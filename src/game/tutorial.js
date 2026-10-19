@@ -116,7 +116,7 @@ export function stepContent(step, s) {
       return {
         ...base,
         title: 'Ton prochain cap : le stade',
-        text: `Chaque match remplit la caisse. À ${cost.toLocaleString('fr-FR')} €, ton stade passera à ${capacity(2).toLocaleString('fr-FR')} places. Les pastilles dorées montrent ce qui est prêt à être amélioré, et le staff te conseille en bas de l’écran.`,
+        text: `Chaque match remplit la caisse. À ${cost.toLocaleString('fr-FR')} €, ton stade passera à ${capacity(2).toLocaleString('fr-FR')} places. Les pastilles dorées montrent ce qui est prêt à être amélioré, et la carte « Conseil du staff » te guide ensuite.`,
         cta: 'Terminer',
         secondary: { label: 'Voir le stade', action: { kind: 'plot', plot: 't0', sector: 'main' } },
       };

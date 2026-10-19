@@ -33,3 +33,4 @@ export const IconCloud = I(<path d="M7 18h10.5a4 4 0 0 0 .4-8A6 6 0 0 0 6.3 9.6 
 export const IconRain = I(<><path d="M7 15h10.5a4 4 0 0 0 .4-8A6 6 0 0 0 6.3 6.6 4.3 4.3 0 0 0 7 15Z" /><path d="M9 18l-1 2.5M13 18l-1 2.5M17 18l-1 2.5" /></>);
 export const IconSnow = I(<><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9" /><path d="M10 4.5 12 6l2-1.5M10 19.5 12 18l2 1.5" /></>);
 export const IconShield = I(<path d="M12 3 4.5 6v5.5c0 4.5 3.2 8.2 7.5 9.5 4.3-1.3 7.5-5 7.5-9.5V6Z" />);
+export const IconEye = I(<><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3" /></>);

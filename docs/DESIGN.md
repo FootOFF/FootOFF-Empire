@@ -30,6 +30,23 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 - Un seul bouton principal (doré) par écran ; les autres en contour (`.btn.ghost`) ou en lien (`.linkbtn`).
 - Mobile : zones tactiles de 44 px minimum, panneaux en plein écran ou en feuille basse.
 
+## Zones du HUD
+
+| Zone | Contenu | Règle |
+|---|---|---|
+| Haut gauche | identité du club | largeur `--rail-w` (320 px), hauteur 56 px |
+| Haut droite | trésorerie, réputation, menu | pastilles de 40 px |
+| Colonne de gauche | objectif ou tutoriel, puis conseil du staff | même largeur que la carte du club, 12 px entre les cartes |
+| Droite | outils de vue (heure, météo, jour de match, recentrer) | centrés verticalement ; derrière un seul bouton sur mobile |
+| Bas | dock centré + carte de match à droite | même hauteur (`--bar-h`, 68 px) et même ligne de base ; sous 1240 px le dock se cale à gauche |
+
+- La 3D occupe tout l'écran. `--hb` réserve la place du badge imposé par l'hébergeur de test (0 sur footoff.media) :
+  seuls les éléments posés en bas l'utilisent (`--hud-bottom`).
+- Mobile (≤ 760 px) : barre du haut (nom du club, ressources), objectif replié, puis en bas, de haut en bas :
+  conseil du staff, carte de match, dock. Jamais plus de six éléments à l'écran.
+- Un contrôle automatique (galerie) vérifie qu'aucun élément ne se chevauche ni ne sort de l'écran à
+  1440, 1280, 1000, 800 et 375 px.
+
 ## Briques (`src/ui/kit.jsx`)
 
 - `Eyebrow` : libellé en capitales.

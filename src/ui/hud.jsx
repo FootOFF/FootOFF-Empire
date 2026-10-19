@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DIVISIONS } from '../game/constants';
 import { SECTORS, nextLockedSector } from '../game/map';
 import { activeGoal, tierOf } from '../game/goals';
@@ -9,7 +9,7 @@ import { AnimatedMoney } from './moneyfx';
 import { fmtRating } from './format';
 import {
   IconCal, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
-  IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow,
+  IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow, IconEye,
 } from './icons';
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran.
@@ -25,12 +25,7 @@ export function TopHud({ state, onMenu }) {
         <FOMonogram className="hud-mark" />
         <div className="hud-club-text">
           <span className="hud-club-name">{state.clubName}</span>
-          <span className="hud-club-meta">{div.name} · Saison {state.seasonNumber}</span>
-        </div>
-        <div className="hud-rounds" aria-label={`Journée ${Math.min(state.round + 1, 7)} sur 7`}>
-          {Array.from({ length: 7 }, (_, i) => (
-            <span key={i} className={i < state.round ? 'done' : i === state.round ? 'next' : ''} />
-          ))}
+          <span className="hud-club-meta">{div.name}<span className="meta-season"> · Saison {state.seasonNumber}</span></span>
         </div>
       </div>
       <div className="hud-res">
@@ -111,28 +106,30 @@ export function Dock({ panel, onPanel, badges = {} }) {
 
 export function MatchCta({ state, onPlay, onEndSeason }) {
   const done = state.round >= 7;
+  // carte compacte : même hauteur et même ligne de base que le dock
   if (done) {
     return (
       <div className="hud-match glass">
-        <span className="eyebrow">Saison {state.seasonNumber} terminée</span>
-        <strong className="hud-match-title">Place au bilan</strong>
-        <button className="btn btn-xl" onClick={onEndSeason}><IconTrophy /> Bilan de saison</button>
+        <div className="hm-info">
+          <span className="eyebrow">Saison {state.seasonNumber} terminée</span>
+          <strong className="hud-match-title">Place au bilan</strong>
+        </div>
+        <button className="btn" onClick={onEndSeason}><IconTrophy /> Bilan</button>
       </div>
     );
   }
   const opp = nextOpponent(state);
   const me = teamLevel(state);
-  const edge = Math.max(-1, Math.min(1, (me - opp.strength) / 4));
   return (
     <div className="hud-match glass">
-      <span className="eyebrow">Journée {state.round + 1} / 7 · à domicile</span>
-      <strong className="hud-match-title">{opp.name}</strong>
-      <div className="hud-versus">
-        <span className="hud-versus-me">{fmtRating(me)}</span>
-        <span className="hud-versus-bar"><i style={{ left: `${50 + edge * 50}%` }} /></span>
-        <span className="hud-versus-opp">{fmtRating(opp.strength)}</span>
+      <div className="hm-info">
+        <span className="hm-line">
+          <span className="eyebrow">Journée {state.round + 1} / 7</span>
+          <span className="hm-lvl" title="Niveau de ton onze · niveau de l’adversaire"><b>{fmtRating(me)}</b> · {fmtRating(opp.strength)}</span>
+        </span>
+        <strong className="hud-match-title" title={`${opp.name} (à domicile)`}>{opp.name}</strong>
       </div>
-      <button className="btn btn-xl" onClick={onPlay}><IconPlay /> Jouer le match</button>
+      <button className="btn" onClick={onPlay} title="Jouer le match" aria-label="Jouer le match"><IconPlay /> Jouer</button>
     </div>
   );
 }
@@ -152,8 +149,10 @@ const WEATHER_UI = {
 export function SceneTools({ timeMode, weatherMode, matchDay, onTime, onWeather, onMatchDay, onRecenter }) {
   const T = TIME_UI[timeMode] || TIME_UI.auto;
   const W = WEATHER_UI[weatherMode] || WEATHER_UI.auto;
+  const [open, setOpen] = useState(false); // mobile : outils repliés derrière un seul bouton
   return (
-    <div className="hud-tools glass" role="toolbar" aria-label="Vue">
+    <div className={`hud-tools glass ${open ? 'open' : ''}`} role="toolbar" aria-label="Vue">
+      <button className={`tools-toggle ${open ? 'on' : ''}`} onClick={() => setOpen((o) => !o)} aria-expanded={open} title="Réglages de la vue"><IconEye /></button>
       <button className={timeMode !== 'auto' ? 'on' : ''} onClick={onTime} disabled={matchDay} title={`${T.title} — cliquer pour changer`}>
         <T.Icon />
       </button>

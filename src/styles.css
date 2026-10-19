@@ -119,7 +119,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .lockup-lg .lockup-sub { font-size: var(--t-md); margin-top: 8px; }
 
 /* =========================================================== jeu */
-.game { position: fixed; inset: 0; bottom: var(--host-badge-h, 0px); overflow: hidden; background: var(--bg); }
+.game { position: fixed; inset: 0; overflow: hidden; background: var(--bg); }
 .stage { position: absolute; inset: 0; }
 .stage::after { /* vignette cinéma */
   content: ''; position: absolute; inset: 0; pointer-events: none;
@@ -167,7 +167,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hud-rep-next { font-family: var(--font-mono); font-size: var(--t-xs); color: var(--muted); }
 
 /* ---- objectif ---- */
-.hud-goal { position: absolute; top: 84px; left: var(--gap); width: 292px; border-radius: var(--r-md); overflow: hidden; }
+.hud-goal { border-radius: var(--r-md); overflow: hidden; }
 .hud-goal-head {
   display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: none;
   padding: 12px 16px; text-align: left;
@@ -195,20 +195,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hud-tools button.on { color: var(--gold); background: var(--gold-soft); border-color: var(--gold-line); }
 .hud-tools button:disabled { opacity: .3; cursor: not-allowed; }
 
-/* ---- prochain match ---- */
-.hud-match {
-  position: absolute; right: var(--gap); bottom: var(--gap); width: 300px;
-  border-radius: var(--r-lg); padding: 16px; display: flex; flex-direction: column; gap: 8px;
-}
-.hud-match-title { font-family: var(--font-title); font-weight: 500; font-size: var(--t-lg); letter-spacing: -.02em; line-height: 1.15; }
-.hud-versus { display: flex; align-items: center; gap: 12px; margin: 8px 0 12px; font-family: var(--font-mono); font-size: var(--t-sm); }
-.hud-versus-me { color: var(--gold-light); }
-.hud-versus-opp { color: var(--text-2); }
-.hud-versus-bar {
-  position: relative; flex: 1; height: 4px; border-radius: 2px;
-  background: linear-gradient(90deg, var(--gold) 0%, rgba(199, 161, 90, .25) 50%, rgba(255, 255, 255, .18) 100%);
-}
-.hud-versus-bar i { position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 50%; background: var(--text); transform: translate(-50%, -50%); box-shadow: 0 0 0 3px rgba(9, 9, 9, .8); }
+/* ---- prochain match : voir « HUD : zones fixes » en fin de fichier ---- */
+.hud-match-title { font-family: var(--font-title); font-weight: 500; font-size: var(--t-md); letter-spacing: -.01em; line-height: 1.2; }
 
 /* ---- dock ---- */
 .hud-dock {
@@ -232,8 +220,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* ---- guidage : tutoriel, conseil du staff, pastilles ---- */
 .hud-coach {
-  position: absolute; top: 84px; left: var(--gap); width: 330px; border-radius: var(--r-md);
-  padding: 16px 16px 16px; display: flex; flex-direction: column; gap: 8px;
+  border-radius: var(--r-md); padding: 16px; display: flex; flex-direction: column; gap: 8px;
   border-color: var(--gold-line); box-shadow: 0 12px 40px rgba(0, 0, 0, .4), 0 0 0 1px rgba(199, 161, 90, .12), 0 0 34px rgba(199, 161, 90, .12);
   animation: fo-up .45s var(--ease);
 }
@@ -250,8 +237,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .coach-skip:hover:not(:disabled) { color: var(--text-2); }
 
 .hud-tip {
-  position: absolute; left: var(--gap); bottom: var(--gap); width: 320px; border-radius: var(--r-md);
-  padding: 12px 40px 12px 16px; display: flex; flex-direction: column; gap: 4px; animation: fo-up .4s var(--ease);
+  border-radius: var(--r-md); padding: 12px 40px 12px 16px; display: flex; flex-direction: column; gap: 4px; animation: fo-up .4s var(--ease);
 }
 .hud-tip.warn { border-color: rgba(224, 122, 111, .45); }
 .tip-eyebrow { font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .18em; text-transform: uppercase; color: var(--gold); }
@@ -297,7 +283,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .game[data-tuto="sign"] .hud-dock button[data-id="squad"],
 .game[data-tuto="sign"] .pcard.market.recommended .btn,
 .game[data-tuto="sign"] .sq-tabs button:last-child:not(.on),
-.game[data-tuto="match"] .hud-match .btn-xl,
+.game[data-tuto="match"] .hud-match .btn,
 .game[data-tuto="match"] .pm-side .btn-xl,
 .game[data-tuto="stadium"] .hud-dock button[data-id="stadium"] { animation: tuto-ring 1.6s ease-out infinite; }
 .game[data-tuto="build"] .plotpin[data-plot="t1"] i { width: 34px; height: 34px; }
@@ -1150,7 +1136,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* écrans intermédiaires : le dock passe à gauche pour ne pas chevaucher la carte de match */
 @media (min-width: 761px) and (max-width: 1100px) {
-  .hud-tip { bottom: 96px; }
   .hud-dock { left: var(--gap); transform: none; }
   .hud-dock button { width: 74px; }
   .game.has-panel .hud-dock { left: var(--gap); }
@@ -1169,25 +1154,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .hud-rep-bar, .hud-rep-next { display: none; }
   .hud-icon { width: 36px; height: 36px; }
   .hud-res { gap: 8px; }
-  .hud-goal { top: 62px; width: calc(100% - 20px); }
-  .hud-coach { top: 62px; width: calc(100% - 20px); padding: 12px 16px 12px; gap: 8px; }
+  .hud-coach { padding: 12px 16px; gap: 8px; }
   .coach-title { font-size: var(--t-md); }
   .coach-text { font-size: var(--t-sm); }
-  .hud-tip { left: var(--gap); right: var(--gap); width: auto; bottom: 160px; padding: 8px 36px 12px 12px; }
+  .hud-tip { padding: 8px 36px 8px 12px; }
   .tip-text { display: none; }
   .tip-main { flex-direction: row; align-items: baseline; justify-content: space-between; gap: 12px; }
   .tip-main strong { font-size: var(--t-sm); }
   .tip-cta { white-space: nowrap; margin: 0; }
   .tip-eyebrow { display: none; }
   .hud-goal:not(.collapsed) .hud-goal-body { padding-left: 16px; }
-  .hud-tools { top: auto; bottom: 220px; transform: none; }
-  .hud-match { left: var(--gap); right: var(--gap); width: auto; bottom: 84px; padding: 12px 16px; display: grid; grid-template-columns: 1fr auto; column-gap: 12px; }
-  .hud-match .eyebrow { grid-column: 1; font-size: var(--t-xs); }
-  .hud-match-title { grid-column: 1; font-size: var(--t-md); }
-  .hud-versus { display: none; }
-  .hud-match .btn-xl { grid-column: 2; grid-row: 1 / span 2; width: auto; padding: 12px 16px; }
-  .hud-dock { left: var(--gap); right: var(--gap); transform: none; justify-content: space-between; }
-  .hud-dock button { flex: 1; width: auto; height: 52px; }
   .game.has-panel .hud-dock { left: var(--gap); }
   .drawer { inset: 0; width: auto; border-radius: 0; background: #0b0b0c; z-index: 12; }
   .squad { inset: 0; width: auto; border-radius: 0; background: #0b0b0c; z-index: 12; }
@@ -1229,4 +1205,75 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .cs-team { font-size: var(--t-md); }
   .empire2d { padding: 72px 12px 172px; }
   .plotlabel { display: none; }
+}
+
+/* =========================================================== HUD : zones fixes (docs/DESIGN.md)
+   haut-gauche : identité du club · haut-droite : ressources · colonne de gauche : objectif ou tutoriel, puis
+   conseil du staff, à la largeur de la carte du club · droite : outils de vue · bas : dock centré et carte de
+   match à droite, même hauteur, même ligne de base. La 3D occupe tout l'écran ; --hb réserve la place du badge
+   imposé par l'hébergeur de test (0 sur footoff.media) aux seuls éléments posés en bas. */
+:root { --hb: var(--host-badge-h, 0px); --rail-w: 320px; --bar-h: 68px; --hud-bottom: calc(var(--gap) + var(--hb)); }
+.hud-club { width: var(--rail-w); height: 56px; }
+.hud-left {
+  position: absolute; top: calc(var(--gap) + 56px + var(--s-3)); left: var(--gap); width: var(--rail-w);
+  display: flex; flex-direction: column; gap: var(--s-3); pointer-events: none;
+}
+.hud-left > * { pointer-events: auto; }
+.hud-goal.collapsed { align-self: flex-start; }
+.hud-tools .tools-toggle { display: none; }
+.hud-dock { bottom: var(--hud-bottom); height: var(--bar-h); align-items: center; }
+.hud-match {
+  position: absolute; right: var(--gap); bottom: var(--hud-bottom); width: 360px; height: var(--bar-h);
+  display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-2) 0 var(--s-6); border-radius: 999px;
+}
+.hm-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.hm-line { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-2); min-width: 0; }
+.hud-dock button { width: 84px; }
+.hud-match-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hm-lvl { font-family: var(--font-mono); font-size: var(--t-xs); color: var(--muted); white-space: nowrap; }
+.hm-line .eyebrow { white-space: nowrap; }
+.hm-lvl b { color: var(--gold-light); font-weight: 500; }
+.hud-match .btn { height: 52px; padding: 0 var(--s-5); white-space: nowrap; flex-shrink: 0; }
+/* tout ce qui se pose en bas reste au-dessus du badge de l'hébergeur */
+.inspector { bottom: var(--hud-bottom); }
+.drawer, .squad { bottom: calc(12px + var(--hb)); }
+.post { padding-bottom: calc(var(--s-6) + var(--hb)); }
+.cine { padding-bottom: calc(6vh + var(--hb)); }
+.matchscreen.prematch { padding-bottom: calc(28px + var(--hb)); }
+.feed { bottom: calc(84px + var(--hb)); }
+.live-controls { bottom: var(--hud-bottom); }
+.goal-banner { bottom: calc(92px + var(--hb)); }
+.halftime, .fulltime { bottom: calc(84px + var(--hb)); }
+
+/* sous 1240 px, le dock centré toucherait la carte de match : il se cale à gauche */
+@media (min-width: 761px) and (max-width: 1240px) {
+  .hud-dock { left: var(--gap); transform: none; }
+  .game.has-panel .hud-dock { left: var(--gap); }
+}
+@media (min-width: 761px) and (max-width: 1100px) {
+  .hud-dock button { width: 74px; }
+  .hud-match { width: 320px; }
+}
+
+@media (max-width: 760px) {
+  /* mobile : barre du haut, objectif replié, outils derrière un bouton, puis en bas : conseil, match, dock */
+  .hud-club { width: auto; height: 44px; flex: 1; min-width: 0; max-width: none; padding: 0 var(--s-4); }
+  .hud-mark, .hud-club-meta, .hm-lvl { display: none; }
+  .hud-left { display: contents; }
+  .hud-goal, .hud-coach { position: absolute; top: calc(var(--gap) + 44px + var(--s-2)); left: var(--gap); right: calc(var(--gap) + 52px); }
+  .hud-goal.collapsed { right: auto; }
+  .hud-tip { position: absolute; left: var(--gap); right: var(--gap); bottom: calc(var(--hud-bottom) + 64px + 60px + var(--s-2) * 2); }
+  .hud-tools { top: calc(var(--gap) + 44px + var(--s-2)); bottom: auto; right: var(--gap); transform: none; }
+  .hud-tools button:not(.tools-toggle) { display: none; }
+  .hud-tools.open button { display: grid; }
+  .hud-tools .tools-toggle { display: grid; }
+  .hud-dock { left: var(--gap); right: var(--gap); transform: none; justify-content: space-between; height: 64px; }
+  .hud-dock button { flex: 1; width: auto; height: 52px; }
+  .hud-match { left: var(--gap); right: var(--gap); width: auto; height: 60px; bottom: calc(var(--hud-bottom) + 64px + var(--s-2)); padding: 0 var(--s-2) 0 var(--s-4); }
+  .hud-match .btn { height: 44px; padding: 0 var(--s-4); }
+  .inspector { bottom: var(--hb); }
+  .drawer, .squad { bottom: 0; padding-bottom: var(--hb); }
+  .post { padding-bottom: var(--hb); }
+  .halftime, .fulltime { bottom: var(--hb); }
+  .feed { bottom: calc(70px + var(--hb)); }
 }

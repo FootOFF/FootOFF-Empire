@@ -174,12 +174,13 @@ export default function App({ preview = null }) {
 
       <div className="hud">
         <TopHud state={state} onMenu={() => setMenu(true)} />
+        <div className="hud-left">
         {tuto ? (
           <CoachCard
             content={tuto}
             onPrimary={onCoachPrimary}
             onSecondary={() => { doAction(tuto.secondary?.action); setTuto('done'); }}
-            onSkip={() => { setTuto('done'); toast('Tutoriel passé : le staff te conseillera en bas de l’écran.', 'gold'); }}
+            onSkip={() => { setTuto('done'); toast('Tutoriel passé : le staff continuera de te conseiller.', 'gold'); }}
           />
         ) : (
           <ObjectiveWidget state={state} collapsed={goalCollapsed} onToggle={() => setGoalCollapsed((c) => !c)} />
@@ -189,6 +190,7 @@ export default function App({ preview = null }) {
           onAction={() => doAction(shownTip.action)}
           onDismiss={() => setDismissedTips((d) => new Set(d).add(shownTip.id))}
         />
+        </div>
         {webglOk && (
           <SceneTools
             timeMode={timeMode}
