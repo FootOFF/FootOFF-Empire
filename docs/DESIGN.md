@@ -70,6 +70,21 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
   La qualité est enregistrée par appareil (`fo-quality`) : Économie = sans ombres et résolution 1, Auto = selon
   l'appareil, Haute = ombres et netteté maximales ; elle s'applique sans recharger.
 
+## Finitions
+
+- Sorties : tout ce qui s'ouvre passe par `<Presence>` (`src/ui/presence.jsx`) et s'efface en 200 ms dans le
+  sens inverse de son entrée (panneau vers la droite, carte vers le bas, fenêtre en se resserrant). Les raccourcis
+  clavier d'une fenêtre passent par `useKeydown` : ils se coupent dès qu'elle sort. Mouvement réduit respecté.
+- Focus : anneau doré au clavier uniquement ; une fenêtre reçoit le focus à l'ouverture et le rend au bouton
+  d'origine à la fermeture (`useDialogFocus`).
+- Survol : seulement avec une souris (`@media (hover: hover)`) ; appui : léger enfoncement partout.
+- Toucher : sur écran tactile, chaque commande se touche sur 44 × 44 px au moins (zone invisible `::after`).
+- Typographie : le code écrit des espaces ordinaires ; `src/ui/typography.js` pose à l'affichage les insécables
+  (avant `: ; ! ?`, dans les guillemets, entre un nombre et son unité), l'apostrophe ’ et les points de
+  suspension. Ordinaux avec `ordinal()` : 1er, 1re, 2e.
+- Chargement : écran HTML dans `index.html` avant l'arrivée du code, puis `LoadingScreen` (progression réelle des
+  modèles 3D, astuces) jusqu'à ce que la scène soit prête ; même mise en page, aucun saut.
+
 ## Contrôle
 
 La galerie (`?galerie` dans l'adresse du jeu) affiche chaque écran avec des données fictives, sur téléphone

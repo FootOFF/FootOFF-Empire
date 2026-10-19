@@ -19,9 +19,56 @@
       href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <!-- écran de chargement avant l'arrivée du code du jeu (remplacé par React ; même mise en page que src/ui/loading.jsx) -->
+    <style>
+      html, body { margin: 0; height: 100%; background: #090909; }
+      .boot { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; box-sizing: border-box;
+        background: radial-gradient(ellipse 80% 60% at 50% 42%, #15241a 0%, #0c110d 48%, #090909 100%);
+        color: #f3f2ee; font-family: Inter, system-ui, -apple-system, sans-serif; text-align: center; }
+      .boot-inner { width: min(380px, 100%); display: flex; flex-direction: column; align-items: center; gap: 32px; }
+      .boot-lockup { display: inline-flex; align-items: center; gap: 20px; }
+      .boot-lockup svg { height: 76px; width: auto; }
+      .boot-sep { width: 1px; align-self: stretch; margin: 2px; background: rgba(199, 161, 90, .38); }
+      .boot-text { display: flex; flex-direction: column; line-height: 1; text-align: left; }
+      .boot-name { font-weight: 500; font-size: 40px; letter-spacing: -.02em; }
+      .boot-name b { font-weight: 500; color: #c7a15a; }
+      .boot-sub { margin-top: 8px; font-weight: 500; font-size: 15px; letter-spacing: .55em; text-transform: uppercase; color: #c7a15a; }
+      .boot-bar { position: relative; width: 100%; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+      .boot-bar i { position: absolute; top: 0; bottom: 0; left: 0; width: 32%;
+        background: linear-gradient(135deg, #b9924c 0%, #c7a15a 55%, #dec17f 100%); animation: boot-wait 1.3s ease-in-out infinite; }
+      .boot-meta { margin-top: -24px; width: 100%; text-align: left; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px;
+        letter-spacing: .12em; text-transform: uppercase; color: #8b8b8b; }
+      .boot-tip { min-height: 82px; } /* place de l'astuce de l'écran suivant : rien ne saute */
+      @keyframes boot-wait { from { transform: translateX(-100%); } to { transform: translateX(320%); } }
+      @media (max-width: 760px) {
+        .boot-lockup { gap: 14px; } .boot-lockup svg { height: 56px; } .boot-name { font-size: 32px; } .boot-sub { font-size: 13px; }
+      }
+      @media (prefers-reduced-motion: reduce) { .boot-bar i { animation: none; width: 100%; opacity: .5; } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot" role="status" aria-label="Chargement de FootOFF Empire">
+        <div class="boot-inner">
+          <span class="boot-lockup">
+            <svg viewBox="594 256 744 768" aria-hidden="true">
+              <defs>
+                <linearGradient id="fo-boot" gradientUnits="userSpaceOnUse" x1="940" y1="640" x2="1180" y2="300">
+                  <stop offset="0" stop-color="#B9924C" /><stop offset="0.55" stop-color="#B9924C" /><stop offset="1" stop-color="#DEC17F" />
+                </linearGradient>
+              </defs>
+              <path d="M594 256H1035V351H689V588H770.6A300 300 0 0 0 744.5 662H689V835L594 938Z" fill="url(#fo-boot)" />
+              <path d="M770.6 588A300 300 0 1 1 744.5 662H829A218 218 0 1 0 867.6 588Z" fill="url(#fo-boot)" />
+            </svg>
+            <span class="boot-sep"></span>
+            <span class="boot-text"><span class="boot-name">Foot<b>OFF</b></span><span class="boot-sub">Empire</span></span>
+          </span>
+          <div class="boot-bar"><i></i></div>
+          <div class="boot-meta">Chargement…</div>
+          <div class="boot-tip"></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

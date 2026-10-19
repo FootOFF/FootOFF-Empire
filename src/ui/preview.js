@@ -22,6 +22,7 @@ export const SCREENS = [
   ['journal', 'Journal du club'],
   ['confirmation', 'Fenêtre de confirmation'],
   ['menu', 'Menu et réglages'],
+  ['chargement', 'Écran de chargement'],
 ];
 
 export function previewState(screen) {
@@ -57,6 +58,7 @@ export function previewUi(screen, s) {
     case 'mi-temps': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime' } };
     case 'apres-match': return { showResult: true, matchDay: true };
     case 'menu': return { menu: true };
+    case 'chargement': return { loading: 0.42 };
     case 'confirmation': {
       const p = s.players[s.players.length - 1];
       return {

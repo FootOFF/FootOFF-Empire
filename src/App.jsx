@@ -16,6 +16,8 @@ import PostMatch from './ui/postmatch';
 import { LiveMatch, PreMatch } from './ui/match';
 import { CoachCard, StaffTip } from './ui/guide';
 import ConfirmDialog from './ui/confirm';
+import { Presence } from './ui/presence';
+import { LoadingScreen } from './ui/loading';
 import { moneyBurst } from './ui/moneyfx';
 import { previewState, previewUi, silentSound } from './ui/preview';
 import { QUALITIES, loadQuality, saveQuality } from './ui/settings';
@@ -52,6 +54,13 @@ export default function App({ preview = null }) {
   const [goalCollapsed, setGoalCollapsed] = useState(() => window.innerWidth < 760); // replié sur mobile
   const [menu, setMenu] = useState(!!boot.ui.menu);
   const [quality, setQuality] = useState(loadQuality); // qualité graphique (par appareil)
+  const [sceneLoaded, setSceneLoaded] = useState(false); // écran de chargement jusqu'à l'arrivée des modèles 3D
+  const [loadProgress, setLoadProgress] = useState(null);
+  useEffect(() => { // filet de sécurité : l'écran de chargement ne reste jamais plus de 20 s
+    if (sceneLoaded || !state) return undefined;
+    const t = setTimeout(() => setSceneLoaded(true), 20000);
+    return () => clearTimeout(t);
+  }, [sceneLoaded, !state]); // eslint-disable-line react-hooks/exhaustive-deps
   const [webglOk, setWebglOk] = useState(true);
   // match : null → 'prematch' (onze + tactique) → 'live' (direct) → résumé (showResult)
   const [matchPhase, setMatchPhase] = useState(boot.ui.matchPhase || null);
@@ -155,7 +164,7 @@ export default function App({ preview = null }) {
         {preview ? (
           <div className="stage-preview" aria-hidden="true" />
         ) : webglOk ? (
-          <Suspense fallback={<div className="stage-loading"><span className="eyebrow">Chargement de l’Empire…</span></div>}>
+          <Suspense fallback={null}>
             <Empire3D
               state={state}
               timeMode={timeMode}
@@ -167,6 +176,8 @@ export default function App({ preview = null }) {
               selectedPlot={sel?.plotId || null}
               badges={plotBadges}
               quality={quality}
+              onLoadProgress={setLoadProgress}
+              onLoaded={() => setSceneLoaded(true)}
               onSelectPlot={selectPlot}
               onWebGLFail={() => setWebglOk(false)}
             />
@@ -189,11 +200,15 @@ export default function App({ preview = null }) {
         ) : (
           <ObjectiveWidget state={state} collapsed={goalCollapsed} onToggle={() => setGoalCollapsed((c) => !c)} />
         )}
-        <StaffTip
-          tip={shownTip}
-          onAction={() => doAction(shownTip.action)}
-          onDismiss={() => setDismissedTips((d) => new Set(d).add(shownTip.id))}
-        />
+        <Presence>
+          {shownTip && (
+            <StaffTip
+              tip={shownTip}
+              onAction={() => doAction(shownTip.action)}
+              onDismiss={() => setDismissedTips((d) => new Set(d).add(shownTip.id))}
+            />
+          )}
+        </Presence>
         </div>
         {webglOk && (
           <SceneTools
@@ -210,32 +225,38 @@ export default function App({ preview = null }) {
         <Dock panel={sel?.plotId === 't0' ? 'stadium' : panel} onPanel={openPanel} badges={signals} />
       </div>
 
-      {panel === 'squad' && (
-        <SquadView
-          state={state}
-          run={run}
-          ask={setConfirm}
-          preview={boot.ui.squad}
-          initialTab={tutoStep === 'sign' ? 'market' : squadTab}
-          onClose={() => { setPanel(null); setSquadTab('players'); }}
-        />
-      )}
-      {panel === 'season' && <SeasonPanel state={state} onClose={() => setPanel(null)} />}
-      {panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}
-      {sel && (
-        <PlotInspector
-          state={state}
-          sel={sel}
-          onClose={() => setSel(null)}
-          onBuild={onBuild}
-          onUpgrade={onUpgrade}
-          onMatchDay={() => { setSel(null); setMatchDay(true); }}
-        />
-      )}
+      <Presence>
+        {panel === 'squad' && (
+          <SquadView
+            state={state}
+            run={run}
+            ask={setConfirm}
+            preview={boot.ui.squad}
+            initialTab={tutoStep === 'sign' ? 'market' : squadTab}
+            onClose={() => { setPanel(null); setSquadTab('players'); }}
+          />
+        )}
+      </Presence>
+      <Presence>{panel === 'season' && <SeasonPanel state={state} onClose={() => setPanel(null)} />}</Presence>
+      <Presence>{panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
+      <Presence>
+        {sel && (
+          <PlotInspector
+            state={state}
+            sel={sel}
+            onClose={() => setSel(null)}
+            onBuild={onBuild}
+            onUpgrade={onUpgrade}
+            onMatchDay={() => { setSel(null); setMatchDay(true); }}
+          />
+        )}
+      </Presence>
 
-      {matchPhase === 'prematch' && matchCtx && (
-        <PreMatch state={state} ctx={matchCtx} onCancel={cancelMatch} onKickoff={kickoff} />
-      )}
+      <Presence>
+        {matchPhase === 'prematch' && matchCtx && (
+          <PreMatch state={state} ctx={matchCtx} onCancel={cancelMatch} onKickoff={kickoff} />
+        )}
+      </Presence>
       {matchPhase === 'live' && matchCtx && (
         <LiveMatch
           state={state}
@@ -246,10 +267,10 @@ export default function App({ preview = null }) {
           onFinish={finishMatch}
         />
       )}
-      {showResult && <PostMatch state={state} onClose={closeResult} />}
-      {!matchPhase && !showResult && state.seasonReview && <SeasonReview state={state} onClose={() => run(dismissReview)} />}
-      {!matchPhase && !showResult && !state.seasonReview && state.offline && <OfflineReturn data={state.offline} onClose={() => run(dismissOffline)} />}
-      {menu && (
+      <Presence>{showResult && <PostMatch state={state} onClose={closeResult} />}</Presence>
+      <Presence>{!matchPhase && !showResult && state.seasonReview && <SeasonReview state={state} onClose={() => run(dismissReview)} />}</Presence>
+      <Presence>{!matchPhase && !showResult && !state.seasonReview && state.offline && <OfflineReturn data={state.offline} onClose={() => run(dismissOffline)} />}</Presence>
+      <Presence>{menu && (
         <GameMenu
           onClose={() => setMenu(false)}
           muted={sound.current.muted}
@@ -265,19 +286,24 @@ export default function App({ preview = null }) {
               text: `La sauvegarde de ${state.clubName} (saison ${state.seasonNumber}, ${DIVISIONS[state.divisionIndex].name}) sera effacée définitivement.`,
               confirmLabel: 'Effacer et recommencer',
               cancelLabel: 'Garder ma partie',
-              onConfirm: () => { clearGame(); setState(null); },
+              onConfirm: () => { clearGame(); setState(null); setSceneLoaded(false); setLoadProgress(null); },
             });
           }}
         />
-      )}
-      {confirm && (
-        <ConfirmDialog
-          {...confirm}
-          onCancel={() => setConfirm(null)}
-          onConfirm={() => { setConfirm(null); confirm.onConfirm(); }}
-        />
-      )}
+      )}</Presence>
+      <Presence>
+        {confirm && (
+          <ConfirmDialog
+            {...confirm}
+            onCancel={() => setConfirm(null)}
+            onConfirm={() => { setConfirm(null); confirm.onConfirm(); }}
+          />
+        )}
+      </Presence>
       <Toasts items={toasts} />
+      <Presence ms={500}>
+        {((webglOk && !preview && !sceneLoaded) || boot.ui.loading != null) && <LoadingScreen progress={boot.ui.loading ?? loadProgress} />}
+      </Presence>
     </div>
   );
 }

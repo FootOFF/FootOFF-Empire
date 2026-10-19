@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { DIVISIONS } from '../game/constants';
 import { SECTORS, nextLockedSector } from '../game/map';
 import { activeGoal, tierOf } from '../game/goals';
@@ -7,6 +7,7 @@ import { nextOpponent } from '../game/season';
 import { FOMonogram } from './brand';
 import { AnimatedMoney } from './moneyfx';
 import { fmtRating } from './format';
+import { useDialogFocus, useKeydown } from './presence';
 import {
   IconCal, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
   IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow, IconEye, IconClose,
@@ -178,9 +179,12 @@ export function Toasts({ items }) {
 }
 
 export function GameMenu({ onClose, onReset, muted, onToggleSound, quality, onQuality, qualities }) {
+  const ref = useRef(null);
+  useDialogFocus(ref);
+  useKeydown((e) => { if (e.key === 'Escape') { e.stopImmediatePropagation(); onClose(); } }, { capture: true }); // pas le panneau dessous
   return (
     <div className="scrim" onClick={onClose}>
-      <div className="menu-card glass" role="dialog" aria-label="Menu" onClick={(e) => e.stopPropagation()}>
+      <div ref={ref} tabIndex={-1} className="menu-card glass" role="dialog" aria-modal="true" aria-label="Menu" onClick={(e) => e.stopPropagation()}>
         <header className="menu-head">
           <FOMonogram className="menu-mark" />
           <div className="panel-title">

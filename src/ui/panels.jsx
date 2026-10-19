@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { DIVISIONS } from '../game/constants';
 import { standingsOf } from '../game/season';
+import { ordinal } from '../game/utils';
 import { fmtMoney, fmtNum } from './format';
 import { IconClose, IconCoin } from './icons';
 import { AnimatedMoney } from './moneyfx';
 import { Eyebrow, IconBall, RatingBadge, SectionHead, Stat } from './kit';
+import { useDialogFocus, useKeydown } from './presence';
 
 // Panneau du jeu : un seul modèle pour l'Effectif, la Saison et le Journal (en-tête, barre d'outils, corps
 // défilant, trésorerie à droite quand on y dépense). Glisse depuis la droite sur PC, plein écran sur mobile.
 export function Panel({ title, eyebrow, size = 'md', money = null, toolbar = null, overlay = null, onClose, onEscape, children }) {
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') (onEscape || onClose)(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, onEscape]);
+  const ref = useRef(null);
+  useDialogFocus(ref);
+  useKeydown((e) => { if (e.key === 'Escape') (onEscape || onClose)(); });
   return (
-    <section className={`panel ${size}`} role="dialog" aria-label={title}>
+    <section ref={ref} tabIndex={-1} className={`panel ${size}`} role="dialog" aria-label={title}>
       <header className="panel-head">
         <div className="panel-title">
           {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
@@ -59,7 +59,7 @@ export function SeasonPanel({ state, onClose }) {
       onClose={onClose}
       toolbar={(
         <div className="season-stats">
-          <Stat label="Position" value={`${pos}e`} sub="sur 8" tone={promo && pos <= 2 ? 'up' : rel && pos >= 7 ? 'down' : ''} />
+          <Stat label="Position" value={ordinal(pos)} sub="sur 8" tone={promo && pos <= 2 ? 'up' : rel && pos >= 7 ? 'down' : ''} />
           <Stat label="Points" value={me.pts} sub={`${me.played} match${me.played > 1 ? 's' : ''}`} />
           <Stat label="Diff." value={`${me.gd > 0 ? '+' : ''}${me.gd}`} />
           <Stat label="Objectif" value={promo ? 'Top 2' : 'Titre'} sub={goal} />
@@ -107,7 +107,7 @@ export function SeasonPanel({ state, onClose }) {
           <SectionHead label="Palmarès" />
           <ul className="honours">
             {state.history.slice().reverse().map((h) => (
-              <li key={h.season}><span>Saison {h.season}</span><em>{h.division}</em><b>{h.position}e</b></li>
+              <li key={h.season}><span>Saison {h.season}</span><em>{h.division}</em><b>{ordinal(h.position)}</b></li>
             ))}
           </ul>
         </>

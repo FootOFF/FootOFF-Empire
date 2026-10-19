@@ -1,24 +1,25 @@
 import React, { useEffect, useRef } from 'react';
+import { useDialogFocus, useKeydown } from './presence';
 
 // Fenêtre de confirmation du jeu (remplace les boîtes de dialogue du navigateur).
 // Entrée confirme, Échap ou un clic à côté annule.
 export default function ConfirmDialog({ title, text, rows = [], confirmLabel = 'Confirmer', cancelLabel = 'Annuler', tone = 'gold', onConfirm, onCancel }) {
   const confirmRef = useRef(null);
   const cancelRef = useRef(null);
+  const cardRef = useRef(null);
+  useDialogFocus(cardRef, { autoFocus: false }); // avant l'effet qui place le focus sur un bouton
 
   useEffect(() => {
     // action risquée : le focus va sur « Annuler », pour qu'une touche Entrée par réflexe ne détruise rien
     (tone === 'danger' ? cancelRef : confirmRef).current?.focus();
-    const onKey = (e) => {
-      if (e.key === 'Escape') { e.stopImmediatePropagation(); onCancel(); } // ne ferme pas aussi le panneau dessous
-    };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [tone, onCancel]);
+  }, [tone]);
+  useKeydown((e) => {
+    if (e.key === 'Escape') { e.stopImmediatePropagation(); onCancel(); } // ne ferme pas aussi le panneau dessous
+  }, { capture: true });
 
   return (
     <div className="scrim confirm-scrim" onClick={onCancel}>
-      <div className={`confirm-card glass ${tone}`} role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" onClick={(e) => e.stopPropagation()}>
+      <div ref={cardRef} className={`confirm-card glass ${tone}`} role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" onClick={(e) => e.stopPropagation()}>
         <span className="eyebrow">{tone === 'danger' ? 'Attention' : 'Confirmation'}</span>
         <h3 id="confirm-title">{title}</h3>
         {text && <p className="confirm-text">{text}</p>}

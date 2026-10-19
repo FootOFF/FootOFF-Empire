@@ -14,6 +14,8 @@ let loader = null;
 let ktx2 = null;
 let draco = null;
 const templates = new Map(); // url -> Promise<THREE.Object3D>
+let requested = 0; // écran de chargement : modèles demandés / arrivés (réussis ou non)
+let settled = 0;
 const nightMats = new Set();
 let isNight = false; // état courant : un modèle chargé après la bascule doit le respecter
 
@@ -49,6 +51,8 @@ function loadTemplate(url) {
   if (!templates.has(url)) {
     const p = loader.loadAsync(`${BASE}${url}`).then((gltf) => prepareTemplate(gltf.scene));
     p.catch(() => templates.delete(url)); // autorise un nouvel essai plus tard
+    requested += 1;
+    p.finally(() => { settled += 1; }).catch(() => {});
     templates.set(url, p);
   }
   return templates.get(url);
@@ -89,6 +93,8 @@ export async function instantiateModel(entry, footprint) {
   wrapper.userData.lightAnchors = lights;
   return wrapper;
 }
+
+export const assetsProgress = () => ({ requested, settled });
 
 let boost = 1;
 export function setAssetsNight(night) {

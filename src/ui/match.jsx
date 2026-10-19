@@ -6,6 +6,7 @@ import { fmtMoney, fmtNum, fmtRating } from './format';
 import { createLiveMatch } from '../game/live';
 import { IconClose, IconPlay } from './icons';
 import { IconBall, IconSwap, IconWhistle } from './kit';
+import { useKeydown } from './presence';
 
 // Avant-match (onze + tactique + pronostic) et match en direct (score, chrono, fil de commentaires,
 // vitesse, mi-temps avec changement). La 3D derrière est en mode « jour de match ».
@@ -58,11 +59,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const odds = matchOdds(xg);
   const bench = state.players.filter((p) => !lineup.includes(p.id));
 
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') { if (slot !== null) setSlot(null); else onCancel(); } };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [slot, onCancel]);
+  useKeydown((e) => { if (e.key === 'Escape') { if (slot !== null) setSlot(null); else onCancel(); } });
 
   const choose = (k, id) => {
     const next = [...lineup];

@@ -10,6 +10,7 @@ import { SLOTS } from '../game/tactics';
 import { fmtMoney, fmtRating } from './format';
 import { IconClose } from './icons';
 import { Panel } from './panels';
+import { Presence } from './presence';
 
 // Effectif : tableau d'analyste (PC) ou liste compacte (mobile), fiche joueur façon magazine FootOFF Media,
 // comparateur radar. Les couleurs des cases disent si une valeur est forte ou faible pour ta division.
@@ -114,7 +115,7 @@ export function SquadView({ state, run, ask, onClose, initialTab = 'players', pr
       )}
       overlay={(
         <>
-          {sheetPlayer && (
+          <Presence>{sheetPlayer && (
             <PlayerSheet
               p={sheetPlayer}
               state={state}
@@ -127,8 +128,8 @@ export function SquadView({ state, run, ask, onClose, initialTab = 'players', pr
               onSell={() => sell(sheetPlayer)}
               onSign={() => sign(sheetPlayer)}
             />
-          )}
-          {compare && find(compare.a) && find(compare.b) && (
+          )}</Presence>
+          <Presence>{compare && find(compare.a) && find(compare.b) && (
             <CompareView
               state={state}
               a={find(compare.a)}
@@ -137,7 +138,7 @@ export function SquadView({ state, run, ask, onClose, initialTab = 'players', pr
               onClose={() => setCompare(null)}
               onSign={sign}
             />
-          )}
+          )}</Presence>
         </>
       )}
     >

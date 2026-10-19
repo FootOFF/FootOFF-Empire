@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { POS_LABELS } from '../game/constants';
 import { fmtMoney, fmtNum, fmtRating } from './format';
 import { AnimatedMoney } from './moneyfx';
 import { Card, Eyebrow, IconAssist, IconBall, IconStar, RatingBadge, SectionHead, VersusBar } from './kit';
+import { useKeydown } from './presence';
 
 // Après-match : un seul écran, au lieu de « coup de sifflet final » puis « résumé ».
 // Score au centre exact (grille 1fr auto 1fr), buteurs sous chaque équipe, notes du match sur 10 et homme du
@@ -35,11 +36,7 @@ function Goals({ list, align }) {
 
 export default function PostMatch({ state, onClose }) {
   const lm = state.lastMatch;
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Enter' || e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  useKeydown((e) => { if (e.key === 'Enter' || e.key === 'Escape') onClose(); });
   if (!lm) return null;
 
   const outcome = lm.gf > lm.ga ? 'win' : lm.gf < lm.ga ? 'loss' : 'draw';

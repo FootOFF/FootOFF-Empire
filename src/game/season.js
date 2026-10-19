@@ -1,6 +1,6 @@
 import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from './constants';
 import { expectedGate, matchGate, prizeFor, sponsorIncome, upkeepOf } from './economy';
-import { clamp, pick, rnd } from './utils';
+import { clamp, ordinal, pick, rnd } from './utils';
 import { randomClubName } from './names';
 import { assignNumber, freshSeason, makePlayer, playerRating, progressPlayer, saleValue, wageOf, wantsRetirement } from './players';
 import { quickMatch } from './live';
@@ -74,7 +74,7 @@ function quickSim(si, sj) {
 function reportText(s, res) {
   const att = res.attendance;
   const buts = res.gf
-    ? `Buts : ${res.scorers.map((x) => `${x.name} ${x.minute}e`).join(', ')}.`
+    ? `Buts : ${res.scorers.map((x) => `${x.name} ${ordinal(x.minute, true)}`).join(', ')}.`
     : `${s.clubName} n’a pas trouvé la faille.`;
   let intro;
   if (res.gf > res.ga) {
@@ -251,8 +251,8 @@ export function endSeason(s) {
   pushJournal(s, {
     season: s.seasonNumber,
     kind: 'saison',
-    title: promoted ? `Montée ! ${s.clubName} termine ${position}e de ${div.name}` : relegated ? `Descente : ${position}e place en ${div.name}` : `Saison ${s.seasonNumber} bouclée à la ${position}e place`,
-    text: `Saison ${s.seasonNumber} terminée : ${position}e en ${div.name}.${promoted ? ' Montée !' : relegated ? ' Descente.' : ''} Prime : ${n(prize)} € · Sponsors : ${n(sponsors)} € · Salaires : −${n(wages)} € · Entretien : −${n(upkeep)} €.`,
+    title: promoted ? `Montée ! ${s.clubName} termine ${ordinal(position)} de ${div.name}` : relegated ? `Descente : ${ordinal(position, true)} place en ${div.name}` : `Saison ${s.seasonNumber} bouclée à la ${ordinal(position, true)} place`,
+    text: `Saison ${s.seasonNumber} terminée : ${ordinal(position)} en ${div.name}.${promoted ? ' Montée !' : relegated ? ' Descente.' : ''} Prime : ${n(prize)} € · Sponsors : ${n(sponsors)} € · Salaires : −${n(wages)} € · Entretien : −${n(upkeep)} €.`,
   });
 
   if (promoted) s.divisionIndex += 1;

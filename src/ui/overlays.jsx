@@ -14,7 +14,7 @@ export function SeasonReview({ state, onClose }) {
     <div className="cine">
       <div className="cine-card">
         <span className="eyebrow">Bilan de saison</span>
-        <div className="cine-rank"><b>{r.position}<sup>e</sup></b><span>sur 8 · {r.division}</span></div>
+        <div className="cine-rank"><b>{r.position}<sup>{r.position === 1 ? 'er' : 'e'}</sup></b><span>sur 8 · {r.division}</span></div>
         {r.promoted && <span className="cine-word win">Montée en {r.nextDivision}</span>}
         {r.relegated && <span className="cine-word loss">Descente en {r.nextDivision}</span>}
         {!r.promoted && !r.relegated && <span className="cine-word draw">Maintien</span>}

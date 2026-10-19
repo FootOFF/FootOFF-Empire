@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BUILDINGS, upgradeCost } from '../game/constants';
 import { PLOT_LABELS, SECTORS, allowedBuildingsFor, buildingEffect, plotBuilding } from '../game/map';
 import { fmtMoney, fmtNum } from './format';
 import { expectedGate } from '../game/economy';
 import { IconAcademy, IconArrowUp, IconClose, IconFans, IconLock, IconSponsor, IconStadium, IconTraining } from './icons';
 import { Eyebrow } from './kit';
+import { useKeydown } from './presence';
 
 const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor };
 
@@ -19,11 +20,7 @@ function Pips({ lvl, max }) {
 // Inspecteur de parcelle : même famille que les panneaux (en-tête, corps), en carte à gauche sur PC et en
 // feuille basse sur mobile, ouverte au clic dans la vue 3D.
 export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade, onMatchDay }) {
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  useKeydown((e) => { if (e.key === 'Escape') onClose(); });
 
   const sec = SECTORS.find((s) => s.id === sel.sector);
   const unlocked = state.reputation >= sec.repNeeded;

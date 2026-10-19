@@ -7,7 +7,7 @@ import { fmtMoney } from './format';
 import { IconArrowUp } from './icons';
 import { PLOT_POS, PLAZA_CENTER, footprintOf, layoutOverlaps } from '../three/layout';
 import { createRenderer, createEnvironment, pixelRatioFor } from '../three/environment';
-import { initAssets, instantiateModel, setAssetsBoost, setAssetsNight } from '../three/assets';
+import { assetsProgress, initAssets, instantiateModel, setAssetsBoost, setAssetsNight } from '../three/assets';
 import { resolveModel, resolveProp } from '../three/manifest';
 import { plotLights } from '../three/lights';
 import { BuildAnimation, Fireworks, hoverFrame } from '../three/fx';
@@ -68,7 +68,7 @@ function plotInfo(s, plotId) {
 // parcelle sélectionnée). Garde ses propres interactions : survol (étiquette) et clic (sélection).
 export default function Empire3D({
   state, onSelectPlot, onWebGLFail, timeMode = 'auto', weatherMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
-  live = false, matchFx = null, badges = [], quality = 'auto',
+  live = false, matchFx = null, badges = [], quality = 'auto', onLoadProgress, onLoaded,
 }) {
   const mountRef = useRef(null);
   const labelRef = useRef(null);
@@ -80,6 +80,8 @@ export default function Empire3D({
   const ctxRef = useRef(null);
   const selectRef = useRef(onSelectPlot);
   selectRef.current = onSelectPlot;
+  const loadRef = useRef({ onLoadProgress, onLoaded });
+  loadRef.current = { onLoadProgress, onLoaded };
   const modeRef = useRef({ timeMode: 'auto', weatherMode: 'auto', matchDay: false, live: false });
 
   useEffect(() => {
@@ -259,6 +261,21 @@ export default function Empire3D({
     }
     setReady(true);
 
+    // Écran de chargement : progression des modèles demandés par la scène. Fini quand tout est arrivé et que
+    // rien de neuf n'a été demandé pendant deux relevés (les modèles arrivent par vagues), ou au bout de 12 s.
+    const loadStart = performance.now();
+    let calm = 0;
+    const loadTimer = setInterval(() => {
+      const { requested, settled } = assetsProgress();
+      loadRef.current.onLoadProgress?.(requested ? settled / requested : 1);
+      calm = requested && settled >= requested ? calm + 1 : 0;
+      if (calm >= 2 || performance.now() - loadStart > 12000) {
+        clearInterval(loadTimer);
+        loadRef.current.onLoadProgress?.(1);
+        loadRef.current.onLoaded?.();
+      }
+    }, 150);
+
     // --- Pointeur : clic = sélection, survol = contour + étiquette ----------------------------------
     const ray = new THREE.Raycaster();
     const ptr = new THREE.Vector2();
@@ -420,6 +437,7 @@ export default function Empire3D({
       ctx.plots.forEach((e) => { e.lights?.dispose(); });
       squad.dispose();
       clearInterval(clockTimer);
+      clearInterval(loadTimer);
       life.dispose();
       weather.dispose();
       fireworks.dispose();
@@ -497,7 +515,6 @@ export default function Empire3D({
   return (
     <div className="scene3d">
       <div className="scene3d-canvas" ref={mountRef} />
-      {!ready && <div className="scene3d-fallback"><span className="eyebrow">Chargement de l’Empire…</span></div>}
       {ready && badges.filter((id) => id !== selectedPlot).map((id) => (
         <button
           key={id}
