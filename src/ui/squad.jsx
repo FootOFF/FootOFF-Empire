@@ -8,8 +8,8 @@ import { seasonForecast } from '../game/economy';
 import { bestSigning } from '../game/advice';
 import { SLOTS } from '../game/tactics';
 import { fmtMoney, fmtRating } from './format';
-import { IconClose, IconCoin } from './icons';
-import { AnimatedMoney } from './moneyfx';
+import { IconClose } from './icons';
+import { Panel } from './panels';
 
 // Effectif : tableau d'analyste (PC) ou liste compacte (mobile), fiche joueur façon magazine FootOFF Media,
 // comparateur radar. Les couleurs des cases disent si une valeur est forte ou faible pour ta division.
@@ -43,16 +43,8 @@ export function SquadView({ state, run, ask, onClose, initialTab = 'players', pr
   const forecast = seasonForecast(state, wages);
   const recommended = bestSigning(state)?.player.id;
 
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key !== 'Escape') return;
-      if (compare) setCompare(null);
-      else if (sheet) setSheet(null);
-      else onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [sheet, compare, onClose]);
+  // Échap ferme d'abord le comparateur, puis la fiche, puis le panneau
+  const onEscape = () => { if (compare) setCompare(null); else if (sheet) setSheet(null); else onClose(); };
 
   const shown = filter === 'all' ? squad : squad.filter((p) => p.pos === filter);
   const find = (id) => state.players.find((p) => p.id === id) || state.market.find((p) => p.id === id);
@@ -98,19 +90,15 @@ export function SquadView({ state, run, ask, onClose, initialTab = 'players', pr
   };
 
   return (
-    <section className="squad glass" role="dialog" aria-label="Effectif">
-      <header className="sq-head">
-        <div>
-          <span className="eyebrow">{squad.length}/{SQUAD_MAX} joueurs · {DIVISIONS[state.divisionIndex].name}</span>
-          <h2>Effectif</h2>
-        </div>
-        <div className="drawer-head-side">
-          <span className={`drawer-money ${state.money < 0 ? 'neg' : ''}`} data-money-target title="Trésorerie"><IconCoin /><AnimatedMoney value={state.money} /></span>
-          <button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button>
-        </div>
-      </header>
-
-      <div className="sq-bar">
+    <Panel
+      size="lg"
+      title="Effectif"
+      eyebrow={<>{squad.length}/{SQUAD_MAX} joueurs<span className="hide-sm"> · {DIVISIONS[state.divisionIndex].name}</span></>}
+      money={state.money}
+      onClose={onClose}
+      onEscape={onEscape}
+      toolbar={(
+        <>
         <div className="sq-budget">
           <div className="sq-budget-top"><span>Salaires</span><b className={forecast.net < 0 ? 'bad' : forecast.wageShare > 0.75 ? 'warn' : ''}>{Math.round(forecast.wageShare * 100)} % des revenus</b></div>
           <span className="sq-gauge"><i className={forecast.net < 0 ? 'bad' : forecast.wageShare > 0.75 ? 'warn' : ''} style={{ width: `${Math.min(100, forecast.wageShare * 100)}%` }} /></span>
@@ -122,9 +110,37 @@ export function SquadView({ state, run, ask, onClose, initialTab = 'players', pr
             Marché{recommended ? <i className="sq-tab-dot" aria-label="recrue recommandée" /> : null}
           </button>
         </div>
-      </div>
-
-      <div className="sq-body">
+        </>
+      )}
+      overlay={(
+        <>
+          {sheetPlayer && (
+            <PlayerSheet
+              p={sheetPlayer}
+              state={state}
+              refLvl={ref}
+              market={!!sheet.market}
+              onClose={() => setSheet(null)}
+              onPrev={() => step(-1)}
+              onNext={() => step(1)}
+              onCompare={() => openCompare(sheetPlayer)}
+              onSell={() => sell(sheetPlayer)}
+              onSign={() => sign(sheetPlayer)}
+            />
+          )}
+          {compare && find(compare.a) && find(compare.b) && (
+            <CompareView
+              state={state}
+              a={find(compare.a)}
+              b={find(compare.b)}
+              onPick={(id) => setCompare({ ...compare, a: id })}
+              onClose={() => setCompare(null)}
+              onSign={sign}
+            />
+          )}
+        </>
+      )}
+    >
         {tab === 'players' ? (
           <>
             <div className="chips">
@@ -148,33 +164,7 @@ export function SquadView({ state, run, ask, onClose, initialTab = 'players', pr
         ) : (
           <Market state={state} refLvl={ref} recommended={recommended} onOpen={(p) => setSheet({ id: p.id, market: true })} onCompare={openCompare} onSign={sign} />
         )}
-      </div>
-
-      {sheetPlayer && (
-        <PlayerSheet
-          p={sheetPlayer}
-          state={state}
-          refLvl={ref}
-          market={!!sheet.market}
-          onClose={() => setSheet(null)}
-          onPrev={() => step(-1)}
-          onNext={() => step(1)}
-          onCompare={() => openCompare(sheetPlayer)}
-          onSell={() => sell(sheetPlayer)}
-          onSign={() => sign(sheetPlayer)}
-        />
-      )}
-      {compare && find(compare.a) && find(compare.b) && (
-        <CompareView
-          state={state}
-          a={find(compare.a)}
-          b={find(compare.b)}
-          onPick={(id) => setCompare({ ...compare, a: id })}
-          onClose={() => setCompare(null)}
-          onSign={sign}
-        />
-      )}
-    </section>
+    </Panel>
   );
 }
 

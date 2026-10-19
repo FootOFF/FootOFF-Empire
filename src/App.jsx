@@ -18,6 +18,7 @@ import { CoachCard, StaffTip } from './ui/guide';
 import ConfirmDialog from './ui/confirm';
 import { moneyBurst } from './ui/moneyfx';
 import { previewState, previewUi, silentSound } from './ui/preview';
+import { QUALITIES, loadQuality, saveQuality } from './ui/settings';
 import { actionablePlots, dockSignals, staffTip } from './game/advice';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { createStadiumSound } from './ui/sound';
@@ -49,7 +50,8 @@ export default function App({ preview = null }) {
   const [recenter, setRecenter] = useState(0);
   const [showResult, setShowResult] = useState(!!boot.ui.showResult);
   const [goalCollapsed, setGoalCollapsed] = useState(() => window.innerWidth < 760); // replié sur mobile
-  const [menu, setMenu] = useState(false);
+  const [menu, setMenu] = useState(!!boot.ui.menu);
+  const [quality, setQuality] = useState(loadQuality); // qualité graphique (par appareil)
   const [webglOk, setWebglOk] = useState(true);
   // match : null → 'prematch' (onze + tactique) → 'live' (direct) → résumé (showResult)
   const [matchPhase, setMatchPhase] = useState(boot.ui.matchPhase || null);
@@ -61,6 +63,7 @@ export default function App({ preview = null }) {
   const sound = useRef(null);
   if (!sound.current) sound.current = preview ? silentSound : createStadiumSound();
   const toastId = useRef(0);
+  const [, bumpSound] = useState(0); // le son se coupe aussi pendant le direct : on relit sound.current.muted
 
   useEffect(() => { if (state && !preview) saveGame(state); }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   // chaque gain ou dépense s'anime (pièces vers la trésorerie, « +1 252 € », tintement)
@@ -163,6 +166,7 @@ export default function App({ preview = null }) {
               recenter={recenter}
               selectedPlot={sel?.plotId || null}
               badges={plotBadges}
+              quality={quality}
               onSelectPlot={selectPlot}
               onWebGLFail={() => setWebglOk(false)}
             />
@@ -248,6 +252,11 @@ export default function App({ preview = null }) {
       {menu && (
         <GameMenu
           onClose={() => setMenu(false)}
+          muted={sound.current.muted}
+          onToggleSound={() => { sound.current.setMuted(!sound.current.muted); bumpSound((n) => n + 1); }}
+          quality={quality}
+          qualities={QUALITIES}
+          onQuality={(q) => { setQuality(q); if (!preview) saveQuality(q); }}
           onReset={() => {
             setMenu(false);
             setConfirm({

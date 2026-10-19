@@ -8,6 +8,7 @@ export const SCREENS = [
   ['empire', 'Empire (HUD)'],
   ['tutoriel', 'Tutoriel des premiers pas'],
   ['inspecteur', 'Inspecteur du stade'],
+  ['parcelle', 'Inspecteur · parcelle libre'],
   ['effectif', 'Effectif · joueurs'],
   ['fiche', 'Fiche joueur'],
   ['marche', 'Effectif · marché'],
@@ -20,6 +21,7 @@ export const SCREENS = [
   ['saison', 'Classement'],
   ['journal', 'Journal du club'],
   ['confirmation', 'Fenêtre de confirmation'],
+  ['menu', 'Menu et réglages'],
 ];
 
 export function previewState(screen) {
@@ -43,6 +45,7 @@ export function previewState(screen) {
 export function previewUi(screen, s) {
   switch (screen) {
     case 'inspecteur': return { sel: { plotId: 't0', sector: 'main' } };
+    case 'parcelle': return { sel: { plotId: 't2', sector: 'main' } };
     case 'effectif': return { panel: 'squad' };
     case 'fiche': return { panel: 'squad', squad: { sheet: s.players.find((p) => p.season?.apps)?.id ?? s.players[0].id } };
     case 'marche': return { panel: 'squad', squadTab: 'market' };
@@ -53,6 +56,7 @@ export function previewUi(screen, s) {
     case 'direct': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34 } };
     case 'mi-temps': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime' } };
     case 'apres-match': return { showResult: true, matchDay: true };
+    case 'menu': return { menu: true };
     case 'confirmation': {
       const p = s.players[s.players.length - 1];
       return {

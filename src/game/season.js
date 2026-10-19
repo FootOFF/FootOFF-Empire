@@ -151,7 +151,12 @@ export function applyMatchResult(s, live) {
   s.reputation = Math.max(0, Math.round((s.reputation + res.repDelta) * 10) / 10);
   s.round++;
   s.lastMatch = { ...res, round: s.round };
-  pushJournal(s, { season: s.seasonNumber, round: s.round, text: reportText(s, res) });
+  const score = `${res.gf}–${res.ga}`;
+  pushJournal(s, {
+    season: s.seasonNumber, round: s.round, kind: 'match',
+    title: res.gf > res.ga ? `Victoire ${score} face à ${res.oppName}` : res.gf === res.ga ? `Match nul ${score} contre ${res.oppName}` : `Défaite ${score} face à ${res.oppName}`,
+    text: reportText(s, res),
+  });
   return s;
 }
 
@@ -245,6 +250,8 @@ export function endSeason(s) {
   sectorUnlockedEvent(s, repBefore);
   pushJournal(s, {
     season: s.seasonNumber,
+    kind: 'saison',
+    title: promoted ? `Montée ! ${s.clubName} termine ${position}e de ${div.name}` : relegated ? `Descente : ${position}e place en ${div.name}` : `Saison ${s.seasonNumber} bouclée à la ${position}e place`,
     text: `Saison ${s.seasonNumber} terminée : ${position}e en ${div.name}.${promoted ? ' Montée !' : relegated ? ' Descente.' : ''} Prime : ${n(prize)} € · Sponsors : ${n(sponsors)} € · Salaires : −${n(wages)} € · Entretien : −${n(upkeep)} €.`,
   });
 

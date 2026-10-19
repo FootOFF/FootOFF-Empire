@@ -4,6 +4,7 @@ import { PLOT_LABELS, SECTORS, allowedBuildingsFor, buildingEffect, plotBuilding
 import { fmtMoney, fmtNum } from './format';
 import { expectedGate } from '../game/economy';
 import { IconAcademy, IconArrowUp, IconClose, IconFans, IconLock, IconSponsor, IconStadium, IconTraining } from './icons';
+import { Eyebrow } from './kit';
 
 const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor };
 
@@ -15,7 +16,8 @@ function Pips({ lvl, max }) {
   );
 }
 
-// Inspecteur de parcelle : carte latérale (feuille basse sur mobile) ouverte au clic dans la vue 3D.
+// Inspecteur de parcelle : même famille que les panneaux (en-tête, corps), en carte à gauche sur PC et en
+// feuille basse sur mobile, ouverte au clic dans la vue 3D.
 export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade, onMatchDay }) {
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -43,7 +45,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
       </>
     );
   } else if (!key) {
-    title = 'Parcelle libre';
+    title = `${PLOT_LABELS[sel.plotId]} · libre`;
     const available = allowedBuildingsFor(state, sec.id);
     body = available.length ? (
       <div className="ins-options">
@@ -79,7 +81,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
       <>
         <div className="ins-level"><Pips lvl={lvl} max={b.max} /><span>Niveau {lvl}/{b.max}</span></div>
         <div className="ins-effect">
-          <span className="eyebrow muted-eyebrow">Actuellement</span>
+          <Eyebrow muted>Actuellement</Eyebrow>
           <p>{buildingEffect(key, lvl, state.divisionIndex)}</p>
           {key === 'terrain' && (() => {
             const gate = expectedGate(state, null);
@@ -94,7 +96,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
         {!maxed ? (
           <>
             <div className="ins-effect next">
-              <span className="eyebrow">Niveau {lvl + 1}</span>
+              <Eyebrow>Niveau {lvl + 1}</Eyebrow>
               <p>{buildingEffect(key, lvl + 1, state.divisionIndex)}</p>
             </div>
             <button className={`btn btn-xl wide ${short ? '' : 'glow'}`} disabled={short} onClick={() => onUpgrade(key)}>
@@ -113,16 +115,17 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
   }
 
   return (
-    <aside className="inspector glass" role="dialog" aria-label={title}>
+    <aside className="inspector" role="dialog" aria-label={title}>
+      <span className="ins-grip" aria-hidden="true" />
       <header className="ins-head">
         <span className="ins-icon"><Icon /></span>
-        <div>
-          <span className="eyebrow">{sec.short || sec.name} · {PLOT_LABELS[sel.plotId]}</span>
+        <div className="panel-title">
+          <Eyebrow>{sec.short || sec.name}{key === 'terrain' ? ` · ${PLOT_LABELS[sel.plotId]}` : ''}</Eyebrow>
           <h3>{title}</h3>
         </div>
         <button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button>
       </header>
-      {body}
+      <div className="ins-body">{body}</div>
     </aside>
   );
 }

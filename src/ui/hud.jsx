@@ -9,7 +9,7 @@ import { AnimatedMoney } from './moneyfx';
 import { fmtRating } from './format';
 import {
   IconCal, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
-  IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow, IconEye,
+  IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow, IconEye, IconClose,
 } from './icons';
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran.
@@ -177,15 +177,44 @@ export function Toasts({ items }) {
   );
 }
 
-export function GameMenu({ onClose, onReset }) {
+export function GameMenu({ onClose, onReset, muted, onToggleSound, quality, onQuality, qualities }) {
   return (
     <div className="scrim" onClick={onClose}>
-      <div className="menu-card glass" onClick={(e) => e.stopPropagation()}>
-        <span className="eyebrow">Menu</span>
-        <button className="menu-item" onClick={onClose}>Reprendre</button>
-        <a className="menu-item" href="https://footoff.media" target="_blank" rel="noreferrer">FootOFF Media ↗</a>
-        <button className="menu-item danger" onClick={onReset}>Nouvelle partie</button>
-        <span className="menu-foot">FootOFF Empire · prototype</span>
+      <div className="menu-card glass" role="dialog" aria-label="Menu" onClick={(e) => e.stopPropagation()}>
+        <header className="menu-head">
+          <FOMonogram className="menu-mark" />
+          <div className="panel-title">
+            <span className="eyebrow">FootOFF Empire</span>
+            <h2>Menu</h2>
+          </div>
+          <button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button>
+        </header>
+
+        <section className="menu-section">
+          <span className="eyebrow muted-eyebrow">Réglages</span>
+          <div className="setting">
+            <div className="setting-text"><strong>Son</strong><span>Ambiance du stade, sifflet, pièces.</span></div>
+            <button className={`switch ${muted ? '' : 'on'}`} role="switch" aria-checked={!muted} onClick={onToggleSound}><i /></button>
+          </div>
+          <div className="setting column">
+            <div className="setting-text"><strong>Qualité graphique</strong><span>{qualities.find((q) => q.id === quality)?.hint}</span></div>
+            <div className="segmented" role="radiogroup" aria-label="Qualité graphique">
+              {qualities.map((q) => (
+                <button key={q.id} role="radio" aria-checked={quality === q.id} className={quality === q.id ? 'on' : ''} onClick={() => onQuality(q.id)}>{q.label}</button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="menu-section">
+          <span className="eyebrow muted-eyebrow">Partie</span>
+          <button className="btn btn-xl" onClick={onClose}>Reprendre</button>
+          <div className="menu-links">
+            <a className="linkbtn menu-link" href="https://footoff.media" target="_blank" rel="noreferrer">FootOFF Media ↗</a>
+            <button className="linkbtn menu-link danger" onClick={onReset}>Nouvelle partie</button>
+          </div>
+        </section>
+        <span className="menu-foot">Un jeu FootOFF Media · bêta</span>
       </div>
     </div>
   );

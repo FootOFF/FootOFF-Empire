@@ -107,7 +107,9 @@ export function closeSeasonGoals(s, events) {
     events.push(`Objectif « ${active.name} » accompli : ${goal.reward.label} !`);
     s.journal.unshift({
       season: s.seasonNumber,
-      text: `Objectif « ${active.name} » accompli — ${goal.reward.label}.`,
+      kind: 'objectif',
+      title: `Objectif accompli : ${active.name.toLowerCase()}`,
+      text: `Récompense : ${goal.reward.label}.`,
     });
   } else if (!active.done(s)) {
     events.push(`Objectif « ${active.name} » non atteint cette saison : il se poursuit.`);
@@ -127,7 +129,9 @@ export function sectorUnlockedEvent(s, before) {
     if (before < sec.repNeeded && s.reputation >= sec.repNeeded) {
       s.journal.unshift({
         season: s.seasonNumber,
-        text: `Réputation ${sec.repNeeded} atteinte : ${sec.name} s’ouvre à l’Empire.`,
+        kind: 'club',
+        title: `${sec.name} s’ouvre à l’Empire`,
+        text: `Avec ${sec.repNeeded} de réputation, le club gagne un nouveau quartier à bâtir.`,
       });
     }
   }

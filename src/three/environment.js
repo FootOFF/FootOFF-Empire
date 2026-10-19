@@ -7,14 +7,21 @@ import { PLAZA_CENTER, PLAZA_SIZE } from './layout';
 
 const lowEnd = () => (navigator.hardwareConcurrency || 4) <= 4 || Math.min(window.innerWidth, window.innerHeight) < 600;
 
-export function createRenderer(mount) {
+// Qualité graphique (menu) : économie = résolution 1 et pas d'ombres ; auto = selon l'appareil ; haute = tout.
+export function pixelRatioFor(quality) {
+  if (quality === 'economie') return 1;
+  if (quality === 'haute') return Math.min(window.devicePixelRatio, 2);
+  return Math.min(window.devicePixelRatio, lowEnd() ? 1.5 : 2);
+}
+
+export function createRenderer(mount, quality = 'auto') {
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, lowEnd() ? 1.5 : 2));
+  renderer.setPixelRatio(pixelRatioFor(quality));
   renderer.setSize(mount.clientWidth, mount.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.75;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = quality !== 'economie';
   renderer.shadowMap.type = THREE.PCFShadowMap; // PCFSoft supprimé en r18x : PCF + shadow.radius
   return renderer;
 }

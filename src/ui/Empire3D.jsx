@@ -6,7 +6,7 @@ import { PLOTS, PLOT_LABELS, SECTORS, plotBuilding } from '../game/map';
 import { fmtMoney } from './format';
 import { IconArrowUp } from './icons';
 import { PLOT_POS, PLAZA_CENTER, footprintOf, layoutOverlaps } from '../three/layout';
-import { createRenderer, createEnvironment } from '../three/environment';
+import { createRenderer, createEnvironment, pixelRatioFor } from '../three/environment';
 import { initAssets, instantiateModel, setAssetsBoost, setAssetsNight } from '../three/assets';
 import { resolveModel, resolveProp } from '../three/manifest';
 import { plotLights } from '../three/lights';
@@ -68,7 +68,7 @@ function plotInfo(s, plotId) {
 // parcelle sélectionnée). Garde ses propres interactions : survol (étiquette) et clic (sélection).
 export default function Empire3D({
   state, onSelectPlot, onWebGLFail, timeMode = 'auto', weatherMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
-  live = false, matchFx = null, badges = [],
+  live = false, matchFx = null, badges = [], quality = 'auto',
 }) {
   const mountRef = useRef(null);
   const labelRef = useRef(null);
@@ -90,7 +90,7 @@ export default function Empire3D({
     }
     let renderer;
     try {
-      renderer = createRenderer(mount);
+      renderer = createRenderer(mount, quality);
     } catch {
       if (onWebGLFail) onWebGLFail();
       return undefined;
@@ -221,6 +221,16 @@ export default function Empire3D({
       fireworks.active = md && won && !lv; // en direct : salves uniquement sur nos buts
     };
 
+    // qualité graphique appliquée à chaud : résolution, puis ombres (les matériaux se recompilent)
+    ctx.setQuality = (q) => {
+      renderer.setPixelRatio(pixelRatioFor(q));
+      renderer.setSize(mount.clientWidth, mount.clientHeight);
+      const shadows = q !== 'economie';
+      if (renderer.shadowMap.enabled !== shadows) {
+        renderer.shadowMap.enabled = shadows;
+        scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); });
+      }
+    };
     ctx.cutCamera = (view) => { // plan de coupe (ralenti) : pas de transition
       ctx.camTween = null;
       controls.minDistance = 1.5; // plan serré autorisé le temps du ralenti (rétabli à la fin du retour caméra)
@@ -438,6 +448,8 @@ export default function Empire3D({
     if (!ctx || !ready) return;
     ctx.tweenCamera(live ? TV_VIEW : matchDay ? MATCH_VIEW : HOME_VIEW);
   }, [matchDay, live, recenter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { ctxRef.current?.setQuality?.(quality); }, [quality, ready]);
 
   // Temps forts du direct : ralenti sur nos buts, le stade s'éteint un instant quand on encaisse.
   useEffect(() => {

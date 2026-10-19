@@ -58,6 +58,18 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 - Boutons : `.btn` (principal), `.btn.ghost` (secondaire), `.linkbtn` (tertiaire), `.chipbtn` (filtre/action
   légère) ; tailles `.btn-sm`, normale, `.btn-xl`.
 
+## Panneaux (`src/ui/panels.jsx`)
+
+- `Panel` : un seul modèle pour l'Effectif (`size="lg"`), la Saison et le Journal. En-tête (sur-titre sur une
+  ligne, titre, trésorerie seulement quand on y dépense, fermeture), barre d'outils fixe, corps qui défile.
+  Glisse depuis la droite sur PC, plein écran sur téléphone. Fond opaque (pas de flou imbriqué).
+- Puces de filtre : toujours sur une ligne ; sur téléphone elles se resserrent et défilent en secours.
+- Inspecteur de parcelle : même famille (en-tête séparé, corps), largeur de la colonne de gauche sur PC,
+  feuille basse opaque avec poignée sur téléphone.
+- Menu : réglages (Son en interrupteur, Qualité graphique en sélecteur à trois positions), puis la partie.
+  La qualité est enregistrée par appareil (`fo-quality`) : Économie = sans ombres et résolution 1, Auto = selon
+  l'appareil, Haute = ombres et netteté maximales ; elle s'applique sans recharger.
+
 ## Contrôle
 
 La galerie (`?galerie` dans l'adresse du jeu) affiche chaque écran avec des données fictives, sur téléphone

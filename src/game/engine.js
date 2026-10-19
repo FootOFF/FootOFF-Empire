@@ -55,6 +55,8 @@ export function createInitialState(clubName) {
   initGoals(s);
   pushJournal(s, {
     season: 1,
+    kind: 'club',
+    title: `Le projet ${clubName} est lancé`,
     text: `${clubName} entame sa première saison en ${DIVISIONS[0].name}. Le terrain est modeste, l’ambition immense.`,
   });
   return s;
@@ -82,7 +84,10 @@ export function build(s, sectorId, key) {
   s.slots[plotIndexOf(plot.id)] = key;
   s.buildings[key] = 1;
   s.money -= upgradeCost(key, 1);
-  pushJournal(s, { season: s.seasonNumber, text: `Nouvelle construction : ${BUILDINGS[key].name} (${upgradeCost(key, 1)} €).` });
+  pushJournal(s, {
+    season: s.seasonNumber, kind: 'infra', title: `${BUILDINGS[key].name} : premier coup de pioche`,
+    text: `Le club investit ${upgradeCost(key, 1).toLocaleString('fr-FR')} € dans un nouveau bâtiment.`,
+  });
   return s;
 }
 
@@ -92,7 +97,10 @@ export function upgrade(s, key) {
   if (lvl >= BUILDINGS[key].max || s.money < cost) return null;
   s.buildings[key] = lvl + 1;
   s.money -= cost;
-  pushJournal(s, { season: s.seasonNumber, text: `${BUILDINGS[key].name} amélioré au niveau ${lvl + 1} (${cost} €).` });
+  pushJournal(s, {
+    season: s.seasonNumber, kind: 'infra', title: `${BUILDINGS[key].name} : cap sur le niveau ${lvl + 1}`,
+    text: `Travaux d’amélioration engagés pour ${cost.toLocaleString('fr-FR')} €.`,
+  });
   return s;
 }
 
@@ -105,7 +113,10 @@ export function sellPlayer(s, id) {
   const fee = saleValue(p, s.divisionIndex);
   s.money += fee;
   ensureLineup(s);
-  pushJournal(s, { season: s.seasonNumber, text: `${p.name} est vendu à ${randomClubName()} pour ${fee.toLocaleString('fr-FR')} €.` });
+  pushJournal(s, {
+    season: s.seasonNumber, kind: 'mercato', title: `${p.name} quitte le club`,
+    text: `Le joueur rejoint ${randomClubName()} pour ${fee.toLocaleString('fr-FR')} €.`,
+  });
   return s;
 }
 export const releasePlayer = sellPlayer;
@@ -123,7 +134,10 @@ export function signPlayer(s, id) {
   assignNumber(s.players, p);
   s.players.push(p);
   s.signings = (s.signings || 0) + 1;
-  pushJournal(s, { season: s.seasonNumber, text: `${p.name} (${p.age} ans) signe au club pour ${fee} €.` });
+  pushJournal(s, {
+    season: s.seasonNumber, kind: 'mercato', title: `${p.name} rejoint ${s.clubName}`,
+    text: `À ${p.age} ans, il s’engage avec le club pour ${fee.toLocaleString('fr-FR')} €.`,
+  });
   return s;
 }
 
