@@ -31,6 +31,8 @@ const ARTICLE = {
   FC: 'le ', Sporting: 'le ', Racing: 'le ', Rapid: 'le ', Jaunes: 'les ', Bleus: 'les ',
 };
 export const withArticle = (name) => (ARTICLE[name.split(' ')[0]] || '') + name;
+// club au nom pluriel (« les Jaunes ») : le verbe s'accorde
+export const isPluralClub = (name) => ARTICLE[name.split(' ')[0]] === 'les ';
 export function clubAfter(prep, name) {
   const a = withArticle(name);
   if (prep === 'de ' && a.startsWith('le ')) return `du ${a.slice(3)}`;

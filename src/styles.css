@@ -1108,7 +1108,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   display: grid; grid-template-columns: 38px 18px minmax(0, 1fr); gap: 8px; align-items: start; padding: 8px 8px; border-radius: var(--r-sm);
   font-size: var(--t-sm); line-height: 1.45; color: var(--text-2); border: 1px solid transparent; animation: ev-in .35s var(--ease);
 }
-@keyframes ev-in { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes ev-in { from { opacity: 0; } } /* fondu seul : un déplacement animé fait sortir la ligne de son cadre sous Safari (iPhone) */
 .ev-min { font-family: var(--font-mono); font-size: var(--t-xs); color: var(--muted); padding-top: 1px; }
 .ev-icon { display: grid; place-items: center; min-height: 18px; font-size: var(--t-sm); }
 .ev-info { color: var(--muted); }
@@ -1576,3 +1576,9 @@ button.hud-chip:active { transform: scale(.97); }
   .lc-skip { margin-left: auto; }
   .feed { bottom: calc(var(--gap) + var(--lc-h) + 8px + var(--hb)); }
 }
+
+/* fil du direct sous Safari (iPhone) : une ligne animée dans une boîte arrondie à fond flou peut s'échapper de son
+   cadre et se dessiner par-dessus l'en-tête. Fond sombre sans flou, et la liste forme son propre calque qui
+   rogne ce qu'elle contient. */
+.feed.glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(11, 11, 12, .9); isolation: isolate; }
+.feed-list { transform: translateZ(0); isolation: isolate; -webkit-overflow-scrolling: touch; }

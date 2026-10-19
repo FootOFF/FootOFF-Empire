@@ -1,5 +1,5 @@
 import { clamp, pick, ri } from './utils';
-import { FIRST, LAST, capitalize, clubAfter, deName } from './names';
+import { FIRST, LAST, capitalize, clubAfter, deName, isPluralClub } from './names';
 import { SLOTS, TACTICS, expectedGoals, lineupRating } from './tactics';
 import { ratingAt } from './players';
 
@@ -28,7 +28,7 @@ const T = {
     'De loin, {p} tente sa chance…',
   ],
   chanceAway: [
-    '{away} contre vite, {p} se présente face au but…',
+    '{away} contre{n} vite, {p} se présente face au but…', // {n} : accord du verbe (« les Jaunes contrent »)
     'Frappe lointaine de {p}…',
     '{p} déborde et centre fort devant le but…',
     'Coup franc dangereux pour {away}, {p} s’élance…',
@@ -49,10 +49,10 @@ const T = {
   secondYellow: ['Second carton jaune pour {p} ({team}) : expulsion !'],
   ambience: [
     'Possession patiente de {home} au milieu de terrain.',
-    '{away} resserre les lignes et laisse venir.',
+    '{away} resserre{n} les lignes et laisse{n} venir.',
     'Le public pousse derrière {home} !',
     'Duel âpre au milieu, l’arbitre laisse jouer.',
-    'Temps faible pour {home}, {away} confisque le ballon.',
+    'Temps faible pour {home}, {away} confisque{n} le ballon.',
     'Corner pour {home}… dégagé par la défense.',
     'Récupération haute de {home}, mais la passe est trop longue.',
   ],
@@ -97,7 +97,7 @@ export function createLiveMatch(s, ctx) {
   const has = (p, t) => p.traits?.includes(t);
   const playersOn = () => m.lineup.map((id) => s.players.find((p) => p.id === id)).filter((p) => p && !m.sent.home.has(p.id));
   const awayOn = () => awayRoster.filter((p) => !m.sent.away.has(p.name));
-  const vars = (extra = {}) => ({ home: m.home, away: m.away, ...extra });
+  const vars = (extra = {}) => ({ home: m.home, away: m.away, n: isPluralClub(m.away) ? 'nt' : '', ...extra });
   const usedAmbience = new Set();
   const ambience = () => { // pas deux fois la même phrase d'ambiance dans un match
     let pool = T.ambience.filter((t) => !usedAmbience.has(t));
