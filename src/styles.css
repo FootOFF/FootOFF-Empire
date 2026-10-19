@@ -113,7 +113,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hud > * { pointer-events: auto; transition: opacity .35s var(--ease), transform .35s var(--ease); }
 .game.cinematic .hud > * { opacity: 0; pointer-events: none; transform: translateY(6px); }
 .game.has-panel .hud-match, .game.has-panel .hud-tools { opacity: 0; pointer-events: none; transform: translateX(12px); }
-.game.has-panel .hud-dock { left: calc((100% - 484px) / 2); } /* reste dans la zone visible à gauche du panneau */
+.game.has-panel .hud-dock { left: calc((100% - 484px) / 2); }
+.game.wide-panel .hud > * { opacity: 0; pointer-events: none; } /* le grand écran Effectif couvre l'Empire : le HUD s'efface */ /* reste dans la zone visible à gauche du panneau */
 
 /* ---- barre haute ---- */
 .hud-top {
@@ -382,8 +383,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sq-row-side b.hi, .sq-row-side b.good { color: var(--gold-light); }
 .sq-row-side b.low { color: var(--red); }
 .sq-row-side span { font-size: 10.5px; color: var(--muted); white-space: nowrap; }
-.sq-market { padding: 0; display: flex; flex-direction: column; gap: 0; }
-.sq-market .sq-market-main { border: none; background: none; }
+/* carte du marché : une ligne sur PC (infos | boutons), empilée sur mobile ; « .pcard.sq-market » l'emporte
+   sur la grille générique .pcard définie plus bas */
+.pcard.sq-market { display: flex; flex-direction: row; align-items: center; gap: 0; padding: 0; }
+.sq-market .sq-market-main { flex: 1; min-width: 0; border: none; background: none; }
+.sq-market .sq-market-actions { padding: 0 14px 0 4px; }
 .sq-market-lvl { font-family: var(--font-title); font-weight: 500; font-size: 22px; }
 .sq-market-lvl.hi, .sq-market-lvl.good { color: var(--gold-light); }
 .sq-market-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 0 12px 10px; }
@@ -1041,6 +1045,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .sq-tabs button { flex: 1; }
   .sq-body { padding: 12px 14px 22px; }
   .sq-legend { display: none; }
+  .pcard.sq-market { flex-direction: column; align-items: stretch; }
+  .sq-market .sq-market-actions { padding: 0 12px 10px; }
   .sq-tables { display: none; }
   .sq-list { display: flex; }
   .sq-sheet { width: 100%; border-width: 0; padding: 14px 14px 20px; }

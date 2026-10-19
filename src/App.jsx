@@ -139,7 +139,7 @@ export default function App() {
   const plotBadges = cinematic ? [] : actionablePlots(state);
 
   return (
-    <div className={`game ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''}`} data-tuto={tuto ? tutoStep : undefined}>
+    <div className={`game ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${panel === 'squad' ? 'wide-panel' : ''}`} data-tuto={tuto ? tutoStep : undefined}>
       <div className="stage">
         {webglOk ? (
           <Suspense fallback={<div className="stage-loading"><span className="eyebrow">Chargement de l’Empire…</span></div>}>
