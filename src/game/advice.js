@@ -122,7 +122,7 @@ export function staffTip(s) {
       id: `sign-${sign.player.id}`,
       title: weak && weak.pos === pos ? `${LINE[pos]} est ta ligne la plus faible` : 'Une recrue renforcerait ton onze',
       text: `${sign.player.name} (${POS_LABELS[pos].toLowerCase()}, note ${ratingAt(sign.player, pos).toFixed(1)}) est libre pour ${money(sign.fee)}.`,
-      action: { kind: 'panel', panel: 'squad', label: 'Voir le marché' },
+      action: { kind: 'panel', panel: 'squad', tab: 'market', label: 'Voir le marché' },
     };
   }
   const plot = actionablePlots(s).find((id) => id !== 't0');

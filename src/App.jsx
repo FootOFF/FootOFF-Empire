@@ -8,7 +8,8 @@ import { clone } from './game/utils';
 import Onboarding from './ui/Onboarding';
 import Empire2D from './ui/EmpireView';
 import { Dock, GameMenu, MatchCta, ObjectiveWidget, SceneTools, Toasts, TopHud } from './ui/hud';
-import { JournalPanel, SeasonPanel, SquadPanel } from './ui/panels';
+import { JournalPanel, SeasonPanel } from './ui/panels';
+import { SquadView } from './ui/squad';
 import PlotInspector from './ui/inspector';
 import { MatchResult, OfflineReturn, SeasonReview } from './ui/overlays';
 import { LiveMatch, PreMatch } from './ui/match';
@@ -47,7 +48,8 @@ export default function App() {
   const [matchCtx, setMatchCtx] = useState(null);
   const [matchFx, setMatchFx] = useState(null); // effets 3D du direct : but, but encaissé, mi-temps…
   const [dismissedTips, setDismissedTips] = useState(() => new Set()); // conseils masqués (session)
-  const [confirm, setConfirm] = useState(null); // fenêtre de confirmation du jeu (vente, nouvelle partie…)
+  const [confirm, setConfirm] = useState(null);
+  const [squadTab, setSquadTab] = useState('players'); // onglet d'ouverture de l'effectif (joueurs ou marché) // fenêtre de confirmation du jeu (vente, nouvelle partie…)
   const sound = useRef(null);
   if (!sound.current) sound.current = createStadiumSound();
   const toastId = useRef(0);
@@ -122,7 +124,7 @@ export default function App() {
   const doAction = (a) => {
     if (!a) return;
     if (a.kind === 'plot') selectPlot(a.plot, a.sector);
-    else if (a.kind === 'panel') openPanel(a.panel);
+    else if (a.kind === 'panel') { setSquadTab(a.tab || 'players'); openPanel(a.panel); }
     else if (a.kind === 'match') play();
   };
   const setTuto = (step) => run((s) => setTutorialStep(s, step));
@@ -192,7 +194,15 @@ export default function App() {
         <Dock panel={sel?.plotId === 't0' ? 'stadium' : panel} onPanel={openPanel} badges={signals} />
       </div>
 
-      {panel === 'squad' && <SquadPanel state={state} run={run} ask={setConfirm} onClose={() => setPanel(null)} />}
+      {panel === 'squad' && (
+        <SquadView
+          state={state}
+          run={run}
+          ask={setConfirm}
+          initialTab={tutoStep === 'sign' ? 'market' : squadTab}
+          onClose={() => { setPanel(null); setSquadTab('players'); }}
+        />
+      )}
       {panel === 'season' && <SeasonPanel state={state} onClose={() => setPanel(null)} />}
       {panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}
       {sel && (

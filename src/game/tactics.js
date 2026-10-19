@@ -72,7 +72,8 @@ export function lineupRating(players, lineup) {
     line[SLOTS[k]].push(p ? ratingAt(p, SLOTS[k]) : 3);
   });
   const avg = (a, n) => (a.reduce((s, v) => s + v, 0) + (n - a.length) * 3) / n;
-  return 0.12 * avg(line.G, 1) + 0.3 * avg(line.D, 4) + 0.26 * avg(line.M, 3) + 0.32 * avg(line.A, 3);
+  const leader = lineup.some((id) => players.find((x) => x.id === id)?.traits?.includes('leader')) ? 0.1 : 0;
+  return 0.12 * avg(line.G, 1) + 0.3 * avg(line.D, 4) + 0.26 * avg(line.M, 3) + 0.32 * avg(line.A, 3) + leader;
 }
 
 // Buts attendus (sur 90 minutes) selon l'écart de niveau, la tactique et l'avantage du terrain.

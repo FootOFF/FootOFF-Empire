@@ -6,6 +6,7 @@ import { teamLevel } from '../game/match';
 import { nextOpponent } from '../game/season';
 import { FOMonogram } from './brand';
 import { AnimatedMoney } from './moneyfx';
+import { fmtRating } from './format';
 import {
   IconCal, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
   IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow,
@@ -127,9 +128,9 @@ export function MatchCta({ state, onPlay, onEndSeason }) {
       <span className="eyebrow">Journée {state.round + 1} / 7 · à domicile</span>
       <strong className="hud-match-title">{opp.name}</strong>
       <div className="hud-versus">
-        <span className="hud-versus-me">{me.toFixed(1)}</span>
+        <span className="hud-versus-me">{fmtRating(me)}</span>
         <span className="hud-versus-bar"><i style={{ left: `${50 + edge * 50}%` }} /></span>
-        <span className="hud-versus-opp">{opp.strength.toFixed(1)}</span>
+        <span className="hud-versus-opp">{fmtRating(opp.strength)}</span>
       </div>
       <button className="btn btn-xl" onClick={onPlay}><IconPlay /> Jouer le match</button>
     </div>

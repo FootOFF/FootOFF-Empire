@@ -1,14 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from '../game/constants';
-import { playerRating, saleValue, signingFee, starsOf, wageOf } from '../game/players';
-import { sellPlayer, signPlayer } from '../game/engine';
-import { seasonForecast } from '../game/economy';
-import { bestSigning } from '../game/advice';
-import { teamLevel } from '../game/match';
+import React, { useEffect } from 'react';
+import { DIVISIONS } from '../game/constants';
 import { standingsOf } from '../game/season';
 import { fmtMoney, fmtNum } from './format';
-import { IconClose, IconCoin } from './icons';
-import { AnimatedMoney } from './moneyfx';
+import { IconClose } from './icons';
 
 // Panneau latéral en verre, glissant au-dessus de la vue 3D (plein écran sur mobile).
 export function Drawer({ title, eyebrow, onClose, children, wide, headExtra }) {
@@ -31,124 +25,6 @@ export function Drawer({ title, eyebrow, onClose, children, wide, headExtra }) {
       </header>
       <div className="drawer-body">{children}</div>
     </section>
-  );
-}
-
-const ORDER = { G: 0, D: 1, M: 2, A: 3 };
-const FILTERS = [['all', 'Tous'], ['G', 'Gardiens'], ['D', 'Défense'], ['M', 'Milieu'], ['A', 'Attaque']];
-
-function Rating({ v }) {
-  return <span className="p-rating">{v.toFixed(1)}</span>;
-}
-
-function Stats({ p }) {
-  return (
-    <div className="p-stats">
-      {[['ATT', p.att], ['DÉF', p.def], ['MEN', p.men]].map(([l, v]) => (
-        <span key={l} className="p-stat"><em>{l}</em><span className="p-track"><i style={{ width: `${(v / 20) * 100}%` }} /></span><b>{v}</b></span>
-      ))}
-    </div>
-  );
-}
-
-export function SquadPanel({ state, run, ask, onClose }) {
-  const [filter, setFilter] = useState('all');
-  const squad = [...state.players].sort((a, b) => ORDER[a.pos] - ORDER[b.pos] || playerRating(b) - playerRating(a));
-  const shown = filter === 'all' ? squad : squad.filter((p) => p.pos === filter);
-  const rating = teamLevel(state);
-  const wages = squad.reduce((s, p) => s + wageOf(p, state.divisionIndex), 0);
-  const forecast = seasonForecast(state, wages);
-  const recommended = bestSigning(state)?.player.id;
-  return (
-    <Drawer
-      title="Effectif"
-      eyebrow={`${squad.length}/${SQUAD_MAX} joueurs`}
-      onClose={onClose}
-      headExtra={<span className={`drawer-money ${state.money < 0 ? 'neg' : ''}`} data-money-target title="Trésorerie"><IconCoin /><AnimatedMoney value={state.money} /></span>}
-    >
-      <div className="kpis">
-        <div className="kpi"><span>Niveau d’équipe</span><b>{rating.toFixed(1)}</b></div>
-        <div className="kpi"><span>Masse salariale</span><b>{fmtMoney(wages)}</b></div>
-        <div className="kpi"><span>Âge moyen</span><b>{(squad.reduce((s, p) => s + p.age, 0) / squad.length).toFixed(1)}</b></div>
-      </div>
-      <p className={`budget-line ${forecast.net < 0 ? 'bad' : forecast.wageShare > 0.75 ? 'warn' : ''}`}>
-        Salaires : <b>{Math.round(forecast.wageShare * 100)} %</b> des revenus attendus sur la saison ({fmtMoney(forecast.income)})
-        {forecast.net < 0 ? ' · saison déficitaire en vue : vends un remplaçant ou agrandis le stade.' : forecast.wageShare > 0.75 ? ' · attention, la marge se réduit.' : '.'}
-      </p>
-      <div className="chips">
-        {FILTERS.map(([id, label]) => (
-          <button key={id} className={filter === id ? 'active' : ''} onClick={() => setFilter(id)}>{label}</button>
-        ))}
-      </div>
-      <ul className="plist">
-        {shown.map((p) => (
-          <li key={p.id} className="pcard">
-            <span className={`pos ${p.pos}`}>{p.pos}</span>
-            <div className="p-main">
-              <span className="p-name">{p.name}</span>
-              <span className="p-meta">{p.age} ans · {POS_LABELS[p.pos]} · <span className="stars">{starsOf(p)}</span></span>
-              <Stats p={p} />
-            </div>
-            <div className="p-side">
-              <Rating v={playerRating(p)} />
-              <span className="p-wage">{fmtMoney(wageOf(p, state.divisionIndex))}/saison</span>
-              <button
-                className="linkbtn"
-                disabled={squad.length <= SQUAD_MIN}
-                title={squad.length <= SQUAD_MIN ? 'Effectif au minimum' : 'Vendre le joueur à un autre club'}
-                onClick={() => {
-                  const fee = saleValue(p, state.divisionIndex);
-                  const starter = state.lineup?.includes(p.id);
-                  ask({
-                    title: `Vendre ${p.name} ?`,
-                    text: `${p.name} (${p.age} ans, ${POS_LABELS[p.pos].toLowerCase()}, note ${playerRating(p).toFixed(1)}) rejoindra un autre club.${starter ? ' C’est un titulaire : ton onze sera recomposé.' : ''}`,
-                    rows: [
-                      ['Montant de la vente', `+${fmtMoney(fee)}`, 'up'],
-                      ['Salaire économisé', `${fmtMoney(wageOf(p, state.divisionIndex))} / saison`, 'up'],
-                    ],
-                    confirmLabel: `Vendre · ${fmtMoney(fee)}`,
-                    onConfirm: () => run((s) => sellPlayer(s, p.id), 'Effectif au minimum (11 joueurs).'),
-                  });
-                }}
-              >
-                Vendre · {fmtMoney(saleValue(p, state.divisionIndex))}
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-
-      <div className="section-head">
-        <span className="eyebrow">Marché des joueurs libres</span>
-        <span className="muted small">Renouvelé à chaque saison</span>
-      </div>
-      <ul className="plist">
-        {state.market.length === 0 && <li className="empty">Plus de joueur disponible cette saison.</li>}
-        {state.market.map((p) => {
-          const fee = signingFee(p, state.divisionIndex);
-          return (
-            <li key={p.id} className={`pcard market ${p.id === recommended ? 'recommended' : ''}`}>
-              <span className={`pos ${p.pos}`}>{p.pos}</span>
-              <div className="p-main">
-                <span className="p-name">{p.name}{p.id === recommended && <em className="rec-tag">Recommandé</em>}</span>
-                <span className="p-meta">{p.age} ans · {POS_LABELS[p.pos]} · <span className="stars">{starsOf(p)}</span></span>
-                <Stats p={p} />
-              </div>
-              <div className="p-side">
-                <Rating v={playerRating(p)} />
-                <button
-                  className="btn btn-sm"
-                  disabled={state.money < fee || squad.length >= SQUAD_MAX}
-                  onClick={() => run((s) => signPlayer(s, p.id), 'Fonds insuffisants ou effectif complet.')}
-                >
-                  Signer · {fmtMoney(fee)}
-                </button>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </Drawer>
   );
 }
 

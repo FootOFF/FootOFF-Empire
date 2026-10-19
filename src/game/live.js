@@ -1,6 +1,7 @@
 import { clamp, pick, ri } from './utils';
 import { FIRST, LAST } from './names';
 import { SLOTS, TACTICS, expectedGoals, lineupRating } from './tactics';
+import { ratingAt } from './players';
 
 // Match en direct : simulation minute par minute, mi-temps par mi-temps (un changement ou une nouvelle
 // tactique à la pause pèse vraiment sur la seconde période). Produit un fil d'événements commentés
@@ -21,6 +22,10 @@ const T = {
     '{p} reprend de volée à l’entrée de la surface…',
     'Centre millimétré, {p} place sa tête…',
     '{p} élimine son vis-à-vis et tente sa chance…',
+  ],
+  chanceLong: [
+    '{p} arme une frappe lointaine…',
+    'De loin, {p} tente sa chance…',
   ],
   chanceAway: [
     '{away} contre vite, {p} se présente face au but…',
@@ -74,7 +79,11 @@ export function createLiveMatch(s, ctx) {
     sent: { home: new Set(), away: new Set() },
     booked: { home: new Set(), away: new Set() },
     subsUsed: 0,
+    played: new Set(s.lineup), // joueurs entrés en jeu (notes de match)
+    perf: {}, // par joueur : buts, passes décisives, cartons
   };
+  const perf = (id) => (m.perf[id] ||= { goals: 0, assists: 0, yellow: 0, red: 0 });
+  const has = (p, t) => p.traits?.includes(t);
   const playersOn = () => m.lineup.map((id) => s.players.find((p) => p.id === id)).filter((p) => p && !m.sent.home.has(p.id));
   const awayOn = () => awayRoster.filter((p) => !m.sent.away.has(p.name));
   const vars = (extra = {}) => ({ home: m.home, away: m.away, ...extra });
@@ -93,9 +102,19 @@ export function createLiveMatch(s, ctx) {
     return mm > base ? `${base}+${mm - base}` : `${mm}`;
   };
 
-  function homeShooter() {
+  // buteur : la finition compte (beaucoup pour un attaquant, un peu pour un milieu, peu pour un défenseur)
+  function homeShooter(bigGame) {
     const out = playersOn().filter((p) => p.pos !== 'G');
-    return pickWeighted(out.length ? out : playersOn(), (p) => (p.pos === 'A' ? p.att * 3 : p.pos === 'M' ? p.men * 1.5 : p.att * 0.5) + 1);
+    return pickWeighted(out.length ? out : playersOn(), (p) => {
+      const base = p.pos === 'A' ? p.a.fin * 3 : p.pos === 'M' ? ((p.a.fin + p.a.pas) / 2) * 1.5 : p.a.fin * 0.5;
+      return (base + 1) * (bigGame && has(p, 'grandsSoirs') ? 1.5 : 1) * (has(p, 'frappe') ? 1.15 : 1);
+    });
+  }
+  // passeur décisif : la passe compte, le signe « Passeur » triple les chances
+  function homeAssist(scorer) {
+    const pool = playersOn().filter((p) => p !== scorer && p.pos !== 'G');
+    if (!pool.length || Math.random() > 0.8) return null; // certains buts sont des exploits personnels
+    return pickWeighted(pool, (p) => (p.a.pas + (p.pos === 'M' ? 3 : 0)) * (has(p, 'passeur') ? 3 : 1));
   }
   const awayShooter = () => pickWeighted(awayOn().filter((p) => p.pos !== 'G'), (p) => (p.pos === 'A' ? 3 : p.pos === 'M' ? 1.6 : 0.5));
 
@@ -108,6 +127,11 @@ export function createLiveMatch(s, ctx) {
     const end = start + m.halfLength[half - 1]; // 45 minutes + temps additionnel
     const rating = lineupRating(s.players, m.lineup);
     const xg = expectedGoals(rating, m.oppStrength, m.tactic);
+    const bigGame = m.oppStrength > rating;
+    const starters = playersOn();
+    const rocs = starters.some((p) => p.pos === 'D' && has(p, 'roc'));
+    const keeper = starters.find((p) => p.pos === 'G');
+    const chat = keeper && has(keeper, 'chat');
     const diff = rating - m.oppStrength;
     const tilt = m.tactic === 'offensive' ? 6 : m.tactic === 'low' ? -9 : 0;
     m.stats.possession = Math.round(clamp(50 + diff * 3 + tilt, 30, 72));
@@ -119,19 +143,31 @@ export function createLiveMatch(s, ctx) {
       // un joueur expulsé affaiblit l'équipe pour le reste du match
       const redH = m.sent.home.size, redA = m.sent.away.size;
       const lamH = xg.for * Math.pow(0.78, redH) * Math.pow(1.22, redA);
-      const lamA = xg.against * Math.pow(1.22, redH) * Math.pow(0.78, redA);
+      const lamA = xg.against * Math.pow(1.22, redH) * Math.pow(0.78, redA) * (rocs ? 0.97 : 1);
       for (const [side, lam] of [['home', lamH], ['away', lamA]]) {
         if (Math.random() >= lam / (90 * CONVERSION)) continue;
         const idx = side === 'home' ? 0 : 1;
-        const p = side === 'home' ? homeShooter() : awayShooter();
+        const p = side === 'home' ? homeShooter(bigGame) : awayShooter();
         m.stats.shots[idx]++;
-        const lead = fill(pick(side === 'home' ? T.chanceHome : T.chanceAway), vars({ p: p.name }));
-        if (Math.random() < CONVERSION) {
+        const pool = side === 'home' ? (has(p, 'frappe') && Math.random() < 0.4 ? T.chanceLong : T.chanceHome) : T.chanceAway;
+        const lead = fill(pick(pool), vars({ p: p.name }));
+        // finition : « Finisseur » et « grands soirs » côté club, « Chat » dans nos cages contre l'adversaire
+        const conv = side === 'home'
+          ? CONVERSION * (has(p, 'finisseur') ? 1.15 : 1) * (bigGame && has(p, 'grandsSoirs') ? 1.1 : 1)
+          : CONVERSION * (chat ? 0.92 : 1);
+        if (Math.random() < conv) {
           m.stats.onTarget[idx]++;
           m.score[side]++;
-          if (side === 'home') m.scorers.push({ name: p.name, minute: Math.ceil(at) });
-          push(at, 'goal', side, fill(pick(side === 'home' ? T.goalHome : T.goalAway), vars({ p: p.name })), {
-            player: p.name, score: { ...m.score }, lead,
+          let text = fill(pick(side === 'home' ? T.goalHome : T.goalAway), vars({ p: p.name }));
+          let assist = null;
+          if (side === 'home') {
+            assist = homeAssist(p);
+            perf(p.id).goals++;
+            if (assist) { perf(assist.id).assists++; text += ` Passe décisive de ${assist.name}.`; }
+            m.scorers.push({ name: p.name, id: p.id, minute: Math.ceil(at), assist: assist?.name || null });
+          }
+          push(at, 'goal', side, text, {
+            player: p.name, playerId: side === 'home' ? p.id : null, score: { ...m.score }, lead,
           });
         } else {
           const r = Math.random();
@@ -146,8 +182,9 @@ export function createLiveMatch(s, ctx) {
         if (r < RED_PER_MIN) {
           const pool = side === 'home' ? playersOn().filter((p) => p.pos !== 'G') : awayOn().filter((p) => p.pos !== 'G');
           if (pool.length > 7) {
-            const p = pick(pool);
+            const p = side === 'home' ? pickWeighted(pool, (q) => (21 - q.a.sfr) * (has(q, 'sangChaud') ? 2.5 : 1)) : pick(pool);
             m.sent[side].add(side === 'home' ? p.id : p.name);
+            if (side === 'home') perf(p.id).red++;
             m.stats.red[side === 'home' ? 0 : 1]++;
             push(at, 'red', side, fill(pick(T.red), vars({ p: p.name, team: side === 'home' ? m.home : m.away })), { player: p.name });
           }
@@ -155,15 +192,18 @@ export function createLiveMatch(s, ctx) {
           const pool = side === 'home' ? playersOn().filter((p) => p.pos !== 'G') : awayOn().filter((p) => p.pos !== 'G');
           const keyOf = (q) => (side === 'home' ? q.id : q.name);
           // un joueur déjà averti se montre prudent : quatre fois moins de risque d'un second carton
-          const p = pickWeighted(pool, (q) => (m.booked[side].has(keyOf(q)) ? 0.25 : 1));
+          const p = pickWeighted(pool, (q) => (m.booked[side].has(keyOf(q)) ? 0.25 : 1)
+            * (side === 'home' ? ((21 - q.a.sfr) / 10) * (has(q, 'sangChaud') ? 2.5 : 1) : 1));
           const key = keyOf(p);
           const team = side === 'home' ? m.home : m.away;
           if (m.booked[side].has(key) && pool.length > 7) {
             m.sent[side].add(key);
+            if (side === 'home') perf(p.id).red++;
             m.stats.red[side === 'home' ? 0 : 1]++;
             push(at, 'red', side, fill(pick(T.secondYellow), vars({ p: p.name, team })), { player: p.name });
           } else {
             m.booked[side].add(key);
+            if (side === 'home') perf(p.id).yellow++;
             m.stats.yellow[side === 'home' ? 0 : 1]++;
             push(at, 'yellow', side, fill(pick(T.yellow), vars({ p: p.name, team })), { player: p.name });
           }
@@ -184,6 +224,27 @@ export function createLiveMatch(s, ctx) {
     return m.events.filter((e) => e.half === half);
   }
 
+  // Notes de match sur 10, comme dans la presse : base 6, résultat, buts, passes, cartons, niveau du
+  // joueur face à l'adversaire, clean sheet pour le gardien et la défense, et une part d'aléa.
+  function matchRatings() {
+    const gf = m.score.home;
+    const ga = m.score.away;
+    const res = gf > ga ? 0.5 : gf < ga ? -0.5 : 0;
+    return [...m.played].map((id) => {
+      const p = s.players.find((q) => q.id === id);
+      if (!p) return null;
+      const k = m.lineup.indexOf(id);
+      const pos = k >= 0 ? SLOTS[k] : p.pos;
+      const f = m.perf[id] || { goals: 0, assists: 0, yellow: 0, red: 0 };
+      let r = 6 + res + f.goals * 1 + f.assists * 0.6 - f.yellow * 0.4 - f.red * 1.5;
+      r += (ratingAt(p, pos) - m.oppStrength) * 0.1;
+      if (pos === 'G') r += ga === 0 ? 0.8 : -0.3 * ga;
+      if (pos === 'D' && ga === 0) r += 0.4;
+      r += (Math.random() - 0.5) * 1.2;
+      return { id, rating: Math.round(clamp(r, 3, 10) * 2) / 2, ...f };
+    }).filter(Boolean);
+  }
+
   return {
     state: m,
     playHalf,
@@ -195,6 +256,7 @@ export function createLiveMatch(s, ctx) {
       const out = s.players.find((p) => p.id === outId);
       const inn = s.players.find((p) => p.id === inId);
       m.lineup[k] = inId;
+      m.played.add(inId);
       m.subsUsed++;
       push(45, 'sub', 'home', `Changement pour ${m.home} : ${inn.name} remplace ${out.name}.`, { half: 2 });
       return true;
@@ -207,6 +269,7 @@ export function createLiveMatch(s, ctx) {
     // résultat au format attendu par applyMatchResult
     result() {
       return {
+        players: matchRatings(),
         gf: m.score.home,
         ga: m.score.away,
         scorers: m.scorers,

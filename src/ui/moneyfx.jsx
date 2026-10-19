@@ -81,7 +81,8 @@ export function moneyBurst(diff, sound) {
   const target = visibleTarget(origin);
   const reduced = reducedMotion();
 
-  try { navigator.vibrate?.(gain ? [10, 40, 10] : 15); } catch { /* vibration indisponible */ }
+  // vibration seulement après un vrai geste du joueur (sinon le navigateur la bloque)
+  try { if (navigator.userActivation?.hasBeenActive) navigator.vibrate?.(gain ? [10, 40, 10] : 15); } catch { /* vibration indisponible */ }
 
   if (!reduced) {
     const tag = document.createElement('div');

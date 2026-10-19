@@ -1,6 +1,6 @@
 import { BUILDINGS, DIVISIONS, SQUAD_MAX, SQUAD_MIN, START_MONEY, upgradeCost } from './constants';
 import { OFFLINE_CAP, offlinePerHour } from './economy';
-import { makePlayer, saleValue, signingFee } from './players';
+import { assignNumber, makePlayer, saleValue, signingFee } from './players';
 import { randomClubName } from './names';
 import { endSeason, playRound, pushJournal, startSeason } from './season';
 import { initGoals } from './goals';
@@ -15,7 +15,7 @@ export { upkeepOf, capacity } from './economy';
 
 export function createInitialState(clubName) {
   const s = {
-    version: 3,
+    version: 4,
     clubName,
     createdAt: Date.now(),
     lastSeen: Date.now(),
@@ -42,6 +42,8 @@ export function createInitialState(clubName) {
   for (const pos of ['G', 'D', 'D', 'D', 'D', 'M', 'M', 'M', 'A', 'A', 'A']) {
     const p = makePlayer({ level: rnd(0.5, 1), pos });
     p.id = s.nextId++;
+    p.joined = 1;
+    assignNumber(s.players, p);
     s.players.push(p);
   }
   addReserves(s);
@@ -66,6 +68,8 @@ export function addReserves(s) {
     if (s.players.length >= SQUAD_MAX) break;
     const p = makePlayer({ level: rnd(0.2, 0.6), pos });
     p.id = s.nextId++;
+    p.joined = s.seasonNumber || 1;
+    assignNumber(s.players, p);
     s.players.push(p);
   }
   return s;
@@ -115,6 +119,8 @@ export function signPlayer(s, id) {
   if (s.money < fee) return null;
   s.market.splice(idx, 1);
   s.money -= fee;
+  p.joined = s.seasonNumber;
+  assignNumber(s.players, p);
   s.players.push(p);
   s.signings = (s.signings || 0) + 1;
   pushJournal(s, { season: s.seasonNumber, text: `${p.name} (${p.age} ans) signe au club pour ${fee} €.` });

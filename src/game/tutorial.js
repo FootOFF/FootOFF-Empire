@@ -100,7 +100,7 @@ export function stepContent(step, s) {
           ? `${rec.name} (${POS_LABELS[rec.pos].toLowerCase()}) est libre sur le marché et renforcerait ton onze. La recrue recommandée est marquée en or.`
           : 'Le marché des joueurs libres se renouvelle chaque saison. Recrute quand un joueur renforce ton onze : il sera marqué en or.',
         cta: 'Ouvrir l’effectif',
-        action: { kind: 'panel', panel: 'squad' },
+        action: { kind: 'panel', panel: 'squad', tab: 'market' },
       };
     }
     case 'match':

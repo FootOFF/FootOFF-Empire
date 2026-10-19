@@ -2,7 +2,7 @@ import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from './constants';
 import { expectedGate, matchGate, prizeFor, sponsorIncome, upkeepOf } from './economy';
 import { clamp, pick, rnd } from './utils';
 import { randomClubName } from './names';
-import { makePlayer, progressPlayer, saleValue, wageOf, wantsRetirement } from './players';
+import { assignNumber, freshSeason, makePlayer, playerRating, progressPlayer, saleValue, wageOf, wantsRetirement } from './players';
 import { quickMatch } from './live';
 import { ensureLineup } from './tactics';
 import { closeSeasonGoals, resetSeasonStats, sectorUnlockedEvent } from './goals';
@@ -132,6 +132,19 @@ export function applyMatchResult(s, live) {
     repDelta: Math.round((live.gf > live.ga ? 1 : live.gf === live.ga ? 0.2 : -0.6) * ctx.repMult * 10) / 10,
   };
   applyResult(s, 0, ctx.oppIdx, res.gf, res.ga);
+  // vie des joueurs : matchs, buts, passes, cartons, note du match et forme (5 derniers matchs)
+  for (const st of live.players || []) {
+    const p = s.players.find((q) => q.id === st.id);
+    if (!p) continue;
+    p.season ||= freshSeason();
+    p.season.apps++;
+    p.season.goals += st.goals;
+    p.season.assists += st.assists;
+    p.season.yellow += st.yellow;
+    p.season.red += st.red;
+    p.season.sum += st.rating;
+    p.form = [...(p.form || []), st.rating].slice(-5);
+  }
   s.money += res.revenue;
   s.seasonStats.gate = (s.seasonStats.gate || 0) + res.revenue; // recettes cumulées, pour le bilan
   if (gate.attendance >= gate.capacity * 0.6) s.seasonStats.crowd = true;
@@ -190,6 +203,13 @@ export function endSeason(s) {
   s.reputation = Math.max(0, Math.round((s.reputation + (promoted ? 4 : relegated ? -3 : 0)) * 10) / 10);
 
   for (const p of s.players) {
+    // bilan individuel de la saison, puis progression de l'été
+    const st = p.season || freshSeason();
+    p.hist = [...(p.hist || []), {
+      season: s.seasonNumber, rating: Math.round(playerRating(p) * 10) / 10, apps: st.apps, goals: st.goals,
+      assists: st.assists, avg: st.apps ? Math.round((st.sum / st.apps) * 10) / 10 : null,
+    }].slice(-10);
+    p.season = freshSeason();
     progressPlayer(p, s.buildings.training);
     p.age += 1;
   }
@@ -203,12 +223,16 @@ export function endSeason(s) {
   if (s.buildings.academy > 0 && s.players.length < SQUAD_MAX) {
     const y = makePlayer({ youth: true, academy: s.buildings.academy });
     y.id = s.nextId++;
+    y.joined = s.seasonNumber + 1;
+    assignNumber(s.players, y);
     s.players.push(y);
     events.push(`L’académie révèle ${y.name} (${y.age} ans, ${POS_LABELS[y.pos]}).`);
   }
   while (s.players.length < SQUAD_MIN) {
     const p = makePlayer({ level: Math.max(0, s.divisionIndex - 0.5) });
     p.id = s.nextId++;
+    p.joined = s.seasonNumber + 1;
+    assignNumber(s.players, p);
     s.players.push(p);
     events.push(`Amateur de secours : ${p.name} (${p.age} ans) complète l’effectif.`);
   }

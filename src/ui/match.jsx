@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { POS_LABELS } from '../game/constants';
 import { ratingAt } from '../game/players';
 import { SLOTS, TACTICS, TACTIC_ORDER, autoLineup, expectedGoals, lineupRating, matchOdds } from '../game/tactics';
-import { fmtMoney, fmtNum } from './format';
+import { fmtMoney, fmtNum, fmtRating } from './format';
 import { createLiveMatch } from '../game/live';
 import { IconClose, IconPlay } from './icons';
 
@@ -87,7 +87,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           <div className="pm-sub">
             <span className="eyebrow">Onze de départ · 4-3-3</span>
             <button className="linkbtn pm-best" onClick={() => { setLineup(autoLineup(state.players)); setSlot(null); }}>Meilleur onze</button>
-            <span className="pm-rating">Niveau <b>{rating.toFixed(1)}</b></span>
+            <span className="pm-rating">Niveau <b>{fmtRating(rating)}</b></span>
           </div>
           <div className="pitch2d">
             <div className="p2-lines"><i className="half" /><i className="circle" /><i className="box top" /><i className="box bottom" /></div>
@@ -103,7 +103,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
                   onClick={() => setSlot(slot === k ? null : k)}
                   title={natural ? '' : `Hors de son poste (${POS_LABELS[p.pos]})`}
                 >
-                  <span className="p2-num">{ratingAt(p, SLOTS[k]).toFixed(1)}</span>
+                  <span className="p2-num">{fmtRating(ratingAt(p, SLOTS[k]))}</span>
                   <span className="p2-name">{lastName(p.name)}</span>
                 </button>
               );
@@ -118,7 +118,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
                     <button className={lineup[slot] === p.id ? 'current' : ''} onClick={() => choose(slot, p.id)}>
                       <span className={`pos ${p.pos}`}>{p.pos}</span>
                       <span className="pk-name">{p.name}{lineup.includes(p.id) && lineup[slot] !== p.id ? <em> · titulaire</em> : ''}</span>
-                      <b>{ratingAt(p, SLOTS[slot]).toFixed(1)}</b>
+                      <b>{fmtRating(ratingAt(p, SLOTS[slot]))}</b>
                     </button>
                   </li>
                 ))}
@@ -139,7 +139,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           <div className="glass pm-card">
             <span className="eyebrow">Pronostic</span>
             <OddsBar odds={odds} />
-            <div className="pm-xg">Buts attendus <b>{xg.for.toFixed(1)}</b> – <b>{xg.against.toFixed(1)}</b> · Adversaire niveau {ctx.opp.strength.toFixed(1)}</div>
+            <div className="pm-xg">Buts attendus <b>{xg.for.toFixed(1)}</b> – <b>{xg.against.toFixed(1)}</b> · Adversaire niveau {fmtRating(ctx.opp.strength)}</div>
             {ctx.gate && (
               <div className="pm-xg">
                 Affluence attendue <b>{fmtNum(ctx.gate.attendance)}</b> / {fmtNum(ctx.gate.capacity)} · Recettes ≈ <b>{fmtMoney(ctx.gate.revenue)}</b>
