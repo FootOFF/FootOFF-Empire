@@ -47,7 +47,7 @@ function Stats({ p }) {
   );
 }
 
-export function SquadPanel({ state, run, onClose }) {
+export function SquadPanel({ state, run, ask, onClose }) {
   const [filter, setFilter] = useState('all');
   const squad = [...state.players].sort((a, b) => ORDER[a.pos] - ORDER[b.pos] || playerRating(b) - playerRating(a));
   const shown = filter === 'all' ? squad : squad.filter((p) => p.pos === filter);
@@ -89,7 +89,17 @@ export function SquadPanel({ state, run, onClose }) {
                 title={squad.length <= SQUAD_MIN ? 'Effectif au minimum' : 'Vendre le joueur à un autre club'}
                 onClick={() => {
                   const fee = saleValue(p, state.divisionIndex);
-                  if (window.confirm(`Vendre ${p.name} pour ${fmtMoney(fee)} ?`)) run((s) => sellPlayer(s, p.id), 'Effectif au minimum (11 joueurs).');
+                  const starter = state.lineup?.includes(p.id);
+                  ask({
+                    title: `Vendre ${p.name} ?`,
+                    text: `${p.name} (${p.age} ans, ${POS_LABELS[p.pos].toLowerCase()}, note ${playerRating(p).toFixed(1)}) rejoindra un autre club.${starter ? ' C’est un titulaire : ton onze sera recomposé.' : ''}`,
+                    rows: [
+                      ['Montant de la vente', `+${fmtMoney(fee)}`, 'up'],
+                      ['Salaire économisé', `${fmtMoney(wageOf(p, state.divisionIndex))} / saison`, 'up'],
+                    ],
+                    confirmLabel: `Vendre · ${fmtMoney(fee)}`,
+                    onConfirm: () => run((s) => sellPlayer(s, p.id), 'Effectif au minimum (11 joueurs).'),
+                  });
                 }}
               >
                 Vendre · {fmtMoney(saleValue(p, state.divisionIndex))}

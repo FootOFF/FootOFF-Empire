@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 
 import {
   applyMatchResult, applyOffline, build, createInitialState, dismissOffline, dismissReview, endSeason, matchContext, upgrade,
 } from './game/engine';
-import { BUILDINGS } from './game/constants';
+import { BUILDINGS, DIVISIONS } from './game/constants';
 import { clearGame, loadGame, saveGame } from './game/save';
 import { clone } from './game/utils';
 import Onboarding from './ui/Onboarding';
@@ -13,6 +13,7 @@ import PlotInspector from './ui/inspector';
 import { MatchResult, OfflineReturn, SeasonReview } from './ui/overlays';
 import { LiveMatch, PreMatch } from './ui/match';
 import { CoachCard, StaffTip } from './ui/guide';
+import ConfirmDialog from './ui/confirm';
 import { actionablePlots, dockSignals, staffTip } from './game/advice';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { createStadiumSound } from './ui/sound';
@@ -45,6 +46,7 @@ export default function App() {
   const [matchCtx, setMatchCtx] = useState(null);
   const [matchFx, setMatchFx] = useState(null); // effets 3D du direct : but, but encaissé, mi-temps…
   const [dismissedTips, setDismissedTips] = useState(() => new Set()); // conseils masqués (session)
+  const [confirm, setConfirm] = useState(null); // fenêtre de confirmation du jeu (vente, nouvelle partie…)
   const sound = useRef(null);
   if (!sound.current) sound.current = createStadiumSound();
   const toastId = useRef(0);
@@ -182,7 +184,7 @@ export default function App() {
         <Dock panel={sel?.plotId === 't0' ? 'stadium' : panel} onPanel={openPanel} badges={signals} />
       </div>
 
-      {panel === 'squad' && <SquadPanel state={state} run={run} onClose={() => setPanel(null)} />}
+      {panel === 'squad' && <SquadPanel state={state} run={run} ask={setConfirm} onClose={() => setPanel(null)} />}
       {panel === 'season' && <SeasonPanel state={state} onClose={() => setPanel(null)} />}
       {panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}
       {sel && (
@@ -215,12 +217,23 @@ export default function App() {
         <GameMenu
           onClose={() => setMenu(false)}
           onReset={() => {
-            if (window.confirm('Effacer la sauvegarde et recommencer une nouvelle aventure ?')) {
-              clearGame();
-              setMenu(false);
-              setState(null);
-            }
+            setMenu(false);
+            setConfirm({
+              tone: 'danger',
+              title: 'Recommencer une nouvelle aventure ?',
+              text: `La sauvegarde de ${state.clubName} (saison ${state.seasonNumber}, ${DIVISIONS[state.divisionIndex].name}) sera effacée définitivement.`,
+              confirmLabel: 'Effacer et recommencer',
+              cancelLabel: 'Garder ma partie',
+              onConfirm: () => { clearGame(); setState(null); },
+            });
           }}
+        />
+      )}
+      {confirm && (
+        <ConfirmDialog
+          {...confirm}
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => { setConfirm(null); confirm.onConfirm(); }}
         />
       )}
       <Toasts items={toasts} />
