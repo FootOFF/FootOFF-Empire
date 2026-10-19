@@ -4,7 +4,7 @@ import { ratingAt } from '../game/players';
 import { SLOTS, TACTICS, TACTIC_ORDER, autoLineup, expectedGoals, lineupRating, matchOdds } from '../game/tactics';
 import { fmtMoney, fmtNum, fmtRating } from './format';
 import { createLiveMatch } from '../game/live';
-import { IconClose, IconPlay } from './icons';
+import { IconClose, IconMute, IconPlay, IconSound } from './icons';
 import { IconBall, IconSwap, IconWhistle } from './kit';
 import { useKeydown } from './presence';
 
@@ -197,6 +197,14 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
   const pause = useRef(0);
   const clockRef = useRef(0);
   const revealed = useRef(0);
+  // identifiant stable par événement : un nouveau commentaire en tête du fil ne recrée pas (ni ne refait
+  // apparaître) tous les autres
+  const evKeys = useRef({ map: new WeakMap(), n: 0 });
+  const keyOf = (e) => {
+    const k = evKeys.current;
+    if (!k.map.has(e)) k.map.set(e, ++k.n);
+    return k.map.get(e);
+  };
   const [sub, setSub] = useState({ out: null, in: null });
   const [tactic2, setTactic2] = useState(live.state.tactic);
 
@@ -326,15 +334,23 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
             <span>Tirs <b>{shown.filter((e) => (e.type === 'chance' || e.type === 'goal') && e.side === 'home').length}–{shown.filter((e) => (e.type === 'chance' || e.type === 'goal') && e.side === 'away').length}</b></span>
           </div>
         </div>
-        <ol className="feed-list">{shown.map((e, i) => <EventRow key={`${e.half}-${e.at}-${i}`} e={e} />)}</ol>
+        <ol className="feed-list">{shown.map((e) => <EventRow key={keyOf(e)} e={e} />)}</ol>
       </aside>
 
       {phase === 'playing' && (
         <div className="live-controls glass">
-          <button className={speed === 1 ? 'on' : ''} onClick={() => setSpeed(1)}>x1</button>
-          <button className={speed === 4 ? 'on' : ''} onClick={() => setSpeed(4)}>Accélérer x4</button>
-          <button onClick={skip}>{half === 1 ? 'Aller à la mi-temps' : 'Aller au coup de sifflet'}</button>
-          <button className="lc-sound" onClick={() => { sound.setMuted(!muted); setMuted(!muted); }}>{muted ? 'Son coupé' : 'Son'}</button>
+          <div className="lc-speed" role="group" aria-label="Vitesse du match">
+            <button className={speed === 1 ? 'on' : ''} aria-pressed={speed === 1} onClick={() => setSpeed(1)} title="Vitesse normale">×1</button>
+            <button className={speed === 4 ? 'on' : ''} aria-pressed={speed === 4} onClick={() => setSpeed(4)} title="Accélérer"><span className="hide-sm">Accélérer </span>×4</button>
+          </div>
+          <button className="lc-skip" onClick={skip}>
+            <span className="hide-sm">{half === 1 ? 'Aller à la mi-temps' : 'Aller au coup de sifflet'}</span>
+            <span className="show-sm">{half === 1 ? 'Mi-temps' : 'Fin du match'}</span>
+          </button>
+          <button className="lc-sound" aria-pressed={!muted} aria-label={muted ? 'Remettre le son' : 'Couper le son'} title={muted ? 'Son coupé' : 'Son'}
+            onClick={() => { sound.setMuted(!muted); setMuted(!muted); }}>
+            {muted ? <IconMute /> : <IconSound />}
+          </button>
         </div>
       )}
 

@@ -28,6 +28,8 @@ export const IconArrowUp = I(<path d="M12 19V5M6 11l6-6 6 6" />);
 export const IconLock = I(<><rect x="5" y="10.5" width="14" height="9.5" rx="2" /><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /></>);
 export const IconChevron = I(<path d="m9 6 6 6-6 6" />);
 export const IconChevronLeft = I(<path d="m15 6-6 6 6 6" />);
+export const IconSound = I(<><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4Z" /><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /></>);
+export const IconMute = I(<><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4Z" /><path d="m16 9.5 5 5M21 9.5l-5 5" /></>);
 export const IconRadar = I(<><path d="M12 3 20.5 9.2 17.3 19H6.7L3.5 9.2Z" /><path d="m12 7.5 4.2 3-1.6 4.8H9.4L7.8 10.5Z" /></>);
 export const IconTrend = I(<path d="M3 17 9 11l4 4 8-8M15 7h6v6" />);
 export const IconClock = I(<><circle cx="12" cy="12" r="8.5" /><path d="M12 7v5l3.5 2" /></>);

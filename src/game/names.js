@@ -24,6 +24,25 @@ const CLUB_PLACES = [
   'Rocheval', 'des Fontaines', 'Hauts-Bois', 'de la Gare',
 ];
 
+// Article d'un club selon son préfixe : l'AS, le FC, les Bleus… (un nom sans préfixe connu reste nu, comme
+// celui que le joueur a choisi). clubAfter contracte avec la préposition : « de le FC » → « du FC ».
+const ARTICLE = {
+  AS: 'l’', US: 'l’', Olympique: 'l’', Étoile: 'l’', Atlas: 'l’', Avenir: 'l’',
+  FC: 'le ', Sporting: 'le ', Racing: 'le ', Rapid: 'le ', Jaunes: 'les ', Bleus: 'les ',
+};
+export const withArticle = (name) => (ARTICLE[name.split(' ')[0]] || '') + name;
+export function clubAfter(prep, name) {
+  const a = withArticle(name);
+  if (prep === 'de ' && a.startsWith('le ')) return `du ${a.slice(3)}`;
+  if (prep === 'de ' && a.startsWith('les ')) return `des ${a.slice(4)}`;
+  if (prep === 'à ' && a.startsWith('le ')) return `au ${a.slice(3)}`;
+  if (prep === 'à ' && a.startsWith('les ')) return `aux ${a.slice(4)}`;
+  return prep + a;
+}
+export const capitalize = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+// élision devant un prénom qui commence par une voyelle : « passe décisive d’Adam », « frappe d’Ilyes »
+export const deName = (name) => (/^[AEIOUÉÈÊÂÎÔ]/.test(name) ? 'd’' : 'de ') + name;
+
 export function randomClubName() {
   return `${pick(CLUB_FIRST)} ${pick(CLUB_PLACES)}`;
 }

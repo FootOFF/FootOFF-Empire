@@ -1,5 +1,5 @@
 import { clamp, pick, ri } from './utils';
-import { FIRST, LAST } from './names';
+import { FIRST, LAST, capitalize, clubAfter, deName } from './names';
 import { SLOTS, TACTICS, expectedGoals, lineupRating } from './tactics';
 import { ratingAt } from './players';
 
@@ -37,7 +37,13 @@ const T = {
   wide: ['à côté !', 'au-dessus de la barre.', 'ça frôle le poteau, mais c’est dehors.'],
   post: ['sur le poteau !', 'la barre transversale tremble encore !'],
   goalHome: ['BUT ! {p} trompe le gardien !', 'BUT ! Quelle frappe de {p} !', 'BUT ! {p} conclut une action collective magnifique !'],
-  goalAway: ['But de {away}. {p} égalise… ou fait mal.', 'But de {away} : {p} punit la défense.', 'Coup dur : {p} marque pour {away}.'],
+  // but adverse, selon l'écart après le but (adversaire − nous)
+  goalAway: {
+    level: ['Égalisation : {p} remet {away} à hauteur.', '{p} égalise pour {away}.'],
+    lead: ['But de {away} : {p} donne l’avantage aux siens.', 'Coup dur : {p} marque pour {away}.'],
+    more: ['{p} creuse l’écart pour {away}.', 'Coup dur : {p} enfonce le clou pour {away}.'],
+    back: ['{p} réduit l’écart pour {away}.', 'But de {away} : {p} relance le suspense.'],
+  },
   yellow: ['Carton jaune pour {p} ({team}) après une faute tactique.', 'Avertissement : {p} ({team}) est sanctionné.'],
   red: ['CARTON ROUGE ! {p} ({team}) est expulsé !'],
   secondYellow: ['Second carton jaune pour {p} ({team}) : expulsion !'],
@@ -52,7 +58,12 @@ const T = {
   ],
 };
 
-const fill = (tpl, v) => tpl.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
+// noms de clubs avec leur article (« pour l’US du Tilleul », « du FC des Bruyères »), élision devant un prénom
+// (« frappe d’Ilyes »), majuscule en tête de phrase. Le club entre parenthèses ({team}) reste nu.
+const CLUB_KEYS = new Set(['home', 'away']);
+const fill = (tpl, v) => capitalize(tpl.replace(/((?<!\p{L})(?:de|à) )?\{(\w+)\}/gu, (_, prep = '', k) => (
+  CLUB_KEYS.has(k) ? clubAfter(prep, v[k] ?? '') : prep === 'de ' ? deName(v[k] ?? '') : prep + (v[k] ?? '')
+)));
 
 function pickWeighted(list, weight) {
   const w = list.map(weight);
@@ -158,12 +169,14 @@ export function createLiveMatch(s, ctx) {
         if (Math.random() < conv) {
           m.stats.onTarget[idx]++;
           m.score[side]++;
-          let text = fill(pick(side === 'home' ? T.goalHome : T.goalAway), vars({ p: p.name }));
+          const gap = m.score.away - m.score.home;
+          const awayPool = gap === 0 ? T.goalAway.level : gap === 1 ? T.goalAway.lead : gap > 1 ? T.goalAway.more : T.goalAway.back;
+          let text = fill(pick(side === 'home' ? T.goalHome : awayPool), vars({ p: p.name }));
           let assist = null;
           if (side === 'home') {
             assist = homeAssist(p);
             perf(p.id).goals++;
-            if (assist) { perf(assist.id).assists++; text += ` Passe décisive de ${assist.name}.`; }
+            if (assist) { perf(assist.id).assists++; text += ` Passe décisive ${deName(assist.name)}.`; }
             m.scorers.push({ name: p.name, id: p.id, minute: Math.ceil(at), assist: assist?.name || null });
           }
           push(at, 'goal', side, text, {

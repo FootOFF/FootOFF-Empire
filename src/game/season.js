@@ -1,7 +1,7 @@
 import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from './constants';
 import { expectedGate, matchGate, prizeFor, sponsorIncome, upkeepOf } from './economy';
 import { clamp, ordinal, pick, rnd } from './utils';
-import { randomClubName } from './names';
+import { clubAfter, randomClubName } from './names';
 import { assignNumber, freshSeason, makePlayer, playerRating, progressPlayer, saleValue, wageOf, wantsRetirement } from './players';
 import { quickMatch } from './live';
 import { ensureLineup } from './tactics';
@@ -74,26 +74,27 @@ function quickSim(si, sj) {
 
 function reportText(s, res) {
   const att = res.attendance;
+  const opp = (prep = '') => clubAfter(prep, res.oppName); // « contre l’AS… », « face au FC… »
   const buts = res.gf
     ? `Buts : ${res.scorers.map((x) => `${x.name} ${ordinal(x.minute, true)}`).join(', ')}.`
     : `${s.clubName} n’a pas trouvé la faille.`;
   let intro;
   if (res.gf > res.ga) {
     intro = pick([
-      `Devant ${att} spectateurs, ${s.clubName} a fait le métier contre ${res.oppName}.`,
-      `Soirée propre : ${s.clubName} maîtrise ${res.oppName} et repart avec les trois points.`,
+      `Devant ${att} spectateurs, ${s.clubName} a fait le métier contre ${opp()}.`,
+      `Soirée propre : ${s.clubName} maîtrise ${opp()} et repart avec les trois points.`,
       `Le projet avance. ${s.clubName} a construit son succès sur un bloc solide, devant ${att} spectateurs.`,
     ]);
   } else if (res.gf === res.ga) {
     intro = pick([
-      `${s.clubName} et ${res.oppName} se sont neutralisés (${att} spectateurs). Un point de plus, mais on en voulait trois.`,
-      `Match serré face à ${res.oppName} : aucune équipe n’a trouvé la faille décisive.`,
+      `${s.clubName} et ${opp()} se sont neutralisés (${att} spectateurs). Un point de plus, mais on en voulait trois.`,
+      `Match serré face ${opp('à ')} : aucune équipe n’a trouvé la faille décisive.`,
     ]);
   } else {
     intro = pick([
-      `Frustration au coup de sifflet final : ${s.clubName} s’incline contre ${res.oppName}.`,
+      `Frustration au coup de sifflet final : ${s.clubName} s’incline contre ${opp()}.`,
       `Soirée difficile devant ${att} spectateurs — ${s.clubName} a manqué de tranchant dans la surface.`,
-      `Rien ne fonctionne ce soir. Défaite logique face à ${res.oppName}.`,
+      `Rien ne fonctionne ce soir. Défaite logique face ${opp('à ')}.`,
     ]);
   }
   return `${intro} ${buts} Recettes : ${new Intl.NumberFormat('fr-FR').format(res.revenue)} €.`;
@@ -157,7 +158,7 @@ export function applyMatchResult(s, live) {
   const score = `${res.gf}–${res.ga}`;
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'match',
-    title: res.gf > res.ga ? `Victoire ${score} face à ${res.oppName}` : res.gf === res.ga ? `Match nul ${score} contre ${res.oppName}` : `Défaite ${score} face à ${res.oppName}`,
+    title: res.gf > res.ga ? `Victoire ${score} face ${clubAfter('à ', res.oppName)}` : res.gf === res.ga ? `Match nul ${score} contre ${clubAfter('', res.oppName)}` : `Défaite ${score} face ${clubAfter('à ', res.oppName)}`,
     text: reportText(s, res),
   });
   return s;

@@ -6,6 +6,7 @@ import {
 import { sellPlayer, signPlayer } from '../game/engine';
 import { endOfSeasonForecast, seasonForecast } from '../game/economy';
 import { standingsOf } from '../game/season';
+import { deName } from '../game/names';
 import { bestSigning } from '../game/advice';
 import { SLOTS } from '../game/tactics';
 import { fmtMoney, fmtRating } from './format';
@@ -362,7 +363,7 @@ function PlayerSheet({ p, state, refLvl, market, place, onClose, onPrev, onNext,
 
   return (
     <div className="sq-overlay" onClick={onClose}>
-      <article ref={ref} className="sq-sheet glass" onClick={(e) => e.stopPropagation()} aria-label={`Fiche de ${p.name}`}>
+      <article ref={ref} className="sq-sheet glass" onClick={(e) => e.stopPropagation()} aria-label={`Fiche ${deName(p.name)}`}>
         <span className="grip" aria-hidden="true" />
         <header className="sh-bar">
           <div className="sh-pager">
@@ -548,7 +549,7 @@ function CompareView({ state, a, b, onPick, onClose, onSign }) {
         <Radar a={va} b={vb} axes={axes} />
 
         <section className="cmp-sec">
-          <span className="sh-cap">Écart de {b.name.split(' ').slice(-1)[0]} par rapport à {a.name.split(' ').slice(-1)[0]}</span>
+          <span className="sh-cap">Écart {deName(b.name.split(' ').slice(-1)[0])} par rapport à {a.name.split(' ').slice(-1)[0]}</span>
           <ul className="cmp-deltas">
             {axes.map((x, i) => {
               const d = Math.round(vb[i]) - Math.round(va[i]);
