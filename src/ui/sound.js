@@ -97,6 +97,42 @@ export function createStadiumSound() {
     goal() { swell(0.95, 0.25, 4.5, 1150); }, // clameur
     conceded() { swell(0.06, 0.4, 2.5, 380); }, // le stade se tait
     card() { whistle(1); swell(0.3, 0.3, 1.2, 640); }, // sifflet + bronca
+    // pièces qui tombent dans la caisse : petits tintements aigus, légèrement désaccordés
+    coins(count = 5, delay = 0.4) {
+      if (!ensure()) return;
+      ctx.resume?.();
+      for (let i = 0; i < count; i++) {
+        const t = ctx.currentTime + delay + i * 0.055 + Math.random() * 0.02;
+        for (const [mult, vol] of [[1, 0.05], [2.76, 0.018]]) {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = (2100 + Math.random() * 600) * mult;
+          g.gain.setValueAtTime(0, t);
+          g.gain.linearRampToValueAtTime(vol, t + 0.004);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+          osc.connect(g).connect(master);
+          osc.start(t);
+          osc.stop(t + 0.18);
+        }
+      }
+    },
+    // dépense : un « toc » sourd
+    spend() {
+      if (!ensure()) return;
+      ctx.resume?.();
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(420, t);
+      osc.frequency.exponentialRampToValueAtTime(220, t + 0.09);
+      g.gain.setValueAtTime(0.06, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      osc.connect(g).connect(master);
+      osc.start(t);
+      osc.stop(t + 0.14);
+    },
     stop() {
       if (!ctx) return;
       const old = ctx;

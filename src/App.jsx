@@ -14,6 +14,7 @@ import { MatchResult, OfflineReturn, SeasonReview } from './ui/overlays';
 import { LiveMatch, PreMatch } from './ui/match';
 import { CoachCard, StaffTip } from './ui/guide';
 import ConfirmDialog from './ui/confirm';
+import { moneyBurst } from './ui/moneyfx';
 import { actionablePlots, dockSignals, staffTip } from './game/advice';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { createStadiumSound } from './ui/sound';
@@ -52,6 +53,13 @@ export default function App() {
   const toastId = useRef(0);
 
   useEffect(() => { if (state) saveGame(state); }, [state]);
+  // chaque gain ou dépense s'anime (pièces vers la trésorerie, « +1 252 € », tintement)
+  const prevMoney = useRef(null);
+  useEffect(() => {
+    const m = state ? state.money : null;
+    if (m !== null && prevMoney.current !== null && m !== prevMoney.current) moneyBurst(m - prevMoney.current, sound.current);
+    prevMoney.current = m;
+  }, [state?.money]); // eslint-disable-line react-hooks/exhaustive-deps
   // revenus hors ligne calculés une seule fois au chargement
   useEffect(() => { setState((prev) => (prev ? applyOffline(clone(prev)) : prev)); }, []);
 

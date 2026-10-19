@@ -7,10 +7,11 @@ import { bestSigning } from '../game/advice';
 import { teamLevel } from '../game/match';
 import { standingsOf } from '../game/season';
 import { fmtMoney, fmtNum } from './format';
-import { IconClose } from './icons';
+import { IconClose, IconCoin } from './icons';
+import { AnimatedMoney } from './moneyfx';
 
 // Panneau latéral en verre, glissant au-dessus de la vue 3D (plein écran sur mobile).
-export function Drawer({ title, eyebrow, onClose, children, wide }) {
+export function Drawer({ title, eyebrow, onClose, children, wide, headExtra }) {
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -23,7 +24,10 @@ export function Drawer({ title, eyebrow, onClose, children, wide }) {
           {eyebrow && <span className="eyebrow">{eyebrow}</span>}
           <h2>{title}</h2>
         </div>
-        <button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button>
+        <div className="drawer-head-side">
+          {headExtra}
+          <button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button>
+        </div>
       </header>
       <div className="drawer-body">{children}</div>
     </section>
@@ -56,7 +60,12 @@ export function SquadPanel({ state, run, ask, onClose }) {
   const forecast = seasonForecast(state, wages);
   const recommended = bestSigning(state)?.player.id;
   return (
-    <Drawer title="Effectif" eyebrow={`${squad.length}/${SQUAD_MAX} joueurs`} onClose={onClose}>
+    <Drawer
+      title="Effectif"
+      eyebrow={`${squad.length}/${SQUAD_MAX} joueurs`}
+      onClose={onClose}
+      headExtra={<span className={`drawer-money ${state.money < 0 ? 'neg' : ''}`} data-money-target title="Trésorerie"><IconCoin /><AnimatedMoney value={state.money} /></span>}
+    >
       <div className="kpis">
         <div className="kpi"><span>Niveau d’équipe</span><b>{rating.toFixed(1)}</b></div>
         <div className="kpi"><span>Masse salariale</span><b>{fmtMoney(wages)}</b></div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { DIVISIONS } from '../game/constants';
 import { FOMonogram } from './brand';
 import { fmtMoney, fmtNum } from './format';
+import { AnimatedMoney } from './moneyfx';
 
 // Écrans « cinématiques » : résultat de match, bilan de saison, retour hors ligne.
 
@@ -35,7 +36,7 @@ export function MatchResult({ state, onClose }) {
         )}
         <div className="cine-facts">
           <div><span>Affluence</span><b>{fmtNum(lm.attendance)}{lm.capacity ? <small> / {fmtNum(lm.capacity)}</small> : null}</b></div>
-          <div><span>Recettes</span><b>{fmtMoney(lm.revenue)}</b></div>
+          <div><span>Recettes</span><b><AnimatedMoney value={lm.revenue} from={0} delay={450} duration={1100} /></b></div>
           <div><span>Réputation</span><b className={lm.repDelta >= 0 ? 'up' : 'down'}>{lm.repDelta >= 0 ? '+' : ''}{lm.repDelta}</b></div>
         </div>
         {lm.breakdown && (
@@ -71,7 +72,7 @@ export function SeasonReview({ state, onClose }) {
           <div><span>Sponsors</span><b className="up">+{fmtMoney(r.sponsors)}</b></div>
           <div><span>Salaires</span><b className="down">−{fmtMoney(r.wages)}</b></div>
           {r.upkeep > 0 && <div><span>Entretien</span><b className="down">−{fmtMoney(r.upkeep)}</b></div>}
-          <div><span>Bilan de la saison</span><b className={net >= 0 ? 'up' : 'down'}>{net >= 0 ? '+' : '−'}{fmtMoney(Math.abs(net))}</b></div>
+          <div><span>Bilan de la saison</span><b className={net >= 0 ? 'up' : 'down'}><AnimatedMoney value={Math.abs(net)} from={0} delay={600} duration={1300} prefix={net >= 0 ? '+' : '−'} /></b></div>
         </div>
         {r.events.length > 0 && <ul className="cine-events">{r.events.map((e, i) => <li key={i}>{e}</li>)}</ul>}
         <button className="btn btn-xl" onClick={onClose}>
@@ -88,7 +89,7 @@ export function OfflineReturn({ data, onClose }) {
       <div className="cine-card small">
         <FOMonogram className="cine-mark" />
         <span className="eyebrow">Pendant votre absence</span>
-        <div className="cine-big">+{fmtMoney(data.amount)}</div>
+        <div className="cine-big"><AnimatedMoney value={data.amount} from={0} delay={400} duration={1200} prefix="+" /></div>
         <p className="muted">Vos partenaires sont restés fidèles : revenus encaissés en {data.hours} h.</p>
         <button className="btn btn-xl" onClick={onClose}>Reprendre</button>
       </div>

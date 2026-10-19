@@ -5,7 +5,7 @@ import { activeGoal, tierOf } from '../game/goals';
 import { teamLevel } from '../game/match';
 import { nextOpponent } from '../game/season';
 import { FOMonogram } from './brand';
-import { fmtMoney } from './format';
+import { AnimatedMoney } from './moneyfx';
 import {
   IconCal, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
   IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow,
@@ -33,9 +33,9 @@ export function TopHud({ state, onMenu }) {
         </div>
       </div>
       <div className="hud-res">
-        <div className={`hud-chip glass ${state.money < 0 ? 'neg' : ''}`} title="Trésorerie">
+        <div className={`hud-chip glass ${state.money < 0 ? 'neg' : ''}`} title="Trésorerie" data-money-target>
           <IconCoin />
-          <span className="hud-val">{fmtMoney(state.money)}</span>
+          <span className="hud-val"><AnimatedMoney value={state.money} /></span>
         </div>
         <div className="hud-chip glass hud-rep" title={next ? `Prochaine ouverture : ${next.name} à ${next.repNeeded} de réputation` : 'Tous les secteurs sont ouverts'}>
           <IconStar />
