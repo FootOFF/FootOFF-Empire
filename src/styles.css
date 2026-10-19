@@ -31,6 +31,17 @@
 }
 
 * { box-sizing: border-box; }
+
+/* barres de défilement aux couleurs FootOFF : fines, dorées, sans flèches, sur fond transparent */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(199, 161, 90, .32); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(222, 193, 127, .6); border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+::-webkit-scrollbar-corner { background: transparent; }
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: rgba(199, 161, 90, .45) transparent; }
+}
 html, body, #root { margin: 0; padding: 0; height: 100%; }
 body {
   background: var(--bg); color: var(--text);
@@ -112,6 +123,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hud { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
 .hud > * { pointer-events: auto; transition: opacity .35s var(--ease), transform .35s var(--ease); }
 .game.cinematic .hud > * { opacity: 0; pointer-events: none; transform: translateY(6px); }
+.game.cinematic .plotlabel { display: none; }
 .game.has-panel .hud-match, .game.has-panel .hud-tools { opacity: 0; pointer-events: none; transform: translateX(12px); }
 .game.has-panel .hud-dock { left: calc((100% - 484px) / 2); }
 .game.wide-panel .hud > * { opacity: 0; pointer-events: none; } /* le grand écran Effectif couvre l'Empire : le HUD s'efface */ /* reste dans la zone visible à gauche du panneau */
@@ -324,7 +336,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sq-tabs button { position: relative; border: none; background: none; padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 500; color: var(--text-2); }
 .sq-tabs button.on { background: var(--gold-soft); color: var(--gold-light); box-shadow: inset 0 0 0 1px var(--gold-line); }
 .sq-tab-dot { position: absolute; top: 6px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); animation: badge-ping 1.8s ease-out infinite; }
-.sq-body { flex: 1; overflow-y: auto; padding: 14px 22px 24px; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .15) transparent; }
+.sq-body { flex: 1; overflow-y: auto; padding: 14px 22px 24px; }
 .sq-body .chips { align-items: center; }
 .sq-legend { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
 .sq-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-left: 6px; }
@@ -487,7 +499,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @keyframes fo-slide { from { opacity: 0; transform: translateX(24px); } }
 .drawer-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 22px 22px 14px; }
 .drawer-head h2 { font-size: 26px; margin-top: 4px; }
-.drawer-body { flex: 1; overflow-y: auto; padding: 4px 22px 24px; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .15) transparent; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 4px 22px 24px; }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; margin: 22px 0 10px; }
 
 .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
@@ -949,6 +961,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-radius: var(--r-lg); padding: 20px; display: flex; flex-direction: column; gap: 14px; animation: fo-up .5s var(--ease);
 }
 .fulltime { align-items: center; text-align: center; }
+/* pendant la pause, le fil de commentaires s'efface : la mi-temps occupe toute la largeur, sans défilement */
+.matchscreen.paused .feed { opacity: 0; pointer-events: none; transform: translateX(16px); transition: opacity .3s, transform .3s var(--ease); }
+.halftime, .fulltime, .matchscreen.paused .scoreboard { right: var(--gap); }
+.halftime { max-width: 800px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 26px; align-items: start; padding: 22px 24px; }
+.ht-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.halftime .ht-col:first-child { padding-right: 26px; border-right: 1px solid var(--line); margin-right: -26px; }
+.halftime .ht-score { justify-content: flex-start; }
+.halftime .btn-xl { margin-top: 6px; }
 .fulltime .btn-xl { width: min(320px, 100%); }
 .ht-score { display: flex; align-items: center; justify-content: center; gap: 14px; font-family: var(--font-title); font-size: 16px; text-align: center; }
 .ht-score b { font-weight: 500; font-size: 42px; letter-spacing: -.02em; color: var(--gold-light); white-space: nowrap; }
@@ -988,6 +1008,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .goal-banner { left: var(--gap); right: var(--gap); top: 96px; bottom: auto; }
   .replay-tag { top: 96px; display: none; }
   .halftime, .fulltime { left: 0; right: 0; top: auto; bottom: 0; max-width: none; max-height: 84vh; margin: 0; border-radius: var(--r-lg) var(--r-lg) 0 0; padding: 18px 14px 22px; background: var(--glass-strong); }
+  .halftime { grid-template-columns: 1fr; gap: 12px; }
+  .ht-col { gap: 12px; }
+  .halftime .ht-col:first-child { padding-right: 0; border-right: none; margin-right: 0; }
+  .halftime .ht-score { justify-content: center; }
   .ht-score { font-size: 13px; gap: 10px; }
   .ht-score b { font-size: 32px; }
   .tactics.compact button { padding: 9px 4px; }

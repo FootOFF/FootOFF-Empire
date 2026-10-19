@@ -282,7 +282,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish }) {
   const xg2 = expectedGoals(lineupRating(state.players, sub.out !== null && sub.in !== null ? m.lineup.map((id) => (id === sub.out ? sub.in : id)) : m.lineup), m.oppStrength, tactic2);
 
   return (
-    <div className="matchscreen live">
+    <div className={`matchscreen live ${phase !== 'playing' ? 'paused' : ''}`}>
       <div className="scoreboard glass">
         <span className="sb-team">{m.home}</span>
         <span className="sb-score"><b key={`h${goalsH}`}>{goalsH}</b><i>–</i><b key={`a${goalsA}`}>{goalsA}</b></span>
@@ -320,6 +320,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish }) {
 
       {phase === 'halftime' && (
         <div className="halftime glass">
+          <div className="ht-col">
           <span className="eyebrow">Mi-temps</span>
           <div className="ht-score">{m.home} <b>{m.score.home} – {m.score.away}</b> {m.away}</div>
           <div className="ht-stats">
@@ -327,6 +328,12 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish }) {
             <span>Tirs <b>{m.stats.shots[0]} – {m.stats.shots[1]}</b></span>
             <span>Cadrés <b>{m.stats.onTarget[0]} – {m.stats.onTarget[1]}</b></span>
           </div>
+          <div className="ht-block">
+            <span className="eyebrow muted-eyebrow">Pronostic final</span>
+            <OddsBar odds={secondHalfOdds(xg2, m.score)} />
+          </div>
+          </div>
+          <div className="ht-col">
           <div className="ht-block">
             <span className="eyebrow muted-eyebrow">Changement</span>
             <div className="ht-sub">
@@ -344,11 +351,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish }) {
             <span className="eyebrow muted-eyebrow">Tactique de la seconde période</span>
             <TacticPicker value={tactic2} onChange={setTactic2} compact />
           </div>
-          <div className="ht-block">
-            <span className="eyebrow muted-eyebrow">Pronostic final</span>
-            <OddsBar odds={secondHalfOdds(xg2, m.score)} />
-          </div>
           <button className="btn btn-xl" onClick={resume}><IconPlay /> Reprendre la seconde période</button>
+          </div>
         </div>
       )}
 
