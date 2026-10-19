@@ -29,10 +29,10 @@ function heat(v, ref) {
   return '';
 }
 
-export function SquadView({ state, run, ask, onClose, initialTab = 'players' }) {
+export function SquadView({ state, run, ask, onClose, initialTab = 'players', preview = null }) {
   const [tab, setTab] = useState(initialTab);
   const [filter, setFilter] = useState('all');
-  const [sheet, setSheet] = useState(null); // { id, market }
+  const [sheet, setSheet] = useState(preview?.sheet ? { id: preview.sheet } : null); // { id, market }
   const [compare, setCompare] = useState(null); // { a, b } identifiants
   const ref = divRef(state);
   const squad = useMemo(
@@ -86,6 +86,8 @@ export function SquadView({ state, run, ask, onClose, initialTab = 'players' }) 
     }
     if (other) setCompare({ a: other.id, b: p.id });
   };
+
+  useEffect(() => { if (preview?.compare && state.market[0]) openCompare(state.market[0]); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sheetPlayer = sheet && find(sheet.id);
   const list = sheet?.market ? state.market : squad;

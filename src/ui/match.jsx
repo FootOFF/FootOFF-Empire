@@ -5,6 +5,7 @@ import { SLOTS, TACTICS, TACTIC_ORDER, autoLineup, expectedGoals, lineupRating, 
 import { fmtMoney, fmtNum, fmtRating } from './format';
 import { createLiveMatch } from '../game/live';
 import { IconClose, IconPlay } from './icons';
+import { IconBall, IconSwap, IconWhistle } from './kit';
 
 // Avant-match (onze + tactique + pronostic) et match en direct (score, chrono, fil de commentaires,
 // vitesse, mi-temps avec changement). La 3D derrière est en mode « jour de match ».
@@ -160,13 +161,13 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
 // --- Match en direct ---------------------------------------------------------------------------------
 
 const SEC_PER_MIN = 0.42; // ~40 s pour 90 minutes à vitesse normale
-const ICON = { goal: '⚽', yellow: '', red: '', chance: '', sub: '⇄', kickoff: '', halftime: '', fulltime: '', info: '' };
+const ICON = { goal: <IconBall />, sub: <IconSwap />, kickoff: <IconWhistle />, halftime: <IconWhistle />, fulltime: <IconWhistle /> };
 
 function EventRow({ e }) {
   return (
     <li className={`ev ev-${e.type} ${e.side || ''} ${e.outcome || ''}`}>
       <span className="ev-min">{e.minute}′</span>
-      <span className="ev-icon">{e.type === 'yellow' || e.type === 'red' ? <i className={`card ${e.type}`} /> : ICON[e.type]}</span>
+      <span className="ev-icon">{e.type === 'yellow' || e.type === 'red' ? <i className={`card ${e.type}`} /> : ICON[e.type] || null}</span>
       <span className="ev-text">{e.type === 'goal' && e.lead ? <><span className="ev-lead">{e.lead}</span> {e.text}</> : e.text}</span>
     </li>
   );
@@ -186,7 +187,7 @@ function secondHalfOdds(xg, score) {
   return { win: w / t, draw: d / t, loss: l / t };
 }
 
-export function LiveMatch({ state, ctx, sound, onFx, onFinish }) {
+export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null }) {
   const [live] = useState(() => createLiveMatch(state, ctx)); // un seul match par montage (jamais recréé)
   const [half, setHalf] = useState(1);
   const [clock, setClock] = useState(0);
@@ -203,6 +204,28 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish }) {
   const [tactic2, setTactic2] = useState(live.state.tactic);
 
   useEffect(() => { sound.start(); sound.whistle(1); return () => sound.stop(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // aperçu (galerie) : direct déjà entamé, ou mi-temps
+  useEffect(() => {
+    if (!preview) return;
+    const upTo = preview.phase === 'halftime' ? Infinity : preview.minute;
+    const seen = events.filter((e) => e.at <= upTo);
+    revealed.current = seen.length;
+    setShown([...seen].reverse());
+    const t = preview.phase === 'halftime' ? live.halfEnd : preview.minute;
+    clockRef.current = t;
+    setClock(t);
+    if (preview.phase === 'halftime') setPhase('halftime');
+    else pause.current = Infinity; // vignette figée sur la minute demandée
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // coup de sifflet final : un court temps de respiration (« Terminé »), puis l'écran d'après-match
+  const finished = useRef(false);
+  useEffect(() => {
+    if (phase !== 'fulltime' || finished.current) return undefined;
+    const t = setTimeout(() => { finished.current = true; onFinish(live.result()); }, 1700);
+    return () => clearTimeout(t);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // horloge : avance le temps de jeu, révèle les événements, marque une pause sur les buts
   useEffect(() => {
@@ -356,13 +379,6 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish }) {
         </div>
       )}
 
-      {phase === 'fulltime' && (
-        <div className="fulltime glass">
-          <span className="eyebrow">Coup de sifflet final</span>
-          <div className="ht-score">{m.home} <b>{m.score.home} – {m.score.away}</b> {m.away}</div>
-          <button className="btn btn-xl" onClick={() => onFinish(live.result())}>Voir le résumé</button>
-        </div>
-      )}
     </div>
   );
 }

@@ -11,11 +11,13 @@ import { Dock, GameMenu, MatchCta, ObjectiveWidget, SceneTools, Toasts, TopHud }
 import { JournalPanel, SeasonPanel } from './ui/panels';
 import { SquadView } from './ui/squad';
 import PlotInspector from './ui/inspector';
-import { MatchResult, OfflineReturn, SeasonReview } from './ui/overlays';
+import { OfflineReturn, SeasonReview } from './ui/overlays';
+import PostMatch from './ui/postmatch';
 import { LiveMatch, PreMatch } from './ui/match';
 import { CoachCard, StaffTip } from './ui/guide';
 import ConfirmDialog from './ui/confirm';
 import { moneyBurst } from './ui/moneyfx';
+import { previewState, previewUi, silentSound } from './ui/preview';
 import { actionablePlots, dockSignals, staffTip } from './game/advice';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { createStadiumSound } from './ui/sound';
@@ -29,32 +31,38 @@ function cycle(current, order, storageKey) {
   return next;
 }
 
-export default function App() {
-  const [state, setState] = useState(loadGame);
-  const [panel, setPanel] = useState(null);
-  const [sel, setSel] = useState(null);
+// preview : nom d'un écran à afficher d'emblée avec une partie fictive (galerie), sans sauvegarde ni 3D.
+export default function App({ preview = null }) {
+  const [boot] = useState(() => {
+    if (!preview) return { state: loadGame(), ui: {} };
+    const st = previewState(preview);
+    return { state: st, ui: st ? previewUi(preview, st) : {} };
+  });
+  const [state, setState] = useState(boot.state);
+  const [panel, setPanel] = useState(boot.ui.panel || null);
+  const [sel, setSel] = useState(boot.ui.sel || null);
   const [toasts, setToasts] = useState([]);
   // préférences de vue (confort, par navigateur) : heure réelle / jour / nuit, météo auto / forcée
   const [timeMode, setTimeMode] = useState(() => { try { return localStorage.getItem('fo-time') || 'auto'; } catch { return 'auto'; } });
   const [weatherMode, setWeatherMode] = useState(() => { try { return localStorage.getItem('fo-weather') || 'auto'; } catch { return 'auto'; } });
-  const [matchDay, setMatchDay] = useState(false);
+  const [matchDay, setMatchDay] = useState(!!boot.ui.matchDay);
   const [recenter, setRecenter] = useState(0);
-  const [showResult, setShowResult] = useState(false);
+  const [showResult, setShowResult] = useState(!!boot.ui.showResult);
   const [goalCollapsed, setGoalCollapsed] = useState(() => window.innerWidth < 760); // replié sur mobile
   const [menu, setMenu] = useState(false);
   const [webglOk, setWebglOk] = useState(true);
   // match : null → 'prematch' (onze + tactique) → 'live' (direct) → résumé (showResult)
-  const [matchPhase, setMatchPhase] = useState(null);
-  const [matchCtx, setMatchCtx] = useState(null);
+  const [matchPhase, setMatchPhase] = useState(boot.ui.matchPhase || null);
+  const [matchCtx, setMatchCtx] = useState(boot.ui.matchCtx || null);
   const [matchFx, setMatchFx] = useState(null); // effets 3D du direct : but, but encaissé, mi-temps…
   const [dismissedTips, setDismissedTips] = useState(() => new Set()); // conseils masqués (session)
-  const [confirm, setConfirm] = useState(null);
-  const [squadTab, setSquadTab] = useState('players'); // onglet d'ouverture de l'effectif (joueurs ou marché) // fenêtre de confirmation du jeu (vente, nouvelle partie…)
+  const [confirm, setConfirm] = useState(boot.ui.confirm || null); // fenêtre de confirmation du jeu (vente, nouvelle partie…)
+  const [squadTab, setSquadTab] = useState(boot.ui.squadTab || 'players'); // onglet d'ouverture de l'effectif
   const sound = useRef(null);
-  if (!sound.current) sound.current = createStadiumSound();
+  if (!sound.current) sound.current = preview ? silentSound : createStadiumSound();
   const toastId = useRef(0);
 
-  useEffect(() => { if (state) saveGame(state); }, [state]);
+  useEffect(() => { if (state && !preview) saveGame(state); }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   // chaque gain ou dépense s'anime (pièces vers la trésorerie, « +1 252 € », tintement)
   const prevMoney = useRef(null);
   useEffect(() => {
@@ -63,7 +71,7 @@ export default function App() {
     prevMoney.current = m;
   }, [state?.money]); // eslint-disable-line react-hooks/exhaustive-deps
   // revenus hors ligne calculés une seule fois au chargement
-  useEffect(() => { setState((prev) => (prev ? applyOffline(clone(prev)) : prev)); }, []);
+  useEffect(() => { if (!preview) setState((prev) => (prev ? applyOffline(clone(prev)) : prev)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toast = useCallback((text, tone) => {
     const id = ++toastId.current;
@@ -141,7 +149,9 @@ export default function App() {
   return (
     <div className={`game ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${panel === 'squad' ? 'wide-panel' : ''}`} data-tuto={tuto ? tutoStep : undefined}>
       <div className="stage">
-        {webglOk ? (
+        {preview ? (
+          <div className="stage-preview" aria-hidden="true" />
+        ) : webglOk ? (
           <Suspense fallback={<div className="stage-loading"><span className="eyebrow">Chargement de l’Empire…</span></div>}>
             <Empire3D
               state={state}
@@ -199,6 +209,7 @@ export default function App() {
           state={state}
           run={run}
           ask={setConfirm}
+          preview={boot.ui.squad}
           initialTab={tutoStep === 'sign' ? 'market' : squadTab}
           onClose={() => { setPanel(null); setSquadTab('players'); }}
         />
@@ -224,11 +235,12 @@ export default function App() {
           state={state}
           ctx={matchCtx}
           sound={sound.current}
+          preview={boot.ui.live}
           onFx={(fx) => setMatchFx({ ...fx, id: performance.now() })}
           onFinish={finishMatch}
         />
       )}
-      {showResult && <MatchResult state={state} onClose={closeResult} />}
+      {showResult && <PostMatch state={state} onClose={closeResult} />}
       {!matchPhase && !showResult && state.seasonReview && <SeasonReview state={state} onClose={() => run(dismissReview)} />}
       {!matchPhase && !showResult && !state.seasonReview && state.offline && <OfflineReturn data={state.offline} onClose={() => run(dismissOffline)} />}
       {menu && (

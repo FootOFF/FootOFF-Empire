@@ -241,7 +241,7 @@ export function createLiveMatch(s, ctx) {
       if (pos === 'G') r += ga === 0 ? 0.8 : -0.3 * ga;
       if (pos === 'D' && ga === 0) r += 0.4;
       r += (Math.random() - 0.5) * 1.2;
-      return { id, rating: Math.round(clamp(r, 3, 10) * 2) / 2, ...f };
+      return { id, name: p.name, num: p.num, pos, rating: Math.round(clamp(r, 3, 10) * 2) / 2, ...f };
     }).filter(Boolean);
   }
 

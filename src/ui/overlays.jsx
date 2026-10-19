@@ -6,54 +6,6 @@ import { AnimatedMoney } from './moneyfx';
 
 // Écrans « cinématiques » : résultat de match, bilan de saison, retour hors ligne.
 
-export function MatchResult({ state, onClose }) {
-  const lm = state.lastMatch;
-  if (!lm) return null;
-  const outcome = lm.gf > lm.ga ? 'win' : lm.gf < lm.ga ? 'loss' : 'draw';
-  const word = { win: 'Victoire', draw: 'Match nul', loss: 'Défaite' }[outcome];
-  return (
-    <div className="cine">
-      <div className="cine-card">
-        <span className="eyebrow">Journée {lm.round} · coup de sifflet final</span>
-        <div className="cine-score">
-          <span className="cs-team">{state.clubName}</span>
-          <span className="cs-num">{lm.gf}<i>–</i>{lm.ga}</span>
-          <span className="cs-team">{lm.oppName}</span>
-        </div>
-        <span className={`cine-word ${outcome}`}>{word}</span>
-        {lm.scorers.length > 0 && (
-          <ul className="cine-scorers">
-            {lm.scorers.map((x, i) => <li key={i}><b>{x.minute}′</b>{x.name}</li>)}
-          </ul>
-        )}
-        {lm.stats && (
-          <div className="cine-stats">
-            <span>Possession <b>{lm.stats.possession} %</b></span>
-            <span>Tirs <b>{lm.stats.shots[0]} – {lm.stats.shots[1]}</b></span>
-            <span>Cadrés <b>{lm.stats.onTarget[0]} – {lm.stats.onTarget[1]}</b></span>
-            {lm.stats.yellow[0] + lm.stats.red[0] > 0 && <span>Cartons <b>{lm.stats.yellow[0]}<i className="card yellow" />{lm.stats.red[0] > 0 && <> {lm.stats.red[0]}<i className="card red" /></>}</b></span>}
-          </div>
-        )}
-        <div className="cine-facts">
-          <div><span>Affluence</span><b>{fmtNum(lm.attendance)}{lm.capacity ? <small> / {fmtNum(lm.capacity)}</small> : null}</b></div>
-          <div><span>Recettes</span><b><AnimatedMoney value={lm.revenue} from={0} delay={450} duration={1100} /></b></div>
-          <div><span>Réputation</span><b className={lm.repDelta >= 0 ? 'up' : 'down'}>{lm.repDelta >= 0 ? '+' : ''}{lm.repDelta}</b></div>
-        </div>
-        {lm.breakdown && (
-          <div className="cine-stats">
-            <span>Billetterie <b>{fmtMoney(lm.breakdown.billetterie)}</b></span>
-            <span>Buvette <b>{fmtMoney(lm.breakdown.buvette)}</b></span>
-            <span>Boutique <b>{fmtMoney(lm.breakdown.boutique)}</b></span>
-            {lm.breakdown.tv > 0 && <span>Droits TV <b>{fmtMoney(lm.breakdown.tv)}</b></span>}
-          </div>
-        )}
-        {lm.demand > lm.capacity && <p className="cine-note">Stade complet : {fmtNum(lm.demand - lm.capacity)} supporters sont restés dehors. Agrandis le stade pour les accueillir.</p>}
-        <button className="btn btn-xl" onClick={onClose}>Continuer</button>
-      </div>
-    </div>
-  );
-}
-
 export function SeasonReview({ state, onClose }) {
   const r = state.seasonReview;
   if (!r) return null;
