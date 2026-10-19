@@ -1,5 +1,6 @@
 import { clamp, pick, ri, rnd } from './utils';
 import { FIRST, LAST } from './names';
+import { saleFor, signingFor, wageFor } from './economy';
 
 // Poids (attaque, défense, mental) par poste pour la note globale
 const W = { A: [0.6, 0.1, 0.3], M: [0.35, 0.25, 0.4], D: [0.15, 0.65, 0.2], G: [0.05, 0.85, 0.1] };
@@ -35,11 +36,11 @@ export function playerRating(p) {
   return ratingAt(p, p.pos);
 }
 
-export function wageOf(p, divisionIndex = 0) {
-  return Math.round(10 + playerRating(p) ** 2 * 0.5 * (1 + divisionIndex * 0.3));
-}
+// Salaire annuel (voir economy.js) : suit la note du joueur et la division du club.
+export const wageOf = (p, divisionIndex = 0) => wageFor(playerRating(p), divisionIndex);
 
-export const signingFee = (p, divisionIndex = 0) => wageOf(p, divisionIndex) * 3;
+export const signingFee = (p, divisionIndex = 0) => signingFor(wageOf(p, divisionIndex));
+export const saleValue = (p, divisionIndex = 0) => saleFor(wageOf(p, divisionIndex));
 
 export function starsOf(p) {
   const n = clamp(Math.round(p.pot / 4), 1, 5);

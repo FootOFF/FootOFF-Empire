@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { BUILDINGS, upgradeCost } from '../game/constants';
 import { PLOT_LABELS, SECTORS, allowedBuildingsFor, buildingEffect, plotBuilding } from '../game/map';
-import { fmtMoney } from './format';
+import { fmtMoney, fmtNum } from './format';
+import { expectedGate } from '../game/economy';
 import { IconAcademy, IconArrowUp, IconClose, IconFans, IconLock, IconSponsor, IconStadium, IconTraining } from './icons';
 
 const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor };
@@ -80,6 +81,15 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
         <div className="ins-effect">
           <span className="eyebrow muted-eyebrow">Actuellement</span>
           <p>{buildingEffect(key, lvl, state.divisionIndex)}</p>
+          {key === 'terrain' && (() => {
+            const gate = expectedGate(state, null);
+            return (
+              <p className={`ins-demand ${gate.demand > gate.capacity ? 'full' : ''}`}>
+                Public potentiel : {fmtNum(gate.demand)} spectateurs par match
+                {gate.demand > gate.capacity ? ' · stade trop petit, des supporters restent dehors.' : ` · ${Math.round((gate.demand / gate.capacity) * 100)} % de remplissage.`}
+              </p>
+            );
+          })()}
         </div>
         {!maxed ? (
           <>

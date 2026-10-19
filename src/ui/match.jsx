@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { POS_LABELS } from '../game/constants';
 import { ratingAt } from '../game/players';
-import { SLOTS, TACTICS, TACTIC_ORDER, expectedGoals, lineupRating, matchOdds } from '../game/tactics';
+import { SLOTS, TACTICS, TACTIC_ORDER, autoLineup, expectedGoals, lineupRating, matchOdds } from '../game/tactics';
+import { fmtMoney, fmtNum } from './format';
 import { createLiveMatch } from '../game/live';
 import { IconClose, IconPlay } from './icons';
 
@@ -85,6 +86,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
         <section className="pm-pitch-wrap glass">
           <div className="pm-sub">
             <span className="eyebrow">Onze de départ · 4-3-3</span>
+            <button className="linkbtn pm-best" onClick={() => { setLineup(autoLineup(state.players)); setSlot(null); }}>Meilleur onze</button>
             <span className="pm-rating">Niveau <b>{rating.toFixed(1)}</b></span>
           </div>
           <div className="pitch2d">
@@ -138,6 +140,11 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
             <span className="eyebrow">Pronostic</span>
             <OddsBar odds={odds} />
             <div className="pm-xg">Buts attendus <b>{xg.for.toFixed(1)}</b> – <b>{xg.against.toFixed(1)}</b> · Adversaire niveau {ctx.opp.strength.toFixed(1)}</div>
+            {ctx.gate && (
+              <div className="pm-xg">
+                Affluence attendue <b>{fmtNum(ctx.gate.attendance)}</b> / {fmtNum(ctx.gate.capacity)} · Recettes ≈ <b>{fmtMoney(ctx.gate.revenue)}</b>
+              </div>
+            )}
           </div>
           <div className="glass pm-card">
             <span className="eyebrow">Tactique</span>

@@ -1,5 +1,7 @@
-import { BUILDINGS, DIVISIONS, OFFLINE_CAP, OFFLINE_RATE, SQUAD_MAX, SQUAD_MIN, upgradeCost } from './constants';
-import { makePlayer, signingFee } from './players';
+import { BUILDINGS, DIVISIONS, SQUAD_MAX, SQUAD_MIN, START_MONEY, upgradeCost } from './constants';
+import { OFFLINE_CAP, offlinePerHour } from './economy';
+import { makePlayer, saleValue, signingFee } from './players';
+import { randomClubName } from './names';
 import { endSeason, playRound, pushJournal, startSeason } from './season';
 import { initGoals } from './goals';
 import { PLOTS, ensureFixedPlots, plotIndexOf } from './map';
@@ -8,14 +10,15 @@ import { rnd } from './utils';
 
 export { playRound, endSeason };
 export { applyMatchResult, matchContext } from './season';
+export { upkeepOf, capacity } from './economy';
 
 export function createInitialState(clubName) {
   const s = {
-    version: 2,
+    version: 3,
     clubName,
     createdAt: Date.now(),
     lastSeen: Date.now(),
-    money: 600,
+    money: START_MONEY,
     reputation: 5,
     divisionIndex: 0,
     seasonNumber: 1,
@@ -86,15 +89,19 @@ export function upgrade(s, key) {
   return s;
 }
 
-export function releasePlayer(s, id) {
+// Vente d'un joueur : il rejoint un autre club, sa valeur de revente entre en caisse.
+export function sellPlayer(s, id) {
   if (s.players.length <= SQUAD_MIN) return null;
   const idx = s.players.findIndex((p) => p.id === id);
   if (idx === -1) return null;
   const [p] = s.players.splice(idx, 1);
+  const fee = saleValue(p, s.divisionIndex);
+  s.money += fee;
   ensureLineup(s);
-  pushJournal(s, { season: s.seasonNumber, text: `${p.name} quitte le club.` });
+  pushJournal(s, { season: s.seasonNumber, text: `${p.name} est vendu à ${randomClubName()} pour ${fee.toLocaleString('fr-FR')} €.` });
   return s;
 }
+export const releasePlayer = sellPlayer;
 
 export function signPlayer(s, id) {
   if (s.players.length >= SQUAD_MAX) return null;
@@ -118,7 +125,7 @@ export function applyOffline(s, now = Date.now()) {
     return s;
   }
   const h = Math.min(hours, OFFLINE_CAP);
-  const amount = Math.round(OFFLINE_RATE * lvl * h);
+  const amount = Math.round(offlinePerHour(lvl, s.divisionIndex) * h);
   s.money += amount;
   s.offline = { hours: Math.round(h * 10) / 10, amount };
   s.lastSeen = now;

@@ -15,7 +15,7 @@ export const GOALS = [
     repNeeded: 0,
     name: 'Tête haute',
     blurb: 'Prouve que ton projet mérite mieux qu’un terrain de quartier.',
-    reward: { label: '600 € de prime de palier', apply: (s) => { s.money += 600; } },
+    reward: { label: '8 000 € de prime de palier', apply: (s) => { s.money += 8000; } },
     active: () => ({
       id: 'top-half',
       name: 'Terminer dans la première moitié du classement',
@@ -29,7 +29,7 @@ export const GOALS = [
     repNeeded: 6,
     name: 'Le public s’attache',
     blurb: 'Un stade qui vibre, un quartier qui t’accompagne.',
-    reward: { label: '1200 € de prime de palier', apply: (s) => { s.money += 1200; } },
+    reward: { label: '30 000 € de prime de palier', apply: (s) => { s.money += 30000; } },
     active: () => ({
       id: 'crowd',
       name: 'Combler le stade',
@@ -57,7 +57,7 @@ export const GOALS = [
     repNeeded: 15,
     name: 'L’Empire',
     blurb: 'Ton complexe sportif tient sa promesse : trois quartiers, une légende.',
-    reward: { label: '2500 € + 2 de réputation', apply: (s) => { s.money += 2500; s.reputation = Math.round((s.reputation + 2) * 10) / 10; } },
+    reward: { label: '3 M€ + 2 de réputation', apply: (s) => { s.money += 3000000; s.reputation = Math.round((s.reputation + 2) * 10) / 10; } },
     active: () => ({
       id: 'elite',
       name: 'Tenir ta place à l’Elite',

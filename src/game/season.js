@@ -1,7 +1,8 @@
-import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN, capacity, fillRate, sponsorIncome } from './constants';
+import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from './constants';
+import { expectedGate, matchGate, prizeFor, sponsorIncome, upkeepOf } from './economy';
 import { clamp, pick, rnd } from './utils';
 import { randomClubName } from './names';
-import { makePlayer, progressPlayer, wageOf, wantsRetirement } from './players';
+import { makePlayer, progressPlayer, saleValue, wageOf, wantsRetirement } from './players';
 import { quickMatch } from './live';
 import { ensureLineup } from './tactics';
 import { closeSeasonGoals, resetSeasonStats, sectorUnlockedEvent } from './goals';
@@ -89,21 +90,19 @@ function reportText(s, res) {
       `Rien ne fonctionne ce soir. Défaite logique face à ${res.oppName}.`,
     ]);
   }
-  return `${intro} ${buts} Recettes : ${res.revenue} €.`;
+  return `${intro} ${buts} Recettes : ${new Intl.NumberFormat('fr-FR').format(res.revenue)} €.`;
 }
 
-// Contexte du prochain match à domicile : adversaire, affluence, billetterie.
+// Contexte du prochain match à domicile : adversaire et affluence attendue.
 export function matchContext(s) {
   if (s.round >= 7) return null;
   const pr = s.schedule[s.round].find((p) => p.includes(0));
   const oppIdx = pr[0] === 0 ? pr[1] : pr[0];
-  const div = DIVISIONS[s.divisionIndex];
+  const opp = s.rivals[oppIdx - 1];
   return {
-    opp: s.rivals[oppIdx - 1],
+    opp,
     oppIdx,
-    capacity: capacity(s.buildings.terrain),
-    fill: fillRate(s.reputation, s.buildings.fans),
-    ticket: div.ticket,
+    gate: expectedGate(s, opp), // estimation : affluence, recettes (sans l'aléa du jour)
     repMult: 1 + s.buildings.fans * 0.1,
   };
 }
@@ -117,16 +116,20 @@ export function applyMatchResult(s, live) {
     const [gi, gj] = quickSim(s.rivals[i - 1].strength, s.rivals[j - 1].strength);
     applyResult(s, i, j, gi, gj);
   }
-  const attendance = Math.round(ctx.capacity * ctx.fill);
+  const gate = matchGate(s, ctx.opp); // affluence et recettes du jour (avant mise à jour du classement)
   const res = {
     ...live,
-    attendance,
-    revenue: attendance * ctx.ticket,
+    attendance: gate.attendance,
+    capacity: gate.capacity,
+    demand: gate.demand,
+    breakdown: gate.breakdown,
+    revenue: gate.revenue,
     repDelta: Math.round((live.gf > live.ga ? 1 : live.gf === live.ga ? 0.2 : -0.6) * ctx.repMult * 10) / 10,
   };
   applyResult(s, 0, ctx.oppIdx, res.gf, res.ga);
   s.money += res.revenue;
-  if (attendance >= ctx.capacity * 0.6) s.seasonStats.crowd = true;
+  s.seasonStats.gate = (s.seasonStats.gate || 0) + res.revenue; // recettes cumulées, pour le bilan
+  if (gate.attendance >= gate.capacity * 0.6) s.seasonStats.crowd = true;
   s.reputation = Math.max(0, Math.round((s.reputation + res.repDelta) * 10) / 10);
   s.round++;
   s.lastMatch = { ...res, round: s.round };
@@ -155,21 +158,32 @@ export function nextOpponent(s) {
   return s.rivals[oppIdx - 1];
 }
 
+const n = (v) => new Intl.NumberFormat('fr-FR').format(v);
+
 export function endSeason(s) {
   const standings = standingsOf(s);
   const position = standings.findIndex((t) => t.i === 0) + 1;
   const div = DIVISIONS[s.divisionIndex];
-  const prize = (8 - position) * div.prize;
+  const prize = prizeFor(position, s.divisionIndex);
   const sponsors = sponsorIncome(s.buildings.sponsor, s.divisionIndex);
   const wages = s.players.reduce((sum, p) => sum + wageOf(p, s.divisionIndex), 0);
+  const upkeep = upkeepOf(s);
   const promoted = position <= 2 && s.divisionIndex < 3;
   const relegated = position >= 7 && s.divisionIndex > 0;
 
-  s.money += prize + sponsors - wages;
+  s.money += prize + sponsors - wages - upkeep;
+  const events = [];
+  // Plan de redressement : saison bouclée dans le rouge → le conseil vend les plus gros salaires.
+  while (s.money < 0 && s.players.length > SQUAD_MIN + 2) {
+    const p = [...s.players].sort((a, b) => wageOf(b, s.divisionIndex) - wageOf(a, s.divisionIndex))[0];
+    const fee = saleValue(p, s.divisionIndex);
+    s.players.splice(s.players.indexOf(p), 1);
+    s.money += fee;
+    events.push(`Plan de redressement : comptes dans le rouge, le conseil vend ${p.name} (${n(fee)} €).`);
+  }
   const repBefore = s.reputation;
   s.reputation = Math.max(0, Math.round((s.reputation + (promoted ? 4 : relegated ? -3 : 0)) * 10) / 10);
 
-  const events = [];
   for (const p of s.players) {
     progressPlayer(p, s.buildings.training);
     p.age += 1;
@@ -196,12 +210,13 @@ export function endSeason(s) {
 
   s.history.push({ season: s.seasonNumber, division: div.name, position });
   const nextDivName = DIVISIONS[clamp(s.divisionIndex + (promoted ? 1 : relegated ? -1 : 0), 0, 3)].name;
-  s.seasonReview = { position, division: div.name, prize, sponsors, wages, promoted, relegated, events, nextDivision: nextDivName };
+  const matchday = s.seasonStats?.gate || 0;
+  s.seasonReview = { position, division: div.name, matchday, prize, sponsors, wages, upkeep, promoted, relegated, events, nextDivision: nextDivName };
   closeSeasonGoals(s, events);
   sectorUnlockedEvent(s, repBefore);
   pushJournal(s, {
     season: s.seasonNumber,
-    text: `Saison ${s.seasonNumber} terminée : ${position}e en ${div.name}.${promoted ? ' Montée !' : relegated ? ' Descente.' : ''} Prime : ${prize} € · Sponsors : ${sponsors} € · Salaires : -${wages} €.`,
+    text: `Saison ${s.seasonNumber} terminée : ${position}e en ${div.name}.${promoted ? ' Montée !' : relegated ? ' Descente.' : ''} Prime : ${n(prize)} € · Sponsors : ${n(sponsors)} € · Salaires : −${n(wages)} € · Entretien : −${n(upkeep)} €.`,
   });
 
   if (promoted) s.divisionIndex += 1;

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from '../game/constants';
-import { playerRating, signingFee, starsOf, wageOf } from '../game/players';
-import { releasePlayer, signPlayer } from '../game/engine';
+import { playerRating, saleValue, signingFee, starsOf, wageOf } from '../game/players';
+import { sellPlayer, signPlayer } from '../game/engine';
+import { seasonForecast } from '../game/economy';
 import { teamLevel } from '../game/match';
 import { standingsOf } from '../game/season';
 import { fmtMoney, fmtNum } from './format';
@@ -51,6 +52,7 @@ export function SquadPanel({ state, run, onClose }) {
   const shown = filter === 'all' ? squad : squad.filter((p) => p.pos === filter);
   const rating = teamLevel(state);
   const wages = squad.reduce((s, p) => s + wageOf(p, state.divisionIndex), 0);
+  const forecast = seasonForecast(state, wages);
   return (
     <Drawer title="Effectif" eyebrow={`${squad.length}/${SQUAD_MAX} joueurs`} onClose={onClose}>
       <div className="kpis">
@@ -58,6 +60,10 @@ export function SquadPanel({ state, run, onClose }) {
         <div className="kpi"><span>Masse salariale</span><b>{fmtMoney(wages)}</b></div>
         <div className="kpi"><span>Âge moyen</span><b>{(squad.reduce((s, p) => s + p.age, 0) / squad.length).toFixed(1)}</b></div>
       </div>
+      <p className={`budget-line ${forecast.net < 0 ? 'bad' : forecast.wageShare > 0.75 ? 'warn' : ''}`}>
+        Salaires : <b>{Math.round(forecast.wageShare * 100)} %</b> des revenus attendus sur la saison ({fmtMoney(forecast.income)})
+        {forecast.net < 0 ? ' · saison déficitaire en vue : vends un remplaçant ou agrandis le stade.' : forecast.wageShare > 0.75 ? ' · attention, la marge se réduit.' : '.'}
+      </p>
       <div className="chips">
         {FILTERS.map(([id, label]) => (
           <button key={id} className={filter === id ? 'active' : ''} onClick={() => setFilter(id)}>{label}</button>
@@ -78,12 +84,13 @@ export function SquadPanel({ state, run, onClose }) {
               <button
                 className="linkbtn"
                 disabled={squad.length <= SQUAD_MIN}
-                title={squad.length <= SQUAD_MIN ? 'Effectif au minimum' : 'Libérer le joueur'}
+                title={squad.length <= SQUAD_MIN ? 'Effectif au minimum' : 'Vendre le joueur à un autre club'}
                 onClick={() => {
-                  if (window.confirm(`Libérer ${p.name} ?`)) run((s) => releasePlayer(s, p.id), 'Effectif au minimum (11 joueurs).');
+                  const fee = saleValue(p, state.divisionIndex);
+                  if (window.confirm(`Vendre ${p.name} pour ${fmtMoney(fee)} ?`)) run((s) => sellPlayer(s, p.id), 'Effectif au minimum (11 joueurs).');
                 }}
               >
-                Libérer
+                Vendre · {fmtMoney(saleValue(p, state.divisionIndex))}
               </button>
             </div>
           </li>

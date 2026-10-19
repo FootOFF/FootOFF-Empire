@@ -34,10 +34,19 @@ export function MatchResult({ state, onClose }) {
           </div>
         )}
         <div className="cine-facts">
-          <div><span>Affluence</span><b>{fmtNum(lm.attendance)}</b></div>
+          <div><span>Affluence</span><b>{fmtNum(lm.attendance)}{lm.capacity ? <small> / {fmtNum(lm.capacity)}</small> : null}</b></div>
           <div><span>Recettes</span><b>{fmtMoney(lm.revenue)}</b></div>
           <div><span>Réputation</span><b className={lm.repDelta >= 0 ? 'up' : 'down'}>{lm.repDelta >= 0 ? '+' : ''}{lm.repDelta}</b></div>
         </div>
+        {lm.breakdown && (
+          <div className="cine-stats">
+            <span>Billetterie <b>{fmtMoney(lm.breakdown.billetterie)}</b></span>
+            <span>Buvette <b>{fmtMoney(lm.breakdown.buvette)}</b></span>
+            <span>Boutique <b>{fmtMoney(lm.breakdown.boutique)}</b></span>
+            {lm.breakdown.tv > 0 && <span>Droits TV <b>{fmtMoney(lm.breakdown.tv)}</b></span>}
+          </div>
+        )}
+        {lm.demand > lm.capacity && <p className="cine-note">Stade complet : {fmtNum(lm.demand - lm.capacity)} supporters sont restés dehors. Agrandis le stade pour les accueillir.</p>}
         <button className="btn btn-xl" onClick={onClose}>Continuer</button>
       </div>
     </div>
@@ -47,7 +56,7 @@ export function MatchResult({ state, onClose }) {
 export function SeasonReview({ state, onClose }) {
   const r = state.seasonReview;
   if (!r) return null;
-  const net = r.prize + r.sponsors - r.wages;
+  const net = (r.matchday || 0) + r.prize + r.sponsors - r.wages - (r.upkeep || 0);
   return (
     <div className="cine">
       <div className="cine-card">
@@ -57,10 +66,12 @@ export function SeasonReview({ state, onClose }) {
         {r.relegated && <span className="cine-word loss">Descente en {r.nextDivision}</span>}
         {!r.promoted && !r.relegated && <span className="cine-word draw">Maintien</span>}
         <div className="cine-facts">
+          {r.matchday > 0 && <div><span>Recettes des matchs</span><b className="up">+{fmtMoney(r.matchday)}</b></div>}
           <div><span>Prime</span><b className="up">+{fmtMoney(r.prize)}</b></div>
           <div><span>Sponsors</span><b className="up">+{fmtMoney(r.sponsors)}</b></div>
           <div><span>Salaires</span><b className="down">−{fmtMoney(r.wages)}</b></div>
-          <div><span>Solde</span><b className={net >= 0 ? 'up' : 'down'}>{net >= 0 ? '+' : '−'}{fmtMoney(Math.abs(net))}</b></div>
+          {r.upkeep > 0 && <div><span>Entretien</span><b className="down">−{fmtMoney(r.upkeep)}</b></div>}
+          <div><span>Bilan de la saison</span><b className={net >= 0 ? 'up' : 'down'}>{net >= 0 ? '+' : '−'}{fmtMoney(Math.abs(net))}</b></div>
         </div>
         {r.events.length > 0 && <ul className="cine-events">{r.events.map((e, i) => <li key={i}>{e}</li>)}</ul>}
         <button className="btn btn-xl" onClick={onClose}>

@@ -1,4 +1,6 @@
-import { BUILDINGS, capacity, OFFLINE_RATE, sponsorIncome } from './constants';
+import { BUILDINGS } from './constants';
+
+export { buildingEffect } from './economy';
 
 // Plan de l'Empire : 3 secteurs, 8 parcelles (t0..t7).
 // Le terrain (t0) est l'ancre du secteur principal ; il existe dès le départ.
@@ -100,23 +102,4 @@ export function sectorProgress(s, sectorId) {
   const plots = PLOTS.filter((p) => p.sector === sectorId);
   const filled = plots.filter((p) => plotBuilding(s, p.id) !== null).length;
   return { filled, total: plots.length };
-}
-
-export function buildingEffect(key, lvl, divIndex) {
-  switch (key) {
-    case 'terrain':
-      return `Capacité d’accueil : ${capacity(lvl)} places.`;
-    case 'training':
-      return `Progression estivale des joueurs : +${lvl * 25} %.`;
-    case 'academy':
-      return lvl > 0
-        ? 'Révèle un jeune talent à fort potentiel à chaque fin de saison.'
-        : 'Aucune révélation de talent tant que l’académie n’est pas construite.';
-    case 'fans':
-      return `Remplissage du stade : +${lvl * 5} % · Réputation gagnée par match : +${lvl * 10} %.`;
-    case 'sponsor':
-      return `Sponsors : ${sponsorIncome(lvl, divIndex)} € par saison · ${OFFLINE_RATE * lvl} € par heure, même hors ligne.`;
-    default:
-      return '';
-  }
 }
