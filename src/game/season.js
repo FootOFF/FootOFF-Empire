@@ -32,6 +32,11 @@ export function startSeason(s) {
     const str = div.oppMin + (div.oppMax - div.oppMin) * (i / 6) + rnd(-0.3, 0.3);
     s.rivals.push({ name: randomClubName(), strength: Math.round(clamp(str, 3, 18) * 10) / 10 });
   }
+  // ordre aléatoire : le calendrier ne commence plus toujours par le favori de la division
+  for (let i = s.rivals.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [s.rivals[i], s.rivals[j]] = [s.rivals[j], s.rivals[i]];
+  }
   s.schedule = roundRobin(8);
   s.round = 0;
   s.table = Array.from({ length: 8 }, () => ({ pts: 0, gd: 0, played: 0 }));

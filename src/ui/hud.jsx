@@ -80,6 +80,14 @@ const DOCK = [
   { id: 'journal', label: 'Journal', Icon: IconNews },
 ];
 
+// Pastille du dock : point doré (action utile), « ! » rouge (alerte) ou nombre.
+function DockBadge({ value }) {
+  if (!value) return null;
+  if (value === 'dot') return <i className="dock-badge dot" aria-label="Action disponible" />;
+  if (value === 'warn') return <i className="dock-badge warn" aria-label="Alerte">!</i>;
+  return <i className="dock-badge">{value}</i>;
+}
+
 export function Dock({ panel, onPanel, badges = {} }) {
   return (
     <nav className="hud-dock glass" aria-label="Navigation">
@@ -87,12 +95,13 @@ export function Dock({ panel, onPanel, badges = {} }) {
         <button
           key={label}
           className={panel === id ? 'active' : ''}
+          data-id={id || 'empire'}
           onClick={() => onPanel(panel === id ? null : id)}
           aria-current={panel === id ? 'page' : undefined}
         >
           <Icon />
           <span>{label}</span>
-          {badges[id] ? <i className="dock-badge">{badges[id]}</i> : null}
+          <DockBadge value={badges[id || 'empire']} />
         </button>
       ))}
     </nav>

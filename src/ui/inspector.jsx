@@ -52,13 +52,13 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
           const cost = upgradeCost(k, 1);
           const short = state.money < cost;
           return (
-            <div className="ins-option" key={k}>
+            <div className="ins-option" key={k} data-key={k}>
               <span className="ins-option-icon"><B /></span>
               <div className="ins-option-main">
                 <strong>{BUILDINGS[k].name}</strong>
                 <span>{buildingEffect(k, 1, state.divisionIndex)}</span>
               </div>
-              <button className="btn btn-sm" disabled={short} onClick={() => onBuild(sec.id, k)} title={short ? `Il manque ${fmtMoney(cost - state.money)}` : ''}>
+              <button className={`btn btn-sm ${short ? '' : 'glow'}`} disabled={short} onClick={() => onBuild(sec.id, k)} title={short ? `Il manque ${fmtMoney(cost - state.money)}` : ''}>
                 {fmtMoney(cost)}
               </button>
             </div>
@@ -97,7 +97,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
               <span className="eyebrow">Niveau {lvl + 1}</span>
               <p>{buildingEffect(key, lvl + 1, state.divisionIndex)}</p>
             </div>
-            <button className="btn btn-xl wide" disabled={short} onClick={() => onUpgrade(key)}>
+            <button className={`btn btn-xl wide ${short ? '' : 'glow'}`} disabled={short} onClick={() => onUpgrade(key)}>
               <IconArrowUp /> Améliorer · {fmtMoney(cost)}
             </button>
             {short && <span className="ins-hint">Il manque {fmtMoney(cost - state.money)}</span>}

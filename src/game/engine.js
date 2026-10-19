@@ -6,6 +6,7 @@ import { endSeason, playRound, pushJournal, startSeason } from './season';
 import { initGoals } from './goals';
 import { PLOTS, ensureFixedPlots, plotIndexOf } from './map';
 import { ensureLineup } from './tactics';
+import { prepareFirstSeason } from './tutorial';
 import { rnd } from './utils';
 
 export { playRound, endSeason };
@@ -47,6 +48,8 @@ export function createInitialState(clubName) {
   ensureFixedPlots(s); // le stade occupe sa parcelle dès le départ
   ensureLineup(s); // onze de départ et tactique équilibrée
   startSeason(s);
+  prepareFirstSeason(s); // premier adversaire à portée, recrue abordable sur le marché
+  s.tutorial = { step: 'welcome' };
   initGoals(s);
   pushJournal(s, {
     season: 1,
@@ -113,6 +116,7 @@ export function signPlayer(s, id) {
   s.market.splice(idx, 1);
   s.money -= fee;
   s.players.push(p);
+  s.signings = (s.signings || 0) + 1;
   pushJournal(s, { season: s.seasonNumber, text: `${p.name} (${p.age} ans) signe au club pour ${fee} €.` });
   return s;
 }

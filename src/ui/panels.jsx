@@ -3,6 +3,7 @@ import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from '../game/constants';
 import { playerRating, saleValue, signingFee, starsOf, wageOf } from '../game/players';
 import { sellPlayer, signPlayer } from '../game/engine';
 import { seasonForecast } from '../game/economy';
+import { bestSigning } from '../game/advice';
 import { teamLevel } from '../game/match';
 import { standingsOf } from '../game/season';
 import { fmtMoney, fmtNum } from './format';
@@ -53,6 +54,7 @@ export function SquadPanel({ state, run, onClose }) {
   const rating = teamLevel(state);
   const wages = squad.reduce((s, p) => s + wageOf(p, state.divisionIndex), 0);
   const forecast = seasonForecast(state, wages);
+  const recommended = bestSigning(state)?.player.id;
   return (
     <Drawer title="Effectif" eyebrow={`${squad.length}/${SQUAD_MAX} joueurs`} onClose={onClose}>
       <div className="kpis">
@@ -106,10 +108,10 @@ export function SquadPanel({ state, run, onClose }) {
         {state.market.map((p) => {
           const fee = signingFee(p, state.divisionIndex);
           return (
-            <li key={p.id} className="pcard market">
+            <li key={p.id} className={`pcard market ${p.id === recommended ? 'recommended' : ''}`}>
               <span className={`pos ${p.pos}`}>{p.pos}</span>
               <div className="p-main">
-                <span className="p-name">{p.name}</span>
+                <span className="p-name">{p.name}{p.id === recommended && <em className="rec-tag">Recommandé</em>}</span>
                 <span className="p-meta">{p.age} ans · {POS_LABELS[p.pos]} · <span className="stars">{starsOf(p)}</span></span>
                 <Stats p={p} />
               </div>

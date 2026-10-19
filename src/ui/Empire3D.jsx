@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { BUILDINGS, upgradeCost } from '../game/constants';
 import { PLOTS, PLOT_LABELS, SECTORS, plotBuilding } from '../game/map';
 import { fmtMoney } from './format';
+import { IconArrowUp } from './icons';
 import { PLOT_POS, PLAZA_CENTER, footprintOf, layoutOverlaps } from '../three/layout';
 import { createRenderer, createEnvironment } from '../three/environment';
 import { initAssets, instantiateModel, setAssetsBoost, setAssetsNight } from '../three/assets';
@@ -67,10 +68,11 @@ function plotInfo(s, plotId) {
 // parcelle sélectionnée). Garde ses propres interactions : survol (étiquette) et clic (sélection).
 export default function Empire3D({
   state, onSelectPlot, onWebGLFail, timeMode = 'auto', weatherMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
-  live = false, matchFx = null,
+  live = false, matchFx = null, badges = [],
 }) {
   const mountRef = useRef(null);
   const labelRef = useRef(null);
+  const pinRefs = useRef(new Map()); // pastilles dorées (DOM), positionnées à chaque image
   const [ready, setReady] = useState(false);
   const [hover, setHover] = useState(null);
   const stateRef = useRef(state);
@@ -364,6 +366,15 @@ export default function Empire3D({
       fireworks.update(sdt);
       life.update(dt, time);
       weather.update(dt, time, controls.target);
+      // pastilles dorées : projetées au-dessus de leur parcelle, masquées sous l'étiquette de survol
+      for (const [id, el] of pinRefs.current) {
+        const e = ctx.plots.get(id);
+        if (!el || !e) continue;
+        tmp.set(e.wrapper.position.x, e.height * (e.content?.scale.y ?? 1) + 0.28, e.wrapper.position.z).project(camera);
+        const visible = tmp.z < 1 && id !== hovered;
+        el.style.opacity = visible ? '1' : '0';
+        if (visible) el.style.transform = `translate(${(tmp.x * 0.5 + 0.5) * mount.clientWidth}px, ${(-tmp.y * 0.5 + 0.5) * mount.clientHeight}px) translate(-50%, -100%)`;
+      }
       if (hovered && labelRef.current) {
         const e = ctx.plots.get(hovered);
         tmp.set(e.wrapper.position.x, e.height * (e.content?.scale.y ?? 1) + 0.5, e.wrapper.position.z).project(camera);
@@ -475,6 +486,18 @@ export default function Empire3D({
     <div className="scene3d">
       <div className="scene3d-canvas" ref={mountRef} />
       {!ready && <div className="scene3d-fallback"><span className="eyebrow">Chargement de l’Empire…</span></div>}
+      {ready && badges.filter((id) => id !== selectedPlot).map((id) => (
+        <button
+          key={id}
+          className="plotpin"
+          data-plot={id}
+          ref={(el) => { if (el) pinRefs.current.set(id, el); else pinRefs.current.delete(id); }}
+          onClick={() => selectRef.current(id, PLOTS.find((p) => p.id === id).sector)}
+          aria-label="Construction ou amélioration disponible"
+        >
+          <i><IconArrowUp /></i>
+        </button>
+      ))}
       {info && (
         <div className={`plotlabel ${info.locked ? 'locked' : ''}`} ref={labelRef}>
           <span className="pl-eyebrow">{info.eyebrow}</span>

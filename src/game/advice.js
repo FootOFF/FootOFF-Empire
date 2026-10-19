@@ -1,0 +1,157 @@
+import { BUILDINGS, POS_LABELS, SQUAD_MAX, upgradeCost } from './constants';
+import { PLOTS, allowedBuildingsFor, isSectorUnlocked, nextLockedSector, plotBuilding } from './map';
+import { SLOTS, autoLineup, lineupRating } from './tactics';
+import { ratingAt, signingFee, wageOf } from './players';
+import { capacity, expectedGate, seasonForecast } from './economy';
+import { nextOpponent } from './season';
+
+// Signaux et conseils : ce que le joueur peut faire d'utile maintenant (pastilles dorées du dock et de
+// la vue 3D, recrue recommandée, carte « Conseil du staff »). Tout est calculé à partir de l'état.
+
+const n = (v) => new Intl.NumberFormat('fr-FR').format(Math.round(v));
+const money = (v) => (v >= 1e6 ? `${(v / 1e6).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} M€` : `${n(v)} €`);
+const LINE = { G: 'Ton gardien', D: 'Ta défense', M: 'Ton milieu', A: 'Ton attaque' };
+
+// Ligne la plus faible de l'onze aligné (moyenne des notes à leur poste).
+export function weakestLine(s) {
+  const lines = { G: [], D: [], M: [], A: [] };
+  s.lineup.forEach((id, k) => {
+    const p = s.players.find((q) => q.id === id);
+    if (p) lines[SLOTS[k]].push(ratingAt(p, SLOTS[k]));
+  });
+  let weak = null;
+  for (const pos of ['A', 'M', 'D', 'G']) {
+    const a = lines[pos];
+    if (!a.length) continue;
+    const avg = a.reduce((x, y) => x + y, 0) / a.length;
+    if (!weak || avg < weak.avg) weak = { pos, avg };
+  }
+  return weak;
+}
+
+// Recrue abordable qui améliore le plus l'onze (elle remplace le titulaire le plus faible à son poste).
+export function bestSigning(s) {
+  if (s.players.length >= SQUAD_MAX) return null;
+  let best = null;
+  for (const p of s.market) {
+    const fee = signingFee(p, s.divisionIndex);
+    if (fee > s.money) continue;
+    let gain = 0;
+    s.lineup.forEach((id, k) => {
+      if (SLOTS[k] !== p.pos) return;
+      const q = s.players.find((x) => x.id === id);
+      gain = Math.max(gain, ratingAt(p, p.pos) - (q ? ratingAt(q, p.pos) : 0));
+    });
+    if (gain >= 0.5 && (!best || gain > best.gain)) best = { player: p, fee, gain };
+  }
+  return best;
+}
+
+const wageBill = (s) => s.players.reduce((a, p) => a + wageOf(p, s.divisionIndex), 0);
+
+// Parcelles où une construction ou une amélioration est payable tout de suite (pastilles dorées 3D).
+// Une seule pastille par secteur pour les parcelles libres.
+export function actionablePlots(s) {
+  const out = [];
+  const freeSectors = new Set();
+  for (const p of PLOTS) {
+    if (!isSectorUnlocked(s, p.sector)) continue;
+    const key = plotBuilding(s, p.id);
+    if (key) {
+      const lvl = s.buildings[key];
+      if (lvl < BUILDINGS[key].max && s.money >= upgradeCost(key, lvl + 1)) out.push(p.id);
+    } else if (!freeSectors.has(p.sector) && allowedBuildingsFor(s, p.sector).some((k) => s.money >= upgradeCost(k, 1))) {
+      freeSectors.add(p.sector);
+      out.push(p.id);
+    }
+  }
+  return out;
+}
+
+// Pastilles du dock : recrue intéressante ou salaires dangereux (Effectif), stade à agrandir (Stade),
+// bâtiment prêt à être construit ou amélioré (Empire).
+export function dockSignals(s) {
+  const forecast = seasonForecast(s, wageBill(s));
+  const plots = actionablePlots(s);
+  const gate = expectedGate(s, null);
+  return {
+    squad: forecast.net < 0 ? 'warn' : bestSigning(s) ? 'dot' : null,
+    stadium: plots.includes('t0') || (gate.demand > gate.capacity * 1.05 && s.buildings.terrain < 4) ? 'dot' : null,
+    empire: plots.some((id) => id !== 't0') ? 'dot' : null,
+  };
+}
+
+// Le conseil le plus utile du moment, par ordre de priorité.
+export function staffTip(s) {
+  if (s.round >= 7) return null; // fin de saison : le bilan prend le relais
+  const wages = wageBill(s);
+  const forecast = seasonForecast(s, wages);
+  if (forecast.net < 0) {
+    return {
+      id: 'wages', tone: 'warn', title: 'Masse salariale trop lourde',
+      text: `Les salaires (${money(wages)}) dépassent ce que la saison doit rapporter. Vends un remplaçant ou agrandis le stade.`,
+      action: { kind: 'panel', panel: 'squad', label: 'Voir l’effectif' },
+    };
+  }
+  const best = autoLineup(s.players);
+  if (lineupRating(s.players, best) > lineupRating(s.players, s.lineup) + 0.15) {
+    return {
+      id: `lineup-${s.seasonNumber}-${s.round}`, title: 'Ton onze peut faire mieux',
+      text: 'Des remplaçants sont plus forts que certains titulaires. Touche « Meilleur onze » dans l’avant-match.',
+      action: { kind: 'match', label: 'Préparer le match' },
+    };
+  }
+  const gate = expectedGate(s, null);
+  const lvl = s.buildings.terrain;
+  if (lvl < 4 && gate.demand > gate.capacity * 1.05) {
+    const cost = upgradeCost('terrain', lvl + 1);
+    const out = gate.demand - gate.capacity;
+    return {
+      id: `stadium-${lvl}`, title: s.money >= cost ? 'Agrandis ton stade' : 'Ton stade est trop petit',
+      text: s.money >= cost
+        ? `${n(out)} supporters restent dehors à chaque match. Le niveau ${lvl + 1} offre ${n(capacity(lvl + 1))} places.`
+        : `${n(out)} supporters restent dehors à chaque match. Objectif : ${money(cost)} pour passer à ${n(capacity(lvl + 1))} places.`,
+      action: { kind: 'plot', plot: 't0', sector: 'main', label: 'Voir le stade' },
+    };
+  }
+  const sign = bestSigning(s);
+  if (sign) {
+    const weak = weakestLine(s);
+    const pos = sign.player.pos;
+    return {
+      id: `sign-${sign.player.id}`,
+      title: weak && weak.pos === pos ? `${LINE[pos]} est ta ligne la plus faible` : 'Une recrue renforcerait ton onze',
+      text: `${sign.player.name} (${POS_LABELS[pos].toLowerCase()}, note ${ratingAt(sign.player, pos).toFixed(1)}) est libre pour ${money(sign.fee)}.`,
+      action: { kind: 'panel', panel: 'squad', label: 'Voir le marché' },
+    };
+  }
+  const plot = actionablePlots(s).find((id) => id !== 't0');
+  if (plot) {
+    const p = PLOTS.find((q) => q.id === plot);
+    const key = plotBuilding(s, plot);
+    const name = key ? BUILDINGS[key].name : BUILDINGS[allowedBuildingsFor(s, p.sector).find((k) => s.money >= upgradeCost(k, 1))].name;
+    return {
+      id: `build-${plot}-${key ? s.buildings[key] : 0}`,
+      title: key ? `Améliore : ${name}` : `Construis : ${name}`,
+      text: key ? `Le niveau ${s.buildings[key] + 1} est à ta portée.` : 'Une parcelle libre t’attend, et tu as les fonds.',
+      action: { kind: 'plot', plot, sector: p.sector, label: key ? 'Voir le bâtiment' : 'Voir la parcelle' },
+    };
+  }
+  const locked = nextLockedSector(s);
+  if (locked && locked.repNeeded - s.reputation <= 2) {
+    return {
+      id: `sector-${locked.id}`, title: `${locked.name} en approche`,
+      text: `Plus que ${Math.ceil(locked.repNeeded - s.reputation)} de réputation : chaque victoire te rapproche de l’ouverture.`,
+      action: { kind: 'match', label: 'Jouer le match' },
+    };
+  }
+  const opp = nextOpponent(s);
+  return opp
+    ? {
+      id: `match-${s.seasonNumber}-${s.round}`, title: `Prochain match : ${opp.name}`,
+      text: 'Une victoire rapporte de la réputation et remplit les tribunes.',
+      action: { kind: 'match', label: 'Jouer le match' },
+    }
+    : null;
+}
+

@@ -12,6 +12,9 @@ import { JournalPanel, SeasonPanel, SquadPanel } from './ui/panels';
 import PlotInspector from './ui/inspector';
 import { MatchResult, OfflineReturn, SeasonReview } from './ui/overlays';
 import { LiveMatch, PreMatch } from './ui/match';
+import { CoachCard, StaffTip } from './ui/guide';
+import { actionablePlots, dockSignals, staffTip } from './game/advice';
+import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { createStadiumSound } from './ui/sound';
 
 // three.js et la scène vivent dans un chunk séparé, chargé à l'entrée dans le jeu.
@@ -41,6 +44,7 @@ export default function App() {
   const [matchPhase, setMatchPhase] = useState(null);
   const [matchCtx, setMatchCtx] = useState(null);
   const [matchFx, setMatchFx] = useState(null); // effets 3D du direct : but, but encaissé, mi-temps…
+  const [dismissedTips, setDismissedTips] = useState(() => new Set()); // conseils masqués (session)
   const sound = useRef(null);
   if (!sound.current) sound.current = createStadiumSound();
   const toastId = useRef(0);
@@ -62,7 +66,7 @@ export default function App() {
   const run = (fn, failMsg) => {
     const ns = fn(clone(state));
     if (!ns) { toast(failMsg || 'Action impossible.', 'warn'); return false; }
-    setState(ns);
+    setState(advanceTutorial(ns)); // une étape du tutoriel se valide dès que son objectif est atteint
     return true;
   };
 
@@ -102,8 +106,28 @@ export default function App() {
 
   const cinematic = !!matchPhase || showResult || !!state.seasonReview || !!state.offline;
 
+  // Guidage : tutoriel des premières minutes, puis conseils du staff et pastilles dorées.
+  const tutoStep = state.tutorial?.step || 'done';
+  const tuto = tutoStep !== 'done' ? stepContent(tutoStep, state) : null;
+  const doAction = (a) => {
+    if (!a) return;
+    if (a.kind === 'plot') selectPlot(a.plot, a.sector);
+    else if (a.kind === 'panel') openPanel(a.panel);
+    else if (a.kind === 'match') play();
+  };
+  const setTuto = (step) => run((s) => setTutorialStep(s, step));
+  const onCoachPrimary = () => {
+    if (tutoStep === 'welcome') setTuto('build');
+    else if (tutoStep === 'stadium') { setTuto('done'); toast('À toi de jouer, président !', 'gold'); }
+    else doAction(tuto.action);
+  };
+  const tip = !tuto && !sel && !panel ? staffTip(state) : null;
+  const shownTip = tip && !dismissedTips.has(tip.id) ? tip : null;
+  const signals = dockSignals(state);
+  const plotBadges = cinematic ? [] : actionablePlots(state);
+
   return (
-    <div className={`game ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''}`}>
+    <div className={`game ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''}`} data-tuto={tuto ? tutoStep : undefined}>
       <div className="stage">
         {webglOk ? (
           <Suspense fallback={<div className="stage-loading"><span className="eyebrow">Chargement de l’Empire…</span></div>}>
@@ -116,6 +140,7 @@ export default function App() {
               matchFx={matchFx}
               recenter={recenter}
               selectedPlot={sel?.plotId || null}
+              badges={plotBadges}
               onSelectPlot={selectPlot}
               onWebGLFail={() => setWebglOk(false)}
             />
@@ -127,7 +152,21 @@ export default function App() {
 
       <div className="hud">
         <TopHud state={state} onMenu={() => setMenu(true)} />
-        <ObjectiveWidget state={state} collapsed={goalCollapsed} onToggle={() => setGoalCollapsed((c) => !c)} />
+        {tuto ? (
+          <CoachCard
+            content={tuto}
+            onPrimary={onCoachPrimary}
+            onSecondary={() => { doAction(tuto.secondary?.action); setTuto('done'); }}
+            onSkip={() => { setTuto('done'); toast('Tutoriel passé : le staff te conseillera en bas de l’écran.', 'gold'); }}
+          />
+        ) : (
+          <ObjectiveWidget state={state} collapsed={goalCollapsed} onToggle={() => setGoalCollapsed((c) => !c)} />
+        )}
+        <StaffTip
+          tip={shownTip}
+          onAction={() => doAction(shownTip.action)}
+          onDismiss={() => setDismissedTips((d) => new Set(d).add(shownTip.id))}
+        />
         {webglOk && (
           <SceneTools
             timeMode={timeMode}
@@ -140,7 +179,7 @@ export default function App() {
           />
         )}
         <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} />
-        <Dock panel={sel?.plotId === 't0' ? 'stadium' : panel} onPanel={openPanel} badges={{ squad: state.market.length || null }} />
+        <Dock panel={sel?.plotId === 't0' ? 'stadium' : panel} onPanel={openPanel} badges={signals} />
       </div>
 
       {panel === 'squad' && <SquadPanel state={state} run={run} onClose={() => setPanel(null)} />}

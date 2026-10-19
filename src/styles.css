@@ -206,6 +206,77 @@ button { font: inherit; color: inherit; cursor: pointer; }
   display: grid; place-items: center;
 }
 
+/* ---- guidage : tutoriel, conseil du staff, pastilles ---- */
+.hud-coach {
+  position: absolute; top: 84px; left: var(--gap); width: 330px; border-radius: var(--r-md);
+  padding: 14px 16px 15px; display: flex; flex-direction: column; gap: 8px;
+  border-color: var(--gold-line); box-shadow: 0 12px 40px rgba(0, 0, 0, .4), 0 0 0 1px rgba(199, 161, 90, .12), 0 0 34px rgba(199, 161, 90, .12);
+  animation: fo-up .45s var(--ease);
+}
+.coach-head { display: flex; align-items: center; gap: 9px; }
+.coach-mark { height: 18px; width: auto; }
+.coach-head .eyebrow { flex: 1; font-size: 9.5px; }
+.coach-dots { display: flex; gap: 4px; }
+.coach-dots i { width: 12px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .14); }
+.coach-dots i.on { background: var(--gold); }
+.coach-title { font-family: var(--font-title); font-weight: 500; font-size: 16px; line-height: 1.25; letter-spacing: -.01em; }
+.coach-text { font-size: 12.5px; color: var(--text-2); line-height: 1.5; }
+.coach-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.coach-skip { margin-left: auto; text-decoration: none; }
+.coach-skip:hover:not(:disabled) { color: var(--text-2); }
+
+.hud-tip {
+  position: absolute; left: var(--gap); bottom: var(--gap); width: 320px; border-radius: var(--r-md);
+  padding: 12px 38px 13px 14px; display: flex; flex-direction: column; gap: 4px; animation: fo-up .4s var(--ease);
+}
+.hud-tip.warn { border-color: rgba(224, 122, 111, .45); }
+.tip-eyebrow { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); }
+.hud-tip.warn .tip-eyebrow { color: var(--red); }
+.tip-main { background: none; border: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 3px; }
+.tip-main strong { font-family: var(--font-title); font-weight: 500; font-size: 14.5px; line-height: 1.3; }
+.tip-text { font-size: 12px; color: var(--text-2); line-height: 1.45; }
+.tip-cta { font-size: 12px; font-weight: 600; color: var(--gold-light); margin-top: 2px; }
+.tip-main:hover .tip-cta { text-decoration: underline; }
+.tip-close { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 50%; border: none; background: none; color: var(--muted); display: grid; place-items: center; }
+.tip-close:hover { color: var(--text); background: rgba(255, 255, 255, .06); }
+.tip-close svg { width: 14px; height: 14px; }
+
+.dock-badge.dot { min-width: 9px; width: 9px; height: 9px; padding: 0; top: 9px; left: calc(50% + 9px); box-shadow: 0 0 0 0 rgba(222, 193, 127, .7); animation: badge-ping 1.8s ease-out infinite; }
+.dock-badge.warn { background: var(--red); color: #160807; }
+@keyframes badge-ping { 0% { box-shadow: 0 0 0 0 rgba(222, 193, 127, .7); } 70%, 100% { box-shadow: 0 0 0 7px rgba(222, 193, 127, 0); } }
+
+/* pastille dorée au-dessus d'une parcelle (vue 3D) */
+.plotpin {
+  position: absolute; left: 0; top: 0; z-index: 3; padding: 0; border: none; background: none; cursor: pointer;
+  will-change: transform; transition: opacity .2s;
+}
+.plotpin i {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--gold-grad); color: #0d0b07; border: 2px solid rgba(9, 9, 9, .55);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .45); animation: pin-bob 2.2s ease-in-out infinite, badge-ping 1.8s ease-out infinite;
+}
+.plotpin i svg { width: 14px; height: 14px; }
+.plotpin:hover i { filter: brightness(1.1); }
+@keyframes pin-bob { 50% { transform: translateY(-4px); } }
+
+/* boutons qui brillent quand l'action est payable */
+.btn.glow { animation: btn-glow 2.4s ease-in-out infinite; }
+@keyframes btn-glow { 50% { box-shadow: 0 0 0 1px rgba(222, 193, 127, .5) inset, 0 0 26px rgba(222, 193, 127, .45); } }
+
+/* recrue recommandée */
+.pcard.recommended { border-color: var(--gold); background: var(--gold-soft); }
+.rec-tag { margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--gold-grad); color: #0d0b07; font-style: normal; font-family: var(--font-mono); font-size: 9px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; vertical-align: 2px; }
+
+/* tutoriel : la cible de l'étape en cours pulse */
+@keyframes tuto-ring { 0% { box-shadow: 0 0 0 0 rgba(222, 193, 127, .8); } 70% { box-shadow: 0 0 0 14px rgba(222, 193, 127, 0); } 100% { box-shadow: 0 0 0 0 rgba(222, 193, 127, 0); } }
+.game[data-tuto="build"] .ins-option[data-key="training"] .btn,
+.game[data-tuto="sign"] .hud-dock button[data-id="squad"],
+.game[data-tuto="sign"] .pcard.market.recommended .btn,
+.game[data-tuto="match"] .hud-match .btn-xl,
+.game[data-tuto="match"] .pm-side .btn-xl,
+.game[data-tuto="stadium"] .hud-dock button[data-id="stadium"] { animation: tuto-ring 1.6s ease-out infinite; }
+.game[data-tuto="build"] .plotpin[data-plot="t1"] i { width: 34px; height: 34px; }
+
 /* ---- notifications ---- */
 .hud-toasts { position: absolute; top: 84px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 6px; align-items: center; z-index: 30; pointer-events: none; }
 .hud-toast { padding: 9px 18px; border-radius: 999px; font-size: 13px; animation: fo-in .35s var(--ease); }
@@ -712,6 +783,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* écrans intermédiaires : le dock passe à gauche pour ne pas chevaucher la carte de match */
 @media (min-width: 761px) and (max-width: 1100px) {
+  .hud-tip { bottom: 96px; }
   .hud-dock { left: var(--gap); transform: none; }
   .hud-dock button { width: 74px; }
   .game.has-panel .hud-dock { left: var(--gap); }
@@ -731,6 +803,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .hud-icon { width: 36px; height: 36px; }
   .hud-res { gap: 6px; }
   .hud-goal { top: 62px; width: calc(100% - 20px); }
+  .hud-coach { top: 62px; width: calc(100% - 20px); padding: 12px 14px 13px; gap: 6px; }
+  .coach-title { font-size: 15px; }
+  .coach-text { font-size: 12px; }
+  .hud-tip { left: var(--gap); right: var(--gap); width: auto; bottom: 160px; padding: 9px 36px 10px 12px; }
+  .tip-text { display: none; }
+  .tip-main { flex-direction: row; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .tip-main strong { font-size: 13px; }
+  .tip-cta { white-space: nowrap; margin: 0; }
+  .tip-eyebrow { display: none; }
   .hud-goal:not(.collapsed) .hud-goal-body { padding-left: 14px; }
   .hud-tools { top: auto; bottom: 220px; transform: none; }
   .hud-match { left: var(--gap); right: var(--gap); width: auto; bottom: 84px; padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; column-gap: 12px; }
