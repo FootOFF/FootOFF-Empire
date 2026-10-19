@@ -66,3 +66,17 @@ décision, les salaires pèsent, et la trésorerie se stabilise en fin de partie
 
 Prochaines sources de dépense prévues (feuille de route) : marché des transferts, personnel du club,
 bâtiments des parcelles vides, compétitions continentales.
+
+## Écran Finances (livre de comptes)
+
+- `src/game/ledger.js` range chaque mouvement d'argent par poste : billetterie, buvette, boutique, droits TV,
+  sponsors, prime de classement, primes d'objectif, ventes, revenus hors ligne ; salaires, entretien, travaux,
+  recrutements. Une saison bouclée garde ses totaux et ses trésoreries de début et de fin (12 dernières).
+  Vérifié par simulation : début + recettes − dépenses = fin, à l'euro près, sur 520 saisons.
+- `endOfSeasonForecast` : trésorerie actuelle + matchs restants (recette attendue) + sponsors + prime au
+  classement actuel − salaires − entretien. C'est la ligne « Fin de saison prévue » des fenêtres de recrutement
+  et de vente, et le conseil du staff « Fin de saison dans le rouge ».
+- `investmentPreview` : pour un niveau de bâtiment de plus, recettes gagnées par saison (7 matchs et sponsors),
+  entretien supplémentaire (4 % du coût) et saisons nécessaires pour rentrer dans ses frais, dans la division
+  actuelle. Entraînement et académie : investissement sportif, sans recette directe.
+- Les parties commencées avant cet écran démarrent leur livre de comptes à la trésorerie du moment.

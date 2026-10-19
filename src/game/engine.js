@@ -8,6 +8,7 @@ import { PLOTS, ensureFixedPlots, plotIndexOf } from './map';
 import { ensureLineup } from './tactics';
 import { prepareFirstSeason } from './tutorial';
 import { rnd } from './utils';
+import { book, ensureLedger } from './ledger';
 
 export { playRound, endSeason };
 export { applyMatchResult, matchContext } from './season';
@@ -59,6 +60,7 @@ export function createInitialState(clubName) {
     title: `Le projet ${clubName} est lancé`,
     text: `${clubName} entame sa première saison en ${DIVISIONS[0].name}. Le terrain est modeste, l’ambition immense.`,
   });
+  ensureLedger(s);
   return s;
 }
 
@@ -84,6 +86,7 @@ export function build(s, sectorId, key) {
   s.slots[plotIndexOf(plot.id)] = key;
   s.buildings[key] = 1;
   s.money -= upgradeCost(key, 1);
+  book(s, 'works', upgradeCost(key, 1));
   pushJournal(s, {
     season: s.seasonNumber, kind: 'infra', title: `${BUILDINGS[key].name} : premier coup de pioche`,
     text: `Le club investit ${upgradeCost(key, 1).toLocaleString('fr-FR')} € dans un nouveau bâtiment.`,
@@ -97,6 +100,7 @@ export function upgrade(s, key) {
   if (lvl >= BUILDINGS[key].max || s.money < cost) return null;
   s.buildings[key] = lvl + 1;
   s.money -= cost;
+  book(s, 'works', cost);
   pushJournal(s, {
     season: s.seasonNumber, kind: 'infra', title: `${BUILDINGS[key].name} : cap sur le niveau ${lvl + 1}`,
     text: `Travaux d’amélioration engagés pour ${cost.toLocaleString('fr-FR')} €.`,
@@ -112,6 +116,7 @@ export function sellPlayer(s, id) {
   const [p] = s.players.splice(idx, 1);
   const fee = saleValue(p, s.divisionIndex);
   s.money += fee;
+  book(s, 'sales', fee);
   ensureLineup(s);
   pushJournal(s, {
     season: s.seasonNumber, kind: 'mercato', title: `${p.name} quitte le club`,
@@ -130,6 +135,7 @@ export function signPlayer(s, id) {
   if (s.money < fee) return null;
   s.market.splice(idx, 1);
   s.money -= fee;
+  book(s, 'signings', fee);
   p.joined = s.seasonNumber;
   assignNumber(s.players, p);
   s.players.push(p);
@@ -151,6 +157,7 @@ export function applyOffline(s, now = Date.now()) {
   const h = Math.min(hours, OFFLINE_CAP);
   const amount = Math.round(offlinePerHour(lvl, s.divisionIndex) * h);
   s.money += amount;
+  book(s, 'offline', amount);
   s.offline = { hours: Math.round(h * 10) / 10, amount };
   s.lastSeen = now;
   return s;

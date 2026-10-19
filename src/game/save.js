@@ -5,6 +5,7 @@ import { ensureLineup } from './tactics';
 import { addReserves } from './engine';
 import { ensureTutorial } from './tutorial';
 import { assignNumber, upgradePlayer } from './players';
+import { ensureLedger } from './ledger';
 
 export function saveGame(state) {
   try {
@@ -47,7 +48,8 @@ export function loadGame() {
     const s = JSON.parse(raw);
     // toute sauvegarde : le stade retrouve sa parcelle (réparation des parties déjà commencées)
     // parties commencées avant le match en direct : banc de 4 remplaçants offert une fois
-    const fix = (x) => ensureTutorial(ensureLineup(addReserves(ensureFixedPlots(migratePlayers(x)))));
+    // parties commencées avant l'écran Finances : le livre de comptes démarre à la trésorerie actuelle
+    const fix = (x) => { const y = ensureTutorial(ensureLineup(addReserves(ensureFixedPlots(migratePlayers(x))))); ensureLedger(y); return y; };
     if (s.version === 4) return fix(s);
     if (s.version === 3) return fix(s);
     if (s.version === 2) return fix(migrateEconomy(s));

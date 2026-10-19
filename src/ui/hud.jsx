@@ -16,7 +16,7 @@ import {
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran.
 
-export function TopHud({ state, onMenu }) {
+export function TopHud({ state, onMenu, onFinances }) {
   const div = DIVISIONS[state.divisionIndex];
   const next = nextLockedSector(state);
   const prevNeed = next ? Math.max(0, ...SECTORS.filter((s) => s.repNeeded <= state.reputation).map((s) => s.repNeeded)) : 0;
@@ -31,10 +31,10 @@ export function TopHud({ state, onMenu }) {
         </div>
       </div>
       <div className="hud-res">
-        <div className={`hud-chip glass ${state.money < 0 ? 'neg' : ''}`} title="Trésorerie" data-money-target>
+        <button className={`hud-chip glass hud-money ${state.money < 0 ? 'neg' : ''}`} onClick={onFinances} title="Trésorerie : voir les finances" aria-label="Trésorerie : voir les finances" data-money-target>
           <IconCoin />
           <span className="hud-val"><AnimatedMoney value={state.money} /></span>
-        </div>
+        </button>
         <div className="hud-chip glass hud-rep" title={next ? `Prochaine ouverture : ${next.name} à ${next.repNeeded} de réputation` : 'Tous les secteurs sont ouverts'}>
           <IconStar />
           <span className="hud-val">{Math.round(state.reputation)}</span>

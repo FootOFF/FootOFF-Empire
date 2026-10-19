@@ -74,7 +74,7 @@ export function createLiveMatch(s, ctx) {
     events: [],
     scorers: [],
     half: 0,
-    played: [false, false],
+    halvesPlayed: [false, false], // mi-temps déjà simulées (rejouer une mi-temps redonne le même déroulé)
     halfLength: [45 + ri(1, 3), 45 + ri(2, 5)],
     sent: { home: new Set(), away: new Set() },
     booked: { home: new Set(), away: new Set() },
@@ -120,8 +120,8 @@ export function createLiveMatch(s, ctx) {
 
   // Simule une mi-temps entière (1 ou 2) avec l'onze et la tactique du moment.
   function playHalf(half) {
-    if (m.played[half - 1]) return m.events.filter((e) => e.half === half); // déjà jouée : même déroulé
-    m.played[half - 1] = true;
+    if (m.halvesPlayed[half - 1]) return m.events.filter((e) => e.half === half); // déjà jouée : même déroulé
+    m.halvesPlayed[half - 1] = true;
     m.half = half;
     const start = half === 1 ? 0 : 45;
     const end = start + m.halfLength[half - 1]; // 45 minutes + temps additionnel

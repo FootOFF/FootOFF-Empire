@@ -95,6 +95,32 @@ export function seasonForecast(s, wages) {
   return { income, wages, upkeep, net: income - wages - upkeep, wageShare: wages / Math.max(1, income) };
 }
 
+// Prévision de fin de saison (écran Finances) : trésorerie actuelle, plus les matchs restants, les sponsors et
+// la prime au classement actuel, moins les salaires et l'entretien qui tombent au coup de sifflet final.
+export function endOfSeasonForecast(s, position, wages) {
+  const left = Math.max(0, 7 - s.round);
+  const perMatch = expectedGate(s, null).revenue;
+  const matches = perMatch * left;
+  const sponsors = sponsorIncome(s.buildings.sponsor, s.divisionIndex);
+  const prize = prizeFor(position, s.divisionIndex);
+  const upkeep = upkeepOf(s);
+  return { left, perMatch, matches, sponsors, prize, wages, upkeep, end: s.money + matches + sponsors + prize - wages - upkeep };
+}
+
+// Ce que rapporte un niveau de plus (inspecteur) : recettes gagnées par saison (7 matchs et sponsors), entretien
+// supplémentaire (4 % du coût), et nombre de saisons pour rentrer dans ses frais. Les bâtiments sportifs
+// (entraînement, académie) ne rapportent pas directement : leur intérêt est sur le terrain.
+export function investmentPreview(s, key) {
+  const lvl = s.buildings[key] || 0;
+  const cost = upgradeCost(key, lvl + 1);
+  const next = { ...s, buildings: { ...s.buildings, [key]: lvl + 1 } };
+  const seasonIncome = (x) => expectedGate(x, null).revenue * 7 + sponsorIncome(x.buildings.sponsor, x.divisionIndex);
+  const gain = seasonIncome(next) - seasonIncome(s);
+  const upkeep = Math.round(cost * 0.04);
+  const net = gain - upkeep;
+  return { cost, gain, upkeep, net, payback: net > 0 ? cost / net : null, sporting: gain <= 0 };
+}
+
 // Effet d'un bâtiment à un niveau donné (inspecteur).
 export function buildingEffect(key, lvl, divIndex) {
   const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n);

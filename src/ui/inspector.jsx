@@ -2,13 +2,32 @@ import React, { useRef } from 'react';
 import { BUILDINGS, upgradeCost } from '../game/constants';
 import { PLOT_LABELS, SECTORS, allowedBuildingsFor, buildingEffect, plotBuilding } from '../game/map';
 import { fmtMoney, fmtNum } from './format';
-import { expectedGate } from '../game/economy';
+import { expectedGate, investmentPreview } from '../game/economy';
 import { IconAcademy, IconArrowUp, IconClose, IconFans, IconLock, IconSponsor, IconStadium, IconTraining } from './icons';
 import { Eyebrow } from './kit';
 import { useKeydown } from './presence';
 import { useSwipe } from './gestures';
 
 const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor };
+
+// Ce que rapporte l'investissement, avant de cliquer : recettes en plus par saison, entretien, rentabilité.
+const SPORTING = new Set(['training', 'academy']);
+function Payoff({ state, k, compact = false }) {
+  const inv = investmentPreview(state, k);
+  if (SPORTING.has(k)) {
+    return <span className="ins-money">Investissement sportif{compact ? '' : ' : il ne rapporte pas d’argent, il fait progresser l’équipe'} · entretien +{fmtMoney(inv.upkeep)} par saison</span>;
+  }
+  if (inv.gain <= 0) {
+    return <span className="ins-money muted">{k === 'terrain' ? 'Aucune recette en plus tant que le stade n’est pas plein' : 'Aucune recette en plus pour l’instant'} · entretien +{fmtMoney(inv.upkeep)}</span>;
+  }
+  const when = inv.payback === null ? 'ne couvre pas son entretien'
+    : inv.payback <= 1 ? 'rentabilisé en moins d’une saison' : `rentabilisé en ${Math.ceil(inv.payback)} saisons environ`;
+  return (
+    <span className={`ins-money ${inv.payback === null ? 'muted' : 'good'}`}>
+      +{fmtMoney(inv.gain)} de recettes par saison{compact ? '' : ` · entretien +${fmtMoney(inv.upkeep)}`} · {when}
+    </span>
+  );
+}
 
 function Pips({ lvl, max }) {
   return (
@@ -60,6 +79,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
               <div className="ins-option-main">
                 <strong>{BUILDINGS[k].name}</strong>
                 <span>{buildingEffect(k, 1, state.divisionIndex)}</span>
+                <Payoff state={state} k={k} compact />
               </div>
               <button className={`btn btn-sm ${short ? '' : 'glow'}`} disabled={short} onClick={() => onBuild(sec.id, k)} title={short ? `Il manque ${fmtMoney(cost - state.money)}` : ''}>
                 {fmtMoney(cost)}
@@ -84,7 +104,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
           <button className={`btn btn-xl wide ${short ? '' : 'glow'}`} disabled={short} onClick={() => onUpgrade(key)}>
             <IconArrowUp /> Améliorer · {fmtMoney(cost)}
           </button>
-          {short && <span className="ins-hint">Il manque {fmtMoney(cost - state.money)}</span>}
+          <span className="ins-hint">{short ? `Il manque ${fmtMoney(cost - state.money)}` : `Trésorerie après travaux : ${fmtMoney(state.money - cost)}`}</span>
         </>
       );
     }
@@ -109,6 +129,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
             <div className="ins-effect next">
               <Eyebrow>Niveau {lvl + 1}</Eyebrow>
               <p>{buildingEffect(key, lvl + 1, state.divisionIndex)}</p>
+              <Payoff state={state} k={key} />
             </div>
           </>
         ) : (

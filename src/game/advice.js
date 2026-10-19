@@ -2,8 +2,8 @@ import { BUILDINGS, POS_LABELS, SQUAD_MAX, upgradeCost } from './constants';
 import { PLOTS, allowedBuildingsFor, isSectorUnlocked, nextLockedSector, plotBuilding } from './map';
 import { SLOTS, autoLineup, lineupRating } from './tactics';
 import { ratingAt, signingFee, wageOf } from './players';
-import { capacity, expectedGate, seasonForecast } from './economy';
-import { nextOpponent } from './season';
+import { capacity, endOfSeasonForecast, expectedGate, seasonForecast } from './economy';
+import { nextOpponent, standingsOf } from './season';
 
 // Signaux et conseils : ce que le joueur peut faire d'utile maintenant (pastilles dorées du dock et de
 // la vue 3D, recrue recommandée, carte « Conseil du staff »). Tout est calculé à partir de l'état.
@@ -85,12 +85,22 @@ export function dockSignals(s) {
 export function staffTip(s) {
   if (s.round >= 7) return null; // fin de saison : le bilan prend le relais
   const wages = wageBill(s);
+  // comptes de fin de saison : ce qu'il restera après les salaires et l'entretien
+  const position = standingsOf(s).findIndex((t) => t.i === 0) + 1;
+  const end = endOfSeasonForecast(s, position, wages).end;
+  if (end < 0) {
+    return {
+      id: `red-${s.seasonNumber}`, tone: 'warn', title: 'Fin de saison dans le rouge',
+      text: `Prévision : −${money(-end)} après les salaires (${money(wages)}). Vends un remplaçant ou évite les recrues coûteuses.`,
+      action: { kind: 'panel', panel: 'finances', label: 'Voir les finances' },
+    };
+  }
   const forecast = seasonForecast(s, wages);
   if (forecast.net < 0) {
     return {
       id: 'wages', tone: 'warn', title: 'Masse salariale trop lourde',
       text: `Les salaires (${money(wages)}) dépassent ce que la saison doit rapporter. Vends un remplaçant ou agrandis le stade.`,
-      action: { kind: 'panel', panel: 'squad', label: 'Voir l’effectif' },
+      action: { kind: 'panel', panel: 'finances', label: 'Voir les finances' },
     };
   }
   const best = autoLineup(s.players);

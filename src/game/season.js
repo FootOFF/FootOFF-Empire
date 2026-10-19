@@ -6,6 +6,7 @@ import { assignNumber, freshSeason, makePlayer, playerRating, progressPlayer, sa
 import { quickMatch } from './live';
 import { ensureLineup } from './tactics';
 import { closeSeasonGoals, resetSeasonStats, sectorUnlockedEvent } from './goals';
+import { book, closeLedger, markTreasury } from './ledger';
 
 export function roundRobin(n) {
   const rounds = [];
@@ -146,6 +147,8 @@ export function applyMatchResult(s, live) {
     p.form = [...(p.form || []), st.rating].slice(-5);
   }
   s.money += res.revenue;
+  for (const [k, v] of Object.entries(res.breakdown)) book(s, k, v);
+  markTreasury(s);
   s.seasonStats.gate = (s.seasonStats.gate || 0) + res.revenue; // recettes cumulées, pour le bilan
   if (gate.attendance >= gate.capacity * 0.6) s.seasonStats.crowd = true;
   s.reputation = Math.max(0, Math.round((s.reputation + res.repDelta) * 10) / 10);
@@ -195,6 +198,10 @@ export function endSeason(s) {
   const relegated = position >= 7 && s.divisionIndex > 0;
 
   s.money += prize + sponsors - wages - upkeep;
+  book(s, 'prize', prize);
+  book(s, 'sponsors', sponsors);
+  book(s, 'wages', wages);
+  book(s, 'upkeep', upkeep);
   const events = [];
   // Plan de redressement : saison bouclée dans le rouge → le conseil vend les plus gros salaires.
   while (s.money < 0 && s.players.length > SQUAD_MIN + 2) {
@@ -202,6 +209,7 @@ export function endSeason(s) {
     const fee = saleValue(p, s.divisionIndex);
     s.players.splice(s.players.indexOf(p), 1);
     s.money += fee;
+    book(s, 'sales', fee);
     events.push(`Plan de redressement : comptes dans le rouge, le conseil vend ${p.name} (${n(fee)} €).`);
   }
   const repBefore = s.reputation;
@@ -255,6 +263,7 @@ export function endSeason(s) {
     text: `Saison ${s.seasonNumber} terminée : ${ordinal(position)} en ${div.name}.${promoted ? ' Montée !' : relegated ? ' Descente.' : ''} Prime : ${n(prize)} € · Sponsors : ${n(sponsors)} € · Salaires : −${n(wages)} € · Entretien : −${n(upkeep)} €.`,
   });
 
+  closeLedger(s, div.name); // comptes de la saison bouclés (primes d'objectif comprises)
   if (promoted) s.divisionIndex += 1;
   if (relegated) s.divisionIndex -= 1;
   s.seasonNumber += 1;

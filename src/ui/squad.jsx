@@ -4,7 +4,8 @@ import {
   ATTRS, FAMILIES, GK_ATTRS, TRAITS, WEIGHTS, playerRating, potentialRange, ratingAt, saleValue, signingFee, wageOf,
 } from '../game/players';
 import { sellPlayer, signPlayer } from '../game/engine';
-import { seasonForecast } from '../game/economy';
+import { endOfSeasonForecast, seasonForecast } from '../game/economy';
+import { standingsOf } from '../game/season';
 import { bestSigning } from '../game/advice';
 import { SLOTS } from '../game/tactics';
 import { fmtMoney, fmtRating } from './format';
@@ -31,7 +32,7 @@ function heat(v, ref) {
   return '';
 }
 
-export function SquadView({ state, run, ask, onClose, initialTab = 'players', preview = null }) {
+export function SquadView({ state, run, ask, onClose, onFinances, initialTab = 'players', preview = null }) {
   const [tab, setTab] = useState(initialTab);
   const [filter, setFilter] = useState('all');
   const [sheet, setSheet] = useState(preview?.sheet ? { id: preview.sheet } : null); // { id, market }
@@ -51,21 +52,47 @@ export function SquadView({ state, run, ask, onClose, initialTab = 'players', pr
   const shown = filter === 'all' ? squad : squad.filter((p) => p.pos === filter);
   const find = (id) => state.players.find((p) => p.id === id) || state.market.find((p) => p.id === id);
 
+  // fin de saison prévue (après salaires et entretien), pour montrer l'effet d'une vente ou d'une recrue
+  const position = standingsOf(state).findIndex((t) => t.i === 0) + 1;
+  const endNow = endOfSeasonForecast(state, position, wages).end;
   const sell = (p) => {
     const fee = saleValue(p, state.divisionIndex);
+    const wage = wageOf(p, state.divisionIndex);
+    const endAfter = endNow + fee + wage;
     ask({
       title: `Vendre ${p.name} ?`,
       text: `${p.name} (${p.age} ans, ${POS_LABELS[p.pos].toLowerCase()}, note ${fmtRating(playerRating(p))}) rejoindra un autre club.${state.lineup?.includes(p.id) ? ' C’est un titulaire : ton onze sera recomposé.' : ''}`,
       rows: [
         ['Montant de la vente', `+${fmtMoney(fee)}`, 'up'],
-        ['Salaire économisé', `${fmtMoney(wageOf(p, state.divisionIndex))} / saison`, 'up'],
+        ['Salaire économisé', `${fmtMoney(wage)} / saison`, 'up'],
+        ['Fin de saison prévue', `${fmtMoney(endNow)} → ${fmtMoney(endAfter)}`, endAfter < 0 ? 'down' : ''],
       ],
       confirmLabel: `Vendre · ${fmtMoney(fee)}`,
       onConfirm: () => { setSheet(null); run((s) => sellPlayer(s, p.id), 'Effectif au minimum (11 joueurs).'); },
     });
   };
+  // recrutement : la fenêtre du jeu montre ce que la recrue coûte maintenant et ce qu'elle pèsera en fin de saison
   const sign = (p) => {
-    if (run((s) => signPlayer(s, p.id), 'Fonds insuffisants ou effectif complet.')) { setSheet(null); setCompare(null); }
+    const fee = signingFee(p, state.divisionIndex);
+    const wage = wageOf(p, state.divisionIndex);
+    const shareAfter = seasonForecast(state, wages + wage).wageShare;
+    const endAfter = endNow - fee - wage;
+    ask({
+      title: `Recruter ${p.name} ?`,
+      text: `${p.age} ans, ${POS_LABELS[p.pos].toLowerCase()}, niveau ${fmtRating(playerRating(p))} sur 20.${endAfter < 0 ? ' Attention : la saison finirait dans le rouge, le conseil vendrait alors tes plus gros salaires.' : ''}`,
+      tone: endAfter < 0 ? 'danger' : 'gold',
+      rows: [
+        ['Prime de signature', `−${fmtMoney(fee)}`, 'down'],
+        ['Salaire', `${fmtMoney(wage)} / saison`],
+        ['Salaires / revenus', `${Math.round(forecast.wageShare * 100)} % → ${Math.round(shareAfter * 100)} %`, shareAfter > 0.75 ? 'down' : ''],
+        ['Fin de saison prévue', `${fmtMoney(endNow)} → ${fmtMoney(endAfter)}`, endAfter < 0 ? 'down' : ''],
+      ],
+      confirmLabel: `Signer · ${fmtMoney(fee)}`,
+      cancelLabel: 'Pas maintenant',
+      onConfirm: () => {
+        if (run((s) => signPlayer(s, p.id), 'Fonds insuffisants ou effectif complet.')) { setSheet(null); setCompare(null); }
+      },
+    });
   };
   // comparaison par défaut : la recrue face au titulaire le plus faible à son poste, un joueur du club face
   // au meilleur autre joueur de sa ligne
@@ -104,7 +131,7 @@ export function SquadView({ state, run, ask, onClose, initialTab = 'players', pr
         <div className="sq-budget">
           <div className="sq-budget-top"><span>Salaires</span><b className={forecast.net < 0 ? 'bad' : forecast.wageShare > 0.75 ? 'warn' : ''}>{Math.round(forecast.wageShare * 100)} % des revenus</b></div>
           <span className="sq-gauge"><i className={forecast.net < 0 ? 'bad' : forecast.wageShare > 0.75 ? 'warn' : ''} style={{ width: `${Math.min(100, forecast.wageShare * 100)}%` }} /></span>
-          <span className="sq-budget-sub">{fmtMoney(wages)} par saison · revenus attendus {fmtMoney(forecast.income)}</span>
+          <span className="sq-budget-sub">{fmtMoney(wages)} par saison · revenus attendus {fmtMoney(forecast.income)}{onFinances && <> · <button className="linkbtn fin-link" onClick={onFinances}>finances</button></>}</span>
         </div>
         <div className="sq-tabs" role="tablist">
           <button role="tab" aria-selected={tab === 'players'} className={tab === 'players' ? 'on' : ''} onClick={() => setTab('players')}>Joueurs</button>

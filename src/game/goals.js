@@ -1,4 +1,5 @@
 import { SECTORS } from './map';
+import { book } from './ledger';
 
 // Système d'objectifs : 4 paliers, chacun lié à un seuil de réputation.
 // Le palier courant est DÉCIDE PAR LA REPUTATION (c'est elle qui mène l'Empire).
@@ -102,7 +103,9 @@ export function closeSeasonGoals(s, events) {
   if (!s.goals) return s;
   const { tier, goal, active } = activeGoal(s);
   if (active.done(s) && !s.goals.completed[tier]) {
+    const before = s.money;
     goal.reward.apply(s);
+    book(s, 'bonus', s.money - before);
     s.goals.completed[tier] = true;
     events.push(`Objectif « ${active.name} » accompli : ${goal.reward.label} !`);
     s.journal.unshift({

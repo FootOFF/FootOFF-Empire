@@ -11,5 +11,8 @@ export const fmtMoney = (n) => {
 
 export const fmtNum = (n) => new Intl.NumberFormat('fr-FR').format(n);
 
+// Montant complet, sans abréviation (écran Finances : une colonne de chiffres se lit à l'euro près).
+export const fmtEuros = (n) => euros.format(n);
+
 // Note sur 20 avec une décimale, virgule à la française : 7,8.
 export const fmtRating = (v) => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',');

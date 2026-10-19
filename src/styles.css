@@ -325,6 +325,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .panel-money.neg { color: var(--red); border-color: rgba(224, 122, 111, .45); }
 .panel-bar { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; padding: 0 var(--s-6) var(--s-3); border-bottom: 1px solid var(--line); }
 .panel-bar .chips { margin: 0; }
+.panel-body > * { flex-shrink: 0; } /* le corps défile : ses blocs ne s'écrasent jamais (graphiques, rangées) */
 .panel-body { flex: 1; overflow-y: auto; padding: var(--s-4) var(--s-6) var(--s-6); display: flex; flex-direction: column; gap: var(--s-3); }
 .panel-body > .ui-section-head { margin-top: var(--s-3); }
 .panel-body > .ui-section-head:first-child { margin-top: 0; }
@@ -1506,3 +1507,56 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .inline-ico { width: 1.1em; height: 1.1em; vertical-align: -.2em; color: var(--text-2); }
 /* fiche et comparateur : opaques, rien ne transparaît dessous (même spécificité que .sq-overlay .glass, déclarée après) */
 .sq-overlay .sq-compare, .sq-overlay .sq-sheet { background: rgb(13, 13, 14); }
+
+/* =========================================================== finances */
+button.hud-chip { border: 1px solid var(--line); color: var(--text); font: inherit; cursor: pointer; transition: border-color var(--dur-fast), transform var(--dur-fast) var(--ease); }
+@media (hover: hover) { button.hud-chip:hover { border-color: var(--gold-line); } }
+button.hud-chip:active { transform: scale(.97); }
+.fin-link { font-size: inherit; text-decoration: underline dotted; color: var(--text-2); }
+@media (hover: hover) { .fin-link:hover:not(:disabled) { color: var(--gold-light); } }
+.fin-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ui-stat.warn .ui-stat-value { color: #f0b3ab; }
+.fin-flow { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.fin-flow li { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); padding: var(--s-2) 0; font-size: var(--t-sm); color: var(--text-2); border-bottom: 1px solid var(--line); }
+.fin-flow li em { font-style: normal; color: var(--muted); margin-left: var(--s-1); }
+.fin-flow li b { font-weight: 500; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fin-flow li.in b { color: var(--green); }
+.fin-flow li.out b { color: var(--red); }
+.fin-flow li.fin-total { border-bottom: 0; padding-top: var(--s-3); font-size: var(--t-md); color: var(--text); }
+.fin-flow li.fin-total b { font-family: var(--font-title); font-size: var(--t-lg); color: var(--text); }
+.fin-flow li.fin-total.neg b { color: var(--red); }
+.fin-advice { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: rgba(255, 255, 255, .03); border: 1px solid var(--line); font-size: var(--t-sm); color: var(--text-2); }
+.fin-advice.bad { border-color: rgba(224, 122, 111, .4); background: rgba(224, 122, 111, .07); }
+.fin-advice b { color: var(--text); font-weight: 600; }
+.fin-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
+.fin-lines + .fin-lines { margin-top: var(--s-2); padding-top: var(--s-3); border-top: 1px solid var(--line); }
+.fin-line { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); font-size: var(--t-sm); color: var(--text-2); }
+.fin-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .06); overflow: hidden; }
+.fin-bar i { display: block; height: 100%; border-radius: 3px; background: rgba(124, 196, 151, .75); }
+.fin-line.out .fin-bar i { background: rgba(224, 122, 111, .75); }
+.fin-line b { font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text); white-space: nowrap; min-width: 84px; text-align: right; }
+.fin-empty, .fin-note { font-size: var(--t-sm); color: var(--muted); }
+.fin-chart { display: flex; align-items: flex-end; gap: 6px; height: 140px; padding-top: 20px; border-bottom: 1px solid var(--line-strong); }
+.fin-col { position: relative; flex: 1; max-width: 44px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+.fin-col i { width: 100%; border-radius: 4px 4px 0 0; background: rgba(199, 161, 90, .4); }
+.fin-col.cur i { background: var(--gold-grad); }
+.fin-col.neg i { background: rgba(224, 122, 111, .7); }
+.fin-col-l { position: absolute; bottom: -20px; font-size: var(--t-xs); color: var(--muted); }
+.fin-col-v { position: absolute; top: -18px; right: 0; font-size: var(--t-xs); font-weight: 500; color: var(--gold-light); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fin-chart + .fin-past { margin-top: 28px; }
+.fin-past { list-style: none; margin: 0; padding: 0; }
+.fin-past li { display: grid; grid-template-columns: minmax(0, 1fr) auto 104px; gap: var(--s-3); align-items: baseline; padding: var(--s-2) 0; border-top: 1px solid var(--line); font-size: var(--t-sm); color: var(--text-2); }
+.fin-past li em { font-style: normal; color: var(--muted); margin-left: var(--s-1); }
+.fin-past b { font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
+.fin-past b.gain { color: var(--green); }
+.fin-past b.loss { color: var(--red); }
+@media (max-width: 760px) {
+  .fin-line { grid-template-columns: minmax(0, 120px) minmax(0, 1fr) auto; }
+  .fin-line b { min-width: 72px; }
+}
+
+/* inspecteur : ce que rapporte un investissement */
+.ins-money { display: block; font-size: var(--t-xs); color: var(--text-2); margin-top: 2px; }
+.ins-effect .ins-money { font-size: var(--t-sm); margin-top: var(--s-1); }
+.ins-money.good { color: var(--green); }
+.ins-money.muted { color: var(--muted); }

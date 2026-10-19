@@ -9,6 +9,7 @@ import Onboarding from './ui/Onboarding';
 import Empire2D from './ui/EmpireView';
 import { Dock, GameMenu, MatchCta, ObjectiveWidget, SceneTools, Toasts, TopHud } from './ui/hud';
 import { JournalPanel, SeasonPanel } from './ui/panels';
+import { FinancesPanel } from './ui/finances';
 import { SquadView } from './ui/squad';
 import PlotInspector from './ui/inspector';
 import { OfflineReturn, SeasonReview } from './ui/overlays';
@@ -191,7 +192,7 @@ export default function App({ preview = null }) {
       </div>
 
       <div className="hud">
-        <TopHud state={state} onMenu={() => setMenu(true)} />
+        <TopHud state={state} onMenu={() => setMenu(true)} onFinances={() => openPanel('finances')} />
         <div className="hud-left">
         {tuto ? (
           <CoachCard
@@ -237,11 +238,17 @@ export default function App({ preview = null }) {
             preview={boot.ui.squad}
             initialTab={tutoStep === 'sign' ? 'market' : squadTab}
             onClose={() => { setPanel(null); setSquadTab('players'); }}
+            onFinances={() => openPanel('finances')}
           />
         )}
       </Presence>
       <Presence>{panel === 'season' && <SeasonPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
+      <Presence>
+        {panel === 'finances' && (
+          <FinancesPanel state={state} onClose={() => setPanel(null)} onOpenSquad={() => { setSquadTab('players'); openPanel('squad'); }} />
+        )}
+      </Presence>
       <Presence>
         {sel && (
           <PlotInspector
