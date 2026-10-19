@@ -8,6 +8,7 @@ import { FOMonogram } from './brand';
 import { AnimatedMoney } from './moneyfx';
 import { fmtRating } from './format';
 import { useDialogFocus, useKeydown } from './presence';
+import { PHONE, useSwipe } from './gestures';
 import {
   IconCal, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
   IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow, IconEye, IconClose,
@@ -178,13 +179,15 @@ export function Toasts({ items }) {
   );
 }
 
-export function GameMenu({ onClose, onReset, muted, onToggleSound, quality, onQuality, qualities }) {
+export function GameMenu({ onClose, onReset, muted, onToggleSound, quality, onQuality, qualities, vibration, canVibrate, onToggleVibration }) {
   const ref = useRef(null);
   useDialogFocus(ref);
+  useSwipe(ref, { onDown: onClose, downMedia: PHONE });
   useKeydown((e) => { if (e.key === 'Escape') { e.stopImmediatePropagation(); onClose(); } }, { capture: true }); // pas le panneau dessous
   return (
     <div className="scrim" onClick={onClose}>
       <div ref={ref} tabIndex={-1} className="menu-card glass" role="dialog" aria-modal="true" aria-label="Menu" onClick={(e) => e.stopPropagation()}>
+        <span className="grip" aria-hidden="true" />
         <header className="menu-head">
           <FOMonogram className="menu-mark" />
           <div className="panel-title">
@@ -198,7 +201,14 @@ export function GameMenu({ onClose, onReset, muted, onToggleSound, quality, onQu
           <span className="eyebrow muted-eyebrow">Réglages</span>
           <div className="setting">
             <div className="setting-text"><strong>Son</strong><span>Ambiance du stade, sifflet, pièces.</span></div>
-            <button className={`switch ${muted ? '' : 'on'}`} role="switch" aria-checked={!muted} onClick={onToggleSound}><i /></button>
+            <button className={`switch ${muted ? '' : 'on'}`} role="switch" aria-checked={!muted} aria-label="Son" onClick={onToggleSound}><i /></button>
+          </div>
+          <div className="setting">
+            <div className="setting-text">
+              <strong>Vibrations</strong>
+              <span>{canVibrate ? 'But marqué, vente, construction.' : 'Non disponibles sur ce navigateur (c’est le cas sur iPhone).'}</span>
+            </div>
+            <button className={`switch ${vibration && canVibrate ? 'on' : ''}`} role="switch" aria-checked={vibration && canVibrate} aria-label="Vibrations" disabled={!canVibrate} onClick={onToggleVibration}><i /></button>
           </div>
           <div className="setting column">
             <div className="setting-text"><strong>Qualité graphique</strong><span>{qualities.find((q) => q.id === quality)?.hint}</span></div>

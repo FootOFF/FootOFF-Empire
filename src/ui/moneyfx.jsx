@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { fmtMoney } from './format';
+import { haptic } from './haptics';
 
 // Animation de l'argent, pour tous les mouvements de la trésorerie :
 // - gain : « +1 252 € » doré qui monte depuis le geste du joueur, pièces qui filent vers la trésorerie
@@ -81,8 +82,7 @@ export function moneyBurst(diff, sound) {
   const target = visibleTarget(origin);
   const reduced = reducedMotion();
 
-  // vibration seulement après un vrai geste du joueur (sinon le navigateur la bloque)
-  try { if (navigator.userActivation?.hasBeenActive) navigator.vibrate?.(gain ? [10, 40, 10] : 15); } catch { /* vibration indisponible */ }
+  haptic(gain ? 'gain' : 'spend');
 
   if (!reduced) {
     const tag = document.createElement('div');

@@ -21,6 +21,7 @@ import { LoadingScreen } from './ui/loading';
 import { moneyBurst } from './ui/moneyfx';
 import { previewState, previewUi, silentSound } from './ui/preview';
 import { QUALITIES, loadQuality, saveQuality } from './ui/settings';
+import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics';
 import { actionablePlots, dockSignals, staffTip } from './game/advice';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { createStadiumSound } from './ui/sound';
@@ -54,6 +55,7 @@ export default function App({ preview = null }) {
   const [goalCollapsed, setGoalCollapsed] = useState(() => window.innerWidth < 760); // replié sur mobile
   const [menu, setMenu] = useState(!!boot.ui.menu);
   const [quality, setQuality] = useState(loadQuality); // qualité graphique (par appareil)
+  const [vibration, setVibrationState] = useState(vibrationEnabled);
   const [sceneLoaded, setSceneLoaded] = useState(false); // écran de chargement jusqu'à l'arrivée des modèles 3D
   const [loadProgress, setLoadProgress] = useState(null);
   useEffect(() => { // filet de sécurité : l'écran de chargement ne reste jamais plus de 20 s
@@ -128,10 +130,11 @@ export default function App({ preview = null }) {
   };
   const closeResult = () => { setShowResult(false); setMatchDay(false); };
   const onBuild = (sectorId, key) => {
-    if (run((s) => build(s, sectorId, key), 'Fonds insuffisants.')) toast(`Chantier lancé : ${BUILDINGS[key].name}`, 'gold');
+    if (run((s) => build(s, sectorId, key), 'Fonds insuffisants.')) { haptic('build'); toast(`Chantier lancé : ${BUILDINGS[key].name}`, 'gold'); }
   };
   const onUpgrade = (key) => {
     if (run((s) => upgrade(s, key), 'Fonds insuffisants ou niveau maximum.')) {
+      haptic('build');
       toast(`${BUILDINGS[key].name} : niveau ${state.buildings[key] + 1}`, 'gold');
     }
   };
@@ -263,7 +266,7 @@ export default function App({ preview = null }) {
           ctx={matchCtx}
           sound={sound.current}
           preview={boot.ui.live}
-          onFx={(fx) => setMatchFx({ ...fx, id: performance.now() })}
+          onFx={(fx) => { if (fx.type === 'goal') haptic('goal'); setMatchFx({ ...fx, id: performance.now() }); }}
           onFinish={finishMatch}
         />
       )}
@@ -278,6 +281,9 @@ export default function App({ preview = null }) {
           quality={quality}
           qualities={QUALITIES}
           onQuality={(q) => { setQuality(q); if (!preview) saveQuality(q); }}
+          vibration={vibration}
+          canVibrate={canVibrate()}
+          onToggleVibration={() => { setVibration(!vibration); setVibrationState(!vibration); }}
           onReset={() => {
             setMenu(false);
             setConfirm({

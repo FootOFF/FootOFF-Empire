@@ -705,7 +705,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: rgba(12, 12, 13, .96); border: 1px solid var(--line); box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
   animation: fo-up var(--dur) var(--ease);
 }
-.ins-grip { display: none; }
 .ins-body { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4) var(--s-5) var(--s-5); overflow-y: auto; }
 @keyframes fo-up { from { opacity: 0; transform: translateY(14px); } }
 .ins-head { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: var(--s-3); align-items: center; padding: var(--s-4) var(--s-4) var(--s-3) var(--s-5); border-bottom: 1px solid var(--line); }
@@ -1234,7 +1233,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .cmp-deltas { grid-template-columns: repeat(2, 1fr); }
   .game.has-panel :is(.hud > *, .hud-left > *, .hud-left > .presence > *) { opacity: 0; pointer-events: none; } /* panneau plein écran : le HUD s'efface */
   .inspector { left: 0; right: 0; bottom: 0; width: auto; border-radius: var(--r-lg) var(--r-lg) 0 0; border-width: 1px 0 0; max-height: 70vh; background: #0b0b0c; z-index: 12; }
-  .ins-grip { display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--line-strong); margin: var(--s-2) auto 0; flex-shrink: 0; }
   .ins-head { padding: var(--s-2) var(--s-3) var(--s-3) var(--s-4); }
   .ins-body { padding: var(--s-3) var(--s-4) var(--s-6); }
   .rules { grid-template-columns: 1fr; }
@@ -1410,4 +1408,40 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .loading .lockup-lg .lockup-mark { height: 56px; }
   .loading .lockup-lg .lockup-name { font-size: var(--t-2xl); }
   .loading .lockup-lg .lockup-sub { font-size: var(--t-sm); }
+}
+
+/* =========================================================== téléphone : gestes et actions sous le pouce
+   Poignée : signale qu'une feuille se ferme en la glissant vers le bas (gestures.js). L'action principale
+   (Améliorer, Signer, Vendre) reste collée en bas, à portée du pouce, même quand le contenu défile. */
+.grip { display: none; }
+.switch:disabled { opacity: .35; cursor: not-allowed; }
+.ins-foot { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3) var(--s-5) var(--s-5); border-top: 1px solid var(--line); }
+.leaving [data-swiped="down"] { animation: fo-swipe-out var(--dur-exit) var(--ease-in) forwards !important; }
+@keyframes fo-swipe-out { to { transform: translateY(100%); opacity: .5; } }
+
+@media (max-width: 760px) {
+  .grip { display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--line-strong); margin: var(--s-2) auto 0; flex-shrink: 0; }
+  .panel > .grip { margin-bottom: calc(-1 * var(--s-2)); }
+  .ins-foot { padding: var(--s-3) var(--s-4) var(--s-4); }
+
+  /* fiche joueur : pied collé en bas, au-dessus du contenu qui défile */
+  .sq-sheet { padding-bottom: 0; }
+  .sq-overlay .sq-sheet { background: rgb(13, 13, 14); } /* plein écran : rien ne transparaît dessous */
+  .sq-sheet > .grip { margin: calc(-1 * var(--s-2)) auto calc(-1 * var(--s-2)); }
+  .sh-foot {
+    position: sticky; bottom: 0; z-index: 1; margin: auto calc(-1 * var(--s-4)) 0;
+    padding: var(--s-3) var(--s-4) calc(var(--s-4) + var(--hb)); background: rgb(13, 13, 14);
+    box-shadow: 0 -16px 24px rgba(0, 0, 0, .45);
+  }
+  .sh-actions .btn { padding: 13px 16px; font-size: var(--t-md); }
+
+  /* menu et confirmation : feuilles qui montent du bas, boutons sous le pouce */
+  .scrim, .confirm-scrim { place-items: end stretch; padding: 0; }
+  .menu-card, .confirm-card {
+    width: 100%; max-height: 92%; border-radius: var(--r-lg) var(--r-lg) 0 0; border-width: 1px 0 0;
+    padding-bottom: calc(var(--s-5) + var(--hb));
+  }
+  .menu-card > .grip { margin: calc(-1 * var(--s-3)) auto calc(-1 * var(--s-3)); }
+  .confirm-card > .grip { margin: calc(-1 * var(--s-3)) auto 0; }
+  .confirm-actions .btn { padding: 14px 16px; font-size: var(--t-md); }
 }

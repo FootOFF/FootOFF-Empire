@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from '../game/constants';
 import {
   ATTRS, FAMILIES, GK_ATTRS, TRAITS, playerRating, potentialRange, ratingAt, saleValue, signingFee, wageOf,
@@ -11,6 +11,7 @@ import { fmtMoney, fmtRating } from './format';
 import { IconClose } from './icons';
 import { Panel } from './panels';
 import { Presence } from './presence';
+import { PHONE, useSwipe } from './gestures';
 
 // Effectif : tableau d'analyste (PC) ou liste compacte (mobile), fiche joueur façon magazine FootOFF Media,
 // comparateur radar. Les couleurs des cases disent si une valeur est forte ou faible pour ta division.
@@ -306,13 +307,32 @@ function PlayerSheet({ p, state, refLvl, market, onClose, onPrev, onNext, onComp
   const all = attrsOf(p);
   const fee = signingFee(p, state.divisionIndex);
   const prev = p.hist?.length ? p.hist[p.hist.length - 1] : null;
+
+  // changement de joueur : la fiche remonte en haut et le nouveau joueur arrive du côté du geste
+  const ref = useRef(null);
+  const dir = useRef(0);
+  const shown = useRef(p.id);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || shown.current === p.id) return;
+    shown.current = p.id;
+    el.scrollTop = 0;
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.animate([{ opacity: 0, transform: `translateX(${dir.current * 28}px)` }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.2, .8, .2, 1)' });
+    }
+  }, [p.id]);
+  const goPrev = () => { dir.current = -1; onPrev(); };
+  const goNext = () => { dir.current = 1; onNext(); };
+  useSwipe(ref, { onDown: onClose, onLeft: goNext, onRight: goPrev, downMedia: PHONE });
+
   return (
     <div className="sq-overlay" onClick={onClose}>
-      <article className="sq-sheet glass" onClick={(e) => e.stopPropagation()} aria-label={`Fiche de ${p.name}`}>
+      <article ref={ref} className="sq-sheet glass" onClick={(e) => e.stopPropagation()} aria-label={`Fiche de ${p.name}`}>
+        <span className="grip" aria-hidden="true" />
         <header className="sh-top">
-          <button className="hud-icon sh-nav" onClick={onPrev} aria-label="Joueur précédent">‹</button>
+          <button className="hud-icon sh-nav" onClick={goPrev} aria-label="Joueur précédent">‹</button>
           <span className="eyebrow">{market ? 'Joueur libre' : state.lineup?.includes(p.id) ? 'Titulaire' : 'Remplaçant'}</span>
-          <button className="hud-icon sh-nav" onClick={onNext} aria-label="Joueur suivant">›</button>
+          <button className="hud-icon sh-nav" onClick={goNext} aria-label="Joueur suivant">›</button>
           <button className="hud-icon" onClick={onClose} aria-label="Fermer la fiche"><IconClose /></button>
         </header>
 

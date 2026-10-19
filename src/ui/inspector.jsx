@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { BUILDINGS, upgradeCost } from '../game/constants';
 import { PLOT_LABELS, SECTORS, allowedBuildingsFor, buildingEffect, plotBuilding } from '../game/map';
 import { fmtMoney, fmtNum } from './format';
@@ -6,6 +6,7 @@ import { expectedGate } from '../game/economy';
 import { IconAcademy, IconArrowUp, IconClose, IconFans, IconLock, IconSponsor, IconStadium, IconTraining } from './icons';
 import { Eyebrow } from './kit';
 import { useKeydown } from './presence';
+import { useSwipe } from './gestures';
 
 const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor };
 
@@ -20,7 +21,9 @@ function Pips({ lvl, max }) {
 // Inspecteur de parcelle : même famille que les panneaux (en-tête, corps), en carte à gauche sur PC et en
 // feuille basse sur mobile, ouverte au clic dans la vue 3D.
 export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade, onMatchDay }) {
+  const ref = useRef(null);
   useKeydown((e) => { if (e.key === 'Escape') onClose(); });
+  useSwipe(ref, { onDown: onClose });
 
   const sec = SECTORS.find((s) => s.id === sel.sector);
   const unlocked = state.reputation >= sec.repNeeded;
@@ -29,6 +32,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
 
   let body;
   let title;
+  let foot = null; // action principale, toujours visible en bas (sous le pouce sur téléphone)
   if (!unlocked) {
     title = 'Secteur verrouillé';
     const pct = Math.min(1, state.reputation / sec.repNeeded);
@@ -74,6 +78,16 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
     const cost = upgradeCost(key, lvl + 1);
     const short = state.money < cost;
     title = b.name;
+    if (!maxed) {
+      foot = (
+        <>
+          <button className={`btn btn-xl wide ${short ? '' : 'glow'}`} disabled={short} onClick={() => onUpgrade(key)}>
+            <IconArrowUp /> Améliorer · {fmtMoney(cost)}
+          </button>
+          {short && <span className="ins-hint">Il manque {fmtMoney(cost - state.money)}</span>}
+        </>
+      );
+    }
     body = (
       <>
         <div className="ins-level"><Pips lvl={lvl} max={b.max} /><span>Niveau {lvl}/{b.max}</span></div>
@@ -96,10 +110,6 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
               <Eyebrow>Niveau {lvl + 1}</Eyebrow>
               <p>{buildingEffect(key, lvl + 1, state.divisionIndex)}</p>
             </div>
-            <button className={`btn btn-xl wide ${short ? '' : 'glow'}`} disabled={short} onClick={() => onUpgrade(key)}>
-              <IconArrowUp /> Améliorer · {fmtMoney(cost)}
-            </button>
-            {short && <span className="ins-hint">Il manque {fmtMoney(cost - state.money)}</span>}
           </>
         ) : (
           <div className="ins-max">Niveau maximum atteint</div>
@@ -112,8 +122,8 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
   }
 
   return (
-    <aside className="inspector" role="dialog" aria-label={title}>
-      <span className="ins-grip" aria-hidden="true" />
+    <aside ref={ref} className="inspector" role="dialog" aria-label={title}>
+      <span className="grip" aria-hidden="true" />
       <header className="ins-head">
         <span className="ins-icon"><Icon /></span>
         <div className="panel-title">
@@ -123,6 +133,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
         <button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button>
       </header>
       <div className="ins-body">{body}</div>
+      {foot && <footer className="ins-foot">{foot}</footer>}
     </aside>
   );
 }

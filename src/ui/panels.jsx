@@ -7,6 +7,7 @@ import { IconClose, IconCoin } from './icons';
 import { AnimatedMoney } from './moneyfx';
 import { Eyebrow, IconBall, RatingBadge, SectionHead, Stat } from './kit';
 import { useDialogFocus, useKeydown } from './presence';
+import { PHONE, useSwipe } from './gestures';
 
 // Panneau du jeu : un seul modèle pour l'Effectif, la Saison et le Journal (en-tête, barre d'outils, corps
 // défilant, trésorerie à droite quand on y dépense). Glisse depuis la droite sur PC, plein écran sur mobile.
@@ -14,8 +15,10 @@ export function Panel({ title, eyebrow, size = 'md', money = null, toolbar = nul
   const ref = useRef(null);
   useDialogFocus(ref);
   useKeydown((e) => { if (e.key === 'Escape') (onEscape || onClose)(); });
+  useSwipe(ref, { onDown: onClose, downMedia: PHONE });
   return (
     <section ref={ref} tabIndex={-1} className={`panel ${size}`} role="dialog" aria-label={title}>
+      <span className="grip" aria-hidden="true" />
       <header className="panel-head">
         <div className="panel-title">
           {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}

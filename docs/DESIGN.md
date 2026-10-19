@@ -79,6 +79,12 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
   d'origine à la fermeture (`useDialogFocus`).
 - Survol : seulement avec une souris (`@media (hover: hover)`) ; appui : léger enfoncement partout.
 - Toucher : sur écran tactile, chaque commande se touche sur 44 × 44 px au moins (zone invisible `::after`).
+- Gestes (`src/ui/gestures.js`) : sur téléphone, panneaux, menu, confirmation, inspecteur et fiche se ferment en
+  glissant vers le bas (poignée visible) ; la fiche passe au joueur suivant ou précédent en glissant à gauche ou
+  à droite. Le défilement reste prioritaire. L'action principale (Améliorer, Signer, Vendre) reste collée en bas ;
+  menu et confirmation deviennent des feuilles qui montent du bas.
+- Vibrations (`src/ui/haptics.js`) : but marqué, vente, dépense, construction ; désactivables dans le menu
+  (indisponibles sur iPhone, Safari ne les permet pas).
 - Typographie : le code écrit des espaces ordinaires ; `src/ui/typography.js` pose à l'affichage les insécables
   (avant `: ; ! ?`, dans les guillemets, entre un nombre et son unité), l'apostrophe ’ et les points de
   suspension. Ordinaux avec `ordinal()` : 1er, 1re, 2e.
