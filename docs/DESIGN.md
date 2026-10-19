@@ -29,6 +29,13 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 - Libellé au-dessus, valeur en dessous ; les valeurs numériques en chiffres tabulaires.
 - Un seul bouton principal (doré) par écran ; les autres en contour (`.btn.ghost`) ou en lien (`.linkbtn`).
 - Mobile : zones tactiles de 44 px minimum, panneaux en plein écran ou en feuille basse.
+- Peu de cadres : un cadre pour un vrai bloc, de simples filets fins ailleurs (fiche joueur, comparateur).
+- Capitales espacées (Geist Mono) réservées aux titres de section et sur-titres ; les petits libellés (tuiles,
+  statistiques, lignes de confirmation, puces de filtre) sont en texte normal discret.
+- Libellés sur une seule ligne, pour que les chiffres d'une même rangée tombent au même niveau.
+- Une seule façon d'afficher chaque échelle : niveau sur 20 en grand chiffre (doré s'il est fort pour la
+  division), note de match sur 10 en pastille (vert, neutre, rouge). Une légende dès qu'une couleur a un sens.
+- Icônes dessinées uniquement (jamais ‹ › ou ⬠ en caractères) ; « Comparer » = bouton rond avec l'icône radar.
 
 ## Zones du HUD
 
@@ -53,7 +60,7 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 - `SectionHead` : libellé de section + complément aligné à droite.
 - `Stat` : tuile libellé / valeur / précision.
 - `VersusBar` : comparaison club / adversaire (possession, tirs…).
-- `RatingBadge` : note de match sur 10 (or ≥ 8, doré clair ≥ 7, rouge < 5,5).
+- `RatingBadge` : note de match sur 10 (vert ≥ 7,5, rouge < 5,5, neutre sinon ; or seulement pour l’homme du match). L’or désigne le niveau sur 20.
 - Icônes des temps forts : `IconBall`, `IconAssist`, `IconSwap`, `IconWhistle`, `IconStar`, `Card` (jamais d'emoji).
 - Boutons : `.btn` (principal), `.btn.ghost` (secondaire), `.linkbtn` (tertiaire), `.chipbtn` (filtre/action
   légère) ; tailles `.btn-sm`, normale, `.btn-xl`.

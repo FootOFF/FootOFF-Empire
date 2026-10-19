@@ -48,7 +48,7 @@ export function VersusBar({ label, home, away, suffix = '' }) {
 
 // Note de match sur 10 (couleur selon la performance).
 export function RatingBadge({ value, size = 'md' }) {
-  const tone = value >= 8 ? 'top' : value >= 7 ? 'good' : value < 5.5 ? 'low' : '';
+  const tone = value >= 7.5 ? 'good' : value < 5.5 ? 'low' : ''; // mêmes seuils que la forme de la fiche joueur
   return <span className={`ui-rate ${size} ${tone}`}>{fmtRating(value)}</span>;
 }
 

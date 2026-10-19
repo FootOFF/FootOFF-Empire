@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from '../game/constants';
 import {
-  ATTRS, FAMILIES, GK_ATTRS, TRAITS, playerRating, potentialRange, ratingAt, saleValue, signingFee, wageOf,
+  ATTRS, FAMILIES, GK_ATTRS, TRAITS, WEIGHTS, playerRating, potentialRange, ratingAt, saleValue, signingFee, wageOf,
 } from '../game/players';
 import { sellPlayer, signPlayer } from '../game/engine';
 import { seasonForecast } from '../game/economy';
 import { bestSigning } from '../game/advice';
 import { SLOTS } from '../game/tactics';
 import { fmtMoney, fmtRating } from './format';
-import { IconClose } from './icons';
+import { IconChevron, IconChevronLeft, IconClose, IconRadar } from './icons';
 import { Panel } from './panels';
 import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
@@ -119,6 +119,7 @@ export function SquadView({ state, run, ask, onClose, initialTab = 'players', pr
           <Presence>{sheetPlayer && (
             <PlayerSheet
               p={sheetPlayer}
+              place={`${list.findIndex((q) => q.id === sheetPlayer.id) + 1} / ${list.length}`}
               state={state}
               refLvl={ref}
               market={!!sheet.market}
@@ -249,7 +250,9 @@ function PlayerRow({ p, state, refLvl, onOpen, extra }) {
         </span>
         <span className="sq-row-side">
           <b className={heat(r, refLvl)}>{fmtRating(r)}</b>
-          <span>{extra ?? (f === null ? 'pas encore joué' : `forme ${fmtRating(f)}`)}</span>
+          {extra ? <span>{extra}</span> : f === null ? <span>pas encore joué</span> : (
+            <span className="sq-row-form">forme <i className={f >= 7.5 ? 'good' : f < 5.5 ? 'low' : ''}>{fmtRating(f)}</i></span>
+          )}
         </span>
       </button>
     </li>
@@ -262,7 +265,7 @@ function Market({ state, refLvl, recommended, onOpen, onCompare, onSign }) {
   const full = state.players.length >= SQUAD_MAX;
   return (
     <>
-      <p className="sq-hint">Joueurs libres, renouvelés à chaque saison. « Comparer » les met face au titulaire qu’ils remplaceraient.</p>
+      <p className="sq-hint">Joueurs libres, renouvelés à chaque saison. Le bouton <IconRadar className="inline-ico" /> compare une recrue au titulaire qu’elle remplacerait.</p>
       <ul className="plist">
         {state.market.length === 0 && <li className="empty">Plus de joueur disponible cette saison.</li>}
         {state.market.map((p) => {
@@ -274,7 +277,7 @@ function Market({ state, refLvl, recommended, onOpen, onCompare, onSign }) {
               <button className="sq-market-main" onClick={() => onOpen(p)}>
                 <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
                 <span className="sq-row-main">
-                  <span className="sq-row-name">{p.name}{p.id === recommended && <em className="rec-tag">Recommandé</em>}</span>
+                  <span className="sq-row-name">{p.name}{p.id === recommended && <em className="sh-tag on rec-tag">Recommandé</em>}</span>
                   <span className="sq-row-meta">
                     {p.age} ans · {topAttrs(p).map((a) => <span key={a.key} className={heat(a.v, refLvl)}>{a.short} {Math.round(a.v)}</span>)}
                   </span>
@@ -283,8 +286,8 @@ function Market({ state, refLvl, recommended, onOpen, onCompare, onSign }) {
                 <b className={`sq-market-lvl ${heat(r, refLvl)}`}>{fmtRating(r)}</b>
               </button>
               <div className="sq-market-actions">
-                <button className="chipbtn" onClick={() => onCompare(p)}>Comparer</button>
-                <button className="btn btn-sm" disabled={state.money < fee || full} onClick={() => onSign(p)} title={full ? 'Effectif complet' : state.money < fee ? `Il manque ${fmtMoney(fee - state.money)}` : ''}>
+                <button className="sh-compare sm" onClick={() => onCompare(p)} aria-label={`Comparer ${p.name}`} title="Comparer"><IconRadar /></button>
+                <button className="btn" disabled={state.money < fee || full} onClick={() => onSign(p)} title={full ? 'Effectif complet' : state.money < fee ? `Il manque ${fmtMoney(fee - state.money)}` : ''}>
                   Signer · {fmtMoney(fee)}
                 </button>
               </div>
@@ -298,15 +301,20 @@ function Market({ state, refLvl, recommended, onOpen, onCompare, onSign }) {
 
 // --- Fiche joueur (magazine FootOFF Media) ---------------------------------------------------------------
 
-function PlayerSheet({ p, state, refLvl, market, onClose, onPrev, onNext, onCompare, onSell, onSign }) {
+function PlayerSheet({ p, state, refLvl, market, place, onClose, onPrev, onNext, onCompare, onSell, onSign }) {
   const r = playerRating(p);
   const pot = potentialRange(p, state);
   const f = formAvg(p);
   const st = p.season || {};
   const fams = p.pos === 'G' ? ['gk'] : ['tech', 'phys', 'tac'];
   const all = attrsOf(p);
+  const keys = new Set(Object.entries(WEIGHTS[p.pos]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => k));
   const fee = signingFee(p, state.divisionIndex);
+  const value = saleValue(p, state.divisionIndex);
   const prev = p.hist?.length ? p.hist[p.hist.length - 1] : null;
+  const role = market ? 'Joueur libre' : state.lineup?.includes(p.id) ? 'Titulaire' : 'Remplaçant';
+  const avg = st.apps ? st.sum / st.apps : null;
+  const plural = (n, one, many) => (n > 1 ? many : one);
 
   // changement de joueur : la fiche remonte en haut et le nouveau joueur arrive du côté du geste
   const ref = useRef(null);
@@ -329,82 +337,113 @@ function PlayerSheet({ p, state, refLvl, market, onClose, onPrev, onNext, onComp
     <div className="sq-overlay" onClick={onClose}>
       <article ref={ref} className="sq-sheet glass" onClick={(e) => e.stopPropagation()} aria-label={`Fiche de ${p.name}`}>
         <span className="grip" aria-hidden="true" />
-        <header className="sh-top">
-          <button className="hud-icon sh-nav" onClick={goPrev} aria-label="Joueur précédent">‹</button>
-          <span className="eyebrow">{market ? 'Joueur libre' : state.lineup?.includes(p.id) ? 'Titulaire' : 'Remplaçant'}</span>
-          <button className="hud-icon sh-nav" onClick={goNext} aria-label="Joueur suivant">›</button>
+        <header className="sh-bar">
+          <div className="sh-pager">
+            <button className="hud-icon" onClick={goPrev} aria-label="Joueur précédent"><IconChevronLeft /></button>
+            <span>{place}</span>
+            <button className="hud-icon" onClick={goNext} aria-label="Joueur suivant"><IconChevron /></button>
+          </div>
           <button className="hud-icon" onClick={onClose} aria-label="Fermer la fiche"><IconClose /></button>
         </header>
 
-        <div className="sh-hero">
-          <div className={`sh-rating ${heat(r, refLvl)}`}><b>{fmtRating(r)}</b><span>/ 20</span></div>
+        <section className="sh-hero">
           <div className="sh-id">
+            <div className="sh-meta">
+              <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
+              <span>{p.num ? `N°${p.num} · ` : ''}{p.age} ans · pied {p.foot}</span>
+            </div>
             <h3>{p.name}</h3>
-            <span>{p.num ? `N°${p.num} · ` : ''}{POS_LABELS[p.pos]} · {p.age} ans · pied {p.foot}</span>
-            {p.alt && <span>Peut dépanner : {POS_LABELS[p.alt].toLowerCase()} ({fmtRating(ratingAt(p, p.alt))})</span>}
+            <div className="sh-tags">
+              <span className={`sh-tag ${role === 'Titulaire' ? 'on' : ''}`}>{role}</span>
+              {p.alt && <span className="sh-tag">Dépanne : {POS_LABELS[p.alt].toLowerCase()} {fmtRating(ratingAt(p, p.alt))}</span>}
+            </div>
           </div>
-        </div>
+          <div className={`sh-level ${heat(r, refLvl)}`}>
+            <b>{fmtRating(r)}</b>
+            <span>niveau / 20</span>
+          </div>
+        </section>
 
-        {p.traits?.length > 0 && (
-          <ul className="sh-traits">
-            {p.traits.map((t) => <li key={t}><b>{TRAITS[t].name}</b><span>{TRAITS[t].desc}</span></li>)}
-          </ul>
-        )}
-
-        <div className="sh-grid">
-          <div className="sh-block">
-            <span className="sh-label">Potentiel estimé</span>
-            <b>{pot ? `${fmtRating(pot[0])} – ${fmtRating(pot[1])}` : 'Plafond atteint'}</b>
-            <span className="sh-sub">{pot ? 'La fourchette se précise avec le temps et l’académie.' : 'Il a donné son plein potentiel.'}</span>
+        <section className="sh-sec">
+          <div className="sh-row">
+            <span className="sh-cap">Niveau et potentiel</span>
+            <span className="sh-pot">{pot ? <>potentiel <b>{fmtRating(pot[0])} – {fmtRating(pot[1])}</b></> : 'plafond atteint'}</span>
           </div>
-          <div className="sh-block">
-            <span className="sh-label">Forme · 5 derniers matchs</span>
-            {p.form?.length ? (
-              <div className="sh-form">
-                {p.form.map((v, i) => <i key={i} className={v >= 7.5 ? 'good' : v < 5.5 ? 'low' : ''} style={{ height: `${v * 10}%` }} title={`${fmtRating(v)} / 10`} />)}
-                <span>{fmtRating(f)} / 10</span>
-              </div>
-            ) : <span className="sh-sub">Pas encore joué{market ? ' pour le club' : ' cette saison'}.</span>}
+          <div className="sh-scale" aria-hidden="true">
+            <i className="now" style={{ width: `${(r / 20) * 100}%` }} />
+            {pot && <i className="pot" style={{ left: `${(pot[0] / 20) * 100}%`, width: `${((pot[1] - pot[0]) / 20) * 100}%` }} />}
           </div>
-        </div>
+          <div className="sh-ticks" aria-hidden="true"><span>0</span><span>10</span><span>20</span></div>
+        </section>
 
         {!market && (
-          <div className="sh-season">
-            <div><span>Matchs</span><b>{st.apps || 0}</b></div>
-            <div><span>Buts</span><b>{st.goals || 0}</b></div>
-            <div><span>Passes déc.</span><b>{st.assists || 0}</b></div>
-            <div><span>Cartons</span><b>{(st.yellow || 0) + (st.red || 0)}</b></div>
-            <div><span>Note moy.</span><b>{st.apps ? fmtRating(st.sum / st.apps) : '–'}</b></div>
-          </div>
-        )}
-        {!market && (p.lastDelta !== undefined || prev) && (
-          <p className="sh-evo">
-            {p.lastDelta !== undefined && <>Dernier été : <b className={p.lastDelta > 0 ? 'up' : p.lastDelta < 0 ? 'down' : ''}>{p.lastDelta > 0 ? '+' : ''}{fmtRating(p.lastDelta)}</b></>}
-            {prev && <> · saison {prev.season} : {prev.apps} matchs, {prev.goals} buts{prev.avg ? `, note moyenne ${fmtRating(prev.avg)}` : ''}</>}
-          </p>
+          <section className="sh-sec">
+            <span className="sh-cap">Saison {state.seasonNumber}</span>
+            <div className="sh-stats">
+              <div><b>{st.apps || 0}</b><span>{plural(st.apps || 0, 'match', 'matchs')}</span></div>
+              <div><b>{st.goals || 0}</b><span>{plural(st.goals || 0, 'but', 'buts')}</span></div>
+              <div><b>{st.assists || 0}</b><span>{plural(st.assists || 0, 'passe', 'passes')}</span></div>
+              <div><b>{(st.yellow || 0) + (st.red || 0)}</b><span>{plural((st.yellow || 0) + (st.red || 0), 'carton', 'cartons')}</span></div>
+              <div><b className={avg >= 7 ? 'good' : avg !== null && avg < 5.5 ? 'low' : ''}>{avg !== null ? fmtRating(avg) : '–'}</b><span>note</span></div>
+            </div>
+            {(p.lastDelta !== undefined || prev) && (
+              <p className="sh-evo">
+                {p.lastDelta !== undefined && <>Dernier été <b className={p.lastDelta > 0 ? 'up' : p.lastDelta < 0 ? 'down' : ''}>{p.lastDelta > 0 ? '+' : ''}{fmtRating(p.lastDelta)}</b></>}
+                {p.lastDelta !== undefined && prev && ' · '}
+                {prev && <>saison {prev.season} : {prev.apps} {plural(prev.apps, 'match', 'matchs')}, {prev.goals} {plural(prev.goals, 'but', 'buts')}{prev.avg ? `, note ${fmtRating(prev.avg)}` : ''}</>}
+              </p>
+            )}
+          </section>
         )}
 
-        {fams.map((fam) => (
-          <div className="sh-fam" key={fam}>
-            <span className="sh-label">{FAMILIES[fam]}</span>
-            {all.filter((a) => a.fam === fam).map((a) => (
-              <div className="sh-attr" key={a.key}>
-                <span>{a.name}</span>
-                <span className="sh-track"><i className={heat(a.v, refLvl)} style={{ width: `${(a.v / 20) * 100}%` }} /></span>
-                <b className={heat(a.v, refLvl)}>{Math.round(a.v)}</b>
-              </div>
-            ))}
+        <section className="sh-sec">
+          <div className="sh-row">
+            <span className="sh-cap">Forme · notes de match sur 10</span>
+            {f !== null && <span className="sh-pot">moyenne <b>{fmtRating(f)}</b></span>}
           </div>
-        ))}
+          {p.form?.length ? (
+            <div className="sh-form">
+              {p.form.map((v, i) => <span key={i} className={v >= 7.5 ? 'good' : v < 5.5 ? 'low' : ''}>{fmtRating(v)}</span>)}
+            </div>
+          ) : <p className="sh-empty">Pas encore joué{market ? ' pour le club' : ' cette saison'}.</p>}
+        </section>
+
+        {p.traits?.length > 0 && (
+          <section className="sh-sec">
+            <span className="sh-cap">{plural(p.traits.length, 'Signe distinctif', 'Signes distinctifs')}</span>
+            <ul className="sh-traits">
+              {p.traits.map((t) => <li key={t}><b>{TRAITS[t].name}</b><span>{TRAITS[t].desc}</span></li>)}
+            </ul>
+          </section>
+        )}
+
+        <section className="sh-sec">
+          <div className="sh-row">
+            <span className="sh-cap">Attributs</span>
+            <span className="sh-legend"><i className="key" /> clés au poste · <em>or</em> : fort pour ta division</span>
+          </div>
+          {fams.map((fam) => (
+            <div className="sh-fam" key={fam}>
+              {fams.length > 1 && <span className="sh-famname">{FAMILIES[fam]}</span>}
+              {all.filter((a) => a.fam === fam).map((a) => (
+                <div className={`sh-attr ${keys.has(a.key) ? 'key' : ''}`} key={a.key}>
+                  <span>{a.name}</span>
+                  <span className="sh-track"><i className={heat(a.v, refLvl)} style={{ width: `${(a.v / 20) * 100}%` }} /></span>
+                  <b className={heat(a.v, refLvl)}>{Math.round(a.v)}</b>
+                </div>
+              ))}
+            </div>
+          ))}
+        </section>
 
         <footer className="sh-foot">
-          <span>Salaire <b>{fmtMoney(wageOf(p, state.divisionIndex))}</b> / saison · {market ? <>Signature <b>{fmtMoney(fee)}</b></> : <>Valeur <b>{fmtMoney(saleValue(p, state.divisionIndex))}</b></>}</span>
+          <span>Salaire <b>{fmtMoney(wageOf(p, state.divisionIndex))}</b> par saison</span>
           <div className="sh-actions">
-            <button className="btn ghost btn-sm" onClick={onCompare}>Comparer</button>
+            <button className="sh-compare" onClick={onCompare} aria-label="Comparer" title="Comparer"><IconRadar /></button>
             {market ? (
-              <button className="btn btn-sm" disabled={state.money < fee || state.players.length >= SQUAD_MAX} onClick={onSign}>Signer · {fmtMoney(fee)}</button>
+              <button className="btn" disabled={state.money < fee || state.players.length >= SQUAD_MAX} onClick={onSign}>Signer · {fmtMoney(fee)}</button>
             ) : (
-              <button className="btn btn-sm" disabled={state.players.length <= SQUAD_MIN} onClick={onSell}>Vendre · {fmtMoney(saleValue(p, state.divisionIndex))}</button>
+              <button className="btn" disabled={state.players.length <= SQUAD_MIN} onClick={onSell}>Vendre · {fmtMoney(value)}</button>
             )}
           </div>
         </footer>
@@ -415,17 +454,20 @@ function PlayerSheet({ p, state, refLvl, market, onClose, onPrev, onNext, onComp
 
 // --- Comparateur radar ----------------------------------------------------------------------------------
 
+// Radar à l'échelle des joueurs comparés (pas toujours sur 20 : des joueurs à 6–9 rempliraient à peine le centre).
 function Radar({ a, b, axes }) {
   const cx = 150, cy = 128, R = 92, n = axes.length;
+  const max = Math.min(20, Math.max(10, Math.ceil((Math.max(...a, ...b) + 1) / 5) * 5));
   const pt = (i, r) => { const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [cx + Math.cos(ang) * r, cy + Math.sin(ang) * r]; };
-  const poly = (vals) => vals.map((v, i) => pt(i, (R * v) / 20).join(',')).join(' ');
+  const poly = (vals) => vals.map((v, i) => pt(i, (R * Math.min(v, max)) / max).join(',')).join(' ');
   return (
-    <svg className="radar" viewBox="0 0 300 262" role="img" aria-label="Comparaison des caractéristiques">
+    <svg className="radar" viewBox="0 0 300 262" role="img" aria-label={`Comparaison des caractéristiques, échelle de 0 à ${max}`}>
       {[0.25, 0.5, 0.75, 1].map((k) => <polygon key={k} points={axes.map((_, i) => pt(i, R * k).join(',')).join(' ')} className="radar-grid" />)}
       {axes.map((ax, i) => { const [x, y] = pt(i, R); return <line key={ax.key} x1={cx} y1={cy} x2={x} y2={y} className="radar-grid" />; })}
       <polygon points={poly(a)} className="radar-a" />
       <polygon points={poly(b)} className="radar-b" />
       {axes.map((ax, i) => { const [x, y] = pt(i, R + 16); return <text key={ax.key} x={x} y={y + 4} textAnchor="middle" className="radar-label">{ax.short}</text>; })}
+      <text x={cx + 4} y={cy - R + 12} className="radar-scale">{max}</text>
     </svg>
   );
 }
@@ -439,37 +481,60 @@ function CompareView({ state, a, b, onPick, onClose, onSign }) {
   const options = [...state.players, ...state.market].filter((p) => p.id !== b.id && (p.pos === 'G') === gk);
   const isMarket = state.market.includes(b);
   const fee = signingFee(b, state.divisionIndex);
+  const roleOf = (p) => (state.market.includes(p) ? 'Joueur libre' : state.lineup?.includes(p.id) ? 'Titulaire' : 'Remplaçant');
+  const la = ratingAt(a, b.pos);
+  const lb = ratingAt(b, b.pos);
+  const ref = useRef(null);
+  useSwipe(ref, { onDown: onClose, downMedia: PHONE });
   return (
     <div className="sq-overlay center" onClick={onClose}>
-      <div className="sq-compare glass" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Comparateur">
-        <header className="sh-top">
-          <span className="eyebrow">Comparateur</span>
-          <button className="hud-icon" onClick={onClose} aria-label="Fermer le comparateur"><IconClose /></button>
-        </header>
-        <div className="cmp-legend">
-          <label className="cmp-a">
-            <i />
-            <select value={a.id} onChange={(e) => onPick(Number(e.target.value))} aria-label="Joueur comparé">
-              {options.map((p) => <option key={p.id} value={p.id}>{p.name} ({fmtRating(playerRating(p))}){state.market.includes(p) ? ' · libre' : ''}</option>)}
-            </select>
-          </label>
-          <span className="cmp-b"><i />{b.name} <b>{fmtRating(playerRating(b))}</b></span>
-        </div>
-        <Radar a={va} b={vb} axes={axes} />
-        <ul className="cmp-deltas">
-          {axes.map((x, i) => {
-            const d = Math.round(vb[i]) - Math.round(va[i]);
-            return <li key={x.key} className={d > 0 ? 'up' : d < 0 ? 'down' : ''}><span>{x.name}</span><b>{d > 0 ? '+' : ''}{d}</b></li>;
-          })}
-        </ul>
-        <p className="cmp-sum">
-          Au poste de {POS_LABELS[b.pos].toLowerCase()} : {b.name} <b>{fmtRating(ratingAt(b, b.pos))}</b> contre {a.name} <b>{fmtRating(ratingAt(a, b.pos))}</b>.
-        </p>
-        {isMarket && (
-          <div className="cmp-foot">
-            <span>Signature {fmtMoney(fee)} · salaire {fmtMoney(wageOf(b, state.divisionIndex))} / saison</span>
-            <button className="btn btn-sm" disabled={state.money < fee || state.players.length >= SQUAD_MAX} onClick={() => onSign(b)}>Signer · {fmtMoney(fee)}</button>
+      <div ref={ref} className="sq-compare glass" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Comparaison">
+        <span className="grip" aria-hidden="true" />
+        <header className="cmp-head">
+          <div>
+            <h3>Comparaison</h3>
+            <span>Au poste {/^[aeiouyéh]/i.test(POS_LABELS[b.pos]) ? 'd’' : 'de '}{POS_LABELS[b.pos].toLowerCase()}</span>
           </div>
+          <button className="hud-icon" onClick={onClose} aria-label="Fermer la comparaison"><IconClose /></button>
+        </header>
+
+        <div className="cmp-vs">
+          <div className="cmp-side a">
+            <span className="cmp-role"><i />{roleOf(a)}</span>
+            <label className="cmp-pick">
+              <span className="cmp-name">{a.name}</span>
+              <IconChevron />
+              <select value={a.id} onChange={(e) => onPick(Number(e.target.value))} aria-label={`Joueur comparé : ${a.name}. Changer`}>
+                {options.map((p) => <option key={p.id} value={p.id}>{p.name} ({fmtRating(playerRating(p))}){state.market.includes(p) ? ' · libre' : ''}</option>)}
+              </select>
+            </label>
+            <b className={la > lb ? 'lead' : ''}>{fmtRating(la)}</b>
+          </div>
+          <span className="cmp-x">contre</span>
+          <div className="cmp-side b">
+            <span className="cmp-role"><i />{roleOf(b)}</span>
+            <span className="cmp-name">{b.name}</span>
+            <b className={lb >= la ? 'lead' : ''}>{fmtRating(lb)}</b>
+          </div>
+        </div>
+
+        <Radar a={va} b={vb} axes={axes} />
+
+        <section className="cmp-sec">
+          <span className="sh-cap">Écart de {b.name.split(' ').slice(-1)[0]} par rapport à {a.name.split(' ').slice(-1)[0]}</span>
+          <ul className="cmp-deltas">
+            {axes.map((x, i) => {
+              const d = Math.round(vb[i]) - Math.round(va[i]);
+              return <li key={x.key} className={d > 0 ? 'up' : d < 0 ? 'down' : ''}><span>{x.name}</span><b>{d > 0 ? '+' : d < 0 ? '−' : ''}{Math.abs(d)}</b></li>;
+            })}
+          </ul>
+        </section>
+
+        {isMarket && (
+          <footer className="cmp-foot">
+            <span>Salaire <b>{fmtMoney(wageOf(b, state.divisionIndex))}</b> par saison</span>
+            <button className="btn" disabled={state.money < fee || state.players.length >= SQUAD_MAX} onClick={() => onSign(b)}>Signer · {fmtMoney(fee)}</button>
+          </footer>
         )}
       </div>
     </div>
