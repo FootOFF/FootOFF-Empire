@@ -1,0 +1,106 @@
+{
+  "_doc": "Source unique des conventions GLB, lue par scripts/models/*.mjs et tools/blender/footoff_export.py. Dimensions en mètres (unités Blender).",
+  "unitScale": 0.1,
+  "specialNodePrefixes": [
+    "emissive_",
+    "light_",
+    "crowd_",
+    "flag_",
+    "club_color_"
+  ],
+  "categories": {
+    "stadium": {
+      "footprint": {
+        "w": 160,
+        "d": 130
+      },
+      "maxHeight": 60,
+      "maxTriangles": 60000,
+      "maxBytes": 4000000,
+      "maxTextureSize": 2048,
+      "maxTextures": 12,
+      "maxMaterials": 16,
+      "maxDrawCalls": 40
+    },
+    "building": {
+      "footprint": {
+        "w": 60,
+        "d": 60
+      },
+      "maxHeight": 120,
+      "maxTriangles": 25000,
+      "maxBytes": 1500000,
+      "maxTextureSize": 1024,
+      "maxTextures": 8,
+      "maxMaterials": 10,
+      "maxDrawCalls": 20
+    },
+    "prop": {
+      "footprint": {
+        "w": 20,
+        "d": 20
+      },
+      "maxHeight": 30,
+      "maxTriangles": 2000,
+      "maxBytes": 200000,
+      "maxTextureSize": 512,
+      "maxTextures": 2,
+      "maxMaterials": 3,
+      "maxDrawCalls": 3
+    },
+    "plot": {
+      "footprint": {
+        "w": 60,
+        "d": 60
+      },
+      "maxHeight": 45,
+      "maxTriangles": 10000,
+      "maxBytes": 800000,
+      "maxTextureSize": 1024,
+      "maxTextures": 8,
+      "maxMaterials": 14,
+      "maxDrawCalls": 16
+    },
+    "site": {
+      "footprint": {
+        "w": 360,
+        "d": 320
+      },
+      "maxHeight": 20,
+      "maxTriangles": 45000,
+      "maxBytes": 2500000,
+      "maxTextureSize": 1024,
+      "maxTextures": 8,
+      "maxMaterials": 14,
+      "maxDrawCalls": 20
+    }
+  },
+  "buildings": {
+    "terrain": {
+      "category": "stadium",
+      "maxLevel": 4
+    },
+    "training": {
+      "category": "building",
+      "maxLevel": 5
+    },
+    "academy": {
+      "category": "building",
+      "maxLevel": 5
+    },
+    "fans": {
+      "category": "building",
+      "maxLevel": 5
+    },
+    "sponsor": {
+      "category": "building",
+      "maxLevel": 5
+    }
+  },
+  "props": {
+    "_doc": "Categorie de chaque prop (assets-src/models/props/<nom>.glb ; collection Blender prop_<nom>). Defaut : prop.",
+    "plot_empty": "plot",
+    "plot_locked": "plot",
+    "site": "site"
+  }
+}

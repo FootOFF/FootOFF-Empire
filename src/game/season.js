@@ -1,0 +1,214 @@
+import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN, capacity, fillRate, sponsorIncome } from './constants';
+import { clamp, pick, rnd } from './utils';
+import { randomClubName } from './names';
+import { makePlayer, progressPlayer, wageOf, wantsRetirement } from './players';
+import { quickMatch } from './live';
+import { ensureLineup } from './tactics';
+import { closeSeasonGoals, resetSeasonStats, sectorUnlockedEvent } from './goals';
+
+export function roundRobin(n) {
+  const rounds = [];
+  const rot = Array.from({ length: n - 1 }, (_, i) => i + 1);
+  for (let r = 0; r < n - 1; r++) {
+    const arr = [0, ...rot];
+    const pairs = [];
+    for (let i = 0; i < n / 2; i++) pairs.push([arr[i], arr[n - 1 - i]]);
+    rounds.push(pairs);
+    rot.push(rot.shift());
+  }
+  return rounds;
+}
+
+export function pushJournal(s, entry) {
+  s.journal.unshift(entry);
+  if (s.journal.length > 40) s.journal.length = 40;
+}
+
+export function startSeason(s) {
+  const div = DIVISIONS[s.divisionIndex];
+  s.rivals = [];
+  for (let i = 0; i < 7; i++) {
+    const str = div.oppMin + (div.oppMax - div.oppMin) * (i / 6) + rnd(-0.3, 0.3);
+    s.rivals.push({ name: randomClubName(), strength: Math.round(clamp(str, 3, 18) * 10) / 10 });
+  }
+  s.schedule = roundRobin(8);
+  s.round = 0;
+  s.table = Array.from({ length: 8 }, () => ({ pts: 0, gd: 0, played: 0 }));
+  s.market = [];
+  for (let i = 0; i < 3; i++) {
+    const p = makePlayer({ level: s.divisionIndex + 1 + rnd(-0.3, 0.4) });
+    p.id = s.nextId++;
+    s.market.push(p);
+  }
+  resetSeasonStats(s);
+}
+
+function applyResult(s, i, j, gi, gj) {
+  const a = s.table[i];
+  const b = s.table[j];
+  a.played++;
+  b.played++;
+  a.gd += gi - gj;
+  b.gd += gj - gi;
+  if (gi > gj) a.pts += 3;
+  else if (gj > gi) b.pts += 3;
+  else {
+    a.pts++;
+    b.pts++;
+  }
+}
+
+function quickSim(si, sj) {
+  const d = si - sj;
+  const g1 = Math.max(0, Math.round(1.15 + d * 0.22 + rnd(-0.9, 0.9)));
+  const g2 = Math.max(0, Math.round(1.15 - d * 0.22 + rnd(-0.9, 0.9)));
+  return [g1, g2];
+}
+
+function reportText(s, res) {
+  const att = res.attendance;
+  const buts = res.gf
+    ? `Buts : ${res.scorers.map((x) => `${x.name} ${x.minute}e`).join(', ')}.`
+    : `${s.clubName} n’a pas trouvé la faille.`;
+  let intro;
+  if (res.gf > res.ga) {
+    intro = pick([
+      `Devant ${att} spectateurs, ${s.clubName} a fait le métier contre ${res.oppName}.`,
+      `Soirée propre : ${s.clubName} maîtrise ${res.oppName} et repart avec les trois points.`,
+      `Le projet avance. ${s.clubName} a construit son succès sur un bloc solide, devant ${att} spectateurs.`,
+    ]);
+  } else if (res.gf === res.ga) {
+    intro = pick([
+      `${s.clubName} et ${res.oppName} se sont neutralisés (${att} spectateurs). Un point de plus, mais on en voulait trois.`,
+      `Match serré face à ${res.oppName} : aucune équipe n’a trouvé la faille décisive.`,
+    ]);
+  } else {
+    intro = pick([
+      `Frustration au coup de sifflet final : ${s.clubName} s’incline contre ${res.oppName}.`,
+      `Soirée difficile devant ${att} spectateurs — ${s.clubName} a manqué de tranchant dans la surface.`,
+      `Rien ne fonctionne ce soir. Défaite logique face à ${res.oppName}.`,
+    ]);
+  }
+  return `${intro} ${buts} Recettes : ${res.revenue} €.`;
+}
+
+// Contexte du prochain match à domicile : adversaire, affluence, billetterie.
+export function matchContext(s) {
+  if (s.round >= 7) return null;
+  const pr = s.schedule[s.round].find((p) => p.includes(0));
+  const oppIdx = pr[0] === 0 ? pr[1] : pr[0];
+  const div = DIVISIONS[s.divisionIndex];
+  return {
+    opp: s.rivals[oppIdx - 1],
+    oppIdx,
+    capacity: capacity(s.buildings.terrain),
+    fill: fillRate(s.reputation, s.buildings.fans),
+    ticket: div.ticket,
+    repMult: 1 + s.buildings.fans * 0.1,
+  };
+}
+
+// Applique le résultat de notre match (joué en direct ou d'un bloc) et joue les autres rencontres.
+export function applyMatchResult(s, live) {
+  const ctx = matchContext(s);
+  if (!ctx) return s;
+  for (const [i, j] of s.schedule[s.round]) {
+    if (i === 0 || j === 0) continue;
+    const [gi, gj] = quickSim(s.rivals[i - 1].strength, s.rivals[j - 1].strength);
+    applyResult(s, i, j, gi, gj);
+  }
+  const attendance = Math.round(ctx.capacity * ctx.fill);
+  const res = {
+    ...live,
+    attendance,
+    revenue: attendance * ctx.ticket,
+    repDelta: Math.round((live.gf > live.ga ? 1 : live.gf === live.ga ? 0.2 : -0.6) * ctx.repMult * 10) / 10,
+  };
+  applyResult(s, 0, ctx.oppIdx, res.gf, res.ga);
+  s.money += res.revenue;
+  if (attendance >= ctx.capacity * 0.6) s.seasonStats.crowd = true;
+  s.reputation = Math.max(0, Math.round((s.reputation + res.repDelta) * 10) / 10);
+  s.round++;
+  s.lastMatch = { ...res, round: s.round };
+  pushJournal(s, { season: s.seasonNumber, round: s.round, text: reportText(s, res) });
+  return s;
+}
+
+// Match joué d'un bloc, sans écran de direct.
+export function playRound(s) {
+  const ctx = matchContext(s);
+  if (!ctx) return s;
+  ensureLineup(s);
+  return applyMatchResult(s, quickMatch(s, ctx));
+}
+
+export function standingsOf(s) {
+  return s.table
+    .map((t, i) => ({ i, ...t, name: i === 0 ? s.clubName : s.rivals[i - 1].name }))
+    .sort((a, b) => b.pts - a.pts || b.gd - a.gd || a.name.localeCompare(b.name));
+}
+
+export function nextOpponent(s) {
+  if (s.round >= 7) return null;
+  const pr = s.schedule[s.round].find((p) => p.includes(0));
+  const oppIdx = pr[0] === 0 ? pr[1] : pr[0];
+  return s.rivals[oppIdx - 1];
+}
+
+export function endSeason(s) {
+  const standings = standingsOf(s);
+  const position = standings.findIndex((t) => t.i === 0) + 1;
+  const div = DIVISIONS[s.divisionIndex];
+  const prize = (8 - position) * div.prize;
+  const sponsors = sponsorIncome(s.buildings.sponsor, s.divisionIndex);
+  const wages = s.players.reduce((sum, p) => sum + wageOf(p, s.divisionIndex), 0);
+  const promoted = position <= 2 && s.divisionIndex < 3;
+  const relegated = position >= 7 && s.divisionIndex > 0;
+
+  s.money += prize + sponsors - wages;
+  const repBefore = s.reputation;
+  s.reputation = Math.max(0, Math.round((s.reputation + (promoted ? 4 : relegated ? -3 : 0)) * 10) / 10);
+
+  const events = [];
+  for (const p of s.players) {
+    progressPlayer(p, s.buildings.training);
+    p.age += 1;
+  }
+  const staying = [];
+  for (const p of s.players) {
+    if (wantsRetirement(p)) events.push(`${p.name} (${p.age} ans) raccroche les crampons.`);
+    else staying.push(p);
+  }
+  s.players = staying;
+
+  if (s.buildings.academy > 0 && s.players.length < SQUAD_MAX) {
+    const y = makePlayer({ youth: true, academy: s.buildings.academy });
+    y.id = s.nextId++;
+    s.players.push(y);
+    events.push(`L’académie révèle ${y.name} (${y.age} ans, ${POS_LABELS[y.pos]}).`);
+  }
+  while (s.players.length < SQUAD_MIN) {
+    const p = makePlayer({ level: Math.max(0, s.divisionIndex - 0.5) });
+    p.id = s.nextId++;
+    s.players.push(p);
+    events.push(`Amateur de secours : ${p.name} (${p.age} ans) complète l’effectif.`);
+  }
+
+  s.history.push({ season: s.seasonNumber, division: div.name, position });
+  const nextDivName = DIVISIONS[clamp(s.divisionIndex + (promoted ? 1 : relegated ? -1 : 0), 0, 3)].name;
+  s.seasonReview = { position, division: div.name, prize, sponsors, wages, promoted, relegated, events, nextDivision: nextDivName };
+  closeSeasonGoals(s, events);
+  sectorUnlockedEvent(s, repBefore);
+  pushJournal(s, {
+    season: s.seasonNumber,
+    text: `Saison ${s.seasonNumber} terminée : ${position}e en ${div.name}.${promoted ? ' Montée !' : relegated ? ' Descente.' : ''} Prime : ${prize} € · Sponsors : ${sponsors} € · Salaires : -${wages} €.`,
+  });
+
+  if (promoted) s.divisionIndex += 1;
+  if (relegated) s.divisionIndex -= 1;
+  s.seasonNumber += 1;
+  s.lastMatch = null;
+  ensureLineup(s); // retraites, révélations de l'académie : l'onze est complété
+  startSeason(s);
+  return s;
+}

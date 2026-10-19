@@ -1,0 +1,110 @@
+// Ambiance sonore du stade, synthétisée avec Web Audio (aucun fichier) : rumeur de foule, « ooh » sur
+// les occasions, clameur sur les buts, soupir quand on encaisse, sifflet de l'arbitre.
+// Le contexte audio est créé au premier geste de l'utilisateur (coup d'envoi), comme l'exigent les navigateurs.
+
+const KEY = 'fo-sound';
+
+function noiseBuffer(ctx, seconds = 3) {
+  const len = ctx.sampleRate * seconds;
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  let b0 = 0, b1 = 0, b2 = 0;
+  for (let i = 0; i < len; i++) { // bruit rose (filtre de Voss simplifié) : plus doux qu'un bruit blanc
+    const w = Math.random() * 2 - 1;
+    b0 = 0.99765 * b0 + w * 0.099; b1 = 0.963 * b1 + w * 0.2965; b2 = 0.57 * b2 + w * 1.0526;
+    d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.12;
+  }
+  return buf;
+}
+
+export function createStadiumSound() {
+  let ctx = null;
+  let master, crowdGain, crowdFilter;
+  let muted = false;
+  try { muted = localStorage.getItem(KEY) === 'off'; } catch { /* préférence indisponible */ }
+
+  function ensure() {
+    if (ctx) return true;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
+    ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = muted ? 0 : 0.9;
+    master.connect(ctx.destination);
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuffer(ctx);
+    src.loop = true;
+    crowdFilter = ctx.createBiquadFilter();
+    crowdFilter.type = 'bandpass';
+    crowdFilter.frequency.value = 520;
+    crowdFilter.Q.value = 0.55;
+    crowdGain = ctx.createGain();
+    crowdGain.gain.value = 0;
+    src.connect(crowdFilter).connect(crowdGain).connect(master);
+    src.start();
+    return true;
+  }
+
+  // Enveloppe de foule : monte vers `peak` en `attack` s, retombe vers le niveau de base en `release` s.
+  function swell(peak, attack, release, freq = 520) {
+    if (!ensure()) return;
+    const t = ctx.currentTime;
+    const g = crowdGain.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(peak, t + attack);
+    g.linearRampToValueAtTime(0.18, t + attack + release);
+    crowdFilter.frequency.cancelScheduledValues(t);
+    crowdFilter.frequency.setValueAtTime(crowdFilter.frequency.value, t);
+    crowdFilter.frequency.linearRampToValueAtTime(freq, t + attack);
+    crowdFilter.frequency.linearRampToValueAtTime(520, t + attack + release);
+  }
+
+  function whistle(count = 1) {
+    if (!ensure()) return;
+    for (let i = 0; i < count; i++) {
+      const t = ctx.currentTime + i * 0.45;
+      const len = count === 3 && i === 2 ? 0.9 : 0.32;
+      const osc = ctx.createOscillator();
+      const trem = ctx.createOscillator();
+      const tremGain = ctx.createGain();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 2950;
+      trem.frequency.value = 28; // roulement de la bille du sifflet
+      tremGain.gain.value = 120;
+      trem.connect(tremGain).connect(osc.frequency);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.09, t + 0.02);
+      g.gain.setValueAtTime(0.09, t + len - 0.05);
+      g.gain.linearRampToValueAtTime(0, t + len);
+      osc.connect(g).connect(master);
+      osc.start(t); trem.start(t);
+      osc.stop(t + len + 0.05); trem.stop(t + len + 0.05);
+    }
+  }
+
+  return {
+    get muted() { return muted; },
+    start() { if (ensure()) { ctx.resume?.(); swell(0.18, 1.5, 0.1); } },
+    setMuted(m) {
+      muted = m;
+      try { localStorage.setItem(KEY, m ? 'off' : 'on'); } catch { /* idem */ }
+      if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05);
+    },
+    whistle,
+    chance() { swell(0.42, 0.35, 1.4, 800); }, // « ooh »
+    goal() { swell(0.95, 0.25, 4.5, 1150); }, // clameur
+    conceded() { swell(0.06, 0.4, 2.5, 380); }, // le stade se tait
+    card() { whistle(1); swell(0.3, 0.3, 1.2, 640); }, // sifflet + bronca
+    stop() {
+      if (!ctx) return;
+      const old = ctx;
+      const t = old.currentTime;
+      crowdGain.gain.cancelScheduledValues(t);
+      crowdGain.gain.setTargetAtTime(0, t, 0.4);
+      ctx = null; // un prochain start() repart sur un contexte neuf pendant que l'ancien s'éteint
+      setTimeout(() => old.close(), 1500);
+    },
+  };
+}
