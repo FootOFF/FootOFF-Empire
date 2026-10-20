@@ -909,7 +909,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* =========================================================== accueil */
 .hero {
-  position: fixed; inset: 0; bottom: var(--host-badge-h, 0px); overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: fixed; inset: 0; bottom: var(--host-badge-h, 0px); overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
   text-align: center; padding: 40px 16px;
   background: radial-gradient(ellipse 60% 45% at 50% 38%, rgba(199, 161, 90, .12), transparent 70%), var(--bg);
 }
@@ -919,6 +919,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background-size: 64px 64px; mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000, transparent);
 }
 .hero > * { position: relative; }
+/* centrage vertical par marges automatiques : un « justify-content: center » faisait déborder le haut du contenu
+   hors d'atteinte sur téléphone (la page semblait s'ouvrir déjà défilée vers le milieu) */
+.hero > :first-child { margin-top: auto; }
+.hero > :last-child { margin-bottom: auto; }
 .hero .lockup { margin-bottom: 36px; animation: fo-up .8s var(--ease); }
 .hero h1 { font-size: clamp(34px, 7vw, 64px); line-height: 1.02; margin: 16px 0 16px; text-transform: uppercase; letter-spacing: -.025em; animation: fo-up .9s var(--ease); }
 .hero h1 em { color: var(--gold); font-style: normal; }
