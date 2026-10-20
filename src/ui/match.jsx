@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { POS_LABELS } from '../game/constants';
 import { ratingAt } from '../game/players';
-import { SLOTS, TACTICS, TACTIC_ORDER, autoLineup, expectedGoals, lineupRating } from '../game/tactics';
+import { FORMATIONS, FORMATION_ORDER, TACTICS, TACTIC_ORDER, autoLineup, expectedGoals, formationOf, lineupRating, reshapeLineup, slotsOf } from '../game/tactics';
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
 import { createLiveMatch, prematchOdds } from '../game/live';
 import { IconClose, IconMute, IconPlay, IconSound } from './icons';
@@ -11,9 +11,6 @@ import { useKeydown } from './presence';
 // Avant-match (onze + tactique + pronostic) et match en direct (score, chrono, fil de commentaires,
 // vitesse, mi-temps avec changement). La 3D derrière est en mode « jour de match ».
 
-const PITCH = [ // positions des postes sur le schéma (en %, attaque vers le haut)
-  [50, 88], [14, 68], [37, 73], [63, 73], [86, 68], [27, 47], [50, 52], [73, 47], [20, 21], [50, 15], [80, 21],
-];
 const lastName = (n) => n.split(' ').slice(1).join(' ') || n;
 // « L. Ferrand » : l'initiale départage deux joueurs au même nom de famille
 const shortName = (n) => { const [first, ...rest] = n.split(' '); return rest.length ? `${first[0]}. ${rest.join(' ')}` : n; };
@@ -49,16 +46,33 @@ function TacticPicker({ value, onChange, compact }) {
   );
 }
 
+// Dispositif : six formations, avec leur effet résumé.
+function FormationPicker({ value, onChange }) {
+  return (
+    <div className="formations" role="radiogroup" aria-label="Dispositif">
+      {FORMATION_ORDER.map((id) => (
+        <button key={id} role="radio" aria-checked={value === id} className={value === id ? 'active' : ''} onClick={() => onChange(id)}>
+          <strong>{FORMATIONS[id].name}</strong>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // --- Avant-match -------------------------------------------------------------------------------------
 
 export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const [lineup, setLineup] = useState(() => [...state.lineup]);
   const [tactic, setTactic] = useState(state.tactic || 'balanced');
+  const [formation, setFormation] = useState(formationOf(state.formation).id);
   const [slot, setSlot] = useState(null);
   const byId = useMemo(() => Object.fromEntries(state.players.map((p) => [p.id, p])), [state.players]);
-  const rating = lineupRating(state.players, lineup);
-  const xg = expectedGoals(rating, ctx.opp.strength, tactic);
-  const odds = prematchOdds(state, { lineup, tactic, oppStrength: ctx.opp.strength }); // calculé sur le moteur
+  const SLOTS = slotsOf(formation);
+  const PITCH = formationOf(formation).pitch;
+  const rating = lineupRating(state.players, lineup, formation);
+  const xg = expectedGoals(rating, ctx.opp.strength, tactic, formation);
+  const odds = prematchOdds(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength }); // calculé sur le moteur
+  const reshape = (f) => { setFormation(f); setLineup(reshapeLineup(state.players, lineup, f)); setSlot(null); };
   const bench = state.players.filter((p) => !lineup.includes(p.id));
 
   useKeydown((e) => { if (e.key === 'Escape') { if (slot !== null) setSlot(null); else onCancel(); } });
@@ -85,8 +99,8 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
       <div className="pm-grid">
         <section className="pm-pitch-wrap glass">
           <div className="pm-sub">
-            <span className="eyebrow">Onze de départ · 4-3-3</span>
-            <button className="linkbtn pm-best" onClick={() => { setLineup(autoLineup(state.players)); setSlot(null); }}>Meilleur onze</button>
+            <span className="eyebrow">Onze de départ · <span className="nowrap">{formationOf(formation).name}</span></span>
+            <button className="linkbtn pm-best" onClick={() => { setLineup(autoLineup(state.players, formation)); setSlot(null); }}>Meilleur onze</button>
             <span className="pm-rating">Niveau <b>{fmtRating(rating)}</b></span>
           </div>
           <div className="pitch2d">
@@ -147,10 +161,15 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
             )}
           </div>
           <div className="glass pm-card">
+            <span className="eyebrow">Dispositif</span>
+            <FormationPicker value={formation} onChange={reshape} />
+            <p className="pm-blurb">{formationOf(formation).blurb}</p>
+          </div>
+          <div className="glass pm-card">
             <span className="eyebrow">Tactique</span>
             <TacticPicker value={tactic} onChange={setTactic} />
           </div>
-          <button className="btn btn-xl" onClick={() => onKickoff(lineup, tactic)}><IconPlay /> Coup d’envoi</button>
+          <button className="btn btn-xl" onClick={() => onKickoff(lineup, tactic, formation)}><IconPlay /> Coup d’envoi</button>
         </section>
       </div>
     </div>
@@ -181,6 +200,7 @@ function SubPicker({ state, m, notes, sub, onChange }) {
   const byId = (id) => state.players.find((p) => p.id === id);
   const outP = sub.out !== null ? byId(sub.out) : null;
   const inP = sub.in !== null ? byId(sub.in) : null;
+  const SLOTS = slotsOf(m.formation);
   const slot = outP ? SLOTS[m.lineup.indexOf(outP.id)] : null;
   const outLvl = outP ? ratingAt(outP, slot) : 0;
   const delta = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmtRating(Math.abs(v))}`;

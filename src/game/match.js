@@ -10,7 +10,7 @@ function lineAvg(players, pos, n) {
 
 // Niveau d'équipe : celui de l'onze aligné s'il existe, sinon des meilleurs joueurs par poste.
 export function teamLevel(s) {
-  return s.lineup ? lineupRating(s.players, s.lineup) : teamRating(s.players);
+  return s.lineup ? lineupRating(s.players, s.lineup, s.formation) : teamRating(s.players);
 }
 
 export function teamRating(players) {

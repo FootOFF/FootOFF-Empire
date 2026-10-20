@@ -3,7 +3,7 @@ import { OFFLINE_CAP, offlinePerHour } from './economy';
 import { assignNumber, costOf, makePlayer, saleValue } from './players';
 import { refreshTransfers } from './transfers';
 import { clubAfter, randomClubName } from './names';
-import { endSeason, playRound, pushJournal, startSeason } from './season';
+import { archivePlayer, endSeason, playRound, pushJournal, startSeason } from './season';
 import { initGoals } from './goals';
 import { PLOTS, ensureFixedPlots, plotIndexOf } from './map';
 import { ensureLineup } from './tactics';
@@ -117,14 +117,16 @@ export function sellPlayer(s, id) {
   if (s.players.length <= SQUAD_MIN) return null;
   const idx = s.players.findIndex((p) => p.id === id);
   if (idx === -1) return null;
+  const fee = saleValue(s.players[idx], s.divisionIndex);
+  const club = randomClubName();
+  archivePlayer(s, s.players[idx], { reason: 'vente', fee, club });
   const [p] = s.players.splice(idx, 1);
-  const fee = saleValue(p, s.divisionIndex);
   s.money += fee;
   book(s, 'sales', fee);
   ensureLineup(s);
   pushJournal(s, {
     season: s.seasonNumber, kind: 'mercato', title: `${p.name} quitte le club`,
-    text: `Le joueur rejoint ${randomClubName()} pour ${fee.toLocaleString('fr-FR')} €.`,
+    text: `Le joueur rejoint ${club} pour ${fee.toLocaleString('fr-FR')} €.`,
   });
   return s;
 }

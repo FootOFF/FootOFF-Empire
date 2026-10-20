@@ -122,8 +122,8 @@ export default function App({ preview = null }) {
     setMatchPhase('prematch');
   };
   const cancelMatch = () => { setMatchPhase(null); setMatchDay(false); };
-  const kickoff = (lineup, tactic) => {
-    if (run((s) => { s.lineup = lineup; s.tactic = tactic; return s; })) setMatchPhase('live');
+  const kickoff = (lineup, tactic, formation) => {
+    if (run((s) => { s.lineup = lineup; s.tactic = tactic; s.formation = formation; return s; })) setMatchPhase('live');
   };
   const finishMatch = (result) => {
     run((s) => applyMatchResult(s, result));
@@ -165,7 +165,7 @@ export default function App({ preview = null }) {
   const plotBadges = cinematic ? [] : actionablePlots(state);
 
   return (
-    <div className={`game ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${panel === 'squad' ? 'wide-panel' : ''}`} data-tuto={tuto ? tutoStep : undefined}>
+    <div className={`game ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${panel === 'squad' ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''}`} data-tuto={tuto ? tutoStep : undefined}>
       <div className="stage">
         {preview ? (
           <div className="stage-preview" aria-hidden="true" />

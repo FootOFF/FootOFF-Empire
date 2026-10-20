@@ -117,3 +117,21 @@ fasse pas changer de fiche.
 Vue d'ensemble calculée pour faire tenir toutes les parcelles entre la barre du haut et le menu du bas. Toucher un
 bâtiment le cadre au-dessus de sa fiche ; toucher à côté referme la fiche et ramène la vue d'ensemble. Double tap
 puis glisser : vers le haut pour dézoomer, vers le bas pour zoomer (double tap seul : un cran de zoom).
+
+## Cadrage d'un bâtiment
+
+La caméra mesure la zone libre (sous la barre du haut, au-dessus de la fiche sur téléphone, à droite de la
+carte de l'inspecteur sur PC) et choisit la distance qui fait tenir le bâtiment entier dans cette zone, en
+trois-quarts face. Sur téléphone, la fiche est limitée à 54 % de la hauteur et l'objectif s'efface pendant ce temps.
+
+## Carrières et anciens joueurs
+
+Chaque départ (vente, plan de redressement, retraite) archive le joueur dans `alumni` avec tout son parcours.
+La fiche carrière (`src/ui/career.jsx`, calculs dans `src/game/career.js`) s'ouvre depuis les classements et les
+légendes de l'onglet Stats, le Stats Pass d'un match, la fiche joueur et l'onglet Anciens de l'effectif.
+
+## Dispositifs
+
+Six formations (`FORMATIONS` dans `src/game/tactics.js`) : 4-3-3, 4-4-2, 4-2-3-1, 3-5-2, 3-4-3, 5-3-2. Le
+dispositif fixe les postes du onze, le schéma de l'avant-match et la place des joueurs 3D ; il agit sur les
+occasions des deux équipes et sur la possession. Le pronostic en tient compte (vérifié par simulation).

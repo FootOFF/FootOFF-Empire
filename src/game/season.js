@@ -74,6 +74,33 @@ function quickSim(si, sj) {
   return [g1, g2];
 }
 
+// Ligne de carrière d'une saison (fiche joueur, onglet Stats) : niveau à la fin de la saison et statistiques.
+export function seasonLine(s, p, st = p.season || freshSeason()) {
+  return {
+    season: s.seasonNumber, rating: Math.round(playerRating(p) * 10) / 10, age: p.age, division: DIVISIONS[s.divisionIndex].name,
+    apps: st.apps || 0, goals: st.goals || 0, assists: st.assists || 0,
+    avg: st.apps ? Math.round((st.sum / st.apps) * 10) / 10 : null,
+    yellow: st.yellow || 0, red: st.red || 0, motm: st.motm || 0,
+    minutes: st.minutes || 0, shots: st.shots || 0, onTarget: st.onTarget || 0, clean: st.clean || 0,
+  };
+}
+
+// Anciens joueurs : un joueur qui quitte le club (vente, plan de redressement, retraite) est archivé avec tout son
+// parcours, pour qu'on puisse le retrouver dans l'effectif et l'onglet Stats. ageSeason : saison où il a l'âge
+// enregistré (pour calculer son âge aujourd'hui).
+export function archivePlayer(s, p, { reason, fee = null, club = null }) {
+  const hist = [...(p.hist || [])];
+  const st = p.season;
+  if (st && st.apps > 0 && !hist.some((h) => h.season === s.seasonNumber)) hist.push(seasonLine(s, p, st));
+  const peak = Math.max(Math.round(playerRating(p) * 10) / 10, ...hist.map((h) => h.rating || 0));
+  s.alumni = [...(s.alumni || []).filter((a) => a.id !== p.id), {
+    id: p.id, name: p.name, pos: p.pos, num: p.num, foot: p.foot, traits: p.traits || [],
+    joined: p.joined ?? 1, left: s.seasonNumber, leftRound: s.round, reason, fee, club,
+    age: p.age, ageSeason: reason === 'retraite' ? s.seasonNumber + 1 : s.seasonNumber,
+    rating: Math.round(playerRating(p) * 10) / 10, peak, hist,
+  }].slice(-150);
+}
+
 // Historique détaillé de chaque match (onglet Stats) : score, statistiques, buteurs, notes, affluence.
 // L'homme du match (meilleure note) est compté dans la saison du joueur.
 function recordMatch(s, res) {
@@ -84,7 +111,7 @@ function recordMatch(s, res) {
   s.matches = [...(s.matches || []), {
     season: s.seasonNumber, round: s.round, division: DIVISIONS[s.divisionIndex].name,
     opp: res.oppName, oppStrength: Math.round((res.oppStrength || 0) * 10) / 10, myRating: res.myRating,
-    tactic: res.tactic || s.tactic, gf: res.gf, ga: res.ga,
+    tactic: res.tactic || s.tactic, formation: res.formation || s.formation || '433', gf: res.gf, ga: res.ga,
     stats: st ? {
       possession: st.possession, shots: [...st.shots], onTarget: [...st.onTarget], yellow: [...st.yellow], red: [...st.red],
       xg: st.xg ? st.xg.map((v) => Math.round(v * 100) / 100) : null, saves: st.saves ? [...st.saves] : null,
@@ -175,6 +202,11 @@ export function applyMatchResult(s, live) {
     p.season.yellow += st.yellow;
     p.season.red += st.red;
     p.season.sum += st.rating;
+    p.season.minutes = (p.season.minutes || 0) + (st.minutes ?? 90);
+    p.season.shots = (p.season.shots || 0) + (st.shots || 0);
+    p.season.onTarget = (p.season.onTarget || 0) + (st.onTarget || 0);
+    // match sans encaisser : gardien et défenseurs présents au moins une heure
+    if (res.ga === 0 && (st.pos === 'G' || st.pos === 'D') && (st.minutes ?? 90) >= 60) p.season.clean = (p.season.clean || 0) + 1;
     p.form = [...(p.form || []), st.rating].slice(-5);
   }
   s.money += res.revenue;
@@ -240,6 +272,7 @@ export function endSeason(s) {
   while (s.money < 0 && s.players.length > SQUAD_MIN + 2) {
     const p = [...s.players].sort((a, b) => wageOf(b, s.divisionIndex) - wageOf(a, s.divisionIndex))[0];
     const fee = saleValue(p, s.divisionIndex);
+    archivePlayer(s, p, { reason: 'conseil', fee, club: randomClubName() });
     s.players.splice(s.players.indexOf(p), 1);
     s.money += fee;
     book(s, 'sales', fee);
@@ -250,20 +283,17 @@ export function endSeason(s) {
 
   for (const p of s.players) {
     // bilan individuel de la saison, puis progression de l'été
-    const st = p.season || freshSeason();
-    p.hist = [...(p.hist || []), {
-      season: s.seasonNumber, rating: Math.round(playerRating(p) * 10) / 10, apps: st.apps, goals: st.goals,
-      assists: st.assists, avg: st.apps ? Math.round((st.sum / st.apps) * 10) / 10 : null,
-      yellow: st.yellow || 0, red: st.red || 0, motm: st.motm || 0, division: div.name,
-    }].slice(-20); // carrière : 20 saisons gardées
+    p.hist = [...(p.hist || []), seasonLine(s, p)].slice(-20); // carrière : 20 saisons gardées
     p.season = freshSeason();
     progressPlayer(p, s.buildings.training);
     p.age += 1;
   }
   const staying = [];
   for (const p of s.players) {
-    if (wantsRetirement(p)) events.push(`${p.name} (${p.age} ans) raccroche les crampons.`);
-    else staying.push(p);
+    if (wantsRetirement(p)) {
+      events.push(`${p.name} (${p.age} ans) raccroche les crampons.`);
+      archivePlayer(s, p, { reason: 'retraite' });
+    } else staying.push(p);
   }
   s.players = staying;
 

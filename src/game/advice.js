@@ -1,6 +1,6 @@
 import { BUILDINGS, POS_LABELS, SQUAD_MAX, upgradeCost } from './constants';
 import { PLOTS, allowedBuildingsFor, isSectorUnlocked, nextLockedSector, plotBuilding } from './map';
-import { SLOTS, autoLineup, lineupRating } from './tactics';
+import { autoLineup, lineupRating, slotsOf } from './tactics';
 import { ratingAt, signingFee, wageOf } from './players';
 import { capacity, endOfSeasonForecast, expectedGate, seasonForecast } from './economy';
 import { nextOpponent, standingsOf } from './season';
@@ -15,9 +15,10 @@ const LINE = { G: 'Ton gardien', D: 'Ta défense', M: 'Ton milieu', A: 'Ton atta
 // Ligne la plus faible de l'onze aligné (moyenne des notes à leur poste).
 export function weakestLine(s) {
   const lines = { G: [], D: [], M: [], A: [] };
+  const slots = slotsOf(s.formation);
   s.lineup.forEach((id, k) => {
     const p = s.players.find((q) => q.id === id);
-    if (p) lines[SLOTS[k]].push(ratingAt(p, SLOTS[k]));
+    if (p && slots[k]) lines[slots[k]].push(ratingAt(p, slots[k]));
   });
   let weak = null;
   for (const pos of ['A', 'M', 'D', 'G']) {
@@ -37,8 +38,9 @@ export function bestSigning(s) {
     const fee = signingFee(p, s.divisionIndex);
     if (fee > s.money) continue;
     let gain = 0;
+    const slots = slotsOf(s.formation);
     s.lineup.forEach((id, k) => {
-      if (SLOTS[k] !== p.pos) return;
+      if (slots[k] !== p.pos) return;
       const q = s.players.find((x) => x.id === id);
       gain = Math.max(gain, ratingAt(p, p.pos) - (q ? ratingAt(q, p.pos) : 0));
     });
@@ -103,8 +105,8 @@ export function staffTip(s) {
       action: { kind: 'panel', panel: 'finances', label: 'Voir les finances' },
     };
   }
-  const best = autoLineup(s.players);
-  if (lineupRating(s.players, best) > lineupRating(s.players, s.lineup) + 0.15) {
+  const best = autoLineup(s.players, s.formation);
+  if (lineupRating(s.players, best, s.formation) > lineupRating(s.players, s.lineup, s.formation) + 0.15) {
     return {
       id: `lineup-${s.seasonNumber}-${s.round}`, title: 'Ton onze peut faire mieux',
       text: 'Des remplaçants sont plus forts que certains titulaires. Touche « Meilleur onze » dans l’avant-match.',

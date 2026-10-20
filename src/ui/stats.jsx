@@ -7,6 +7,8 @@ import { IconBall, RatingBadge, SectionHead, Stat, VersusBar } from './kit';
 import { IconChevron, IconChevronLeft, IconClose } from './icons';
 import { Panel } from './panels';
 import { GlassTabs } from './glass';
+import { PlayerCareer } from './career';
+import { allCareers } from '../game/career';
 import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
 
@@ -55,7 +57,7 @@ function FormPills({ list, onOpen }) {
 }
 
 // --- Le club : saison choisie, forme, records, saison par saison -------------------------------------------------
-function ClubTab({ state, matches, season, onOpen }) {
+function ClubTab({ state, matches, season, onOpen, onCareer }) {
   const list = matches.filter((m) => m.season === season);
   const t = summary(list);
   const withStats = list.filter((m) => m.stats).length || 1;
@@ -104,6 +106,8 @@ function ClubTab({ state, matches, season, onOpen }) {
         </>
       )}
 
+      <Legends state={state} matches={all} onCareer={onCareer} />
+
       {seasons.length > 0 && (
         <>
           <SectionHead label="Saison par saison" />
@@ -128,6 +132,49 @@ function ClubTab({ state, matches, season, onOpen }) {
           </table>
         </>
       )}
+    </>
+  );
+}
+
+// Légendes du club : records individuels de toute l'histoire, chacun ouvre la fiche carrière du joueur.
+function Legends({ state, matches, onCareer }) {
+  const careers = allCareers(state);
+  if (!careers.some((c) => c.totals.apps)) return null;
+  const top = (score) => careers.reduce((b, c) => (score(c) > (b ? score(b) : 0) ? c : b), null);
+  const scorer = top((c) => c.totals.goals);
+  const passer = top((c) => c.totals.assists);
+  const loyal = top((c) => c.totals.apps);
+  const star = top((c) => c.totals.motm);
+  const rated = top((c) => (c.totals.apps >= 10 ? c.totals.avg : 0));
+  const keeper = top((c) => ((c.p.pos === 'G' || c.p.pos === 'D') ? c.totals.clean : 0));
+  let bestSeason = null;
+  for (const c of careers) for (const h of c.hist) if (h.goals && (!bestSeason || h.goals > bestSeason.h.goals)) bestSeason = { c, h };
+  let bestGame = null;
+  for (const m of matches) for (const r of m.players || []) if (r.goals && (!bestGame || r.goals > bestGame.r.goals)) bestGame = { m, r };
+  const name = (c) => c.p.name + (c.current ? '' : ' (ancien)');
+  const rows = [
+    scorer?.totals.goals ? ['Meilleur buteur de l’histoire', name(scorer), plural(scorer.totals.goals, 'but', 'buts'), scorer.id] : null,
+    passer?.totals.assists ? ['Meilleur passeur', name(passer), plural(passer.totals.assists, 'passe', 'passes'), passer.id] : null,
+    loyal?.totals.apps ? ['Le plus de matchs', name(loyal), plural(loyal.totals.apps, 'match', 'matchs'), loyal.id] : null,
+    star?.totals.motm ? ['Le plus d’hommes du match', name(star), `${star.totals.motm} fois`, star.id] : null,
+    rated ? ['Meilleure note moyenne (10 matchs min.)', name(rated), `${fmtRating(rated.totals.avg)} / 10`, rated.id] : null,
+    keeper?.totals.clean ? ['Le plus de matchs sans encaisser', name(keeper), plural(keeper.totals.clean, 'match', 'matchs'), keeper.id] : null,
+    bestSeason ? ['Record de buts sur une saison', `${name(bestSeason.c)} · saison ${bestSeason.h.season}`, plural(bestSeason.h.goals, 'but', 'buts'), bestSeason.c.id] : null,
+    bestGame ? ['Record de buts sur un match', `${bestGame.r.name} · contre ${bestGame.m.opp}`, plural(bestGame.r.goals, 'but', 'buts'), bestGame.r.id] : null,
+  ].filter(Boolean);
+  return (
+    <>
+      <SectionHead label="Légendes du club" aside="records individuels" />
+      <ul className="st-records">
+        {rows.map(([label, who, value, id]) => (
+          <li key={label}>
+            <button className="st-record" onClick={() => onCareer(id)}>
+              <span>{label}<em>{who}</em></span>
+              <b>{value}</b>
+            </button>
+          </li>
+        ))}
+      </ul>
     </>
   );
 }
@@ -172,29 +219,40 @@ function MatchesTab({ matches, onOpen }) {
   );
 }
 
-// --- Joueurs : classements de la saison ou de la carrière ----------------------------------------------------------
-function PlayersTab({ state }) {
+// --- Joueurs : classements de la saison ou de toute l'histoire du club ----------------------------------------------
+// Saison : joueurs actuels. Histoire du club : tous ceux qui sont passés par le club, anciens compris. Chaque
+// ligne ouvre la fiche carrière du joueur.
+function PlayersTab({ state, onCareer }) {
   const [scope, setScope] = useState('season');
-  const rows = state.players.map((p) => {
-    const st = p.season || {};
-    const base = { apps: st.apps || 0, goals: st.goals || 0, assists: st.assists || 0, motm: st.motm || 0, yellow: st.yellow || 0, red: st.red || 0, sum: st.sum || 0 };
-    if (scope === 'career') for (const h of p.hist || []) {
-      base.apps += h.apps || 0; base.goals += h.goals || 0; base.assists += h.assists || 0; base.motm += h.motm || 0;
-      base.yellow += h.yellow || 0; base.red += h.red || 0; base.sum += (h.avg || 0) * (h.apps || 0);
-    }
-    return { p, ...base, avg: base.apps ? base.sum / base.apps : 0 };
-  });
+  const season = scope === 'season';
+  const rows = season
+    ? state.players.map((p) => {
+      const st = p.season || {};
+      return {
+        id: p.id, p, old: false, apps: st.apps || 0, goals: st.goals || 0, assists: st.assists || 0, motm: st.motm || 0,
+        yellow: st.yellow || 0, red: st.red || 0, minutes: st.minutes || 0, shots: st.shots || 0, onTarget: st.onTarget || 0,
+        clean: st.clean || 0, avg: st.apps ? st.sum / st.apps : 0,
+      };
+    })
+    : allCareers(state).map((c) => ({ id: c.id, p: c.p, old: !c.current, ...c.totals, avg: c.totals.avg || 0 }));
+  const minApps = season ? 3 : 10;
+  const minShots = season ? 6 : 15;
   const boards = [
     ['Buteurs', (r) => r.goals, (r) => plural(r.goals, 'but', 'buts')],
     ['Passeurs décisifs', (r) => r.assists, (r) => plural(r.assists, 'passe', 'passes')],
+    ['Décisifs (buts + passes)', (r) => r.goals + r.assists, (r) => `${r.goals + r.assists} (${r.goals} + ${r.assists})`],
     ['Hommes du match', (r) => r.motm, (r) => `${r.motm} fois`],
-    ['Note moyenne', (r) => (r.apps >= 3 ? r.avg : 0), (r) => `${fmtRating(r.avg)} / 10`],
+    [`Note moyenne (${minApps} matchs min.)`, (r) => (r.apps >= minApps ? r.avg : 0), (r) => `${fmtRating(r.avg)} / 10`],
     ['Matchs joués', (r) => r.apps, (r) => plural(r.apps, 'match', 'matchs')],
+    ['Minutes jouées', (r) => r.minutes, (r) => `${fmtNum(r.minutes)} min`],
+    ['Tirs cadrés', (r) => r.onTarget, (r) => `${r.onTarget} sur ${r.shots}`],
+    [`Efficacité (${minShots} tirs min.)`, (r) => (r.shots >= minShots ? r.goals / r.shots : 0), (r) => `${pct(r.goals, r.shots)} %`],
+    ['Matchs sans encaisser', (r) => ((r.p.pos === 'G' || r.p.pos === 'D') ? r.clean : 0), (r) => plural(r.clean, 'match', 'matchs')],
     ['Discipline', (r) => r.yellow + r.red * 3, (r) => `${r.yellow} J · ${r.red} R`],
   ];
   return (
     <>
-      <GlassTabs className="segmented st-scope" role="radiogroup" label="Période" items={[['season', `Saison ${state.seasonNumber}`], ['career', 'Carrière au club']]} value={scope} onChange={setScope} />
+      <GlassTabs className="segmented st-scope" role="radiogroup" label="Période" items={[['season', `Saison ${state.seasonNumber}`], ['career', 'Histoire du club']]} value={scope} onChange={setScope} />
       <div className="st-boards">
         {boards.map(([title, score, label]) => {
           const top = rows.filter((r) => score(r) > 0).sort((a, b) => score(b) - score(a)).slice(0, 5);
@@ -204,11 +262,13 @@ function PlayersTab({ state }) {
               {top.length === 0 ? <span className="st-muted">—</span> : (
                 <ol>
                   {top.map((r, i) => (
-                    <li key={r.p.id}>
-                      <span className="st-rank">{i + 1}</span>
-                      <span className={`pos-pill ${r.p.pos}`}>{r.p.pos}</span>
-                      <span className="st-name">{shortName(r.p.name)}</span>
-                      <b>{label(r)}</b>
+                    <li key={r.id}>
+                      <button className="st-player" onClick={() => onCareer(r.id)}>
+                        <span className="st-rank">{i + 1}</span>
+                        <span className={`pos-pill ${r.p.pos}`}>{r.p.pos}</span>
+                        <span className="st-name">{shortName(r.p.name)}{r.old && <em className="st-old">ancien</em>}</span>
+                        <b>{label(r)}</b>
+                      </button>
                     </li>
                   ))}
                 </ol>
@@ -217,7 +277,7 @@ function PlayersTab({ state }) {
           );
         })}
       </div>
-      <p className="st-muted">Joueurs actuellement au club{scope === 'career' ? ', toutes leurs saisons chez toi' : ''}.</p>
+      <p className="st-muted">{season ? 'Joueurs actuellement au club.' : 'Tous les joueurs passés par le club, anciens compris.'} Touche un joueur pour ouvrir sa carrière.</p>
     </>
   );
 }
@@ -308,7 +368,7 @@ function MatchStats({ m }) {
   );
 }
 
-function MatchPlayers({ m, clubName }) {
+function MatchPlayers({ m, clubName, onCareer }) {
   const players = (m.players || []).slice().sort((a, b) => POS_ORDER[a.pos] - POS_ORDER[b.pos] || b.rating - a.rating);
   const oppGoals = (m.events || []).filter((e) => e.side === 'away' && e.type === 'goal');
   const oppShots = (m.shots || []).filter((x) => x.s === 1);
@@ -327,7 +387,7 @@ function MatchPlayers({ m, clubName }) {
             <thead><tr><th className="l">Joueur</th><th>Note</th><th>Min.</th><th>Buts</th><th>Passes</th><th>Tirs</th><th>Cartons</th></tr></thead>
             <tbody>
               {players.map((p) => (
-                <tr key={p.id} className={p.id === m.motm ? 'motm' : ''}>
+                <tr key={p.id} className={`sp-click ${p.id === m.motm ? 'motm' : ''}`} onClick={() => onCareer?.(p.id)}>
                   <td className="l"><span className={`pos-pill ${p.pos}`}>{p.pos}</span><span className="sp-pname">{shortName(p.name)}</span></td>
                   <td><RatingBadge value={p.rating} /></td>
                   <td>{dash(p.minutes)}</td>
@@ -340,7 +400,7 @@ function MatchPlayers({ m, clubName }) {
             </tbody>
           </table>
         </div>
-        <p className="sp-note">En or : l’homme du match. Les tirs entre parenthèses sont ceux cadrés.</p>
+        <p className="sp-note">En or : l’homme du match. Les tirs entre parenthèses sont ceux cadrés. Touche un joueur pour ouvrir sa carrière.</p>
       </section>
       <section className="sh-sec">
         <span className="sh-cap">{m.opp}</span>
@@ -401,7 +461,7 @@ function MatchTimeline({ m }) {
   );
 }
 
-function StatsPass({ state, m, matches, onClose, onPrev, onNext }) {
+function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
   const ref = useRef(null);
   const [view, setView] = useState('resume');
   useSwipe(ref, { onDown: onClose, onLeft: onNext, onRight: onPrev, downMedia: PHONE });
@@ -445,7 +505,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext }) {
         <GlassTabs className="sq-tabs sp-tabs" items={[['resume', 'Résumé'], ['stats', 'Stats'], ['players', 'Joueurs'], ['timeline', 'Déroulé']]} value={view} onChange={setView} />
 
         {view === 'stats' && <MatchStats m={m} />}
-        {view === 'players' && <MatchPlayers m={m} clubName={state.clubName} />}
+        {view === 'players' && <MatchPlayers m={m} clubName={state.clubName} onCareer={onCareer} />}
         {view === 'timeline' && <MatchTimeline m={m} />}
         {view === 'resume' && <>
         {st && (
@@ -486,7 +546,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext }) {
               {lines.filter(([, ps]) => ps.length).map(([pos, ps]) => (
                 <div key={pos} className="sp-line">
                   <span className={`pos-pill ${pos}`}>{pos}</span>
-                  <div>{ps.map((p) => <span key={p.id} className="sp-chip"><RatingBadge value={p.rating} />{shortName(p.name)}</span>)}</div>
+                  <div>{ps.map((p) => <button key={p.id} className="sp-chip" onClick={() => onCareer?.(p.id)}><RatingBadge value={p.rating} />{shortName(p.name)}</button>)}</div>
                 </div>
               ))}
             </div>
@@ -526,12 +586,13 @@ export function StatsPanel({ state, onClose, initialMatch = null }) {
   const seasons = [...new Set([state.seasonNumber, ...matches.map((m) => m.season)])].sort((a, b) => b - a);
   const [season, setSeason] = useState(state.seasonNumber);
   const [open, setOpen] = useState(initialMatch === 'last' ? matches[matches.length - 1] || null : null);
+  const [career, setCareer] = useState(null); // fiche carrière ouverte (identifiant du joueur)
   const go = (d) => {
     const i = matches.indexOf(open);
     const next = matches[(i + d + matches.length) % matches.length];
     if (next) setOpen(next);
   };
-  const onEscape = () => { if (open) setOpen(null); else onClose(); };
+  const onEscape = () => { if (career) setCareer(null); else if (open) setOpen(null); else onClose(); };
   const pick = (id) => { // chaque onglet s'ouvre en haut de sa liste
     setTab(id);
     document.querySelector('.panel.lg .panel-body')?.scrollTo(0, 0);
@@ -546,18 +607,23 @@ export function StatsPanel({ state, onClose, initialMatch = null }) {
       toolbar={(
         <GlassTabs items={[['club', 'Le club'], ['matches', 'Matchs'], ['players', 'Joueurs']]} value={tab} onChange={pick} />
       )}
-      overlay={<Presence>{open && <StatsPass state={state} m={open} matches={matches} onClose={() => setOpen(null)} onPrev={() => go(-1)} onNext={() => go(1)} />}</Presence>}
+      overlay={(
+        <>
+          <Presence>{open && <StatsPass state={state} m={open} matches={matches} onClose={() => setOpen(null)} onPrev={() => go(-1)} onNext={() => go(1)} onCareer={setCareer} />}</Presence>
+          <Presence>{career !== null && <PlayerCareer state={state} id={career} onClose={() => setCareer(null)} />}</Presence>
+        </>
+      )}
     >
       {tab === 'club' && (
         <>
           {seasons.length > 1 && (
             <div className="chips">{seasons.map((n) => <button key={n} className={season === n ? 'active' : ''} onClick={() => setSeason(n)}>Saison {n}</button>)}</div>
           )}
-          <ClubTab state={state} matches={matches} season={season} onOpen={setOpen} />
+          <ClubTab state={state} matches={matches} season={season} onOpen={setOpen} onCareer={setCareer} />
         </>
       )}
       {tab === 'matches' && <MatchesTab matches={matches} onOpen={setOpen} />}
-      {tab === 'players' && <PlayersTab state={state} />}
+      {tab === 'players' && <PlayersTab state={state} onCareer={setCareer} />}
     </Panel>
   );
 }

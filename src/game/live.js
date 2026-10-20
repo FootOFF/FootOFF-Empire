@@ -1,6 +1,6 @@
 import { clamp, pick, ri } from './utils';
 import { FIRST, LAST, capitalize, clubAfter, deName, isPluralClub } from './names';
-import { SLOTS, TACTICS, expectedGoals, lineupRating } from './tactics';
+import { SLOTS, TACTICS, expectedGoals, formationOf, lineupRating, slotsOf } from './tactics';
 import { ratingAt } from './players';
 
 // Match en direct : simulation minute par minute, mi-temps par mi-temps (un changement ou une nouvelle
@@ -88,9 +88,9 @@ const shooterWeight = (p, bigGame) => {
 };
 
 // probabilités de but par minute pour chaque équipe, dans l'état donné (onze, tactique, expulsions)
-function minuteGoalChances(s, lineup, tactic, oppStrength, sent = { home: 0, away: 0 }, sentIds = new Set()) {
-  const rating = lineupRating(s.players, lineup);
-  const xg = expectedGoals(rating, oppStrength, tactic);
+function minuteGoalChances(s, lineup, tactic, oppStrength, sent = { home: 0, away: 0 }, sentIds = new Set(), formation = s.formation) {
+  const rating = lineupRating(s.players, lineup, formation);
+  const xg = expectedGoals(rating, oppStrength, tactic, formation);
   const bigGame = oppStrength > rating;
   const on = lineup.map((id) => s.players.find((p) => p.id === id)).filter((p) => p && !sentIds.has(p.id));
   const has = (p, t) => p.traits?.includes(t);
@@ -144,9 +144,9 @@ function outcomeOdds({ pH, pA }, lead, durations) {
 }
 
 // avant le coup d'envoi : 90 minutes plus le temps additionnel des deux mi-temps
-export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, oppStrength }) {
+export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength }) {
   const durations = HALF1.flatMap((a) => HALF2.map((b) => a + b));
-  return outcomeOdds(minuteGoalChances(s, lineup, tactic, oppStrength), 0, durations);
+  return outcomeOdds(minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation), 0, durations);
 }
 
 export function createLiveMatch(s, ctx) {
@@ -156,6 +156,7 @@ export function createLiveMatch(s, ctx) {
     away: ctx.opp.name,
     oppStrength: ctx.opp.strength,
     lineup: [...s.lineup],
+    formation: formationOf(s.formation).id,
     tactic: s.tactic,
     score: { home: 0, away: 0 },
     // statistiques détaillées (fiche Stats Pass) : [club, adversaire] ; xg = buts attendus, saves = arrêts du gardien
@@ -215,15 +216,15 @@ export function createLiveMatch(s, ctx) {
     m.half = half;
     const start = half === 1 ? 0 : 45;
     const end = start + m.halfLength[half - 1]; // 45 minutes + temps additionnel
-    const rating = lineupRating(s.players, m.lineup);
-    const xg = expectedGoals(rating, m.oppStrength, m.tactic);
+    const rating = lineupRating(s.players, m.lineup, m.formation);
+    const xg = expectedGoals(rating, m.oppStrength, m.tactic, m.formation);
     const bigGame = m.oppStrength > rating;
     const starters = playersOn();
     const rocs = starters.some((p) => p.pos === 'D' && has(p, 'roc'));
     const keeper = starters.find((p) => p.pos === 'G');
     const chat = keeper && has(keeper, 'chat');
     const diff = rating - m.oppStrength;
-    const tilt = m.tactic === 'offensive' ? 6 : m.tactic === 'low' ? -9 : 0;
+    const tilt = (m.tactic === 'offensive' ? 6 : m.tactic === 'low' ? -9 : 0) + (formationOf(m.formation).lines[1] - 3) * 2.5; // un milieu fourni tient le ballon
     m.stats.possHalf[half - 1] = Math.round(clamp(50 + diff * 3 + tilt + (Math.random() - 0.5) * 6, 28, 74));
     const halves = m.stats.possHalf.filter((x) => x !== null);
     m.stats.possession = Math.round(halves.reduce((a, b) => a + b, 0) / halves.length);
@@ -346,7 +347,7 @@ export function createLiveMatch(s, ctx) {
       const p = s.players.find((q) => q.id === id);
       if (!p) return null;
       const k = m.lineup.indexOf(id);
-      const pos = k >= 0 ? SLOTS[k] : p.pos;
+      const pos = k >= 0 ? slotsOf(m.formation)[k] : p.pos;
       const f = m.perf[id] || { goals: 0, assists: 0, yellow: 0, red: 0, shots: 0, onTarget: 0 };
       const minutes = Math.max(0, Math.min(90, f.out ?? 90) - (f.in ?? 0)); // temps de jeu (entrée à la pause, expulsion)
       let r = 6 + res + f.goals * 1 + f.assists * 0.6 - f.yellow * 0.4 - f.red * 1.5;
@@ -366,7 +367,7 @@ export function createLiveMatch(s, ctx) {
     // pronostic de fin de match à la mi-temps, avec le onze et la tactique envisagés pour la seconde période
     secondHalfOdds({ lineup = m.lineup, tactic = m.tactic } = {}) {
       const sent = { home: m.sent.home.size, away: m.sent.away.size };
-      const chances = minuteGoalChances(s, lineup, tactic, m.oppStrength, sent, m.sent.home);
+      const chances = minuteGoalChances(s, lineup, tactic, m.oppStrength, sent, m.sent.home, m.formation);
       return outcomeOdds(chances, m.score.home - m.score.away, [m.halfLength[1]]);
     },
     // changement à la mi-temps : un titulaire sort, un remplaçant prend son poste
@@ -395,7 +396,8 @@ export function createLiveMatch(s, ctx) {
         gf: m.score.home,
         ga: m.score.away,
         scorers: m.scorers,
-        myRating: Math.round(lineupRating(s.players, m.lineup) * 10) / 10,
+        myRating: Math.round(lineupRating(s.players, m.lineup, m.formation) * 10) / 10,
+        formation: m.formation,
         oppStrength: m.oppStrength,
         oppName: m.away,
         tactic: m.tactic,

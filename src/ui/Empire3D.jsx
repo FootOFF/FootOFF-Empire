@@ -58,6 +58,70 @@ function homeView(aspect) {
   return { pos: HOME_VIEW.target.clone().addScaledVector(HOME_DIR, dist), target: HOME_VIEW.target.clone(), dist };
 }
 
+// Cadrage d'une parcelle choisie : la zone libre de l'écran (sous la barre du haut, au-dessus de la fiche sur
+// téléphone, à droite de la carte de l'inspecteur sur PC, au-dessus du menu du bas), puis la distance qui fait
+// tenir le bâtiment entier dans cette zone, avec une marge. L'angle est un trois-quarts face un peu plus bas que
+// la vue d'ensemble, pour bien voir les façades.
+function freeRegion(mount) {
+  const r = mount.getBoundingClientRect();
+  const W = r.width;
+  const H = r.height;
+  const narrow = W <= 760;
+  const rect = (sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return null;
+    const b = el.getBoundingClientRect();
+    return b.width && b.height ? b : null;
+  };
+  let top = 0;
+  let bottom = H;
+  let left = 0;
+  let right = W;
+  const hudTop = rect('.hud-top');
+  if (hudTop) top = hudTop.bottom - r.top;
+  const ins = document.querySelector('.inspector');
+  if (ins) { // offsetTop / offsetLeft : position finale, sans l'animation d'entrée de la fiche
+    if (narrow) bottom = Math.min(bottom, ins.offsetTop);
+    else left = Math.max(left, ins.offsetLeft + ins.offsetWidth);
+  }
+  if (!narrow) {
+    for (const sel of ['.hud-dock', '.hud-match']) { const b = rect(sel); if (b && b.left < right && b.right > left) bottom = Math.min(bottom, b.top - r.top); }
+    const tools = rect('.hud-tools');
+    if (tools) right = Math.min(right, tools.left - r.left);
+  }
+  const pad = narrow ? 12 : 24;
+  return { left: left + pad, right: right - pad, top: top + pad, bottom: Math.max(top + pad + 80, bottom - pad), W, H };
+}
+const FRAME_ELEV = 0.5; // ~30° au-dessus de l'horizon
+const FRAME_DIR = new THREE.Vector3(HOME_DIR.x, 0, HOME_DIR.z).normalize().multiplyScalar(Math.cos(FRAME_ELEV)).setY(Math.sin(FRAME_ELEV));
+function frameView(camera, box, region) {
+  const { W, H } = region;
+  const cam = camera.clone();
+  const shift = { x: W / 2 - (region.left + region.right) / 2, y: H / 2 - (region.top + region.bottom) / 2 };
+  cam.aspect = W / H;
+  cam.setViewOffset(W, H, shift.x, shift.y, W, H);
+  const center = box.getCenter(new THREE.Vector3());
+  const corners = [];
+  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) corners.push(new THREE.Vector3(x, y, z));
+  const v = new THREE.Vector3();
+  const fits = (d) => {
+    cam.position.copy(center).addScaledVector(FRAME_DIR, d);
+    cam.lookAt(center);
+    cam.updateMatrixWorld();
+    cam.updateProjectionMatrix();
+    return corners.every((p) => {
+      v.copy(p).project(cam);
+      const sx = (v.x * 0.5 + 0.5) * W;
+      const sy = (-v.y * 0.5 + 0.5) * H;
+      return v.z < 1 && sx >= region.left && sx <= region.right && sy >= region.top && sy <= region.bottom;
+    });
+  };
+  let lo = 2;
+  let hi = 160;
+  for (let i = 0; i < 22; i++) { const m = (lo + hi) / 2; if (fits(m)) hi = m; else lo = m; }
+  return { pos: center.clone().addScaledVector(FRAME_DIR, hi), target: center, dist: hi, shift };
+}
+
 const MATCH_VIEW = { pos: new THREE.Vector3(11, 8.5, 14), target: new THREE.Vector3(0, 0.4, -0.5) };
 // match en direct : caméra « télé » en tribune latérale, et plan rapproché sur la surface pour les ralentis
 const TV_VIEW = { pos: new THREE.Vector3(0, 5.4, 10.8), target: new THREE.Vector3(0, 0, 0.8) };
@@ -174,6 +238,7 @@ export default function Empire3D({
     const stadium = ctx.plots.get('t0');
     // le onze du club sur la pelouse (seules silhouettes humaines du stade)
     const squad = createSquad(stadium.wrapper);
+    squad.setFormation(stateRef.current.formation);
     stadium.squad = squad;
 
     ctx.setContent = (entry, node) => {
@@ -451,7 +516,7 @@ export default function Empire3D({
         controls.target.lerpVectors(tw.fromTarget, tw.toTarget, k);
         if (tw.t >= 1) {
           ctx.camTween = null;
-          if (!ctx.replay) controls.minDistance = 6;
+          if (!ctx.replay) controls.minDistance = ctx.sheetOpen ? Math.min(6, camera.position.distanceTo(controls.target) * 0.8) : 6;
         }
       }
       controls.update();
@@ -517,11 +582,11 @@ export default function Empire3D({
       const narrow = W <= 760;
       // Fiche d'une parcelle ouverte : la parcelle glisse au-dessus de la feuille (mobile) ou à droite de la
       // carte de l'inspecteur (PC), pour rester visible.
-      const sheet = ctx.sheetOpen && !modeRef.current.live;
-      const wantX = modeRef.current.live && !narrow ? 188 : sheet && !narrow ? -170 : 0;
-      const wantY = modeRef.current.live && narrow ? H * 0.18 : sheet && narrow ? H * 0.31 : 0;
-      viewShift.x += (wantX - viewShift.x) * Math.min(1, dt * 3);
-      viewShift.y += (wantY - viewShift.y) * Math.min(1, dt * 3);
+      const sheet = ctx.sheetOpen && ctx.frameShift && !modeRef.current.live;
+      const wantX = modeRef.current.live && !narrow ? 188 : sheet ? ctx.frameShift.x : 0;
+      const wantY = modeRef.current.live && narrow ? H * 0.18 : sheet ? ctx.frameShift.y : 0;
+      viewShift.x += (wantX - viewShift.x) * Math.min(1, dt * 2.6);
+      viewShift.y += (wantY - viewShift.y) * Math.min(1, dt * 2.6);
       if (Math.abs(viewShift.x) + Math.abs(viewShift.y) > 0.5) camera.setViewOffset(W, H, viewShift.x, viewShift.y, W, H);
       else if (camera.view?.enabled) camera.clearViewOffset();
       camera.position.x += shakeX; camera.position.y += shakeY;
@@ -562,6 +627,7 @@ export default function Empire3D({
   useEffect(() => {
     if (ctxRef.current) { ctxRef.current.sync(state, true); ctxRef.current.applyMode(); }
     ctxRef.current?.life?.setState(state);
+    ctxRef.current?.plots.get('t0')?.squad?.setFormation(state.formation);
   }, [state]);
 
   useEffect(() => {
@@ -615,12 +681,18 @@ export default function Empire3D({
       const [x, z] = PLOT_POS[selectedPlot];
       const fp = footprintOf(selectedPlot);
       ctx.selFrame.show(x, z, fp.w + 0.2, fp.d + 0.2);
-      // cadrage : même angle de vue, distance adaptée à la taille de la parcelle
-      const target = new THREE.Vector3(x, 0.4, z);
-      const dir = ctx.camera.position.clone().sub(ctx.controls.target).normalize();
-      const narrow = mountRef.current && mountRef.current.clientWidth <= 760; // téléphone : moins de place au-dessus de la fiche
-      const dist = Math.max(fp.w, fp.d) * (selectedPlot === 't0' ? 1.55 : 2.4) * (narrow ? 1.75 : 1);
-      ctx.tweenCamera({ pos: target.clone().addScaledVector(dir, dist), target });
+      // hauteur réelle du bâtiment affiché (modèle chargé ou procédural), emprise de la parcelle
+      const entry = ctx.plots.get(selectedPlot);
+      const h = entry ? Math.min(9, Math.max(0.8, new THREE.Box3().setFromObject(entry.wrapper).max.y)) : 2;
+      const box = new THREE.Box3(new THREE.Vector3(x - fp.w / 2, 0, z - fp.d / 2), new THREE.Vector3(x + fp.w / 2, h, z + fp.d / 2));
+      // la fiche vient d'être affichée : on mesure la zone libre à l'image suivante, une fois sa mise en page faite
+      setTimeout(() => {
+        if (!ctxRef.current || !mountRef.current || !ctx.sheetOpen) return;
+        const view = frameView(ctx.camera, box, freeRegion(mountRef.current));
+        ctx.frameShift = view.shift;
+        ctx.controls.minDistance = Math.min(6, view.dist * 0.8);
+        ctx.tweenCamera(view, 1.25);
+      }, 40);
     } else {
       ctx.selFrame.hide();
       if (had && !modeRef.current.matchDay && !modeRef.current.live) ctx.tweenCamera(ctx.home, 1.1);

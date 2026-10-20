@@ -1,4 +1,4 @@
-import { build, createInitialState, endSeason, playRound, upgrade } from '../game/engine';
+import { build, createInitialState, endSeason, playRound, sellPlayer, upgrade } from '../game/engine';
 import { matchContext } from '../game/season';
 
 // Mode aperçu (galerie d'écrans) : une partie fictive, jamais sauvegardée, et l'écran demandé déjà ouvert.
@@ -12,6 +12,7 @@ export const SCREENS = [
   ['effectif', 'Effectif · joueurs'],
   ['fiche', 'Fiche joueur'],
   ['marche', 'Effectif · marché'],
+  ['anciens', 'Effectif · anciens joueurs'],
   ['transferts', 'Marché des transferts'],
   ['bureau', 'Inspecteur · bureau des transferts'],
   ['comparateur', 'Comparateur radar'],
@@ -35,10 +36,11 @@ export function previewState(screen) {
   if (screen === 'accueil') return null;
   const s = createInitialState('FootOFF FC');
   s.tutorial = { step: screen === 'tutoriel' ? 'build' : 'done' };
-  if (screen === 'finances' || screen === 'stats' || screen === 'stats-pass' || screen === 'stats-detail') { // deux saisons bouclées, puis trois matchs : courbe et comptes remplis
+  if (screen === 'finances' || screen === 'stats' || screen === 'stats-pass' || screen === 'stats-detail' || screen === 'anciens') { // deux saisons bouclées, puis trois matchs : courbe et comptes remplis
     build(s, 'main', 'training');
     for (let k = 0; k < 2; k++) { while (s.round < 7) playRound(s); endSeason(s); s.seasonReview = null; }
     for (let k = 0; k < 3; k++) playRound(s);
+    sellPlayer(s, [...s.players].sort((x, y) => (y.hist?.length || 0) - (x.hist?.length || 0))[0].id); // un ancien, pour les fiches carrière
     s.offline = null;
     return s;
   }
@@ -70,6 +72,7 @@ export function previewUi(screen, s) {
     case 'effectif': return { panel: 'squad' };
     case 'fiche': return { panel: 'squad', squad: { sheet: s.players.find((p) => p.season?.apps)?.id ?? s.players[0].id } };
     case 'marche': return { panel: 'squad', squadTab: 'market' };
+    case 'anciens': return { panel: 'squad', squadTab: 'alumni' };
     case 'transferts': return { panel: 'squad', squadTab: 'transfers' };
     case 'bureau': return { sel: { plotId: 't3', sector: 'supporters' } };
     case 'comparateur': return { panel: 'squad', squadTab: 'market', squad: { compare: true } };

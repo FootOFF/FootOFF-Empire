@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Agent, PassingGame, createBallMesh, placeBall } from './motion';
+import { formationOf } from '../game/tactics';
 
 // Joueurs : silhouette humaine low-poly réaliste (crampons, chaussettes, jambes, short, maillot, bras,
 // tête et cheveux), modélisée en mètres (1,80 m), face vers +X. Deux maillages instanciés partagent
@@ -171,6 +172,8 @@ const FORMATION = [
   [-4.7, 0], [-3.1, -2.3], [-3.4, -0.8], [-3.4, 0.8], [-3.1, 2.3],
   [-1.4, -1.5], [-1.0, 0], [-1.4, 1.5], [1.4, -2.2], [2.0, 0], [1.4, 2.2],
 ];
+// Dispositif choisi par le joueur : schéma de l'avant-match (en %, attaque vers le haut) → pelouse (attaque vers +x).
+const anchorsOf = (formation) => formationOf(formation).pitch.map(([x, y]) => [-4.7 + (88 - y) * (6.7 / 73), ((x - 50) / 36) * 2.3]);
 const PX = 5.0, PZ = 3.25; // limites de jeu (légèrement à l'intérieur des lignes)
 const clampX = (x) => THREE.MathUtils.clamp(x, -PX, PX);
 const clampZ = (z) => THREE.MathUtils.clamp(z, -PZ, PZ);
@@ -182,6 +185,8 @@ export function createSquad(parent) {
   const ball = createBallMesh();
   parent.add(ball);
   const agents = FORMATION.map(([x, z]) => new Agent(x, z, 0));
+  let anchors = FORMATION.map((a) => [...a]);
+  let defenders = 4;
   let match = false;
   let baseY = 0.006;
 
@@ -210,14 +215,14 @@ export function createSquad(parent) {
     },
     shoot: (i) => {
       const p = agents[i];
-      if (i < 5 || p.x < 3.1 || Math.random() > 0.7) return null;
+      if (i <= defenders || p.x < 3.1 || Math.random() > 0.7) return null;
       return { x: 5.3, z: Math.random() < 0.8 ? rnd(-0.3, 0.3) : rnd(0.45, 0.7) * Math.sign(rnd(-1, 1)) };
     },
     goal: { x: 5.25 },
     keeper: 0,
     clampTarget: (x, z) => [THREE.MathUtils.clamp(x, -4.9, 4.9), THREE.MathUtils.clamp(z, -3.1, 3.1)],
     offBall: (i, b, time) => {
-      const [ax, az] = FORMATION[i];
+      const [ax, az] = anchors[i];
       if (i === 0) return { x: -4.85, z: THREE.MathUtils.clamp(b.z * 0.2, -0.45, 0.45), speed: 0.25 };
       const shiftX = THREE.MathUtils.clamp(b.x * 0.42, -1.2, 1.6);
       const tx = clampX(ax + shiftX + Math.sin(time * 0.23 + i * 1.7) * 0.25);
@@ -243,6 +248,10 @@ export function createSquad(parent) {
       const [sx, sz] = game.footSpot(p);
       game.ball.x = sx; game.ball.z = sz;
       game.prev = [sx, sz];
+    },
+    setFormation(formation) { // les joueurs rejoignent leurs nouveaux postes en courant
+      anchors = anchorsOf(formation);
+      defenders = formationOf(formation).lines[0];
     },
     setMode(m) {
       if (m.match !== undefined) match = m.match;

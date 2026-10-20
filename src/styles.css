@@ -489,7 +489,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sh-scale i.now { left: 0; background: var(--gold-grad); }
 .sh-scale i.pot { background: rgba(199, 161, 90, .3); box-shadow: inset 0 0 0 1px var(--gold-line); }
 .sh-ticks { display: flex; justify-content: space-between; margin-top: calc(-1 * var(--s-2)); font-size: var(--t-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
-.sh-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.sh-stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .sh-stats div { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .sh-stats div + div { border-left: 1px solid var(--line); }
 .sh-stats b { font-family: var(--font-title); font-weight: 500; font-size: var(--t-xl); line-height: 1.1; font-variant-numeric: tabular-nums; }
@@ -1643,20 +1643,24 @@ button.hud-chip:active { transform: scale(.97); }
   background: linear-gradient(180deg, rgba(255, 255, 255, .35), rgba(255, 255, 255, 0));
 }
 .glass-pill.moving { animation: glass-stretch .5s cubic-bezier(.3, 1.2, .5, 1); }
-/* au doigt : la goutte se soulève (un peu plus grande, plus claire) et suit le doigt sans retard */
+/* au doigt : la goutte se soulève (un peu plus grande, plus claire) et suit le doigt sans aucun retard : seule la
+   loupe a une transition, la position est écrite à chaque image par le script */
 .glass-pill.dragging {
-  scale: 1.1 1.14; transition: transform .14s ease-out, width .2s ease-out, scale .2s ease;
+  scale: 1.08 1.12; transition: scale .22s cubic-bezier(.3, 1.4, .5, 1), background .2s; animation: none;
   background:
     radial-gradient(120% 70% at 50% 0%, rgba(255, 255, 255, .4), rgba(255, 255, 255, 0) 60%),
     linear-gradient(180deg, rgba(222, 193, 127, .26), rgba(199, 161, 90, .1) 55%, rgba(255, 255, 255, .1));
 }
+.glass-dragging button, .glass-dragging button:active { transform: none !important; transition: color .15s !important; }
 @keyframes glass-stretch {
   0% { transform: translateX(var(--x)) scale(1, 1); }
   35% { transform: translateX(var(--x)) scale(1.18, .86); }
   70% { transform: translateX(var(--x)) scale(.96, 1.04); }
   100% { transform: translateX(var(--x)) scale(1, 1); }
 }
-.hud-dock, .has-glass { touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.hud-dock, .has-glass { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.hud-dock { touch-action: none; } /* le menu du bas ne fait jamais défiler la page : le doigt ne pilote que la goutte */
+.has-glass { touch-action: pan-y; }
 /* onglets et choix segmentés : même goutte, en plus discret */
 .has-glass { position: relative; isolation: isolate; }
 .has-glass > button { position: relative; z-index: 1; background: none !important; box-shadow: none !important; transition: color .2s; }
@@ -1812,3 +1816,62 @@ button.hud-chip:active { transform: scale(.97); }
 .sp-shot.p { border-style: dashed; }
 .sp-all li.o-w .sp-who, .sp-all li.o-p .sp-who { color: var(--muted); }
 .sp-all li.o-g .sp-who { font-weight: 600; }
+
+/* téléphone, fiche d'une parcelle ouverte : la fiche est plus basse et l'objectif s'efface, pour laisser voir
+   le bâtiment en entier entre la barre du haut et la fiche */
+@media (max-width: 760px) {
+  .inspector { max-height: 54vh; }
+  .game.has-sel :is(.hud-left > *, .hud-left > .presence > *) { opacity: 0; pointer-events: none; }
+}
+
+/* fiche carrière, joueurs cliquables, anciens */
+.st-player { width: 100%; display: grid; grid-template-columns: 14px auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-2); padding: 3px 4px; margin: -3px -4px; border: none; background: none; border-radius: 8px; color: var(--text); font-size: var(--t-sm); text-align: left; }
+@media (hover: hover) { .st-player:hover { background: rgba(255, 255, 255, .05); } .st-player:hover .st-name { color: var(--gold-light); } }
+.st-board li { display: block; }
+.st-old { font-style: normal; margin-left: 6px; font-size: 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; }
+.st-boards { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.sp-click { cursor: pointer; }
+@media (hover: hover) { .sp-click:hover td { background: rgba(255, 255, 255, .03); } }
+button.sp-chip { background: none; color: var(--text); cursor: pointer; }
+.cr-overlay { z-index: 40; }
+.sq-sheet.cr { width: min(600px, 100%); }
+.cr-title { font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+.cr-status { margin: 0 0 var(--s-2); font-size: var(--t-sm); color: var(--text-2); }
+.cr-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: var(--s-2); }
+.cr-tiles > div { display: flex; flex-direction: column; gap: 2px; padding: var(--s-2); border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, .02); }
+.cr-tiles b { font-family: var(--font-title); font-weight: 600; font-size: var(--t-lg); font-variant-numeric: tabular-nums; }
+.cr-tiles b.gold { color: var(--gold-light); }
+.cr-tiles b.good { color: var(--green); }
+.cr-tiles b.low { color: var(--red); }
+.cr-tiles span { font-size: var(--t-xs); color: var(--muted); line-height: 1.3; }
+.cr-season { font-weight: 500; }
+.cr-div { display: block; font-style: normal; font-size: 10px; color: var(--muted); }
+.sp-table td.l:has(.cr-season) { display: table-cell; }
+.cr-games { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.cr-games li { display: flex; align-items: center; gap: var(--s-3); padding: 6px 0; border-top: 1px solid var(--line); }
+.cr-game-main { display: flex; flex-direction: column; min-width: 0; }
+.cr-game-main b { font-weight: 500; font-size: var(--t-sm); }
+.cr-game-main em { font-style: normal; font-size: var(--t-xs); color: var(--muted); }
+.cr-awards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.cr-awards li { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--gold-line); background: var(--gold-soft); font-size: var(--t-sm); color: var(--gold-light); }
+.sh-career { margin-top: var(--s-2); }
+.sh-stats b.gold { color: var(--gold-light); }
+.al-tag { font-style: normal; margin-left: 8px; font-size: 10px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); vertical-align: 1px; }
+.al-tag.retraite { color: var(--gold-light); border-color: var(--gold-line); }
+.al-list .sq-row-meta { white-space: normal; }
+@media (max-width: 760px) {
+  .cr-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.sh-stats .sh-wrap span { white-space: normal; text-align: center; line-height: 1.2; }
+
+/* avant-match : choix du dispositif */
+.formations { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.formations button { min-height: 40px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); color: var(--text-2); font-family: var(--font-title); font-size: var(--t-md); font-variant-numeric: tabular-nums; }
+.formations button.active { border-color: var(--gold-line); background: var(--gold-soft); color: var(--gold-light); }
+@media (hover: hover) { .formations button:hover:not(.active) { color: var(--text); border-color: rgba(255, 255, 255, .2); } }
+.pm-blurb { margin: 6px 0 0; font-size: var(--t-sm); color: var(--text-2); line-height: 1.45; }
+
+@media (max-width: 760px) {
+  .sq-tabs.has-glass > button { padding: 8px 4px; min-width: 0; font-size: 13px; } /* quatre onglets tiennent sur 375 px */
+}

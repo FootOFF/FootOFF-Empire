@@ -56,6 +56,7 @@ export function loadGame() {
       const y = ensureTutorial(ensureLineup(addReserves(ensureFixedPlots(migratePlayers(x)))));
       ensureLedger(y);
       y.buildings.transfers ??= 0; // bureau des transferts (ajouté après coup)
+      y.alumni ||= []; // anciens joueurs (archivés à partir de cette version)
       y.transfers ||= [];
       const renamed = new Map(); // ancien nom → nouveau
       for (const p of [...y.players, ...(y.market || []), ...y.transfers]) {
@@ -65,6 +66,7 @@ export function loadGame() {
       }
       if (renamed.size) {
         const nm = (n) => renamed.get(n) || n;
+        for (const a of y.alumni) a.name = nm(a.name);
         for (const m of y.matches || []) {
           (m.players || []).forEach((q) => { q.name = nm(q.name); });
           (m.scorers || []).forEach((g) => { g.name = nm(g.name); if (g.assist) g.assist = nm(g.assist); });

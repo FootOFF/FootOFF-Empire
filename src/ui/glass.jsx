@@ -2,15 +2,19 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 import { haptic } from './haptics';
 
 // Sélection en verre liquide (façon iOS) : une pastille posée sous l'élément actif, qui glisse vers le nouvel
-// élément choisi en s'étirant, et qu'on peut aussi faire glisser au doigt : elle suit le doigt, se cale sur
-// l'élément le plus proche, et la section est sélectionnée quand on relâche.
+// élément choisi en s'étirant, et qu'on peut aussi faire glisser au doigt : elle suit le doigt image par image,
+// change de largeur progressivement entre deux sections, résiste au-delà des bords, puis se pose sur la section
+// la plus proche au relâché (qui est alors sélectionnée).
+// Pendant le glissé, rien ne passe par React (pas de rendu à chaque mouvement) : la position est écrite
+// directement sur la pastille, une fois par image, à partir de mesures prises au début du geste.
 // Chaque élément sélectionnable porte data-key ; un simple appui garde le comportement normal du bouton.
 export function useGlass(activeKey, onPick) {
   const ref = useRef(null);
+  const pill = useRef(null);
   const [box, setBox] = useState(null);
-  const [drag, setDrag] = useState(null); // { x, w, key } pendant le glissé
+  const [hoverKey, setHoverKey] = useState(null);
   const [moving, setMoving] = useState(false);
-  const g = useRef({ start: null, moved: false, suppress: false, key: null });
+  const g = useRef({ start: null, moved: false, suppress: false, key: null, items: null, left: 0, x: 0, raf: 0 });
   const first = useRef(true);
 
   const boxOf = (el) => ({ x: el.offsetLeft, w: el.offsetWidth, y: el.offsetTop, h: el.offsetHeight });
@@ -18,6 +22,7 @@ export function useGlass(activeKey, onPick) {
     const root = ref.current;
     if (!root) return undefined;
     const place = () => {
+      if (g.current.moved) return; // la pastille appartient au doigt pendant le glissé
       const el = root.querySelector(`[data-key="${activeKey}"]`);
       setBox(el ? boxOf(el) : null);
     };
@@ -30,67 +35,102 @@ export function useGlass(activeKey, onPick) {
     return () => { clearTimeout(t); ro.disconnect(); };
   }, [activeKey]);
 
-  const items = () => [...ref.current.querySelectorAll('[data-key]')];
-  const nearest = (clientX) => {
-    let best = null;
-    let bd = Infinity;
-    for (const el of items()) {
-      const r = el.getBoundingClientRect();
-      const d = Math.abs(clientX - (r.left + r.width / 2));
-      if (d < bd) { bd = d; best = el; }
+  // position du doigt → centre et largeur de la pastille (interpolés entre les sections voisines)
+  const layout = (lx) => {
+    const it = g.current.items;
+    const n = it.length;
+    const a = it[0].c;
+    const b = it[n - 1].c;
+    let c = lx;
+    if (lx < a) c = a - (a - lx) * 0.22; // au-delà des bords : la goutte résiste
+    if (lx > b) c = b + (lx - b) * 0.22;
+    let i = 0;
+    while (i < n - 2 && c > it[i + 1].c) i++;
+    const span = it[i + 1] ? it[i + 1].c - it[i].c : 1;
+    const t = Math.min(1, Math.max(0, (c - it[i].c) / span));
+    const w = it[i + 1] ? it[i].w + (it[i + 1].w - it[i].w) * t : it[i].w;
+    const key = (t < 0.5 || !it[i + 1] ? it[i] : it[i + 1]).key;
+    return { x: c - w / 2, w, key };
+  };
+  const paint = () => {
+    g.current.raf = 0;
+    const el = pill.current;
+    if (!el || !g.current.items) return;
+    const { x, w, key } = layout(g.current.x);
+    el.style.setProperty('--x', `${x}px`);
+    el.style.width = `${w}px`;
+    if (key !== g.current.key) {
+      if (g.current.key !== null) haptic('tap');
+      g.current.key = key;
+      setHoverKey(key);
     }
-    return best;
   };
 
-  const reset = () => { g.current.start = null; g.current.moved = false; g.current.key = null; setDrag(null); };
+  const end = (commit) => {
+    const st = g.current;
+    cancelAnimationFrame(st.raf);
+    st.raf = 0;
+    const wasMoving = st.moved;
+    const key = st.key;
+    st.start = null;
+    st.moved = false;
+    st.key = null;
+    ref.current?.classList.remove('glass-dragging');
+    pill.current?.classList.remove('dragging');
+    setHoverKey(null);
+    if (!wasMoving) return;
+    st.suppress = true; // le clic qui suit le relâché ne doit pas rebasculer la section
+    setTimeout(() => { st.suppress = false; }, 0);
+    const target = commit && key !== null ? key : String(activeKey);
+    const el = ref.current?.querySelector(`[data-key="${target}"]`);
+    if (el && pill.current) { // la goutte se pose (transition élastique de la feuille de style)
+      pill.current.style.setProperty('--x', `${el.offsetLeft}px`);
+      pill.current.style.width = `${el.offsetWidth}px`;
+    }
+    st.items = null;
+    if (commit && key !== null && key !== String(activeKey)) onPick(key);
+  };
+
   const handlers = {
     onPointerDown: (e) => {
       if (e.button > 0) return;
+      cancelAnimationFrame(g.current.raf); // un geste précédent interrompu ne doit rien laisser en attente
+      g.current.raf = 0;
       g.current.start = { x: e.clientX, y: e.clientY };
       g.current.moved = false;
     },
     onPointerMove: (e) => {
-      const st = g.current.start;
-      if (!st) return;
-      if (!g.current.moved) {
-        if (Math.abs(e.clientX - st.x) < 8) return;
-        if (Math.abs(e.clientY - st.y) > Math.abs(e.clientX - st.x)) { g.current.start = null; return; } // geste vertical
-        g.current.moved = true;
-        try { ref.current.setPointerCapture(e.pointerId); } catch { /* pointeur déjà relâché */ }
+      const st = g.current;
+      if (!st.start) return;
+      if (!st.moved) {
+        const dx = Math.abs(e.clientX - st.start.x);
+        const dy = Math.abs(e.clientY - st.start.y);
+        if (dx < 6) return;
+        if (dy > dx) { st.start = null; return; } // geste vertical : on laisse défiler
+        st.moved = true;
+        const root = ref.current;
+        try { root.setPointerCapture(e.pointerId); } catch { /* pointeur déjà relâché */ }
+        st.left = root.getBoundingClientRect().left;
+        st.items = [...root.querySelectorAll('[data-key]')].map((el) => ({
+          key: el.getAttribute('data-key'), c: el.offsetLeft + el.offsetWidth / 2, w: el.offsetWidth,
+        }));
+        st.key = String(activeKey);
+        root.classList.add('glass-dragging');
+        pill.current?.classList.add('dragging');
       }
-      const el = nearest(e.clientX);
-      if (!el) return;
-      const root = ref.current.getBoundingClientRect();
-      const b = boxOf(el);
-      const min = items()[0].offsetLeft;
-      const last = items()[items().length - 1];
-      const max = last.offsetLeft + last.offsetWidth - b.w;
-      const x = Math.min(max, Math.max(min, e.clientX - root.left - b.w / 2));
-      const key = el.getAttribute('data-key');
-      if (key !== g.current.key) { if (g.current.key !== null) haptic('tap'); g.current.key = key; }
-      setDrag({ x, w: b.w, key });
+      st.x = e.clientX - st.left;
+      if (!st.raf) st.raf = requestAnimationFrame(paint);
     },
-    onPointerUp: () => {
-      if (g.current.moved) {
-        const key = g.current.key;
-        g.current.suppress = true; // le clic qui suit le relâché ne doit pas rebasculer la section
-        setTimeout(() => { g.current.suppress = false; }, 0);
-        reset();
-        if (key !== null && key !== String(activeKey)) onPick(key);
-        return;
-      }
-      reset();
-    },
-    onPointerCancel: reset,
+    onPointerUp: () => end(true),
+    onPointerCancel: () => end(false),
     onClickCapture: (e) => {
       if (g.current.suppress) { e.preventDefault(); e.stopPropagation(); }
     },
   };
 
-  const style = drag && box ? { '--x': `${drag.x}px`, width: drag.w, top: box.y, height: box.h }
-    : box ? { '--x': `${box.x}px`, width: box.w, top: box.y, height: box.h } : null;
-  const glass = style ? <span className={`glass-pill ${moving && !drag ? 'moving' : ''} ${drag ? 'dragging' : ''}`} style={style} aria-hidden="true" /> : null;
-  return { ref, glass, handlers, hoverKey: drag?.key ?? null };
+  const style = box ? { '--x': `${box.x}px`, width: box.w, top: box.y, height: box.h } : null;
+  const glass = style ? <span ref={pill} className={`glass-pill ${moving ? 'moving' : ''}`} style={style} aria-hidden="true" /> : null;
+  return { ref, glass, handlers, hoverKey };
 }
 
 // Barre d'onglets (ou choix segmenté) avec pastille en verre : items = [[id, libellé, complément?], …].

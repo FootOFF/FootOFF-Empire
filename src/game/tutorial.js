@@ -1,7 +1,7 @@
 import { DIVISIONS, POS_LABELS, START_MONEY, upgradeCost } from './constants';
 import { capacity } from './economy';
 import { makePlayer, ratingAt, signingFee } from './players';
-import { SLOTS } from './tactics';
+import { slotsOf } from './tactics';
 import { bestSigning } from './advice';
 import { rnd } from './utils';
 
@@ -52,7 +52,8 @@ export function prepareFirstSeason(s) {
   const lines = {};
   s.lineup.forEach((id, k) => {
     const p = s.players.find((q) => q.id === id);
-    (lines[SLOTS[k]] ||= []).push(ratingAt(p, SLOTS[k]));
+    const slot = slotsOf(s.formation)[k];
+    (lines[slot] ||= []).push(ratingAt(p, slot));
   });
   const pos = Object.keys(lines).filter((x) => x !== 'G')
     .sort((a, b) => lines[a].reduce((x, y) => x + y, 0) / lines[a].length - lines[b].reduce((x, y) => x + y, 0) / lines[b].length)[0];

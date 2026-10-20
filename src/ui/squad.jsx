@@ -8,11 +8,13 @@ import { endOfSeasonForecast, officeSize, seasonForecast } from '../game/economy
 import { standingsOf } from '../game/season';
 import { deName } from '../game/names';
 import { bestSigning } from '../game/advice';
-import { SLOTS } from '../game/tactics';
+import { slotsOf } from '../game/tactics';
 import { fmtMoney, fmtRating } from './format';
 import { IconChevron, IconChevronLeft, IconClose, IconRadar, IconTransfer } from './icons';
 import { Panel } from './panels';
 import { GlassTabs } from './glass';
+import { PlayerCareer, departureText, reasonTag } from './career';
+import { careerOf } from '../game/career';
 import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
 
@@ -20,6 +22,7 @@ import { PHONE, useSwipe } from './gestures';
 // comparateur radar. Les couleurs des cases disent si une valeur est forte ou faible pour ta division.
 
 const ORDER = { G: 0, D: 1, M: 2, A: 3 };
+const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 const FILTERS = [['all', 'Tous'], ['G', 'Gardiens'], ['D', 'Défense'], ['M', 'Milieu'], ['A', 'Attaque']];
 const attrsOf = (p) => (p.pos === 'G' ? GK_ATTRS.map((x) => ({ ...x, v: p.g[x.key] })) : ATTRS.map((x) => ({ ...x, v: p.a[x.key] })));
 const topAttrs = (p, n = 3) => [...attrsOf(p)].sort((a, b) => b.v - a.v).slice(0, n);
@@ -39,6 +42,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
   const [filter, setFilter] = useState('all');
   const [sheet, setSheet] = useState(preview?.sheet ? { id: preview.sheet } : null); // { id, market, order }
   const [compare, setCompare] = useState(null); // { a, b } identifiants
+  const [career, setCareer] = useState(null); // fiche carrière (joueur actuel ou ancien)
   const ref = divRef(state);
   const squad = useMemo(
     () => [...state.players].sort((a, b) => ORDER[a.pos] - ORDER[b.pos] || playerRating(b) - playerRating(a)),
@@ -49,7 +53,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
   const recommended = bestSigning(state)?.player.id;
 
   // Échap ferme d'abord le comparateur, puis la fiche, puis le panneau
-  const onEscape = () => { if (compare) setCompare(null); else if (sheet) setSheet(null); else onClose(); };
+  const onEscape = () => { if (career !== null) setCareer(null); else if (compare) setCompare(null); else if (sheet) setSheet(null); else onClose(); };
 
   const shown = filter === 'all' ? squad : squad.filter((p) => p.pos === filter);
   const find = (id) => state.players.find((p) => p.id === id) || state.market.find((p) => p.id === id)
@@ -104,7 +108,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
     const mates = state.players.filter((q) => q.id !== p.id && q.pos === p.pos);
     let other;
     if (!state.players.includes(p)) {
-      const starters = state.lineup.map((id, k) => (SLOTS[k] === p.pos ? find(id) : null)).filter(Boolean);
+      const starters = state.lineup.map((id, k) => (slotsOf(state.formation)[k] === p.pos ? find(id) : null)).filter(Boolean);
       other = starters.sort((a, b) => playerRating(a) - playerRating(b))[0] || mates[0];
     } else {
       other = mates.sort((a, b) => playerRating(b) - playerRating(a))[0] || state.market.find((q) => q.pos === p.pos);
@@ -142,6 +146,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
             ['players', 'Joueurs'],
             ['market', 'Marché', recommended ? <i className="sq-tab-dot" aria-label="recrue recommandée" /> : null],
             ['transfers', 'Transferts'],
+            ['alumni', 'Anciens'],
           ]}
           value={tab}
           onChange={setTab}
@@ -163,6 +168,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
               onCompare={() => openCompare(sheetPlayer)}
               onSell={() => sell(sheetPlayer)}
               onSign={() => sign(sheetPlayer)}
+              onCareer={() => setCareer(sheetPlayer.id)}
             />
           )}</Presence>
           <Presence>{compare && find(compare.a) && find(compare.b) && (
@@ -175,6 +181,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
               onSign={sign}
             />
           )}</Presence>
+          <Presence>{career !== null && <PlayerCareer state={state} id={career} onClose={() => setCareer(null)} />}</Presence>
         </>
       )}
     >
@@ -200,6 +207,8 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
           </>
         ) : tab === 'market' ? (
           <Market state={state} refLvl={ref} recommended={recommended} onOpen={(p) => setSheet({ id: p.id, market: true })} onCompare={openCompare} onSign={sign} />
+        ) : tab === 'alumni' ? (
+          <Alumni state={state} onOpen={setCareer} />
         ) : (
           <TransferMarket state={state} refLvl={ref} onOpen={(p, shown) => setSheet({ id: p.id, market: true, order: shown.map((q) => q.id) })} onCompare={openCompare} onSign={sign} />
         )}
@@ -335,6 +344,39 @@ function Market({ state, refLvl, recommended, onOpen, onCompare, onSign }) {
   );
 }
 
+// --- Anciens joueurs : ceux qui sont partis (vendus, retraités), pour retrouver leur carrière ---------------------
+
+function Alumni({ state, onOpen }) {
+  const list = [...(state.alumni || [])].reverse();
+  if (!list.length) {
+    return <p className="sq-hint">Aucun ancien pour l’instant. Les joueurs vendus ou partis à la retraite apparaîtront ici, avec toute leur carrière au club.</p>;
+  }
+  return (
+    <>
+      <p className="sq-hint">{list.length} {list.length > 1 ? 'anciens joueurs' : 'ancien joueur'}. Touche un nom pour revoir sa carrière au club.</p>
+      <ul className="sq-list al-list">
+        {list.map((a) => {
+          const c = careerOf(state, a.id);
+          if (!c) return null;
+          return (
+            <li key={a.id}>
+              <button className="sq-row" onClick={() => onOpen(a.id)}>
+                <span className={`pos-pill ${a.pos}`}>{a.pos}</span>
+                <span className="sq-row-main">
+                  <span className="sq-row-name">{a.name}<em className={`al-tag ${a.reason}`}>{reasonTag(c)}</em></span>
+                  <span className="sq-row-meta">{departureText(c)}</span>
+                  <span className="sq-row-meta">{plural(c.totals.apps, 'match', 'matchs')} · {plural(c.totals.goals, 'but', 'buts')} · {plural(c.totals.assists, 'passe', 'passes')} · homme du match {c.totals.motm} fois · {c.age} ans aujourd’hui</span>
+                </span>
+                <span className="sq-row-side"><b>{fmtRating(a.rating)}</b><span>au départ</span></span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
 // --- Marché des transferts (bureau des transferts) ---------------------------------------------------------
 
 const SORTS = [['lvl', 'Niveau'], ['price', 'Prix'], ['pot', 'Potentiel'], ['age', 'Âge']];
@@ -413,7 +455,7 @@ function TransferMarket({ state, refLvl, onOpen, onCompare, onSign }) {
 
 // --- Fiche joueur (magazine FootOFF Media) ---------------------------------------------------------------
 
-function PlayerSheet({ p, state, refLvl, market, place, onClose, onPrev, onNext, onCompare, onSell, onSign }) {
+function PlayerSheet({ p, state, refLvl, market, place, onClose, onPrev, onNext, onCompare, onSell, onSign, onCareer }) {
   const r = playerRating(p);
   const pot = potentialRange(p, state);
   const f = formAvg(p);
@@ -497,7 +539,9 @@ function PlayerSheet({ p, state, refLvl, market, place, onClose, onPrev, onNext,
               <div><b>{st.assists || 0}</b><span>{plural(st.assists || 0, 'passe', 'passes')}</span></div>
               <div><b>{(st.yellow || 0) + (st.red || 0)}</b><span>{plural((st.yellow || 0) + (st.red || 0), 'carton', 'cartons')}</span></div>
               <div><b className={avg >= 7 ? 'good' : avg !== null && avg < 5.5 ? 'low' : ''}>{avg !== null ? fmtRating(avg) : '–'}</b><span>note</span></div>
+              <div className="sh-wrap"><b className={st.motm ? 'gold' : ''}>{st.motm || 0}</b><span>homme du match</span></div>
             </div>
+            <button className="btn ghost wide sh-career" onClick={onCareer}>Toute sa carrière au club</button>
             {(p.lastDelta !== undefined || prev) && (
               <p className="sh-evo">
                 {p.lastDelta !== undefined && <>Dernier été <b className={p.lastDelta > 0 ? 'up' : p.lastDelta < 0 ? 'down' : ''}>{p.lastDelta > 0 ? '+' : ''}{fmtRating(p.lastDelta)}</b></>}
