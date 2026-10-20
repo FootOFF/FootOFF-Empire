@@ -12,7 +12,9 @@ import { resolveModel, resolveProp } from '../three/manifest';
 import { plotLights } from '../three/lights';
 import { BuildAnimation, Fireworks, hoverFrame } from '../three/fx';
 import { createLife } from '../three/life';
-import { createSquad } from '../three/players';
+import { createMatchScene } from '../three/matchplay';
+import { createCrowd } from '../three/crowd';
+import { HOME_KIT, kitOf } from '../game/kits';
 import { autoWeather, createWeather } from '../three/weather';
 import {
   buildingMesh, padMesh, setProceduralNight, stadiumMesh, wastelandMesh,
@@ -160,7 +162,7 @@ function plotInfo(s, plotId) {
 // parcelle sélectionnée). Garde ses propres interactions : survol (étiquette) et clic (sélection).
 export default function Empire3D({
   state, onSelectPlot, onEmptyTap, onWebGLFail, timeMode = 'auto', weatherMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
-  live = false, matchFx = null, badges = [], quality = 'auto', onLoadProgress, onLoaded,
+  live = false, matchFx = null, badges = [], quality = 'auto', onLoadProgress, onLoaded, matchInfo = null,
 }) {
   const mountRef = useRef(null);
   const labelRef = useRef(null);
@@ -236,10 +238,24 @@ export default function Empire3D({
       ctx.plots.set(p.id, { id: p.id, wrapper, content: null, sig: null, height: 1, lights: null, anim: null });
     }
     const stadium = ctx.plots.get('t0');
-    // le onze du club sur la pelouse (seules silhouettes humaines du stade)
-    const squad = createSquad(stadium.wrapper);
+    // les jours de match : notre onze contre l'adversaire, et le public dans les tribunes
+    const squad = createMatchScene(stadium.wrapper);
     squad.setFormation(stateRef.current.formation);
     stadium.squad = squad;
+    const crowd = createCrowd(stadium.wrapper);
+    crowd.setQuality(quality);
+    ctx.crowd = crowd;
+    if (import.meta.env.DEV) window.__empire = ctx; // inspection en développement
+    squad.on.goal = (team) => {
+      crowd.cheer(team, 1, 4);
+      if (team === 0) { fireworks.burst(8); ctx.ledBoost = 2.6; }
+      else { stadium.lights?.setLevel(0.7); setTimeout(() => ctxRef.current?.applyMode(), 1600); }
+    };
+    const ooh = (team) => crowd.cheer(team, 0.35, 0.5); // occasion manquée : la tribune se soulève à peine
+    squad.on.save = ooh;
+    squad.on.post = ooh;
+    squad.on.miss = ooh;
+    controls.addEventListener('start', () => { ctx.userCam = performance.now() + 5000; }); // le joueur reprend la main
 
     ctx.setContent = (entry, node) => {
       if (entry.content) entry.wrapper.remove(entry.content); // ressources partagées : pas de dispose ici
@@ -248,6 +264,7 @@ export default function Empire3D({
       const real = node.name.startsWith('model:');
       // pelouse du stade : ~0,5 cm dans le GLB, plus haute dans le repli procédural
       if (entry.squad) entry.squad.setMode({ baseY: real ? 0.006 : 0.226 });
+      if (entry.id === 't0') ctx.crowd?.setStadium(node, real ? 0.006 : 0.226);
       entry.lights?.dispose();
       entry.lights = real ? plotLights(scene, node, entry.id === 't0' ? { max: 6, power: 5 } : { max: 2, power: 1.6 }) : null;
       const box = new THREE.Box3().setFromObject(node);
@@ -316,8 +333,9 @@ export default function Empire3D({
       });
       const lm = s.lastMatch;
       const won = !!lm && lm.gf > lm.ga;
-      squad.setMode({ match: md });
-      fireworks.active = md && won && !lv; // en direct : salves uniquement sur nos buts
+      squad.setMode({ matchDay: md });
+      if (md) crowd.show(ctx.crowdFill ?? 0.6, ctx.awayColor); else crowd.hide();
+      fireworks.active = md && won && !lv && !!ctx.postMatch; // en direct : salves uniquement sur nos buts
     };
 
     // qualité graphique appliquée à chaud : résolution, puis ombres (les matériaux se recompilent)
@@ -529,24 +547,6 @@ export default function Empire3D({
       if (pointer) { setHovered(pick(pointer.x, pointer.y)); pointer = null; }
       frame.update(time);
       selFrame.update(time * 0.6);
-      // ralenti d'un but : vitesse normale pendant l'action, ralenti dès la frappe, retour après le filet
-      const rp = ctx.replay;
-      if (rp) {
-        rp.t += dt;
-        camera.position.lerp(controls.target, dt * 0.05); // lent travelling avant pendant le ralenti
-        const bs = squad.ball.state;
-        if (bs === 'shot') { rp.shot = true; ctx.timeScale = 0.4; }
-        if (rp.shot && bs === 'net') {
-          rp.net += dt;
-          if (!rp.burst) { rp.burst = true; fireworks.burst(8); ctx.ledBoost = 2.6; }
-          ctx.timeScale = 0.6;
-        }
-        if (rp.net > 1.3 || rp.t > 6 || (rp.shot && bs === 'held')) {
-          ctx.replay = null;
-          ctx.timeScale = 1;
-          if (modeRef.current.live) ctx.tweenCamera(TV_VIEW);
-        }
-      }
       let shakeX = 0, shakeY = 0;
       if (ctx.shake > 0) { // tremblement de caméra (but encaissé), appliqué le temps du rendu seulement
         ctx.shake = Math.max(0, ctx.shake - dt);
@@ -555,7 +555,16 @@ export default function Empire3D({
       }
       if (ctx.ledBoost > 1) { ctx.ledBoost = Math.max(1, ctx.ledBoost - dt * 0.7); setAssetsBoost(ctx.ledBoost); }
       const sdt = dt * ctx.timeScale;
-      squad.update(sdt, time);
+      const mi = squad.update(dt, time);
+      crowd.update(dt, time);
+      // direct : la caméra télé glisse le long de la ligne de touche pour suivre l'action (sauf si le joueur la
+      // déplace lui-même)
+      if (mi && modeRef.current.live && mi.live && !ctx.camTween && !(ctx.userCam > performance.now())) {
+        const want = THREE.MathUtils.clamp(mi.x * 0.6, -2.8, 2.8);
+        const dx = (want - controls.target.x) * Math.min(1, dt * 1.5);
+        controls.target.x += dx;
+        camera.position.x += dx;
+      }
       ctx.anims.forEach((a) => { a.update(dt); if (a.done) ctx.anims.delete(a); });
       fireworks.update(sdt);
       life.update(dt, time);
@@ -609,6 +618,7 @@ export default function Empire3D({
       ctx.anims.forEach((a) => a.finish());
       ctx.plots.forEach((e) => { e.lights?.dispose(); });
       squad.dispose();
+      crowd.dispose();
       clearInterval(clockTimer);
       clearInterval(loadTimer);
       life.dispose();
@@ -641,32 +651,20 @@ export default function Empire3D({
     ctx.tweenCamera(live ? TV_VIEW : matchDay ? MATCH_VIEW : ctx.home);
   }, [matchDay, live, recenter]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { ctxRef.current?.setQuality?.(quality); }, [quality, ready]);
+  useEffect(() => { ctxRef.current?.setQuality?.(quality); ctxRef.current?.crowd?.setQuality(quality); }, [quality, ready]);
 
-  // Temps forts du direct : ralenti sur nos buts, le stade s'éteint un instant quand on encaisse.
+  // Jour de match : couleurs de l'adversaire, remplissage des tribunes selon l'affluence attendue (ou réelle).
   useEffect(() => {
     const ctx = ctxRef.current;
-    if (!ctx || !matchFx) return;
-    const stadium = ctx.plots.get('t0');
-    if (matchFx.type === 'goal') {
-      if (matchFx.fast) { // vitesse accélérée : pas de ralenti, juste la fête
-        ctx.fireworks.burst(6);
-        ctx.ledBoost = 2.4;
-      } else if (stadium.squad) { // ~4 s : conduite, frappe au ralenti, filets, retour à la vue TV
-        stadium.squad.scriptGoal();
-        ctx.replay = { t: 0, shot: false, net: 0, burst: false };
-        ctx.cutCamera(GOAL_VIEW);
-      }
-    } else if (matchFx.type === 'conceded') {
-      ctx.shake = 0.7;
-      stadium.lights?.setLevel(0.55);
-      setTimeout(() => ctxRef.current?.applyMode(), 1800);
-    } else if (matchFx.type === 'fulltime' || matchFx.type === 'skip') {
-      if (ctx.replay) ctx.tweenCamera(TV_VIEW);
-      ctx.replay = null;
-      ctx.timeScale = 1;
-    }
-  }, [matchFx]);
+    if (!ctx || !ready) return;
+    const opp = matchInfo?.opp || '';
+    const away = kitOf(opp);
+    ctx.plots.get('t0')?.squad?.setKits(HOME_KIT, away);
+    ctx.crowdFill = matchInfo?.capacity ? Math.min(1, (matchInfo.attendance || 0) / matchInfo.capacity) : 0.6;
+    ctx.awayColor = away.shirt;
+    ctx.postMatch = !!matchInfo?.played;
+    ctx.applyMode();
+  }, [matchInfo?.opp, matchInfo?.attendance, matchInfo?.capacity, matchInfo?.played, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Parcelle sélectionnée (inspecteur ouvert) : contour doré persistant. Quand on la quitte, la caméra revient
   // à la vue d'ensemble.

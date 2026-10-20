@@ -1873,5 +1873,5 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 .pm-blurb { margin: 6px 0 0; font-size: var(--t-sm); color: var(--text-2); line-height: 1.45; }
 
 @media (max-width: 760px) {
-  .sq-tabs.has-glass > button { padding: 8px 4px; min-width: 0; font-size: 13px; } /* quatre onglets tiennent sur 375 px */
+  .sq-tabs > button { padding: 8px 4px; min-width: 0; font-size: 13px; } /* quatre onglets tiennent sur 375 px */
 }

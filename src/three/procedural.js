@@ -20,6 +20,7 @@ const cyl = (rt, rb, h, s = 12) => geo(`cyl:${rt}:${rb}:${h}:${s}`, () => new TH
 export function mat(key, params, night) {
   if (!matCache.has(key)) {
     const m = new THREE.MeshStandardMaterial(params);
+    m.name = key; // le public repère les sièges par le nom du matériau
     if (night !== undefined) m.userData.nightEmissive = { day: params.emissiveIntensity ?? 0, night };
     matCache.set(key, m);
   }

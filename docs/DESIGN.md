@@ -135,3 +135,16 @@ légendes de l'onglet Stats, le Stats Pass d'un match, la fiche joueur et l'ongl
 Six formations (`FORMATIONS` dans `src/game/tactics.js`) : 4-3-3, 4-4-2, 4-2-3-1, 3-5-2, 3-4-3, 5-3-2. Le
 dispositif fixe les postes du onze, le schéma de l'avant-match et la place des joueurs 3D ; il agit sur les
 occasions des deux équipes et sur la possession. Le pronostic en tient compte (vérifié par simulation).
+
+## Stade et match en 3D
+
+Hors match, le stade est vide et immobile ; l'équipe s'entraîne au centre d'entraînement (rien tant qu'il n'est pas
+construit). Le jour de match (`src/three/matchplay.js`) : échauffement des deux équipes avant le coup d'envoi,
+puis 11 contre 11 en direct, maillots adverses propres à chaque club (`src/game/kits.js`). L'écran du direct
+écrit l'horloge et les événements de la mi-temps dans `src/game/matchFeed.js` ; la scène construit chaque action
+pour que la frappe parte à l'instant où le commentaire l'annonce (but, arrêt, à côté, poteau), joue les fautes
+et cartons (expulsé qui sort), les célébrations, les engagements, le changement de côté et le retour aux
+vestiaires. Une action qui ne peut plus aboutir à l'heure est abandonnée pour rester synchrone. Public
+(`src/three/crowd.js`) : supporters assis sur les sièges du modèle de stade (debout le long de la main courante
+dans les petits stades), nombre selon l'affluence, parcage visiteurs, le camp concerné se lève sur un but.
+Le verre liquide reste réservé au menu du bas ; les onglets des panneaux gardent leur style simple (`Tabs`).

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { GlassTabs, useGlass } from './glass';
+import { Tabs, useGlass } from './glass';
 import { DIVISIONS } from '../game/constants';
 import { SECTORS, nextLockedSector } from '../game/map';
 import { activeGoal, tierOf } from '../game/goals';
@@ -227,7 +227,7 @@ export function GameMenu({ onClose, onReset, muted, onToggleSound, quality, onQu
           </div>
           <div className="setting column">
             <div className="setting-text"><strong>Qualité graphique</strong><span>{qualities.find((q) => q.id === quality)?.hint}</span></div>
-            <GlassTabs className="segmented" role="radiogroup" label="Qualité graphique" items={qualities.map((q) => [q.id, q.label])} value={quality} onChange={onQuality} />
+            <Tabs className="segmented" role="radiogroup" label="Qualité graphique" items={qualities.map((q) => [q.id, q.label])} value={quality} onChange={onQuality} />
           </div>
         </section>
 

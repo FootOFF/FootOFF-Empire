@@ -133,19 +133,14 @@ export function useGlass(activeKey, onPick) {
   return { ref, glass, handlers, hoverKey };
 }
 
-// Barre d'onglets (ou choix segmenté) avec pastille en verre : items = [[id, libellé, complément?], …].
-export function GlassTabs({ items, value, onChange, className = 'sq-tabs', role = 'tablist', label }) {
-  const { ref, glass, handlers, hoverKey } = useGlass(String(value), (k) => {
-    const it = items.find(([id]) => String(id) === k);
-    if (it) onChange(it[0]);
-  });
+// Barre d'onglets (ou choix segmenté) au style simple d'origine : pilule dorée sur l'élément actif. Le verre liquide
+// est réservé au menu du bas. items = [[id, libellé, complément?], …].
+export function Tabs({ items, value, onChange, className = 'sq-tabs', role = 'tablist', label }) {
   const radio = role === 'radiogroup';
   return (
-    <div ref={ref} className={`${className} has-glass`} role={role} aria-label={label} data-noswipe {...handlers}>
-      {glass}
+    <div className={className} role={role} aria-label={label}>
       {items.map(([id, text, extra]) => {
         const on = value === id;
-        const lit = hoverKey === null ? on : hoverKey === String(id);
         return (
           <button
             key={String(id)}
@@ -153,7 +148,7 @@ export function GlassTabs({ items, value, onChange, className = 'sq-tabs', role 
             role={radio ? 'radio' : 'tab'}
             aria-selected={radio ? undefined : on}
             aria-checked={radio ? on : undefined}
-            className={`${on ? 'on' : ''} ${lit ? 'lit' : ''}`}
+            className={on ? 'on' : ''}
             onClick={() => onChange(id)}
           >
             {text}{extra || null}

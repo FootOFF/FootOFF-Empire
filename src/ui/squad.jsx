@@ -12,7 +12,7 @@ import { slotsOf } from '../game/tactics';
 import { fmtMoney, fmtRating } from './format';
 import { IconChevron, IconChevronLeft, IconClose, IconRadar, IconTransfer } from './icons';
 import { Panel } from './panels';
-import { GlassTabs } from './glass';
+import { Tabs } from './glass';
 import { PlayerCareer, departureText, reasonTag } from './career';
 import { careerOf } from '../game/career';
 import { Presence } from './presence';
@@ -141,7 +141,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
           <span className="sq-gauge"><i className={forecast.net < 0 ? 'bad' : forecast.wageShare > 0.75 ? 'warn' : ''} style={{ width: `${Math.min(100, forecast.wageShare * 100)}%` }} /></span>
           <span className="sq-budget-sub">{fmtMoney(wages)} par saison · revenus attendus {fmtMoney(forecast.income)}{onFinances && <> · <button className="linkbtn fin-link" onClick={onFinances}>finances</button></>}</span>
         </div>
-        <GlassTabs
+        <Tabs
           items={[
             ['players', 'Joueurs'],
             ['market', 'Marché', recommended ? <i className="sq-tab-dot" aria-label="recrue recommandée" /> : null],
@@ -416,7 +416,7 @@ function TransferMarket({ state, refLvl, onOpen, onCompare, onSign }) {
       </div>
       <div className="tr-sort">
         <span className="tr-sort-label">Trier par</span>
-        <GlassTabs className="segmented" role="radiogroup" label="Trier par" items={SORTS} value={sort} onChange={setSort} />
+        <Tabs className="segmented" role="radiogroup" label="Trier par" items={SORTS} value={sort} onChange={setSort} />
         <div className="chips tr-afford">
           <button className={afford ? 'active' : ''} aria-pressed={afford} onClick={() => setAfford(!afford)}>Dans mes moyens</button>
         </div>

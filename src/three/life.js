@@ -229,7 +229,9 @@ function createTraining(scene, max = 48) {
   const players = createPlayers(scene, max);
   const balls = [];
   let sessions = [];
+  let keys = []; // bâtiment de chaque séance (entraînement ou académie)
   let sig = '';
+  let matchDay = false; // jour de match : l'équipe première est au stade, seuls les jeunes de l'académie s'entraînent
 
   return {
     setState(s) {
@@ -238,12 +240,14 @@ function createTraining(scene, max = 48) {
       if (next === sig) return;
       sig = next;
       sessions = [];
+      keys = [];
       for (const p of PLOTS) {
         const key = plotBuilding(s, p.id);
         if (key !== 'training' && key !== 'academy') continue;
         const { c, h } = pitchOf(key, s.buildings[key]);
         const [px, pz] = PLOT_POS[p.id];
         sessions.push(sessionFor(px + c[0] / 10, pz - c[1] / 10, h[0], h[1], key === 'academy'));
+        keys.push(key);
       }
       while (balls.length < sessions.length) { const b = createBallMesh(); scene.add(b); balls.push(b); }
       balls.forEach((b, i) => { b.visible = i < sessions.length; });
@@ -254,6 +258,8 @@ function createTraining(scene, max = 48) {
       const step = Math.min(dt, 0.05);
       let i = 0;
       sessions.forEach((units, si) => {
+        if (matchDay && keys[si] === 'training') { balls[si].visible = false; return; }
+        balls[si].visible = true;
         units.forEach((u) => {
           if (u.type === 'rondo') {
             u.game.update(step, time);
@@ -280,6 +286,15 @@ function createTraining(scene, max = 48) {
       });
       players.commit(i);
     },
+    setMatchDay(v) {
+      if (v === matchDay) return;
+      matchDay = v;
+      let i = 0; // les couleurs restent attachées à l'ordre des joueurs affichés
+      sessions.forEach((units, si) => {
+        if (matchDay && keys[si] === 'training') return;
+        units.forEach((u) => u.kits.forEach((k) => { if (i < max) players.setKit(i++, k); }));
+      });
+    },
     dispose() {
       players.dispose();
       balls.forEach((b) => { scene.remove(b); b.geometry.dispose(); b.material.dispose(); });
@@ -295,7 +310,7 @@ export function createLife(scene) {
   return {
     traffic,
     setState: (s) => training.setState(s),
-    setMode({ dark }) { traffic.setDark(dark); },
+    setMode({ dark, matchDay }) { traffic.setDark(dark); training.setMatchDay(!!matchDay); },
     update(dt, time) { traffic.update(dt); training.update(dt, time); },
     dispose() { traffic.dispose(); training.dispose(); },
   };

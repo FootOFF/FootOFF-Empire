@@ -7,6 +7,7 @@ import { createLiveMatch, prematchOdds } from '../game/live';
 import { IconClose, IconMute, IconPlay, IconSound } from './icons';
 import { IconBall, IconSwap, IconWhistle, RatingBadge } from './kit';
 import { useKeydown } from './presence';
+import { SEC_PER_MIN, matchFeed } from '../game/matchFeed';
 
 // Avant-match (onze + tactique + pronostic) et match en direct (score, chrono, fil de commentaires,
 // vitesse, mi-temps avec changement). La 3D derrière est en mode « jour de match ».
@@ -178,7 +179,6 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
 
 // --- Match en direct ---------------------------------------------------------------------------------
 
-const SEC_PER_MIN = 0.42; // ~40 s pour 90 minutes à vitesse normale
 const ICON = { goal: <IconBall />, sub: <IconSwap />, kickoff: <IconWhistle />, halftime: <IconWhistle />, fulltime: <IconWhistle /> };
 
 // Les classes tirées des données du match sont toujours préfixées (ev-side-…, ev-out-…) : un nom nu comme
@@ -291,6 +291,21 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
 
   useEffect(() => { sound.start(); sound.whistle(1); return () => sound.stop(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // scène 3D : elle lit l'horloge et les événements de la mi-temps dans le canal du direct
+  const homeNames = () => live.state.lineup.map((id) => state.players.find((p) => p.id === id)?.name || '');
+  useEffect(() => {
+    Object.assign(matchFeed, {
+      active: !preview, ended: false, phase: 'playing', half: 1, clock: 0, speed: 1, pause: 0, events,
+      formation: live.state.formation, homeNames: homeNames(), awayNames: live.state.awayRoster.map((p) => p.name),
+      awayName: live.state.away, skipped: 0,
+    });
+    return () => { matchFeed.active = false; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    Object.assign(matchFeed, { phase, half, events, speed, homeNames: homeNames() });
+    if (phase === 'fulltime') matchFeed.ended = true;
+  }, [phase, half, events, speed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // aperçu (galerie) : direct déjà entamé, ou mi-temps
   useEffect(() => {
     if (!preview) return;
@@ -321,10 +336,12 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
       const now = performance.now();
       const dt = Math.min(0.25, (now - last) / 1000);
       last = now;
-      if (pause.current > 0) { pause.current -= dt; return; }
+      if (pause.current > 0) { pause.current -= dt; matchFeed.pause = Math.max(0, pause.current); return; }
+      matchFeed.pause = 0;
       const end = live.halfEnd;
       const next = Math.min(end, clockRef.current + (dt * speed) / SEC_PER_MIN);
       clockRef.current = next;
+      matchFeed.clock = next;
       setClock(next);
       while (revealed.current < events.length && events[revealed.current].at <= next) {
         const e = events[revealed.current++];
@@ -344,6 +361,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
       const ours = e.side === 'home';
       setBanner({ ...e, ours, fast: speed > 1 });
       pause.current = speed > 1 ? 1.6 : 4.4;
+      matchFeed.pause = pause.current;
       setTimeout(() => setBanner(null), (speed > 1 ? 1.6 : 4.2) * 1000);
       if (ours) sound.goal(); else sound.conceded();
       onFx({ type: ours ? 'goal' : 'conceded', fast: speed > 1 });
@@ -359,6 +377,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
     const rest = events.slice(revealed.current);
     revealed.current = events.length;
     clockRef.current = end;
+    matchFeed.clock = end;
+    matchFeed.skipped += 1;
     setClock(end);
     setShown((s) => [...rest.reverse(), ...s]);
     setBanner(null);
@@ -374,6 +394,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
     setEvents(h2);
     revealed.current = 0;
     clockRef.current = 45;
+    matchFeed.clock = 45;
     setClock(45);
     setHalf(2);
     setPhase('playing');
@@ -407,7 +428,6 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
           <span className="gb-who">{banner.player} · {banner.minute}′</span>
         </div>
       )}
-      {banner?.ours && !banner.fast && <span key={`r${banner.at}`} className="replay-tag"><i />Ralenti</span>}
 
       <aside className="feed glass">
         <div className="feed-head">

@@ -150,13 +150,20 @@ export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formatio
 }
 
 export function createLiveMatch(s, ctx) {
-  const awayRoster = Array.from({ length: 11 }, (_, k) => ({ name: `${pick(FIRST)} ${pick(LAST)}`, pos: SLOTS[k] }));
+  const taken = new Set(s.lineup.map((id) => s.players.find((p) => p.id === id)?.name));
+  const awayRoster = Array.from({ length: 11 }, (_, k) => { // noms uniques : la scène 3D retrouve le bon joueur
+    let name;
+    do name = `${pick(FIRST)} ${pick(LAST)}`; while (taken.has(name));
+    taken.add(name);
+    return { name, pos: SLOTS[k] };
+  });
   const m = {
     home: s.clubName,
     away: ctx.opp.name,
     oppStrength: ctx.opp.strength,
     lineup: [...s.lineup],
     formation: formationOf(s.formation).id,
+    awayRoster, // onze adverse (4-3-3), pour la scène 3D
     tactic: s.tactic,
     score: { home: 0, away: 0 },
     // statistiques détaillées (fiche Stats Pass) : [club, adversaire] ; xg = buts attendus, saves = arrêts du gardien

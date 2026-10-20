@@ -132,6 +132,15 @@ export default function App({ preview = null }) {
     setShowResult(true);
   };
   const closeResult = () => { setShowResult(false); setMatchDay(false); };
+  // jour de match : adversaire et affluence pour la scène 3D (match à venir, en cours, ou qui vient de finir)
+  const matchInfo = (() => {
+    if (!matchDay) return null;
+    const lm = state.lastMatch;
+    if (showResult && lm) return { opp: lm.oppName, attendance: lm.attendance, capacity: lm.capacity, played: true };
+    const c = matchCtx || matchContext(state);
+    if (c) return { opp: c.opp.name, attendance: c.gate?.attendance, capacity: c.gate?.capacity };
+    return lm ? { opp: lm.oppName, attendance: lm.attendance, capacity: lm.capacity, played: true } : null;
+  })();
   const onBuild = (sectorId, key) => {
     if (run((s) => build(s, sectorId, key), 'Fonds insuffisants.')) { haptic('build'); toast(`Chantier lancé : ${BUILDINGS[key].name}`, 'gold'); }
   };
@@ -178,6 +187,7 @@ export default function App({ preview = null }) {
               matchDay={matchDay}
               live={matchPhase === 'live'}
               matchFx={matchFx}
+              matchInfo={matchInfo}
               recenter={recenter}
               selectedPlot={sel?.plotId || null}
               badges={plotBadges}

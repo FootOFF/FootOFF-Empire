@@ -6,7 +6,7 @@ import { fmtMoney, fmtNum, fmtRating } from './format';
 import { IconBall, RatingBadge, SectionHead, Stat, VersusBar } from './kit';
 import { IconChevron, IconChevronLeft, IconClose } from './icons';
 import { Panel } from './panels';
-import { GlassTabs } from './glass';
+import { Tabs } from './glass';
 import { PlayerCareer } from './career';
 import { allCareers } from '../game/career';
 import { Presence } from './presence';
@@ -252,7 +252,7 @@ function PlayersTab({ state, onCareer }) {
   ];
   return (
     <>
-      <GlassTabs className="segmented st-scope" role="radiogroup" label="Période" items={[['season', `Saison ${state.seasonNumber}`], ['career', 'Histoire du club']]} value={scope} onChange={setScope} />
+      <Tabs className="segmented st-scope" role="radiogroup" label="Période" items={[['season', `Saison ${state.seasonNumber}`], ['career', 'Histoire du club']]} value={scope} onChange={setScope} />
       <div className="st-boards">
         {boards.map(([title, score, label]) => {
           const top = rows.filter((r) => score(r) > 0).sort((a, b) => score(b) - score(a)).slice(0, 5);
@@ -502,7 +502,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
           </div>
         </section>
 
-        <GlassTabs className="sq-tabs sp-tabs" items={[['resume', 'Résumé'], ['stats', 'Stats'], ['players', 'Joueurs'], ['timeline', 'Déroulé']]} value={view} onChange={setView} />
+        <Tabs className="sq-tabs sp-tabs" items={[['resume', 'Résumé'], ['stats', 'Stats'], ['players', 'Joueurs'], ['timeline', 'Déroulé']]} value={view} onChange={setView} />
 
         {view === 'stats' && <MatchStats m={m} />}
         {view === 'players' && <MatchPlayers m={m} clubName={state.clubName} onCareer={onCareer} />}
@@ -605,7 +605,7 @@ export function StatsPanel({ state, onClose, initialMatch = null }) {
       onClose={onClose}
       onEscape={onEscape}
       toolbar={(
-        <GlassTabs items={[['club', 'Le club'], ['matches', 'Matchs'], ['players', 'Joueurs']]} value={tab} onChange={pick} />
+        <Tabs items={[['club', 'Le club'], ['matches', 'Matchs'], ['players', 'Joueurs']]} value={tab} onChange={pick} />
       )}
       overlay={(
         <>
