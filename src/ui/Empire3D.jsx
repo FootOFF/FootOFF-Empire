@@ -494,6 +494,17 @@ export default function Empire3D({
     mount.addEventListener('pointermove', onCapMove, capture);
     mount.addEventListener('pointerup', onCapUp, capture);
     mount.addEventListener('pointercancel', onCapUp, capture);
+    // iPhone : un double tap maintenu est aussi le geste de sélection de texte de Safari. Le second appui est
+    // bloqué à la source (pas de sélection, pas de zoom de la page), tout menu d'appui long est refusé, et une
+    // sélection qui aurait quand même démarré est effacée quand le doigt se lève.
+    let lastTouchEnd = 0;
+    const onTouchStart = (e) => { if (e.touches.length === 1 && performance.now() - lastTouchEnd < 350) e.preventDefault(); };
+    const onTouchEnd = () => { lastTouchEnd = performance.now(); window.getSelection?.()?.removeAllRanges(); };
+    const noDefault = (e) => e.preventDefault();
+    mount.addEventListener('touchstart', onTouchStart, { passive: false });
+    mount.addEventListener('touchend', onTouchEnd);
+    mount.addEventListener('selectstart', noDefault);
+    mount.addEventListener('contextmenu', noDefault);
     const onMove = (e) => { pointer = down ? null : { x: e.clientX, y: e.clientY }; if (down) setHovered(null); };
     const onLeave = () => { pointer = null; setHovered(null); };
     renderer.domElement.addEventListener('pointerdown', onDown);
@@ -611,6 +622,10 @@ export default function Empire3D({
       ['pointerdown', 'pointerup', 'pointermove', 'pointerleave'].forEach((ev, i) => {
         renderer.domElement.removeEventListener(ev, [onDown, onUp, onMove, onLeave][i]);
       });
+      mount.removeEventListener('touchstart', onTouchStart);
+      mount.removeEventListener('touchend', onTouchEnd);
+      mount.removeEventListener('selectstart', noDefault);
+      mount.removeEventListener('contextmenu', noDefault);
       [['pointerdown', onCapDown], ['pointermove', onCapMove], ['pointerup', onCapUp], ['pointercancel', onCapUp]]
         .forEach(([ev, fn]) => mount.removeEventListener(ev, fn, capture));
       clearTimeout(tapTimer);

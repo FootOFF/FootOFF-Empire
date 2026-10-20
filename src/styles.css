@@ -1875,3 +1875,8 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 @media (max-width: 760px) {
   .sq-tabs > button { padding: 8px 4px; min-width: 0; font-size: 13px; } /* quatre onglets tiennent sur 375 px */
 }
+
+/* écran de jeu : rien n'est sélectionnable comme du texte (double tap maintenu sur iPhone), pas de bulle
+   « Copier / Traduire » à l'appui long, pas de flash bleu au toucher ; les champs de saisie restent normaux */
+.game, .game * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.game input, .game textarea, .game [contenteditable="true"] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
