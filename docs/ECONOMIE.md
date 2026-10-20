@@ -37,6 +37,18 @@ stabilise la fin de partie.
 **Transferts** : signer un joueur libre coûte 1,5 saison de salaire ; le vendre rapporte 1,2 saison.
 Acheter puis revendre fait perdre de l'argent, former un jeune et le revendre en fait gagner.
 
+**Bureau des transferts** (4,5 k€ au niveau 1, ×6,2 par niveau, quartier des supporters ou zone des
+partenaires) : il donne accès aux joueurs sous contrat dans d'autres clubs, 12 au niveau 1 puis 4 de plus
+par niveau (28 au niveau 5), avec des profils de plus en plus forts (jusqu'à environ 2,5 niveaux de
+division au-dessus du club). Un joueur sur quatre est un espoir (18 à 21 ans, potentiel relevé).
+L'indemnité de transfert vaut 2,5 saisons de salaire × âge (×1,35 jusqu'à 21 ans, ×1,15 jusqu'à 24,
+×0,85 à 29-30, ×0,7 dès 31) × marge de progression (+7 % par point de potentiel, ×1,5 au plus) ×
+contrat (0,9 à 1,2 selon 1 à 4 ans restants) × réseau du bureau (−3 % par niveau). Ordres de grandeur
+(médiane) : 3 à 11 k€ en Départementale, 45 k€ en Régionale, 230 à 380 k€ en Nationale, 1,2 à 1,5 M€ en
+Elite. La liste est renouvelée chaque saison ; après chaque journée, environ un joueur sur cinq signe
+ailleurs et de nouveaux arrivent (marqués « Nouveau »). Les rapports des recruteurs resserrent aussi la
+fourchette de potentiel affichée.
+
 **Charges** : entretien des installations, 4 % de ce qui a été investi chaque saison.
 
 **Plan de redressement** : une saison bouclée dans le rouge déclenche la vente des plus gros salaires

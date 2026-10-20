@@ -260,6 +260,7 @@ export default function App({ preview = null }) {
             onBuild={onBuild}
             onUpgrade={onUpgrade}
             onMatchDay={() => { setSel(null); setMatchDay(true); }}
+            onTransfers={() => { setSel(null); setSquadTab('transfers'); setPanel('squad'); }}
           />
         )}
       </Presence>

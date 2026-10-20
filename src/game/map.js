@@ -19,7 +19,7 @@ export const SECTORS = [
     short: 'Supporters',
     repNeeded: 6,
     blurb:
-      'Espace dédié aux supporters, aux événements et à l’ambiance. Améliore le remplissage du stade et la réputation gagnée par match.',
+      'Espace dédié aux supporters, aux événements et à l’ambiance. Améliore le remplissage du stade et la réputation gagnée par match. Le bureau des transferts peut aussi s’y installer.',
   },
   {
     id: 'partners',
@@ -87,13 +87,14 @@ export function nextLockedSector(s) {
 
 // Quel bâtiment peut-on poser sur une parcelle vide ?
 // Règle : chaque bâtiment se construit une seule fois ;
-// training/academy -> main · fans -> supporters · sponsor -> partners.
+// training/academy -> main · fans -> supporters · sponsor -> partners ;
+// le bureau des transferts va au choix chez les supporters ou chez les partenaires.
 export function allowedBuildingsFor(s, sectorId) {
   const built = new Set(Object.keys(s.buildings).filter((k) => s.buildings[k] > 0));
   const bySector = {
     main: ['training', 'academy'],
-    supporters: ['fans'],
-    partners: ['sponsor'],
+    supporters: ['fans', 'transfers'],
+    partners: ['sponsor', 'transfers'],
   };
   return (bySector[sectorId] || []).filter((k) => BUILDINGS[k] && !built.has(k));
 }

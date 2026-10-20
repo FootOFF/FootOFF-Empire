@@ -1,9 +1,9 @@
 import React from 'react';
 import { BUILDINGS } from '../game/constants';
 import { PLOTS, SECTORS, plotBuilding } from '../game/map';
-import { IconAcademy, IconFans, IconLock, IconPitch, IconPlus, IconSponsor, IconTraining } from './icons';
+import { IconAcademy, IconFans, IconLock, IconPitch, IconPlus, IconSponsor, IconTransfer, IconTraining } from './icons';
 
-const ICONS = { terrain: IconPitch, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor };
+const ICONS = { terrain: IconPitch, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor, transfers: IconTransfer };
 
 // Repli 2D quand WebGL est indisponible : plan de l'Empire par secteurs, mêmes interactions que la 3D.
 export default function Empire2D({ state, onSelect }) {

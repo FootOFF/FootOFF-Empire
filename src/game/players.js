@@ -157,6 +157,18 @@ export const wageOf = (p, divisionIndex = 0) => wageFor(playerRating(p), divisio
 export const signingFee = (p, divisionIndex = 0) => signingFor(wageOf(p, divisionIndex));
 export const saleValue = (p, divisionIndex = 0) => saleFor(wageOf(p, divisionIndex));
 
+// Indemnité de transfert demandée par le club vendeur : bien plus qu'un joueur libre, environ deux saisons et
+// demie de salaire ; plus pour un jeune à potentiel ou un long contrat, moins pour un trentenaire en fin de
+// contrat. Le réseau du bureau des transferts fait baisser la facture (−3 % par niveau).
+export function transferFee(p, divisionIndex = 0, officeLvl = 0) {
+  const age = p.age <= 21 ? 1.35 : p.age <= 24 ? 1.15 : p.age >= 31 ? 0.7 : p.age >= 29 ? 0.85 : 1;
+  const room = clamp(1 + 0.07 * Math.max(0, p.pot - playerRating(p)), 1, 1.5);
+  const contract = 0.8 + 0.1 * (p.contract || 2);
+  return Math.round((wageOf(p, divisionIndex) * 2.5 * age * room * contract * (1 - 0.03 * officeLvl)) / 50) * 50;
+}
+// Ce que coûte une recrue : indemnité de transfert (joueur sous contrat) ou prime de signature (joueur libre).
+export const costOf = (p, s) => (p.club ? transferFee(p, s.divisionIndex, s.buildings.transfers || 0) : signingFee(p, s.divisionIndex));
+
 // Potentiel estimé : une fourchette, d'autant plus précise que l'académie est développée et que le joueur
 // est au club depuis longtemps. Null quand le joueur a atteint son plafond.
 export function potentialRange(p, s) {
@@ -164,7 +176,8 @@ export function potentialRange(p, s) {
   if (p.pot <= now + 0.3) return null;
   const seasons = p.joined ? Math.max(0, s.seasonNumber - p.joined) : 0;
   const known = s.players.includes(p);
-  const u = clamp(2.5 - 0.35 * (s.buildings.academy || 0) - (known ? 0.5 * seasons : 0), known ? 0.5 : 1, 3);
+  const scouts = p.club ? 0.25 * (s.buildings.transfers || 0) : 0; // rapports des recruteurs sur les joueurs sous contrat
+  const u = clamp(2.5 - 0.35 * (s.buildings.academy || 0) - scouts - (known ? 0.5 * seasons : 0), known ? 0.5 : 0.75, 3);
   const shift = ((((p.id || 1) * 7919) % 100) / 100 - 0.5) * u; // la fourchette n'est pas centrée sur la vérité
   const half = (v) => Math.round(v * 2) / 2;
   const lo = half(clamp(p.pot + shift - u, now, 20));

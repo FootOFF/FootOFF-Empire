@@ -54,7 +54,9 @@ export function loadGame() {
     const fix = (x) => {
       const y = ensureTutorial(ensureLineup(addReserves(ensureFixedPlots(migratePlayers(x)))));
       ensureLedger(y);
-      [...y.players, ...(y.market || [])].forEach(renameRetired);
+      y.buildings.transfers ??= 0; // bureau des transferts (ajouté après coup)
+      y.transfers ||= [];
+      [...y.players, ...(y.market || []), ...y.transfers].forEach(renameRetired);
       return y;
     };
     if (s.version === 4) return fix(s);

@@ -1,4 +1,4 @@
-import { build, createInitialState, endSeason, playRound } from '../game/engine';
+import { build, createInitialState, endSeason, playRound, upgrade } from '../game/engine';
 import { matchContext } from '../game/season';
 
 // Mode aperçu (galerie d'écrans) : une partie fictive, jamais sauvegardée, et l'écran demandé déjà ouvert.
@@ -12,6 +12,8 @@ export const SCREENS = [
   ['effectif', 'Effectif · joueurs'],
   ['fiche', 'Fiche joueur'],
   ['marche', 'Effectif · marché'],
+  ['transferts', 'Marché des transferts'],
+  ['bureau', 'Inspecteur · bureau des transferts'],
   ['comparateur', 'Comparateur radar'],
   ['avant-match', 'Avant-match'],
   ['direct', 'Match en direct'],
@@ -44,6 +46,13 @@ export function previewState(screen) {
     for (let k = 0; k < 3; k++) playRound(s); // statistiques, forme, dernier match
     s.money = 42000;
   }
+  if (screen === 'transferts' || screen === 'bureau') { // bureau construit au niveau 2 chez les supporters
+    s.reputation = 8;
+    s.money = 1e6;
+    build(s, 'supporters', 'transfers');
+    upgrade(s, 'transfers');
+    s.money = 60000;
+  }
   if (screen === 'bilan') {
     while (s.round < 7) playRound(s);
     endSeason(s);
@@ -60,6 +69,8 @@ export function previewUi(screen, s) {
     case 'effectif': return { panel: 'squad' };
     case 'fiche': return { panel: 'squad', squad: { sheet: s.players.find((p) => p.season?.apps)?.id ?? s.players[0].id } };
     case 'marche': return { panel: 'squad', squadTab: 'market' };
+    case 'transferts': return { panel: 'squad', squadTab: 'transfers' };
+    case 'bureau': return { sel: { plotId: 't3', sector: 'supporters' } };
     case 'comparateur': return { panel: 'squad', squadTab: 'market', squad: { compare: true } };
     case 'saison': return { panel: 'season' };
     case 'journal': return { panel: 'journal' };

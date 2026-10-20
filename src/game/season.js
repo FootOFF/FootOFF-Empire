@@ -1,4 +1,5 @@
 import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from './constants';
+import { refreshTransfers } from './transfers';
 import { expectedGate, matchGate, prizeFor, sponsorIncome, upkeepOf } from './economy';
 import { clamp, ordinal, pick, rnd } from './utils';
 import { clubAfter, randomClubName } from './names';
@@ -47,6 +48,7 @@ export function startSeason(s) {
     p.id = s.nextId++;
     s.market.push(p);
   }
+  refreshTransfers(s, 'full');
   resetSeasonStats(s);
 }
 
@@ -176,6 +178,7 @@ export function applyMatchResult(s, live) {
   s.round++;
   s.lastMatch = { ...res, round: s.round };
   recordMatch(s, res);
+  refreshTransfers(s); // le marché des transferts bouge à chaque journée
   const score = `${res.gf}–${res.ga}`;
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'match',

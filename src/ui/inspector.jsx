@@ -3,19 +3,19 @@ import { BUILDINGS, upgradeCost } from '../game/constants';
 import { PLOT_LABELS, SECTORS, allowedBuildingsFor, buildingEffect, plotBuilding } from '../game/map';
 import { fmtMoney, fmtNum } from './format';
 import { expectedGate, investmentPreview } from '../game/economy';
-import { IconAcademy, IconArrowUp, IconClose, IconFans, IconLock, IconSponsor, IconStadium, IconTraining } from './icons';
+import { IconAcademy, IconArrowUp, IconClose, IconFans, IconLock, IconSponsor, IconStadium, IconTraining, IconTransfer } from './icons';
 import { Eyebrow } from './kit';
 import { useKeydown } from './presence';
 import { useSwipe } from './gestures';
 
-const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor };
+const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor, transfers: IconTransfer };
 
 // Ce que rapporte l'investissement, avant de cliquer : recettes en plus par saison, entretien, rentabilité.
-const SPORTING = new Set(['training', 'academy']);
+const SPORTING = { training: 'il fait progresser l’équipe', academy: 'il fait progresser l’équipe', transfers: 'il ouvre le marché des joueurs sous contrat' };
 function Payoff({ state, k, compact = false }) {
   const inv = investmentPreview(state, k);
-  if (SPORTING.has(k)) {
-    return <span className="ins-money">Investissement sportif{compact ? '' : ' : il ne rapporte pas d’argent, il fait progresser l’équipe'} · entretien +{fmtMoney(inv.upkeep)} par saison</span>;
+  if (SPORTING[k]) {
+    return <span className="ins-money">Investissement sportif{compact ? '' : ` : il ne rapporte pas d’argent, ${SPORTING[k]}`} · entretien +{fmtMoney(inv.upkeep)} par saison</span>;
   }
   if (inv.gain <= 0) {
     return <span className="ins-money muted">{k === 'terrain' ? 'Aucune recette en plus tant que le stade n’est pas plein' : 'Aucune recette en plus pour l’instant'} · entretien +{fmtMoney(inv.upkeep)}</span>;
@@ -39,7 +39,7 @@ function Pips({ lvl, max }) {
 
 // Inspecteur de parcelle : même famille que les panneaux (en-tête, corps), en carte à gauche sur PC et en
 // feuille basse sur mobile, ouverte au clic dans la vue 3D.
-export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade, onMatchDay }) {
+export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade, onMatchDay, onTransfers }) {
   const ref = useRef(null);
   useKeydown((e) => { if (e.key === 'Escape') onClose(); });
   useSwipe(ref, { onDown: onClose });
@@ -134,6 +134,9 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
           </>
         ) : (
           <div className="ins-max">Niveau maximum atteint</div>
+        )}
+        {key === 'transfers' && onTransfers && (
+          <button className="btn ghost wide" onClick={onTransfers}><IconTransfer /> Ouvrir le marché des transferts · {(state.transfers || []).length} joueurs</button>
         )}
         {key === 'terrain' && onMatchDay && (
           <button className="btn ghost wide" onClick={onMatchDay}><IconStadium /> Voir le stade en jour de match</button>

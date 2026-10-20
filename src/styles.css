@@ -1741,3 +1741,19 @@ button.hud-chip:active { transform: scale(.97); }
   .sp-card { padding: var(--s-3); }
   .sp-team { font-size: var(--t-sm); }
 }
+
+/* =========================================================== marché des transferts */
+.tr-empty { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); max-width: 520px; margin: var(--s-5) auto; padding: var(--s-5) var(--s-4); text-align: center; border: 1px dashed var(--gold-line); border-radius: var(--r-md); }
+.tr-empty-ico { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; background: var(--gold-soft); color: var(--gold-light); }
+.tr-empty-ico svg { width: 24px; height: 24px; }
+.tr-empty strong { font-family: var(--font-title); font-weight: 600; font-size: var(--t-lg); }
+.tr-empty p { margin: 0; font-size: var(--t-sm); color: var(--text-2); line-height: 1.5; }
+.tr-empty .tr-where { color: var(--muted); }
+.tr-sort { display: grid; grid-template-columns: auto minmax(0, 420px) 1fr; grid-template-areas: "label seg toggle"; align-items: center; gap: var(--s-3); font-size: var(--t-sm); color: var(--muted); }
+.tr-sort-label { grid-area: label; }
+.tr-sort .segmented { grid-area: seg; grid-template-columns: repeat(4, 1fr); }
+.tr-sort .tr-afford { grid-area: toggle; justify-self: end; flex-wrap: nowrap; }
+@media (max-width: 760px) {
+  .tr-sort { grid-template-columns: 1fr auto; grid-template-areas: "label toggle" "seg seg"; gap: var(--s-2); }
+}
+.nowrap { white-space: nowrap; }

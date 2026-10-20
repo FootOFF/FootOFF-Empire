@@ -121,6 +121,9 @@ export function investmentPreview(s, key) {
   return { cost, gain, upkeep, net, payback: net > 0 ? cost / net : null, sporting: gain <= 0 };
 }
 
+// Bureau des transferts : joueurs sous contrat suivis par les recruteurs (aucun sans le bureau).
+export const officeSize = (lvl) => (lvl > 0 ? 8 + lvl * 4 : 0);
+
 // Effet d'un bâtiment à un niveau donné (inspecteur).
 export function buildingEffect(key, lvl, divIndex) {
   const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n);
@@ -135,6 +138,10 @@ export function buildingEffect(key, lvl, divIndex) {
         : 'Aucune révélation de talent tant que l’académie n’est pas construite.';
     case 'fans':
       return `Public attiré : +${lvl * 7} % · Buvette +${lvl * 10} %, boutique +${lvl * 12} % · Réputation par match : +${lvl * 10} %.`;
+    case 'transfers':
+      return lvl > 0
+        ? `${officeSize(lvl)} joueurs sous contrat suivis par tes recruteurs · indemnités −${lvl * 3} % · potentiel mieux cerné.`
+        : 'Aucun accès aux joueurs sous contrat tant que le bureau n’est pas construit.';
     case 'sponsor':
       return `Sponsors : ${fmt(sponsorIncome(lvl, divIndex))} € par saison · ${fmt(offlinePerHour(lvl, divIndex))} € par heure, même hors ligne.`;
     default:

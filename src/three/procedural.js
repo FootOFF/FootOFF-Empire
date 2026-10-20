@@ -217,7 +217,33 @@ function sponsorMesh(lvl) {
   return g;
 }
 
-const BUILDERS = { training: trainingMesh, academy: academyMesh, fans: fansMesh, sponsor: sponsorMesh };
+// Bureau des transferts : immeuble de verre sombre cerclé d'un bandeau doré, annexe d'accueil des agents et
+// panneau d'affichage des transferts devant l'entrée ; un étage par niveau, enseigne au niveau 4, antenne au 5.
+function transfersMesh(lvl) {
+  const g = new THREE.Group();
+  const floors = 1 + lvl;
+  const fh = 0.4, w = S * 0.5, d = S * 0.38, x = -S * 0.14, z = -S * 0.18;
+  const h = floors * fh;
+  g.add(mesh(box(w, h, d), M.glass(), x, h / 2, z));
+  for (let i = 1; i < floors; i++) g.add(mesh(box(w + 0.04, 0.05, d + 0.04), M.concreteDark(), x, i * fh, z)); // dalles
+  g.add(mesh(box(w + 0.06, 0.1, d + 0.06), M.gold(), x, h - 0.12, z)); // bandeau doré
+  g.add(mesh(box(w + 0.12, 0.08, d + 0.12), M.concreteDark(), x, h + 0.04, z));
+  const annex = new THREE.Group();
+  annex.position.set(S * 0.28, 0, -S * 0.12);
+  annex.add(mesh(box(S * 0.3, 0.5, S * 0.28), M.facade(), 0, 0.25, 0));
+  windowsOn(annex, S * 0.3, 0.5, 1, S * 0.14 + 0.02, 3);
+  annex.add(mesh(box(S * 0.34, 0.06, S * 0.32), M.concreteDark(), 0, 0.53, 0));
+  g.add(annex);
+  // panneau d'affichage des transferts, face à la caméra
+  g.add(mesh(cyl(0.04, 0.04, 0.7), M.steel(), S * 0.1, 0.35, S * 0.28));
+  g.add(mesh(box(1.3, 0.6, 0.06), M.glass(), S * 0.1, 0.95, S * 0.28));
+  g.add(mesh(box(1.3, 0.08, 0.07), M.gold(), S * 0.1, 1.29, S * 0.28));
+  if (lvl >= 4) g.add(mesh(box(w * 0.6, 0.28, 0.06), M.gold(), x, h + 0.26, z + d / 2 - 0.08)); // enseigne
+  if (lvl >= 5) g.add(mesh(cyl(0.03, 0.05, 1.1, 6), M.steel(), x - w * 0.3, h + 0.6, z - d * 0.2)); // antenne
+  return g;
+}
+
+const BUILDERS = { training: trainingMesh, academy: academyMesh, fans: fansMesh, sponsor: sponsorMesh, transfers: transfersMesh };
 
 export function buildingMesh(key, lvl) {
   return (BUILDERS[key] || trainingMesh)(Math.max(1, lvl));

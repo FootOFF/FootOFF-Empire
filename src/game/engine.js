@@ -1,7 +1,8 @@
 import { BUILDINGS, DIVISIONS, SQUAD_MAX, SQUAD_MIN, START_MONEY, upgradeCost } from './constants';
 import { OFFLINE_CAP, offlinePerHour } from './economy';
-import { assignNumber, makePlayer, saleValue, signingFee } from './players';
-import { randomClubName } from './names';
+import { assignNumber, costOf, makePlayer, saleValue } from './players';
+import { refreshTransfers } from './transfers';
+import { clubAfter, randomClubName } from './names';
 import { endSeason, playRound, pushJournal, startSeason } from './season';
 import { initGoals } from './goals';
 import { PLOTS, ensureFixedPlots, plotIndexOf } from './map';
@@ -25,13 +26,14 @@ export function createInitialState(clubName) {
     divisionIndex: 0,
     seasonNumber: 1,
     round: 0,
-    buildings: { terrain: 1, training: 0, academy: 0, fans: 0, sponsor: 0 },
+    buildings: { terrain: 1, training: 0, academy: 0, fans: 0, sponsor: 0, transfers: 0 },
     slots: Array(8).fill(null),
     players: [],
     rivals: [],
     schedule: [],
     table: [],
     market: [],
+    transfers: [],
     journal: [],
     history: [],
     lastMatch: null,
@@ -87,6 +89,7 @@ export function build(s, sectorId, key) {
   s.buildings[key] = 1;
   s.money -= upgradeCost(key, 1);
   book(s, 'works', upgradeCost(key, 1));
+  if (key === 'transfers') refreshTransfers(s, 'full'); // les recruteurs livrent leur première liste
   pushJournal(s, {
     season: s.seasonNumber, kind: 'infra', title: `${BUILDINGS[key].name} : premier coup de pioche`,
     text: `Le club investit ${upgradeCost(key, 1).toLocaleString('fr-FR')} € dans un nouveau bâtiment.`,
@@ -101,6 +104,7 @@ export function upgrade(s, key) {
   s.buildings[key] = lvl + 1;
   s.money -= cost;
   book(s, 'works', cost);
+  if (key === 'transfers') refreshTransfers(s, 'grow'); // liste allongée tout de suite
   pushJournal(s, {
     season: s.seasonNumber, kind: 'infra', title: `${BUILDINGS[key].name} : cap sur le niveau ${lvl + 1}`,
     text: `Travaux d’amélioration engagés pour ${cost.toLocaleString('fr-FR')} €.`,
@@ -128,12 +132,16 @@ export const releasePlayer = sellPlayer;
 
 export function signPlayer(s, id) {
   if (s.players.length >= SQUAD_MAX) return null;
-  const idx = s.market.findIndex((p) => p.id === id);
+  // joueur libre (marché de l'effectif) ou joueur sous contrat (bureau des transferts)
+  const pool = s.market.some((p) => p.id === id) ? s.market : s.transfers || [];
+  const idx = pool.findIndex((p) => p.id === id);
   if (idx === -1) return null;
-  const p = s.market[idx];
-  const fee = signingFee(p, s.divisionIndex);
+  const p = pool[idx];
+  const fee = costOf(p, s);
   if (s.money < fee) return null;
-  s.market.splice(idx, 1);
+  pool.splice(idx, 1);
+  const from = p.club;
+  delete p.club; delete p.contract; delete p.listedAt;
   s.money -= fee;
   book(s, 'signings', fee);
   p.joined = s.seasonNumber;
@@ -142,7 +150,9 @@ export function signPlayer(s, id) {
   s.signings = (s.signings || 0) + 1;
   pushJournal(s, {
     season: s.seasonNumber, kind: 'mercato', title: `${p.name} rejoint ${s.clubName}`,
-    text: `À ${p.age} ans, il s’engage avec le club pour ${fee.toLocaleString('fr-FR')} €.`,
+    text: from
+      ? `Transfert conclu : il arrive ${clubAfter('de ', from)} pour ${fee.toLocaleString('fr-FR')} €, à ${p.age} ans.`
+      : `À ${p.age} ans, il s’engage avec le club pour ${fee.toLocaleString('fr-FR')} €.`,
   });
   return s;
 }

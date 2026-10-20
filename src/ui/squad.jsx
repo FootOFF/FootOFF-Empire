@@ -1,16 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from '../game/constants';
 import {
-  ATTRS, FAMILIES, GK_ATTRS, TRAITS, WEIGHTS, playerRating, potentialRange, ratingAt, saleValue, signingFee, wageOf,
+  ATTRS, FAMILIES, GK_ATTRS, TRAITS, WEIGHTS, costOf, playerRating, potentialRange, ratingAt, saleValue, wageOf,
 } from '../game/players';
 import { sellPlayer, signPlayer } from '../game/engine';
-import { endOfSeasonForecast, seasonForecast } from '../game/economy';
+import { endOfSeasonForecast, officeSize, seasonForecast } from '../game/economy';
 import { standingsOf } from '../game/season';
 import { deName } from '../game/names';
 import { bestSigning } from '../game/advice';
 import { SLOTS } from '../game/tactics';
 import { fmtMoney, fmtRating } from './format';
-import { IconChevron, IconChevronLeft, IconClose, IconRadar } from './icons';
+import { IconChevron, IconChevronLeft, IconClose, IconRadar, IconTransfer } from './icons';
 import { Panel } from './panels';
 import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
@@ -36,7 +36,7 @@ function heat(v, ref) {
 export function SquadView({ state, run, ask, onClose, onFinances, initialTab = 'players', preview = null }) {
   const [tab, setTab] = useState(initialTab);
   const [filter, setFilter] = useState('all');
-  const [sheet, setSheet] = useState(preview?.sheet ? { id: preview.sheet } : null); // { id, market }
+  const [sheet, setSheet] = useState(preview?.sheet ? { id: preview.sheet } : null); // { id, market, order }
   const [compare, setCompare] = useState(null); // { a, b } identifiants
   const ref = divRef(state);
   const squad = useMemo(
@@ -51,7 +51,8 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
   const onEscape = () => { if (compare) setCompare(null); else if (sheet) setSheet(null); else onClose(); };
 
   const shown = filter === 'all' ? squad : squad.filter((p) => p.pos === filter);
-  const find = (id) => state.players.find((p) => p.id === id) || state.market.find((p) => p.id === id);
+  const find = (id) => state.players.find((p) => p.id === id) || state.market.find((p) => p.id === id)
+    || (state.transfers || []).find((p) => p.id === id);
 
   // fin de saison prévue (après salaires et entretien), pour montrer l'effet d'une vente ou d'une recrue
   const position = standingsOf(state).findIndex((t) => t.i === 0) + 1;
@@ -74,21 +75,22 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
   };
   // recrutement : la fenêtre du jeu montre ce que la recrue coûte maintenant et ce qu'elle pèsera en fin de saison
   const sign = (p) => {
-    const fee = signingFee(p, state.divisionIndex);
+    const fee = costOf(p, state);
+    const transfer = !!p.club;
     const wage = wageOf(p, state.divisionIndex);
     const shareAfter = seasonForecast(state, wages + wage).wageShare;
     const endAfter = endNow - fee - wage;
     ask({
-      title: `Recruter ${p.name} ?`,
-      text: `${p.age} ans, ${POS_LABELS[p.pos].toLowerCase()}, niveau ${fmtRating(playerRating(p))} sur 20.${endAfter < 0 ? ' Attention : la saison finirait dans le rouge, le conseil vendrait alors tes plus gros salaires.' : ''}`,
+      title: transfer ? `Acheter ${p.name} ?` : `Recruter ${p.name} ?`,
+      text: `${p.age} ans, ${POS_LABELS[p.pos].toLowerCase()}, niveau ${fmtRating(playerRating(p))} sur 20.${transfer ? ` Sous contrat avec ${p.club} : le club vendeur demande une indemnité de transfert.` : ''}${endAfter < 0 ? ' Attention : la saison finirait dans le rouge, le conseil vendrait alors tes plus gros salaires.' : ''}`,
       tone: endAfter < 0 ? 'danger' : 'gold',
       rows: [
-        ['Prime de signature', `−${fmtMoney(fee)}`, 'down'],
+        [transfer ? 'Indemnité de transfert' : 'Prime de signature', `−${fmtMoney(fee)}`, 'down'],
         ['Salaire', `${fmtMoney(wage)} / saison`],
         ['Salaires / revenus', `${Math.round(forecast.wageShare * 100)} % → ${Math.round(shareAfter * 100)} %`, shareAfter > 0.75 ? 'down' : ''],
         ['Fin de saison prévue', `${fmtMoney(endNow)} → ${fmtMoney(endAfter)}`, endAfter < 0 ? 'down' : ''],
       ],
-      confirmLabel: `Signer · ${fmtMoney(fee)}`,
+      confirmLabel: `${transfer ? 'Acheter' : 'Signer'} · ${fmtMoney(fee)}`,
       cancelLabel: 'Pas maintenant',
       onConfirm: () => {
         if (run((s) => signPlayer(s, p.id), 'Fonds insuffisants ou effectif complet.')) { setSheet(null); setCompare(null); }
@@ -100,7 +102,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
   const openCompare = (p) => {
     const mates = state.players.filter((q) => q.id !== p.id && q.pos === p.pos);
     let other;
-    if (state.market.includes(p)) {
+    if (!state.players.includes(p)) {
       const starters = state.lineup.map((id, k) => (SLOTS[k] === p.pos ? find(id) : null)).filter(Boolean);
       other = starters.sort((a, b) => playerRating(a) - playerRating(b))[0] || mates[0];
     } else {
@@ -112,7 +114,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
   useEffect(() => { if (preview?.compare && state.market[0]) openCompare(state.market[0]); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sheetPlayer = sheet && find(sheet.id);
-  const list = sheet?.market ? state.market : squad;
+  const list = sheet?.order ? sheet.order.map(find).filter(Boolean) : sheet?.market ? state.market : squad;
   const step = (d) => {
     const i = list.findIndex((p) => p.id === sheet.id);
     const next = list[(i + d + list.length) % list.length];
@@ -122,7 +124,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
   return (
     <Panel
       size="lg"
-      title="Effectif"
+      title={tab === 'transfers' ? 'Marché des transferts' : 'Effectif'}
       eyebrow={<>{squad.length}/{SQUAD_MAX} joueurs<span className="hide-sm"> · {DIVISIONS[state.divisionIndex].name}</span></>}
       money={state.money}
       onClose={onClose}
@@ -139,6 +141,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
           <button role="tab" aria-selected={tab === 'market'} className={tab === 'market' ? 'on' : ''} onClick={() => setTab('market')}>
             Marché{recommended ? <i className="sq-tab-dot" aria-label="recrue recommandée" /> : null}
           </button>
+          <button role="tab" aria-selected={tab === 'transfers'} className={tab === 'transfers' ? 'on' : ''} onClick={() => setTab('transfers')}>Transferts</button>
         </div>
         </>
       )}
@@ -192,8 +195,10 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
               {shown.map((p) => <PlayerRow key={p.id} p={p} state={state} refLvl={ref} onOpen={() => setSheet({ id: p.id })} />)}
             </ul>
           </>
-        ) : (
+        ) : tab === 'market' ? (
           <Market state={state} refLvl={ref} recommended={recommended} onOpen={(p) => setSheet({ id: p.id, market: true })} onCompare={openCompare} onSign={sign} />
+        ) : (
+          <TransferMarket state={state} refLvl={ref} onOpen={(p, shown) => setSheet({ id: p.id, market: true, order: shown.map((q) => q.id) })} onCompare={openCompare} onSign={sign} />
         )}
     </Panel>
   );
@@ -297,7 +302,7 @@ function Market({ state, refLvl, recommended, onOpen, onCompare, onSign }) {
       <ul className="plist">
         {state.market.length === 0 && <li className="empty">Plus de joueur disponible cette saison.</li>}
         {state.market.map((p) => {
-          const fee = signingFee(p, state.divisionIndex);
+          const fee = costOf(p, state);
           const pot = potentialRange(p, state);
           const r = playerRating(p);
           return (
@@ -327,6 +332,86 @@ function Market({ state, refLvl, recommended, onOpen, onCompare, onSign }) {
   );
 }
 
+// --- Marché des transferts (bureau des transferts) ---------------------------------------------------------
+
+const SORTS = [['lvl', 'Niveau'], ['price', 'Prix'], ['pot', 'Potentiel'], ['age', 'Âge']];
+
+function TransferMarket({ state, refLvl, onOpen, onCompare, onSign }) {
+  const lvl = state.buildings.transfers || 0;
+  const [filter, setFilter] = useState('all');
+  const [sort, setSort] = useState('lvl');
+  const [afford, setAfford] = useState(false);
+  if (!lvl) {
+    return (
+      <div className="tr-empty">
+        <span className="tr-empty-ico"><IconTransfer /></span>
+        <strong>Construis le Bureau des transferts</strong>
+        <p>Tes recruteurs suivront {officeSize(1)} joueurs sous contrat dans d’autres clubs dès le niveau 1, et jusqu’à {officeSize(5)} au niveau 5, avec des profils de plus en plus forts et des indemnités négociées à la baisse.</p>
+        <p className="tr-where">Il se construit sur une parcelle libre du quartier des supporters ou de la zone des partenaires.</p>
+      </div>
+    );
+  }
+  const full = state.players.length >= SQUAD_MAX;
+  const now = `${state.seasonNumber}:${state.round}`;
+  const potMid = (p) => { const r = potentialRange(p, state); return r ? (r[0] + r[1]) / 2 : playerRating(p); };
+  const score = { lvl: (p) => -playerRating(p), price: (p) => costOf(p, state), pot: (p) => -potMid(p), age: (p) => p.age };
+  const shown = (state.transfers || [])
+    .filter((p) => (filter === 'all' || p.pos === filter) && (!afford || costOf(p, state) <= state.money))
+    .sort((a, b) => score[sort](a) - score[sort](b));
+  return (
+    <>
+      <p className="sq-hint">
+        {(state.transfers || []).length} joueurs sous contrat suivis par tes recruteurs. Le marché bouge à chaque journée : des joueurs signent ailleurs, d’autres arrivent.
+        Indemnités négociées −{lvl * 3} %.
+      </p>
+      <div className="chips">
+        {FILTERS.map(([id, label]) => (
+          <button key={id} className={filter === id ? 'active' : ''} onClick={() => setFilter(id)}>{label}</button>
+        ))}
+      </div>
+      <div className="tr-sort">
+        <span className="tr-sort-label">Trier par</span>
+        <div className="segmented" role="radiogroup" aria-label="Trier par">
+          {SORTS.map(([id, label]) => (
+            <button key={id} role="radio" aria-checked={sort === id} className={sort === id ? 'on' : ''} onClick={() => setSort(id)}>{label}</button>
+          ))}
+        </div>
+        <div className="chips tr-afford">
+          <button className={afford ? 'active' : ''} aria-pressed={afford} onClick={() => setAfford(!afford)}>Dans mes moyens</button>
+        </div>
+      </div>
+      <ul className="plist tr-list">
+        {shown.length === 0 && <li className="empty">{afford ? 'Aucun joueur de ce profil dans tes moyens pour l’instant.' : 'Aucun joueur à ce poste pour l’instant.'}</li>}
+        {shown.map((p) => {
+          const fee = costOf(p, state);
+          const pot = potentialRange(p, state);
+          const r = playerRating(p);
+          return (
+            <li key={p.id} className="pcard market sq-market">
+              <button className="sq-market-main" onClick={() => onOpen(p, shown)}>
+                <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
+                <span className="sq-row-main">
+                  <span className="sq-row-name">{p.name}{p.listedAt === now && <em className="sh-tag on rec-tag">Nouveau</em>}</span>
+                  <span className="sq-row-meta">{p.age} ans · {p.club} · <span className="nowrap">contrat {p.contract} an{p.contract > 1 ? 's' : ''}</span></span>
+                  <span className="sq-row-meta">{topAttrs(p).map((a) => <span key={a.key} className={heat(a.v, refLvl)}>{a.short} {Math.round(a.v)}</span>)}</span>
+                  <span className="sq-row-meta">Potentiel {pot ? `${fmtRating(pot[0])} – ${fmtRating(pot[1])}` : 'atteint'} · salaire {fmtMoney(wageOf(p, state.divisionIndex))}</span>
+                </span>
+                <b className={`sq-market-lvl ${heat(r, refLvl)}`}>{fmtRating(r)}</b>
+              </button>
+              <div className="sq-market-actions">
+                <button className="sh-compare sm" onClick={() => onCompare(p)} aria-label={`Comparer ${p.name}`} title="Comparer"><IconRadar /></button>
+                <button className="btn" disabled={state.money < fee || full} onClick={() => onSign(p)} title={full ? 'Effectif complet' : state.money < fee ? `Il manque ${fmtMoney(fee - state.money)}` : ''}>
+                  Acheter · {fmtMoney(fee)}
+                </button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
 // --- Fiche joueur (magazine FootOFF Media) ---------------------------------------------------------------
 
 function PlayerSheet({ p, state, refLvl, market, place, onClose, onPrev, onNext, onCompare, onSell, onSign }) {
@@ -337,10 +422,10 @@ function PlayerSheet({ p, state, refLvl, market, place, onClose, onPrev, onNext,
   const fams = p.pos === 'G' ? ['gk'] : ['tech', 'phys', 'tac'];
   const all = attrsOf(p);
   const keys = new Set(Object.entries(WEIGHTS[p.pos]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => k));
-  const fee = signingFee(p, state.divisionIndex);
+  const fee = costOf(p, state);
   const value = saleValue(p, state.divisionIndex);
   const prev = p.hist?.length ? p.hist[p.hist.length - 1] : null;
-  const role = market ? 'Joueur libre' : state.lineup?.includes(p.id) ? 'Titulaire' : 'Remplaçant';
+  const role = market ? (p.club ? `${p.club} · contrat ${p.contract} an${p.contract > 1 ? 's' : ''}` : 'Joueur libre') : state.lineup?.includes(p.id) ? 'Titulaire' : 'Remplaçant';
   const avg = st.apps ? st.sum / st.apps : null;
   const plural = (n, one, many) => (n > 1 ? many : one);
 
@@ -469,7 +554,7 @@ function PlayerSheet({ p, state, refLvl, market, place, onClose, onPrev, onNext,
           <div className="sh-actions">
             <button className="sh-compare" onClick={onCompare} aria-label="Comparer" title="Comparer"><IconRadar /></button>
             {market ? (
-              <button className="btn" disabled={state.money < fee || state.players.length >= SQUAD_MAX} onClick={onSign}>Signer · {fmtMoney(fee)}</button>
+              <button className="btn" disabled={state.money < fee || state.players.length >= SQUAD_MAX} onClick={onSign}>{p.club ? 'Acheter' : 'Signer'} · {fmtMoney(fee)}</button>
             ) : (
               <button className="btn" disabled={state.players.length <= SQUAD_MIN} onClick={onSell}>Vendre · {fmtMoney(value)}</button>
             )}
@@ -507,9 +592,9 @@ function CompareView({ state, a, b, onPick, onClose, onSign }) {
   const va = vals(a);
   const vb = vals(b);
   const options = [...state.players, ...state.market].filter((p) => p.id !== b.id && (p.pos === 'G') === gk);
-  const isMarket = state.market.includes(b);
-  const fee = signingFee(b, state.divisionIndex);
-  const roleOf = (p) => (state.market.includes(p) ? 'Joueur libre' : state.lineup?.includes(p.id) ? 'Titulaire' : 'Remplaçant');
+  const isMarket = !state.players.includes(b);
+  const fee = costOf(b, state);
+  const roleOf = (p) => (p.club ? p.club : state.market.includes(p) ? 'Joueur libre' : state.lineup?.includes(p.id) ? 'Titulaire' : 'Remplaçant');
   const la = ratingAt(a, b.pos);
   const lb = ratingAt(b, b.pos);
   const ref = useRef(null);
@@ -561,7 +646,7 @@ function CompareView({ state, a, b, onPick, onClose, onSign }) {
         {isMarket && (
           <footer className="cmp-foot">
             <span>Salaire <b>{fmtMoney(wageOf(b, state.divisionIndex))}</b> par saison</span>
-            <button className="btn" disabled={state.money < fee || state.players.length >= SQUAD_MAX} onClick={() => onSign(b)}>Signer · {fmtMoney(fee)}</button>
+            <button className="btn" disabled={state.money < fee || state.players.length >= SQUAD_MAX} onClick={() => onSign(b)}>{b.club ? 'Acheter' : 'Signer'} · {fmtMoney(fee)}</button>
           </footer>
         )}
       </div>
