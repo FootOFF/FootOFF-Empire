@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { POS_LABELS } from '../game/constants';
 import { ratingAt } from '../game/players';
 import { SLOTS, TACTICS, TACTIC_ORDER, autoLineup, expectedGoals, lineupRating, matchOdds } from '../game/tactics';
-import { fmtMoney, fmtNum, fmtRating } from './format';
+import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
 import { createLiveMatch } from '../game/live';
 import { IconClose, IconMute, IconPlay, IconSound } from './icons';
 import { IconBall, IconSwap, IconWhistle } from './kit';
@@ -15,9 +15,9 @@ const PITCH = [ // positions des postes sur le schéma (en %, attaque vers le ha
   [50, 88], [14, 68], [37, 73], [63, 73], [86, 68], [27, 47], [50, 52], [73, 47], [20, 21], [50, 15], [80, 21],
 ];
 const lastName = (n) => n.split(' ').slice(1).join(' ') || n;
-const pct = (v) => `${Math.round(v * 100)} %`;
 
 function OddsBar({ odds }) {
+  const [w, d, l] = roundPercents([odds.win, odds.draw, odds.loss]); // somme toujours égale à 100 %
   return (
     <div className="odds">
       <div className="odds-bar">
@@ -26,9 +26,9 @@ function OddsBar({ odds }) {
         <i className="l" style={{ width: `${odds.loss * 100}%` }} />
       </div>
       <div className="odds-legend">
-        <span><b>{pct(odds.win)}</b> Victoire</span>
-        <span><b>{pct(odds.draw)}</b> Nul</span>
-        <span><b>{pct(odds.loss)}</b> Défaite</span>
+        <span><b>{w.label}</b> Victoire</span>
+        <span><b>{d.label}</b> Nul</span>
+        <span><b>{l.label}</b> Défaite</span>
       </div>
     </div>
   );
