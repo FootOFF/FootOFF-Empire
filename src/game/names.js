@@ -7,12 +7,29 @@ export const FIRST = [
   'Félix', 'Aurélien', 'Bilal', 'Adam', 'Gabriel', 'Nassim', 'Sébastien', 'Oscar', 'Tiago', 'Rafael',
 ];
 
+// Noms de famille choisis pour qu'aucun ne soit porté par un footballeur connu : le jeu ne doit jamais
+// produire le nom d'un vrai joueur (l'ancienne liste donnait « Ousmane Dembélé », « Diego Costa »…).
 export const LAST = [
+  'Vasseur', 'Delorme', 'Carrel', 'Delmas', 'Hamon', 'Maillard', 'Perrot', 'Tessier', 'Vallet', 'Lefort',
+  'Charron', 'Brunel', 'Masson', 'Poulain', 'Royer', 'Cordier', 'Bellanger', 'Lagarde', 'Voisin', 'Bouvier',
+  'Marais', 'Joubert', 'Combes', 'Ferrière', 'Azevedo', 'Medeiros', 'Bellini', 'Santoro', 'Ferraro', 'Moretti',
+  'Okonkwo', 'Nwosu', 'Tiendrebeogo', 'Mabika', 'Haddad', 'Mansouri', 'Toussaint', 'Kassé', 'Lindqvist', 'Sandoval',
+];
+
+// Anciens noms (avant le changement de liste) : les joueurs des parties existantes qui les portent sont renommés
+// au chargement, en gardant leur prénom (nouveau nom stable, tiré de leur identifiant).
+const RETIRED_LAST = new Set([
   'Ndiaye', 'Martin', 'Da Silva', 'Kébé', 'Lopez', 'Bernard', 'Okafor', 'Rossi', 'Diallo', 'Petit',
   'Moreau', 'Sissoko', 'Fontaine', 'Garcia', 'Kanté', 'Lemoine', 'Barbosa', 'Traoré', 'Marchand', 'Nkunku',
   'Pereira', 'Sow', 'Ricci', 'Dembélé', 'Cissé', 'Aubert', 'Fofana', 'Girard', 'Mendes', 'Sarr',
   'Dubois', 'Camara', 'Ferrand', 'Bamba', 'Kouassi', 'Renard', 'Vidal', 'Costa', 'Leroux', 'Zahavi',
-];
+]);
+export function renameRetired(p) {
+  const [first, ...rest] = (p.name || '').split(' ');
+  if (!RETIRED_LAST.has(rest.join(' '))) return p;
+  p.name = `${first} ${LAST[((p.id || 1) * 7919) % LAST.length]}`;
+  return p;
+}
 
 const CLUB_FIRST = [
   'AS', 'FC', 'US', 'Olympique', 'Sporting', 'Racing', 'Étoile', 'Rapid', 'Atlas', 'Avenir', 'Jaunes', 'Bleus',

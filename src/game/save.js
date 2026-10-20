@@ -6,6 +6,7 @@ import { addReserves } from './engine';
 import { ensureTutorial } from './tutorial';
 import { assignNumber, upgradePlayer } from './players';
 import { ensureLedger } from './ledger';
+import { renameRetired } from './names';
 
 export function saveGame(state) {
   try {
@@ -49,7 +50,13 @@ export function loadGame() {
     // toute sauvegarde : le stade retrouve sa parcelle (réparation des parties déjà commencées)
     // parties commencées avant le match en direct : banc de 4 remplaçants offert une fois
     // parties commencées avant l'écran Finances : le livre de comptes démarre à la trésorerie actuelle
-    const fix = (x) => { const y = ensureTutorial(ensureLineup(addReserves(ensureFixedPlots(migratePlayers(x))))); ensureLedger(y); return y; };
+    // joueurs portant un ancien nom (proche de vrais footballeurs) : renommés, prénom conservé
+    const fix = (x) => {
+      const y = ensureTutorial(ensureLineup(addReserves(ensureFixedPlots(migratePlayers(x)))));
+      ensureLedger(y);
+      [...y.players, ...(y.market || [])].forEach(renameRetired);
+      return y;
+    };
     if (s.version === 4) return fix(s);
     if (s.version === 3) return fix(s);
     if (s.version === 2) return fix(migrateEconomy(s));
