@@ -72,6 +72,26 @@ function quickSim(si, sj) {
   return [g1, g2];
 }
 
+// Historique détaillé de chaque match (onglet Stats) : score, statistiques, buteurs, notes, affluence.
+// L'homme du match (meilleure note) est compté dans la saison du joueur.
+function recordMatch(s, res) {
+  const best = (res.players || []).reduce((b, x) => (!b || x.rating > b.rating ? x : b), null);
+  const star = best && s.players.find((q) => q.id === best.id);
+  if (star) { star.season ||= freshSeason(); star.season.motm = (star.season.motm || 0) + 1; }
+  const st = res.stats;
+  s.matches = [...(s.matches || []), {
+    season: s.seasonNumber, round: s.round, division: DIVISIONS[s.divisionIndex].name,
+    opp: res.oppName, oppStrength: Math.round((res.oppStrength || 0) * 10) / 10, myRating: res.myRating,
+    tactic: res.tactic || s.tactic, gf: res.gf, ga: res.ga,
+    stats: st ? { possession: st.possession, shots: [...st.shots], onTarget: [...st.onTarget], yellow: [...st.yellow], red: [...st.red] } : null,
+    scorers: (res.scorers || []).map(({ name, id, minute, assist }) => ({ name, id, minute, assist })),
+    players: (res.players || []).map(({ id, name, pos, rating, goals, assists, yellow, red }) => ({ id, name, pos, rating, goals, assists, yellow, red })),
+    motm: best ? best.id : null,
+    events: (res.highlights || []).map(({ minute, type, side, player }) => ({ minute, type, side, player })), // buts et cartons des deux équipes
+    attendance: res.attendance, capacity: res.capacity, revenue: res.revenue,
+  }].slice(-400);
+}
+
 function reportText(s, res) {
   const att = res.attendance;
   const opp = (prep = '') => clubAfter(prep, res.oppName); // « contre l’AS… », « face au FC… »
@@ -155,6 +175,7 @@ export function applyMatchResult(s, live) {
   s.reputation = Math.max(0, Math.round((s.reputation + res.repDelta) * 10) / 10);
   s.round++;
   s.lastMatch = { ...res, round: s.round };
+  recordMatch(s, res);
   const score = `${res.gf}–${res.ga}`;
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'match',
@@ -222,7 +243,8 @@ export function endSeason(s) {
     p.hist = [...(p.hist || []), {
       season: s.seasonNumber, rating: Math.round(playerRating(p) * 10) / 10, apps: st.apps, goals: st.goals,
       assists: st.assists, avg: st.apps ? Math.round((st.sum / st.apps) * 10) / 10 : null,
-    }].slice(-10);
+      yellow: st.yellow || 0, red: st.red || 0, motm: st.motm || 0, division: div.name,
+    }].slice(-20); // carrière : 20 saisons gardées
     p.season = freshSeason();
     progressPlayer(p, s.buildings.training);
     p.age += 1;

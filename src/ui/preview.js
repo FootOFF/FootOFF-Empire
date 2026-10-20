@@ -20,6 +20,8 @@ export const SCREENS = [
   ['bilan', 'Bilan de saison'],
   ['saison', 'Classement'],
   ['finances', 'Finances'],
+  ['stats', 'Statistiques'],
+  ['stats-pass', 'Stats Pass d’un match'],
   ['journal', 'Journal du club'],
   ['confirmation', 'Fenêtre de confirmation'],
   ['menu', 'Menu et réglages'],
@@ -30,7 +32,7 @@ export function previewState(screen) {
   if (screen === 'accueil') return null;
   const s = createInitialState('FootOFF FC');
   s.tutorial = { step: screen === 'tutoriel' ? 'build' : 'done' };
-  if (screen === 'finances') { // deux saisons bouclées, puis trois matchs : courbe et comptes remplis
+  if (screen === 'finances' || screen === 'stats' || screen === 'stats-pass') { // deux saisons bouclées, puis trois matchs : courbe et comptes remplis
     build(s, 'main', 'training');
     for (let k = 0; k < 2; k++) { while (s.round < 7) playRound(s); endSeason(s); s.seasonReview = null; }
     for (let k = 0; k < 3; k++) playRound(s);
@@ -62,6 +64,8 @@ export function previewUi(screen, s) {
     case 'saison': return { panel: 'season' };
     case 'journal': return { panel: 'journal' };
     case 'finances': return { panel: 'finances' };
+    case 'stats': return { panel: 'stats' };
+    case 'stats-pass': return { panel: 'stats', statsMatch: 'last' };
     case 'avant-match': return { matchPhase: 'prematch', matchCtx: matchContext(s), matchDay: true };
     case 'direct': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34 } };
     case 'mi-temps': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime' } };

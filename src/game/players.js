@@ -142,7 +142,7 @@ export function makePlayer({ level = 0, youth = false, academy = 0, pos = null }
   return player;
 }
 
-export const freshSeason = () => ({ apps: 0, goals: 0, assists: 0, yellow: 0, red: 0, sum: 0 });
+export const freshSeason = () => ({ apps: 0, goals: 0, assists: 0, yellow: 0, red: 0, sum: 0, motm: 0 });
 
 // Numéros de maillot : les numéros classiques de chaque poste d'abord.
 const NUMBERS = { G: [1, 16, 30, 40], D: [2, 3, 4, 5, 12, 13, 15, 23, 24], M: [6, 8, 10, 14, 17, 18, 20, 21], A: [7, 9, 11, 19, 22, 25, 26, 27] };

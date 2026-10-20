@@ -369,6 +369,7 @@ export function createLiveMatch(s, ctx) {
         myRating: Math.round(lineupRating(s.players, m.lineup) * 10) / 10,
         oppStrength: m.oppStrength,
         oppName: m.away,
+        tactic: m.tactic,
         stats: m.stats,
         highlights: m.events.filter((e) => ['goal', 'red', 'yellow'].includes(e.type)).map(({ minute, type, side, player }) => ({ minute, type, side, player })),
       };

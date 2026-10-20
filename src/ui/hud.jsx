@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { DIVISIONS } from '../game/constants';
 import { SECTORS, nextLockedSector } from '../game/map';
 import { activeGoal, tierOf } from '../game/goals';
@@ -11,7 +11,7 @@ import { useDialogFocus, useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import {
   IconCal, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
-  IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow, IconEye, IconClose,
+  IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow, IconEye, IconClose, IconStats,
 } from './icons';
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran.
@@ -70,10 +70,11 @@ export function ObjectiveWidget({ state, collapsed, onToggle }) {
   );
 }
 
+// Le stade n'a plus de bouton : on l'ouvre en le touchant dans la vue 3D.
 const DOCK = [
   { id: null, label: 'Empire', Icon: IconEmpire },
-  { id: 'stadium', label: 'Stade', Icon: IconStadium },
   { id: 'squad', label: 'Effectif', Icon: IconUsers },
+  { id: 'stats', label: 'Stats', Icon: IconStats },
   { id: 'season', label: 'Saison', Icon: IconCal },
   { id: 'journal', label: 'Journal', Icon: IconNews },
 ];
@@ -86,16 +87,35 @@ function DockBadge({ value }) {
   return <i className="dock-badge">{value}</i>;
 }
 
+// Menu du bas : la sélection est une pastille en verre liquide qui glisse d'un bouton à l'autre (façon iOS),
+// en s'étirant pendant le trajet puis en se posant avec un léger rebond.
 export function Dock({ panel, onPanel, badges = {} }) {
+  const active = DOCK.some((d) => d.id === panel) ? panel : null; // panneau hors menu : l'Empire reste sélectionné
+  const nav = useRef(null);
+  const [glass, setGlass] = useState(null);
+  const [moving, setMoving] = useState(false);
+  const first = useRef(true);
+  useLayoutEffect(() => {
+    const place = () => {
+      const btn = nav.current?.querySelector(`button[data-id="${active || 'empire'}"]`);
+      if (btn) setGlass({ x: btn.offsetLeft, w: btn.offsetWidth, y: btn.offsetTop, h: btn.offsetHeight });
+    };
+    place();
+    if (first.current) first.current = false;
+    else { setMoving(true); const t = setTimeout(() => setMoving(false), 260); window.addEventListener('resize', place); return () => { clearTimeout(t); window.removeEventListener('resize', place); }; }
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, [active]);
   return (
-    <nav className="hud-dock glass" aria-label="Navigation">
+    <nav ref={nav} className="hud-dock glass" aria-label="Navigation">
+      {glass && <span className={`dock-glass ${moving ? 'moving' : ''}`} style={{ '--x': `${glass.x}px`, width: glass.w, top: glass.y, height: glass.h }} aria-hidden="true" />}
       {DOCK.map(({ id, label, Icon }) => (
         <button
           key={label}
-          className={panel === id ? 'active' : ''}
+          className={active === id ? 'active' : ''}
           data-id={id || 'empire'}
-          onClick={() => onPanel(panel === id ? null : id)}
-          aria-current={panel === id ? 'page' : undefined}
+          onClick={() => onPanel(active === id ? null : id)}
+          aria-current={active === id ? 'page' : undefined}
         >
           <Icon />
           <span>{label}</span>

@@ -10,6 +10,7 @@ import Empire2D from './ui/EmpireView';
 import { Dock, GameMenu, MatchCta, ObjectiveWidget, SceneTools, Toasts, TopHud } from './ui/hud';
 import { JournalPanel, SeasonPanel } from './ui/panels';
 import { FinancesPanel } from './ui/finances';
+import { StatsPanel } from './ui/stats';
 import { SquadView } from './ui/squad';
 import PlotInspector from './ui/inspector';
 import { OfflineReturn, SeasonReview } from './ui/overlays';
@@ -226,7 +227,7 @@ export default function App({ preview = null }) {
           />
         )}
         <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} />
-        <Dock panel={sel?.plotId === 't0' ? 'stadium' : panel} onPanel={openPanel} badges={signals} />
+        <Dock panel={panel} onPanel={openPanel} badges={signals} />
       </div>
 
       <Presence>
@@ -244,6 +245,7 @@ export default function App({ preview = null }) {
       </Presence>
       <Presence>{panel === 'season' && <SeasonPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
+      <Presence>{panel === 'stats' && <StatsPanel state={state} initialMatch={boot.ui.statsMatch || null} onClose={() => setPanel(null)} />}</Presence>
       <Presence>
         {panel === 'finances' && (
           <FinancesPanel state={state} onClose={() => setPanel(null)} onOpenSquad={() => { setSquadTab('players'); openPanel('squad'); }} />
