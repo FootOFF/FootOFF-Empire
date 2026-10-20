@@ -35,6 +35,8 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 - Libellés sur une seule ligne, pour que les chiffres d'une même rangée tombent au même niveau.
 - Une seule façon d'afficher chaque échelle : niveau sur 20 en grand chiffre (doré s'il est fort pour la
   division), note de match sur 10 en pastille (vert, neutre, rouge). Une légende dès qu'une couleur a un sens.
+- Classes tirées des données du jeu toujours préfixées (`ev-side-home`, `ev-out-post`…) : un nom nu peut tomber
+  sur celui d'un écran (« post », tir sur le poteau, prenait les styles de l'écran d'après-match `.post`).
 - Icônes dessinées uniquement (jamais ‹ › ou ⬠ en caractères) ; « Comparer » = bouton rond avec l'icône radar.
 
 ## Zones du HUD

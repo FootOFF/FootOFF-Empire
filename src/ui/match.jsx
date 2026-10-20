@@ -160,9 +160,11 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
 const SEC_PER_MIN = 0.42; // ~40 s pour 90 minutes à vitesse normale
 const ICON = { goal: <IconBall />, sub: <IconSwap />, kickoff: <IconWhistle />, halftime: <IconWhistle />, fulltime: <IconWhistle /> };
 
+// Les classes tirées des données du match sont toujours préfixées (ev-side-…, ev-out-…) : un nom nu comme
+// « post » (tir sur le poteau) prenait les styles de l'écran d'après-match (.post) et figeait la ligne en haut du fil.
 function EventRow({ e }) {
   return (
-    <li className={`ev ev-${e.type} ${e.side || ''} ${e.outcome || ''}`}>
+    <li className={['ev', `ev-${e.type}`, e.side && `ev-side-${e.side}`, e.outcome && `ev-out-${e.outcome}`].filter(Boolean).join(' ')}>
       <span className="ev-min">{e.minute}′</span>
       <span className="ev-icon">{e.type === 'yellow' || e.type === 'red' ? <i className={`card ${e.type}`} /> : ICON[e.type] || null}</span>
       <span className="ev-text">{e.type === 'goal' && e.lead ? <><span className="ev-lead">{e.lead}</span> {e.text}</> : e.text}</span>
