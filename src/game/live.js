@@ -72,6 +72,83 @@ function pickWeighted(list, weight) {
   return list[list.length - 1];
 }
 
+// --- Pronostic exact -----------------------------------------------------------------------------------------
+// Calculé sur les règles mêmes du moteur (ci-dessous) : chaque minute, chaque équipe a une occasion avec la
+// probabilité λ/27 (λ : buts attendus sur 90 minutes, corrigés des expulsions) et la transforme avec son taux de
+// conversion (signes distinctifs compris) ; au plus un but par équipe et par minute. On additionne toutes les
+// suites de minutes possibles, temps additionnel compris : « 70 % » veut dire 7 victoires sur 10. Seules les
+// expulsions encore à venir sont ignorées (environ 0,2 par match). Une issue n'a une probabilité nulle que si elle
+// est réellement impossible.
+const HALF1 = [46, 47, 48]; // 45 minutes + 1 à 3 de temps additionnel
+const HALF2 = [47, 48, 49, 50]; // 45 minutes + 2 à 5
+
+const shooterWeight = (p, bigGame) => {
+  const base = p.pos === 'A' ? p.a.fin * 3 : p.pos === 'M' ? ((p.a.fin + p.a.pas) / 2) * 1.5 : p.a.fin * 0.5;
+  return (base + 1) * (bigGame && p.traits?.includes('grandsSoirs') ? 1.5 : 1) * (p.traits?.includes('frappe') ? 1.15 : 1);
+};
+
+// probabilités de but par minute pour chaque équipe, dans l'état donné (onze, tactique, expulsions)
+function minuteGoalChances(s, lineup, tactic, oppStrength, sent = { home: 0, away: 0 }, sentIds = new Set()) {
+  const rating = lineupRating(s.players, lineup);
+  const xg = expectedGoals(rating, oppStrength, tactic);
+  const bigGame = oppStrength > rating;
+  const on = lineup.map((id) => s.players.find((p) => p.id === id)).filter((p) => p && !sentIds.has(p.id));
+  const has = (p, t) => p.traits?.includes(t);
+  const rocs = on.some((p) => p.pos === 'D' && has(p, 'roc'));
+  const keeper = on.find((p) => p.pos === 'G');
+  const field = on.filter((p) => p.pos !== 'G');
+  const shooters = field.length ? field : on;
+  let wSum = 0, convSum = 0;
+  for (const p of shooters) {
+    const w = shooterWeight(p, bigGame);
+    wSum += w;
+    convSum += w * CONVERSION * (has(p, 'finisseur') ? 1.15 : 1) * (bigGame && has(p, 'grandsSoirs') ? 1.1 : 1);
+  }
+  const convH = wSum ? convSum / wSum : CONVERSION;
+  const convA = CONVERSION * (keeper && has(keeper, 'chat') ? 0.92 : 1);
+  const lamH = xg.for * 0.78 ** sent.home * 1.22 ** sent.away;
+  const lamA = xg.against * 1.22 ** sent.home * 0.78 ** sent.away * (rocs ? 0.97 : 1);
+  return { pH: Math.min(1, lamH / (90 * CONVERSION)) * convH, pA: Math.min(1, lamA / (90 * CONVERSION)) * convA };
+}
+
+// répartition victoire / nul / défaite après n minutes, n tiré parmi `durations` (toutes également probables)
+function outcomeOdds({ pH, pA }, lead, durations) {
+  const max = Math.max(...durations);
+  const off = max + 1;
+  let dist = new Float64Array(2 * off + 1);
+  dist[off] = 1; // écart de buts supplémentaire, en partant de 0
+  const up = pH * (1 - pA);
+  const down = pA * (1 - pH);
+  const stay = 1 - up - down;
+  let win = 0, draw = 0, loss = 0;
+  for (let n = 1; n <= max; n++) {
+    const next = new Float64Array(dist.length);
+    for (let d = 1; d < dist.length - 1; d++) {
+      const v = dist[d];
+      if (!v) continue;
+      next[d] += v * stay;
+      next[d + 1] += v * up;
+      next[d - 1] += v * down;
+    }
+    dist = next;
+    const k = durations.filter((x) => x === n).length;
+    if (!k) continue;
+    for (let d = 0; d < dist.length; d++) {
+      if (!dist[d]) continue;
+      const final = lead + d - off;
+      const share = (dist[d] * k) / durations.length;
+      if (final > 0) win += share; else if (final === 0) draw += share; else loss += share;
+    }
+  }
+  return { win, draw, loss };
+}
+
+// avant le coup d'envoi : 90 minutes plus le temps additionnel des deux mi-temps
+export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, oppStrength }) {
+  const durations = HALF1.flatMap((a) => HALF2.map((b) => a + b));
+  return outcomeOdds(minuteGoalChances(s, lineup, tactic, oppStrength), 0, durations);
+}
+
 export function createLiveMatch(s, ctx) {
   const awayRoster = Array.from({ length: 11 }, (_, k) => ({ name: `${pick(FIRST)} ${pick(LAST)}`, pos: SLOTS[k] }));
   const m = {
@@ -116,10 +193,7 @@ export function createLiveMatch(s, ctx) {
   // buteur : la finition compte (beaucoup pour un attaquant, un peu pour un milieu, peu pour un défenseur)
   function homeShooter(bigGame) {
     const out = playersOn().filter((p) => p.pos !== 'G');
-    return pickWeighted(out.length ? out : playersOn(), (p) => {
-      const base = p.pos === 'A' ? p.a.fin * 3 : p.pos === 'M' ? ((p.a.fin + p.a.pas) / 2) * 1.5 : p.a.fin * 0.5;
-      return (base + 1) * (bigGame && has(p, 'grandsSoirs') ? 1.5 : 1) * (has(p, 'frappe') ? 1.15 : 1);
-    });
+    return pickWeighted(out.length ? out : playersOn(), (p) => shooterWeight(p, bigGame)); // même pondération que le pronostic
   }
   // passeur décisif : la passe compte, le signe « Passeur » triple les chances
   function homeAssist(scorer) {
@@ -262,6 +336,12 @@ export function createLiveMatch(s, ctx) {
     state: m,
     playHalf,
     get halfEnd() { return m.half === 1 ? m.halfLength[0] : 45 + m.halfLength[1]; },
+    // pronostic de fin de match à la mi-temps, avec le onze et la tactique envisagés pour la seconde période
+    secondHalfOdds({ lineup = m.lineup, tactic = m.tactic } = {}) {
+      const sent = { home: m.sent.home.size, away: m.sent.away.size };
+      const chances = minuteGoalChances(s, lineup, tactic, m.oppStrength, sent, m.sent.home);
+      return outcomeOdds(chances, m.score.home - m.score.away, [m.halfLength[1]]);
+    },
     // changement à la mi-temps : un titulaire sort, un remplaçant prend son poste
     substitute(outId, inId) {
       const k = m.lineup.indexOf(outId);

@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { POS_LABELS } from '../game/constants';
 import { ratingAt } from '../game/players';
-import { SLOTS, TACTICS, TACTIC_ORDER, autoLineup, expectedGoals, lineupRating, matchOdds } from '../game/tactics';
+import { SLOTS, TACTICS, TACTIC_ORDER, autoLineup, expectedGoals, lineupRating } from '../game/tactics';
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
-import { createLiveMatch } from '../game/live';
+import { createLiveMatch, prematchOdds } from '../game/live';
 import { IconClose, IconMute, IconPlay, IconSound } from './icons';
 import { IconBall, IconSwap, IconWhistle } from './kit';
 import { useKeydown } from './presence';
@@ -56,7 +56,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const byId = useMemo(() => Object.fromEntries(state.players.map((p) => [p.id, p])), [state.players]);
   const rating = lineupRating(state.players, lineup);
   const xg = expectedGoals(rating, ctx.opp.strength, tactic);
-  const odds = matchOdds(xg);
+  const odds = prematchOdds(state, { lineup, tactic, oppStrength: ctx.opp.strength }); // calculé sur le moteur
   const bench = state.players.filter((p) => !lineup.includes(p.id));
 
   useKeydown((e) => { if (e.key === 'Escape') { if (slot !== null) setSlot(null); else onCancel(); } });
@@ -173,19 +173,6 @@ function EventRow({ e }) {
 }
 
 // probabilités finales depuis un score donné, pour la seconde période
-function secondHalfOdds(xg, score) {
-  const h = { for: xg.for / 2, against: xg.against / 2 };
-  const pois = (l, k) => { let p = Math.exp(-l); for (let i = 1; i <= k; i++) p *= l / i; return p; };
-  let w = 0, d = 0, l = 0;
-  for (let i = 0; i <= 7; i++) for (let j = 0; j <= 7; j++) {
-    const p = pois(h.for, i) * pois(h.against, j);
-    const a = score.home + i, b = score.away + j;
-    if (a > b) w += p; else if (a === b) d += p; else l += p;
-  }
-  const t = w + d + l;
-  return { win: w / t, draw: d / t, loss: l / t };
-}
-
 export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null }) {
   const [live] = useState(() => createLiveMatch(state, ctx)); // un seul match par montage (jamais recréé)
   const [half, setHalf] = useState(1);
@@ -309,7 +296,6 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
   // score affiché = buts déjà révélés par le direct (le moteur connaît la suite de la mi-temps)
   const goalsH = shown.filter((e) => e.type === 'goal' && e.side === 'home').length;
   const goalsA = shown.filter((e) => e.type === 'goal' && e.side === 'away').length;
-  const xg2 = expectedGoals(lineupRating(state.players, sub.out !== null && sub.in !== null ? m.lineup.map((id) => (id === sub.out ? sub.in : id)) : m.lineup), m.oppStrength, tactic2);
 
   return (
     <div className={`matchscreen live ${phase !== 'playing' ? 'paused' : ''}`}>
@@ -368,7 +354,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
           </div>
           <div className="ht-block">
             <span className="eyebrow muted-eyebrow">Pronostic final</span>
-            <OddsBar odds={secondHalfOdds(xg2, m.score)} />
+            <OddsBar odds={live.secondHalfOdds({ lineup: sub.out !== null && sub.in !== null ? m.lineup.map((id) => (id === sub.out ? sub.in : id)) : m.lineup, tactic: tactic2 })} />
           </div>
           </div>
           <div className="ht-col">

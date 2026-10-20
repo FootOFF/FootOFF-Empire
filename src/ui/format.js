@@ -18,8 +18,8 @@ export const fmtEuros = (n) => euros.format(n);
 export const fmtRating = (v) => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',');
 
 // Pourcentages qui tombent juste (pronostic victoire / nul / défaite) : arrondis par la méthode du plus fort reste,
-// leur somme fait toujours 100. Arrondis un par un, 93,6 + 5,6 + 0,8 donnaient 94 + 6 + 1 = 101 %.
-// Un résultat quasi impossible s'affiche 0 %.
+// leur somme fait toujours 100. Honnêtes aux extrêmes : 0 % seulement pour une issue réellement impossible et
+// 100 % seulement pour une issue certaine ; sinon l'affichage reste entre 1 % et 99 %.
 export function roundPercents(values) {
   const total = values.reduce((a, v) => a + Math.max(0, v), 0) || 1;
   const exact = values.map((v) => (Math.max(0, v) / total) * 100);
@@ -27,5 +27,13 @@ export function roundPercents(values) {
   let left = 100 - whole.reduce((a, b) => a + b, 0);
   const byRemainder = exact.map((x, i) => i).sort((a, b) => (exact[b] % 1) - (exact[a] % 1));
   for (const i of byRemainder) { if (left <= 0) break; whole[i] += 1; left -= 1; }
+  // une issue possible ne s'affiche jamais 0 % : elle prend 1 point à la plus grosse
+  for (let i = 0; i < whole.length; i++) {
+    if (whole[i] === 0 && exact[i] > 0) {
+      const big = whole.indexOf(Math.max(...whole));
+      whole[big] -= 1;
+      whole[i] = 1;
+    }
+  }
   return whole.map((n) => ({ value: n, label: `${n} %` }));
 }
