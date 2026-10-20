@@ -4,11 +4,6 @@ import App from './App.jsx';
 import './styles.css';
 import { installFrenchTypography } from './ui/typography';
 
-// Hébergement Netlify gratuit : un badge imposé occupe le coin bas-droit ; le jeu lui laisse une bande en bas.
-if (/\.netlify\.app$/.test(window.location.hostname)) {
-  document.documentElement.style.setProperty('--host-badge-h', '56px');
-}
-
 // ?galerie : tous les écrans côte à côte · ?ecran=nom : un écran seul avec une partie fictive (jamais sauvegardée)
 const params = new URLSearchParams(window.location.search);
 const Gallery = lazy(() => import('./ui/gallery'));

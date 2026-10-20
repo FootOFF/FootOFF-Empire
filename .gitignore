@@ -2,6 +2,6 @@ node_modules/
 dist/
 *.blend1
 
-# fichiers de travail (déploiement Netlify, bundles temporaires)
+# fichiers de travail (anciens déploiements Netlify, bundles temporaires)
 .netlify/
 tmp/
