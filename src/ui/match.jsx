@@ -5,7 +5,7 @@ import { SLOTS, TACTICS, TACTIC_ORDER, autoLineup, expectedGoals, lineupRating }
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
 import { createLiveMatch, prematchOdds } from '../game/live';
 import { IconClose, IconMute, IconPlay, IconSound } from './icons';
-import { IconBall, IconSwap, IconWhistle } from './kit';
+import { IconBall, IconSwap, IconWhistle, RatingBadge } from './kit';
 import { useKeydown } from './presence';
 
 // Avant-match (onze + tactique + pronostic) et match en direct (score, chrono, fil de commentaires,
@@ -15,6 +15,8 @@ const PITCH = [ // positions des postes sur le schéma (en %, attaque vers le ha
   [50, 88], [14, 68], [37, 73], [63, 73], [86, 68], [27, 47], [50, 52], [73, 47], [20, 21], [50, 15], [80, 21],
 ];
 const lastName = (n) => n.split(' ').slice(1).join(' ') || n;
+// « L. Ferrand » : l'initiale départage deux joueurs au même nom de famille
+const shortName = (n) => { const [first, ...rest] = n.split(' '); return rest.length ? `${first[0]}. ${rest.join(' ')}` : n; };
 
 function OddsBar({ odds }) {
   const [w, d, l] = roundPercents([odds.win, odds.draw, odds.loss]); // somme toujours égale à 100 %
@@ -173,6 +175,76 @@ function EventRow({ e }) {
 }
 
 // probabilités finales depuis un score donné, pour la seconde période
+// Changement à la mi-temps, au doigt : on touche le joueur qui sort (note du match et carton visibles), puis
+// celui qui entre (remplaçants du même poste en tête, avec leur niveau à ce poste et l'écart avec le sortant).
+function SubPicker({ state, m, notes, sub, onChange }) {
+  const byId = (id) => state.players.find((p) => p.id === id);
+  const outP = sub.out !== null ? byId(sub.out) : null;
+  const inP = sub.in !== null ? byId(sub.in) : null;
+  const slot = outP ? SLOTS[m.lineup.indexOf(outP.id)] : null;
+  const outLvl = outP ? ratingAt(outP, slot) : 0;
+  const delta = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmtRating(Math.abs(v))}`;
+
+  if (outP && inP) {
+    const inLvl = ratingAt(inP, slot);
+    return (
+      <div className="sub-done">
+        <div className="sub-swap">
+          <span className="sub-way out">Sort</span><b>{outP.name}</b>
+          <span className="sub-way in">Entre</span><b>{inP.name}</b>
+        </div>
+        <div className="sub-done-foot">
+          <span>Niveau au poste ({POS_LABELS[slot].toLowerCase()}) : {fmtRating(outLvl)} → <b className={inLvl >= outLvl ? 'up' : 'down'}>{fmtRating(inLvl)}</b></span>
+          <button className="linkbtn sub-reset" onClick={() => onChange({ out: null, in: null })}>Modifier</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (outP) {
+    const bench = state.players
+      .filter((p) => !m.lineup.includes(p.id))
+      .map((p) => ({ p, lvl: ratingAt(p, slot) }))
+      .sort((a, b) => (b.p.pos === slot) - (a.p.pos === slot) || b.lvl - a.lvl);
+    return (
+      <div className="sub-step">
+        <div className="sub-head">
+          <span>Qui remplace <b>{lastName(outP.name)}</b> ({POS_LABELS[slot].toLowerCase()}, niveau {fmtRating(outLvl)}) ?</span>
+          <button className="linkbtn sub-reset" onClick={() => onChange({ out: null, in: null })}>Annuler</button>
+        </div>
+        {bench.length === 0 ? <p className="sub-empty">Aucun remplaçant : recrute dans l’Effectif.</p> : (
+          <div className="sub-grid">
+            {bench.map(({ p, lvl }) => (
+              <button key={p.id} className="sub-chip" onClick={() => onChange({ out: outP.id, in: p.id })}>
+                <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
+                <span className="sub-name">{shortName(p.name)}</span>
+                <span className="sub-lvl">{fmtRating(lvl)}<em className={lvl > outLvl ? 'up' : lvl < outLvl ? 'down' : ''}>{delta(lvl - outLvl)}</em></span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const starters = m.lineup.map((id, k) => ({ p: byId(id), slot: SLOTS[k] })).filter(({ p }) => p && !m.sent.home.has(p.id));
+  return (
+    <div className="sub-step">
+      <p className="sub-hint">Touche le joueur qui sort. Sinon, l’équipe repart telle quelle.</p>
+      <div className="sub-grid">
+        {starters.map(({ p, slot: s }) => (
+          <button key={p.id} className="sub-chip" onClick={() => onChange({ out: p.id, in: null })}>
+            <span className={`pos-pill ${s}`}>{s}</span>
+            <span className="sub-name">{shortName(p.name)}</span>
+            {m.booked.home.has(p.id) && <i className="card yellow" title="Averti" />}
+            {notes[p.id] && <RatingBadge value={notes[p.id]} />}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null }) {
   const [live] = useState(() => createLiveMatch(state, ctx)); // un seul match par montage (jamais recréé)
   const [half, setHalf] = useState(1);
@@ -289,6 +361,9 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
   };
 
   const m = live.state;
+  // notes du match à la pause (aide à choisir qui sort)
+  const notes = useMemo(() => (phase === 'halftime'
+    ? Object.fromEntries(live.result().players.filter(Boolean).map((x) => [x.id, x.rating])) : {}), [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   const base = half === 1 ? 45 : 90;
   const minute = Math.max(half === 1 ? 0 : 45, Math.ceil(clock));
   const minuteLabel = minute > base ? `${base}+${minute - base}` : `${minute}`;
@@ -345,8 +420,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
       {phase === 'halftime' && (
         <div className="halftime glass">
           <div className="ht-col">
-          <span className="eyebrow">Mi-temps</span>
-          <div className="ht-score">{m.home} <b>{m.score.home} – {m.score.away}</b> {m.away}</div>
+          <span className="eyebrow">Mi-temps · tes consignes</span>
           <div className="ht-stats">
             <span>Possession <b>{m.stats.possession}%</b></span>
             <span>Tirs <b>{m.stats.shots[0]} – {m.stats.shots[1]}</b></span>
@@ -360,22 +434,13 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
           <div className="ht-col">
           <div className="ht-block">
             <span className="eyebrow muted-eyebrow">Changement</span>
-            <div className="ht-sub">
-              <select value={sub.out ?? ''} onChange={(e) => setSub((x) => ({ ...x, out: e.target.value ? Number(e.target.value) : null }))}>
-                <option value="">Joueur qui sort…</option>
-                {m.lineup.filter((id) => !m.sent.home.has(id)).map((id) => <option key={id} value={id}>{byId[id]?.name} ({byId[id]?.pos})</option>)}
-              </select>
-              <select value={sub.in ?? ''} onChange={(e) => setSub((x) => ({ ...x, in: e.target.value ? Number(e.target.value) : null }))}>
-                <option value="">Joueur qui entre…</option>
-                {state.players.filter((p) => !m.lineup.includes(p.id)).map((p) => <option key={p.id} value={p.id}>{p.name} ({p.pos})</option>)}
-              </select>
-            </div>
+            <SubPicker state={state} m={m} notes={notes} sub={sub} onChange={setSub} />
           </div>
           <div className="ht-block">
             <span className="eyebrow muted-eyebrow">Tactique de la seconde période</span>
             <TacticPicker value={tactic2} onChange={setTactic2} compact />
           </div>
-          <button className="btn btn-xl" onClick={resume}><IconPlay /> Reprendre la seconde période</button>
+          <div className="ht-go"><button className="btn btn-xl" onClick={resume}><IconPlay /> Reprendre la seconde période</button></div>
           </div>
         </div>
       )}
