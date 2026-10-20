@@ -1,4 +1,5 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { GlassTabs, useGlass } from './glass';
 import { DIVISIONS } from '../game/constants';
 import { SECTORS, nextLockedSector } from '../game/map';
 import { activeGoal, tierOf } from '../game/goals';
@@ -87,41 +88,35 @@ function DockBadge({ value }) {
   return <i className="dock-badge">{value}</i>;
 }
 
-// Menu du bas : la sélection est une pastille en verre liquide qui glisse d'un bouton à l'autre (façon iOS),
-// en s'étirant pendant le trajet puis en se posant avec un léger rebond.
+// Menu du bas : la sélection est une pastille en verre liquide (façon iOS) qui glisse d'un bouton à l'autre en
+// s'étirant ; on peut aussi la faire glisser au doigt le long du menu, la section s'ouvre au relâché.
 export function Dock({ panel, onPanel, badges = {} }) {
   const active = DOCK.some((d) => d.id === panel) ? panel : null; // panneau hors menu : l'Empire reste sélectionné
-  const nav = useRef(null);
-  const [glass, setGlass] = useState(null);
-  const [moving, setMoving] = useState(false);
-  const first = useRef(true);
-  useLayoutEffect(() => {
-    const place = () => {
-      const btn = nav.current?.querySelector(`button[data-id="${active || 'empire'}"]`);
-      if (btn) setGlass({ x: btn.offsetLeft, w: btn.offsetWidth, y: btn.offsetTop, h: btn.offsetHeight });
-    };
-    place();
-    if (first.current) first.current = false;
-    else { setMoving(true); const t = setTimeout(() => setMoving(false), 260); window.addEventListener('resize', place); return () => { clearTimeout(t); window.removeEventListener('resize', place); }; }
-    window.addEventListener('resize', place);
-    return () => window.removeEventListener('resize', place);
-  }, [active]);
+  const keyOf = (id) => id || 'empire';
+  const { ref, glass, handlers, hoverKey } = useGlass(keyOf(active), (k) => {
+    const d = DOCK.find((x) => keyOf(x.id) === k);
+    if (d) onPanel(d.id);
+  });
   return (
-    <nav ref={nav} className="hud-dock glass" aria-label="Navigation">
-      {glass && <span className={`dock-glass ${moving ? 'moving' : ''}`} style={{ '--x': `${glass.x}px`, width: glass.w, top: glass.y, height: glass.h }} aria-hidden="true" />}
-      {DOCK.map(({ id, label, Icon }) => (
-        <button
-          key={label}
-          className={active === id ? 'active' : ''}
-          data-id={id || 'empire'}
-          onClick={() => onPanel(active === id ? null : id)}
-          aria-current={active === id ? 'page' : undefined}
-        >
-          <Icon />
-          <span>{label}</span>
-          <DockBadge value={badges[id || 'empire']} />
-        </button>
-      ))}
+    <nav ref={ref} className="hud-dock glass" aria-label="Navigation" {...handlers}>
+      {glass}
+      {DOCK.map(({ id, label, Icon }) => {
+        const lit = hoverKey === null ? active === id : hoverKey === keyOf(id);
+        return (
+          <button
+            key={label}
+            className={lit ? 'active' : ''}
+            data-id={keyOf(id)}
+            data-key={keyOf(id)}
+            onClick={() => onPanel(active === id ? null : id)}
+            aria-current={active === id ? 'page' : undefined}
+          >
+            <Icon />
+            <span>{label}</span>
+            <DockBadge value={badges[keyOf(id)]} />
+          </button>
+        );
+      })}
     </nav>
   );
 }
@@ -232,11 +227,7 @@ export function GameMenu({ onClose, onReset, muted, onToggleSound, quality, onQu
           </div>
           <div className="setting column">
             <div className="setting-text"><strong>Qualité graphique</strong><span>{qualities.find((q) => q.id === quality)?.hint}</span></div>
-            <div className="segmented" role="radiogroup" aria-label="Qualité graphique">
-              {qualities.map((q) => (
-                <button key={q.id} role="radio" aria-checked={quality === q.id} className={quality === q.id ? 'on' : ''} onClick={() => onQuality(q.id)}>{q.label}</button>
-              ))}
-            </div>
+            <GlassTabs className="segmented" role="radiogroup" label="Qualité graphique" items={qualities.map((q) => [q.id, q.label])} value={quality} onChange={onQuality} />
           </div>
         </section>
 

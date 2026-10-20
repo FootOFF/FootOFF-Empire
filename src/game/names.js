@@ -1,33 +1,39 @@
 import { pick } from './utils';
 
+// Noms des joueurs : surtout francophones, faciles à prononcer et à retenir, pour s'attacher à ses joueurs.
+// Aucune combinaison ne doit donner un footballeur connu : les noms et prénoms trop associés à de vrais joueurs
+// sont écartés (pas de Griezmann, de Giroud ni de Dembélé ; pas de « Nolan Roux », « Loïc Perrin »,
+// « Gabriel Charpentier », « Paul Lambert »…).
 export const FIRST = [
-  'Yanis', 'Karim', 'Léo', 'Mateo', 'Ibrahim', 'Noah', 'Rayan', 'Enzo', 'Sacha', 'Malo',
-  'Amine', 'Lucas', 'Théo', 'Elias', 'Nolan', 'Ilyes', 'Marceau', 'Aadam', 'Kylian', 'Ousmane',
-  'Fodé', 'Junior', 'Diego', 'Andrés', 'Marco', 'Pietro', 'Jonas', 'Mika', 'Sofiane', 'Idriss',
-  'Félix', 'Aurélien', 'Bilal', 'Adam', 'Gabriel', 'Nassim', 'Sébastien', 'Oscar', 'Tiago', 'Rafael',
+  'Léo', 'Hugo', 'Louis', 'Jules', 'Gabriel', 'Arthur', 'Raphaël', 'Paul', 'Victor', 'Adam',
+  'Sacha', 'Nathan', 'Théo', 'Tom', 'Baptiste', 'Mathis', 'Lucas', 'Enzo', 'Axel', 'Clément',
+  'Antoine', 'Maxime', 'Quentin', 'Romain', 'Julien', 'Bastien', 'Valentin', 'Simon', 'Robin', 'Marius',
+  'Gaspard', 'Félix', 'Oscar', 'Noé', 'Malo', 'Timothée', 'Elias', 'Nolan', 'Yanis', 'Rayan',
+  'Ilyes', 'Amine', 'Malik', 'Samy', 'Mehdi', 'Sofiane', 'Bilal', 'Idriss', 'Moussa', 'Ibrahim',
+  'Dylan', 'Evan', 'Florent', 'Damien', 'Benoît', 'Mathéo', 'Aurélien', 'Marceau', 'Côme', 'Basile',
 ];
+const FIRST_SET = new Set(FIRST);
 
-// Noms de famille choisis pour qu'aucun ne soit porté par un footballeur connu : le jeu ne doit jamais
-// produire le nom d'un vrai joueur (l'ancienne liste donnait « Ousmane Dembélé », « Diego Costa »…).
 export const LAST = [
   'Vasseur', 'Delorme', 'Carrel', 'Delmas', 'Hamon', 'Maillard', 'Perrot', 'Tessier', 'Vallet', 'Lefort',
   'Charron', 'Brunel', 'Masson', 'Poulain', 'Royer', 'Cordier', 'Bellanger', 'Lagarde', 'Voisin', 'Bouvier',
-  'Marais', 'Joubert', 'Combes', 'Ferrière', 'Azevedo', 'Medeiros', 'Bellini', 'Santoro', 'Ferraro', 'Moretti',
-  'Okonkwo', 'Nwosu', 'Tiendrebeogo', 'Mabika', 'Haddad', 'Mansouri', 'Toussaint', 'Kassé', 'Lindqvist', 'Sandoval',
+  'Marais', 'Joubert', 'Combes', 'Ferrière', 'Toussaint', 'Leclerc', 'Marchal', 'Rousseau', 'Faure', 'Mercier',
+  'Chevalier', 'Garnier', 'Bonnet', 'Fournier', 'Picard', 'Renaud', 'Brunet', 'Morel', 'Caron', 'Barbier',
+  'Collin', 'Dumas', 'Lemaire', 'Gauthier', 'Aubry', 'Lacroix', 'Moulin', 'Dupré', 'Besson', 'Rivière',
+  'Loiseau', 'Duval', 'Langlois', 'Noël', 'Granger', 'Delattre', 'Berger', 'Carpentier', 'Chauvin', 'Ferrand',
+  'Haddad', 'Mansouri', 'Benali', 'Kaci', 'Kassé',
 ];
+const LAST_SET = new Set(LAST);
 
-// Anciens noms (avant le changement de liste) : les joueurs des parties existantes qui les portent sont renommés
-// au chargement, en gardant leur prénom (nouveau nom stable, tiré de leur identifiant).
-const RETIRED_LAST = new Set([
-  'Ndiaye', 'Martin', 'Da Silva', 'Kébé', 'Lopez', 'Bernard', 'Okafor', 'Rossi', 'Diallo', 'Petit',
-  'Moreau', 'Sissoko', 'Fontaine', 'Garcia', 'Kanté', 'Lemoine', 'Barbosa', 'Traoré', 'Marchand', 'Nkunku',
-  'Pereira', 'Sow', 'Ricci', 'Dembélé', 'Cissé', 'Aubert', 'Fofana', 'Girard', 'Mendes', 'Sarr',
-  'Dubois', 'Camara', 'Ferrand', 'Bamba', 'Kouassi', 'Renard', 'Vidal', 'Costa', 'Leroux', 'Zahavi',
-]);
+// Parties existantes : un joueur dont le prénom ou le nom n'est plus dans les listes reçoit un équivalent
+// francophone (stable, tiré de son identifiant) ; ce qui est déjà dans les listes est conservé.
 export function renameRetired(p) {
   const [first, ...rest] = (p.name || '').split(' ');
-  if (!RETIRED_LAST.has(rest.join(' '))) return p;
-  p.name = `${first} ${LAST[((p.id || 1) * 7919) % LAST.length]}`;
+  const last = rest.join(' ');
+  const id = p.id || 1;
+  const f = FIRST_SET.has(first) ? first : FIRST[(id * 31) % FIRST.length];
+  const l = LAST_SET.has(last) ? last : LAST[(id * 7919) % LAST.length];
+  p.name = `${f} ${l}`;
   return p;
 }
 

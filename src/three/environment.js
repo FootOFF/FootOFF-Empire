@@ -129,6 +129,7 @@ export function createEnvironment(scene, renderer) {
     scene.fog.color.copy(fog);
     scene.fog.near = w.fog[0];
     scene.fog.far = w.fog[1];
+    scene.userData.fogBase = w.fog; // distances de référence, reculées avec la caméra (vue d'ensemble sur téléphone)
 
     u.turbidity.value = w.turbidity;
     u.mieCoefficient.value = w.mie;

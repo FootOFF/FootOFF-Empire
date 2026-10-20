@@ -50,13 +50,28 @@ export function loadGame() {
     // toute sauvegarde : le stade retrouve sa parcelle (réparation des parties déjà commencées)
     // parties commencées avant le match en direct : banc de 4 remplaçants offert une fois
     // parties commencées avant l'écran Finances : le livre de comptes démarre à la trésorerie actuelle
-    // joueurs portant un ancien nom (proche de vrais footballeurs) : renommés, prénom conservé
+    // noms des joueurs : équivalents francophones pour les prénoms et noms sortis des listes, y compris dans
+    // l'historique des matchs (notes, buteurs, passeurs, fil du match)
     const fix = (x) => {
       const y = ensureTutorial(ensureLineup(addReserves(ensureFixedPlots(migratePlayers(x)))));
       ensureLedger(y);
       y.buildings.transfers ??= 0; // bureau des transferts (ajouté après coup)
       y.transfers ||= [];
-      [...y.players, ...(y.market || []), ...y.transfers].forEach(renameRetired);
+      const renamed = new Map(); // ancien nom → nouveau
+      for (const p of [...y.players, ...(y.market || []), ...y.transfers]) {
+        const before = p.name;
+        renameRetired(p);
+        if (p.name !== before) renamed.set(before, p.name);
+      }
+      if (renamed.size) {
+        const nm = (n) => renamed.get(n) || n;
+        for (const m of y.matches || []) {
+          (m.players || []).forEach((q) => { q.name = nm(q.name); });
+          (m.scorers || []).forEach((g) => { g.name = nm(g.name); if (g.assist) g.assist = nm(g.assist); });
+          (m.events || []).forEach((e) => { if (e.side === 'home') e.player = nm(e.player); });
+          (m.shots || []).forEach((t) => { if (t.s === 0) t.p = nm(t.p); });
+        }
+      }
       return y;
     };
     if (s.version === 4) return fix(s);

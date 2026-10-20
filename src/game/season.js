@@ -85,9 +85,17 @@ function recordMatch(s, res) {
     season: s.seasonNumber, round: s.round, division: DIVISIONS[s.divisionIndex].name,
     opp: res.oppName, oppStrength: Math.round((res.oppStrength || 0) * 10) / 10, myRating: res.myRating,
     tactic: res.tactic || s.tactic, gf: res.gf, ga: res.ga,
-    stats: st ? { possession: st.possession, shots: [...st.shots], onTarget: [...st.onTarget], yellow: [...st.yellow], red: [...st.red] } : null,
+    stats: st ? {
+      possession: st.possession, shots: [...st.shots], onTarget: [...st.onTarget], yellow: [...st.yellow], red: [...st.red],
+      xg: st.xg ? st.xg.map((v) => Math.round(v * 100) / 100) : null, saves: st.saves ? [...st.saves] : null,
+      post: st.post ? [...st.post] : null, wide: st.wide ? [...st.wide] : null, big: st.big ? [...st.big] : null,
+      possHalf: st.possHalf ? [...st.possHalf] : null, longShots: st.longShots ?? null,
+    } : null,
+    shots: (res.shots || []).map(({ m, h, s: side, o, p, x, q }) => ({ m, h, s: side, o, p, x, q })), // tous les tirs, pour le déroulé
     scorers: (res.scorers || []).map(({ name, id, minute, assist }) => ({ name, id, minute, assist })),
-    players: (res.players || []).map(({ id, name, pos, rating, goals, assists, yellow, red }) => ({ id, name, pos, rating, goals, assists, yellow, red })),
+    players: (res.players || []).map(({ id, name, pos, rating, goals, assists, yellow, red, shots, onTarget, minutes }) => ({
+      id, name, pos, rating, goals, assists, yellow, red, shots, onTarget, minutes,
+    })),
     motm: best ? best.id : null,
     events: (res.highlights || []).map(({ minute, type, side, player }) => ({ minute, type, side, player })), // buts et cartons des deux équipes
     attendance: res.attendance, capacity: res.capacity, revenue: res.revenue,

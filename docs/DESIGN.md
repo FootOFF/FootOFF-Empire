@@ -104,3 +104,16 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 
 La galerie (`?galerie` dans l'adresse du jeu) affiche chaque écran avec des données fictives, sur téléphone
 (390 × 844) et sur PC (1280 × 720), sans toucher à la sauvegarde. Chaque modification d'interface se relit là.
+
+## Sélection en verre liquide
+
+Le menu du bas, les onglets des panneaux et les choix segmentés utilisent la même pastille en verre
+(`src/ui/glass.jsx`, `useGlass` et `GlassTabs`) : elle glisse vers la section choisie en s'étirant, et on peut la
+faire glisser au doigt ; la section s'ouvre au relâché. Les barres portent `data-noswipe` pour que ce geste ne
+fasse pas changer de fiche.
+
+## Caméra sur téléphone
+
+Vue d'ensemble calculée pour faire tenir toutes les parcelles entre la barre du haut et le menu du bas. Toucher un
+bâtiment le cadre au-dessus de sa fiche ; toucher à côté referme la fiche et ramène la vue d'ensemble. Double tap
+puis glisser : vers le haut pour dézoomer, vers le bas pour zoomer (double tap seul : un cran de zoom).

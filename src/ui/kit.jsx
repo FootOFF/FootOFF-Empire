@@ -31,17 +31,17 @@ export function Stat({ label, value, sub, tone = '' }) {
 }
 
 // Comparaison club / adversaire sur une ligne : valeur, barres opposées, valeur.
-export function VersusBar({ label, home, away, suffix = '' }) {
+export function VersusBar({ label, home, away, suffix = '', format = (v) => v }) {
   const total = home + away;
   const h = total ? (home / total) * 100 : 50;
   return (
     <div className="ui-vs">
-      <b className={home >= away ? 'lead' : ''}>{home}{suffix}</b>
+      <b className={home >= away ? 'lead' : ''}>{format(home)}{suffix}</b>
       <div className="ui-vs-mid">
         <span className="ui-vs-label">{label}</span>
         <span className="ui-vs-bars"><i className="h" style={{ width: `${h}%` }} /><i className="a" style={{ width: `${100 - h}%` }} /></span>
       </div>
-      <b className={away > home ? 'lead' : ''}>{away}{suffix}</b>
+      <b className={away > home ? 'lead' : ''}>{format(away)}{suffix}</b>
     </div>
   );
 }

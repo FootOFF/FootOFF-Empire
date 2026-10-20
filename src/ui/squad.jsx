@@ -12,6 +12,7 @@ import { SLOTS } from '../game/tactics';
 import { fmtMoney, fmtRating } from './format';
 import { IconChevron, IconChevronLeft, IconClose, IconRadar, IconTransfer } from './icons';
 import { Panel } from './panels';
+import { GlassTabs } from './glass';
 import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
 
@@ -136,13 +137,15 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
           <span className="sq-gauge"><i className={forecast.net < 0 ? 'bad' : forecast.wageShare > 0.75 ? 'warn' : ''} style={{ width: `${Math.min(100, forecast.wageShare * 100)}%` }} /></span>
           <span className="sq-budget-sub">{fmtMoney(wages)} par saison · revenus attendus {fmtMoney(forecast.income)}{onFinances && <> · <button className="linkbtn fin-link" onClick={onFinances}>finances</button></>}</span>
         </div>
-        <div className="sq-tabs" role="tablist">
-          <button role="tab" aria-selected={tab === 'players'} className={tab === 'players' ? 'on' : ''} onClick={() => setTab('players')}>Joueurs</button>
-          <button role="tab" aria-selected={tab === 'market'} className={tab === 'market' ? 'on' : ''} onClick={() => setTab('market')}>
-            Marché{recommended ? <i className="sq-tab-dot" aria-label="recrue recommandée" /> : null}
-          </button>
-          <button role="tab" aria-selected={tab === 'transfers'} className={tab === 'transfers' ? 'on' : ''} onClick={() => setTab('transfers')}>Transferts</button>
-        </div>
+        <GlassTabs
+          items={[
+            ['players', 'Joueurs'],
+            ['market', 'Marché', recommended ? <i className="sq-tab-dot" aria-label="recrue recommandée" /> : null],
+            ['transfers', 'Transferts'],
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
         </>
       )}
       overlay={(
@@ -371,11 +374,7 @@ function TransferMarket({ state, refLvl, onOpen, onCompare, onSign }) {
       </div>
       <div className="tr-sort">
         <span className="tr-sort-label">Trier par</span>
-        <div className="segmented" role="radiogroup" aria-label="Trier par">
-          {SORTS.map(([id, label]) => (
-            <button key={id} role="radio" aria-checked={sort === id} className={sort === id ? 'on' : ''} onClick={() => setSort(id)}>{label}</button>
-          ))}
-        </div>
+        <GlassTabs className="segmented" role="radiogroup" label="Trier par" items={SORTS} value={sort} onChange={setSort} />
         <div className="chips tr-afford">
           <button className={afford ? 'active' : ''} aria-pressed={afford} onClick={() => setAfford(!afford)}>Dans mes moyens</button>
         </div>

@@ -34,7 +34,7 @@ function Goals({ list, align }) {
   );
 }
 
-export default function PostMatch({ state, onClose }) {
+export default function PostMatch({ state, onClose, onStats }) {
   const lm = state.lastMatch;
   useKeydown((e) => { if (e.key === 'Enter' || e.key === 'Escape') onClose(); });
   if (!lm) return null;
@@ -133,6 +133,7 @@ export default function PostMatch({ state, onClose }) {
 
         <footer className="post-foot">
           <span className={`post-rep ${lm.repDelta >= 0 ? 'up' : 'down'}`}>Réputation {lm.repDelta >= 0 ? '+' : '−'}{fmtRating(Math.abs(lm.repDelta))}</span>
+          {onStats && <button className="btn ghost btn-xl" onClick={onStats}>Stats du match</button>}
           <button className="btn btn-xl" onClick={onClose} autoFocus>Continuer</button>
         </footer>
       </article>

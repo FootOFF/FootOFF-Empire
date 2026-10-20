@@ -73,6 +73,7 @@ export default function App({ preview = null }) {
   const [dismissedTips, setDismissedTips] = useState(() => new Set()); // conseils masqués (session)
   const [confirm, setConfirm] = useState(boot.ui.confirm || null); // fenêtre de confirmation du jeu (vente, nouvelle partie…)
   const [squadTab, setSquadTab] = useState(boot.ui.squadTab || 'players'); // onglet d'ouverture de l'effectif
+  const [statsMatch, setStatsMatch] = useState(boot.ui.statsMatch || null); // 'last' : Stats Pass du dernier match ouvert d'emblée
   const sound = useRef(null);
   if (!sound.current) sound.current = preview ? silentSound : createStadiumSound();
   const toastId = useRef(0);
@@ -184,6 +185,7 @@ export default function App({ preview = null }) {
               onLoadProgress={setLoadProgress}
               onLoaded={() => setSceneLoaded(true)}
               onSelectPlot={selectPlot}
+              onEmptyTap={() => setSel(null)}
               onWebGLFail={() => setWebglOk(false)}
             />
           </Suspense>
@@ -245,7 +247,7 @@ export default function App({ preview = null }) {
       </Presence>
       <Presence>{panel === 'season' && <SeasonPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
-      <Presence>{panel === 'stats' && <StatsPanel state={state} initialMatch={boot.ui.statsMatch || null} onClose={() => setPanel(null)} />}</Presence>
+      <Presence>{panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} onClose={() => { setPanel(null); setStatsMatch(null); }} />}</Presence>
       <Presence>
         {panel === 'finances' && (
           <FinancesPanel state={state} onClose={() => setPanel(null)} onOpenSquad={() => { setSquadTab('players'); openPanel('squad'); }} />
@@ -280,7 +282,7 @@ export default function App({ preview = null }) {
           onFinish={finishMatch}
         />
       )}
-      <Presence>{showResult && <PostMatch state={state} onClose={closeResult} />}</Presence>
+      <Presence>{showResult && <PostMatch state={state} onClose={closeResult} onStats={() => { closeResult(); setStatsMatch('last'); setPanel('stats'); }} />}</Presence>
       <Presence>{!matchPhase && !showResult && state.seasonReview && <SeasonReview state={state} onClose={() => run(dismissReview)} />}</Presence>
       <Presence>{!matchPhase && !showResult && !state.seasonReview && state.offline && <OfflineReturn data={state.offline} onClose={() => run(dismissOffline)} />}</Presence>
       <Presence>{menu && (

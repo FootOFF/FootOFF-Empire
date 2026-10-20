@@ -30,6 +30,34 @@ if (import.meta.env.DEV && layoutOverlaps().length) {
 }
 
 const HOME_VIEW = { pos: new THREE.Vector3(20, 21.5, 25), target: new THREE.Vector3(PLAZA_CENTER[0], 0.5, PLAZA_CENTER[1]) };
+// Vue d'ensemble : même angle que HOME_VIEW, à la distance qui fait tenir toutes les parcelles à l'écran, entre
+// la barre du haut et le menu du bas. En portrait (téléphone), l'objectif s'élargit un peu pour ne pas reculer
+// trop loin.
+const HOME_DIR = HOME_VIEW.pos.clone().sub(HOME_VIEW.target).normalize();
+const HOME_DIST = HOME_VIEW.pos.distanceTo(HOME_VIEW.target);
+const FIT_POINTS = Object.keys(PLOT_POS).flatMap((id) => {
+  const [x, z] = PLOT_POS[id];
+  const { w, d } = footprintOf(id);
+  return [[x - w / 2, z - d / 2], [x + w / 2, z - d / 2], [x - w / 2, z + d / 2], [x + w / 2, z + d / 2]]
+    .flatMap(([a, b]) => [new THREE.Vector3(a, 0, b), new THREE.Vector3(a, 1.6, b)]);
+});
+const fovFor = (aspect) => (aspect < 1 ? 42 + (1 - aspect) * 26 : 42);
+function homeView(aspect) {
+  const cam = new THREE.PerspectiveCamera(fovFor(aspect), aspect, 0.5, 600);
+  const v = new THREE.Vector3();
+  const fits = (d) => {
+    cam.position.copy(HOME_VIEW.target).addScaledVector(HOME_DIR, d);
+    cam.lookAt(HOME_VIEW.target);
+    cam.updateMatrixWorld();
+    return FIT_POINTS.every((p) => { v.copy(p).project(cam); return Math.abs(v.x) <= 0.94 && v.y <= 0.7 && v.y >= -0.6; });
+  };
+  let lo = 15;
+  let hi = 200;
+  for (let i = 0; i < 20; i++) { const m = (lo + hi) / 2; if (fits(m)) hi = m; else lo = m; }
+  const dist = aspect >= 1 ? Math.max(hi, HOME_DIST) : hi;
+  return { pos: HOME_VIEW.target.clone().addScaledVector(HOME_DIR, dist), target: HOME_VIEW.target.clone(), dist };
+}
+
 const MATCH_VIEW = { pos: new THREE.Vector3(11, 8.5, 14), target: new THREE.Vector3(0, 0.4, -0.5) };
 // match en direct : caméra « télé » en tribune latérale, et plan rapproché sur la surface pour les ralentis
 const TV_VIEW = { pos: new THREE.Vector3(0, 5.4, 10.8), target: new THREE.Vector3(0, 0, 0.8) };
@@ -67,7 +95,7 @@ function plotInfo(s, plotId) {
 // Vue 3D plein écran : décor permanent du jeu, pilotée par le HUD (nuit, jour de match, recentrage,
 // parcelle sélectionnée). Garde ses propres interactions : survol (étiquette) et clic (sélection).
 export default function Empire3D({
-  state, onSelectPlot, onWebGLFail, timeMode = 'auto', weatherMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
+  state, onSelectPlot, onEmptyTap, onWebGLFail, timeMode = 'auto', weatherMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
   live = false, matchFx = null, badges = [], quality = 'auto', onLoadProgress, onLoaded,
 }) {
   const mountRef = useRef(null);
@@ -80,6 +108,8 @@ export default function Empire3D({
   const ctxRef = useRef(null);
   const selectRef = useRef(onSelectPlot);
   selectRef.current = onSelectPlot;
+  const emptyRef = useRef(onEmptyTap);
+  emptyRef.current = onEmptyTap;
   const loadRef = useRef({ onLoadProgress, onLoaded });
   loadRef.current = { onLoadProgress, onLoaded };
   const modeRef = useRef({ timeMode: 'auto', weatherMode: 'auto', matchDay: false, live: false });
@@ -102,15 +132,17 @@ export default function Empire3D({
 
     const scene = new THREE.Scene();
     const env = createEnvironment(scene, renderer);
-    const camera = new THREE.PerspectiveCamera(42, mount.clientWidth / mount.clientHeight, 0.5, 600);
-    camera.position.copy(HOME_VIEW.pos);
+    const aspect0 = mount.clientWidth / Math.max(1, mount.clientHeight);
+    const home0 = homeView(aspect0);
+    const camera = new THREE.PerspectiveCamera(fovFor(aspect0), aspect0, 0.5, 600);
+    camera.position.copy(home0.pos);
     renderer.domElement.style.cursor = 'grab';
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.target.copy(HOME_VIEW.target);
     controls.minDistance = 6;
-    controls.maxDistance = 80;
+    controls.maxDistance = Math.max(80, home0.dist * 1.25);
     controls.maxPolarAngle = Math.PI * 0.46;
     controls.minPolarAngle = Math.PI * 0.08;
 
@@ -123,7 +155,7 @@ export default function Empire3D({
     const weather = createWeather(scene);
 
     const ctx = {
-      scene, env, camera, controls, plots: new Map(), anims: new Set(), fireworks, camTween: null, alive: true, selFrame,
+      home: home0, scene, env, camera, controls, plots: new Map(), anims: new Set(), fireworks, camTween: null, alive: true, selFrame,
       life: null, timeScale: 1, replay: null, shake: 0, ledBoost: 1,
     };
     ctx.life = life;
@@ -239,9 +271,9 @@ export default function Empire3D({
       camera.position.copy(view.pos);
       controls.target.copy(view.target);
     };
-    ctx.tweenCamera = (view) => {
+    ctx.tweenCamera = (view, duration = 1.6) => {
       ctx.camTween = {
-        t: 0,
+        t: 0, duration,
         fromPos: camera.position.clone(), fromTarget: controls.target.clone(),
         toPos: view.pos.clone(), toTarget: view.target.clone(),
       };
@@ -281,6 +313,7 @@ export default function Empire3D({
     const ptr = new THREE.Vector2();
     const wrappers = [...ctx.plots.values()].map((e) => e.wrapper);
     let down = null;
+    let tapTimer = null;
     let hovered = null;
     let pointer = null;
 
@@ -314,10 +347,70 @@ export default function Empire3D({
       down = null;
       if (moved > 6) return;
       const id = pick(e.clientX, e.clientY);
-      if (id && selectRef.current) { // parcelle verrouillée : l'inspecteur affiche la condition d'ouverture
-        selectRef.current(id, PLOTS.find((p) => p.id === id).sector);
+      const act = () => {
+        if (id && selectRef.current) { // parcelle verrouillée : l'inspecteur affiche la condition d'ouverture
+          selectRef.current(id, PLOTS.find((p) => p.id === id).sector);
+        } else if (!id) emptyRef.current?.(); // toucher à côté : on quitte la parcelle et la caméra revient
+      };
+      // au doigt, un tap attend un instant : s'il est suivi d'un second, c'est le geste de zoom, pas une sélection
+      clearTimeout(tapTimer);
+      if (e.pointerType === 'touch') tapTimer = setTimeout(act, 300);
+      else act();
+    };
+
+    // Téléphone : double tap puis glisser, comme sur les cartes. Glisser vers le haut dézoome, vers le bas zoome ;
+    // un double tap sans glisser zoome d'un cran. Le geste est intercepté avant OrbitControls et la sélection.
+    let tap = null; // dernier appui court (instant, position)
+    let press = null;
+    let zoomDrag = null;
+    const setDist = (d) => {
+      const dir = camera.position.clone().sub(controls.target).normalize();
+      const dist = Math.min(controls.maxDistance, Math.max(controls.minDistance, d));
+      camera.position.copy(controls.target).addScaledVector(dir, dist);
+    };
+    const onCapDown = (e) => {
+      if (e.pointerType !== 'touch' || !e.isPrimary) return;
+      const now = performance.now();
+      press = { x: e.clientX, y: e.clientY, t: now };
+      if (tap && now - tap.t < 300 && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 40) {
+        e.stopPropagation();
+        clearTimeout(tapTimer); // le premier tap ne sélectionne rien
+        tap = null;
+        ctx.camTween = null;
+        zoomDrag = { id: e.pointerId, y: e.clientY, d0: camera.position.distanceTo(controls.target), moved: false };
+        controls.enabled = false;
       }
     };
+    const onCapMove = (e) => {
+      if (!zoomDrag || e.pointerId !== zoomDrag.id) return;
+      e.stopPropagation();
+      const dy = e.clientY - zoomDrag.y;
+      if (Math.abs(dy) > 6) zoomDrag.moved = true;
+      if (zoomDrag.moved) setDist(zoomDrag.d0 * Math.exp(-dy * 0.009));
+    };
+    const onCapUp = (e) => {
+      if (zoomDrag && e.pointerId === zoomDrag.id) {
+        e.stopPropagation();
+        if (!zoomDrag.moved && e.type === 'pointerup') {
+          const dir = camera.position.clone().sub(controls.target).normalize();
+          const d = Math.max(controls.minDistance, zoomDrag.d0 * 0.6);
+          ctx.tweenCamera({ pos: controls.target.clone().addScaledVector(dir, d), target: controls.target.clone() }, 0.45);
+        }
+        zoomDrag = null;
+        controls.enabled = true;
+        return;
+      }
+      if (e.pointerType === 'touch' && press && e.type === 'pointerup') {
+        const short = performance.now() - press.t < 280 && Math.hypot(e.clientX - press.x, e.clientY - press.y) < 10;
+        tap = short ? { t: performance.now(), x: e.clientX, y: e.clientY } : null;
+      }
+      press = null;
+    };
+    const capture = { capture: true };
+    mount.addEventListener('pointerdown', onCapDown, capture);
+    mount.addEventListener('pointermove', onCapMove, capture);
+    mount.addEventListener('pointerup', onCapUp, capture);
+    mount.addEventListener('pointercancel', onCapUp, capture);
     const onMove = (e) => { pointer = down ? null : { x: e.clientX, y: e.clientY }; if (down) setHovered(null); };
     const onLeave = () => { pointer = null; setHovered(null); };
     renderer.domElement.addEventListener('pointerdown', onDown);
@@ -329,7 +422,10 @@ export default function Empire3D({
       const w = mount.clientWidth, h = mount.clientHeight;
       if (w === 0 || h === 0) return;
       camera.aspect = w / h;
+      camera.fov = fovFor(w / h);
       camera.updateProjectionMatrix();
+      ctx.home = homeView(w / h);
+      controls.maxDistance = Math.max(80, ctx.home.dist * 1.25);
       renderer.setSize(w, h);
     });
     ro.observe(mount);
@@ -349,7 +445,7 @@ export default function Empire3D({
       time += dt;
       if (ctx.camTween) {
         const tw = ctx.camTween;
-        tw.t = Math.min(1, tw.t + dt / 1.6);
+        tw.t = Math.min(1, tw.t + dt / tw.duration);
         const k = tw.t < 0.5 ? 4 * tw.t ** 3 : 1 - (-2 * tw.t + 2) ** 3 / 2;
         camera.position.lerpVectors(tw.fromPos, tw.toPos, k);
         controls.target.lerpVectors(tw.fromTarget, tw.toTarget, k);
@@ -359,6 +455,12 @@ export default function Empire3D({
         }
       }
       controls.update();
+      const fogBase = scene.fog && scene.userData.fogBase;
+      if (fogBase) { // le brouillard suit le recul de la caméra : la vue d'ensemble reste nette sur téléphone
+        const k = Math.max(1, camera.position.distanceTo(controls.target) / HOME_DIST);
+        scene.fog.near = fogBase[0] * k;
+        scene.fog.far = fogBase[1] * k;
+      }
       if (pointer) { setHovered(pick(pointer.x, pointer.y)); pointer = null; }
       frame.update(time);
       selFrame.update(time * 0.6);
@@ -413,8 +515,11 @@ export default function Empire3D({
       // (desktop) ou au-dessus (mobile), pour que l'action et le but restent visibles.
       const W = mount.clientWidth, H = mount.clientHeight;
       const narrow = W <= 760;
-      const wantX = modeRef.current.live && !narrow ? 188 : 0;
-      const wantY = modeRef.current.live && narrow ? H * 0.18 : 0;
+      // Fiche d'une parcelle ouverte : la parcelle glisse au-dessus de la feuille (mobile) ou à droite de la
+      // carte de l'inspecteur (PC), pour rester visible.
+      const sheet = ctx.sheetOpen && !modeRef.current.live;
+      const wantX = modeRef.current.live && !narrow ? 188 : sheet && !narrow ? -170 : 0;
+      const wantY = modeRef.current.live && narrow ? H * 0.18 : sheet && narrow ? H * 0.31 : 0;
       viewShift.x += (wantX - viewShift.x) * Math.min(1, dt * 3);
       viewShift.y += (wantY - viewShift.y) * Math.min(1, dt * 3);
       if (Math.abs(viewShift.x) + Math.abs(viewShift.y) > 0.5) camera.setViewOffset(W, H, viewShift.x, viewShift.y, W, H);
@@ -432,6 +537,9 @@ export default function Empire3D({
       ['pointerdown', 'pointerup', 'pointermove', 'pointerleave'].forEach((ev, i) => {
         renderer.domElement.removeEventListener(ev, [onDown, onUp, onMove, onLeave][i]);
       });
+      [['pointerdown', onCapDown], ['pointermove', onCapMove], ['pointerup', onCapUp], ['pointercancel', onCapUp]]
+        .forEach(([ev, fn]) => mount.removeEventListener(ev, fn, capture));
+      clearTimeout(tapTimer);
       controls.dispose();
       ctx.anims.forEach((a) => a.finish());
       ctx.plots.forEach((e) => { e.lights?.dispose(); });
@@ -464,7 +572,7 @@ export default function Empire3D({
   useEffect(() => {
     const ctx = ctxRef.current;
     if (!ctx || !ready) return;
-    ctx.tweenCamera(live ? TV_VIEW : matchDay ? MATCH_VIEW : HOME_VIEW);
+    ctx.tweenCamera(live ? TV_VIEW : matchDay ? MATCH_VIEW : ctx.home);
   }, [matchDay, live, recenter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { ctxRef.current?.setQuality?.(quality); }, [quality, ready]);
@@ -494,10 +602,15 @@ export default function Empire3D({
     }
   }, [matchFx]);
 
-  // Parcelle sélectionnée (inspecteur ouvert) : contour doré persistant.
+  // Parcelle sélectionnée (inspecteur ouvert) : contour doré persistant. Quand on la quitte, la caméra revient
+  // à la vue d'ensemble.
+  const wasSelected = useRef(false);
   useEffect(() => {
     const ctx = ctxRef.current;
     if (!ctx) return;
+    const had = wasSelected.current;
+    wasSelected.current = !!selectedPlot;
+    ctx.sheetOpen = !!selectedPlot;
     if (selectedPlot) {
       const [x, z] = PLOT_POS[selectedPlot];
       const fp = footprintOf(selectedPlot);
@@ -505,9 +618,13 @@ export default function Empire3D({
       // cadrage : même angle de vue, distance adaptée à la taille de la parcelle
       const target = new THREE.Vector3(x, 0.4, z);
       const dir = ctx.camera.position.clone().sub(ctx.controls.target).normalize();
-      const dist = Math.max(fp.w, fp.d) * (selectedPlot === 't0' ? 1.55 : 2.4);
+      const narrow = mountRef.current && mountRef.current.clientWidth <= 760; // téléphone : moins de place au-dessus de la fiche
+      const dist = Math.max(fp.w, fp.d) * (selectedPlot === 't0' ? 1.55 : 2.4) * (narrow ? 1.75 : 1);
       ctx.tweenCamera({ pos: target.clone().addScaledVector(dir, dist), target });
-    } else ctx.selFrame.hide();
+    } else {
+      ctx.selFrame.hide();
+      if (had && !modeRef.current.matchDay && !modeRef.current.live) ctx.tweenCamera(ctx.home, 1.1);
+    }
   }, [selectedPlot, ready]);
 
   const info = hover && hover !== selectedPlot ? plotInfo(state, hover) : null;
