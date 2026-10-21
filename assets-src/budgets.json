@@ -7,7 +7,8 @@
     "crowd_",
     "flag_",
     "club_color_",
-    "trophy_"
+    "trophy_",
+    "tree_"
   ],
   "categories": {
     "stadium": {
@@ -102,6 +103,21 @@
       "maxTextures": 2,
       "maxMaterials": 9,
       "maxDrawCalls": 40
+    },
+    "trees": {
+      "_doc": "Arbres du decor et vegetation basse (build_trees.py) : les cinq especes, buis, arbuste et module de haie, modelises a l'origine, ecorce, feuillage et coeur separes (prefixe special tree_ : jamais fusionnes) ; plantes par instances (forest.js). Reliefs du feuillage en 512 (maxNormalTextureSize), ecorces reduites a 512 sans relief (troncs minuscules a l'ecran).",
+      "footprint": {
+        "w": 26,
+        "d": 26
+      },
+      "maxHeight": 28,
+      "maxTriangles": 9000,
+      "maxBytes": 2600000,
+      "maxTextureSize": 1024,
+      "maxNormalTextureSize": 512,
+      "maxTextures": 14,
+      "maxMaterials": 11,
+      "maxDrawCalls": 16
     }
   },
   "buildings": {
@@ -135,6 +151,7 @@
     "plot_empty": "plot",
     "plot_locked": "plot",
     "site": "site",
-    "trophies": "trophies"
+    "trophies": "trophies",
+    "trees": "trees"
   }
 }

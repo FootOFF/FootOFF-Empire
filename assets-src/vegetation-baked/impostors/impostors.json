@@ -1,0 +1,40 @@
+{
+  "views": 8,
+  "elevation": 28.0,
+  "cell": [
+    256,
+    384
+  ],
+  "species": {
+    "chene": {
+      "height": 19.22,
+      "radius": 11.48,
+      "ortho": 36.513,
+      "baseV": 0.2677
+    },
+    "hetre": {
+      "height": 23.65,
+      "radius": 8.27,
+      "ortho": 30.371,
+      "baseV": 0.1562
+    },
+    "peuplier": {
+      "height": 25.54,
+      "radius": 3.91,
+      "ortho": 27.794,
+      "baseV": 0.0943
+    },
+    "pin": {
+      "height": 20.28,
+      "radius": 8.51,
+      "ortho": 27.451,
+      "baseV": 0.1739
+    },
+    "sapin": {
+      "height": 22.46,
+      "radius": 6.13,
+      "ortho": 27.126,
+      "baseV": 0.1345
+    }
+  }
+}

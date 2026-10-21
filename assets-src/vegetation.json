@@ -1,0 +1,166 @@
+{
+  "about": "Sources de vegetation (non versionnees, dans assets-src/vegetation/) : telecharger avec ces URL.",
+  "files": [
+    {
+      "file": "tree_small_02_leaves_diff_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/tree_small_02/tree_small_02_leaves_diff_2k.jpg",
+      "md5": "021ddc0cf1d94b99716a106cede576c7",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "tree_small_02_leaves_alpha_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/tree_small_02/tree_small_02_leaves_alpha_2k.jpg",
+      "md5": "5e47ee2dd9f910dbfe05a46e57a0074a",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "tree_small_02_leaves_nor_gl_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/tree_small_02/tree_small_02_leaves_nor_gl_2k.jpg",
+      "md5": "ab509e55b5d763f68195e0eb257bb5e3",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "tree_small_02_branch_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/tree_small_02/tree_small_02_branch_diff_1k.jpg",
+      "md5": "88b531469f5dba2fc44ca85df3776e7c",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "tree_small_02_branch_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/tree_small_02/tree_small_02_branch_nor_gl_1k.jpg",
+      "md5": "00a3eed0d4d28e7e890d9ec6ac0619af",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "pine_tree_01_twig_diff_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/pine_tree_01/pine_tree_01_twig_diff_2k.jpg",
+      "md5": "45d577b1b780711976147d66234a1f4c",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "pine_tree_01_twig_alpha_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/pine_tree_01/pine_tree_01_twig_alpha_2k.jpg",
+      "md5": "62d321c31d625a3cf786db46b729f8c6",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "pine_tree_01_twig_nor_gl_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/pine_tree_01/pine_tree_01_twig_nor_gl_2k.jpg",
+      "md5": "843dd3359c958c7a8bfd60f55fb4fb80",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "pine_tree_01_bark_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/pine_tree_01/pine_tree_01_bark_diff_1k.jpg",
+      "md5": "7d3a558ed614c7e75594c7be3bf80311",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "pine_tree_01_bark_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/pine_tree_01/pine_tree_01_bark_nor_gl_1k.jpg",
+      "md5": "bb6e3a6eea777d992cef48fabfdc538c",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "fir_tree_01_twig_diff_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/fir_tree_01/fir_tree_01_twig_diff_2k.jpg",
+      "md5": "6d023f52dab632b031a2ab8e5a27541f",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "fir_tree_01_twig_alpha_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/fir_tree_01/fir_tree_01_twig_alpha_2k.jpg",
+      "md5": "2adf3baea4bc1efc98693c5427cd872f",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "fir_tree_01_twig_nor_gl_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/fir_tree_01/fir_tree_01_twig_nor_gl_2k.jpg",
+      "md5": "2072f6b164184f0ca9b41f8623bfec06",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "fir_tree_01_bark_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fir_tree_01/fir_tree_01_bark_diff_1k.jpg",
+      "md5": "93265c0d9fbd3cf17deabdb68aa8b5e9",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "fir_tree_01_bark_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fir_tree_01/fir_tree_01_bark_nor_gl_1k.jpg",
+      "md5": "978d32ec721696e45b38a72411c4edf4",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "bark_brown_02_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_diff_1k.jpg",
+      "md5": "6669cca520594bdca19f94084984ab72",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "bark_brown_02_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_nor_gl_1k.jpg",
+      "md5": "1cad3fe0349a44df2d4d1c2859c79920",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "bark_brown_02_rough_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_rough_1k.jpg",
+      "md5": "bbcde696e5b9418cdcb2abe638965417",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "shrub_04_diff_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/shrub_04/shrub_04_diff_2k.jpg",
+      "md5": "76f10cb443bc5964ec9484cfea474196",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "shrub_04_alpha_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/shrub_04/shrub_04_alpha_2k.jpg",
+      "md5": "41838677f97db4232c293b22a6f6ae5e",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "shrub_04_nor_gl_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/shrub_04/shrub_04_nor_gl_2k.jpg",
+      "md5": "ca4ecc50015a85e38675a4967e843485",
+      "source": "Poly Haven",
+      "license": "CC0"
+    },
+    {
+      "file": "Bark004_1K-JPG.zip",
+      "url": "https://ambientcg.com/get?file=Bark004_1K-JPG.zip",
+      "bytes": 9360504,
+      "source": "ambientCG",
+      "license": "CC0"
+    },
+    {
+      "file": "Bark005_1K-JPG.zip",
+      "url": "https://ambientcg.com/get?file=Bark005_1K-JPG.zip",
+      "bytes": 4295962,
+      "source": "ambientCG",
+      "license": "CC0"
+    }
+  ]
+}

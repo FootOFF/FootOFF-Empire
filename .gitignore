@@ -11,3 +11,8 @@ assets-src/hdri/
 
 # caches Python (scripts Blender)
 __pycache__/
+
+# sources de vegetation (retelechargeables : voir assets-src/vegetation.json)
+assets-src/vegetation/
+# rendus intermediaires des imposteurs (l'atlas publie est dans public/vegetation)
+assets-src/vegetation-baked/impostors/*.png

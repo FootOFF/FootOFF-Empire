@@ -152,7 +152,6 @@ def modern_materials():
         "black_metal": material("black_metal", (0.09, 0.09, 0.095), rough=0.4, metal=0.7),
         "glass": material("glass", (0.06, 0.08, 0.10), rough=0.05, metal=0.8),
         "white": material("white", (0.92, 0.92, 0.92), rough=0.45),
-        "foliage": material("foliage", (0.12, 0.22, 0.10), rough=0.9),
         "water": material("water", (0.05, 0.22, 0.30), rough=0.05, metal=0.3),
         "emissive_led": material("emissive_led", GOLD, rough=0.35, metal=0.55, emission=GOLD_LIGHT, strength=1.4),
         "emissive_light": material("emissive_light", (0.85, 0.85, 0.82), rough=0.3, emission=(1.0, 0.92, 0.78), strength=6.0),
@@ -162,32 +161,15 @@ def modern_materials():
 
 # =============================================================== paysage et architecture
 
-def ellipsoid(B, mat, c, rx, ry, rz, segs=8, rings=5):
-    cx, cy, cz = c
-    verts = [(cx, cy, cz + rz)]
-    for i in range(1, rings):
-        t = math.pi * i / rings
-        for j in range(segs):
-            a = 2 * math.pi * j / segs
-            verts.append((cx + rx * math.sin(t) * math.cos(a), cy + ry * math.sin(t) * math.sin(a), cz + rz * math.cos(t)))
-    verts.append((cx, cy, cz - rz))
-    last = len(verts) - 1
-    faces = [(0, 1 + j, 1 + (j + 1) % segs) for j in range(segs)]
-    for i in range(rings - 2):
-        a0, a1 = 1 + i * segs, 1 + (i + 1) * segs
-        faces += [(a0 + j, a1 + j, a1 + (j + 1) % segs, a0 + (j + 1) % segs) for j in range(segs)]
-    base = 1 + (rings - 2) * segs
-    faces += [(last, base + (j + 1) % segs, base + j) for j in range(segs)]
-    B.piece(mat, verts, faces, smooth=set(range(len(faces))))
-
-
 def tree(B, x, y, h=9.0, r=2.6, z=0.0, columnar=False):
-    """Arbre d'alignement : tronc + houppier ellipsoidal, feuillage sombre."""
-    trunk = h * 0.38
-    B.cyl("wood", (x, y, z), (x, y, z + trunk + 0.5), 0.16, 0.12, segs=6)
-    rz = (h - trunk) / 2
-    rr = r * (0.55 if columnar else 1.0)
-    ellipsoid(B, "foliage", (x, y, z + trunk + rz), rr, rr * 0.92, rz)
+    """Arbre : un simple repere tree_spot_* (Builder.finalize), ou le jeu plante un arbre modelise (build_trees.py,
+    src/three/forest.js), comme ceux du site et de l'ecrin naturel. Proprietes : hauteur h (m), largeur relative w
+    (memes proportions que site_trees.json), espece."""
+    if columnar:
+        kind, w = "peuplier", (r * 0.55) / (0.13 * h)
+    else:
+        kind, w = ("chene" if int(abs(x * 3.1 + y * 1.7)) % 3 else "hetre"), r / (0.36 * h)
+    B.spots.append(((x, y, z), {"h": round(h, 3), "w": round(w, 3), "kind": kind}))
 
 
 def plinth(B, w=58.0, d=58.0, mat="paving"):
@@ -200,7 +182,11 @@ def plinth(B, w=58.0, d=58.0, mat="paving"):
 
 
 def lawn(B, x0, y0, x1, y1, z=0.12):
+    """Pelouse ; un buis en boule a chaque coin quand elle est assez grande (repere tree_spot_*, plante par le jeu)."""
     B.box("lawn", (x0, y0, z), (x1, y1, z + 0.08), tile=(8, 8))
+    if x1 - x0 >= 5 and y1 - y0 >= 5:
+        for x, y in ((x0 + 0.9, y0 + 0.9), (x1 - 0.9, y0 + 0.9), (x0 + 0.9, y1 - 0.9), (x1 - 0.9, y1 - 0.9)):
+            B.spots.append(((x, y, z + 0.08), {"h": 1.0, "w": 1.0, "kind": "buis"}))
 
 
 def roof(B, x0, y0, x1, y1, z, units=True):

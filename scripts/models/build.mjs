@@ -100,6 +100,7 @@ async function optimize(doc, category) {
   root.listCameras().forEach((cam) => cam.dispose());
   root.listExtensionsUsed().filter((e) => e.extensionName === 'KHR_lights_punctual').forEach((e) => e.dispose());
   const size = category.maxTextureSize;
+  const nsize = category.maxNormalTextureSize || size; // reliefs : souvent moins fins que la couleur
   await doc.transform(
     dedup(),
     instance({ min: 5 }),
@@ -115,7 +116,7 @@ async function optimize(doc, category) {
     pruneEmptyLeaves(),
     prune({ keepLeaves: true, keepExtras: true }),
     textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^(?!normalTexture).*$/, resize: [size, size], quality: 82 }),
-    textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^normalTexture$/, resize: [size, size], quality: 95 }),
+    textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^normalTexture$/, resize: [nsize, nsize], quality: 95 }),
     // UV sur 16 bits : les textures répétées (sièges, béton, toiture) ont des UV bien au-delà de [0, 1].
     meshopt({ encoder: MeshoptEncoder, level: 'medium', quantizeTexcoord: 16 }),
   );

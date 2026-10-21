@@ -342,6 +342,7 @@ class Builder:
     def __init__(self, mats):
         self.mats = mats
         self.bms = {}
+        self.spots = []  # reperes tree_spot_* : (position, proprietes)
 
     def bm(self, mat):
         if mat not in self.bms:
@@ -434,6 +435,13 @@ class Builder:
             ob = bpy.data.objects.new(f"{OBJECT_NAMES.get(mat, mat)}_{suffix}", me)
             coll.objects.link(ob)
         self.bms = {}
+        for i, (loc, props) in enumerate(self.spots):  # empties exportes (extras glTF : userData dans le jeu)
+            e = bpy.data.objects.new(f"tree_spot_{suffix}_{i:02d}", None)
+            e.location = loc
+            for k, v in props.items():
+                e[k] = v
+            coll.objects.link(e)
+        self.spots = []
 
 
 def fo_logo(B, mat, M, height, depth=0.2):

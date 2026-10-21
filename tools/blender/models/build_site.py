@@ -24,10 +24,11 @@ from footoff_lib import GOLD, GOLD_LIGHT, Builder, Matrix, RNG, bpy, fbm, find_r
 from footoff_modern import car, container_box, lawn, modern_materials, plinth  # noqa: E402
 from footoff_modern import tree as modern_tree  # noqa: E402
 
-# Arbres du site : plus modelises dans le GLB, mais listes (site_trees.json) et plantes par le jeu avec les arbres
-# realistes de l'ecrin naturel (src/three/landscape.js). Format par arbre, en unites du jeu (1 = 10 m) :
-# [x, z, base, hauteur, largeur relative, espece].
+# Arbres et vegetation basse du site : plus modelises dans le GLB, mais listes (site_trees.json) et plantes par le
+# jeu avec les arbres realistes de l'ecrin naturel (src/three/forest.js). Format, en unites du jeu (1 = 10 m) :
+# [x, z, base, hauteur, largeur relative, espece] ; haie : [x, z, base, hauteur, largeur, "haie", axe, longueur].
 SITE_TREES = []
+SHRUB_RNG = np.random.default_rng(7)  # a part : les arbres des jardins gardent leur tirage
 
 
 def tree(B, x, y, h=9.0, r=2.6, z=0.0, columnar=False):
@@ -36,6 +37,18 @@ def tree(B, x, y, h=9.0, r=2.6, z=0.0, columnar=False):
     else:
         kind, w = ("oak" if int(abs(x * 3.1 + y * 1.7)) % 3 else "beech"), (r / 10) / 0.36
     SITE_TREES.append([round(x / 10, 3), round(-y / 10, 3), round(z / 10, 3), round(h / 10, 3), round(w, 3), kind])
+
+
+def shrub(x, y, h, kind="arbuste", z=0.0):
+    """Buis en boule ou massif d'arbustes, a sa forme naturelle (hauteur h en metres)."""
+    SITE_TREES.append([round(x / 10, 3), round(-y / 10, 3), round(z / 10, 3), round(h / 10, 3), round(h / 10, 3), kind])
+
+
+def hedge(x0, y0, x1, y1, h=0.9, w=0.8, z=0.0):
+    """Haie taillee de (x0, y0) a (x1, y1) (metres, repere Blender) ; axe : angle autour de la verticale du jeu."""
+    length = math.hypot(x1 - x0, y1 - y0)
+    SITE_TREES.append([round((x0 + x1) / 20, 3), round(-(y0 + y1) / 20, 3), round(z / 10, 3), round(h / 10, 3), round(w / 10, 3),
+                       "haie", round(math.atan2(y1 - y0, x1 - x0), 4), round(length / 10, 3)])
 
 # Parcelles (centres en metres, repere Blender) = PLOT_POS de layout.js x 10, z -> -y
 PLOTS = {
@@ -235,7 +248,8 @@ def banner(B, x, y, s, gold):
 
 
 def planter(B, x0, y0, x1, y1, tree_x, step=7.0):
-    """Jardiniere basse en granit sombre, gazon, alignement d'arbres."""
+    """Jardiniere basse en granit sombre, gazon, alignement d'arbres ; parterre a la francaise : haie taillee le long
+    du bord, buis en boule entre les arbres."""
     t = 0.3
     for a, b in (((x0, y0), (x1, y0 + t)), ((x0, y1 - t), (x1, y1)), ((x0, y0 + t), (x0 + t, y1 - t)), ((x1 - t, y0 + t), (x1, y1 - t))):
         B.box("granite_dark", (*a, 0.0), (*b, 0.5), tile=(2.4, 2.4))
@@ -243,7 +257,15 @@ def planter(B, x0, y0, x1, y1, tree_x, step=7.0):
     y = y0 + step / 2
     while y < y1 - 2:
         tree(B, tree_x, y, 9.5, 2.4, z=0.42)
+        if y + step < y1 - 2:
+            for dx in (-2.6, 2.6):
+                shrub(tree_x + dx, y + step / 2, 1.3, "buis", z=0.42)
         y += step
+    e = t + 0.55  # haie : cadre interieur de la jardiniere
+    hedge(x0 + e, y0 + e, x0 + e, y1 - e, z=0.42)
+    hedge(x1 - e, y0 + e, x1 - e, y1 - e, z=0.42)
+    hedge(x0 + e + 0.4, y0 + e, x1 - e - 0.4, y0 + e, z=0.42)
+    hedge(x0 + e + 0.4, y1 - e, x1 - e - 0.4, y1 - e, z=0.42)
 
 
 def prestige(B):
@@ -432,6 +454,12 @@ def site(B, coll):
             if RNG.random() > (0.5 if within else 0.28) or any(inside(x, y, r, 3.0) for r in blocked):
                 continue
             tree(B, x, y, RNG.uniform(7, 11), RNG.uniform(1.8, 2.8), columnar=RNG.random() < 0.25)
+            if SHRUB_RNG.random() < 0.4:  # massifs d'arbustes au pied de certains arbres
+                for _ in range(int(SHRUB_RNG.integers(1, 4))):
+                    a, d = SHRUB_RNG.uniform(0, 2 * math.pi), SHRUB_RNG.uniform(3.0, 5.5)
+                    sx, sy = x + d * math.cos(a), y + d * math.sin(a)
+                    if not any(inside(sx, sy, r, 1.5) for r in blocked):
+                        shrub(sx, sy, SHRUB_RNG.uniform(1.3, 2.1))
 
 
 def plot_empty(B, coll):
@@ -504,12 +532,13 @@ def main():
     mats = modern_materials()
     mats["gravel"] = material("gravel", (0.30, 0.27, 0.23), rough=1.0)
     mats["gold_paint"] = material("gold_paint", GOLD, rough=0.4, metal=0.5)
+    plot_mats = dict(mats)  # parcelles : dallage sombre des batiments (le dallage clair est celui de l'esplanade)
     prestige_materials(mats)
     site_materials(mats)  # dallage de l'esplanade, pelouse tondue, grain de l'enrobe (avec relief)
-    for name, fn in (("site", site), ("plot_empty", plot_empty), ("plot_locked", plot_locked)):
+    for name, fn, m in (("site", site, mats), ("plot_empty", plot_empty, plot_mats), ("plot_locked", plot_locked, plot_mats)):
         coll = bpy.data.collections.new(f"prop_{name}")
         scene.collection.children.link(coll)
-        B = Builder(mats)
+        B = Builder(m)
         fn(B, coll)
         B.finalize(coll, name)
     import json

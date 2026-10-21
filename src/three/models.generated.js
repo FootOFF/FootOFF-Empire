@@ -34,5 +34,6 @@ export const GENERATED_PROPS = {
   'plot_empty': {"url":"models/props/plot_empty.glb","scale":0.1},
   'plot_locked': {"url":"models/props/plot_locked.glb","scale":0.1},
   'site': {"url":"models/props/site.glb","scale":0.1},
+  'trees': {"url":"models/props/trees.glb","scale":0.1},
   'trophies': {"url":"models/props/trophies.glb","scale":0.1},
 };

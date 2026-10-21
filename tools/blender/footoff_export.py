@@ -8,6 +8,8 @@ l'emprise et au sol, facade vers -Y dans Blender (= +Z dans le jeu apres convers
 Objets speciaux (gardent leur nom dans le GLB) :
     emissive_*   maillages qui s'allument la nuit (fenetres, LED, enseignes)
     light_*      empties : position des projecteurs
+    tree_*       arbres : maillages tree_<espece>__<partie> (build_trees.py) ; empties tree_spot_* : emplacement
+                 d'un arbre (proprietes h, w, kind), ou le jeu plante un arbre modelise (src/three/forest.js)
     crowd_*, flag_*, club_color_*   reserves aux phases suivantes
 
 Utilisation

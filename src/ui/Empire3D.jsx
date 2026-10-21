@@ -13,6 +13,7 @@ import { plotLights } from '../three/lights';
 import { BuildAnimation, Fireworks, hoverFrame } from '../three/fx';
 import { createLife } from '../three/life';
 import { createLandscape, heightAt } from '../three/landscape';
+import { plantSpots } from '../three/forest';
 import { createPostFX } from '../three/postfx';
 import { momentAt } from '../three/sky';
 import { PARVIS, createTrophies } from '../three/trophies';
@@ -345,6 +346,7 @@ export default function Empire3D({
           instantiateModel(model, fp)
             .then((node) => {
               if (entry.sig !== wanted || !ctx.alive) return;
+              plantSpots(node); // arbres des bâtiments et des parcelles (repères tree_spot_*)
               if (anim) anim.provide(node); else ctx.setContent(entry, node);
             })
             .catch((err) => {
@@ -669,7 +671,7 @@ export default function Empire3D({
       life.update(dt, time);
       ctx.trophies.update(dt);
       weather.update(dt, time, controls.target);
-      landscape.update(dt, time);
+      landscape.update(dt, time, camera);
       // pastilles dorées : projetées au-dessus de leur parcelle, masquées sous l'étiquette de survol
       for (const [id, el] of pinRefs.current) {
         const e = ctx.plots.get(id);

@@ -1,0 +1,55 @@
+{
+  "chene": {
+    "height": 19.22,
+    "radius": 11.48,
+    "foliage": "broad",
+    "triangles": 1316
+  },
+  "hetre": {
+    "height": 23.65,
+    "radius": 8.27,
+    "foliage": "broad",
+    "triangles": 1342
+  },
+  "peuplier": {
+    "height": 25.54,
+    "radius": 3.91,
+    "foliage": "broad",
+    "triangles": 924
+  },
+  "pin": {
+    "height": 20.28,
+    "radius": 8.51,
+    "foliage": "pine",
+    "triangles": 720
+  },
+  "sapin": {
+    "height": 22.46,
+    "radius": 6.13,
+    "foliage": "fir",
+    "triangles": 1188
+  },
+  "buis": {
+    "height": 1.56,
+    "radius": 0.9,
+    "foliage": "hedge",
+    "triangles": 42
+  },
+  "arbuste": {
+    "height": 2.33,
+    "radius": 1.8,
+    "foliage": "hedge",
+    "triangles": 96
+  },
+  "haie": {
+    "height": 1.24,
+    "radius": 1.44,
+    "foliage": "hedge",
+    "triangles": 46,
+    "module": [
+      2.0,
+      0.9,
+      1.0
+    ]
+  }
+}

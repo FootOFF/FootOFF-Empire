@@ -1,19 +1,19 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Water } from 'three/examples/jsm/objects/Water.js';
+import { createForest, setForestTime } from './forest';
 
 // Écrin naturel autour du complexe : la plateforme du site posée sur un plateau, des collines douces boisées qui
-// ondulent jusqu'à l'horizon, un lac au nord-ouest juste derrière le stade, une forêt européenne (canopée au
-// loin, arbres un par un près du site et en lisière), et le boulevard sud prolongé par une route bordée de
-// platanes avec son tram. Tout est généré ici (aucun gros fichier à télécharger), en unités du jeu (1 = 10 m),
-// x vers l'est, z vers le sud. Côté caméra (sud-est), le relief reste bas pour ne jamais masquer le complexe.
+// ondulent jusqu'à l'horizon, un lac au nord-ouest juste derrière le stade, une forêt européenne (arbres modélisés
+// près du site et en lisière, imposteurs au loin : forest.js), et le boulevard sud prolongé par une route bordée
+// d'arbres avec son tram. Relief, eau et route sont générés ici, en unités du jeu (1 = 10 m), x vers l'est, z vers
+// le sud. Côté caméra (sud-est), le relief reste bas pour ne jamais masquer le complexe.
 
 const SITE = { x0: -30, x1: 30, z0: -28, z1: 23 }; // plateforme du site (build_site.py)
 const LAKE = { x: -56, z: -58, rx: 30, rz: 16, rot: 0.5, level: -0.35 };
 const ROAD_Z = { median: [15.8, 17.2], rails: [16.15, 16.85], lanes: [17.2, 18.4], mid: 16.9 };
 const EXTENT = 240;
 const CAM = new THREE.Vector2(0.62, 0.78).normalize(); // direction de la caméra vue de dessus
-const TREE_TOP = { haute: 1, auto: 1, economie: 0.45 };
 
 // --- bruit -----------------------------------------------------------------------------------------
 
@@ -158,7 +158,7 @@ function repeatTexture(canvas, srgb, repeat) {
   return t;
 }
 
-// --- arbres -----------------------------------------------------------------------------------------
+// --- couleurs par sommet ----------------------------------------------------------------------------
 
 function paint(geo, fn) {
   const pos = geo.attributes.position;
@@ -172,195 +172,6 @@ function paint(geo, fn) {
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
   geo.deleteAttribute('uv');
   return geo;
-}
-
-// Textures de feuillage (fond transparent) : feuilles de feuillus en ellipses, aiguilles de pin en traits.
-function foliageTexture(kind) {
-  const S = 256;
-  const c = document.createElement('canvas');
-  c.width = c.height = S;
-  const g = c.getContext('2d');
-  const r = mulberry32(kind === 'needle' ? 9 : 3);
-  const green = (k) => {
-    const t = 0.72 + 0.4 * r() - 0.18 * k;
-    return kind === 'needle'
-      ? `rgb(${Math.round(46 * t)},${Math.round(82 * t)},${Math.round(52 * t)})`
-      : `rgb(${Math.round(76 * t)},${Math.round(114 * t)},${Math.round(42 * t)})`;
-  };
-  g.fillStyle = green(0.6);
-  g.beginPath(); g.ellipse(S / 2, S / 2, S * 0.17, S * 0.17, 0, 0, Math.PI * 2); g.fill(); // cœur opaque
-  if (kind === 'needle') {
-    g.lineCap = 'round';
-    for (let i = 0; i < 520; i++) {
-      const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 112;
-      const x = S / 2 + Math.cos(a) * d * 1.05, y = S / 2 + Math.sin(a) * d * 0.7;
-      g.strokeStyle = green(d / 112);
-      g.lineWidth = 1.6 + r() * 1.4;
-      const la = a + (r() - 0.5) * 0.9, len = 7 + r() * 9;
-      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(la) * len, y + Math.sin(la) * len); g.stroke();
-    }
-  } else {
-    for (let i = 0; i < 760; i++) {
-      const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 114;
-      const x = S / 2 + Math.cos(a) * d, y = S / 2 + Math.sin(a) * d * 0.94;
-      g.fillStyle = green(d / 114);
-      g.beginPath(); g.ellipse(x, y, 5 + r() * 4.5, 2.6 + r() * 2.2, r() * Math.PI, 0, Math.PI * 2); g.fill();
-    }
-  }
-  // texture brute (non prémultipliée) : les pixels transparents prennent la couleur moyenne du feuillage, sinon les
-  // niveaux de détail réduits mélangent du noir et les arbres lointains deviennent sombres
-  const img = g.getImageData(0, 0, S, S).data;
-  let ar = 0, ag = 0, ab = 0, n = 0;
-  for (let i = 0; i < img.length; i += 4) if (img[i + 3] > 200) { ar += img[i]; ag += img[i + 1]; ab += img[i + 2]; n++; }
-  ar /= n; ag /= n; ab /= n;
-  const data = new Uint8Array(img.length);
-  for (let i = 0; i < img.length; i += 4) {
-    const a = img[i + 3] / 255;
-    data[i] = img[i] * a + ar * (1 - a); data[i + 1] = img[i + 1] * a + ag * (1 - a); data[i + 2] = img[i + 2] * a + ab * (1 - a);
-    data[i + 3] = img[i + 3];
-  }
-  const t = new THREE.DataTexture(data, S, S, THREE.RGBAFormat);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.generateMipmaps = true;
-  t.minFilter = THREE.LinearMipmapLinearFilter;
-  t.magFilter = THREE.LinearFilter;
-  t.anisotropy = 4;
-  t.needsUpdate = true;
-  return t;
-}
-
-const UPV = new THREE.Vector3(0, 1, 0), RIGHT = new THREE.Vector3(1, 0, 0);
-// Houppier en grappes : cartes de feuillage dans un ellipsoïde, normales sphériques (lumière douce et volumineuse),
-// plus sombres dessous et au cœur (occlusion).
-function foliageCards(rand, { cx, cy, cz, rx, ry, rz, cards, size, droop = 0, radial = false, tiers = null, perTier = 7, sides = 8 }) {
-  const pos = [], nrm = [], uv = [], col = [];
-  const center = new THREE.Vector3(cx, cy, cz);
-  const p = new THREE.Vector3(), n = new THREE.Vector3(), t1 = new THREE.Vector3(), t2 = new THREE.Vector3(), q = new THREE.Vector3();
-  // carte en polygone arrondi (pas en carré) : au loin, quand la texture réduite devient pleine, la grappe reste
-  // une masse ronde de feuillage au lieu d'un carré
-  const quad = (half) => {
-    const rot = rand() * Math.PI * 2;
-    const corners = [], uvs = [];
-    for (let k = 0; k < sides; k++) {
-      const a = rot + (k / sides) * Math.PI * 2, rr = 0.86 + 0.14 * rand();
-      corners.push(p.clone().addScaledVector(t1, Math.cos(a) * half * rr).addScaledVector(t2, Math.sin(a) * half * rr));
-      uvs.push([0.5 + 0.48 * Math.cos(a - rot) * rr, 0.5 + 0.48 * Math.sin(a - rot) * rr]);
-    }
-    const order = [];
-    for (let k = 1; k < sides - 1; k++) order.push(0, k, k + 1);
-    for (const k of order) {
-      const c = corners[k];
-      pos.push(c.x, c.y, c.z);
-      q.subVectors(c, center); q.y = q.y * 0.8 + 0.25 * ry; q.normalize();
-      nrm.push(q.x, q.y, q.z);
-      uv.push(uvs[k][0], uvs[k][1]);
-      const h = THREE.MathUtils.clamp((c.y - (cy - ry)) / (2 * ry), 0, 1);
-      const inner = THREE.MathUtils.clamp(c.distanceTo(center) / Math.max(rx, ry), 0, 1);
-      const ao = 0.42 + 0.38 * h + 0.3 * inner;
-      col.push(ao, ao, ao);
-    }
-  };
-  if (tiers) { // pin : étages de branches horizontales tombantes, autour du tronc
-    for (const { y, r } of tiers) {
-      for (let k = 0; k < perTier; k++) {
-        const a = (k / perTier) * Math.PI * 2 + rand() * 0.6;
-        const dir = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
-        p.set(cx + dir.x * r * 0.55, y - r * 0.12, cz + dir.z * r * 0.55);
-        t1.copy(dir);
-        t2.crossVectors(UPV, dir).normalize();
-        t1.applyAxisAngle(t2, 0.35 + droop);
-        quad(r * 0.62);
-      }
-    }
-  } else {
-    for (let i = 0; i < cards; i++) {
-      const u = rand() * 2 - 1, th = rand() * Math.PI * 2, rr = 0.5 + 0.5 * Math.cbrt(rand());
-      const sq = Math.sqrt(1 - u * u);
-      const dir = new THREE.Vector3(sq * Math.cos(th), u, sq * Math.sin(th));
-      p.set(cx + dir.x * rx * rr, cy + dir.y * ry * rr, cz + dir.z * rz * rr);
-      n.set(rand() * 2 - 1, rand() * 2 - 1, rand() * 2 - 1).normalize().lerp(dir, radial ? 0.7 : 0.4).normalize();
-      t1.crossVectors(n, Math.abs(n.y) < 0.9 ? UPV : RIGHT).normalize();
-      t2.crossVectors(n, t1);
-      quad(size * (0.8 + 0.45 * rand()));
-    }
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
-  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  return geo;
-}
-
-// Tronc et branches maîtresses (écorce), mêmes attributs que le feuillage pour la fusion en groupes.
-function wood(rand, h, r0, r1, branches) {
-  const parts = [];
-  const bark = srgb(0.27, 0.21, 0.16);
-  const cyl = (from, to, ra, rb) => {
-    const d = new THREE.Vector3().subVectors(to, from);
-    const g = new THREE.CylinderGeometry(rb, ra, d.length(), 5, 1, true).translate(0, d.length() / 2, 0);
-    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(UPV, d.clone().normalize()));
-    g.translate(from.x, from.y, from.z);
-    const ng = g.toNonIndexed();
-    const uvs = new Float32Array(ng.attributes.position.count * 2).fill(0.5); // cœur opaque de la texture (ombres)
-    ng.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-    const col = new Float32Array(ng.attributes.position.count * 3);
-    for (let i = 0; i < ng.attributes.position.count; i++) col.set(bark, i * 3);
-    ng.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    parts.push(ng);
-  };
-  cyl(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, h, 0), r0, r1);
-  for (let k = 0; k < branches; k++) {
-    const a = rand() * Math.PI * 2, y = h * (0.55 + rand() * 0.35);
-    cyl(new THREE.Vector3(0, y, 0), new THREE.Vector3(Math.cos(a) * 0.2, y + 0.18, Math.sin(a) * 0.2), r1 * 0.9, r1 * 0.45);
-  }
-  return mergeGeometries(parts);
-}
-
-// arbres de hauteur 1 (mis à l'échelle par instance) : chêne, hêtre, pin, peuplier
-function treeGeometries() {
-  const r = mulberry32(5);
-  const make = (woodGeo, leaves) => mergeGeometries([woodGeo, leaves], true); // groupe 0 : écorce, 1 : feuillage
-  return {
-    oak: make(wood(r, 0.5, 0.05, 0.03, 3), foliageCards(r, { cx: 0, cy: 0.66, cz: 0, rx: 0.37, ry: 0.27, rz: 0.37, cards: 24, size: 0.16 })),
-    beech: make(wood(r, 0.5, 0.045, 0.028, 2), foliageCards(r, { cx: 0, cy: 0.64, cz: 0, rx: 0.3, ry: 0.33, rz: 0.3, cards: 22, size: 0.15 })),
-    pine: make(wood(r, 0.82, 0.04, 0.02, 0), foliageCards(r, {
-      cx: 0, cy: 0.6, cz: 0, rx: 0.25, ry: 0.4, rz: 0.25, cards: 0, size: 0, droop: 0.1,
-      tiers: [0.36, 0.48, 0.6, 0.71, 0.81, 0.9].map((y, k) => ({ y, r: 0.27 * (1 - k / 6.5) + 0.04 })),
-    })),
-    poplar: make(wood(r, 0.32, 0.035, 0.025, 0), foliageCards(r, { cx: 0, cy: 0.62, cz: 0, rx: 0.13, ry: 0.42, rz: 0.13, cards: 22, size: 0.09, radial: true })),
-    // versions allégées pour la forêt lointaine (dans la brume) : moins de cartes, plus grandes
-    oakLow: make(wood(r, 0.5, 0.05, 0.03, 0), foliageCards(r, { cx: 0, cy: 0.66, cz: 0, rx: 0.32, ry: 0.26, rz: 0.32, cards: 13, size: 0.25, sides: 6 })),
-    pineLow: make(wood(r, 0.82, 0.04, 0.02, 0), foliageCards(r, {
-      cx: 0, cy: 0.6, cz: 0, rx: 0.25, ry: 0.4, rz: 0.25, cards: 0, size: 0, droop: 0.1,
-      tiers: [0.36, 0.52, 0.68, 0.84].map((y, k) => ({ y, r: 0.3 * (1 - k / 5) + 0.04 })), perTier: 5, sides: 6,
-    })),
-  };
-}
-
-// Feuillage : alpha testé (cartes), vent léger, normales sphériques conservées des deux côtés des cartes.
-function foliageMaterial(map, uniforms) {
-  const m = new THREE.MeshStandardMaterial({
-    map, vertexColors: true, alphaTest: 0.42, side: THREE.DoubleSide, roughness: 0.82, metalness: 0,
-  });
-  m.alphaToCoverage = true;
-  m.onBeforeCompile = (shader) => {
-    shader.uniforms.uTime = uniforms.uTime;
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uTime;')
-      .replace('#include <begin_vertex>', `#include <begin_vertex>
-        #ifdef USE_INSTANCING
-          float ph = instanceMatrix[3].x * 0.7 + instanceMatrix[3].z * 0.9;
-        #else
-          float ph = 0.0;
-        #endif
-        float sway = smoothstep(0.35, 1.0, position.y) * 0.014;
-        transformed.x += sin(uTime * 1.3 + ph + position.y * 3.0) * sway;
-        transformed.z += cos(uTime * 1.05 + ph * 1.3) * sway * 0.7;`);
-    shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_begin>',
-      THREE.ShaderChunk.normal_fragment_begin.replace('normal *= faceDirection;', ''));
-  };
-  return m;
 }
 
 // --- construction ------------------------------------------------------------------------------------
@@ -431,12 +242,16 @@ function buildTerrain(maps) {
   return { mesh };
 }
 
+// Arbres du paysage (forest.js) : [x, y, z, hauteur, largeur, espèce, orientation, arbre du site, longueur d'une
+// haie]. Massifs de chênes et de hêtres, peuplements de résineux (sapins, quelques pins sylvestres), peupliers au
+// bord du lac ; sur le site, arbres, haies et arbustes de site_trees.json (build_site.py).
+const SITE_SPECIES = { oak: 'chene', beech: 'hetre', poplar: 'peuplier' }; // noms de site_trees.json (build_site.py)
 function scatterTrees(siteTrees) {
   const r = mulberry32(77);
-  const list = []; // [x, y, z, échelle hauteur, échelle largeur, espèce]
+  const list = [];
   const kindAt = (x, z) => {
-    if (fbm(N5, x / 30, z / 30, 2) > 0.22 && r() < 0.8) return 'pine';
-    return r() < 0.55 ? 'oak' : 'beech';
+    if (fbm(N5, x / 30, z / 30, 2) > 0.22 && r() < 0.8) return r() < 0.3 ? 'pin' : 'sapin';
+    return r() < 0.55 ? 'chene' : 'hetre';
   };
   const add = (x, z, kind, h) => {
     const y = heightAt(x, z);
@@ -452,11 +267,10 @@ function scatterTrees(siteTrees) {
       if (q < 1.08 || inCorridor(jx, jz, 3.2)) continue;
       const f = forestAt(jx, jz);
       const shore = q < 1.4 ? 0.22 : 0;
-      if (r() < f * 0.95 || r() < 0.005 + shore) add(jx, jz, kindAt(jx, jz), 0.85 + r() * 0.55);
+      if (r() < f * 0.95 || r() < 0.005 + shore) add(jx, jz, shore && r() < 0.5 ? 'peuplier' : kindAt(jx, jz), 0.85 + r() * 0.55);
     }
   }
-  // forêts et bosquets au-delà, jusqu'à ~1,2 km : arbres allégés, denses au cœur des massifs
-  const low = (k) => (k === 'pine' ? 'pineLow' : 'oakLow');
+  // forêts et bosquets au-delà, jusqu'à ~1,2 km : denses au cœur des massifs
   for (let x = -150; x <= 150; x += 1.7) {
     for (let z = -150; z <= 140; z += 1.7) {
       const jx = x + (r() - 0.5) * 1.5, jz = z + (r() - 0.5) * 1.5;
@@ -464,56 +278,19 @@ function scatterTrees(siteTrees) {
       if (d <= 18 || d > 120) continue;
       if (lakeQ(jx, jz) < 1.08 || inCorridor(jx, jz, 3.2)) continue;
       const f = forestAt(jx, jz);
-      if (r() < f * 0.9 || r() < 0.002) add(jx, jz, low(kindAt(jx, jz)), 1.0 + r() * 0.6);
+      if (r() < f * 0.9 || r() < 0.002) add(jx, jz, kindAt(jx, jz), 1.0 + r() * 0.6);
     }
   }
-  // route bordée de platanes (prolongement du boulevard sud)
+  // route bordée d'arbres d'alignement (prolongement du boulevard sud)
   for (const s of [-1, 1]) {
     for (let x = SITE.x1 + 1.2; x < 170; x += 1.2) {
-      for (const z of [15.15, 19.05]) list.push([s * x, 0, z, 1.25 + r() * 0.15, 1.35, 'oak', r() * 6.28]);
+      for (const z of [15.15, 19.05]) list.push([s * x, 0, z, 1.25 + r() * 0.15, 1.35, 'hetre', r() * 6.28]);
     }
   }
-  for (const t of siteTrees) list.push(t);
+  for (const [x, z, y, h, w, kind, rot, len] of siteTrees) {
+    list.push([x, y, z, h, w, SITE_SPECIES[kind] || kind, rot ?? (x * 7.3 + z * 3.1) % 6.28, true, len]);
+  }
   return list;
-}
-
-function buildForest(list, uniforms) {
-  const geos = treeGeometries();
-  const leafTex = foliageTexture('leaf');
-  const needleTex = foliageTexture('needle');
-  const bark = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92 });
-  const leaves = foliageMaterial(leafTex, uniforms);
-  const needles = foliageMaterial(needleTex, uniforms);
-  const depth = (map) => new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map, alphaTest: 0.42 });
-  const meshes = [];
-  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3();
-  const col = new THREE.Color();
-  const near = (t) => Math.abs(t[0]) < 32 && Math.abs(t[2] + 2) < 32; // dans le cadre des ombres du soleil
-  for (const kind of Object.keys(geos)) {
-    const tex = kind.startsWith('pine') ? needleTex : leafTex;
-    for (const shadow of [true, false]) {
-      const items = list.filter((t) => t[5] === kind && near(t) === shadow);
-      if (!items.length) continue;
-      // ordre mélangé : réduire `count` (mode économie) retire des arbres partout, pas une zone entière
-      const rr = mulberry32(items.length + kind.length);
-      for (let i = items.length - 1; i > 0; i--) { const j = Math.floor(rr() * (i + 1)); [items[i], items[j]] = [items[j], items[i]]; }
-      const mesh = new THREE.InstancedMesh(geos[kind], [bark, kind.startsWith('pine') ? needles : leaves], items.length);
-      items.forEach((t, i) => {
-        q.setFromAxisAngle(UPV, t[6]);
-        m4.compose(p.set(t[0], t[1], t[2]), q, s.set(t[4], t[3], t[4]));
-        mesh.setMatrixAt(i, m4);
-        const v = 0.86 + rr() * 0.28;
-        mesh.setColorAt(i, col.setRGB(v * (0.94 + rr() * 0.12), v * (0.97 + rr() * 0.06), v * (0.88 + rr() * 0.12)));
-      });
-      mesh.castShadow = shadow;
-      mesh.receiveShadow = true;
-      mesh.customDepthMaterial = depth(tex);
-      mesh.userData.full = items.length;
-      mesh.name = `landscape_trees_${kind}`;
-      meshes.push(mesh);
-    }
-  }
-  return meshes;
 }
 
 function buildRoad(maps) {
@@ -553,7 +330,6 @@ function waterNormalsTexture() {
 }
 
 export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null } = {}) {
-  const uniforms = { uTime: { value: 0 } };
   const maps = {
     grass: (() => {
       const nz = periodicNoise(11, [4, 8, 16, 32, 64, 128]);
@@ -626,20 +402,16 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
   makeLake(quality);
 
   scene.add(group);
-  let trees = [];
+  let forest = null;
   let currentQuality = quality;
-  const applyTreeCount = () => trees.forEach((m) => { m.count = Math.max(1, Math.round(m.userData.full * (TREE_TOP[currentQuality] ?? 1))); });
   const plant = (siteTrees) => {
-    trees.forEach((m) => { group.remove(m); m.dispose(); });
-    trees = buildForest(scatterTrees(siteTrees), uniforms);
-    trees.forEach((m) => group.add(m));
-    applyTreeCount();
+    forest?.dispose();
+    forest = createForest(group, scatterTrees(siteTrees), { quality: currentQuality, site: SITE });
   };
   plant([]);
   if (siteTreesUrl) {
     fetch(siteTreesUrl).then((r) => (r.ok ? r.json() : [])).then((data) => {
-      if (!Array.isArray(data) || !data.length) return;
-      plant(data.map(([x, z, y, h, w, kind]) => [x, y, z, h, w, kind, (x * 7.3 + z * 3.1) % 6.28]));
+      if (Array.isArray(data) && data.length) plant(data);
     }).catch(() => {});
   }
 
@@ -653,8 +425,9 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
       mesh.userData.ripple = true;
       this.pools = [...(this.pools || []), mesh];
     },
-    update(dt, time) {
-      uniforms.uTime.value = time;
+    update(dt, time, camera) {
+      setForestTime(time);
+      if (camera) forest?.update(camera);
       if (scene.fog && veil.material.uniforms.uColor) veil.material.uniforms.uColor.value.copy(scene.fog.color);
       if (lake?.material.uniforms?.time) lake.material.uniforms.time.value = time * 0.35;
       else waterNormals.offset.set(time * 0.004, time * 0.0025);
@@ -671,10 +444,11 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
       waterMats.forEach((m) => { m.envMap = tex; if (first) m.needsUpdate = true; });
     },
     setSun(dir) { if (lake?.material.uniforms?.sunDirection) lake.material.uniforms.sunDirection.value.copy(dir).normalize(); },
-    setQuality(q) { if (q === currentQuality) return; currentQuality = q; makeLake(q); applyTreeCount(); },
+    setQuality(q) { if (q === currentQuality) return; currentQuality = q; makeLake(q); forest?.setQuality(q); },
     // voile peint avec le ciel photographié (sky.js) à la place de la couleur de brume
     setVeilMaterial(mat) { veil.material.dispose(); veil.material = mat; },
     dispose() {
+      forest?.dispose();
       scene.remove(group);
       group.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); [].concat(o.material).forEach((m) => m.dispose()); } });
     },

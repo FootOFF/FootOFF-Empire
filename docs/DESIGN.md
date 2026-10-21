@@ -198,3 +198,18 @@ direction du regard. L'heure réelle choisit un moment (aube, matin, journée, f
 crépuscule, nuit) d'après le lever et le coucher de la saison ; chaque moment tourne sa photo pour placer le soleil
 là où il flatte la vue d'ensemble, et le soleil du jeu suit celui de la photo. Pluie et neige : ciels couverts.
 Fondu de quatre secondes entre deux ambiances (ciel, soleil, exposition, étalonnage).
+
+## Arbres et jardins
+
+Cinq essences européennes (chêne, hêtre, peuplier d'Italie, pin sylvestre, sapin) modélisées dans Blender
+(`tools/blender/models/build_trees.py`) : la silhouette de chaque espèce est remplie de touffes de feuillage
+composées à partir de vraies feuilles, aiguilles et écorces photographiées (CC0, liste dans
+`assets-src/vegetation.json`, sources hors dépôt dans `assets-src/vegetation/`, masses de feuilles composées par
+`tools/vegetation/clusters.py`). Normales arrondies sur le houppier et sur chaque touffe : de loin, un arbre se lit
+comme un vrai volume de feuillage, éclairé et ombré. Au loin (forêts des collines) et sur le site quand la caméra
+s'éloigne, chaque arbre devient un imposteur : l'espèce rendue sous huit angles (couleur, relief, part de ciel
+visible ; `render_impostors.py` puis `tools/vegetation/impostors.py`), éclairée en direct comme le reste de la scène.
+Les arbres du site gardent toujours l'ombre de leur modèle 3D. Jardins : haies taillées, buis en boule et massifs
+d'arbustes (quelques-uns pourpres) dans les jardinières du parvis, les jardins et aux coins des pelouses des
+parcelles. Emplacements : `site_trees.json` pour le site (`build_site.py`), repères `tree_spot_*` dans les modèles des
+bâtiments et des parcelles. Sur téléphone et en mode économie : atlas réduit, pas d'ombres d'arbres.
