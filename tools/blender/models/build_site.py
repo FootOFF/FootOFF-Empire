@@ -11,18 +11,26 @@ Collections exportees (models/props/<nom>.glb) :
 Plan (metres, Blender : x vers l'est, y vers le nord ; jeu : z = -y) calque sur src/three/layout.js :
 stade au centre (arene jusqu'a 187 x 140 m), parcelles 60 x 60 en t1..t7, ecartees du stade.
 
+Sols, routes et mobilier (phase 3) : matieres photo CC0 preparees par tools/grounds/prepare.py
+(assets-src/grounds-baked/, materiaux ground_* que le jeu nuance dalle par dalle : src/three/ground.js), bordures
+en granit et caniveaux calcules sur le contour des espaces pietons, mobilier contemporain (footoff_street.py).
+
 Lancement :
+    python -I tools/grounds/prepare.py
     blender -b --factory-startup -P tools/blender/models/build_site.py
 """
 
+import json
 import math
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from footoff_lib import GOLD, GOLD_LIGHT, Builder, Matrix, RNG, bpy, fbm, find_repo, fo_logo, mast, material, mix, np, to_image  # noqa: E402
-from footoff_modern import car, container_box, lawn, modern_materials, plinth  # noqa: E402
+from footoff_lib import GOLD, GOLD_LIGHT, Builder, Matrix, RNG, bpy, find_repo, fo_logo, mast, material, np  # noqa: E402
+from footoff_modern import car, container_box, modern_materials, plinth  # noqa: E402
 from footoff_modern import tree as modern_tree  # noqa: E402
+from footoff_street import (bench, bike_rack, bollard, drain, lantern, litter_bin, manhole, street_lamp,  # noqa: E402
+                            tex_grate, tex_pool, tree_grate)
 
 # Arbres et vegetation basse du site : plus modelises dans le GLB, mais listes (site_trees.json) et plantes par le
 # jeu avec les arbres realistes de l'ecrin naturel (src/three/forest.js). Format, en unites du jeu (1 = 10 m) :
@@ -62,6 +70,22 @@ ARENA = (-95.0, -70.0, 95.0, 76.0)  # arene des niveaux 5 et 6 (facade, parvis, 
 MARK_Z = 0.08  # marquages 5 cm au-dessus de l'enrobe : a distance, 5 mm scintillaient (conflit de profondeur)
 ROAD_Z = 0.03
 DISC_Z = 0.07  # anneau des ronds-points, un peu au-dessus des voies qui y entrent (jamais deux sols au meme niveau)
+PAVE_Z = 0.14  # dessus des espaces pietons
+CURB_W, CURB_Z = 0.15, 0.175  # bordures en granit : 3,5 cm au-dessus du dallage qu'elles recouvrent (pas de conflit)
+GUTTER_W, GUTTER_Z = 0.3, 0.06  # caniveaux en beton, 3 cm au-dessus de l'enrobe
+BAND_W, BAND_Z, BAND_STEP = 0.25, 0.165, 6.0  # calepinage de l'esplanade : bandes de granit tous les 6 m
+RES = 0.5  # trame du plan : toutes les cotes des sols sont des multiples de 50 cm
+# Ecarts verticaux entre sols superposes : au moins 2,5 cm (positions du site compressees sur 16 bits : pas de 9 mm)
+
+# Matieres photo (tools/grounds/prepare.py) : tuile de chaque texture en metres
+GROUNDS = os.path.join(find_repo(), "assets-src", "grounds-baked")
+with open(os.path.join(GROUNDS, "grounds_meta.json"), encoding="utf-8") as _f:
+    GROUND_META = json.load(_f)
+
+
+def tile(key):
+    t = GROUND_META[key]["tile"]
+    return (t, t)
 
 # Boulevard peripherique autour du complexe (axe x = +-230, nord y = 220) ; au sud il devient un grand
 # boulevard a deux chaussees separees par la plateforme du tram. Ronds-points aux deux angles sud.
@@ -100,16 +124,8 @@ def inside(x, y, r, m=0.0):
     return r[0] - m <= x <= r[2] + m and r[1] - m <= y <= r[3] + m
 
 
-def lamp(B, x, y, ang, h=8.0, z=0.0):
-    """Lampadaire moderne : mat noir, crosse, tete LED (allumee la nuit)."""
-    dx, dy = math.cos(ang) * 1.6, math.sin(ang) * 1.6
-    B.cyl("black_metal", (x, y, z), (x, y, z + h), 0.09, 0.07, segs=6)
-    B.cyl("black_metal", (x, y, z + h), (x + dx, y + dy, z + h + 0.15), 0.05, segs=4)
-    B.box("emissive_light", (x + dx - 0.35, y + dy - 0.18, z + h - 0.05), (x + dx + 0.35, y + dy + 0.18, z + h + 0.12))
-
-
 def dashes(B, x0, y0, x1, y1, z=MARK_Z):
-    """Marquage axial discontinu (3 m / 6 m)."""
+    """Marquage axial discontinu (3 m / 6 m), peinture routiere qui laisse voir le grain de l'enrobe."""
     horiz = abs(x1 - x0) > abs(y1 - y0)
     length = abs(x1 - x0) if horiz else abs(y1 - y0)
     n = int(length // 9)
@@ -117,10 +133,10 @@ def dashes(B, x0, y0, x1, y1, z=MARK_Z):
         t = (i * 9 + 3) / length
         if horiz:
             x = x0 + (x1 - x0) * t
-            B.box("white", (x, y0 - 0.08, 0.0), (x + 3, y0 + 0.08, z))
+            B.box("ground_paint", (x, y0 - 0.08, 0.0), (x + 3, y0 + 0.08, z), tile=tile("asphalt"))
         else:
             y = y0 + (y1 - y0) * t
-            B.box("white", (x0 - 0.08, y, 0.0), (x0 + 0.08, y + 3, z))
+            B.box("ground_paint", (x0 - 0.08, y, 0.0), (x0 + 0.08, y + 3, z), tile=tile("asphalt"))
 
 
 def zebra(B, x0, x1, y0, y1, along_x=True):
@@ -128,12 +144,12 @@ def zebra(B, x0, x1, y0, y1, along_x=True):
     if along_x:  # chaussee est-ouest : bandes orientees nord-sud
         x = x0
         while x + 0.5 <= x1:
-            B.box("white", (x, y0 + 0.4, 0.0), (x + 0.5, y1 - 0.4, MARK_Z))
+            B.box("ground_paint", (x, y0 + 0.4, 0.0), (x + 0.5, y1 - 0.4, MARK_Z), tile=tile("asphalt"))
             x += 1.0
     else:
         y = y0
         while y + 0.5 <= y1:
-            B.box("white", (x0 + 0.4, y, 0.0), (x1 - 0.4, y + 0.5, MARK_Z))
+            B.box("ground_paint", (x0 + 0.4, y, 0.0), (x1 - 0.4, y + 0.5, MARK_Z), tile=tile("asphalt"))
             y += 1.0
 
 
@@ -144,9 +160,9 @@ def flat_logo(B, mat, x, y, height, z=0.0):
 
 def roundabout(B, cx, cy):
     """Rond-point : anneau d'enrobe, ilot engazonne borde de beton, stele FootOFF au centre."""
-    B.cyl("asphalt", (cx, cy, 0.0), (cx, cy, DISC_Z), DISC_R, segs=40)
-    B.cyl("concrete_dark", (cx, cy, 0.0), (cx, cy, 0.2), ISLAND_R + 0.4, segs=28)
-    B.cyl("lawn", (cx, cy, 0.0), (cx, cy, 0.24), ISLAND_R, segs=28)
+    B.cyl("ground_asphalt", (cx, cy, 0.0), (cx, cy, DISC_Z), DISC_R, segs=40, tile=tile("asphalt"))
+    B.cyl("ground_concrete", (cx, cy, 0.0), (cx, cy, 0.2), ISLAND_R + 0.4, segs=28, tile=tile("concrete"))
+    B.cyl("ground_lawn", (cx, cy, 0.0), (cx, cy, 0.24), ISLAND_R, segs=28, tile=tile("lawn"))
     B.box("black_metal", (cx - 1.3, cy - 0.4, 0.24), (cx + 1.3, cy + 0.4, 4.6))
     fo_logo(B, "emissive_led", Matrix.Translation((cx, cy - 0.45, 1.6)), 2.0, depth=0.06)
     for a in range(0, 360, 60):  # bosquet bas autour de la stele
@@ -170,7 +186,7 @@ def tram(B):
         B.box("steel", (-300, yc - 0.03, 6.25), (300, yc + 0.03, 6.31))
     # station : quai central, abri vitre a toiture noire, bandes dorees, bancs, eclairage, totem FO
     q0, q1 = TRAM_Y[0] - 1.6, TRAM_Y[1] + 1.6
-    B.box("paving", (-42, q1, 0.0), (42, q0, 0.35), tile=(4.8, 4.8))
+    B.box("ground_sidewalk", (-42, q1, 0.0), (42, q0, 0.35), tile=tile("sidewalk"))
     B.box("emissive_led", (-42, q0 - 0.3, 0.35), (42, q0, 0.4))
     B.box("emissive_led", (-42, q1, 0.35), (42, q1 + 0.3, 0.4))
     for x in range(-36, 37, 12):
@@ -180,22 +196,24 @@ def tram(B):
     B.box("emissive_light", (-38, ym - 0.2, 3.75), (38, ym + 0.2, 3.9))
     for x in (-24, 0, 24):
         B.box("glass", (x - 4, ym - 0.03, 0.35), (x + 4, ym + 0.03, 2.6))
-        B.box("wood", (x - 3, ym + 0.2, 0.35), (x + 3, ym + 0.75, 0.8), tile=(2, 2))
+        for dx in (-1.05, 1.05):  # bancs adosses a la paroi vitree, tournes vers le parvis
+            bench(B, x + dx, ym + 0.36, 0.0, z=0.35)
+        litter_bin(B, x + 3.2, ym + 0.5, z=0.35)
     B.box("black_metal", (44, ym - 0.3, 0.35), (45.6, ym + 0.3, 5.2))
     fo_logo(B, "emissive_led", Matrix.Translation((44.8, ym - 0.35, 3.0)), 1.8, depth=0.05)
 
 
 def parking_lot(B, x0, y0, x1, y1):
     """Parking paysager : deux rangees d'emplacements, ilot central plante, voitures garees."""
-    B.box("asphalt", (x0, y0, 0.0), (x1, y1, ROAD_Z), tile=(8, 8))
+    B.box("ground_asphalt", (x0, y0, 0.0), (x1, y1, ROAD_Z), tile=tile("asphalt"))
     ym = (y0 + y1) / 2
-    B.box("concrete_dark", (x0 + 4, ym - 2.4, 0.0), (x1 - 4, ym + 2.4, 0.16))
-    B.box("lawn", (x0 + 4.3, ym - 2.1, 0.0), (x1 - 4.3, ym + 2.1, 0.2), tile=(8, 8))
+    B.box("ground_concrete", (x0 + 4, ym - 2.4, 0.0), (x1 - 4, ym + 2.4, 0.16), tile=tile("concrete"))
+    B.box("ground_lawn", (x0 + 4.3, ym - 2.1, 0.0), (x1 - 4.3, ym + 2.1, 0.2), tile=tile("lawn"))
     n = int((x1 - x0 - 8) // 2.6)
     for i in range(n + 1):
         x = x0 + 4 + i * 2.6
         for ya, yb in ((y0 + 0.6, y0 + 5.6), (y1 - 5.6, y1 - 0.6)):
-            B.box("white", (x - 0.06, ya, 0.0), (x + 0.06, yb, MARK_Z))
+            B.box("ground_paint", (x - 0.06, ya, 0.0), (x + 0.06, yb, MARK_Z), tile=tile("asphalt"))
     for x in range(int(x0) + 10, int(x1) - 6, 12):
         tree(B, x, ym, 7.5, 2.0, z=0.2)
     paints = ("black_metal", "steel", "white", "black_metal", "glass")
@@ -212,27 +230,7 @@ TROPHY = (0.0, -82.0)  # place de la Coupe d'Europe (trophee pose par le jeu qua
 POOL = (-15.0, -126.0, 15.0, -100.0)  # miroir d'eau (bord interieur)
 
 
-def tex_granite(name, base, var=0.05):
-    """Granit flamme en dalles 1,2 x 0,6 m a joints decales, tuile 2,4 x 2,4 m (raccord sans couture)."""
-    S = 512
-    u, v = np.meshgrid((np.arange(S) + 0.5) / S, (np.arange(S) + 0.5) / S)
-    X, Y = u * 2.4, v * 2.4
-    row = np.floor(Y / 0.6)
-    xx = X + (row % 2) * 0.6
-    col = np.floor(xx / 1.2) % 2
-    jx = np.minimum(xx % 1.2, 1.2 - xx % 1.2)
-    jy = np.minimum(Y % 0.6, 0.6 - Y % 0.6)
-    joint = np.clip(1.0 - np.minimum(jx, jy) / 0.01, 0, 1)
-    tint = RNG.random((4, 2))[row.astype(int) % 4, col.astype(int)]
-    grain = fbm(S, S, 48, 3)
-    val = 1 + var * (tint - 0.5) * 2 + 0.1 * (grain - 0.5)
-    rgb = np.asarray(base)[None, None, :] * val[..., None]
-    return to_image(name, mix(rgb, np.asarray(base) * 0.55, joint))
-
-
 def prestige_materials(mats):
-    mats["granite_light"] = material("granite_light", image=tex_granite("granite_light", (0.62, 0.60, 0.56)), rough=0.7)
-    mats["granite_dark"] = material("granite_dark", image=tex_granite("granite_dark", (0.12, 0.12, 0.13), 0.08), rough=0.45)
     mats["trophy_gold"] = material("trophy_gold", GOLD_LIGHT, rough=0.22, metal=0.95)
     mats["mirror_water"] = material("mirror_water", (0.30, 0.40, 0.45), rough=0.03, metal=0.85)  # reflete le ciel
 
@@ -252,8 +250,8 @@ def planter(B, x0, y0, x1, y1, tree_x, step=7.0):
     du bord, buis en boule entre les arbres."""
     t = 0.3
     for a, b in (((x0, y0), (x1, y0 + t)), ((x0, y1 - t), (x1, y1)), ((x0, y0 + t), (x0 + t, y1 - t)), ((x1 - t, y0 + t), (x1, y1 - t))):
-        B.box("granite_dark", (*a, 0.0), (*b, 0.5), tile=(2.4, 2.4))
-    B.box("lawn", (x0 + t, y0 + t, 0.0), (x1 - t, y1 - t, 0.42), tile=(8, 8))
+        B.box("ground_granite", (*a, 0.0), (*b, 0.5), tile=tile("granite"))
+    B.box("ground_lawn", (x0 + t, y0 + t, 0.0), (x1 - t, y1 - t, 0.42), tile=tile("lawn"))
     y = y0 + step / 2
     while y < y1 - 2:
         tree(B, tree_x, y, 9.5, 2.4, z=0.42)
@@ -273,22 +271,22 @@ def prestige(B):
     jardinieres plantees, bannieres FootOFF, bornes lumineuses et monogramme dore au sol. Les trophees et leurs socles
     (allee d'honneur, x = +/-20,5 m) sont poses par le jeu, seulement pour les competitions gagnees."""
     x0, y0, x1, y1 = PRESTIGE
-    B.box("granite_light", (x0, y0, 0.0), (x1, y1, 0.14), tile=(2.4, 2.4))
+    B.box("ground_prestige", (x0, y0, 0.0), (x1, y1, PAVE_Z), tile=tile("esplanade"))
     tx, ty = TROPHY
     near = lambda x, y, r: math.hypot(x - tx, y - ty) < r  # noqa: E731
     # bandes de granit sombre : bordures de l'allee centrale et calepinage transversal tous les 12 m
     for s in (-1, 1):
-        B.box("granite_dark", (min(s * 17, s * 18), y0, 0.0), (max(s * 17, s * 18), y1, 0.19), tile=(2.4, 2.4))
+        B.box("ground_granite", (min(s * 17, s * 18), y0, 0.0), (max(s * 17, s * 18), y1, 0.19), tile=tile("granite"))
     for y in (-141.3, -128.3, -97.3):  # entre le monogramme, le miroir d'eau et la place du trophee
-        B.box("granite_dark", (-17, y, 0.0), (17, y + 0.6, 0.19), tile=(2.4, 2.4))
+        B.box("ground_granite", (-17, y, 0.0), (17, y + 0.6, 0.19), tile=tile("granite"))
     # place de la Coupe d'Europe : anneau sombre et cercle d'or lumineux (le trophee est pose par le jeu)
-    B.sector("granite_dark", (tx, ty), 12.0, 13.2, 0, 2 * math.pi, 0.0, 0.19, segs=56, tile=(2.4, 2.4))
+    B.sector("ground_granite", (tx, ty), 12.0, 13.2, 0, 2 * math.pi, 0.0, 0.19, segs=56, tile=tile("granite"))
     B.sector("emissive_led", (tx, ty), 11.55, 11.8, 0, 2 * math.pi, 0.0, 0.2, segs=56)
     # miroir d'eau : margelle sombre, eau 4 cm sous la margelle
     p0, q0, p1, q1 = POOL
     m = 0.6
     for a, b in (((p0 - m, q0 - m), (p1 + m, q0)), ((p0 - m, q1), (p1 + m, q1 + m)), ((p0 - m, q0), (p0, q1)), ((p1, q0), (p1 + m, q1))):
-        B.box("granite_dark", (*a, 0.0), (*b, 0.32), tile=(2.4, 2.4))
+        B.box("ground_granite", (*a, 0.0), (*b, 0.32), tile=tile("granite"))
     B.box("mirror_water", (p0, q0, 0.0), (p1, q1, 0.28), tile=(8, 8))
     for x in range(int(p0) + 3, int(p1) - 1, 6):  # buses lumineuses au fond, de part et d'autre
         for y in (q0 + 1.2, q1 - 1.2):
@@ -303,7 +301,7 @@ def prestige(B):
         for k, y in enumerate((-137, -124, -111, -98, -85, -74)):
             banner(B, s * 22.3, y, s, gold=(k % 2 == 0))
         for y in (-91, -79):
-            B.box("granite_dark", (min(s * 20.4, s * 21.0), y - 1.2, 0.0), (max(s * 20.4, s * 21.0), y + 1.2, 0.48), tile=(2.4, 2.4))
+            B.box("ground_granite", (min(s * 20.4, s * 21.0), y - 1.2, 0.0), (max(s * 20.4, s * 21.0), y + 1.2, 0.48), tile=tile("granite"))
         for y in range(int(y0) + 4, int(y1), 8):  # bornes lumineuses
             if near(s * 17.5, y, 14.5):
                 continue
@@ -311,70 +309,260 @@ def prestige(B):
             B.cyl("emissive_light", (s * 16.4, y, 1.0), (s * 16.4, y, 1.12), 0.13, segs=8)
 
 
-def height_to_normal(name, h, strength):
-    """Carte de normales (non couleur) depuis une carte de hauteur periodique."""
-    gx = (np.roll(h, -1, axis=1) - np.roll(h, 1, axis=1)) * strength
-    gy = (np.roll(h, -1, axis=0) - np.roll(h, 1, axis=0)) * strength
-    n = np.stack([-gx, -gy, np.ones_like(h)], -1)
-    n /= np.linalg.norm(n, axis=-1, keepdims=True)
-    return to_image(name, n * 0.5 + 0.5, non_color=True)
+def ground_image(key, kind):
+    img = bpy.data.images.load(os.path.join(GROUNDS, f"{key}_{kind}.jpg"), check_existing=True)
+    img.colorspace_settings.name = "sRGB" if kind == "color" else "Non-Color"
+    return img
 
 
-def tex_esplanade():
-    """Dallage de l'esplanade, tuile 4,8 x 4,8 m : grandes dalles de granit 1,2 x 0,6 m a joints decales,
-    bandes de granit plus sombre de 20 cm qui quadrillent tous les 4,8 m, joints en creux (relief)."""
-    S, m = 1024, 4.8
-    u, v = np.meshgrid((np.arange(S) + 0.5) / S * m, (np.arange(S) + 0.5) / S * m)
-    band = (u < 0.2) | (v < 0.2)
-    uu, vv = u - 0.2, v - 0.2
-    row = np.floor(vv / 0.6)
-    xx = uu + (row % 2) * 0.6
-    col = np.floor(xx / 1.2)
-    jx = np.minimum(xx % 1.2, 1.2 - xx % 1.2)
-    jy = np.minimum(vv % 0.6, 0.6 - vv % 0.6)
-    joint = np.clip(1 - np.minimum(jx, jy) / 0.007, 0, 1) * ~band
-    edge = np.clip(1 - np.minimum(np.abs(u - 0.2), np.abs(v - 0.2)) / 0.008, 0, 1)
-    joint = np.maximum(joint, edge)
-    tint = RNG.random((8, 4))[row.astype(int) % 8, col.astype(int) % 4]
-    grain = fbm(S, S, 64, 3)
-    base = np.array([0.42, 0.405, 0.38]) * (0.92 + 0.12 * tint + 0.08 * (grain - 0.5))[..., None]
-    dark = np.array([0.30, 0.295, 0.285]) * (0.95 + 0.1 * grain)[..., None]
-    rgb = np.where(band[..., None], dark, base)
-    rgb = rgb * (1 - 0.3 * joint[..., None])
-    height = 1.0 - joint * 0.9 + 0.04 * grain
-    return to_image("esplanade", rgb), height_to_normal("esplanade_n", height, 6.0)
+def gltf_output():
+    """Groupe « glTF Material Output » : l'exportateur glTF y lit l'occlusion ambiante."""
+    g = bpy.data.node_groups.get("glTF Material Output")
+    if g is None:
+        g = bpy.data.node_groups.new("glTF Material Output", "ShaderNodeTree")
+        g.interface.new_socket("Occlusion", in_out="INPUT", socket_type="NodeSocketFloat")
+    return g
 
 
-def tex_site_lawn():
-    """Pelouse tondue, tuile 8 x 8 m : bandes de tonte de 2 m (claire / foncee), grain d'herbe en relief."""
-    S, m = 512, 8.0
-    u, v = np.meshgrid((np.arange(S) + 0.5) / S * m, (np.arange(S) + 0.5) / S * m)
-    n = fbm(S, S, 6, 5)
-    fine = fbm(S, S, 96, 2)
-    stripe = np.where((np.floor(u / 2.0) % 2) == 0, 1.05, 0.95)
-    g = np.stack([0.14 + 0.05 * n, 0.26 + 0.07 * n, 0.095 + 0.03 * n], -1) * (stripe * (0.94 + 0.12 * fine))[..., None]
-    return to_image("site_lawn", g), height_to_normal("site_lawn_n", fine, 3.0)
+def photo_material(name, key, color=None, tone=None):
+    """Matiere photo : couleur, relief et ARM (occlusion R, rugosite G, metal B) de assets-src/grounds-baked/.
+    Une seule image ARM, exportee a la fois en occlusionTexture et en metallicRoughnessTexture. tone : teinte sRGB
+    visee, obtenue en multipliant la photo dans le jeu (extras « factor », ground.js) : deux sols, une seule image."""
+    m = material(name, image=ground_image(color or key, "color"), normal=ground_image(key, "normal"))
+    nt = m.node_tree
+    b = nt.nodes.get("Principled BSDF")
+    t = nt.nodes.new("ShaderNodeTexImage")
+    t.image = ground_image(key, "arm")
+    sep = nt.nodes.new("ShaderNodeSeparateColor")
+    nt.links.new(t.outputs["Color"], sep.inputs["Color"])
+    nt.links.new(sep.outputs["Green"], b.inputs["Roughness"])
+    nt.links.new(sep.outputs["Blue"], b.inputs["Metallic"])
+    out = nt.nodes.new("ShaderNodeGroup")
+    out.node_tree = gltf_output()
+    nt.links.new(sep.outputs["Red"], out.inputs["Occlusion"])
+    # extras glTF (userData dans le jeu) : tuile en metres, dalles par tuile, couleur moyenne (lumiere lineaire)
+    m["tile"] = GROUND_META[key]["tile"]
+    m["slabs"] = GROUND_META[key].get("slabs", 0)
+    m["mean"] = GROUND_META[color or key]["mean_linear"]
+    if tone:
+        lin = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in tone]
+        m["factor"] = [round(t / mm, 4) for t, mm in zip(lin, m["mean"])]
+    return m
 
 
-def tex_asphalt_n():
-    """Grain d'enrobe (normales), tuile 8 x 8 m."""
-    S = 512
-    return height_to_normal("asphalt_n", fbm(S, S, 128, 2) + 0.4 * fbm(S, S, 32, 2), 2.5)
+def ground_materials(mats):
+    """Sols photo (ground_* : nuances du jeu, src/three/ground.js), peinture routiere, teck des bancs, fonte."""
+    for key in ("granite", "sidewalk", "asphalt", "lawn", "concrete", "gravel", "mulch"):
+        mats[f"ground_{key}"] = photo_material(f"ground_{key}", key)
+    mats["ground_prestige"] = photo_material("ground_prestige", "esplanade")  # granit clair de l'axe d'honneur
+    mats["ground_esplanade"] = photo_material("ground_esplanade", "esplanade", tone=(0.42, 0.41, 0.385))
+    mats["ground_paint"] = photo_material("ground_paint", "asphalt", color="paint")  # relief et ARM de l'enrobe
+    mats["ground_band"] = photo_material("ground_band", "granite", color="band")  # calepinage : granit plus clair
+    mats["wood_teak"] = photo_material("wood_teak", "teak")
+    mats["tree_grate"] = material("tree_grate", image=tex_grate(), rough=0.6, metal=0.35)
+    mats["cast_iron"] = material("cast_iron", (0.10, 0.10, 0.105), rough=0.55, metal=0.4)
+    mats["emissive_pool"] = material("emissive_pool", (0, 0, 0), rough=1.0, emission_map=tex_pool(), strength=1.0)
 
 
-def site_materials(mats):
-    esp, esp_n = tex_esplanade()
-    lawn_img, lawn_n = tex_site_lawn()
-    mats["paving"] = material("paving", image=esp, normal=esp_n, normal_strength=0.8, rough=0.78)
-    mats["lawn"] = material("lawn", image=lawn_img, normal=lawn_n, normal_strength=0.5, rough=0.95)
-    mats["asphalt"] = material("asphalt", image=bpy.data.images["asphalt"], normal=tex_asphalt_n(), normal_strength=0.6, rough=0.92)
+def legacy_draws():
+    """Les anciennes textures procedurales des sols (remplacees par les photos) tiraient dans RNG avant le placement
+    des jardins : memes tirages, pour garder les arbres et massifs valides en phase 2 exactement a leur place."""
+    def fbm_draws(cells, octaves):
+        for o in range(octaves):
+            RNG.random((cells * 2 ** o, cells * 2 ** o))
+    for _ in range(2):  # granit clair et sombre du parvis
+        RNG.random((4, 2))
+        fbm_draws(48, 3)
+    RNG.random((8, 4))  # dallage de l'esplanade
+    fbm_draws(64, 3)
+    fbm_draws(6, 5)  # pelouse
+    fbm_draws(96, 2)
+    fbm_draws(128, 2)  # grain de l'enrobe
+    fbm_draws(32, 2)
+
+
+# =============================================================== bordures, caniveaux, calepinage
+
+def raster(rects=(), circles=()):
+    """Masque du plan a 50 cm (cellule [j, i] : x = SITE.x0 + i * RES, y = SITE.y0 + j * RES)."""
+    x0, y0, x1, y1 = SITE
+    nx, ny = round((x1 - x0) / RES), round((y1 - y0) / RES)
+    m = np.zeros((ny, nx), bool)
+    for r in rects:
+        i0, i1 = (max(0, min(nx, round((v - x0) / RES))) for v in (r[0], r[2]))
+        j0, j1 = (max(0, min(ny, round((v - y0) / RES))) for v in (r[1], r[3]))
+        m[j0:j1, i0:i1] = True
+    if circles:
+        X, Y = np.meshgrid(x0 + (np.arange(nx) + 0.5) * RES, y0 + (np.arange(ny) + 0.5) * RES)
+        for cx, cy, rad in circles:
+            m |= np.hypot(X - cx, Y - cy) < rad
+    return m
+
+
+def runs(mask):
+    """Suites de cellules vraies le long de chaque ligne : (ligne, debut, fin)."""
+    out = []
+    for j in np.flatnonzero(mask.any(1)):
+        d = np.diff(np.concatenate([[0], mask[j].astype(np.int8), [0]]))
+        out += [(int(j), int(a), int(b)) for a, b in zip(np.flatnonzero(d == 1), np.flatnonzero(d == -1))]
+    return out
+
+
+def borders(zone, beyond):
+    """Cellules de `zone` dont la voisine (sud, nord, ouest, est) est hors de la zone et dans `beyond`."""
+    z = np.pad(zone, 1)
+    b = np.pad(beyond, 1)
+    c = z[1:-1, 1:-1]
+    return {"s": c & ~z[:-2, 1:-1] & b[:-2, 1:-1], "n": c & ~z[2:, 1:-1] & b[2:, 1:-1],
+            "w": c & ~z[1:-1, :-2] & b[1:-1, :-2], "e": c & ~z[1:-1, 2:] & b[1:-1, 2:]}
+
+
+def edge_strips(sides, inner, outer):
+    """Bandes le long des bords : `inner` m vers l'interieur de la zone, `outer` m vers l'exterieur.
+    Rend des rectangles (x0, y0, x1, y1) et leur sens (vrai : le long de x)."""
+    x0, y0 = SITE[0], SITE[1]
+    out = []
+    for d, m in sides.items():
+        horiz = d in ("s", "n")
+        for j, a, b in runs(m if horiz else m.T):
+            line = (y0 if horiz else x0) + (j if d in ("s", "w") else j + 1) * RES
+            lo, hi = (line - outer, line + inner) if d in ("s", "w") else (line - inner, line + outer)
+            if horiz:
+                out.append(((x0 + a * RES, lo, x0 + b * RES, hi), True))
+            else:
+                out.append(((lo, y0 + a * RES, hi, y0 + b * RES), False))
+    return out
+
+
+def edging(B):
+    """Bordures en granit autour des espaces pietons, des terre-pleins et des chaussees bordees de pelouse ;
+    caniveaux en beton et avaloirs le long des trottoirs. Rien contre le stade (il a son propre sol)."""
+    paved = raster(SIDEWALKS + ESPLANADE + ALLEYS + FORECOURT_SIDES + [PROMENADE, PRESTIGE])
+    roads = raster(ROADS + PARKINGS)
+    discs = raster(circles=[(cx, cy, DISC_R) for cx, cy in ROUNDABOUTS])
+    median = raster(MEDIAN) & ~discs
+    free = ~raster([(STADIUM[0] - RES, STADIUM[1] - RES, STADIUM[2] + RES, STADIUM[3] + RES)])
+    lawn = free & ~paved & ~roads & ~discs & ~median
+    granite = tile("granite")
+    for r, _ in edge_strips(borders(paved, free), CURB_W, 0.01):
+        B.box("ground_band", (r[0], r[1], 0.0), (r[2], r[3], CURB_Z), tile=granite)
+    for r, _ in edge_strips(borders(median, roads | discs), CURB_W, 0.01):
+        B.box("ground_band", (r[0], r[1], 0.0), (r[2], r[3], 0.15), tile=granite)
+    for r, _ in edge_strips(borders(roads, lawn), 0.01, CURB_W):  # chaussee bordee de pelouse : bordure cote pelouse
+        B.box("ground_band", (r[0], r[1], 0.0), (r[2], r[3], 0.15), tile=granite)
+    for r, along_x in edge_strips(borders(roads, paved | median), GUTTER_W, 0.0):  # sur l'enrobe, contre la bordure
+        B.box("ground_concrete", (r[0], r[1], 0.0), (r[2], r[3], GUTTER_Z), tile=tile("concrete"))
+        length = (r[2] - r[0]) if along_x else (r[3] - r[1])
+        for k in range(int(length // 24)):  # avaloirs tous les 24 m
+            t = 12 + 24 * k
+            if along_x:
+                drain(B, r[0] + t, (r[1] + r[3]) / 2, GUTTER_Z, along_x=True)
+            else:
+                drain(B, (r[0] + r[2]) / 2, r[1] + t, GUTTER_Z, along_x=False)
+    # anneaux des ronds-points : bordure courbe, interrompue la ou les voies et les terre-pleins arrivent
+    n = 144
+    for cx, cy in ROUNDABOUTS:
+        open_ = [any(inside(cx + (DISC_R + 0.4) * math.cos(a), cy + (DISC_R + 0.4) * math.sin(a), r)
+                     for r in ROADS + MEDIAN + SIDEWALKS) for a in (2 * math.pi * (k + 0.5) / n for k in range(n))]
+        start = open_.index(True) if True in open_ else 0
+        k = 0
+        while k < n:
+            i = (start + k) % n
+            if open_[i]:
+                k += 1
+                continue
+            m = 0
+            while k + m < n and not open_[(start + k + m) % n]:
+                m += 1
+            a0 = 2 * math.pi * i / n
+            B.sector("ground_band", (cx, cy), DISC_R - 0.01, DISC_R + CURB_W, a0, a0 + 2 * math.pi * m / n,
+                     0.0, 0.15, segs=max(1, m), tile=granite)
+            k += m
+
+
+def bands(B):
+    """Calepinage de l'esplanade : bandes de granit gris tous les 6 m (sur les joints des dalles d'un metre), arretees
+    aux bordures ; liseré de granit la ou l'esplanade rejoint les allees et les trottoirs en paves."""
+    esp = raster(ESPLANADE + FORECOURT_SIDES + [PROMENADE])
+    paved = raster(SIDEWALKS + ESPLANADE + ALLEYS + FORECOURT_SIDES + [PROMENADE, PRESTIGE])
+    x0, y0 = SITE[0], SITE[1]
+    h = BAND_W / 2
+    granite = tile("granite")
+    for vertical in (True, False):
+        m, pm = (esp, paved) if vertical else (esp.T, paved.T)  # lignes : le long de la bande ; colonnes : en travers
+        org, along = (x0, y0) if vertical else (y0, x0)
+        for k in range(math.ceil(org / BAND_STEP), math.floor((org + m.shape[1] * RES) / BAND_STEP) + 1):
+            c = round((k * BAND_STEP - org) / RES)  # cellule juste apres la ligne de bande
+            if c <= 0 or c >= m.shape[1]:
+                continue
+            both = m[:, c - 1] & m[:, c]
+            for _, a, b in runs(both[None, :]):
+                lo, hi = along + a * RES, along + b * RES
+                # au bout : bordure (bord du dallage) ou autre revetement ; la bande s'arrete avant
+                if a == 0 or not (pm[a - 1, c - 1] and pm[a - 1, c]):
+                    lo += CURB_W
+                elif not (m[a - 1, c - 1] and m[a - 1, c]):
+                    lo += BAND_W
+                if b >= len(both) or not (pm[b, c - 1] and pm[b, c]):
+                    hi -= CURB_W
+                elif not (m[b, c - 1] and m[b, c]):
+                    hi -= BAND_W
+                if hi - lo < 0.5:
+                    continue
+                line = k * BAND_STEP
+                if vertical:
+                    B.box("ground_band", (line - h, lo, 0.0), (line + h, hi, BAND_Z), tile=granite)
+                else:
+                    B.box("ground_band", (lo, line - h, 0.0), (hi, line + h, BAND_Z), tile=granite)
+    # liseré aux changements de revetement (esplanade -> paves des allees et trottoirs)
+    for r, _ in edge_strips(borders(esp, paved & ~raster([PRESTIGE])), BAND_W, 0.0):
+        B.box("ground_band", (r[0], r[1], 0.0), (r[2], r[3], BAND_Z), tile=granite)
+
+
+MULCH_RNG = np.random.default_rng(12)  # contours du paillage (a part : RNG et SHRUB_RNG placent les jardins)
+
+
+def mulch(B, x, y, r):
+    """Paillage (copeaux d'ecorce) en tache irreguliere sur la pelouse, au pied d'un arbre ou d'un arbuste."""
+    if not inside(x, y, SITE, -1.2 * r):
+        return  # massif au bord du site : le paillage deborderait sur la prairie
+    n = 14
+    ph = MULCH_RNG.uniform(0, 2 * math.pi, 2)
+    pts = []
+    for k in range(n):
+        a = 2 * math.pi * k / n
+        rr = r * (1 + 0.1 * math.sin(3 * a + ph[0]) + 0.06 * math.sin(5 * a + ph[1]))
+        pts.append((x + rr * math.cos(a), y + rr * math.sin(a), 0.03))
+    B.piece("ground_mulch", pts, [tuple(range(n))], tile=tile("mulch"))
+
+
+ZEBRAS = [(-6, -158, 6, -146), (-6, -184, 6, -172), (-6, 214, 6, 226),
+          (-236, 34.5, -224, 40.5), (-236, -40.5, -224, -34.5), (224, -3, 236, 3)]
+
+
+def manholes(B):
+    """Plaques d'egout dans les voies, environ tous les 48 m (ni sur les passages pietons, ni dans les ronds-points)."""
+    for r in ROADS:
+        w, h = r[2] - r[0], r[3] - r[1]
+        if max(w, h) < 40:
+            continue
+        along_x = w > h
+        lo, hi = (r[0], r[2]) if along_x else (r[1], r[3])
+        c = ((r[1] + r[3]) / 2 if along_x else (r[0] + r[2]) / 2) + 2.8  # au milieu d'une voie
+        t = lo + 20
+        while t < hi - 10:
+            x, y = (t, c) if along_x else (c, t)
+            clear = all(math.hypot(x - cx, y - cy) > DISC_R + 4 for cx, cy in ROUNDABOUTS)
+            if clear and not any(inside(x, y, z, 3.0) for z in ZEBRAS):
+                manhole(B, x, y, ROAD_Z)
+            t += 48
 
 
 def site(B, coll):
     x0, y0, x1, y1 = SITE
-    B.box("lawn", (x0, y0, -0.02), (x1, y1, 0.0), tile=(8, 8))
+    B.box("ground_lawn", (x0, y0, -0.02), (x1, y1, 0.0), tile=tile("lawn"))
     for r in ROADS:
-        B.box("asphalt", (r[0], r[1], 0.0), (r[2], r[3], ROAD_Z), tile=(8, 8))
+        B.box("ground_asphalt", (r[0], r[1], 0.0), (r[2], r[3], ROAD_Z), tile=tile("asphalt"))
     for cx, cy in ROUNDABOUTS:
         roundabout(B, cx, cy)
     # marquages : axes discontinus (interrompus aux ronds-points)
@@ -384,35 +572,52 @@ def site(B, coll):
     dashes(B, -214, RING_S, 214, RING_S)
     dashes(B, -300, -178, 300, -178)
     for r in MEDIAN:
-        B.box("lawn", (r[0], r[1], 0.0), (r[2], r[3], 0.1), tile=(8, 8))
+        B.box("ground_lawn", (r[0], r[1], 0.0), (r[2], r[3], 0.1), tile=tile("lawn"))
     tram(B)
-    for r in SIDEWALKS + ESPLANADE + ALLEYS + FORECOURT_SIDES + [PROMENADE]:
-        B.box("paving", (r[0], r[1], 0.0), (r[2], r[3], 0.14), tile=(4.8, 4.8))
+    # espaces pietons : grandes dalles de granit (esplanade, parvis, promenade), paves beton (trottoirs, allees)
+    for r in ESPLANADE + FORECOURT_SIDES + [PROMENADE]:
+        B.box("ground_esplanade", (r[0], r[1], 0.0), (r[2], r[3], PAVE_Z), tile=tile("esplanade"))
+    for r in SIDEWALKS + ALLEYS:
+        B.box("ground_sidewalk", (r[0], r[1], 0.0), (r[2], r[3], PAVE_Z), tile=tile("sidewalk"))
+    edging(B)
+    bands(B)
     for p in PARKINGS:
         parking_lot(B, *p)
     # passages pietons : du parvis a la station (deux chaussees), en haut de la promenade, aux allees
-    zebra(B, -6, 6, -158, -146)
-    zebra(B, -6, 6, -184, -172)
-    zebra(B, -6, 6, 214, 226)
-    zebra(B, -236, -224, 34.5, 40.5, along_x=False)
-    zebra(B, -236, -224, -40.5, -34.5, along_x=False)
-    zebra(B, 224, 236, -3, 3, along_x=False)
-    # parvis de prestige au centre, cotes plantes et eclaires
+    for zx0, zy0, zx1, zy1 in ZEBRAS:
+        zebra(B, zx0, zx1, zy0, zy1, along_x=(zx1 - zx0) <= (zy1 - zy0))
+    manholes(B)
+    # parvis de prestige au centre, cotes plantes (grilles d'arbres), eclaires, bancs, arceaux a velos, bornes
     prestige(B)
     for x in (-70, -56, -42, 42, 56, 70):
         for y in (-136, -107):
-            tree(B, x, y, 8.5, 2.2, z=0.14)
+            tree(B, x, y, 8.5, 2.2, z=PAVE_Z)
+            tree_grate(B, x, y, PAVE_Z)
     for x in (-74, -46, 46, 74):
-        lamp(B, x, -121, 0.0, z=0.14)
-    # promenade entre les parcelles nord : arbres en colonnes, bancs, lampadaires bas
+        lantern(B, x, -121, z=PAVE_Z)
+    for s in (-1, 1):
+        bench(B, s * 60, -121, s * math.pi / 2, z=PAVE_Z)  # tournes vers l'axe d'honneur
+        litter_bin(B, s * 60, -122.6, PAVE_Z)
+        for i in range(6):
+            bike_rack(B, s * (64.0 + 1.0 * i), -139.6, math.pi / 2, z=PAVE_Z)
+    for x in np.arange(-78.0, 78.1, 2.5):  # bornes le long du boulevard, devant le parvis (sauf le passage pieton)
+        if abs(x) > 8:
+            bollard(B, float(x), -145.5, PAVE_Z)
+    # promenade entre les parcelles nord : arbres en colonnes sur grilles, bancs, lanternes basses
     for y in range(126, 206, 10):
         for x in (-9, 9):
-            tree(B, x, y, 8, 2.0, z=0.14, columnar=True)
-        lamp(B, 0, y + 5, 0.0, h=6, z=0.14)
-        B.box("wood", (-6.5, y, 0.14), (-5.9, y + 3, 0.6), tile=(2, 2))
-        B.box("wood", (5.9, y, 0.14), (6.5, y + 3, 0.6), tile=(2, 2))
+            tree(B, x, y, 8, 2.0, z=PAVE_Z, columnar=True)
+            tree_grate(B, x, y, PAVE_Z, size=1.2)
+        lantern(B, 0, y + 5, h=4.5, z=PAVE_Z)
+        bench(B, -6.2, y + 1.5, -math.pi / 2, z=PAVE_Z)
+        bench(B, 6.2, y + 1.5, math.pi / 2, z=PAVE_Z)
+        if y % 20 == 6:
+            litter_bin(B, -6.3, y + 3.3, PAVE_Z)
+            litter_bin(B, 6.3, y + 3.3, PAVE_Z)
     flat_logo(B, "gold_paint", 0, 200, 6.0)
-    # allees autour de l'esplanade : alignements d'arbres cote esplanade, lampadaires cote parcelles
+    for x in (-11.5, -9.5, -7.5, 7.5, 9.5, 11.5):  # bornes au debouche de la promenade sur le peripherique
+        bollard(B, x, 213.4, PAVE_Z)
+    # allees autour de l'esplanade : alignements d'arbres cote esplanade, lanternes cote parcelles
     for y in range(-98, 112, 12):
         tree(B, -133, y, 8, 2.1)
         tree(B, 133, y, 8, 2.1)
@@ -420,30 +625,44 @@ def site(B, coll):
         if abs(x) > 18:
             tree(B, x, 112.0, 8, 2.1)
     for y in range(-96, 113, 24):
-        lamp(B, -142.6, y, 0.0, z=0.14)
-        lamp(B, 142.6, y, math.pi, z=0.14)
-    # lampadaires de l'esplanade (bord exterieur) et du peripherique (cote interieur)
+        lantern(B, -141.5, y, z=PAVE_Z)
+        lantern(B, 141.5, y, z=PAVE_Z)
+    # lanternes et bancs de l'esplanade (bord exterieur, tournes vers le stade), corbeille a un banc sur deux
     for x in range(-120, 121, 24):
         if abs(x) > 40:
-            lamp(B, x, -97, math.pi / 2, z=0.14)
-        lamp(B, x, 107, -math.pi / 2, z=0.14)
+            lantern(B, x, -97, z=PAVE_Z)
+        lantern(B, x, 107, z=PAVE_Z)
     for y in range(-60, 61, 24):
-        lamp(B, -127, y, 0.0, z=0.14)
-        lamp(B, 127, y, math.pi, z=0.14)
+        lantern(B, -127, y, z=PAVE_Z)
+        lantern(B, 127, y, z=PAVE_Z)
+    for k, x in enumerate((-108, -84, -60, 60, 84, 108)):
+        bench(B, x, -98.4, 0.0, z=PAVE_Z)
+        if k % 2 == 0:
+            litter_bin(B, x + 1.5, -98.6, PAVE_Z)
+    for k, x in enumerate((-108, -84, -60, -36, 36, 60, 84, 108)):
+        bench(B, x, 108.4, math.pi, z=PAVE_Z)
+        if k % 2 == 0:
+            litter_bin(B, x - 1.5, 108.6, PAVE_Z)
+    for k, y in enumerate((-48, -24, 0, 24, 48)):
+        for s in (-1, 1):
+            bench(B, s * 128.4, y, s * math.pi / 2, z=PAVE_Z)
+            if k % 2 == 0:
+                litter_bin(B, s * 128.6, y + 1.5, PAVE_Z)
     # mats d'eclairage aux quatre coins de l'esplanade, tournes vers le stade : ils eclairent la plateforme quand
     # le jour baisse (projecteurs reels du jeu aux empties light_site_*)
     for i, (x, y) in enumerate(((-118, -88), (118, -88), (-118, 98), (118, 98))):
         mast(B, coll, x, y, 30, 4, 2, f"light_site_{i}", target=(0, 0, 0))
+    # lampadaires routiers (crosse vers la chaussee) : peripherique et boulevard sud
     for x in range(-210, 211, 30):
-        lamp(B, x, 212.3, math.pi / 2, z=0.14)
+        street_lamp(B, x, 212.3, math.pi / 2, z=PAVE_Z)
         if abs(x) > 12 and not 170 < abs(x) < 190:
-            lamp(B, x, -144.3, -math.pi / 2, z=0.14)
+            street_lamp(B, x, -144.3, -math.pi / 2, z=PAVE_Z)
     for y in range(-120, 211, 30):
-        lamp(B, -222.3, y, math.pi, z=0.14)
-        lamp(B, 222.3, y, 0.0, z=0.14)
+        street_lamp(B, -222.3, y, math.pi, z=PAVE_Z)
+        street_lamp(B, 222.3, y, 0.0, z=PAVE_Z)
     for x in range(-290, 291, 30):
-        lamp(B, x, -185.8, math.pi / 2, z=0.14)
-    # arbres des jardins (dans le peripherique) et de la bande exterieure (moins denses)
+        street_lamp(B, x, -185.8, math.pi / 2, z=PAVE_Z)
+    # arbres des jardins (dans le peripherique) et de la bande exterieure (moins denses) ; massifs paillés
     blocked = [STADIUM, ARENA, FORECOURT, PRESTIGE, PROMENADE] + ROADS + SIDEWALKS + ESPLANADE + ALLEYS + PARKINGS + MEDIAN
     blocked += [(cx - 33, cy - 33, cx + 33, cy + 33) for cx, cy in PLOTS.values()]
     blocked += [(cx - DISC_R, cy - DISC_R, cx + DISC_R, cy + DISC_R) for cx, cy in ROUNDABOUTS]
@@ -455,17 +674,24 @@ def site(B, coll):
                 continue
             tree(B, x, y, RNG.uniform(7, 11), RNG.uniform(1.8, 2.8), columnar=RNG.random() < 0.25)
             if SHRUB_RNG.random() < 0.4:  # massifs d'arbustes au pied de certains arbres
+                bed = []
                 for _ in range(int(SHRUB_RNG.integers(1, 4))):
                     a, d = SHRUB_RNG.uniform(0, 2 * math.pi), SHRUB_RNG.uniform(3.0, 5.5)
                     sx, sy = x + d * math.cos(a), y + d * math.sin(a)
                     if not any(inside(sx, sy, r, 1.5) for r in blocked):
-                        shrub(sx, sy, SHRUB_RNG.uniform(1.3, 2.1))
+                        h = SHRUB_RNG.uniform(1.3, 2.1)
+                        shrub(sx, sy, h)
+                        bed.append((sx, sy, h))
+                if bed:
+                    mulch(B, x, y, 1.7)
+                    for sx, sy, h in bed:
+                        mulch(B, sx, sy, min(1.4, 0.55 * h + 0.35))
 
 
 def plot_empty(B, coll):
     """Parcelle ouverte : dalle prete a batir, contour dore (lumineux la nuit), panneau FootOFF."""
     plinth(B)
-    B.box("concrete_dark", (-20, -20, 0.12), (20, 20, 0.16))  # dalle sombre : le contour dore ressort
+    B.box("ground_concrete", (-20, -20, 0.12), (20, 20, 0.16), tile=tile("concrete"))  # dalle sombre : le contour dore ressort
     for side in range(4):  # contour en tirets dores
         for i in range(10):
             a = -20 + i * 4
@@ -476,7 +702,7 @@ def plot_empty(B, coll):
             x, y = sx * 22, sy * 22
             B.box("emissive_led", (min(x, x - sx * 4), y - 0.25, 0.12), (max(x, x - sx * 4), y + 0.25, 0.35))
             B.box("emissive_led", (x - 0.25, min(y, y - sy * 4), 0.12), (x + 0.25, max(y, y - sy * 4), 0.35))
-            B.box("concrete_dark", (sx * 26 - 1.4, sy * 26 - 1.4, 0.12), (sx * 26 + 1.4, sy * 26 + 1.4, 0.7))
+            B.box("ground_concrete", (sx * 26 - 1.4, sy * 26 - 1.4, 0.12), (sx * 26 + 1.4, sy * 26 + 1.4, 0.7), tile=tile("concrete"))
             modern_tree(B, sx * 26, sy * 26, 8, 2.2, z=0.7)
     # panneau "terrain disponible" face camera
     for x in (-2.2, 2.2):
@@ -489,7 +715,7 @@ def plot_empty(B, coll):
 
 def plot_locked(B, coll):
     """Parcelle verrouillee : chantier a venir (palissade noire aux monogrammes FO, cabanes, grue doree)."""
-    B.box("gravel", (-29, -29, 0), (29, 29, 0.1), tile=(8, 8))
+    B.box("gravel", (-29, -29, 0), (29, 29, 0.1), tile=tile("gravel"))
     h = 2.6
     for (ax, ay, bx, by) in [(-29, -29, 29, -28.8), (-29, 28.8, 29, 29), (-29, -29, -28.8, 29), (28.8, -29, 29, 29)]:
         B.box("black_metal", (ax, ay, 0.1), (bx, by, h))
@@ -530,11 +756,12 @@ def main():
     scene.unit_settings.system = "METRIC"
     scene.unit_settings.scale_length = 1.0
     mats = modern_materials()
-    mats["gravel"] = material("gravel", (0.30, 0.27, 0.23), rough=1.0)
     mats["gold_paint"] = material("gold_paint", GOLD, rough=0.4, metal=0.5)
+    ground_materials(mats)  # sols photo, peinture routiere, teck, fonte
+    mats["gravel"] = mats["ground_gravel"]
     plot_mats = dict(mats)  # parcelles : dallage sombre des batiments (le dallage clair est celui de l'esplanade)
     prestige_materials(mats)
-    site_materials(mats)  # dallage de l'esplanade, pelouse tondue, grain de l'enrobe (avec relief)
+    legacy_draws()
     for name, fn, m in (("site", site, mats), ("plot_empty", plot_empty, plot_mats), ("plot_locked", plot_locked, plot_mats)):
         coll = bpy.data.collections.new(f"prop_{name}")
         scene.collection.children.link(coll)

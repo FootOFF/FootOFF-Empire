@@ -1,0 +1,230 @@
+{
+  "about": "Sources des sols, routes et mobilier (phase 3, non versionnees, dans assets-src/grounds/) : telecharger avec ces URL. Grass004 : archive ambientCG decompressee dans assets-src/grounds/Grass004_1K-JPG/.",
+  "files": [
+    {
+      "file": "large_floor_tiles_02_diff_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/large_floor_tiles_02/large_floor_tiles_02_diff_2k.jpg",
+      "md5": "4a11f2c94aeba4ef7eec7a4ec31b857e",
+      "bytes": 2409892,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "esplanade, parvis, allees (dalles de granit gris 1 m)"
+    },
+    {
+      "file": "large_floor_tiles_02_nor_gl_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/large_floor_tiles_02/large_floor_tiles_02_nor_gl_2k.jpg",
+      "md5": "ae6767279425e8719d255c768e30ef33",
+      "bytes": 1272020,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "esplanade, parvis, allees (dalles de granit gris 1 m)"
+    },
+    {
+      "file": "large_floor_tiles_02_arm_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/large_floor_tiles_02/large_floor_tiles_02_arm_2k.jpg",
+      "md5": "e8170ae81f03c97957f85f5063a7f245",
+      "bytes": 904327,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "esplanade, parvis, allees (dalles de granit gris 1 m)"
+    },
+    {
+      "file": "granite_tile_diff_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/granite_tile/granite_tile_diff_2k.jpg",
+      "md5": "79a1eaac48a3d6720a88c216997dbd67",
+      "bytes": 2938829,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "bandes sombres, bordures, margelles, jardinieres (granit anthracite)"
+    },
+    {
+      "file": "granite_tile_nor_gl_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/granite_tile/granite_tile_nor_gl_2k.jpg",
+      "md5": "da6b09b4f8bff2e4d28cd29294b1b10f",
+      "bytes": 2486724,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "bandes sombres, bordures, margelles, jardinieres (granit anthracite)"
+    },
+    {
+      "file": "granite_tile_arm_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/granite_tile/granite_tile_arm_2k.jpg",
+      "md5": "d754c592f16e84b59d178ffd99ecf480",
+      "bytes": 3017037,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "bandes sombres, bordures, margelles, jardinieres (granit anthracite)"
+    },
+    {
+      "file": "concrete_pavement_diff_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_pavement/concrete_pavement_diff_2k.jpg",
+      "md5": "f7cdc6f38538e2739d48fbb4f1507ddb",
+      "bytes": 3817566,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "trottoirs, quai du tram, promenade (paves beton 60 x 30 cm)"
+    },
+    {
+      "file": "concrete_pavement_nor_gl_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_pavement/concrete_pavement_nor_gl_2k.jpg",
+      "md5": "0b6ff8180e61242be0b89e8fe1d6fda7",
+      "bytes": 5179971,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "trottoirs, quai du tram, promenade (paves beton 60 x 30 cm)"
+    },
+    {
+      "file": "concrete_pavement_arm_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_pavement/concrete_pavement_arm_2k.jpg",
+      "md5": "850a6ac811d73e993555058cc21471a1",
+      "bytes": 3465289,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "trottoirs, quai du tram, promenade (paves beton 60 x 30 cm)"
+    },
+    {
+      "file": "clean_asphalt_diff_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/clean_asphalt/clean_asphalt_diff_2k.jpg",
+      "md5": "d3afa117daf0846a743bbf5b4eb2464d",
+      "bytes": 3314999,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "routes, parkings, ronds-points (enrobe neuf)"
+    },
+    {
+      "file": "clean_asphalt_nor_gl_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/clean_asphalt/clean_asphalt_nor_gl_2k.jpg",
+      "md5": "f9d4e1b14ac5b231748b600dcd59f20e",
+      "bytes": 3923727,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "routes, parkings, ronds-points (enrobe neuf)"
+    },
+    {
+      "file": "clean_asphalt_arm_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/clean_asphalt/clean_asphalt_arm_2k.jpg",
+      "md5": "683b881a2b614cd57fd518102f6ce99a",
+      "bytes": 3461113,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "routes, parkings, ronds-points (enrobe neuf)"
+    },
+    {
+      "file": "concrete_floor_01_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_01/concrete_floor_01_diff_1k.jpg",
+      "md5": "187065cfc20a35eb421eac6d4f38c58f",
+      "bytes": 755740,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "dalles des parcelles, ilots (beton desactive)"
+    },
+    {
+      "file": "concrete_floor_01_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_01/concrete_floor_01_nor_gl_1k.jpg",
+      "md5": "3862d48eb9495b302652cac825738876",
+      "bytes": 909898,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "dalles des parcelles, ilots (beton desactive)"
+    },
+    {
+      "file": "concrete_floor_01_arm_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_01/concrete_floor_01_arm_1k.jpg",
+      "md5": "146fe392b094a93768ba67216ea025d1",
+      "bytes": 177301,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "dalles des parcelles, ilots (beton desactive)"
+    },
+    {
+      "file": "gravel_floor_03_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/gravel_floor_03/gravel_floor_03_diff_1k.jpg",
+      "md5": "b2d31ac9dd803cf32c9ced98bccf44bb",
+      "bytes": 929643,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "chantier des parcelles fermees (gravier gris)"
+    },
+    {
+      "file": "gravel_floor_03_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/gravel_floor_03/gravel_floor_03_nor_gl_1k.jpg",
+      "md5": "3985a5985a97fa50712f34fd69e61a82",
+      "bytes": 1545702,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "chantier des parcelles fermees (gravier gris)"
+    },
+    {
+      "file": "gravel_floor_03_arm_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/gravel_floor_03/gravel_floor_03_arm_1k.jpg",
+      "md5": "a44748e29ec1cf432d22b22680514830",
+      "bytes": 1181228,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "chantier des parcelles fermees (gravier gris)"
+    },
+    {
+      "file": "teak_veneer_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/teak_veneer/teak_veneer_diff_1k.jpg",
+      "md5": "0ca1914271448bcec9989ccaf46ea6b8",
+      "bytes": 612194,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "lattes des bancs (teck)"
+    },
+    {
+      "file": "teak_veneer_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/teak_veneer/teak_veneer_nor_gl_1k.jpg",
+      "md5": "7c7d3c362775233d89523b44e5771c73",
+      "bytes": 410625,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "lattes des bancs (teck)"
+    },
+    {
+      "file": "teak_veneer_arm_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/teak_veneer/teak_veneer_arm_1k.jpg",
+      "md5": "1fe3fb2491e8b1d7978d9153ba409b3f",
+      "bytes": 783510,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "lattes des bancs (teck)"
+    },
+    {
+      "file": "wood_chips_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_chips/wood_chips_diff_1k.jpg",
+      "md5": "6e2f357759bf532e8e89dcb6441b2e3f",
+      "bytes": 1174889,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "paillage des massifs (copeaux d ecorce)"
+    },
+    {
+      "file": "wood_chips_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_chips/wood_chips_nor_gl_1k.jpg",
+      "md5": "99d012a1645749512043f51e38a09162",
+      "bytes": 1468925,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "paillage des massifs (copeaux d ecorce)"
+    },
+    {
+      "file": "wood_chips_arm_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_chips/wood_chips_arm_1k.jpg",
+      "md5": "d32a64af0cd25043fa403909951c9718",
+      "bytes": 851576,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "paillage des massifs (copeaux d ecorce)"
+    },
+    {
+      "file": "Grass004_1K-JPG.zip",
+      "url": "https://ambientcg.com/get?file=Grass004_1K-JPG.zip",
+      "md5": "ede3ecdf304e4c95212d7ec4157d2e74",
+      "bytes": 11003149,
+      "source": "ambientCG",
+      "license": "CC0",
+      "use": "pelouses du site et prairie (gazon dense)"
+    }
+  ]
+}

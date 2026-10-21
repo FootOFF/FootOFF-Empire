@@ -537,6 +537,7 @@ export default function Empire3D({
           scene.add(node);
           env.setPlazaVisible(false);
           node.traverse((o) => { if (o.isMesh && /mirror_water/.test(o.material?.name || '')) landscape.adoptWater(o); }); // miroir d'eau animé
+          landscape.adoptGround(node); // gazon et enrobé photo du site sur la prairie et la route extérieure
           // mâts d'éclairage de l'esplanade (empties light_site_*) : projecteurs réels, deux seulement sur téléphone
           ctx.siteLights = plotLights(scene, node, { max: Math.min(window.innerWidth, window.innerHeight) < 600 ? 2 : 4, power: 4.5 });
           ctx.applyMode();

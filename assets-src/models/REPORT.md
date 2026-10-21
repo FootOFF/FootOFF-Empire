@@ -1,6 +1,6 @@
 # Rapport du pipeline GLB
 
-Généré par `npm run models` le 21/10/2026 19:18:42.
+Généré par `npm run models` le 21/10/2026 22:16:58.
 
 | Modèle | Statut | Triangles | Draw calls | Matériaux | Poids final | Dimensions (L × H × P) | Nœuds spéciaux |
 |---|---|---|---|---|---|---|---|
@@ -30,9 +30,9 @@ Généré par `npm run models` le 21/10/2026 19:18:42.
 | training_L3 | ALERTES | 2 888 | 13 | 13 | 90.4 Ko | 60 × 18 × 60 m | 7 |
 | training_L4 | ALERTES | 3 116 | 13 | 13 | 95.2 Ko | 60 × 18 × 60 m | 7 |
 | training_L5 | ALERTES | 3 152 | 15 | 15 | 99.8 Ko | 60 × 20 × 60 m | 14 |
-| plot_empty | OK | 1 112 | 5 | 5 | 21.4 Ko | 59 × 4 × 59 m | 5 |
-| plot_locked | OK | 1 652 | 11 | 11 | 39.6 Ko | 58 × 39 × 58 m | 2 |
-| site | ALERTES | 30 352 | 16 | 16 | 715 Ko | 600 × 32 × 510 m | 7 |
+| plot_empty | OK | 1 112 | 6 | 6 | 195 Ko | 59 × 4 × 59 m | 5 |
+| plot_locked | OK | 1 652 | 11 | 11 | 339 Ko | 58 × 39 × 58 m | 2 |
+| site | ALERTES | 87 048 | 23 | 23 | 2335 Ko | 600 × 32 × 510 m | 9 |
 | trees | ALERTES | 5 674 | 14 | 10 | 2178 Ko | 17 × 26 × 22 m | 14 |
 | trophies | OK | 67 594 | 28 | 7 | 452 Ko | 10 × 11 × 10 m | 28 |
 

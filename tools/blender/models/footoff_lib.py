@@ -386,7 +386,7 @@ class Builder:
         self.hexa(mat, [(x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0),
                         (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)], M, tile, origin)
 
-    def cyl(self, mat, p0, p1, r0, r1=None, segs=10, M=I4):
+    def cyl(self, mat, p0, p1, r0, r1=None, segs=10, M=I4, tile=(1.0, 1.0)):
         r1 = r0 if r1 is None else r1
         p0, p1 = Vector(p0), Vector(p1)
         d = p1 - p0
@@ -401,7 +401,7 @@ class Builder:
         faces = [(i, (i + 1) % segs, segs + (i + 1) % segs, segs + i) for i in range(segs)]
         side = set(range(segs))
         faces += [tuple(range(segs, 2 * segs)), tuple(reversed(range(segs)))]
-        self.piece(mat, verts, faces, T, smooth=side)
+        self.piece(mat, verts, faces, T, tile=tile, smooth=side)
 
     def sector(self, mat, center, r0, r1, a0, a1, z0, z1, segs=12, tile=(1, 1), origin=None):
         """Secteur annulaire extrude (gradin courbe)."""

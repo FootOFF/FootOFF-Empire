@@ -157,6 +157,46 @@ function repeatTexture(canvas, srgb, repeat) {
   if (srgb) t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
+// texture d'attente 1 x 1 (blanc, ou relief plat) : le programme est compilé une fois pour toutes avec une carte
+const pixel = (r, g, b, srgb) => {
+  const t = new THREE.DataTexture(new Uint8Array([r, g, b, 255]), 1, 1);
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  t.needsUpdate = true;
+  return t;
+};
+
+// Prairie : son grain d'origine (couleur et relief, qui font l'herbe vue de loin) garde sa place ; la photo du gazon
+// du site (adoptGround) s'y multiplie en détail fin, ramenée à 1 en moyenne : même teinte, du grain de près.
+function extraDetail(mat) {
+  const detail = { map: { value: pixel(255, 255, 255, false) }, scale: { value: 1 }, gain: { value: new THREE.Vector3(1, 1, 1) } };
+  mat.userData.detail = detail;
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uDetail = detail.map;
+    shader.uniforms.uDetailScale = detail.scale;
+    shader.uniforms.uDetailGain = detail.gain;
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform sampler2D uDetail;\nuniform float uDetailScale;\nuniform vec3 uDetailGain;')
+      .replace('#include <map_fragment>', '#include <map_fragment>\n\tdiffuseColor.rgb *= texture2D( uDetail, vMapUv * uDetailScale ).rgb * uDetailGain;');
+  };
+  return detail;
+}
+
+// Détail photo (enrobé du site, adoptGround) à la place de la carte : la photo est ramenée à la moyenne voulue (gain
+// par canal), les couleurs par sommet gardent la teinte ; échelle des UV dans le shader.
+function detailPatch(mat) {
+  const detail = { scale: { value: 1 }, gain: { value: new THREE.Vector3(1, 1, 1) } };
+  mat.userData.detail = detail;
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uDetailScale = detail.scale;
+    shader.uniforms.uDetailGain = detail.gain;
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform float uDetailScale;\nuniform vec3 uDetailGain;')
+      .replace('#include <map_fragment>', '#ifdef USE_MAP\n\tdiffuseColor.rgb *= texture2D( map, vMapUv * uDetailScale ).rgb * uDetailGain;\n#endif')
+      .replace('#include <normal_fragment_maps>', THREE.ShaderChunk.normal_fragment_maps
+        .replaceAll('texture2D( normalMap, vNormalMapUv )', 'texture2D( normalMap, vNormalMapUv * uDetailScale )'));
+  };
+  return detail;
+}
 
 // --- couleurs par sommet ----------------------------------------------------------------------------
 
@@ -235,8 +275,10 @@ function buildTerrain(maps) {
   geo.setIndex(idx);
   geo.computeVertexNormals();
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, map: maps.grass, normalMap: maps.grassN, normalScale: new THREE.Vector2(0.7, 0.7), roughness: 0.96 });
+  extraDetail(mat);
   const mesh = new THREE.Mesh(geo, mat);
   mesh.receiveShadow = true;
+  mesh.renderOrder = 3; // après les forêts : les pixels de prairie cachés par les arbres ne sont pas calculés (ground.js)
   mesh.name = 'landscape_terrain';
 
   return { mesh };
@@ -293,14 +335,15 @@ function scatterTrees(siteTrees) {
   return list;
 }
 
-function buildRoad(maps) {
-  // chaussée de transit et voies du tram, des deux côtés de la plateforme, jusqu'à l'horizon
+function buildRoad() {
+  // chaussée de transit et voies du tram, des deux côtés de la plateforme, jusqu'à l'horizon ; enrobé et peinture
+  // aux teintes de ceux du site (matières photo, build_site.py), grain de l'enrobé du site une fois chargé
   const parts = [];
   const strip = (x0, x1, z0, z1, y, color) => {
     const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-Math.PI / 2).translate((x0 + x1) / 2, y, (z0 + z1) / 2);
     parts.push(paint(g, () => color));
   };
-  const asphalt = srgb(0.12, 0.12, 0.125), white = srgb(0.42, 0.42, 0.41), rail = srgb(0.22, 0.22, 0.23), pole = srgb(0.08, 0.08, 0.09);
+  const asphalt = srgb(0.175, 0.175, 0.182), white = srgb(0.7, 0.7, 0.68), rail = srgb(0.22, 0.22, 0.23), pole = srgb(0.08, 0.08, 0.09);
   for (const s of [-1, 1]) {
     const [a, b] = s > 0 ? [SITE.x1, EXTENT] : [-EXTENT, SITE.x0];
     strip(a, b, ROAD_Z.lanes[0], ROAD_Z.lanes[1], 0.006, asphalt);
@@ -313,8 +356,17 @@ function buildRoad(maps) {
     }
   }
   const geo = mergeGeometries(parts);
-  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92 }));
+  const pos = geo.attributes.position;
+  const uv = new Float32Array(pos.count * 2); // en tuiles de l'enrobé du site (2,1 m), dans le plan
+  for (let i = 0; i < pos.count; i++) uv.set([pos.getX(i) * 10 / 2.1, -pos.getZ(i) * 10 / 2.1], i * 2);
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  const mat = new THREE.MeshStandardMaterial({
+    vertexColors: true, roughness: 0.92, map: pixel(255, 255, 255, true), normalMap: pixel(128, 128, 255, false),
+  });
+  detailPatch(mat);
+  const mesh = new THREE.Mesh(geo, mat);
   mesh.receiveShadow = true;
+  mesh.renderOrder = 2;
   mesh.name = 'landscape_road';
   return mesh;
 }
@@ -343,7 +395,8 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
   const group = new THREE.Group();
   group.name = 'landscape';
   const { mesh: terrain } = buildTerrain(maps);
-  group.add(terrain, buildRoad(maps));
+  const road = buildRoad();
+  group.add(terrain, road);
 
   // eau sans miroir : sombre en profondeur, reflète le ciel (environnement du ciel) d'autant plus que le regard
   // est rasant (Fresnel des matériaux physiques)
@@ -424,6 +477,26 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
 
   return {
     group,
+    // sols photo du site (build_site.py, ground.js) : son gazon sur la prairie (même grain, les teintes de la prairie
+    // restent celles du paysage) et son enrobé sur la route extérieure ; textures échangées, rien n'est recompilé
+    adoptGround(root) {
+      const mats = {};
+      root.traverse((o) => { if (o.isMesh) [].concat(o.material).forEach((m) => { mats[m.name] = m; }); });
+      const lawn = mats.ground_lawn, asphalt = mats.ground_asphalt;
+      if (lawn?.map && lawn.userData.mean) {
+        const d = terrain.material.userData.detail;
+        d.map.value = lawn.map;
+        d.scale.value = 40 / (lawn.userData.tile || 1.4); // UV du terrain : 1 = 40 m
+        d.gain.value.set(...lawn.userData.mean.map((v) => 1 / v));
+      }
+      if (asphalt?.map && asphalt.userData.mean) {
+        const m = road.material;
+        m.map = asphalt.map;
+        m.normalMap = asphalt.normalMap;
+        m.userData.detail.scale.value = 2.1 / (asphalt.userData.tile || 2.1); // UV de la route : tuiles de 2,1 m
+        m.userData.detail.gain.value.set(...asphalt.userData.mean.map((v) => 1 / v));
+      }
+    },
     // miroir d'eau du parvis (site) : même eau animée, reflets du ciel
     adoptWater(mesh) {
       const normals = waterNormals.clone();

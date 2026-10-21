@@ -214,6 +214,25 @@ d'arbustes (quelques-uns pourpres) dans les jardinières du parvis, les jardins 
 parcelles. Emplacements : `site_trees.json` pour le site (`build_site.py`), repères `tree_spot_*` dans les modèles des
 bâtiments et des parcelles. Sur téléphone et en mode économie : atlas réduit, pas d'ombres d'arbres.
 
+## Sols, routes et mobilier
+
+Matières photographiées (CC0, liste dans `assets-src/grounds.json`, sources hors dépôt dans `assets-src/grounds/`),
+préparées par `tools/grounds/prepare.py` : teinte calée sur la palette du complexe, joints des grandes dalles calés
+au mètre, tailles du jeu. Esplanade, parvis et promenade en grandes dalles de granit d'un mètre (l'axe d'honneur dans
+le même granit, plus clair), calepinage de bandes de granit gris tous les 6 m ; trottoirs, allées et quai du tram en
+pavés béton ; routes, parkings et ronds-points en enrobé, marquages en peinture qui laisse voir le grain ; pelouses
+en gazon dense, bandes de tonte comprises ; béton désactivé des dalles de parcelles, gravier des chantiers, paillage
+d'écorce au pied des massifs. Bordures en granit et caniveaux calculés sur le contour des espaces piétons
+(`edging()` de `build_site.py`), avaloirs, plaques d'égout, grilles d'arbres en fonte. Dans le jeu (`src/three/ground.js`),
+sans texture de plus : taches à grande échelle, mosaïque des dalles (chaque dalle prend l'une des neuf dalles de la
+photo, tournée au hasard : aucune répétition visible), touffes et zones plus sèches des pelouses. La prairie de
+l'écrin garde son grain et prend en plus le gazon photo de près ; la route extérieure, l'enrobé du site.
+Mobilier contemporain (`tools/blender/models/footoff_street.py`) : lampadaires routiers à LED, lanternes piétonnes,
+bancs en teck et acier anthracite, corbeilles, bornes, arceaux à vélos. Le soir et la nuit, une flaque de lumière
+chaude au sol sous chaque lampadaire et lanterne (ajoutée à l'image, cachée le jour).
+Écarts verticaux entre sols superposés : au moins 2,5 cm (positions du site compressées sur 16 bits, pas de 9 mm ;
+sur 14 bits, le paillage passait sous la pelouse).
+
 ## Fluidité
 
 Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone, sans rien retirer à l'image :
@@ -226,4 +245,7 @@ Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone
   étalonnage dans la passe de sortie ; ciel peint en dernier, là où il se voit ; reflet du lac une image sur deux ;
 - résolution adaptative : si l'appareil ne tient plus ~50 images par seconde, la résolution de rendu descend par
   paliers (jamais sous un pixel par pixel d'écran) puis remonte dès qu'il y a de la marge ;
-- caméra sans inertie : elle s'arrête dès qu'on lâche.
+- caméra sans inertie : elle s'arrête dès qu'on lâche ;
+- sols dessinés après tout le reste (les pixels de sol cachés par les arbres et les bâtiments ne sont pas calculés),
+  couches posées dessus avant les surfaces qu'elles recouvrent, pelouse du site en dernier ; un sol plat ne projette
+  pas d'ombre (mesuré en vue rapprochée, 4 Mpx : les sols photo coûtent ainsi autant que les anciens sols unis).

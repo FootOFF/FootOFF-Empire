@@ -118,7 +118,9 @@ async function optimize(doc, category) {
     textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^(?!normalTexture).*$/, resize: [size, size], quality: 82 }),
     textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^normalTexture$/, resize: [nsize, nsize], quality: 95 }),
     // UV sur 16 bits : les textures répétées (sièges, béton, toiture) ont des UV bien au-delà de [0, 1].
-    meshopt({ encoder: MeshoptEncoder, level: 'medium', quantizeTexcoord: 16 }),
+    // Positions : 14 bits par défaut (pas = emprise / 16 384) ; le site (600 m) passe à 16 bits (pas de 9 mm), sinon
+    // ses sols superposés à quelques centimètres (bordures, paillage, calepinage) s'inversaient.
+    meshopt({ encoder: MeshoptEncoder, level: 'medium', quantizeTexcoord: 16, quantizePosition: category.quantizePosition || 14 }),
   );
 }
 

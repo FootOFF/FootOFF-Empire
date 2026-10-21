@@ -13,6 +13,8 @@ assets-src/
     props/<nom>.glb                  décor (phase 3) : lampadaire, arbre, voiture...
     REPORT.md                        rapport généré à chaque `npm run models`
   blend/                             fichiers .blend de travail (conseillé : Git LFS)
+  grounds.json                       matières photo CC0 des sols et du mobilier, à télécharger dans grounds/ (hors dépôt)
+  grounds-baked/                     leurs textures aux tailles du jeu : python -I tools/grounds/prepare.py (hors dépôt)
 ```
 
 Bâtiments et niveaux : `terrain` (1 à 4), `training`, `academy`, `fans`, `sponsor` (1 à 5).

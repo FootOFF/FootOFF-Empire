@@ -4,6 +4,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { placeGround, prepareGround, setGroundAnisotropy } from './ground';
 
 // Chargement des GLB : Draco + KTX2 + Meshopt, cache par URL, instances clonées
 // (géométries/matériaux/textures partagés entre instances).
@@ -17,6 +18,8 @@ const templates = new Map(); // url -> Promise<THREE.Object3D>
 let requested = 0; // écran de chargement : modèles demandés / arrivés (réussis ou non)
 let settled = 0;
 const nightMats = new Set();
+const poolMats = new Set(); // flaques de lumière au sol (lampadaires du site) : ajoutées à l'image, la nuit seulement
+const POOL = 0.28; // intensité d'une flaque en pleine nuit (lumière linéaire ajoutée au sol)
 let isNight = 0; // niveau d'éclairage courant (0 à 1) : un modèle chargé après la bascule doit le respecter
 
 export function initAssets(renderer) {
@@ -24,14 +27,35 @@ export function initAssets(renderer) {
   draco = new DRACOLoader();
   ktx2 = new KTX2Loader().detectSupport(renderer);
   loader = new GLTFLoader().setDRACOLoader(draco).setKTX2Loader(ktx2).setMeshoptDecoder(MeshoptDecoder);
+  setGroundAnisotropy(renderer);
 }
 
 function prepareTemplate(root) {
   root.traverse((o) => {
     if (!o.isMesh) return;
     if (/^crowd_/i.test(o.name)) { o.visible = false; return; } // zones techniques, jamais affichées
+    if (o.material?.name === 'emissive_pool') {
+      // flaques de lumière : texture ajoutée à l'image (rien à éclairer, pas d'ombre, ni occlusion), cachées le jour
+      const src = o.material;
+      const m = new THREE.MeshBasicMaterial({
+        map: src.emissiveMap, color: 0x000000, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false,
+        fog: false, // ajoutée à l'image : la brume l'éclaircirait au lieu de l'éteindre
+      });
+      m.name = src.name;
+      m.color.setScalar(POOL * isNight);
+      m.visible = isNight > 0.01;
+      src.dispose();
+      o.material = m;
+      o.castShadow = false;
+      o.receiveShadow = false;
+      o.userData.noAO = true;
+      poolMats.add(m);
+      return;
+    }
     o.castShadow = true;
     o.receiveShadow = true;
+    [].concat(o.material).forEach(prepareGround); // sols photo ground_* (ground.js)
+    placeGround(o); // ordre de dessin et ombres des sols
     // emissive_* : allumé la nuit, éteint le jour.
     if (/^emissive_/i.test(o.name) || /^emissive_/i.test(o.parent?.name || '')) {
       const mats = Array.isArray(o.material) ? o.material : [o.material];
@@ -104,6 +128,7 @@ export function setAssetsNight(level) {
     const e = m.userData.nightEmissive;
     m.emissiveIntensity = (e.day + (e.night - e.day) * isNight) * boost;
   });
+  poolMats.forEach((m) => { m.color.setScalar(POOL * isNight); m.visible = isNight > 0.01; });
 }
 
 // Surintensité des éléments lumineux (LED, écrans) : 1 = normal.
@@ -128,6 +153,7 @@ export async function disposeAssets() {
   });
   templates.clear();
   nightMats.clear();
+  poolMats.clear();
   draco?.dispose();
   ktx2?.dispose();
   loader = null;

@@ -16,3 +16,8 @@ __pycache__/
 assets-src/vegetation/
 # rendus intermediaires des imposteurs (l'atlas publie est dans public/vegetation)
 assets-src/vegetation-baked/impostors/*.png
+
+# sources des sols, routes et mobilier (retelechargeables : voir assets-src/grounds.json)
+assets-src/grounds/
+# leurs textures aux tailles du jeu (regenerables : python -I tools/grounds/prepare.py)
+assets-src/grounds-baked/

@@ -178,7 +178,7 @@ def plinth(B, w=58.0, d=58.0, mat="paving"):
     k = 0.3
     for a, b in [((-w / 2 - k, -d / 2 - k), (w / 2 + k, -d / 2)), ((-w / 2 - k, d / 2), (w / 2 + k, d / 2 + k)),
                  ((-w / 2 - k, -d / 2), (-w / 2, d / 2)), ((w / 2, -d / 2), (w / 2 + k, d / 2))]:
-        B.box("concrete_dark", (*a, 0), (*b, 0.16))
+        B.box("concrete_dark", (*a, 0), (*b, 0.16), tile=(2.0, 2.0))  # beton photo des parcelles : tuile de 2 m
 
 
 def lawn(B, x0, y0, x1, y1, z=0.12):
