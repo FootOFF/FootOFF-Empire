@@ -213,3 +213,17 @@ Les arbres du site gardent toujours l'ombre de leur modèle 3D. Jardins : haies 
 d'arbustes (quelques-uns pourpres) dans les jardinières du parvis, les jardins et aux coins des pelouses des
 parcelles. Emplacements : `site_trees.json` pour le site (`build_site.py`), repères `tree_spot_*` dans les modèles des
 bâtiments et des parcelles. Sur téléphone et en mode économie : atlas réduit, pas d'ombres d'arbres.
+
+## Fluidité
+
+Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone, sans rien retirer à l'image :
+- ombres calculées une seule fois par image (et non à chaque rendu de la scène) ; les arbres du site affichés en
+  imposteurs gardent l'ombre de leur modèle 3D, dessiné seulement dans la carte d'ombres ;
+- projecteurs (mâts, parcelles, stade, trophée) tous dans le calcul de la lumière ou aucun : le jour, aucun ne coûte ;
+  les deux combinaisons sont compilées d'avance, derrière l'écran de chargement (pas d'à-coup à la tombée du jour) ;
+- seule la scène est rendue en multi-échantillons ; occlusion à demi-résolution de l'écran, sans le ciel, l'eau, le
+  voile d'horizon, les imposteurs ni les cartes de feuillage ; garde-fou des pixels invalides à l'entrée du halo,
+  étalonnage dans la passe de sortie ; ciel peint en dernier, là où il se voit ; reflet du lac une image sur deux ;
+- résolution adaptative : si l'appareil ne tient plus ~50 images par seconde, la résolution de rendu descend par
+  paliers (jamais sous un pixel par pixel d'écran) puis remonte dès qu'il y a de la marge ;
+- caméra sans inertie : elle s'arrête dès qu'on lâche.

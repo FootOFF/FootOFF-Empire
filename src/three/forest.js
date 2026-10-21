@@ -29,13 +29,30 @@ const nearRadius = (q) => (q === 'haute' ? 9 : q === 'economie' ? 0 : narrow() ?
 // arbres du site et des abords : modèles 3D à moins de cette distance de la caméra (unités du jeu), imposteurs
 // au-delà (écart entre les deux seuils : pas de va-et-vient quand la caméra s'arrête à la limite)
 const lodDistance = (q) => (q === 'haute' ? [32, 36] : q === 'economie' || narrow() ? [16, 19] : [24, 28]);
-// ombres des arbres affichés en imposteurs : leur modèle 3D, dessiné seulement dans la carte d'ombres (sommets
-// envoyés hors de l'écran au rendu normal, matériau de profondeur pour l'ombre)
+// ombres des arbres affichés en imposteurs : leur modèle 3D (« fantôme »), visible seulement le temps du calcul de
+// la carte d'ombres (hookShadowMap) ; matériau de profondeur pour l'ombre, et par sécurité un matériau qui ne
+// dessine rien s'il était rendu ailleurs
+const ghosts = new Set();
 const GHOST = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
 GHOST.onBeforeCompile = (shader) => {
   shader.vertexShader = shader.vertexShader.replace('#include <project_vertex>', 'vec4 mvPosition = vec4(0.0);\ngl_Position = vec4(2.0, 2.0, 2.0, 1.0);');
 };
 const BARK_DEPTH = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+const noRaycast = () => {}; // la végétation n'est pas une cible du survol ni du clic (parcelles, parvis)
+
+// Carte d'ombres : les fantômes des arbres n'y apparaissent que pendant son calcul. Avec une seule mise à jour par
+// image (renderer.shadowMap.autoUpdate = false, needsUpdate dans la boucle), ni l'image, ni l'occlusion, ni le
+// reflet du lac ne les dessinent.
+export function hookShadowMap(renderer) {
+  const sm = renderer.shadowMap;
+  const render = sm.render.bind(sm);
+  sm.render = (lights, scene, camera) => {
+    const run = sm.enabled && (sm.autoUpdate || sm.needsUpdate) && lights.length > 0;
+    if (run) ghosts.forEach((g) => { g.visible = true; });
+    render(lights, scene, camera);
+    if (run) ghosts.forEach((g) => { g.visible = false; });
+  };
+}
 const hash = (x, z, k = 0) => { const s = Math.sin(x * 12.9898 + z * 78.233 + k * 37.719) * 43758.5453; return s - Math.floor(s); };
 const species = (kind) => (TREES.species[kind] || SHRUBS[kind] ? kind : 'chene');
 
@@ -244,6 +261,8 @@ function plantMeshes(lib, items, parent) {
       mesh.castShadow = shadows;
       mesh.receiveShadow = true;
       if (part.leaves) mesh.customDepthMaterial = part.depth;
+      mesh.userData.noAO = part.leaves; // cartes de feuillage : pleines pour l'occlusion (carrés sombres)
+      mesh.raycast = noRaycast;
       mesh.name = `forest_${key}_${part.part}`;
       parent.add(mesh);
       meshes.push(mesh);
@@ -291,6 +310,8 @@ function impostorMesh(material, capacity, name) {
   geo.instanceCount = 0;
   const mesh = new THREE.Mesh(geo, material);
   mesh.frustumCulled = false; // positions calculées dans le shader
+  mesh.userData.noAO = true; // l'occlusion les dessinerait tous à l'origine (matériau de normales sans billboard)
+  mesh.raycast = noRaycast;
   mesh.name = name;
   return {
     mesh,
@@ -342,7 +363,7 @@ export function createForest(group, list, { quality = 'auto', site }) {
   let alive = true; // le modèle peut arriver après dispose() (liste replantée entre-temps)
 
   function clearNear() {
-    nearMeshes.forEach((m) => { group.remove(m); m.dispose(); });
+    nearMeshes.forEach((m) => { group.remove(m); m.dispose(); ghosts.delete(m); });
     nearMeshes = [];
     lodGroups = [];
     if (nearImp) { group.remove(nearImp.mesh); nearImp.dispose(); nearImp = null; }
@@ -381,6 +402,8 @@ export function createForest(group, list, { quality = 'auto', site }) {
         mesh.count = 0;
         mesh.frustumCulled = false; // nombre d'instances variable
         mesh.receiveShadow = true;
+        mesh.userData.noAO = part.leaves;
+        mesh.raycast = noRaycast;
         mesh.name = `forest_${key}_${part.part}`;
         group.add(mesh);
         nearMeshes.push(mesh);
@@ -390,6 +413,9 @@ export function createForest(group, list, { quality = 'auto', site }) {
           ghost.computeBoundingSphere();
           ghost.castShadow = true;
           ghost.customDepthMaterial = part.leaves ? part.depth : BARK_DEPTH;
+          ghost.visible = false;
+          ghost.raycast = noRaycast;
+          ghosts.add(ghost);
           ghost.name = `forest_${key}_${part.part}_ombre`;
           group.add(ghost);
           nearMeshes.push(ghost);

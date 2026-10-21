@@ -375,6 +375,7 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
   );
   veil.renderOrder = 10;
   veil.name = 'landscape_veil';
+  veil.userData.noAO = true;
   group.add(veil);
 
   // lac : miroir réel (reflets du stade la nuit) en qualité haute, sinon reflets du ciel
@@ -390,6 +391,11 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
         sunColor: 0xfff1dc, waterColor: 0x0c2f3a, distortionScale: 1.6, fog: true,
       });
       lake.material.uniforms.size.value = 6.0;
+      // reflet recalculé une image sur deux (toute la scène vue depuis sous l'eau) : sur ce lac lointain et ridé, un
+      // reflet d'une image plus ancien ne se voit pas
+      const mirror = lake.onBeforeRender;
+      let odd = false;
+      lake.onBeforeRender = (...args) => { odd = !odd; if (odd) mirror(...args); };
     } else {
       lake = new THREE.Mesh(lakeGeo, waterMaterial(waterNormals, 0.09));
       waterNormals.repeat.set(9, 5);
@@ -397,6 +403,7 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
     lake.rotation.x = -Math.PI / 2;
     lake.position.set(LAKE.x, LAKE.level, LAKE.z);
     lake.name = 'landscape_lake';
+    lake.userData.noAO = true; // ni occlusion, ni second rendu de son reflet
     group.add(lake);
   };
   makeLake(quality);

@@ -202,13 +202,14 @@ export function createPhotoSky(renderer, { quality = 'auto' } = {}) {
   };
   const material = (env) => new THREE.ShaderMaterial({
     uniforms: { ...shared, uEnv: { value: env ? 1 : 0 }, uClamp: { value: 1e4 }, uGround: { value: new THREE.Color() } },
-    vertexShader, fragmentShader: domeFragment, depthTest: false, depthWrite: false, side: THREE.BackSide, fog: false,
+    vertexShader, fragmentShader: domeFragment, depthWrite: false, side: THREE.BackSide, fog: false,
   });
   const geo = new THREE.SphereGeometry(1, 64, 32);
   const dome = new THREE.Mesh(geo, material(false));
   dome.name = 'photo_sky';
+  dome.userData.noAO = true;
   dome.frustumCulled = false;
-  dome.renderOrder = -100;
+  dome.renderOrder = 1000; // après le décor opaque, à la profondeur maximale : peint seulement là où le ciel se voit
   dome.visible = false;
   const envMat = material(true);
   const envScene = new THREE.Scene();

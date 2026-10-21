@@ -13,7 +13,7 @@ import { plotLights } from '../three/lights';
 import { BuildAnimation, Fireworks, hoverFrame } from '../three/fx';
 import { createLife } from '../three/life';
 import { createLandscape, heightAt } from '../three/landscape';
-import { plantSpots } from '../three/forest';
+import { hookShadowMap, plantSpots } from '../three/forest';
 import { createPostFX } from '../three/postfx';
 import { momentAt } from '../three/sky';
 import { PARVIS, createTrophies } from '../three/trophies';
@@ -215,6 +215,7 @@ export default function Empire3D({
     }
     mount.appendChild(renderer.domElement);
     initAssets(renderer);
+    hookShadowMap(renderer); // ombres des arbres affichés en imposteurs
 
     const scene = new THREE.Scene();
     const env = createEnvironment(scene, renderer, { quality });
@@ -224,8 +225,7 @@ export default function Empire3D({
     camera.position.copy(home0.pos);
     renderer.domElement.style.cursor = 'grab';
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
+    controls.enableDamping = false; // la caméra s'arrête dès qu'on lâche (pas d'inertie qui continue seule)
     controls.target.copy(HOME_VIEW.target);
     controls.minDistance = 6;
     controls.maxDistance = Math.max(80, home0.dist * 1.25);
@@ -356,6 +356,7 @@ export default function Empire3D({
         }
       }
       const fresh = ctx.trophies.sync(s);
+      ctx.syncSpots?.(); // projecteurs du trophée central
       if (animate && fresh.length) ctx.showcase(fresh[fresh.length - 1]);
     };
 
@@ -408,11 +409,96 @@ export default function Empire3D({
       squad.setMode({ matchDay: md });
       if (md) crowd.show(ctx.crowdFill ?? 0.6, ctx.awayColor); else crowd.hide();
       fireworks.active = md && won && !lv && !!ctx.postMatch; // en direct : salves uniquement sur nos buts
+      ctx.syncSpots?.(); // projecteurs : tous dans le calcul de la lumière, ou aucun
+    };
+
+    // Résolution adaptative : quand l'appareil ne tient plus ~50 images par seconde (grand écran très dense,
+    // téléphone), la résolution de rendu descend par paliers, puis remonte dès qu'il y a de la marge. Jamais sous un
+    // pixel de rendu par pixel d'écran (CSS) : tous les effets restent, l'interface reste nette. Un palier qui ne
+    // tient pas n'est réessayé qu'après un délai qui double à chaque échec (pas de va-et-vient).
+    const DRS_LEVELS = [1, 0.85, 0.72, 0.6, 0.5];
+    const drs = { level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map(), active: false };
+    ctx.drs = drs; // inspection et essais (développement)
+    const drsRatio = (level = drs.level) => {
+      const max = pixelRatioFor(ctx.quality);
+      return Math.max(Math.min(1, max), max * DRS_LEVELS[level]);
+    };
+    const applyRatio = () => {
+      const pr = drsRatio();
+      if (Math.abs(renderer.getPixelRatio() - pr) < 0.01) return;
+      renderer.setPixelRatio(pr);
+      renderer.setSize(mount.clientWidth, mount.clientHeight);
+      post.setSize(mount.clientWidth, mount.clientHeight);
+    };
+    const drsStep = (raw) => {
+      if (!drs.active || raw > 0.25) return; // retour d'un onglet caché, gros à-coup isolé : ne compte pas
+      drs.frames.push(raw * 1000);
+      drs.time += raw;
+      if (drs.time < 1) return;
+      const ms = drs.frames.sort((a, b) => a - b)[Math.floor(drs.frames.length / 2)]; // médiane : un à-coup isolé ne compte pas
+      drs.frames = [];
+      drs.time = 0;
+      const now = performance.now();
+      const lower = drs.level + 1 < DRS_LEVELS.length && drsRatio(drs.level + 1) < drsRatio() - 0.01;
+      if (ms > 21 && lower) { // moins de ~48 images par seconde : palier en dessous, celui-ci mis de côté
+        const fails = (drs.fails.get(drs.level) || 0) + 1;
+        drs.fails.set(drs.level, fails);
+        drs.until.set(drs.level, now + 30000 * 2 ** (fails - 1));
+        drs.level += 1;
+        drs.good = 0;
+        applyRatio();
+      } else if (ms < 18 && drs.level > 0) { // fluide : après trois secondes, on retente le palier au-dessus
+        drs.good += 1;
+        if (drs.good >= 3 && !((drs.until.get(drs.level - 1) || 0) > now)) {
+          drs.level -= 1;
+          drs.good = 0;
+          applyRatio();
+        }
+      } else drs.good = 0;
+    };
+    drs.step = drsStep;
+
+    // Projecteurs (mâts, parcelles, stade, trophée) : tous dans le calcul de la lumière ou aucun. Le jour, aucun
+    // n'éclaire : ils en sortent (sinon chaque pixel de l'image les paierait, même à zéro). Jamais une partie
+    // seulement : deux combinaisons de lumières en tout, compilées d'avance pour chaque nombre de projecteurs (au
+    // chargement, puis quand un bâtiment en apporte), sans recompilation de plusieurs secondes à la tombée du jour.
+    let loaded = false;
+    let compiledFor = -1;
+    const precompile = (spots) => {
+      const shown = spots.map((l) => l.visible);
+      const target = renderer.getRenderTarget();
+      renderer.setRenderTarget(post.sceneTarget); // même cible que le rendu : mêmes programmes (sans tone mapping)
+      spots.forEach((l) => { l.visible = true; });
+      const lit = renderer.compileAsync(scene, camera); // lumières relevées tout de suite, compilation en fond
+      spots.forEach((l) => { l.visible = false; });
+      const unlit = renderer.compileAsync(scene, camera);
+      spots.forEach((l, i) => { l.visible = shown[i]; });
+      renderer.setRenderTarget(target);
+      return Promise.all([lit, unlit]).then(() => {
+        // le jour, une image avec les projecteurs dans le calcul mais à zéro (rien ne change à l'écran) : les
+        // programmes hors de la scène (ombres, occlusion, reflet du lac) sont prêts aussi pour le soir
+        if (!ctx.alive || spots.some((l) => l.visible)) return;
+        spots.forEach((l) => { l.visible = true; });
+        renderer.shadowMap.needsUpdate = true;
+        post.render(0);
+        spots.forEach((l) => { l.visible = false; });
+      }).catch(() => {});
+    };
+    ctx.syncSpots = () => {
+      const spots = [];
+      scene.traverse((o) => { if (o.isSpotLight) spots.push(o); });
+      const on = spots.some((l) => l.intensity > 0);
+      spots.forEach((l) => { l.visible = on; });
+      if (loaded && spots.length !== compiledFor) { compiledFor = spots.length; return precompile(spots); }
+      return Promise.resolve();
     };
 
     // qualité graphique appliquée à chaud : résolution, puis ombres (les matériaux se recompilent)
+    ctx.quality = quality;
     ctx.setQuality = (q) => {
-      renderer.setPixelRatio(pixelRatioFor(q));
+      ctx.quality = q;
+      Object.assign(drs, { level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map() });
+      renderer.setPixelRatio(drsRatio());
       renderer.setSize(mount.clientWidth, mount.clientHeight);
       post.setQuality(q);
       landscape.setQuality(q);
@@ -469,8 +555,16 @@ export default function Empire3D({
       calm = requested && settled >= requested ? calm + 1 : 0;
       if (calm >= 2 || performance.now() - loadStart > 12000) {
         clearInterval(loadTimer);
-        loadRef.current.onLoadProgress?.(1);
-        loadRef.current.onLoaded?.();
+        // tous les matériaux compilés d'avance (projecteurs allumés et éteints), derrière l'écran de chargement : pas
+        // d'à-coup quand un arbre passe en 3D, qu'un bâtiment apparaît ou que les projecteurs s'allument le soir
+        loaded = true;
+        const ready = () => {
+          if (!ctx.alive) return;
+          loadRef.current.onLoadProgress?.(1);
+          loadRef.current.onLoaded?.();
+          setTimeout(() => { drs.active = true; }, 3000); // résolution adaptative : après les compilations du départ
+        };
+        Promise.race([ctx.syncSpots(), new Promise((r) => { setTimeout(r, 4000); })]).then(ready);
       }
     }, 150);
 
@@ -620,8 +714,10 @@ export default function Empire3D({
     const tmp = new THREE.Vector3();
     renderer.setAnimationLoop(() => {
       timer.update();
-      const dt = Math.min(timer.getDelta(), 0.05);
+      const raw = timer.getDelta();
+      const dt = Math.min(raw, 0.05);
       if (!onScreen || document.hidden) return;
+      drsStep(raw);
       time += dt;
       if (ctx.camTween) {
         const tw = ctx.camTween;
@@ -706,6 +802,7 @@ export default function Empire3D({
       post.setLook(env.grade);
       landscape.setSun(env.sunDir);
       camera.position.x += shakeX; camera.position.y += shakeY;
+      renderer.shadowMap.needsUpdate = true; // ombres : une fois par image, au premier rendu de la scène
       post.render(dt);
       camera.position.x -= shakeX; camera.position.y -= shakeY;
     });

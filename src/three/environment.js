@@ -16,7 +16,9 @@ export function pixelRatioFor(quality) {
 }
 
 export function createRenderer(mount, quality = 'auto') {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  // anticrénelage de la toile seulement sans post-traitement (économie) : sinon la scène est déjà rendue en
+  // multi-échantillons (postfx.js) et la dernière passe plein écran le paierait une seconde fois pour rien
+  const renderer = new THREE.WebGLRenderer({ antialias: quality === 'economie', powerPreference: 'high-performance' });
   renderer.setPixelRatio(pixelRatioFor(quality));
   renderer.setSize(mount.clientWidth, mount.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -24,6 +26,9 @@ export function createRenderer(mount, quality = 'auto') {
   renderer.toneMappingExposure = 0.85;
   renderer.shadowMap.enabled = quality !== 'economie';
   renderer.shadowMap.type = THREE.PCFShadowMap; // PCFSoft supprimé en r18x : PCF + shadow.radius
+  // une seule mise à jour des ombres par image (boucle de rendu) : sinon chaque rendu de la scène (image, occlusion,
+  // reflet du lac) les recalcule
+  renderer.shadowMap.autoUpdate = false;
   return renderer;
 }
 

@@ -1,50 +1,75 @@
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { FullScreenQuad, Pass } from 'three/examples/jsm/postprocessing/Pass.js';
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { CopyShader } from 'three/examples/jsm/shaders/CopyShader.js';
 
 // Rendu « cinéma » : ombres de contact (occlusion ambiante GTAO), halo des lumières (bloom, plus présent la nuit),
 // étalonnage des couleurs selon l'ambiance (saturation, contraste, chaleur, vignettage discret) et anticrénelage
 // multi-échantillons.
 // Qualité économie : rendu direct, sans post-traitement. Téléphone en qualité auto : halo et étalonnage seulement.
+//
+// Coût maîtrisé sans rien changer à l'image : seule la scène est rendue en multi-échantillons (les passes plein
+// écran écrivent dans des tampons simples, quatre fois plus légers) ; l'occlusion est calculée à demi-résolution de
+// l'écran (pixels CSS), sans ce qui n'a pas de sens pour elle, et posée directement sur l'image ; le garde-fou des
+// pixels invalides est fait à l'entrée du halo, et l'étalonnage dans la passe de sortie (deux passes plein écran de
+// moins).
 
-const GradeShader = {
-  uniforms: {
-    tDiffuse: { value: null }, uSat: { value: 1.1 }, uContrast: { value: 1.06 }, uWarm: { value: 0.025 }, uVignette: { value: 0.3 },
-  },
-  vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: `
-    uniform sampler2D tDiffuse; uniform float uSat, uContrast, uWarm, uVignette; varying vec2 vUv;
-    void main() {
-      vec4 c = texture2D(tDiffuse, vUv);
-      vec3 col = c.rgb;
-      float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
-      col = mix(vec3(l), col, uSat);
-      col = (col - 0.5) * uContrast + 0.5;
-      col *= vec3(1.0 + uWarm, 1.0 + uWarm * 0.3, 1.0 - uWarm);
-      vec2 d = vUv - 0.5;
-      col *= 1.0 - dot(d, d) * uVignette * 1.6;
-      gl_FragColor = vec4(clamp(col, 0.0, 1.0), c.a);
-    }`,
-};
+// Étalonnage (espace d'affichage, après le tone mapping) : saturation, contraste, chaleur, vignettage.
+const GRADE = /* glsl */`
+  {
+    vec3 col = gl_FragColor.rgb;
+    float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
+    col = mix(vec3(l), col, uSat);
+    col = (col - 0.5) * uContrast + 0.5;
+    col *= vec3(1.0 + uWarm, 1.0 + uWarm * 0.3, 1.0 - uWarm);
+    vec2 d = vUv - 0.5;
+    col *= 1.0 - dot(d, d) * uVignette * 1.6;
+    gl_FragColor = vec4(clamp(col, 0.0, 1.0), gl_FragColor.a);
+  }
+`;
 
-// Garde-fou avant le halo : un seul pixel invalide (NaN, infini : reflet du soleil rasant sur l'eau, cas limite
-// d'un calcul) serait étalé par le flou du halo sur tout l'écran, qui deviendrait noir. Pixels invalides ramenés
-// à zéro, reflets extrêmes bornés (ils restent éblouissants).
-const SanitizeShader = {
-  uniforms: { tDiffuse: { value: null }, uMax: { value: 48 } },
-  vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: `
-    uniform sampler2D tDiffuse; uniform float uMax; varying vec2 vUv;
-    float safe(float v) { return v >= 0.0 ? min(v, uMax) : 0.0; } // NaN : toute comparaison est fausse
-    void main() {
-      vec4 c = texture2D(tDiffuse, vUv);
-      gl_FragColor = vec4(safe(c.r), safe(c.g), safe(c.b), 1.0);
-    }`,
-};
+// Scène rendue dans sa propre cible multi-échantillonnée (anticrénelage), puis copiée dans le tampon du composer.
+// samples() : échantillons voulus pour la densité de rendu du moment.
+class ScenePass extends Pass {
+  constructor(scene, camera, samples) {
+    super();
+    this.scene = scene;
+    this.camera = camera;
+    this.samples = samples;
+    this.needsSwap = false;
+    this.target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: samples() });
+    this.copy = new FullScreenQuad(new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.clone(CopyShader.uniforms),
+      vertexShader: CopyShader.vertexShader,
+      fragmentShader: CopyShader.fragmentShader,
+      blending: THREE.NoBlending, depthTest: false, depthWrite: false,
+    }));
+  }
+
+  setSize(w, h) {
+    const want = this.samples();
+    if (this.target.samples !== want) { this.target.samples = want; this.target.dispose(); } // recréée au prochain rendu
+    this.target.setSize(w, h);
+  }
+
+  render(renderer, writeBuffer, readBuffer) {
+    renderer.setRenderTarget(this.target);
+    renderer.clear();
+    renderer.render(this.scene, this.camera);
+    this.copy.material.uniforms.tDiffuse.value = this.target.texture;
+    renderer.setRenderTarget(readBuffer);
+    this.copy.render(renderer);
+  }
+
+  dispose() {
+    this.target.dispose();
+    this.copy.material.dispose();
+    this.copy.dispose();
+  }
+}
 
 const narrow = () => Math.min(window.innerWidth, window.innerHeight) < 600;
 
@@ -52,15 +77,14 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
   let composer = null;
   let gtao = null;
   let bloom = null;
-  let grade = null;
+  let output = null;
   let look = null;
-  let sanitize = null;
   const size = new THREE.Vector2();
 
   function teardown() {
     composer?.passes.forEach((p) => p.dispose?.());
     composer?.dispose();
-    composer = gtao = bloom = grade = sanitize = null;
+    composer = gtao = bloom = output = null;
   }
 
   function build(q) {
@@ -68,13 +92,13 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
     if (q === 'economie') return;
     renderer.getSize(size);
     const pr = renderer.getPixelRatio();
-    const target = new THREE.WebGLRenderTarget(size.x * pr, size.y * pr, {
-      type: THREE.HalfFloatType, samples: narrow() && q !== 'haute' ? 2 : 4,
-    });
-    composer = new EffectComposer(renderer, target);
+    composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(size.x * pr, size.y * pr, { type: THREE.HalfFloatType }));
     composer.setPixelRatio(pr);
     composer.setSize(size.x, size.y);
-    composer.addPass(new RenderPass(scene, camera));
+    // anticrénelage : 4 échantillons ; 2 quand la densité de rendu dépasse 1,5 (image déjà sur-échantillonnée, bords
+    // identiques à l'œil) et sur téléphone hors qualité haute
+    const scenePass = new ScenePass(scene, camera, () => (narrow() && q !== 'haute') || renderer.getPixelRatio() >= 1.5 ? 2 : 4);
+    composer.addPass(scenePass);
     // occlusion ambiante : la plus coûteuse (≈ 2× le rendu) ; sur téléphone seulement en qualité haute
     const phone = narrow() && q !== 'haute';
     if (!phone) {
@@ -82,16 +106,48 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
       gtao.updateGtaoMaterial({ radius: 0.3, distanceExponent: 1.6, thickness: 0.5, scale: 1.0, samples: narrow() ? 8 : 16 });
       gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: narrow() ? 8 : 16 });
       gtao.blendIntensity = 0.9;
+      // passe de normales de l'occlusion : sans ce qui n'y a pas de sens (ciel, voile d'horizon, eau et son reflet,
+      // imposteurs, cartes de feuillage, marqués userData.noAO), en plus des points et des lignes déjà écartés
+      const hide = gtao._overrideVisibility.bind(gtao);
+      gtao._overrideVisibility = () => {
+        hide();
+        scene.traverse((o) => {
+          if (o.userData.noAO && o.visible) { o.visible = false; gtao._visibilityCache.push(o); }
+        });
+      };
+      // calcul à demi-résolution de l'écran (pixels CSS) : effet doux, identique à l'œil (débruité puis étiré), quatre
+      // fois moins de calcul qu'à pleine résolution, seize fois moins sur un écran à densité double
+      const setSize = gtao.setSize.bind(gtao);
+      gtao.setSize = (w, h) => {
+        const k = 0.5 / Math.max(1, renderer.getPixelRatio());
+        setSize(Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k)));
+      };
+      // occlusion multipliée directement sur l'image : pas de copie plein écran
+      gtao.output = GTAOPass.OUTPUT.Off;
+      gtao.needsSwap = false;
+      const renderAO = gtao.render.bind(gtao);
+      gtao.render = (r, writeBuffer, readBuffer, dt, mask) => {
+        renderAO(r, writeBuffer, readBuffer, dt, mask);
+        gtao.blendMaterial.uniforms.intensity.value = gtao.blendIntensity;
+        gtao.blendMaterial.uniforms.tDiffuse.value = gtao.pdRenderTarget.texture;
+        gtao._renderPass(r, gtao.blendMaterial, readBuffer);
+      };
       composer.addPass(gtao);
     }
-    sanitize = new ShaderPass(SanitizeShader);
-    composer.addPass(sanitize); // avant le halo : aucun pixel invalide ne s'étale
-    const bloomScale = phone ? 0.5 : 1; // halo à demi-résolution sur téléphone
-    bloom = new UnrealBloomPass(new THREE.Vector2(size.x * bloomScale, size.y * bloomScale), 0.18, 0.55, 0.92);
+    bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.18, 0.55, 0.92);
+    // garde-fou à l'entrée du halo : un seul pixel invalide (NaN, infini : reflet du soleil rasant sur l'eau, cas
+    // limite d'un calcul) serait étalé par son flou sur tout l'écran, qui deviendrait noir. Pixels invalides
+    // ramenés à zéro, reflets extrêmes bornés (ils restent éblouissants).
+    const hp = bloom.materialHighPassFilter;
+    hp.fragmentShader = hp.fragmentShader
+      .replace('void main() {', 'float safe(float v) { return v >= 0.0 ? min(v, 48.0) : 0.0; } // NaN : toute comparaison est fausse\nvoid main() {')
+      .replace('vec4 texel = texture2D( tDiffuse, vUv );', 'vec4 texel = texture2D( tDiffuse, vUv );\n\t\t\ttexel = vec4( safe( texel.r ), safe( texel.g ), safe( texel.b ), 1.0 );');
     composer.addPass(bloom);
-    composer.addPass(new OutputPass());
-    grade = new ShaderPass(GradeShader);
-    composer.addPass(grade);
+    output = new OutputPass();
+    Object.assign(output.uniforms, { uSat: { value: 1.1 }, uContrast: { value: 1.06 }, uWarm: { value: 0.025 }, uVignette: { value: 0.3 } });
+    const fs = output.material.fragmentShader.replace('varying vec2 vUv;', 'varying vec2 vUv;\n\t\tuniform float uSat, uContrast, uWarm, uVignette;');
+    output.material.fragmentShader = `${fs.slice(0, fs.lastIndexOf('}'))}${GRADE}}`; // étalonnage en fin de sortie
+    composer.addPass(output);
     if (look) setLook(look);
   }
 
@@ -99,8 +155,8 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
   function setLook(g) {
     look = g;
     if (bloom) { [bloom.strength, bloom.radius, bloom.threshold] = g.bloom; }
-    if (grade) {
-      const u = grade.uniforms;
+    if (output) {
+      const u = output.uniforms;
       u.uSat.value = g.sat;
       u.uContrast.value = g.contrast;
       u.uWarm.value = g.warm;
@@ -119,7 +175,10 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
     setQuality(q) { build(q); },
     setLook,
     get enabled() { return !!composer; },
-    get passes() { return { gtao, bloom, grade, sanitize }; }, // réglage et inspection
+    get passes() { return { gtao, bloom, output }; }, // réglage et inspection
+    get composer() { return composer; }, // mesures (développement)
+    // cible où la scène est dessinée (null : écran) : compiler les matériaux d'avance dans la même configuration
+    get sceneTarget() { return composer ? composer.passes[0].target : null; },
     dispose: teardown,
   };
 }

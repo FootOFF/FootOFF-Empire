@@ -2,8 +2,8 @@ import * as THREE from 'three';
 
 // Projecteurs réels aux positions « light_* » d'un modèle (mâts, pylônes, bord de toiture).
 // Ils visent le centre de la zone éclairée (barycentre des projecteurs, au sol), sans ombres pour rester
-// légers. Leur nombre ne change pas entre le jour et la nuit (seule l'intensité varie), pour éviter de
-// recompiler les shaders à chaque bascule.
+// légers. Ici, seule l'intensité varie ; Empire3D (syncSpots) les sort tous ensemble du calcul de la lumière
+// quand aucun n'éclaire (le jour).
 
 export function plotLights(scene, contentNode, { max = 6, power = 4 } = {}) {
   const anchors = contentNode.userData.lightAnchors || [];
