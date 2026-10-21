@@ -373,7 +373,7 @@ export default function Empire3D({
     // Site urbain (voirie, trottoirs, lampadaires, arbres) autour des parcelles.
     const siteEntry = resolveProp('site');
     if (siteEntry) {
-      instantiateModel(siteEntry, { w: 35, d: 27 })
+      instantiateModel(siteEntry, { w: 60, d: 51 })
         .then((node) => { if (ctx.alive) { scene.add(node); env.setPlazaVisible(false); } })
         .catch((err) => console.warn('[Empire3D] site GLB indisponible, esplanade procédurale conservée.', err));
     }

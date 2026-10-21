@@ -77,12 +77,12 @@
     },
     "site": {
       "footprint": {
-        "w": 360,
-        "d": 320
+        "w": 620,
+        "d": 580
       },
       "maxHeight": 20,
-      "maxTriangles": 45000,
-      "maxBytes": 2500000,
+      "maxTriangles": 90000,
+      "maxBytes": 4000000,
       "maxTextureSize": 1024,
       "maxTextures": 8,
       "maxMaterials": 14,

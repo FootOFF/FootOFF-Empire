@@ -8,12 +8,14 @@ export const STADIUM_FOOTPRINT = { w: 16, d: 13 }; // emprise réservée au stad
 export const ARENA_FOOTPRINT = { w: 19, d: 15 };
 
 // [x, z] du centre de chaque parcelle.
-// Secteur principal : stade au centre, A/B au nord. Supporters à l'ouest, partenaires à l'est.
+// Secteur principal : stade au centre sur son esplanade, A/B au nord. Supporters à l'ouest, partenaires à l'est.
+// Les parcelles sont écartées du stade : allées et jardins entre elles, boulevard périphérique autour
+// (voir tools/blender/models/build_site.py, même plan en mètres).
 export const PLOT_POS = {
   t0: [0, 0],
-  t1: [-4.5, -11], t2: [4.5, -11],
-  t3: [-13, -7], t4: [-13, 0], t5: [-13, 7],
-  t6: [13, -3.5], t7: [13, 3.5],
+  t1: [-4.5, -15.5], t2: [4.5, -15.5],
+  t3: [-17.5, -7.5], t4: [-17.5, 0], t5: [-17.5, 7.5],
+  t6: [17.5, -4], t7: [17.5, 4],
 };
 
 export function footprintOf(plotId, lvl = 0) {
@@ -21,8 +23,8 @@ export function footprintOf(plotId, lvl = 0) {
   return { w: PLOT_SIZE, d: PLOT_SIZE };
 }
 
-// Esplanade pavée qui englobe toutes les parcelles (+ marge pour les routes).
-export const PLAZA = { minX: -17.5, maxX: 17.5, minZ: -15.5, maxZ: 11.5 };
+// Emprise du complexe jusqu'au boulevard périphérique (esplanade procédurale tant que le site n'est pas chargé).
+export const PLAZA = { minX: -24, maxX: 24, minZ: -23, maxZ: 18.8 };
 export const PLAZA_CENTER = [(PLAZA.minX + PLAZA.maxX) / 2, (PLAZA.minZ + PLAZA.maxZ) / 2];
 export const PLAZA_SIZE = [PLAZA.maxX - PLAZA.minX, PLAZA.maxZ - PLAZA.minZ];
 

@@ -161,6 +161,16 @@ cuvette continue aux angles fermés, deux étages reliés par des loges au nord 
 (haut au nord, bas et reculé côté caméra pour voir toute la pelouse), bande vitrée et nervures, façade vitrée à
 ailettes LED or, bandeau FootOFF Media et monogrammes côté caméra. Elle déborde sur les allées de l'esplanade
 (`ARENA_FOOTPRINT`, catégorie `arena` de `assets-src/budgets.json`) ; caméras de match un peu plus hautes.
-Le stade est posé sur une esplanade piétonne (plus de route autour) ; les voitures roulent sur le boulevard sud.
+Le stade est posé sur une esplanade piétonne (plus de route autour).
+
+## Plateforme du complexe
+
+Plan commun à `src/three/layout.js` (parcelles, en unités du jeu) et `tools/blender/models/build_site.py` (site, en
+mètres) : arène au centre sur son esplanade, parcelles écartées (allées plantées et jardins entre elles, promenade
+au nord), boulevard périphérique autour du complexe avec deux ronds-points au sud, parkings paysagers de part et
+d'autre du parvis, grand boulevard sud à deux chaussées avec le tram sur gazon et sa station face au parvis. La
+circulation (`src/three/life.js`) suit les mêmes cotes : deux boucles du périphérique en sens contraires qui
+contournent l'îlot des ronds-points, plus la chaussée de transit. Aucun sol n'en recouvre un autre à moins de 4 cm,
+et les marquages sont 5 cm au-dessus de l'enrobé : de loin, des surfaces plus proches scintillent.
 Marquages au sol 5 cm au-dessus de l'enrobé : plus fins, ils scintillaient de loin (conflit de profondeur).
 Le verre liquide reste réservé au menu du bas ; les onglets des panneaux gardent leur style simple (`Tabs`).

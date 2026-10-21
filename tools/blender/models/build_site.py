@@ -1,14 +1,15 @@
 """FootOFF Empire - generateur du site urbain et des parcelles (props).
 
 Collections exportees (models/props/<nom>.glb) :
-  prop_site         : boulevard, trottoirs, esplanade pietonne autour du stade, promenade, parvis, lampadaires,
-                      arbres (circulation animee dans le jeu)
-                      autour des parcelles (emprise 350 x 270 m, origine = centre du stade)
+  prop_site         : plateforme du complexe (emprise 600 x 510 m, origine = centre du stade) : esplanade
+                      pietonne autour du stade, allees, jardins, promenade, boulevard peripherique et
+                      ronds-points, boulevard sud avec tram et station, parkings, lampadaires, arbres
+                      (circulation animee dans le jeu)
   prop_plot_empty   : parcelle ouverte, prete a batir
   prop_plot_locked  : parcelle verrouillee : chantier palissade, cabanes, grue
 
 Plan (metres, Blender : x vers l'est, y vers le nord ; jeu : z = -y) calque sur src/three/layout.js :
-stade 160 x 130 au centre, parcelles 60 x 60 en t1..t7.
+stade au centre (arene jusqu'a 187 x 140 m), parcelles 60 x 60 en t1..t7, ecartees du stade.
 
 Lancement :
     blender -b --factory-startup -P tools/blender/models/build_site.py
@@ -20,46 +21,63 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from footoff_lib import GOLD, Builder, Matrix, RNG, bpy, find_repo, fo_logo, material  # noqa: E402
-from footoff_modern import container_box, lawn, modern_materials, plinth, tree  # noqa: E402
+from footoff_modern import car, container_box, lawn, modern_materials, plinth, tree  # noqa: E402
 
 # Parcelles (centres en metres, repere Blender) = PLOT_POS de layout.js x 10, z -> -y
 PLOTS = {
-    "t1": (-45, 110), "t2": (45, 110),
-    "t3": (-130, 70), "t4": (-130, 0), "t5": (-130, -70),
-    "t6": (130, 35), "t7": (130, -35),
+    "t1": (-45, 155), "t2": (45, 155),
+    "t3": (-175, 75), "t4": (-175, 0), "t5": (-175, -75),
+    "t6": (175, 40), "t7": (175, -40),
 }
-SITE = (-175.0, -115.0, 175.0, 155.0)  # x0, y0, x1, y1
+SITE = (-300.0, -230.0, 300.0, 280.0)  # x0, y0, x1, y1 : complexe + bande de terrain autour (la ville viendra ici)
 STADIUM = (-80.0, -65.0, 80.0, 65.0)
 ARENA = (-95.0, -70.0, 95.0, 76.0)  # arene des niveaux 5 et 6 (facade, parvis, totems) : rien d'autre dedans
-ROAD_W = 12.0
+MARK_Z = 0.08  # marquages 5 cm au-dessus de l'enrobe : a distance, 5 mm scintillaient (conflit de profondeur)
+ROAD_Z = 0.03
+DISC_Z = 0.07  # anneau des ronds-points, un peu au-dessus des voies qui y entrent (jamais deux sols au meme niveau)
 
-# Voirie : boulevard sud (cote camera). Plus de boucle autour du stade : l'arene des niveaux 5 et 6 la
-# recouvrait ; le stade est pose sur une esplanade pietonne.
+# Boulevard peripherique autour du complexe (axe x = +-230, nord y = 220) ; au sud il devient un grand
+# boulevard a deux chaussees separees par la plateforme du tram. Ronds-points aux deux angles sud.
+RING_X, RING_N, RING_S = 230.0, 220.0, -152.0
+ROUNDABOUTS = [(-RING_X, RING_S), (RING_X, RING_S)]
+DISC_R, ISLAND_R = 16.0, 6.0
 ROADS = [
-    (-175, -112, 175, -100),
+    (-236, 214, 236, 226),            # nord
+    (-236, -146, -224, 214),          # ouest
+    (224, -146, 236, 214),            # est
+    (-236, -158, 236, -146),          # sud : chaussee nord du boulevard (le peripherique)
+    (-300, -184, 300, -172),          # sud : chaussee de transit, d'un bout a l'autre de la carte
+    (-184, -146, -176, -138), (176, -146, 184, -138),  # entrees des parkings
 ]
+MEDIAN = [(-300, -172, 300, -165.5), (-300, -165.5, -246, -158), (-214, -165.5, 214, -158), (246, -165.5, 300, -158)]
+TRAM_Y = (-161.5, -168.5)  # axes des deux voies du tram
 SIDEWALKS = [
-    (-175, -100, -60, -96.5), (60, -100, 175, -96.5),
+    (-214, -146, -184, -142.5), (-176, -146, 176, -142.5), (184, -146, 214, -142.5),  # bord nord du boulevard
+    (-224, 210.5, 224, 214), (-224, -136, -220.5, 210.5), (220.5, -136, 224, 210.5),   # cote interieur
+    (-239.5, 226, 239.5, 229.5), (-239.5, -136, -236, 226), (236, -136, 239.5, 226),   # cote exterieur
+    (-300, -187.5, 300, -184),                                                         # bord sud
 ]
 # esplanade pietonne : anneau dalle autour de l'emprise du stade (le modele du stade a son propre sol dedans)
-ESPLANADE = [
-    (-99.6, -81.5, 99.6, -65), (-99.6, 65, 99.6, 79.6), (-99.6, -65, -80, 65), (80, -65, 99.6, 65),
+ESPLANADE = [(-130, -100, 130, -65), (-130, 65, 130, 110), (-130, -65, -80, 65), (80, -65, 130, 65)]
+FORECOURT = (-80, -142.5, 80, -100)  # parvis provisoire jusqu'au boulevard (etape 2 : parvis de prestige)
+ALLEYS = [
+    (-142, -105, -136, 113), (136, -105, 142, 113), (-142, 113, 142, 119),          # tour de l'esplanade
+    (-220.5, 34.5, -142, 40.5), (-220.5, -40.5, -142, -34.5), (142, -3, 220.5, 3),  # entre les parcelles
 ]
-MARK_Z = 0.08  # marquages 5 cm au-dessus de l'enrobe : a distance, 5 mm scintillaient (conflit de profondeur)
-PROMENADE = (-13, 79.6, 13, 150)
-FORECOURT = (-60, -100, 60, -81.5)
+PROMENADE = (-13, 119, 13, 210.5)
+PARKINGS = [(-214, -138, -142, -112), (142, -138, 214, -112)]
 
 
 def inside(x, y, r, m=0.0):
     return r[0] - m <= x <= r[2] + m and r[1] - m <= y <= r[3] + m
 
 
-def lamp(B, x, y, ang, h=8.0):
+def lamp(B, x, y, ang, h=8.0, z=0.0):
     """Lampadaire moderne : mat noir, crosse, tete LED (allumee la nuit)."""
     dx, dy = math.cos(ang) * 1.6, math.sin(ang) * 1.6
-    B.cyl("black_metal", (x, y, 0), (x, y, h), 0.09, 0.07, segs=6)
-    B.cyl("black_metal", (x, y, h), (x + dx, y + dy, h + 0.15), 0.05, segs=4)
-    B.box("emissive_light", (x + dx - 0.35, y + dy - 0.18, h - 0.05), (x + dx + 0.35, y + dy + 0.18, h + 0.12))
+    B.cyl("black_metal", (x, y, z), (x, y, z + h), 0.09, 0.07, segs=6)
+    B.cyl("black_metal", (x, y, z + h), (x + dx, y + dy, z + h + 0.15), 0.05, segs=4)
+    B.box("emissive_light", (x + dx - 0.35, y + dy - 0.18, z + h - 0.05), (x + dx + 0.35, y + dy + 0.18, z + h + 0.12))
 
 
 def dashes(B, x0, y0, x1, y1, z=MARK_Z):
@@ -77,59 +95,167 @@ def dashes(B, x0, y0, x1, y1, z=MARK_Z):
             B.box("white", (x0 - 0.08, y, 0.0), (x0 + 0.08, y + 3, z))
 
 
+def zebra(B, x0, x1, y0, y1, along_x=True):
+    """Passage pieton : bandes de 50 cm tous les metres, en travers de la chaussee."""
+    if along_x:  # chaussee est-ouest : bandes orientees nord-sud
+        x = x0
+        while x + 0.5 <= x1:
+            B.box("white", (x, y0 + 0.4, 0.0), (x + 0.5, y1 - 0.4, MARK_Z))
+            x += 1.0
+    else:
+        y = y0
+        while y + 0.5 <= y1:
+            B.box("white", (x0 + 0.4, y, 0.0), (x1 - 0.4, y + 0.5, MARK_Z))
+            y += 1.0
+
+
 def flat_logo(B, mat, x, y, height, z=0.0):
     """Monogramme FO incruste a plat dans le sol (haut du logo vers le nord)."""
     fo_logo(B, mat, Matrix.Translation((x, y - height / 2, z + 0.15)) @ Matrix.Rotation(-math.pi / 2, 4, "X"), height, depth=0.04)
+
+
+def roundabout(B, cx, cy):
+    """Rond-point : anneau d'enrobe, ilot engazonne borde de beton, stele FootOFF au centre."""
+    B.cyl("asphalt", (cx, cy, 0.0), (cx, cy, DISC_Z), DISC_R, segs=40)
+    B.cyl("concrete_dark", (cx, cy, 0.0), (cx, cy, 0.2), ISLAND_R + 0.4, segs=28)
+    B.cyl("lawn", (cx, cy, 0.0), (cx, cy, 0.24), ISLAND_R, segs=28)
+    B.box("black_metal", (cx - 1.3, cy - 0.4, 0.24), (cx + 1.3, cy + 0.4, 4.6))
+    fo_logo(B, "emissive_led", Matrix.Translation((cx, cy - 0.45, 1.6)), 2.0, depth=0.06)
+    for a in range(0, 360, 60):  # bosquet bas autour de la stele
+        r = ISLAND_R * 0.62
+        tree(B, cx + r * math.cos(math.radians(a)), cy + r * math.sin(math.radians(a)), 3.2, 1.1, z=0.24)
+
+
+def tram(B):
+    """Plateforme du tram sur gazon entre les deux chaussees : rails, poteaux et fils, station face au parvis."""
+    for yc in TRAM_Y:
+        for dy in (-0.72, 0.72):
+            B.box("steel", (-300, yc + dy - 0.05, 0.0), (300, yc + dy + 0.05, 0.16))
+    # poteaux de ligne aerienne au milieu, potences et fils de contact au-dessus de chaque voie
+    ym = (TRAM_Y[0] + TRAM_Y[1]) / 2
+    for x in range(-288, 289, 32):
+        if -46 < x < 46:
+            continue  # la station a sa propre structure
+        B.cyl("black_metal", (x, ym, 0.1), (x, ym, 7.2), 0.12, 0.09, segs=6)
+        B.box("black_metal", (x - 0.06, TRAM_Y[1] - 0.3, 6.6), (x + 0.06, TRAM_Y[0] + 0.3, 6.75))
+    for yc in TRAM_Y:
+        B.box("steel", (-300, yc - 0.03, 6.25), (300, yc + 0.03, 6.31))
+    # station : quai central, abri vitre a toiture noire, bandes dorees, bancs, eclairage, totem FO
+    q0, q1 = TRAM_Y[0] - 1.6, TRAM_Y[1] + 1.6
+    B.box("paving", (-42, q1, 0.0), (42, q0, 0.35), tile=(4.8, 4.8))
+    B.box("emissive_led", (-42, q0 - 0.3, 0.35), (42, q0, 0.4))
+    B.box("emissive_led", (-42, q1, 0.35), (42, q1 + 0.3, 0.4))
+    for x in range(-36, 37, 12):
+        B.cyl("black_metal", (x, ym, 0.35), (x, ym, 3.9), 0.1, segs=6)
+    B.box("black_metal", (-40, q1 - 0.6, 3.9), (40, q0 + 0.6, 4.15))
+    B.box("glass", (-40, q1 - 0.6, 4.15), (40, q0 + 0.6, 4.2))
+    B.box("emissive_light", (-38, ym - 0.2, 3.75), (38, ym + 0.2, 3.9))
+    for x in (-24, 0, 24):
+        B.box("glass", (x - 4, ym - 0.03, 0.35), (x + 4, ym + 0.03, 2.6))
+        B.box("wood", (x - 3, ym + 0.2, 0.35), (x + 3, ym + 0.75, 0.8), tile=(2, 2))
+    B.box("black_metal", (44, ym - 0.3, 0.35), (45.6, ym + 0.3, 5.2))
+    fo_logo(B, "emissive_led", Matrix.Translation((44.8, ym - 0.35, 3.0)), 1.8, depth=0.05)
+
+
+def parking_lot(B, x0, y0, x1, y1):
+    """Parking paysager : deux rangees d'emplacements, ilot central plante, voitures garees."""
+    B.box("asphalt", (x0, y0, 0.0), (x1, y1, ROAD_Z), tile=(8, 8))
+    ym = (y0 + y1) / 2
+    B.box("concrete_dark", (x0 + 4, ym - 2.4, 0.0), (x1 - 4, ym + 2.4, 0.16))
+    B.box("lawn", (x0 + 4.3, ym - 2.1, 0.0), (x1 - 4.3, ym + 2.1, 0.2), tile=(8, 8))
+    n = int((x1 - x0 - 8) // 2.6)
+    for i in range(n + 1):
+        x = x0 + 4 + i * 2.6
+        for ya, yb in ((y0 + 0.6, y0 + 5.6), (y1 - 5.6, y1 - 0.6)):
+            B.box("white", (x - 0.06, ya, 0.0), (x + 0.06, yb, MARK_Z))
+    for x in range(int(x0) + 10, int(x1) - 6, 12):
+        tree(B, x, ym, 7.5, 2.0, z=0.2)
+    paints = ("black_metal", "steel", "white", "black_metal", "glass")
+    k = 0
+    for i in range(n):
+        for row, yy, ang in ((0, y0 + 3.1, 0.0), (1, y1 - 3.1, math.pi)):
+            if (i * 5 + row * 3) % 7 < 4:
+                car(B, x0 + 4 + (i + 0.5) * 2.6, yy, ang, paints[k % len(paints)])
+                k += 1
 
 
 def site(B, coll):
     x0, y0, x1, y1 = SITE
     B.box("lawn", (x0, y0, -0.02), (x1, y1, 0.0), tile=(8, 8))
     for r in ROADS:
-        B.box("asphalt", (r[0], r[1], 0.0), (r[2], r[3], 0.03), tile=(8, 8))
-    # marquage axial du boulevard
-    dashes(B, -175, -106, 175, -106)
-    for r in SIDEWALKS + ESPLANADE:
+        B.box("asphalt", (r[0], r[1], 0.0), (r[2], r[3], ROAD_Z), tile=(8, 8))
+    for cx, cy in ROUNDABOUTS:
+        roundabout(B, cx, cy)
+    # marquages : axes discontinus (interrompus aux ronds-points)
+    dashes(B, -224, RING_N, 224, RING_N)
+    dashes(B, -RING_X, -136, -RING_X, 214)
+    dashes(B, RING_X, -136, RING_X, 214)
+    dashes(B, -214, RING_S, 214, RING_S)
+    dashes(B, -300, -178, 300, -178)
+    for r in MEDIAN:
+        B.box("lawn", (r[0], r[1], 0.0), (r[2], r[3], 0.1), tile=(8, 8))
+    tram(B)
+    for r in SIDEWALKS + ESPLANADE + ALLEYS + [FORECOURT, PROMENADE]:
         B.box("paving", (r[0], r[1], 0.0), (r[2], r[3], 0.14), tile=(4.8, 4.8))
-    # passage pieton du boulevard, face au parvis
-    for i in range(7):
-        x = -8 + i * 2.4
-        B.box("white", (x, -111.4, 0.0), (x + 1.2, -100.6, MARK_Z))
-    # parvis du stade : dallage, grand monogramme dore, alignements d'arbres
-    f = FORECOURT
-    B.box("paving", (f[0], f[1], 0.0), (f[2], f[3], 0.14), tile=(4.8, 4.8))
-    flat_logo(B, "gold_paint", 0, -90.5, 13.0)
-    for x in (-52, -40, -28, 28, 40, 52):
-        for y in (-95, -86):
+    for p in PARKINGS:
+        parking_lot(B, *p)
+    # passages pietons : du parvis a la station (deux chaussees), en haut de la promenade, aux allees
+    zebra(B, -6, 6, -158, -146)
+    zebra(B, -6, 6, -184, -172)
+    zebra(B, -6, 6, 214, 226)
+    zebra(B, -236, -224, 34.5, 40.5, along_x=False)
+    zebra(B, -236, -224, -40.5, -34.5, along_x=False)
+    zebra(B, 224, 236, -3, 3, along_x=False)
+    # parvis (provisoire) : grand monogramme dore, alignements d'arbres, lampadaires
+    flat_logo(B, "gold_paint", 0, -121, 13.0)
+    for x in (-70, -56, -42, -28, 28, 42, 56, 70):
+        for y in (-136, -107):
             tree(B, x, y, 8.5, 2.2, z=0.14)
-    for x in (-58, -20, 20, 58):
-        lamp(B, x, -98.5, math.pi / 2)
-    # promenade entre les parcelles nord
-    p = PROMENADE
-    B.box("paving", (p[0], p[1], 0.0), (p[2], p[3], 0.14), tile=(4.8, 4.8))
-    for y in range(86, 150, 10):
+    for x in (-74, -36, 36, 74):
+        lamp(B, x, -121, 0.0, z=0.14)
+    # promenade entre les parcelles nord : arbres en colonnes, bancs, lampadaires bas
+    for y in range(126, 206, 10):
         for x in (-9, 9):
             tree(B, x, y, 8, 2.0, z=0.14, columnar=True)
-        lamp(B, 0, y + 5, 0.0, h=6)
+        lamp(B, 0, y + 5, 0.0, h=6, z=0.14)
         B.box("wood", (-6.5, y, 0.14), (-5.9, y + 3, 0.6), tile=(2, 2))
         B.box("wood", (5.9, y, 0.14), (6.5, y + 3, 0.6), tile=(2, 2))
-    flat_logo(B, "gold_paint", 0, 145, 6.0)
-    # lampadaires de l'esplanade (bord exterieur)
-    for x in range(-84, 85, 24):
-        lamp(B, x, -79.8, math.pi / 2)
-        lamp(B, x, 78.8, -math.pi / 2)
+    flat_logo(B, "gold_paint", 0, 200, 6.0)
+    # allees autour de l'esplanade : alignements d'arbres cote esplanade, lampadaires cote parcelles
+    for y in range(-98, 112, 12):
+        tree(B, -133, y, 8, 2.1)
+        tree(B, 133, y, 8, 2.1)
+    for x in range(-126, 127, 12):
+        if abs(x) > 18:
+            tree(B, x, 112.0, 8, 2.1)
+    for y in range(-96, 113, 24):
+        lamp(B, -142.6, y, 0.0, z=0.14)
+        lamp(B, 142.6, y, math.pi, z=0.14)
+    # lampadaires de l'esplanade (bord exterieur) et du peripherique (cote interieur)
+    for x in range(-120, 121, 24):
+        lamp(B, x, -97, math.pi / 2, z=0.14)
+        lamp(B, x, 107, -math.pi / 2, z=0.14)
     for y in range(-60, 61, 24):
-        lamp(B, -97.8, y, 0.0)
-        lamp(B, 97.8, y, math.pi)
-    for x in range(-168, 169, 28):
-        lamp(B, x, -98.2, -math.pi / 2)
-    # arbres dans les espaces verts libres (grille jittee, hors voirie / parcelles / stade)
-    blocked = [STADIUM, ARENA, PROMENADE, FORECOURT] + list(ROADS) + list(SIDEWALKS) + list(ESPLANADE)
-    blocked += [(cx - 31, cy - 31, cx + 31, cy + 31) for cx, cy in PLOTS.values()]
+        lamp(B, -127, y, 0.0, z=0.14)
+        lamp(B, 127, y, math.pi, z=0.14)
+    for x in range(-210, 211, 30):
+        lamp(B, x, 212.3, math.pi / 2, z=0.14)
+        if abs(x) > 12 and not 170 < abs(x) < 190:
+            lamp(B, x, -144.3, -math.pi / 2, z=0.14)
+    for y in range(-120, 211, 30):
+        lamp(B, -222.3, y, math.pi, z=0.14)
+        lamp(B, 222.3, y, 0.0, z=0.14)
+    for x in range(-290, 291, 30):
+        lamp(B, x, -185.8, math.pi / 2, z=0.14)
+    # arbres des jardins (dans le peripherique) et de la bande exterieure (moins denses)
+    blocked = [STADIUM, ARENA, FORECOURT, PROMENADE] + ROADS + SIDEWALKS + ESPLANADE + ALLEYS + PARKINGS + MEDIAN
+    blocked += [(cx - 33, cy - 33, cx + 33, cy + 33) for cx, cy in PLOTS.values()]
+    blocked += [(cx - DISC_R, cy - DISC_R, cx + DISC_R, cy + DISC_R) for cx, cy in ROUNDABOUTS]
     for gx in range(int(x0) + 6, int(x1) - 4, 13):
-        for gy in range(int(y0) + 18, int(y1) - 4, 13):
+        for gy in range(int(y0) + 6, int(y1) - 4, 13):
             x, y = gx + RNG.uniform(-4, 4), gy + RNG.uniform(-4, 4)
-            if RNG.random() > 0.62 or any(inside(x, y, r, 3.0) for r in blocked):
+            within = abs(x) < 224 and -142 < y < 214
+            if RNG.random() > (0.5 if within else 0.28) or any(inside(x, y, r, 3.0) for r in blocked):
                 continue
             tree(B, x, y, RNG.uniform(7, 11), RNG.uniform(1.8, 2.8), columnar=RNG.random() < 0.25)
 

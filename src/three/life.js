@@ -46,10 +46,45 @@ function polyline(points, closed) {
   };
 }
 
-// Plus de boucle autour du stade : l'arène des niveaux 5 et 6 la recouvrait, le stade est sur une esplanade.
+// Boulevard périphérique (mêmes cotes que build_site.py, en mètres Blender : axe x = ±230, nord y = 220, sud
+// y = −152) : deux boucles en sens contraires, circulation à droite. Aux angles sud, les voitures contournent
+// l'îlot des ronds-points (trois quarts de tour pour tourner à gauche, un quart pour tourner à droite) ; au
+// nord, simple virage. Le boulevard sud a sa propre chaussée de transit, de part et d'autre de la carte.
+const RX = 230, RN = 220, RS = -152;
+const OFF = 3; // demi-largeur de voie : axe de chaque sens à 3 m de l'axe de la route
+const arcPts = (cx, cy, r, a0, a1) => { // arc en degrés, sens donné par a0 → a1
+  const n = Math.max(2, Math.ceil(Math.abs(a1 - a0) / 8));
+  return Array.from({ length: n + 1 }, (_, i) => {
+    const a = THREE.MathUtils.degToRad(a0 + ((a1 - a0) * i) / n);
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  });
+};
+const toGame = (pts) => pts.map(([x, y]) => [x / 10, -y / 10]);
+const ang = (dx, dy) => THREE.MathUtils.radToDeg(Math.atan2(dy, dx));
+function ringLane(outer) {
+  const R = outer ? 12.5 : 9.5; // rayon de giration autour de l'îlot
+  const k = Math.sqrt(R * R - OFF * OFF);
+  const pts = [];
+  if (outer) { // sens trigonométrique vu de dessus : est au sud, nord à l'est, ouest au nord, sud à l'ouest
+    pts.push(...arcPts(RX, RS, R, ang(-k, -OFF), ang(OFF, k) + 360)); // rond-point sud-est : à gauche
+    pts.push(...arcPts(RX - 10, RN - 10, 10 + OFF, 0, 90)); // virage nord-est
+    pts.push(...arcPts(-RX + 10, RN - 10, 10 + OFF, 90, 180)); // virage nord-ouest
+    pts.push(...arcPts(-RX, RS, R, ang(-OFF, k), ang(k, -OFF) + 360)); // rond-point sud-ouest : à gauche
+  } else { // sens horaire : ouest au sud, nord à l'ouest, est au nord, sud à l'est
+    pts.push(...arcPts(-RX, RS, R, ang(k, OFF), ang(OFF, k))); // rond-point sud-ouest : à droite
+    pts.push(...arcPts(-RX + 10, RN - 10, 10 - OFF, 180, 90)); // virage nord-ouest
+    pts.push(...arcPts(RX - 10, RN - 10, 10 - OFF, 90, 0)); // virage nord-est
+    pts.push(...arcPts(RX, RS, R, ang(-OFF, k), ang(-k, OFF))); // rond-point sud-est : à droite
+  }
+  return polyline(toGame(pts), true);
+}
+
+// Une voie = un tracé parcouru dans un seul sens ; les voitures d'une même voie ne se doublent jamais.
 const LANES = [
-  { path: polyline([[-19, 10.3], [19, 10.3]], false), cars: 6 }, // boulevard sud vers l'est
-  { path: polyline([[19, 10.9], [-19, 10.9]], false), cars: 6 }, // boulevard sud vers l'ouest
+  { path: ringLane(true), cars: 18 }, // périphérique, sens trigonométrique
+  { path: ringLane(false), cars: 16 }, // périphérique, sens horaire
+  { path: polyline([[-30, 17.5], [30, 17.5]], false), cars: 8 }, // boulevard sud (transit) vers l'est
+  { path: polyline([[30, 18.1], [-30, 18.1]], false), cars: 8 }, // boulevard sud (transit) vers l'ouest
 ];
 const CAR_LEN = 0.45;
 const MIN_GAP = CAR_LEN + 0.35; // distance pare-chocs à pare-chocs minimale ~3,5 m

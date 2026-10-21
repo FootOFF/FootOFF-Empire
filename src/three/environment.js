@@ -60,7 +60,7 @@ export function createEnvironment(scene, renderer) {
   sun.castShadow = true;
   sun.shadow.mapSize.set(lowEnd() ? 1024 : 2048, lowEnd() ? 1024 : 2048);
   const sc = sun.shadow.camera;
-  sc.left = -26; sc.right = 26; sc.top = 26; sc.bottom = -26; sc.near = 1; sc.far = 120;
+  sc.left = -32; sc.right = 32; sc.top = 32; sc.bottom = -32; // tout le complexe sc.near = 1; sc.far = 120;
   sun.shadow.bias = -0.0004;
   sun.shadow.normalBias = 0.03;
   sun.shadow.radius = 3;
