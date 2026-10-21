@@ -46,19 +46,8 @@ function polyline(points, closed) {
   };
 }
 
-// Rectangle à coins chanfreinés (virages adoucis), parcouru dans le sens donné.
-function roundedRect(hx, hz, c = 0.5, reverse = false) {
-  const pts = [
-    [-hx + c, -hz], [hx - c, -hz], [hx, -hz + c], [hx, hz - c],
-    [hx - c, hz], [-hx + c, hz], [-hx, hz - c], [-hx, -hz + c],
-  ];
-  return reverse ? pts.reverse() : pts;
-}
-
-// Une voie = un tracé parcouru dans un seul sens ; les voitures d'une même voie ne se doublent jamais.
+// Plus de boucle autour du stade : l'arène des niveaux 5 et 6 la recouvrait, le stade est sur une esplanade.
 const LANES = [
-  { path: polyline(roundedRect(9.3, 7.5), true), cars: 11 }, // boucle du stade, voie extérieure
-  { path: polyline(roundedRect(8.7, 6.9, 0.5, true), true), cars: 9 }, // voie intérieure, sens inverse
   { path: polyline([[-19, 10.3], [19, 10.3]], false), cars: 6 }, // boulevard sud vers l'est
   { path: polyline([[19, 10.9], [-19, 10.9]], false), cars: 6 }, // boulevard sud vers l'ouest
 ];

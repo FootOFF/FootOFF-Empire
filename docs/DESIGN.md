@@ -161,4 +161,6 @@ cuvette continue aux angles fermés, deux étages reliés par des loges au nord 
 (haut au nord, bas et reculé côté caméra pour voir toute la pelouse), bande vitrée et nervures, façade vitrée à
 ailettes LED or, bandeau FootOFF Media et monogrammes côté caméra. Elle déborde sur les allées de l'esplanade
 (`ARENA_FOOTPRINT`, catégorie `arena` de `assets-src/budgets.json`) ; caméras de match un peu plus hautes.
+Le stade est posé sur une esplanade piétonne (plus de route autour) ; les voitures roulent sur le boulevard sud.
+Marquages au sol 5 cm au-dessus de l'enrobé : plus fins, ils scintillaient de loin (conflit de profondeur).
 Le verre liquide reste réservé au menu du bas ; les onglets des panneaux gardent leur style simple (`Tabs`).
