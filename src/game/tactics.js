@@ -66,21 +66,53 @@ export const TACTIC_ORDER = ['offensive', 'balanced', 'low'];
 
 const HOME_BONUS = 1.06;
 
-// Meilleur onze : chaque poste est d'abord pourvu par des joueurs de ce poste, puis par les meilleurs restants.
+// Affectation optimale (méthode hongroise) : n lignes (postes) × m colonnes (joueurs), n ≤ m, coût minimal.
+function hungarian(a) {
+  const n = a.length;
+  const m = a[0].length;
+  const u = new Array(n + 1).fill(0);
+  const v = new Array(m + 1).fill(0);
+  const p = new Array(m + 1).fill(0);
+  const way = new Array(m + 1).fill(0);
+  for (let i = 1; i <= n; i++) {
+    p[0] = i;
+    let j0 = 0;
+    const minv = new Array(m + 1).fill(Infinity);
+    const used = new Array(m + 1).fill(false);
+    do {
+      used[j0] = true;
+      const i0 = p[j0];
+      let delta = Infinity;
+      let j1 = 0;
+      for (let j = 1; j <= m; j++) {
+        if (used[j]) continue;
+        const cur = a[i0 - 1][j - 1] - u[i0] - v[j];
+        if (cur < minv[j]) { minv[j] = cur; way[j] = j0; }
+        if (minv[j] < delta) { delta = minv[j]; j1 = j; }
+      }
+      for (let j = 0; j <= m; j++) {
+        if (used[j]) { u[p[j]] += delta; v[j] -= delta; } else minv[j] -= delta;
+      }
+      j0 = j1;
+    } while (p[j0] !== 0);
+    do { const j1 = way[j0]; p[j0] = p[j1]; j0 = j1; } while (j0);
+  }
+  const res = new Array(n).fill(-1);
+  for (let j = 1; j <= m; j++) if (p[j]) res[p[j] - 1] = j - 1;
+  return res;
+}
+
+// Meilleur onze : la répartition des joueurs sur les postes du dispositif qui donne le niveau d'équipe le plus haut
+// (même pondération que lineupRating). Un joueur hors de son poste est retenu s'il y reste meilleur que le
+// spécialiste ; à égalité, le joueur à son poste naturel passe devant.
 export function autoLineup(players, formation = '433') {
   const slots = slotsOf(formation);
-  const used = new Set();
-  const lineup = Array(slots.length).fill(null);
-  slots.forEach((pos, k) => {
-    const natural = players.filter((p) => p.pos === pos && !used.has(p.id)).sort((a, b) => ratingAt(b, pos) - ratingAt(a, pos));
-    if (natural[0]) { lineup[k] = natural[0].id; used.add(natural[0].id); }
-  });
-  slots.forEach((pos, k) => {
-    if (lineup[k] !== null) return;
-    const best = players.filter((p) => !used.has(p.id)).sort((a, b) => ratingAt(b, pos) - ratingAt(a, pos))[0];
-    if (best) { lineup[k] = best.id; used.add(best.id); }
-  });
-  return lineup;
+  const [nd, nm, na] = formationOf(formation).lines;
+  const weight = { G: 0.12, D: 0.3 / nd, M: 0.26 / nm, A: 0.32 / na };
+  const cols = [...players];
+  while (cols.length < slots.length) cols.push(null); // effectif trop court : poste laissé vide (niveau 3)
+  const cost = slots.map((pos) => cols.map((p) => (p ? -(weight[pos] * ratingAt(p, pos)) - (p.pos === pos ? 1e-4 : 0) : -weight[pos] * 3)));
+  return hungarian(cost).map((j) => (cols[j] ? cols[j].id : null));
 }
 
 // Répare un onze après des départs (retraite, libération) : garde les titulaires présents, complète au mieux.

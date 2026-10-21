@@ -20,7 +20,7 @@ import { PHONE, useSwipe } from './gestures';
 
 const outcome = (m) => (m.pens ? (m.pens[0] > m.pens[1] ? 'win' : 'loss') : m.gf > m.ga ? 'win' : m.gf < m.ga ? 'loss' : 'draw');
 const mkey = (m) => `${m.season}-${m.round}-${m.comp || 'league'}-${m.stage ?? ''}`;
-const whenOf = (m) => (m.comp === 'cup' ? `Coupe ${STAGES_SHORT[m.stage]}` : m.comp === 'c1' ? `C1 ${STAGES_SHORT[m.stage]}` : `J${m.round}`);
+const whenOf = (m) => (m.comp === 'cup' ? `Coupe ${STAGES_SHORT[m.stage]}` : m.comp === 'c1' ? `Europe ${STAGES_SHORT[m.stage]}` : `J${m.round}`);
 const LETTER = { win: 'V', draw: 'N', loss: 'D' };
 const WORD = { win: 'Victoire', draw: 'Match nul', loss: 'Défaite' };
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
@@ -585,7 +585,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
   );
 }
 
-export function StatsPanel({ state, onClose, initialMatch = null }) {
+export function StatsPanel({ state, onClose, initialMatch = null, onPlayerSheet }) {
   const matches = state.matches || [];
   const [tab, setTab] = useState(initialMatch ? 'matches' : 'club');
   const seasons = [...new Set([state.seasonNumber, ...matches.map((m) => m.season)])].sort((a, b) => b - a);
@@ -615,7 +615,7 @@ export function StatsPanel({ state, onClose, initialMatch = null }) {
       overlay={(
         <>
           <Presence>{open && <StatsPass state={state} m={open} matches={matches} onClose={() => setOpen(null)} onPrev={() => go(-1)} onNext={() => go(1)} onCareer={setCareer} />}</Presence>
-          <Presence>{career !== null && <PlayerCareer state={state} id={career} onClose={() => setCareer(null)} />}</Presence>
+          <Presence>{career !== null && <PlayerCareer state={state} id={career} onClose={() => setCareer(null)} onSheet={onPlayerSheet} />}</Presence>
         </>
       )}
     >

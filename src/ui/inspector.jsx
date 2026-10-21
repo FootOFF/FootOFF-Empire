@@ -4,6 +4,7 @@ import { PLOT_LABELS, SECTORS, allowedBuildingsFor, buildingEffect, plotBuilding
 import { fmtMoney, fmtNum } from './format';
 import { TICKET_ORDER, TICKET_POLICIES, expectedGate, investmentPreview } from '../game/economy';
 import { Tabs } from './glass';
+import { seasonEndForecast } from '../game/advice';
 import { IconAcademy, IconArrowUp, IconClose, IconFans, IconLock, IconSponsor, IconStadium, IconTraining, IconTransfer } from './icons';
 import { Eyebrow } from './kit';
 import { useKeydown } from './presence';
@@ -119,6 +120,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
     const maxed = lvl >= b.max;
     const cost = upgradeCost(key, lvl + 1);
     const short = state.money < cost;
+    const endAfter = seasonEndForecast(state) - cost - Math.round(cost * 0.04); // fin de saison prévue après les travaux
     title = b.name;
     if (!maxed) {
       foot = (
@@ -126,7 +128,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
           <button className={`btn btn-xl wide ${short ? '' : 'glow'}`} disabled={short} onClick={() => onUpgrade(key)}>
             <IconArrowUp /> Améliorer · {fmtMoney(cost)}
           </button>
-          <span className="ins-hint">{short ? `Il manque ${fmtMoney(cost - state.money)}` : `Trésorerie après travaux : ${fmtMoney(state.money - cost)}`}</span>
+          <span className={`ins-hint ${endAfter < 0 ? 'risk' : ''}`}>{short ? `Il manque ${fmtMoney(cost - state.money)}` : endAfter < 0 ? `Attention : fin de saison prévue dans le rouge (${fmtMoney(endAfter)})` : `Trésorerie après travaux : ${fmtMoney(state.money - cost)}`}</span>
         </>
       );
     }

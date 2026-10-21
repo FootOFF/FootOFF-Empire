@@ -22,7 +22,7 @@ export const TICKET_POLICIES = {
 export const TICKET_ORDER = ['popular', 'standard', 'premium', 'prestige'];
 export const policyOf = (s) => TICKET_POLICIES[s.ticketPolicy] || TICKET_POLICIES.standard;
 
-// Soirées de coupe : plus de public, et la C1 se vend plus cher, avec ses droits TV européens.
+// Soirées de coupe : plus de public, et la Coupe d'Europe se vend plus cher, avec ses droits TV européens.
 export const COMP_GATE = {
   league: { demand: 1, ticket: 1, tv: 1 },
   cup: { demand: 1.15, ticket: 1.1, tv: 1.5 },

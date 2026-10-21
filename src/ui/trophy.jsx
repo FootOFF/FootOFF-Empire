@@ -1,9 +1,9 @@
 import React, { useId } from 'react';
 
 // Trophées dessinés (or FootOFF) : la coupe du championnat (coupe classique à deux anses), la Coupe nationale
-// (haute, avec couvercle) et la C1 (coupe aux grandes anses). Socle noir avec bandeau doré.
+// (haute, avec couvercle) et la Coupe d'Europe des clubs (coupe aux grandes anses). Socle noir avec bandeau doré.
 
-export const TROPHY_NAMES = { league: 'Championnat', cup: 'Coupe nationale', c1: 'C1' };
+export const TROPHY_NAMES = { league: 'Championnat', cup: 'Coupe nationale', c1: 'Coupe d’Europe' };
 
 export function Trophy({ comp = 'league', className = '', title }) {
   const id = useId().replace(/:/g, '');

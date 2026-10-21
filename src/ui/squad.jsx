@@ -37,10 +37,10 @@ function heat(v, ref) {
   return '';
 }
 
-export function SquadView({ state, run, ask, onClose, onFinances, initialTab = 'players', preview = null }) {
+export function SquadView({ state, run, ask, onClose, onFinances, initialTab = 'players', preview = null, initialSheet = null }) {
   const [tab, setTab] = useState(initialTab);
   const [filter, setFilter] = useState('all');
-  const [sheet, setSheet] = useState(preview?.sheet ? { id: preview.sheet } : null); // { id, market, order }
+  const [sheet, setSheet] = useState(preview?.sheet ? { id: preview.sheet } : initialSheet ? { id: initialSheet } : null); // { id, market, order }
   const [compare, setCompare] = useState(null); // { a, b } identifiants
   const [career, setCareer] = useState(null); // fiche carrière (joueur actuel ou ancien)
   const ref = divRef(state);
@@ -181,7 +181,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
               onSign={sign}
             />
           )}</Presence>
-          <Presence>{career !== null && <PlayerCareer state={state} id={career} onClose={() => setCareer(null)} />}</Presence>
+          <Presence>{career !== null && <PlayerCareer state={state} id={career} onClose={() => setCareer(null)} onSheet={(pid) => { setCareer(null); setSheet({ id: pid }); }} />}</Presence>
         </>
       )}
     >

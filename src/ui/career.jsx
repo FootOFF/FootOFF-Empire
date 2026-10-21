@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { POS_LABELS } from '../game/constants';
+import { ATTRS, GK_ATTRS } from '../game/players';
 import { allCareers, careerOf, topScorers } from '../game/career';
 import { fmtMoney, fmtNum, fmtRating } from './format';
 import { RatingBadge } from './kit';
@@ -22,7 +23,7 @@ export function departureText(c) {
 }
 export const reasonTag = (c) => (!c.old ? 'Au club' : c.old.reason === 'retraite' ? 'Retraité' : 'Vendu');
 
-export function PlayerCareer({ state, id, onClose }) {
+export function PlayerCareer({ state, id, onClose, onSheet }) {
   const ref = useRef(null);
   useSwipe(ref, { onDown: onClose, downMedia: PHONE });
   useEffect(() => { if (ref.current) ref.current.scrollTop = 0; }, [id]);
@@ -67,6 +68,20 @@ export function PlayerCareer({ state, id, onClose }) {
           </div>
         </section>
         <p className="cr-status">{departureText(c)}.</p>
+        {c.current && onSheet && <button className="btn ghost wide cr-sheet" onClick={() => onSheet(id)}>Voir sa fiche joueur · qualités, forme, notes</button>}
+        {!c.current && (c.old.a || c.old.g) && (
+          <section className="sh-sec">
+            <span className="sh-cap">Ses qualités au moment du départ</span>
+            <div className="cr-attrs">
+              {[...(p.pos === 'G' ? GK_ATTRS.map((x) => [x, c.old.g?.[x.key]]) : []), ...ATTRS.map((x) => [x, c.old.a?.[x.key]])]
+                .filter(([, v]) => v != null)
+                .slice(0, p.pos === 'G' ? 6 : 9)
+                .map(([x, v]) => (
+                  <div key={x.key}><span>{x.name}</span><i><b style={{ width: `${(v / 20) * 100}%` }} /></i><em>{Math.round(v)}</em></div>
+                ))}
+            </div>
+          </section>
+        )}
 
         <section className="sh-sec">
           <span className="sh-cap">Au club</span>

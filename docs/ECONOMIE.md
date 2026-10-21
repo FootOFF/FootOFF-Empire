@@ -15,18 +15,18 @@ capacité, vendues dix fois le prix du billet, dans la limite de 5 % du public p
 pleine et rapportent davantage ; le staff le conseille quand le stade est au maximum et la demande 30 % au-dessus.
 
 **Coupes** : la Coupe nationale (quatre tours à élimination directe, tirs au but en cas d'égalité, adversaires
-des divisions voisines) et la C1, réservée aux deux premiers de l'Elite la saison précédente (adversaires
+des divisions voisines) et la Coupe d'Europe des clubs, réservée aux deux premiers de l'Elite la saison précédente (adversaires
 européens fictifs). Les tours s'intercalent entre les journées ; tous les matchs se jouent à domicile, avec un
-public en hausse (×1,15 en Coupe nationale, ×1,55 en C1, billets ×1,5 en C1) et 1,5 M€ de droits TV par match
+public en hausse (×1,15 en Coupe nationale, ×1,55 en Coupe d'Europe, billets ×1,5) et 1,5 M€ de droits TV par match
 européen. Primes de la Coupe nationale : 6 %, 12 %, 25 % puis 75 % de la prime du champion de la division pour
-chaque tour gagné. C1 : 4 M€ de participation, puis 2,5 M€, 4 M€, 6,5 M€ et 15 M€ par tour gagné.
+chaque tour gagné. Coupe d'Europe : 4 M€ de participation, puis 2,5 M€, 4 M€, 6,5 M€ et 15 M€ par tour gagné.
 
 **Trophées et titre** : champion de sa division → trophée, prime de titre (la moitié de la prime du champion et
-30 % des sponsors), +3 de réputation. Coupe gagnée → trophée et +3 de réputation (+6 pour la C1). Chaque trophée
+30 % des sponsors), +3 de réputation. Coupe gagnée → trophée et +3 de réputation (+6 pour la Coupe d'Europe). Chaque trophée
 attire 3 % de public en plus (six au plus).
 
 Effet mesuré en Elite (club au niveau 15-16, bâtiments au maximum) : stade à 38 000 places, salaires ≈ 63 % des
-revenus ; à 75 000 places, recettes des matchs de 18 à 42 M€ et salaires ≈ 34 % ; avec la C1, ≈ 23 %.
+revenus ; à 75 000 places, recettes des matchs de 18 à 42 M€ et salaires ≈ 34 % ; avec la Coupe d'Europe, ≈ 23 %.
 
 **Effectif** : 25 joueurs au plus (au lieu de 18).
 

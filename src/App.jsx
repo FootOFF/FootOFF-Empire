@@ -2,7 +2,8 @@ import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 
 import {
   applyMatchResult, applyOffline, build, setTicketPolicy, createInitialState, dismissOffline, dismissReview, endSeason, matchContext, upgrade,
 } from './game/engine';
-import { BUILDINGS, DIVISIONS } from './game/constants';
+import { BUILDINGS, DIVISIONS, upgradeCost } from './game/constants';
+import { fmtMoney } from './ui/format';
 import { clearGame, loadGame, saveGame } from './game/save';
 import { clone } from './game/utils';
 import Onboarding from './ui/Onboarding';
@@ -24,7 +25,7 @@ import { moneyBurst } from './ui/moneyfx';
 import { previewState, previewUi, silentSound } from './ui/preview';
 import { QUALITIES, loadQuality, saveQuality } from './ui/settings';
 import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics';
-import { actionablePlots, dockSignals, staffTip } from './game/advice';
+import { actionablePlots, dockSignals, seasonEndForecast, staffTip } from './game/advice';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { createStadiumSound } from './ui/sound';
 
@@ -73,6 +74,7 @@ export default function App({ preview = null }) {
   const [dismissedTips, setDismissedTips] = useState(() => new Set()); // conseils masqués (session)
   const [confirm, setConfirm] = useState(boot.ui.confirm || null); // fenêtre de confirmation du jeu (vente, nouvelle partie…)
   const [squadTab, setSquadTab] = useState(boot.ui.squadTab || 'players'); // onglet d'ouverture de l'effectif
+  const [squadSheet, setSquadSheet] = useState(null); // fiche joueur ouverte d'emblée (depuis une fiche carrière)
   const [statsMatch, setStatsMatch] = useState(boot.ui.statsMatch || null); // 'last' : Stats Pass du dernier match ouvert d'emblée
   const sound = useRef(null);
   if (!sound.current) sound.current = preview ? silentSound : createStadiumSound();
@@ -141,15 +143,36 @@ export default function App({ preview = null }) {
     if (c) return { opp: c.opp.name, attendance: c.gate?.attendance, capacity: c.gate?.capacity };
     return lm ? { opp: lm.oppName, attendance: lm.attendance, capacity: lm.capacity, played: true } : null;
   })();
-  const onBuild = (sectorId, key) => {
-    if (run((s) => build(s, sectorId, key), 'Fonds insuffisants.')) { haptic('build'); toast(`Chantier lancé : ${BUILDINGS[key].name}`, 'gold'); }
+  // Une dépense qui ferait finir la saison dans le rouge demande confirmation : le conseil vendrait alors les plus
+  // gros salaires (plan de redressement). La fenêtre montre la fin de saison prévue avant et après.
+  const guardSpend = (cost, title, go) => {
+    const end = seasonEndForecast(state);
+    const upkeep = Math.round(cost * 0.04);
+    const after = end - cost - upkeep;
+    if (after >= 0) { go(); return; }
+    setConfirm({
+      title,
+      tone: 'danger',
+      text: 'Avec cette dépense, la saison finirait dans le rouge. Au coup de sifflet final, le conseil vendrait tes plus gros salaires pour redresser les comptes.',
+      rows: [
+        ['Coût', `−${fmtMoney(cost)}`, 'down'],
+        ['Entretien en plus', `${fmtMoney(upkeep)} / saison`, 'down'],
+        ['Fin de saison prévue', `${fmtMoney(end)} → ${fmtMoney(after)}`, 'down'],
+      ],
+      confirmLabel: 'Dépenser quand même',
+      cancelLabel: 'Renoncer',
+      onConfirm: go,
+    });
   };
-  const onUpgrade = (key) => {
+  const onBuild = (sectorId, key) => guardSpend(upgradeCost(key, 1), `Construire : ${BUILDINGS[key].name} ?`, () => {
+    if (run((s) => build(s, sectorId, key), 'Fonds insuffisants.')) { haptic('build'); toast(`Chantier lancé : ${BUILDINGS[key].name}`, 'gold'); }
+  });
+  const onUpgrade = (key) => guardSpend(upgradeCost(key, state.buildings[key] + 1), `${BUILDINGS[key].name} : passer au niveau ${state.buildings[key] + 1} ?`, () => {
     if (run((s) => upgrade(s, key), 'Fonds insuffisants ou niveau maximum.')) {
       haptic('build');
       toast(`${BUILDINGS[key].name} : niveau ${state.buildings[key] + 1}`, 'gold');
     }
-  };
+  });
 
   const cinematic = !!matchPhase || showResult || !!state.seasonReview || !!state.offline;
 
@@ -250,14 +273,15 @@ export default function App({ preview = null }) {
             ask={setConfirm}
             preview={boot.ui.squad}
             initialTab={tutoStep === 'sign' ? 'market' : squadTab}
-            onClose={() => { setPanel(null); setSquadTab('players'); }}
+            initialSheet={squadSheet}
+            onClose={() => { setPanel(null); setSquadTab('players'); setSquadSheet(null); }}
             onFinances={() => openPanel('finances')}
           />
         )}
       </Presence>
       <Presence>{panel === 'season' && <SeasonPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
-      <Presence>{panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} onClose={() => { setPanel(null); setStatsMatch(null); }} />}</Presence>
+      <Presence>{panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} onClose={() => { setPanel(null); setStatsMatch(null); }} onPlayerSheet={(id) => { setSquadSheet(id); setSquadTab('players'); setPanel('squad'); }} />}</Presence>
       <Presence>
         {panel === 'finances' && (
           <FinancesPanel state={state} onClose={() => setPanel(null)} onOpenSquad={() => { setSquadTab('players'); openPanel('squad'); }} />

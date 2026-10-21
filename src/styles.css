@@ -1938,3 +1938,12 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 .cine { overflow-y: auto; align-items: flex-start; }
 .cine > .cine-card { margin-top: auto; }
 .cine-champion .cine-card { padding-top: var(--s-3); }
+.hm-line .eyebrow { min-width: 0; overflow: hidden; text-overflow: ellipsis; } /* libellé de coupe : jamais coupé par le bouton Jouer */
+
+.cr-sheet { margin: 0 0 var(--s-2); }
+.cr-attrs { display: flex; flex-direction: column; gap: 6px; }
+.cr-attrs > div { display: grid; grid-template-columns: 110px minmax(0, 1fr) 26px; align-items: center; gap: var(--s-2); font-size: var(--t-sm); color: var(--text-2); }
+.cr-attrs i { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .07); overflow: hidden; }
+.cr-attrs i b { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
+.cr-attrs em { font-style: normal; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+.ins-hint.risk { color: var(--red); }

@@ -52,6 +52,13 @@ export function bestSigning(s) {
 
 const wageBill = (s) => s.players.reduce((a, p) => a + wageOf(p, s.divisionIndex), 0);
 
+// Trésorerie prévue au coup de sifflet final de la saison (matchs restants, sponsors, prime au classement actuel,
+// moins salaires et entretien) : sert à prévenir avant une dépense qui ferait finir la saison dans le rouge.
+export function seasonEndForecast(s) {
+  const position = standingsOf(s).findIndex((t) => t.i === 0) + 1;
+  return endOfSeasonForecast(s, position, wageBill(s)).end;
+}
+
 // Parcelles où une construction ou une amélioration est payable tout de suite (pastilles dorées 3D).
 // Une seule pastille par secteur pour les parcelles libres.
 export function actionablePlots(s) {

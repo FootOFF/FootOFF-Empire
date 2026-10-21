@@ -8,7 +8,7 @@ import { quickMatch } from './live';
 import { ensureLineup } from './tactics';
 import { closeSeasonGoals, resetSeasonStats, sectorUnlockedEvent } from './goals';
 import { book, closeLedger, markTreasury } from './ledger';
-import { C1_ENTRY, COMPS, STAGES, buildCalendar, cupPrize, drawOpponent, fixtureLabel, nextFixture } from './cups';
+import { C1_ENTRY, COMPS, STAGES, buildCalendar, cupPrize, drawOpponent, fixtureLabel, fixtureShort, nextFixture, ofDiv } from './cups';
 
 export function roundRobin(n) {
   const rounds = [];
@@ -51,7 +51,7 @@ export function startSeason(s) {
   }
   refreshTransfers(s, 'full');
   resetSeasonStats(s);
-  // C1 : qualifié par le classement de l'Elite la saison passée ; la participation est payée d'avance
+  // Coupe d'Europe : qualifié par le classement de l'Elite la saison passée ; la participation est payée d'avance
   s.c1 = !!s.c1Next;
   s.c1Next = false;
   buildCalendar(s);
@@ -59,7 +59,7 @@ export function startSeason(s) {
     s.money += C1_ENTRY;
     book(s, 'cups', C1_ENTRY);
     pushJournal(s, {
-      season: s.seasonNumber, kind: 'club', title: `${s.clubName} dispute la C1`,
+      season: s.seasonNumber, kind: 'club', title: `${s.clubName} dispute la Coupe d’Europe des clubs`,
       text: `Grand soir européen en vue : premier tour face ${clubAfter('à ', s.cups.c1.opp.name)}. Prime de participation : ${C1_ENTRY.toLocaleString('fr-FR')} €.`,
     });
   }
@@ -111,6 +111,7 @@ export function archivePlayer(s, p, { reason, fee = null, club = null }) {
     joined: p.joined ?? 1, left: s.seasonNumber, leftRound: s.round, reason, fee, club,
     age: p.age, ageSeason: reason === 'retraite' ? s.seasonNumber + 1 : s.seasonNumber,
     rating: Math.round(playerRating(p) * 10) / 10, peak, hist,
+    a: p.a ? { ...p.a } : null, g: p.g ? { ...p.g } : null, pot: p.pot, alt: p.alt || null, // qualités au départ
   }].slice(-150);
 }
 
@@ -212,7 +213,7 @@ export function matchContext(s) {
     const opp = s.cups[f.comp].opp;
     return {
       comp: f.comp, stage: f.stage, fixture: f.index, knockout: true, opp, oppIdx: -1,
-      label: fixtureLabel(f), gate: expectedGate(s, opp, f.comp), repMult: repMult * (f.comp === 'c1' ? 1.6 : 1.2),
+      label: fixtureLabel(f), short: fixtureShort(f), gate: expectedGate(s, opp, f.comp), repMult: repMult * (f.comp === 'c1' ? 1.6 : 1.2),
     };
   }
   const pr = s.schedule[s.round].find((p) => p.includes(0));
@@ -223,6 +224,7 @@ export function matchContext(s) {
     opp,
     oppIdx,
     label: fixtureLabel(f, s.round + 1),
+    short: fixtureShort(f, s.round + 1),
     gate: expectedGate(s, opp), // estimation : affluence, recettes (sans l'aléa du jour)
     repMult,
   };
@@ -285,7 +287,7 @@ export function applyMatchResult(s, live) {
   if (!league) {
     pushJournal(s, {
       season: s.seasonNumber, round: s.round, kind: 'match',
-      title: cupNote.trophy ? `${s.clubName} remporte ${cupNote.comp === 'c1' ? 'la C1' : 'la Coupe nationale'} !`
+      title: cupNote.trophy ? `${s.clubName} remporte ${cupNote.comp === 'c1' ? 'la Coupe d’Europe des clubs' : 'la Coupe nationale'} !`
         : cupNote.won ? `${COMPS[ctx.comp].short} : qualification contre ${clubAfter('', res.oppName)} (${score})`
           : `${COMPS[ctx.comp].short} : élimination face ${clubAfter('à ', res.oppName)} (${score})`,
       text: `${ctx.label}. ${cupNote.text}`,
@@ -345,12 +347,12 @@ export function endSeason(s) {
     s.money += titleBonus;
     book(s, 'titles', titleBonus);
     s.trophies = [...(s.trophies || []), { comp: 'league', season: s.seasonNumber, division: div.name }];
-    events.unshift(`Champion de ${div.name} ! Le trophée rejoint la vitrine et rapporte ${n(titleBonus)} € de primes de titre.`);
+    events.unshift(`Champion ${ofDiv(div.name)} ! Le trophée rejoint la vitrine et rapporte ${n(titleBonus)} € de primes de titre.`);
   }
-  // C1 : les deux premiers de l'Elite disputent la coupe d'Europe la saison suivante
+  // Coupe d'Europe : les deux premiers de l'Elite la disputent la saison suivante
   if (s.divisionIndex === DIVISIONS.length - 1 && position <= 2) {
     s.c1Next = true;
-    events.push(`Qualifié pour la C1 : ${n(C1_ENTRY)} € de prime de participation dès la reprise.`);
+    events.push(`Qualifié pour la Coupe d’Europe des clubs : ${n(C1_ENTRY)} € de prime de participation dès la reprise.`);
   }
   // Plan de redressement : saison bouclée dans le rouge → le conseil vend les plus gros salaires.
   while (s.money < 0 && s.players.length > SQUAD_MIN + 2) {
@@ -416,7 +418,7 @@ export function endSeason(s) {
   pushJournal(s, {
     season: s.seasonNumber,
     kind: 'saison',
-    title: promoted ? `Montée ! ${s.clubName} termine ${ordinal(position)} de ${div.name}` : relegated ? `Descente : ${ordinal(position, true)} place en ${div.name}` : `Saison ${s.seasonNumber} bouclée à la ${ordinal(position, true)} place`,
+    title: promoted ? `Montée ! ${s.clubName} termine ${ordinal(position)} ${ofDiv(div.name)}` : relegated ? `Descente : ${ordinal(position, true)} place en ${div.name}` : `Saison ${s.seasonNumber} bouclée à la ${ordinal(position, true)} place`,
     text: `Saison ${s.seasonNumber} terminée : ${ordinal(position)} en ${div.name}.${promoted ? ' Montée !' : relegated ? ' Descente.' : ''} Prime : ${n(prize)} € · Sponsors : ${n(sponsors)} € · Salaires : −${n(wages)} € · Entretien : −${n(upkeep)} €.`,
   });
 

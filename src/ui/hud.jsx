@@ -142,7 +142,7 @@ export function MatchCta({ state, onPlay, onEndSeason }) {
     <div className="hud-match glass">
       <div className="hm-info">
         <span className="hm-line">
-          <span className={`eyebrow hm-comp-${ctx.comp}`}>{ctx.label}</span>
+          <span className={`eyebrow hm-comp-${ctx.comp}`} title={ctx.label}>{ctx.short || ctx.label}</span>
           <span className="hm-lvl" title="Niveau de ton onze · niveau de l’adversaire"><b>{fmtRating(me)}</b> · {fmtRating(opp.strength)}</span>
         </span>
         <strong className="hud-match-title" title={`${opp.name} (à domicile)`}>{opp.name}</strong>

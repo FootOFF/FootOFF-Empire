@@ -2,15 +2,15 @@ import { DIVISIONS } from './constants';
 import { randomClubName } from './names';
 import { clamp, pick, rnd } from './utils';
 
-// Coupes : la Coupe nationale (tous les clubs du pays, à élimination directe) et la C1 (coupe d'Europe des
-// champions, réservée aux deux premiers de l'Elite la saison précédente). Quatre tours chacune, matchs à
+// Coupes : la Coupe nationale (tous les clubs du pays, à élimination directe) et la Coupe d'Europe des clubs
+// (réservée aux deux premiers de l'Elite la saison précédente ; identifiant interne « c1 »). Quatre tours chacune, matchs à
 // élimination directe : en cas d'égalité après 90 minutes, tirs au but. Les tours s'intercalent entre les journées
 // du championnat ; un club éliminé saute simplement les dates restantes.
 
 export const COMPS = {
   league: { id: 'league', name: 'Championnat', short: 'Championnat' },
   cup: { id: 'cup', name: 'Coupe nationale', short: 'Coupe' },
-  c1: { id: 'c1', name: 'C1, la coupe d’Europe des champions', short: 'C1' },
+  c1: { id: 'c1', name: 'Coupe d’Europe des clubs', short: 'Coupe d’Europe' },
 };
 export const STAGES = ['Huitièmes de finale', 'Quarts de finale', 'Demi-finale', 'Finale'];
 export const STAGES_SHORT = ['8es', 'Quarts', 'Demies', 'Finale'];
@@ -21,7 +21,7 @@ const ORDER = [
   ['league'], ['cup', 2], ['c1', 2], ['league'], ['cup', 3], ['league'], ['c1', 3],
 ];
 
-// Primes : Coupe nationale à l'échelle de la division (part de la prime du champion), C1 en montants européens.
+// Primes : Coupe nationale à l'échelle de la division (part de la prime du champion), Coupe d'Europe en montants européens.
 const CUP_SHARE = [0.06, 0.12, 0.25, 0.75]; // tour gagné
 export const C1_ENTRY = 4000000; // participation
 const C1_WIN = [2500000, 4000000, 6500000, 15000000];
@@ -34,7 +34,7 @@ const EURO_CITY = ['Valmora', 'Castellano', 'Lisvar', 'Kravets', 'Norrhavn', 'Me
   'Halmstrand', 'Corvina', 'Ostrava Nova', 'Belmira', 'Sankt Arlen', 'Varnacci', 'Tirelli', 'Doruva', 'Lindhaven'];
 const euroName = () => `${pick(EURO_PREFIX)} ${pick(EURO_CITY)}`;
 
-// Adversaire d'un tour : en Coupe nationale, un club d'une division voisine (plus fort à chaque tour) ; en C1,
+// Adversaire d'un tour : en Coupe nationale, un club d'une division voisine (plus fort à chaque tour) ; en Coupe d'Europe,
 // un cador européen.
 export function drawOpponent(s, comp, stage) {
   if (comp === 'c1') {
@@ -70,11 +70,19 @@ export function nextFixture(s) {
   return null;
 }
 
-// Libellé d'un match : « Journée 3 / 7 », « Coupe nationale · Quarts de finale », « C1 · Finale ».
+// Libellé d'un match : « Journée 3 / 7 », « Coupe nationale · Quarts de finale », « Coupe d'Europe · Finale ».
 export function fixtureLabel(f, round) {
   if (!f || f.comp === 'league') return `Journée ${round} / 7`;
-  return `${f.comp === 'c1' ? 'C1' : 'Coupe nationale'} · ${STAGES[f.stage]}`;
+  return `${f.comp === 'c1' ? 'Coupe d’Europe' : 'Coupe nationale'} · ${STAGES[f.stage]}`;
 }
+// Version courte (bouton « Jouer », petits espaces) : « Coupe · 8es de finale », « Coupe d'Europe · Finale ».
+const STAGES_MID = ['8es de finale', 'Quarts', 'Demies', 'Finale'];
+export function fixtureShort(f, round) {
+  if (!f || f.comp === 'league') return `Journée ${round} / 7`;
+  return `${f.comp === 'c1' ? 'Europe' : 'Coupe'} · ${STAGES_MID[f.stage]}`;
+}
+// « de Nationale », « d'Elite » : élision devant une voyelle
+export const ofDiv = (name) => (/^[AEIOUÉÈÊ]/i.test(name) ? `d’${name}` : `de ${name}`);
 
 // Tirs au but : cinq tentatives chacun, puis mort subite. Notre réussite dépend un peu de la finition de nos
 // tireurs et de notre gardien.

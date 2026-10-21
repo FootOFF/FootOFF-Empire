@@ -74,7 +74,7 @@ export default function PostMatch({ state, onClose, onStats }) {
             <div className={`post-cup ${cup.trophy ? 'trophy' : cup.won ? 'won' : 'out'}`}>
               {cup.trophy && <Trophy comp={cup.comp} className="post-trophy" />}
               <div>
-                <b>{cup.trophy ? `${cup.comp === 'c1' ? 'Vainqueur de la C1' : 'Vainqueur de la Coupe nationale'} !` : cup.won ? `Qualifié pour la suite : ${cup.next ? STAGES[cup.stage + 1].toLowerCase() : ''}` : `Éliminé en ${STAGES[cup.stage].toLowerCase()}`}</b>
+                <b>{cup.trophy ? `${cup.comp === 'c1' ? 'Vainqueur de la Coupe d’Europe des clubs' : 'Vainqueur de la Coupe nationale'} !` : cup.won ? `Qualifié pour la suite : ${cup.next ? STAGES[cup.stage + 1].toLowerCase() : ''}` : `Éliminé en ${STAGES[cup.stage].toLowerCase()}`}</b>
                 <span>{cup.prize ? `Prime de ${fmtMoney(cup.prize)}` : 'Pas de prime pour ce tour'}{cup.next ? ` · prochain adversaire : ${cup.next.name}` : ''}{cup.trophy ? ' · le trophée rejoint la vitrine du club' : ''}</span>
               </div>
             </div>

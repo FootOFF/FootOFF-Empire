@@ -7,7 +7,7 @@ import { IconClose, IconCoin } from './icons';
 import { AnimatedMoney } from './moneyfx';
 import { Eyebrow, IconBall, RatingBadge, SectionHead, Stat } from './kit';
 import { Trophy, TROPHY_NAMES } from './trophy';
-import { STAGES_SHORT, STAGES, nextFixture } from '../game/cups';
+import { STAGES_SHORT, STAGES, nextFixture, ofDiv } from '../game/cups';
 import { useDialogFocus, useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
 
@@ -91,7 +91,7 @@ export function SeasonPanel({ state, onClose }) {
 
       {lm && (
         <>
-          <SectionHead label={`Dernier match · ${lm.comp && lm.comp !== 'league' ? `${lm.comp === 'c1' ? 'C1' : 'Coupe'} · ${STAGES_SHORT[lm.stage].toLowerCase()}` : `journée ${lm.round}`}`} aside={lm.gf > lm.ga ? 'Victoire' : lm.gf < lm.ga ? 'Défaite' : 'Match nul'} />
+          <SectionHead label={`Dernier match · ${lm.comp && lm.comp !== 'league' ? `${lm.comp === 'c1' ? 'Europe' : 'Coupe'} · ${STAGES_SHORT[lm.stage].toLowerCase()}` : `journée ${lm.round}`}`} aside={lm.gf > lm.ga ? 'Victoire' : lm.gf < lm.ga ? 'Défaite' : 'Match nul'} />
           <div className="last-match">
             <div className="lm-score">
               <span className="lm-team">{state.clubName}</span>
@@ -135,7 +135,7 @@ function CupRuns({ state }) {
     const status = c.won ? 'Vainqueur' : c.alive ? `En course · ${STAGES[c.stage].toLowerCase()}` : 'Éliminé';
     return (
       <React.Fragment key={k}>
-        <SectionHead label={k === 'c1' ? 'C1 · coupe d’Europe des champions' : 'Coupe nationale'} aside={status} />
+        <SectionHead label={k === 'c1' ? 'Coupe d’Europe des clubs' : 'Coupe nationale'} aside={status} />
         <ol className="cup-run">
           {STAGES.map((st, i) => {
             const r = c.results.find((x) => x.stage === i);
@@ -180,7 +180,7 @@ export function TrophyCase({ trophies }) {
           </div>
           <ul className="tc-list">
             {[...trophies].reverse().map((t, i) => (
-              <li key={i}><Trophy comp={t.comp} /><span>{t.comp === 'league' ? `Champion de ${t.division}` : t.comp === 'cup' ? 'Coupe nationale' : 'C1, coupe d’Europe des champions'}</span><em>Saison {t.season}</em></li>
+              <li key={i}><Trophy comp={t.comp} /><span>{t.comp === 'league' ? `Champion ${ofDiv(t.division)}` : t.comp === 'cup' ? 'Coupe nationale' : 'Coupe d’Europe des clubs'}</span><em>Saison {t.season}</em></li>
             ))}
           </ul>
         </>
