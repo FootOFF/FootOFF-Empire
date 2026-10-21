@@ -7,7 +7,7 @@ import { clamp, rnd } from './utils';
 // Réglages validés par simulation de carrières sur 50 saisons (voir docs/ECONOMIE.md).
 
 // Capacité du stade par niveau : terrain municipal, tribune couverte, stade 4 tribunes, arène moderne, puis
-// deux agrandissements (anneau supérieur, enceinte géante).
+// l'arène fermée (deux étages, toit en selle) et sa version agrandie.
 export const STADIUM_CAPACITY = [0, 600, 3500, 14000, 38000, 55000, 75000];
 export const capacity = (lvl) => STADIUM_CAPACITY[clamp(lvl, 1, 6)];
 

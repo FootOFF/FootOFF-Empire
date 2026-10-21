@@ -1,6 +1,6 @@
-"""FootOFF Empire - generateur du stade semi-realiste (terrain_L1 a terrain_L4).
+"""FootOFF Empire - generateur du stade semi-realiste (terrain_L1 a terrain_L6).
 
-Construit les 4 niveaux dans des collections terrain_L1..terrain_L4, textures procedurales comprises,
+Construit les 6 niveaux dans des collections terrain_L1..terrain_L6, textures procedurales comprises,
 puis enregistre assets-src/blend/stadium.blend. Ensuite :
     blender assets-src/blend/stadium.blend -b -P tools/blender/footoff_export.py
     npm run models
@@ -10,7 +10,8 @@ Lancement :
 
 Conventions (voir assets-src/README.md) : metres, Z en haut, origine au centre du terrain et au sol,
 cote camera du jeu = -Y (sud) : il reste bas a tous les niveaux pour que la pelouse soit visible.
-Emprise max 160 x 130 m (x : +-80, y : +-65). Une geometrie par materiau = un draw call par materiau.
+Emprise max 160 x 130 m (x : +-80, y : +-65) jusqu'au niveau 4 ; l'arene des niveaux 5 et 6 deborde sur
+l'esplanade (|x| <= 94 m, nord <= 77 m, voir budgets.json). Une geometrie par materiau = un draw call par materiau.
 """
 
 
@@ -114,6 +115,7 @@ def build_materials():
         "brick": material("brick", image=tex_brick(), rough=0.85),
         "facade": material("facade", image=tex_facade(), rough=0.25, metal=0.3),
         "glass": material("glass", (0.12, 0.17, 0.22), rough=0.08, metal=0.8),
+        "roof_glass": material("roof_glass", (0.60, 0.65, 0.70), rough=0.2, metal=0.35),  # bande vitree du toit (arene)
         "white": material("white", (0.92, 0.92, 0.92), rough=0.45),
         "flag": material("flag", GOLD, rough=0.35, metal=0.55),
         "wood": material("wood", (0.42, 0.29, 0.18), rough=0.8),
@@ -443,6 +445,259 @@ def level_4(B, coll):
         B.box("emissive_screen", (-6.2, -0.06, 8.0), (6.2, 0.05, 15.0), M)
 
 
+# =============================================================== arene fermee (niveaux 5 et 6)
+# Une seule cuvette autour d'un rectangle arrondi : tribunes droites le long des cotes, angles fermes en eventail.
+# Etage bas continu tout autour ; etage haut (avec loges vitrees entre les deux) au nord et sur la moitie nord
+# des virages, qui s'abaisse en gradins vers le sud. Toit continu en selle : haut au nord, bas et recule au sud
+# pour que la camera du jeu (au sud, ~30 deg) voie toute la pelouse. Facade vitree a ailettes LED, bandeau
+# lumineux FootOFF Media et monogrammes cote camera. Limites de la carte : |x| <= 94 m, nord <= 77 m.
+
+AX, AY = 62.0, 42.0  # rectangle interieur : pied des tribunes (pelouse 120 x 80 m + bord)
+
+
+def smooth(e0, e1, x):
+    t = min(1.0, max(0.0, (x - e0) / (e1 - e0)))
+    return t * t * (3 - 2 * t)
+
+
+def ring_stations(n_long=10, n_end=7, n_corner=8):
+    """Stations du pourtour, sens trigo vu de dessus : (px, py, nx, ny) = pied de tribune et normale sortante.
+    La derniere station repete la premiere (boucle fermee)."""
+    st = []
+    half = math.pi / 2
+    sides = [  # (depart, direction le long du cote, longueur, angle de la normale, n segments)
+        ((-AX, -AY), (1, 0), 2 * AX, -half, n_long),   # sud, d'ouest en est
+        ((AX, -AY), (0, 1), 2 * AY, 0.0, n_end),       # est, du sud au nord
+        ((AX, AY), (-1, 0), 2 * AX, half, n_long),     # nord, d'est en ouest
+        ((-AX, AY), (0, -1), 2 * AY, math.pi, n_end),  # ouest, du nord au sud
+    ]
+    for (sx, sy), (dx, dy), length, a, n in sides:
+        for k in range(n):
+            st.append((sx + dx * length * k / n, sy + dy * length * k / n, math.cos(a), math.sin(a)))
+        cx, cy = sx + dx * length, sy + dy * length  # angle suivant : eventail centre sur le coin
+        for k in range(n_corner):
+            b = a + half * k / n_corner
+            st.append((cx, cy, math.cos(b), math.sin(b)))
+    st.append(st[0])
+    return st
+
+
+def at(S, d):
+    return (S[0] + S[2] * d, S[1] + S[3] * d)
+
+
+def north_of(S):
+    """0 au sud, 1 au nord (lineaire le long des virages)."""
+    return (S[1] + AY) / (2 * AY)
+
+
+def tier(B, S0, S1, rows, rd, rh, off, z0, zbase, prev_rows, next_rows, accent=(), seats_from=0.0):
+    """Gradins d'un segment entre deux stations : un bloc beton par rang (dessus + contremarche), sieges en
+    dessus. Les flancs ne sont dessines que la ou le segment voisin s'arrete plus tot (gradins en escalier)."""
+    for i in range(rows):
+        d0, d1 = off + i * rd, off + (i + 1) * rd
+        zt = z0 + (i + 1) * rh
+        a0, b0, b1, a1 = at(S0, max(d0, 0.05)), at(S1, max(d0, 0.05)), at(S1, d1), at(S0, d1)
+        skip = {0, 4}
+        if next_rows > i:
+            skip.add(3)
+        if prev_rows > i:
+            skip.add(5)
+        B.hexa("concrete", [(*a0, zbase), (*b0, zbase), (*b1, zbase), (*a1, zbase),
+                            (*a0, zt), (*b0, zt), (*b1, zt), (*a1, zt)], tile=(4, 4), skip=skip)
+        # sieges : un bloc par segment, allee de 1,2 m entre deux segments droits (joint fin dans les angles)
+        sa, sb = d0 + 0.08, d0 + 0.58
+        pa, pb = at(S0, sa), at(S1, sa)
+        length = math.hypot(pb[0] - pa[0], pb[1] - pa[1])
+        aisle = 1.2 if (S0[2], S0[3]) == (S1[2], S1[3]) else 0.15
+        if length < aisle + 0.5 or d0 < seats_from:
+            continue
+        t = aisle / 2 / length
+        lerp = lambda p, q, f: (p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f)  # noqa: E731
+        f0, f1 = lerp(at(S0, sa), at(S1, sa), t), lerp(at(S0, sa), at(S1, sa), 1 - t)
+        g1, g0 = lerp(at(S0, sb), at(S1, sb), 1 - t), lerp(at(S0, sb), at(S1, sb), t)
+        mat = "seats_accent" if i in accent else "seats"
+        B.hexa(mat, [(*f0, zt), (*f1, zt), (*g1, zt), (*g0, zt),
+                     (*f0, zt + 0.42), (*f1, zt + 0.42), (*g1, zt + 0.42), (*g0, zt + 0.42)],
+               tile=(0.5, 0.5), skip={0})
+
+
+def quad(B, mat, p0, p1, p2, p3, z0, z1, tile=(4, 4), skip=(), origin=(0, 0, 0)):
+    B.hexa(mat, [(*p0, z0), (*p1, z0), (*p2, z0), (*p3, z0), (*p0, z1), (*p1, z1), (*p2, z1), (*p3, z1)],
+           tile=tile, skip=set(skip), origin=origin)
+
+
+def arena(B, coll, lvl):
+    big = lvl >= 6
+    P = {  # profils des deux niveaux d'arene
+        "rows": 18 if big else 16, "rd": 0.82 if big else 0.85, "rh": 0.5, "z0": 0.8,
+        "up_rows": 15 if big else 12, "up_rd": 0.82 if big else 0.85, "up_rh": 0.66 if big else 0.62,
+        "gap": 2.4 if big else 2.2, "boxes": 3.2 if big else 3.0,
+        "z_north": 29.0 if big else 25.0, "z_south": 10.5, "in_north": -6.0, "in_south": 9.0,
+        "up_from": 0.15 if big else 0.35,  # l'etage haut commence a cette latitude (0 sud, 1 nord)
+    }
+    pitch(B, 4)
+    surround(B, "concrete_dark", AX, AY)
+    goals(B)
+    boards(B, 57.5, 38.5, mat="emissive_boards", h=0.9)
+    dugout(B, -10, -4, 39.4)
+    dugout(B, 4, 10, 39.4)
+
+    st = ring_stations()
+    nseg = len(st) - 1
+    depth_l = P["rows"] * P["rd"]
+    z_l = P["z0"] + P["rows"] * P["rh"]
+    off_u = depth_l + P["gap"]
+    z_u0 = z_l + P["boxes"]
+
+    def up_rows(u):
+        return int(round(P["up_rows"] * smooth(P["up_from"], P["up_from"] + 0.55, u)))
+
+    seg_u = [(north_of(st[k]) + north_of(st[k + 1])) / 2 for k in range(nseg)]
+    ups = [up_rows(u) for u in seg_u]
+    seg_depth = [off_u + n * P["up_rd"] if n else depth_l for n in ups]
+    seg_top = [z_u0 + n * P["up_rh"] if n else z_l for n in ups]
+
+    def roof_z(u):
+        return P["z_south"] + (P["z_north"] - P["z_south"]) * smooth(0.0, 1.0, u)
+
+    def roof_rise(u):  # du bord interieur au bord exterieur : plus fort au sud, ou le toit est bas
+        return 2.0 + 2.0 * (1.0 - smooth(0.0, 1.0, u))
+
+    # facade : un peu derriere le segment le plus profond de chaque station
+    face_d = [max(seg_depth[(k - 1) % nseg], seg_depth[k % nseg]) + 0.35 for k in range(nseg)]
+    face_d.append(face_d[0])
+
+    for k in range(nseg):
+        S0, S1 = st[k], st[k + 1]
+        prev_k, next_k = (k - 1) % nseg, (k + 1) % nseg
+        tier(B, S0, S1, P["rows"], P["rd"], P["rh"], 0.0, P["z0"], 0.0, P["rows"], P["rows"],
+             accent=(6, 7), seats_from=1.2)
+        n = ups[k]
+        if n:
+            # loges vitrees entre les deux etages, puis l'etage haut
+            quad(B, "emissive_windows", at(S0, depth_l), at(S1, depth_l), at(S1, depth_l + 0.3), at(S0, depth_l + 0.3),
+                 z_l, z_u0, skip=(0, 1, 3, 4, 5))
+            quad(B, "concrete", at(S0, depth_l + 0.3), at(S1, depth_l + 0.3), at(S1, off_u), at(S0, off_u),
+                 z_l, z_u0 - 0.2, skip=(0, 2, 3, 5))
+            quad(B, "concrete_dark", at(S0, depth_l), at(S1, depth_l), at(S1, off_u + 0.2), at(S0, off_u + 0.2),
+                 z_u0 - 0.5, z_u0, skip=(0, 3, 4, 5))
+            tier(B, S0, S1, n, P["up_rd"], P["up_rh"], off_u, z_u0, z_u0 - 0.5, ups[prev_k], ups[next_k], accent=(0,))
+        # dalle de coursive entre le dernier rang et la facade
+        d_back = seg_depth[k]
+        if max(face_d[k], face_d[k + 1]) - d_back > 0.05:
+            quad(B, "concrete_dark", at(S0, d_back), at(S1, d_back), at(S1, face_d[k + 1]), at(S0, face_d[k]),
+                 0.0, seg_top[k], skip=(0, 3, 5))
+
+    # toit en selle + facade vitree + ailettes LED
+    roof = []
+    for k in range(nseg + 1):
+        S = st[k]
+        u = north_of(S)
+        s = smooth(0.0, 1.0, u)
+        d_in = P["in_south"] + (P["in_north"] - P["in_south"]) * s
+        z_in = roof_z(u)
+        roof.append((S, d_in, face_d[k] + 0.6, z_in, z_in + roof_rise(u)))
+    for k in range(nseg):
+        (S0, i0, o0, zi0, zo0), (S1, i1, o1, zi1, zo1) = roof[k], roof[k + 1]
+        a, b, c, d = at(S0, i0), at(S1, i1), at(S1, o1), at(S0, o0)
+        # bande vitree claire au bord interieur (35 % de la profondeur), toiture sombre au-dela
+        m0, m1 = i0 + (o0 - i0) * 0.35, i1 + (o1 - i1) * 0.35
+        zm0, zm1 = zi0 + (zo0 - zi0) * 0.35, zi1 + (zo1 - zi1) * 0.35
+        e0, e1 = at(S0, m0), at(S1, m1)
+        B.hexa("roof_glass", [(*a, zi0 - 1.0), (*b, zi1 - 1.0), (*e1, zm1 - 1.0), (*e0, zm0 - 1.0),
+                              (*a, zi0), (*b, zi1), (*e1, zm1), (*e0, zm0)], tile=(1.0, 8.0), skip={3, 4, 5})
+        B.hexa("membrane", [(*e0, zm0 - 1.0), (*e1, zm1 - 1.0), (*c, zo1 - 1.0), (*d, zo0 - 1.0),
+                            (*e0, zm0), (*e1, zm1), (*c, zo1), (*d, zo0)], tile=(1.0, 8.0), skip={2, 3, 5})
+        # nervure acier sur le dessus, a chaque station (une sur deux dans les angles)
+        straight = (S0[2], S0[3]) == (S1[2], S1[3])
+        if straight or k % 2 == 0:
+            tx, ty = -S0[3] * 0.18, S0[2] * 0.18
+            ia, oa = a, d
+            B.hexa("steel", [(ia[0] - tx, ia[1] - ty, zi0), (ia[0] + tx, ia[1] + ty, zi0), (oa[0] + tx, oa[1] + ty, zo0), (oa[0] - tx, oa[1] - ty, zo0),
+                             (ia[0] - tx, ia[1] - ty, zi0 + 0.3), (ia[0] + tx, ia[1] + ty, zi0 + 0.3), (oa[0] + tx, oa[1] + ty, zo0 + 0.3), (oa[0] - tx, oa[1] - ty, zo0 + 0.3)],
+                   skip={0})
+        # anneau LED sous le bord interieur (halo autour de la pelouse)
+        e, f = at(S0, i0 + 1.2), at(S1, i1 + 1.2)
+        B.hexa("emissive_led", [(*a, zi0 - 1.35), (*b, zi1 - 1.35), (*f, zi1 - 1.35), (*e, zi0 - 1.35),
+                                (*a, zi0 - 1.0), (*b, zi1 - 1.0), (*f, zi1 - 1.0), (*e, zi0 - 1.0)], skip={3, 4, 5})
+        if big:  # couronne lumineuse au bord exterieur
+            g, h = at(S0, o0 - 0.5), at(S1, o1 - 0.5)
+            B.hexa("emissive_led", [(*g, zo0), (*h, zo1), (*c, zo1), (*d, zo0),
+                                    (*g, zo0 + 0.35), (*h, zo1 + 0.35), (*c, zo1 + 0.35), (*d, zo0 + 0.35)], skip={0, 3, 5})
+        # facade vitree, posee sous le bord exterieur du toit
+        p, q = at(S0, face_d[k]), at(S1, face_d[k + 1])
+        p2, q2 = at(S0, face_d[k] + 0.4), at(S1, face_d[k + 1] + 0.4)
+        B.hexa("facade", [(*p, 0), (*q, 0), (*q2, 0), (*p2, 0), (*p, zo0 - 1.0), (*q, zo1 - 1.0), (*q2, zo1 - 1.0), (*p2, zo0 - 1.0)],
+               tile=(4, 4), skip={0, 3, 5})
+        # parvis : dalle autour de la facade, large cote sud (entrees), etroite ailleurs (parcelles voisines)
+        w0, w1 = (6.0 if north_of(S) == 0.0 else 1.5 for S in (S0, S1))
+        r, t = at(S0, face_d[k] + 0.4 + w0), at(S1, face_d[k + 1] + 0.4 + w1)
+        quad(B, "concrete_dark", p2, q2, t, r, 0.0, 0.06, skip=(0, 2, 3, 5))
+    # ailettes LED verticales (or le jour, lumineuses la nuit) et poteaux du toit, toutes les deux stations
+    step = 1 if big else 2
+    for k in range(0, nseg, step):
+        S = st[k]
+        if k % 4 and abs(S[2]) < 0.99 and abs(S[3]) < 0.99:
+            continue  # dans les angles, une ailette sur quatre stations
+        _, i0, o0, zi0, zo0 = roof[k]
+        tx, ty = -S[3], S[2]
+        base = at(S, face_d[k] + 0.4)
+        c = [(base[0] - tx * 0.25, base[1] - ty * 0.25), (base[0] + tx * 0.25, base[1] + ty * 0.25)]
+        out = [(x + S[2] * 0.5, y + S[3] * 0.5) for x, y in c]
+        quad(B, "emissive_led", c[0], c[1], out[1], out[0], 0.8, zo0 - 1.2, skip=(0,))
+        if k % 4 == 0:
+            ox, oy = at(S, o0 - 0.3)
+            ix, iy = at(S, i0 + 2.0)
+            B.cyl("steel", (ox, oy, zo0 - 1.3), (ix, iy, zi0 - 1.3), 0.22, segs=6)
+            if k % 8 == 0:
+                fx, fy = at(S, i0 + 1.6)
+                B.box("emissive_light", (fx - 1.2, fy - 1.2, zi0 - 2.6), (fx + 1.2, fy + 1.2, zi0 - 2.2))
+    # bandeau lumineux FootOFF Media sur la facade sud (cote camera) et monogrammes
+    y_face = -(AY + face_d[0] + 0.4)
+    band_z = roof_z(0.0) + roof_rise(0.0) - 1.0 - 0.5 - 2.4  # sous le bord du toit
+    B.box("emissive_boards", (-AX, y_face - 0.25, band_z), (AX, y_face, band_z + 2.4), tile=(62.4, 2.4), origin=(-AX, 0, band_z))
+    for x in (-38, 38):
+        fo_logo(B, "emissive_led", Matrix.Translation((x, y_face - 0.3, 1.4)), 6.4 if big else 5.6)
+    if big:  # totems du parvis
+        for x in (-20, 20):
+            B.box("facade", (x - 1.6, y_face - 9.0, 0), (x + 1.6, y_face - 7.8, 9.0))
+            fo_logo(B, "emissive_led", Matrix.Translation((x, y_face - 9.2, 2.2)), 4.6)
+    # monogramme or sur la toiture nord, lisible depuis la camera du jeu
+    zn = roof_z(1.0)
+    north_out = AY + face_d[nseg // 2] + 0.6
+    slope = math.atan2(roof_rise(1.0), north_out - (AY + P["in_north"]))
+    d_logo = (north_out - (AY + P["in_north"])) * 0.4  # juste apres la bande vitree
+    roof_logo(B, "emissive_led", AY + P["in_north"] + d_logo, zn + d_logo * math.tan(slope), slope, 16.0 if big else 14.0)
+    # ecrans geants suspendus sous le toit, au-dessus des virages
+    zm = roof_z(0.5)
+    for s in (-1, 1):
+        M = rot(-s * math.pi / 2, s * (AX + 1.2), 0.0)
+        top = zm - 2.0
+        B.box("steel", (-6.8, 0, top - 7.9), (6.8, 0.7, top), M)
+        B.box("emissive_screen", (-6.4, -0.06, top - 7.5), (6.4, 0.05, top - 0.4), M)
+        for x in (-5, 5):
+            B.cyl("steel", (x, 0.35, top), (x, 0.35, zm - 1.0), 0.06, segs=4, M=M)
+    # projecteurs (empties) le long du bord interieur du toit
+    spots = [(-30, AY + P["in_north"] + 1.0, 1.0), (0, AY + P["in_north"] + 1.0, 1.0), (30, AY + P["in_north"] + 1.0, 1.0),
+             (-(AX + 1.5), 0, 0.5), (AX + 1.5, 0, 0.5), (0, -(AY + P["in_south"] + 1.0), 0.0)]
+    for i, (x, y, u) in enumerate(spots):
+        e = bpy.data.objects.new(f"light_{i}", None)
+        e.location = (x, y, roof_z(u) - 2.4)
+        e.rotation_euler = (Vector((0, 0, 0)) - Vector(e.location)).to_track_quat("-Z", "Y").to_euler()
+        coll.objects.link(e)
+
+
+def level_5(B, coll):
+    """Arene fermee : deux etages relies par des loges, angles fermes, toit en selle, facade lumineuse."""
+    arena(B, coll, 5)
+
+
+def level_6(B, coll):
+    """Grande arene : plus large et plus haute, couronne LED sur le toit, totems FootOFF sur le parvis."""
+    arena(B, coll, 6)
+
+
 # =============================================================== main
 
 def main():
@@ -451,7 +706,7 @@ def main():
     scene.unit_settings.system = "METRIC"
     scene.unit_settings.scale_length = 1.0
     mats = build_materials()
-    for lvl, fn in ((1, level_1), (2, level_2), (3, level_3), (4, level_4)):
+    for lvl, fn in ((1, level_1), (2, level_2), (3, level_3), (4, level_4), (5, level_5), (6, level_6)):
         coll = bpy.data.collections.new(f"terrain_L{lvl}")
         scene.collection.children.link(coll)
         B = Builder(mats)

@@ -21,6 +21,8 @@ export const GENERATED_MODELS = {
   'terrain:2': {"url":"models/buildings/terrain_L2.glb","scale":0.1},
   'terrain:3': {"url":"models/buildings/terrain_L3.glb","scale":0.1},
   'terrain:4': {"url":"models/buildings/terrain_L4.glb","scale":0.1},
+  'terrain:5': {"url":"models/buildings/terrain_L5.glb","scale":0.1},
+  'terrain:6': {"url":"models/buildings/terrain_L6.glb","scale":0.1},
   'training:1': {"url":"models/buildings/training_L1.glb","scale":0.1},
   'training:2': {"url":"models/buildings/training_L2.glb","scale":0.1},
   'training:3': {"url":"models/buildings/training_L3.glb","scale":0.1},

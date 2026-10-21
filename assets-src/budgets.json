@@ -22,6 +22,20 @@
       "maxMaterials": 16,
       "maxDrawCalls": 40
     },
+    "arena": {
+      "_doc": "Stade des niveaux 5 et 6 : arene fermee plus large, qui deborde sur l'esplanade (cote nord limite a 78 m par les parcelles voisines, a verifier dans le generateur).",
+      "footprint": {
+        "w": 192,
+        "d": 186
+      },
+      "maxHeight": 60,
+      "maxTriangles": 90000,
+      "maxBytes": 5000000,
+      "maxTextureSize": 2048,
+      "maxTextures": 12,
+      "maxMaterials": 18,
+      "maxDrawCalls": 40
+    },
     "building": {
       "footprint": {
         "w": 60,
@@ -78,7 +92,11 @@
   "buildings": {
     "terrain": {
       "category": "stadium",
-      "maxLevel": 4
+      "levelCategories": {
+        "5": "arena",
+        "6": "arena"
+      },
+      "maxLevel": 6
     },
     "training": {
       "category": "building",

@@ -308,7 +308,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .panel {
   position: absolute; top: 12px; right: 12px; bottom: 12px; width: 460px; z-index: 10;
   display: flex; flex-direction: column; overflow: hidden; border-radius: var(--r-lg);
-  background: rgba(12, 12, 13, .96); border: 1px solid var(--line); box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
+  background: rgb(12, 12, 13); border: 1px solid var(--line); box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
   animation: fo-slide var(--dur-slow) var(--ease);
 }
 .panel.lg { width: min(1060px, calc(100% - 24px)); }
@@ -547,11 +547,24 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cmp-side.a .cmp-role i { background: rgba(243, 242, 238, .55); }
 .cmp-side.b .cmp-role i { background: var(--gold); }
 .cmp-name { font-weight: 600; font-size: var(--t-md); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.cmp-pick { position: relative; display: flex; align-items: center; gap: 6px; max-width: 100%; padding-bottom: 2px; border-bottom: 1px dashed var(--line-strong); cursor: pointer; }
-.cmp-pick svg { width: 14px; height: 14px; flex-shrink: 0; transform: rotate(90deg); color: var(--muted); }
-.cmp-pick select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; font-size: 16px; } /* liste native du téléphone, nom affiché par-dessus */
-.cmp-pick option { background: #141414; }
-.cmp-pick:has(select:focus-visible) { outline: 2px solid var(--gold-light); outline-offset: 3px; border-radius: 4px; }
+.cmp-pick { position: relative; display: flex; align-items: center; gap: 6px; max-width: 100%; padding: 0 0 2px; border: none; border-bottom: 1px dashed var(--line-strong); background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.cmp-pick svg { width: 14px; height: 14px; flex-shrink: 0; transform: rotate(90deg); color: var(--muted); transition: transform var(--dur-fast) var(--ease); }
+.cmp-pick.open svg { transform: rotate(-90deg); color: var(--gold-light); }
+.cmp-pick.open { border-bottom-color: var(--gold-line); }
+/* liste du joueur comparé (à la place de la roue native du téléphone) */
+.cmp-list { display: flex; flex-direction: column; gap: var(--s-3); min-height: 0; overflow-x: hidden; overflow-y: auto; max-height: min(52vh, 460px); animation: fo-in .2s var(--ease); }
+.cmp-list-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
+.cmp-list-sec { display: flex; flex-direction: column; gap: 6px; }
+.cmp-opt {
+  display: flex; align-items: center; gap: var(--s-3); min-height: 44px; padding: 6px 12px 6px 8px; border-radius: var(--r-sm);
+  border: 1px solid var(--line); background: rgba(255, 255, 255, .025); color: var(--text); text-align: left; font-size: var(--t-sm);
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+@media (hover: hover) { .cmp-opt:hover { border-color: var(--gold-line); background: var(--gold-soft); } }
+.cmp-opt.on { border-color: var(--gold); background: var(--gold-soft); }
+.cmp-opt-name { flex: 1; min-width: 0; display: flex; flex-direction: column; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmp-opt-name em { font-style: normal; font-weight: 400; font-size: var(--t-xs); color: var(--muted); }
+.cmp-opt b { font-family: var(--font-mono); font-weight: 400; color: var(--gold-light); }
 @media (hover: hover) { .cmp-pick:hover { border-bottom-color: var(--gold-line); } .cmp-pick:hover svg { color: var(--gold-light); } }
 .cmp-side b { font-family: var(--font-title); font-weight: 500; font-size: var(--t-2xl); line-height: 1; font-variant-numeric: tabular-nums; color: var(--text-2); }
 .cmp-side.b b.lead { color: var(--gold-light); }
@@ -964,8 +977,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .pm-rating { font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
 .pm-rating b { font-family: var(--font-title); font-weight: 500; font-size: var(--t-lg); letter-spacing: 0; color: var(--gold-light); margin-left: 8px; }
 
-.pm-best { margin-left: auto; color: var(--gold); text-decoration: none; font-size: var(--t-xs); letter-spacing: .02em; }
-@media (hover: hover) { .pm-best:hover:not(:disabled) { color: var(--gold-light); text-decoration: underline; } }
 /* schéma tactique (attaque vers le haut) */
 .pitch2d {
   position: relative; width: min(100%, calc(56vh * 1.05)); aspect-ratio: 1.05; margin: 0 auto; border-radius: var(--r-md); overflow: hidden;
@@ -1002,22 +1013,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .ins-demand { margin-top: 8px; font-size: var(--t-sm); color: var(--muted); }
 .ins-demand.full { color: var(--gold-light); }
-.pm-picker { display: flex; flex-direction: column; gap: 8px; animation: fo-in .25s var(--ease); }
-.pm-picker ul { list-style: none; margin: 0; padding: 0 2px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; max-height: 214px; overflow-y: auto; }
-.pm-picker li button {
-  width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; border-radius: var(--r-sm); text-align: left;
-  border: 1px solid var(--line); background: rgba(255, 255, 255, .025); transition: border-color .2s, background .2s;
-}
-@media (hover: hover) { .pm-picker li button:hover { border-color: var(--gold-line); background: var(--gold-soft); } }
-.pm-picker li button.current { border-color: var(--gold); background: var(--gold-soft); }
-.pm-picker .pos { width: 26px; height: 26px; font-size: var(--t-xs); flex-shrink: 0; }
-.pk-name { flex: 1; min-width: 0; font-size: var(--t-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pk-name em { font-style: normal; font-size: var(--t-xs); color: var(--muted); }
-.pm-picker li b { font-family: var(--font-mono); font-weight: 400; font-size: var(--t-sm); color: var(--gold-light); }
-.pm-bench { display: flex; flex-direction: column; gap: 8px; }
-.pm-bench > div { display: flex; flex-wrap: wrap; gap: 8px; }
-.bench-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); font-size: var(--t-sm); }
-.bench-chip .pos { width: 22px; height: 22px; font-size: var(--t-xs); font-style: normal; }
 
 .pm-side { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 0; }
 .pm-card { border-radius: var(--r-lg); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -1174,14 +1169,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .ht-stats b { font-family: var(--font-title); font-weight: 500; font-size: var(--t-lg); letter-spacing: 0; color: var(--text); }
 .ht-block { display: flex; flex-direction: column; gap: 8px; }
-.ht-sub { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.ht-sub select {
-  -webkit-appearance: none; appearance: none; width: 100%; padding: 12px 32px 12px 12px; border-radius: var(--r-sm);
-  border: 1px solid var(--line-strong); color: var(--text); font: inherit; font-size: var(--t-sm); cursor: pointer;
-  background: rgba(255, 255, 255, .04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23c7a15a' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 12px center;
-}
-.ht-sub select:focus { outline: none; border-color: var(--gold); }
-.ht-sub option { background: #141414; color: var(--text); }
 
 @media (max-width: 760px) {
   .matchscreen.prematch { padding: 16px 12px 24px; }
@@ -1190,7 +1177,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .pitch2d { width: 100%; aspect-ratio: .95; }
   .p2-num { width: 36px; height: 36px; font-size: var(--t-xs); }
   .p2-name { font-size: var(--t-xs); max-width: 78px; padding: 1px 8px; }
-  .pm-picker ul { grid-template-columns: 1fr; max-height: 240px; }
 
   .scoreboard { left: var(--gap); right: var(--gap); max-width: none; padding: 8px 16px 8px; column-gap: 12px; }
   .sb-team { font-size: var(--t-sm); }
@@ -1413,12 +1399,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 .btn:active:not(:disabled) { transform: translateY(0) scale(.98); filter: brightness(.96); }
-.chips button, .segmented button, .sq-tabs button, .hud-icon, .hud-dock button, .hud-tools button, .chipbtn, .tactics button, .pm-picker li button, .live-controls button, .switch {
+.chips button, .segmented button, .sq-tabs button, .hud-icon, .hud-dock button, .hud-tools button, .chipbtn, .tactics button, .live-controls button, .switch {
   transition: color var(--dur-fast), background var(--dur-fast), border-color var(--dur-fast), transform var(--dur-fast) var(--ease);
 }
 .chips button:active, .segmented button:active, .sq-tabs button:active, .hud-icon:active, .hud-dock button:active,
 .hud-tools button:active:not(:disabled), .chipbtn:active, .live-controls button:active, .switch:active { transform: scale(.95); }
-.tactics button:active, .pm-picker li button:active, .pcard:active { transform: scale(.98); }
+.tactics button:active, .pcard:active { transform: scale(.98); }
 
 /* =========================================================== zones tactiles
    Sur écran tactile (et sur téléphone), chaque commande se touche sur au moins 44 × 44 px : une zone invisible
@@ -1437,7 +1423,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .hud-goal-head { min-height: 44px; }
   .hud-tip .tip-main { min-height: 44px; justify-content: center; }
   .cmp-pick { min-height: 44px; }
-  .ht-sub select { min-height: 44px; }
   .sq-overlay.center { padding: 0; align-items: stretch; }
   .sq-overlay .sq-compare { width: 100%; max-height: none; height: 100%; border-radius: 0; border-width: 0; background: rgb(13, 13, 14); padding: var(--s-4) var(--s-4) 0; }
   .cmp-foot { margin: auto calc(-1 * var(--s-4)) 0; padding: var(--s-3) var(--s-4) calc(var(--s-4) + var(--hb)); box-shadow: 0 -16px 24px rgba(0, 0, 0, .45); }
@@ -1586,39 +1571,14 @@ button.hud-chip:active { transform: scale(.97); }
 /* fil du direct : fond sombre sans flou (lisible sur la 3D, comme les panneaux) */
 .feed.glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(11, 11, 12, .9); }
 
-/* mi-temps : changement au doigt (sortant, puis entrant), action collée en bas sur téléphone */
-.sub-step { display: flex; flex-direction: column; gap: var(--s-2); }
-.sub-hint, .sub-empty { font-size: var(--t-sm); color: var(--muted); }
-.sub-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); font-size: var(--t-sm); color: var(--text-2); }
-.sub-head b { color: var(--text); font-weight: 600; }
+/* mi-temps : changements composés sur le terrain, action collée en bas sur téléphone */
 .sub-reset { font-size: var(--t-sm); color: var(--text-2); flex-shrink: 0; }
-.sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
-.sub-chip {
-  display: flex; align-items: center; gap: var(--s-2); min-height: 44px; padding: 6px 10px; border-radius: var(--r-sm);
-  border: 1px solid var(--line); background: rgba(255, 255, 255, .03); color: var(--text); text-align: left; font-size: var(--t-sm);
-  transition: border-color var(--dur-fast), background var(--dur-fast), transform var(--dur-fast) var(--ease);
-}
-@media (hover: hover) { .sub-chip:hover { border-color: var(--gold-line); background: var(--gold-soft); } }
-.sub-chip:active { transform: scale(.97); }
-.sub-name { flex: 1; min-width: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sub-chip .card { flex-shrink: 0; }
-.sub-chip .ui-rate { min-width: 34px; height: 24px; font-size: var(--t-xs); }
-.sub-lvl { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; font-weight: 500; font-variant-numeric: tabular-nums; }
-.sub-lvl em { font-style: normal; font-size: var(--t-xs); color: var(--muted); }
-.sub-lvl em.up, .sub-done-foot b.up { color: var(--green); }
-.sub-lvl em.down, .sub-done-foot b.down { color: var(--red); }
-.sub-done { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); border-radius: var(--r-md); border: 1px solid var(--gold-line); background: var(--gold-soft); }
-.sub-swap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px var(--s-3); align-items: baseline; font-size: var(--t-md); }
-.sub-swap b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sub-way { font-size: var(--t-xs); font-weight: 600; padding: 2px 8px; border-radius: 999px; text-align: center; }
 .sub-way.out { color: var(--red); background: rgba(224, 122, 111, .14); }
 .sub-way.in { color: var(--green); background: rgba(124, 196, 151, .14); }
-.sub-done-foot { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); font-size: var(--t-sm); color: var(--text-2); }
-.sub-done-foot b { font-weight: 600; font-variant-numeric: tabular-nums; }
 .ht-go .btn-xl { width: 100%; }
 @media (max-width: 760px) {
   .halftime { background: #0b0b0c; padding-bottom: 0; }
-  .sub-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ht-go { position: sticky; bottom: 0; margin: 0 -16px; padding: var(--s-3) 16px calc(var(--s-4) + var(--hb)); background: #0b0b0c; box-shadow: 0 -16px 24px rgba(0, 0, 0, .5); }
 }
 
@@ -1873,7 +1833,8 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 .pm-blurb { margin: 6px 0 0; font-size: var(--t-sm); color: var(--text-2); line-height: 1.45; }
 
 @media (max-width: 760px) {
-  .sq-tabs > button { padding: 8px 4px; min-width: 0; font-size: 13px; } /* quatre onglets tiennent sur 375 px */
+  .sq-tabs > button { flex: 1 1 auto; padding: 8px 4px; min-width: 0; font-size: 13px; } /* cinq onglets tiennent sur 375 px (largeur selon le mot) */
+  .sq-tab-dot { top: 3px; right: 1px; width: 6px; height: 6px; }
 }
 
 /* écran de jeu : rien n'est sélectionnable comme du texte (double tap maintenu sur iPhone), pas de bulle
@@ -1938,7 +1899,10 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 .cine { overflow-y: auto; align-items: flex-start; }
 .cine > .cine-card { margin-top: auto; }
 .cine-champion .cine-card { padding-top: var(--s-3); }
-.hm-line .eyebrow { min-width: 0; overflow: hidden; text-overflow: ellipsis; } /* libellé de coupe : jamais coupé par le bouton Jouer */
+/* libellé du match prioritaire : quand la place manque, les niveaux passent à la ligne suivante, masquée (jamais
+   « Journée 2 /… ») ; un libellé de coupe trop long seul finit par des points de suspension */
+.hm-line { flex-wrap: wrap; row-gap: 0; overflow: hidden; height: 16px; line-height: 16px; }
+.hm-line .eyebrow { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; letter-spacing: .12em; }
 
 .cr-sheet { margin: 0 0 var(--s-2); }
 .cr-attrs { display: flex; flex-direction: column; gap: 6px; }
@@ -1947,3 +1911,113 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 .cr-attrs i b { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
 .cr-attrs em { font-style: normal; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
 .ins-hint.risk { color: var(--red); }
+
+/* =========================================================== composition interactive
+   Terrain (onglet Composition, avant-match, mi-temps) : on glisse un joueur sur un poste ou un coéquipier, ou on
+   en touche deux. Le doigt ne fait pas défiler la page quand il saisit un joueur du terrain. */
+.lu { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
+.lu-chip, .lu-bchip { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; cursor: grab; }
+.lu-chip { touch-action: none; z-index: 1; }
+.lu-chip .p2-num { position: relative; }
+.lu-chip.sel, .lu-chip.over { z-index: 2; }
+.lu-chip.over .p2-num { border-color: var(--gold-light); box-shadow: 0 0 0 6px rgba(199, 161, 90, .3), 0 6px 18px rgba(0, 0, 0, .5); transform: scale(1.12); }
+.lu-chip .p2-num { transition: border-color .2s, background .2s, box-shadow .2s, color .2s, transform .2s var(--ease); }
+.lu-chip.src { opacity: .35; }
+.lu-chip.locked { cursor: not-allowed; }
+.lu-chip.locked .p2-num { opacity: .55; border-style: solid; border-color: rgba(217, 72, 59, .6); }
+.lu.dragging .lu-chip:not(.src):not(.locked) .p2-num { border-color: var(--gold); }
+/* niveau qu'aurait le joueur choisi à ce poste */
+.lu-alt {
+  position: absolute; top: -9px; right: -16px; min-width: 30px; padding: 1px 5px; border-radius: 999px; font-size: 10px; line-height: 15px;
+  font-family: var(--font-mono); text-align: center; background: #1b1b1d; color: var(--text-2); border: 1px solid var(--line-strong);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .5); pointer-events: none; animation: fo-in .2s var(--ease);
+}
+.lu-alt.up { color: var(--green); border-color: rgba(124, 196, 151, .55); background: #12241a; }
+.lu-alt.down { color: var(--red); border-color: rgba(224, 122, 111, .45); background: #2a1514; }
+/* note du match (mi-temps) et carton */
+.lu-note { position: absolute; top: -9px; left: -16px; pointer-events: none; }
+.lu-note .ui-rate { min-width: 28px; height: 17px; font-size: 10px; padding: 0 4px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); background: #2a2a2e; color: var(--text); border: 1px solid rgba(255, 255, 255, .14); }
+.lu-note .ui-rate.good { background: #16301f; color: var(--green); border-color: rgba(124, 196, 151, .45); }
+.lu-note .ui-rate.low { background: #331917; color: var(--red); border-color: rgba(224, 122, 111, .4); }
+.lu-flag { position: absolute; bottom: -4px; right: -6px; transform: rotate(8deg); }
+
+.lu-bench { display: flex; flex-direction: column; gap: var(--s-2); }
+.lu-bench-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
+.lu-left { font-size: var(--t-xs); color: var(--gold-light); font-weight: 500; }
+.lu-left.none { color: var(--muted); }
+.lu-bench-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.lu-bchip {
+  display: flex; align-items: center; gap: var(--s-2); min-height: 40px; padding: 4px 10px 4px 6px; border-radius: var(--r-sm);
+  border: 1px solid var(--line); background: rgba(255, 255, 255, .03); color: var(--text); text-align: left; font-size: var(--t-sm);
+  transition: border-color var(--dur-fast), background var(--dur-fast), transform var(--dur-fast) var(--ease), opacity var(--dur-fast);
+}
+.lu-bchip .pos-pill { width: 24px; height: 20px; }
+.lu-bname { flex: 1; min-width: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lu-bchip b { font-family: var(--font-mono); font-weight: 400; font-size: var(--t-xs); color: var(--gold-light); }
+@media (hover: hover) { .lu-bchip:hover { border-color: var(--gold-line); background: var(--gold-soft); } }
+.lu-bchip.sel { border-color: var(--gold); background: var(--gold-soft); box-shadow: 0 0 0 3px rgba(199, 161, 90, .2); }
+.lu-bchip.over { border-color: var(--gold-light); background: var(--gold-soft); transform: scale(1.03); }
+.lu-bchip.src { opacity: .4; }
+.lu-bchip.lift { opacity: 1; transform: scale(1.04); border-color: var(--gold); }
+.lu-hint { margin: 0; font-size: var(--t-xs); color: var(--muted); }
+
+/* joueur suivi par le doigt pendant le glissé */
+.lu-ghost {
+  position: fixed; z-index: 9999; pointer-events: none; transform: translate(-50%, -62%) scale(1.12);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text);
+}
+.lu-ghost .p2-num { background: var(--gold-grad); color: #0d0b07; border: 1.5px solid var(--gold-light); box-shadow: 0 0 0 6px rgba(199, 161, 90, .25), 0 14px 28px rgba(0, 0, 0, .6); }
+.lu-ghost .p2-name { background: rgba(0, 0, 0, .7); }
+
+.lu-best { margin-left: auto; color: var(--gold); text-decoration: none; font-size: var(--t-xs); letter-spacing: .02em; white-space: nowrap; }
+.lu-best b { font-family: var(--font-mono); font-weight: 400; color: var(--green); margin-left: 4px; }
+@media (hover: hover) { button.lu-best:hover { color: var(--gold-light); text-decoration: underline; } }
+.lu-best.done { color: var(--muted); }
+
+/* onglet Composition de l'Effectif */
+.lu-editor { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--s-4); align-items: start; }
+.lu-main { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
+.lu-main .pitch2d { width: min(100%, calc(60vh * 1.05)); }
+.lu-side { display: flex; flex-direction: column; gap: var(--s-3); position: sticky; top: 0; }
+.lu-card { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-4); border-radius: var(--r-md); border: 1px solid var(--line); background: rgba(255, 255, 255, .02); }
+.lu-legend p { margin: 0; display: flex; gap: var(--s-2); align-items: baseline; font-size: var(--t-sm); color: var(--text-2); line-height: 1.45; }
+.lu-legend b { color: var(--text); font-weight: 600; }
+.lu-dot { flex-shrink: 0; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--gold-line); background: rgba(10, 10, 10, .85); transform: translateY(2px); }
+.lu-dot.off { border: 1.5px dashed rgba(224, 122, 111, .8); }
+.lu-dot.alt { border-color: rgba(124, 196, 151, .7); background: #12241a; }
+
+/* mi-temps : le terrain à droite, consignes et pronostic à gauche */
+.halftime { max-width: 960px; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
+.ht-board .pitch2d { width: min(100%, calc(46vh * 1.05)); }
+.halftime .ht-go { grid-column: 1 / -1; }
+.ht-board { gap: var(--s-2); }
+.ht-none { margin: 0; font-size: var(--t-sm); color: var(--muted); }
+.ht-changes { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); border-radius: var(--r-md); border: 1px solid var(--gold-line); background: var(--gold-soft); }
+.ht-swap { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 4px var(--s-2); align-items: center; font-size: var(--t-sm); }
+.ht-swap b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ht-moved { font-size: var(--t-xs); color: var(--text-2); }
+.ht-changes-foot { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); font-size: var(--t-sm); color: var(--text-2); }
+.ht-changes-foot b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ht-changes-foot b.up { color: var(--green); }
+.ht-changes-foot b.down { color: var(--red); }
+
+@media (max-width: 760px) {
+  .lu-editor { grid-template-columns: 1fr; }
+  .lu-side { position: static; }
+  .lu-main .pitch2d, .ht-board .pitch2d { width: 100%; }
+  .lu-bench-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lu-alt { right: -14px; }
+  .halftime { grid-template-columns: 1fr; }
+  /* sur téléphone : score et pronostic, puis le terrain, puis le résumé des changements et la tactique */
+  .halftime .ht-col { display: contents; }
+  .ht-board { order: 1; }
+  .ht-b-changes { order: 2; }
+  .ht-b-tactic { order: 3; }
+  .halftime .ht-go { order: 4; }
+}
+@media (max-width: 760px) {
+  /* en-tête du terrain : dispositif et niveau sur une ligne, « Meilleur onze » dessous */
+  .lu-main .pm-sub, .pm-pitch-wrap .pm-sub { flex-wrap: wrap; row-gap: 2px; }
+  .pm-sub .lu-best { order: 3; flex-basis: 100%; margin-left: 0; text-align: left; }
+  .pm-rating { white-space: nowrap; }
+}

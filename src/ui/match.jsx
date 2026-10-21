@@ -1,20 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { POS_LABELS } from '../game/constants';
-import { ratingAt } from '../game/players';
-import { FORMATIONS, FORMATION_ORDER, TACTICS, TACTIC_ORDER, autoLineup, expectedGoals, formationOf, lineupRating, reshapeLineup, slotsOf } from '../game/tactics';
+import { TACTICS, TACTIC_ORDER, expectedGoals, formationOf, lineupRating, reshapeLineup } from '../game/tactics';
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
-import { createLiveMatch, prematchOdds } from '../game/live';
+import { SUBS_MAX, createLiveMatch, pairSubs, prematchOdds } from '../game/live';
+import { BestEleven, FormationPicker, LineupBoard, displayNames } from './lineup';
 import { IconClose, IconMute, IconPlay, IconSound } from './icons';
-import { IconBall, IconSwap, IconWhistle, RatingBadge } from './kit';
+import { IconBall, IconSwap, IconWhistle } from './kit';
 import { useKeydown } from './presence';
 import { SEC_PER_MIN, matchFeed } from '../game/matchFeed';
 
 // Avant-match (onze + tactique + pronostic) et match en direct (score, chrono, fil de commentaires,
-// vitesse, mi-temps avec changement). La 3D derrière est en mode « jour de match ».
-
-const lastName = (n) => n.split(' ').slice(1).join(' ') || n;
-// « L. Ferrand » : l'initiale départage deux joueurs au même nom de famille
-const shortName = (n) => { const [first, ...rest] = n.split(' '); return rest.length ? `${first[0]}. ${rest.join(' ')}` : n; };
+// vitesse, mi-temps avec changements sur le terrain). La 3D derrière est en mode « jour de match ».
 
 function OddsBar({ odds }) {
   const [w, d, l] = roundPercents([odds.win, odds.draw, odds.loss]); // somme toujours égale à 100 %
@@ -47,45 +42,18 @@ function TacticPicker({ value, onChange, compact }) {
   );
 }
 
-// Dispositif : six formations, avec leur effet résumé.
-function FormationPicker({ value, onChange }) {
-  return (
-    <div className="formations" role="radiogroup" aria-label="Dispositif">
-      {FORMATION_ORDER.map((id) => (
-        <button key={id} role="radio" aria-checked={value === id} className={value === id ? 'active' : ''} onClick={() => onChange(id)}>
-          <strong>{FORMATIONS[id].name}</strong>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 // --- Avant-match -------------------------------------------------------------------------------------
 
 export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const [lineup, setLineup] = useState(() => [...state.lineup]);
   const [tactic, setTactic] = useState(state.tactic || 'balanced');
   const [formation, setFormation] = useState(formationOf(state.formation).id);
-  const [slot, setSlot] = useState(null);
-  const byId = useMemo(() => Object.fromEntries(state.players.map((p) => [p.id, p])), [state.players]);
-  const SLOTS = slotsOf(formation);
-  const PITCH = formationOf(formation).pitch;
   const rating = lineupRating(state.players, lineup, formation);
   const xg = expectedGoals(rating, ctx.opp.strength, tactic, formation);
   const odds = prematchOdds(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength }); // calculé sur le moteur
-  const reshape = (f) => { setFormation(f); setLineup(reshapeLineup(state.players, lineup, f)); setSlot(null); };
-  const bench = state.players.filter((p) => !lineup.includes(p.id));
+  const reshape = (f) => { setFormation(f); setLineup(reshapeLineup(state.players, lineup, f)); };
 
-  useKeydown((e) => { if (e.key === 'Escape') { if (slot !== null) setSlot(null); else onCancel(); } });
-
-  const choose = (k, id) => {
-    const next = [...lineup];
-    const from = next.indexOf(id);
-    if (from !== -1) next[from] = next[k]; // échange de postes entre deux titulaires
-    next[k] = id;
-    setLineup(next);
-    setSlot(null);
-  };
+  useKeydown((e) => { if (e.key === 'Escape') onCancel(); });
 
   return (
     <div className="matchscreen prematch">
@@ -101,53 +69,10 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
         <section className="pm-pitch-wrap glass">
           <div className="pm-sub">
             <span className="eyebrow">Onze de départ · <span className="nowrap">{formationOf(formation).name}</span></span>
-            <button className="linkbtn pm-best" onClick={() => { setLineup(autoLineup(state.players, formation)); setSlot(null); }}>Meilleur onze</button>
+            <BestEleven players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
             <span className="pm-rating">Niveau <b>{fmtRating(rating)}</b></span>
           </div>
-          <div className="pitch2d">
-            <div className="p2-lines"><i className="half" /><i className="circle" /><i className="box top" /><i className="box bottom" /></div>
-            {lineup.map((id, k) => {
-              const p = byId[id];
-              if (!p) return null;
-              const natural = p.pos === SLOTS[k];
-              return (
-                <button
-                  key={k}
-                  className={`p2-chip ${natural ? '' : 'off'} ${slot === k ? 'sel' : ''}`}
-                  style={{ left: `${PITCH[k][0]}%`, top: `${PITCH[k][1]}%` }}
-                  onClick={() => setSlot(slot === k ? null : k)}
-                  title={natural ? '' : `Hors de son poste (${POS_LABELS[p.pos]})`}
-                >
-                  <span className="p2-num">{fmtRating(ratingAt(p, SLOTS[k]))}</span>
-                  <span className="p2-name">{lastName(p.name)}</span>
-                </button>
-              );
-            })}
-          </div>
-          {slot !== null ? (
-            <div className="pm-picker">
-              <div className="pm-sub"><span className="eyebrow">Poste : {POS_LABELS[SLOTS[slot]]}</span><button className="linkbtn" onClick={() => setSlot(null)}>Fermer</button></div>
-              <ul>
-                {[...state.players].sort((a, b) => ratingAt(b, SLOTS[slot]) - ratingAt(a, SLOTS[slot])).map((p) => (
-                  <li key={p.id}>
-                    <button className={lineup[slot] === p.id ? 'current' : ''} onClick={() => choose(slot, p.id)}>
-                      <span className={`pos ${p.pos}`}>{p.pos}</span>
-                      <span className="pk-name">{p.name}{lineup.includes(p.id) && lineup[slot] !== p.id ? <em> · titulaire</em> : ''}</span>
-                      <b>{fmtRating(ratingAt(p, SLOTS[slot]))}</b>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <div className="pm-bench">
-              <span className="eyebrow muted-eyebrow">Remplaçants</span>
-              <div>
-                {bench.length === 0 && <span className="muted small">Aucun remplaçant : recrute dans l’Effectif.</span>}
-                {bench.map((p) => <span key={p.id} className="bench-chip"><i className={`pos ${p.pos}`}>{p.pos}</i>{lastName(p.name)}</span>)}
-              </div>
-            </div>
-          )}
+          <LineupBoard players={state.players} lineup={lineup} formation={formation} onChange={setLineup} />
         </section>
 
         <section className="pm-side">
@@ -194,73 +119,27 @@ function EventRow({ e }) {
   );
 }
 
-// probabilités finales depuis un score donné, pour la seconde période
-// Changement à la mi-temps, au doigt : on touche le joueur qui sort (note du match et carton visibles), puis
-// celui qui entre (remplaçants du même poste en tête, avec leur niveau à ce poste et l'écart avec le sortant).
-function SubPicker({ state, m, notes, sub, onChange }) {
-  const byId = (id) => state.players.find((p) => p.id === id);
-  const outP = sub.out !== null ? byId(sub.out) : null;
-  const inP = sub.in !== null ? byId(sub.in) : null;
-  const SLOTS = slotsOf(m.formation);
-  const slot = outP ? SLOTS[m.lineup.indexOf(outP.id)] : null;
-  const outLvl = outP ? ratingAt(outP, slot) : 0;
-  const delta = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmtRating(Math.abs(v))}`;
-
-  if (outP && inP) {
-    const inLvl = ratingAt(inP, slot);
-    return (
-      <div className="sub-done">
-        <div className="sub-swap">
-          <span className="sub-way out">Sort</span><b>{outP.name}</b>
-          <span className="sub-way in">Entre</span><b>{inP.name}</b>
-        </div>
-        <div className="sub-done-foot">
-          <span>Niveau au poste ({POS_LABELS[slot].toLowerCase()}) : {fmtRating(outLvl)} → <b className={inLvl >= outLvl ? 'up' : 'down'}>{fmtRating(inLvl)}</b></span>
-          <button className="linkbtn sub-reset" onClick={() => onChange({ out: null, in: null })}>Modifier</button>
-        </div>
-      </div>
-    );
-  }
-
-  if (outP) {
-    const bench = state.players
-      .filter((p) => !m.lineup.includes(p.id))
-      .map((p) => ({ p, lvl: ratingAt(p, slot) }))
-      .sort((a, b) => (b.p.pos === slot) - (a.p.pos === slot) || b.lvl - a.lvl);
-    return (
-      <div className="sub-step">
-        <div className="sub-head">
-          <span>Qui remplace <b>{lastName(outP.name)}</b> ({POS_LABELS[slot].toLowerCase()}, niveau {fmtRating(outLvl)}) ?</span>
-          <button className="linkbtn sub-reset" onClick={() => onChange({ out: null, in: null })}>Annuler</button>
-        </div>
-        {bench.length === 0 ? <p className="sub-empty">Aucun remplaçant : recrute dans l’Effectif.</p> : (
-          <div className="sub-grid">
-            {bench.map(({ p, lvl }) => (
-              <button key={p.id} className="sub-chip" onClick={() => onChange({ out: outP.id, in: p.id })}>
-                <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
-                <span className="sub-name">{shortName(p.name)}</span>
-                <span className="sub-lvl">{fmtRating(lvl)}<em className={lvl > outLvl ? 'up' : lvl < outLvl ? 'down' : ''}>{delta(lvl - outLvl)}</em></span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  const starters = m.lineup.map((id, k) => ({ p: byId(id), slot: SLOTS[k] })).filter(({ p }) => p && !m.sent.home.has(p.id));
+// Changements de la mi-temps : ce qui change entre le onze de la première période et celui composé sur le terrain
+// (entrants face aux sortants de leur poste, et niveau du onze avant → après).
+function HalftimeChanges({ state, m, plan, onReset }) {
+  const names = displayNames(state.players);
+  const pairs = pairSubs(m.lineup, plan);
+  const moved = plan.some((id, k) => m.lineup.includes(id) && m.lineup[k] !== id);
+  if (!pairs.length && !moved) return <p className="ht-none">Aucun changement : l’équipe repart telle quelle.</p>;
+  const before = lineupRating(state.players, m.lineup, m.formation);
+  const after = lineupRating(state.players, plan, m.formation);
   return (
-    <div className="sub-step">
-      <p className="sub-hint">Touche le joueur qui sort. Sinon, l’équipe repart telle quelle.</p>
-      <div className="sub-grid">
-        {starters.map(({ p, slot: s }) => (
-          <button key={p.id} className="sub-chip" onClick={() => onChange({ out: p.id, in: null })}>
-            <span className={`pos-pill ${s}`}>{s}</span>
-            <span className="sub-name">{shortName(p.name)}</span>
-            {m.booked.home.has(p.id) && <i className="card yellow" title="Averti" />}
-            {notes[p.id] && <RatingBadge value={notes[p.id]} />}
-          </button>
-        ))}
+    <div className="ht-changes">
+      {pairs.map(([id, out]) => (
+        <div key={id} className="ht-swap">
+          <span className="sub-way in">Entre</span><b>{names[id]}</b>
+          <span className="sub-way out">Sort</span><b>{names[out]}</b>
+        </div>
+      ))}
+      {moved && <span className="ht-moved">Postes réorganisés</span>}
+      <div className="ht-changes-foot">
+        <span>Niveau du onze {fmtRating(before)} → <b className={after >= before ? 'up' : 'down'}>{fmtRating(after)}</b></span>
+        <button className="linkbtn sub-reset" onClick={onReset}>Annuler</button>
       </div>
     </div>
   );
@@ -287,7 +166,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
     if (!k.map.has(e)) k.map.set(e, ++k.n);
     return k.map.get(e);
   };
-  const [sub, setSub] = useState({ out: null, in: null });
+  const [plan, setPlan] = useState(null); // onze de la seconde période, composé sur le terrain à la mi-temps
   const [tactic2, setTactic2] = useState(live.state.tactic);
 
   useEffect(() => { sound.start(); sound.whistle(1); return () => sound.stop(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -389,7 +268,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
   };
 
   const resume = () => {
-    if (sub.out !== null && sub.in !== null) live.substitute(sub.out, sub.in);
+    if (plan) live.applyLineup(plan);
     live.setTactic(tactic2);
     const h2 = live.playHalf(2);
     setEvents(h2);
@@ -403,13 +282,14 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
   };
 
   const m = live.state;
+  useEffect(() => { if (phase === 'halftime') setPlan([...m.lineup]); }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  const planned = plan || m.lineup;
   // notes du match à la pause (aide à choisir qui sort)
   const notes = useMemo(() => (phase === 'halftime'
     ? Object.fromEntries(live.result().players.filter(Boolean).map((x) => [x.id, x.rating])) : {}), [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   const base = half === 1 ? 45 : 90;
   const minute = Math.max(half === 1 ? 0 : 45, Math.ceil(clock));
   const minuteLabel = minute > base ? `${base}+${minute - base}` : `${minute}`;
-  const byId = Object.fromEntries(state.players.map((p) => [p.id, p]));
   // score affiché = buts déjà révélés par le direct (le moteur connaît la suite de la mi-temps)
   const goalsH = shown.filter((e) => e.type === 'goal' && e.side === 'home').length;
   const goalsA = shown.filter((e) => e.type === 'goal' && e.side === 'away').length;
@@ -461,28 +341,40 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
       {phase === 'halftime' && (
         <div className="halftime glass">
           <div className="ht-col">
-          <span className="eyebrow">Mi-temps · tes consignes</span>
-          <div className="ht-stats">
-            <span>Possession <b>{m.stats.possession}%</b></span>
-            <span>Tirs <b>{m.stats.shots[0]} – {m.stats.shots[1]}</b></span>
-            <span>Cadrés <b>{m.stats.onTarget[0]} – {m.stats.onTarget[1]}</b></span>
+            <span className="eyebrow">Mi-temps · tes consignes</span>
+            <div className="ht-stats">
+              <span>Possession <b>{m.stats.possession}%</b></span>
+              <span>Tirs <b>{m.stats.shots[0]} – {m.stats.shots[1]}</b></span>
+              <span>Cadrés <b>{m.stats.onTarget[0]} – {m.stats.onTarget[1]}</b></span>
+            </div>
+            <div className="ht-block">
+              <span className="eyebrow muted-eyebrow">Pronostic final</span>
+              <OddsBar odds={live.secondHalfOdds({ lineup: planned, tactic: tactic2 })} />
+            </div>
+            <div className="ht-block ht-b-changes">
+              <span className="eyebrow muted-eyebrow">Changements</span>
+              <HalftimeChanges state={state} m={m} plan={planned} onReset={() => setPlan([...m.lineup])} />
+            </div>
+            <div className="ht-block ht-b-tactic">
+              <span className="eyebrow muted-eyebrow">Tactique de la seconde période</span>
+              <TacticPicker value={tactic2} onChange={setTactic2} compact />
+            </div>
           </div>
-          <div className="ht-block">
-            <span className="eyebrow muted-eyebrow">Pronostic final</span>
-            <OddsBar odds={live.secondHalfOdds({ lineup: sub.out !== null && sub.in !== null ? m.lineup.map((id) => (id === sub.out ? sub.in : id)) : m.lineup, tactic: tactic2 })} />
-          </div>
-          </div>
-          <div className="ht-col">
-          <div className="ht-block">
-            <span className="eyebrow muted-eyebrow">Changement</span>
-            <SubPicker state={state} m={m} notes={notes} sub={sub} onChange={setSub} />
-          </div>
-          <div className="ht-block">
-            <span className="eyebrow muted-eyebrow">Tactique de la seconde période</span>
-            <TacticPicker value={tactic2} onChange={setTactic2} compact />
+          <div className="ht-col ht-board">
+            <span className="eyebrow muted-eyebrow">Ton équipe · pastille : note de la première période</span>
+            <LineupBoard
+              players={state.players}
+              lineup={planned}
+              formation={m.formation}
+              onChange={setPlan}
+              original={m.lineup}
+              maxIn={SUBS_MAX - m.subsUsed}
+              locked={m.sent.home}
+              booked={m.booked.home}
+              notes={notes}
+            />
           </div>
           <div className="ht-go"><button className="btn btn-xl" onClick={resume}><IconPlay /> Reprendre la seconde période</button></div>
-          </div>
         </div>
       )}
 

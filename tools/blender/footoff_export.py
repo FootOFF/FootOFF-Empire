@@ -117,7 +117,7 @@ def check_collection(coll, budgets, depsgraph):
             return rep, None
         if not 1 <= level <= bdef["maxLevel"]:
             rep.error(f"niveau {level} hors limites (1 a {bdef['maxLevel']})")
-        cat = budgets["categories"][bdef["category"]]
+        cat = budgets["categories"][bdef.get("levelCategories", {}).get(str(level), bdef["category"])]
     special = re.compile("^(" + "|".join(budgets["specialNodePrefixes"]) + ")", re.I)
 
     scene = bpy.context.scene

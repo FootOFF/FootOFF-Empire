@@ -1,6 +1,6 @@
 # Rapport du pipeline GLB
 
-Généré par `npm run models` le 18/10/2026 23:06:59.
+Généré par `npm run models` le 21/10/2026 12:59:06.
 
 | Modèle | Statut | Triangles | Draw calls | Matériaux | Poids final | Dimensions (L × H × P) | Nœuds spéciaux |
 |---|---|---|---|---|---|---|---|
@@ -23,6 +23,8 @@ Généré par `npm run models` le 18/10/2026 23:06:59.
 | terrain_L2 | OK | 3 360 | 14 | 14 | 136 Ko | 134 × 24 × 100 m | 8 |
 | terrain_L3 | OK | 14 344 | 15 | 15 | 410 Ko | 153 × 41 × 126 m | 9 |
 | terrain_L4 | OK | 20 348 | 16 | 16 | 687 Ko | 156 × 37 × 127 m | 13 |
+| terrain_L5 | OK | 23 734 | 17 | 17 | 810 Ko | 181 × 27 × 133 m | 12 |
+| terrain_L6 | OK | 28 828 | 17 | 17 | 955 Ko | 187 × 31 × 140 m | 12 |
 | training_L1 | ALERTES | 2 064 | 13 | 13 | 81.9 Ko | 59 × 13 × 59 m | 6 |
 | training_L2 | ALERTES | 2 744 | 13 | 13 | 111 Ko | 60 × 18 × 60 m | 7 |
 | training_L3 | ALERTES | 2 888 | 13 | 13 | 110 Ko | 60 × 18 × 60 m | 7 |

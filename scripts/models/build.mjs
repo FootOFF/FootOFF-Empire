@@ -64,8 +64,9 @@ function identify(src) {
   if (!def) return { error: `Bâtiment « ${key} » inconnu (${Object.keys(BUILDINGS).join(', ')}).` };
   if (key !== src.folder) return { error: `Fichier dans buildings/${src.folder}/ au lieu de buildings/${key}/.` };
   if (level < 1 || level > def.maxLevel) return { error: `Niveau ${level} hors limites (1 à ${def.maxLevel} pour ${key}).` };
+  const categoryName = def.levelCategories?.[level] || def.category; // ex. stade : arène plus large aux niveaux 5 et 6
   return {
-    key, level, category: CATEGORIES[def.category], categoryName: def.category,
+    key, level, category: CATEGORIES[categoryName], categoryName,
     out: join(OUT_DIR, 'buildings', `${src.name}.glb`),
   };
 }

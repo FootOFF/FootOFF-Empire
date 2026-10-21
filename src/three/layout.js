@@ -4,6 +4,8 @@
 
 export const PLOT_SIZE = 6; // parcelle standard : 60 × 60 m
 export const STADIUM_FOOTPRINT = { w: 16, d: 13 }; // emprise réservée au stade (t0)
+// arène des niveaux 5 et 6 : plus large, elle déborde sur les allées de l'esplanade (sans toucher les parcelles)
+export const ARENA_FOOTPRINT = { w: 19, d: 15 };
 
 // [x, z] du centre de chaque parcelle.
 // Secteur principal : stade au centre, A/B au nord. Supporters à l'ouest, partenaires à l'est.
@@ -14,8 +16,9 @@ export const PLOT_POS = {
   t6: [13, -3.5], t7: [13, 3.5],
 };
 
-export function footprintOf(plotId) {
-  return plotId === 't0' ? STADIUM_FOOTPRINT : { w: PLOT_SIZE, d: PLOT_SIZE };
+export function footprintOf(plotId, lvl = 0) {
+  if (plotId === 't0') return lvl >= 5 ? ARENA_FOOTPRINT : STADIUM_FOOTPRINT;
+  return { w: PLOT_SIZE, d: PLOT_SIZE };
 }
 
 // Esplanade pavée qui englobe toutes les parcelles (+ marge pour les routes).
@@ -28,7 +31,7 @@ export function layoutOverlaps() {
   const ids = Object.keys(PLOT_POS);
   const box = (id) => {
     const [x, z] = PLOT_POS[id];
-    const { w, d } = footprintOf(id);
+    const { w, d } = footprintOf(id, 6); // emprise maximale : l'arène ne doit toucher aucune parcelle
     return { x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2 };
   };
   const out = [];

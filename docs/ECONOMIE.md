@@ -6,7 +6,7 @@ dans `src/game/constants.js`. Les valeurs ci-dessous ont été calées par simul
 ## Le modèle
 
 **Stade** : 600 places (terrain municipal), 3 500 (tribune couverte), 14 000 (stade 4 tribunes),
-38 000 (arène moderne), puis deux agrandissements : 55 000 (anneau supérieur) et 75 000 (enceinte géante).
+38 000 (arène moderne), puis l'arène fermée : 55 000 (deux étages, toit en selle) et 75 000 (plus large et plus haute).
 Coût : 40 k€, 400 k€, 4 M€, 22 M€, 55 M€. Loges et hospitalités à partir de 14 000 places (1,2 % à 3 % de la
 capacité, vendues dix fois le prix du billet, dans la limite de 5 % du public potentiel).
 

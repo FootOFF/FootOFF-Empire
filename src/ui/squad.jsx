@@ -14,6 +14,7 @@ import { IconChevron, IconChevronLeft, IconClose, IconRadar, IconTransfer } from
 import { Panel } from './panels';
 import { Tabs } from './glass';
 import { PlayerCareer, departureText, reasonTag } from './career';
+import { LineupEditor } from './lineup';
 import { careerOf } from '../game/career';
 import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
@@ -144,6 +145,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
         <Tabs
           items={[
             ['players', 'Joueurs'],
+            ['lineup', <><span className="hide-sm">Composition</span><span className="show-sm">Compo</span></>],
             ['market', 'Marché', recommended ? <i className="sq-tab-dot" aria-label="recrue recommandée" /> : null],
             ['transfers', 'Transferts'],
             ['alumni', 'Anciens'],
@@ -207,6 +209,8 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
           </>
         ) : tab === 'market' ? (
           <Market state={state} refLvl={ref} recommended={recommended} onOpen={(p) => setSheet({ id: p.id, market: true })} onCompare={openCompare} onSign={sign} />
+        ) : tab === 'lineup' ? (
+          <LineupEditor state={state} run={run} />
         ) : tab === 'alumni' ? (
           <Alumni state={state} onOpen={setCareer} />
         ) : (
@@ -628,19 +632,48 @@ function Radar({ a, b, axes }) {
   );
 }
 
+// Choix du joueur comparé : liste du jeu (effectif puis joueurs libres), triée par niveau au poste comparé.
+function ComparePicker({ state, a, b, onPick, onClose }) {
+  const gk = b.pos === 'G';
+  const rows = (list) => list
+    .filter((p) => p.id !== b.id && (p.pos === 'G') === gk)
+    .sort((x, y) => ratingAt(y, b.pos) - ratingAt(x, b.pos));
+  const groups = [['Ton effectif', rows(state.players)], ['Joueurs libres', rows(state.market)]].filter(([, l]) => l.length);
+  return (
+    <div className="cmp-list" role="listbox" aria-label="Joueur à comparer">
+      <div className="cmp-list-head">
+        <span className="sh-cap">Comparer {b.name.split(' ').slice(-1)[0]} avec…</span>
+        <button className="linkbtn" onClick={onClose}>Fermer</button>
+      </div>
+      {groups.map(([title, list]) => (
+        <section key={title} className="cmp-list-sec">
+          <span className="eyebrow muted-eyebrow">{title}</span>
+          {list.map((p) => (
+            <button key={p.id} role="option" aria-selected={p.id === a.id} className={`cmp-opt ${p.id === a.id ? 'on' : ''}`} onClick={() => { onPick(p.id); onClose(); }}>
+              <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
+              <span className="cmp-opt-name">{p.name}<em>{p.age} ans{state.lineup?.includes(p.id) ? ' · titulaire' : ''}</em></span>
+              <b>{fmtRating(ratingAt(p, b.pos))}</b>
+            </button>
+          ))}
+        </section>
+      ))}
+    </div>
+  );
+}
+
 function CompareView({ state, a, b, onPick, onClose, onSign }) {
   const gk = b.pos === 'G';
   const axes = gk ? GK_ATTRS : ATTRS;
   const vals = (p) => axes.map((x) => (gk ? p.g?.[x.key] ?? 1 : p.a[x.key]));
   const va = vals(a);
   const vb = vals(b);
-  const options = [...state.players, ...state.market].filter((p) => p.id !== b.id && (p.pos === 'G') === gk);
   const isMarket = !state.players.includes(b);
   const fee = costOf(b, state);
   const roleOf = (p) => (p.club ? p.club : state.market.includes(p) ? 'Joueur libre' : state.lineup?.includes(p.id) ? 'Titulaire' : 'Remplaçant');
   const la = ratingAt(a, b.pos);
   const lb = ratingAt(b, b.pos);
   const ref = useRef(null);
+  const [picking, setPicking] = useState(false);
   useSwipe(ref, { onDown: onClose, downMedia: PHONE });
   return (
     <div className="sq-overlay center" onClick={onClose}>
@@ -657,13 +690,10 @@ function CompareView({ state, a, b, onPick, onClose, onSign }) {
         <div className="cmp-vs">
           <div className="cmp-side a">
             <span className="cmp-role"><i />{roleOf(a)}</span>
-            <label className="cmp-pick">
+            <button className={`cmp-pick ${picking ? 'open' : ''}`} onClick={() => setPicking(!picking)} aria-expanded={picking} aria-label={`Joueur comparé : ${a.name}. Changer`}>
               <span className="cmp-name">{a.name}</span>
               <IconChevron />
-              <select value={a.id} onChange={(e) => onPick(Number(e.target.value))} aria-label={`Joueur comparé : ${a.name}. Changer`}>
-                {options.map((p) => <option key={p.id} value={p.id}>{p.name} ({fmtRating(playerRating(p))}){state.market.includes(p) ? ' · libre' : ''}</option>)}
-              </select>
-            </label>
+            </button>
             <b className={la > lb ? 'lead' : ''}>{fmtRating(la)}</b>
           </div>
           <span className="cmp-x">contre</span>
@@ -674,6 +704,7 @@ function CompareView({ state, a, b, onPick, onClose, onSign }) {
           </div>
         </div>
 
+        {picking ? <ComparePicker state={state} a={a} b={b} onPick={onPick} onClose={() => setPicking(false)} /> : <>
         <Radar a={va} b={vb} axes={axes} />
 
         <section className="cmp-sec">
@@ -685,6 +716,7 @@ function CompareView({ state, a, b, onPick, onClose, onSign }) {
             })}
           </ul>
         </section>
+        </>}
 
         {isMarket && (
           <footer className="cmp-foot">

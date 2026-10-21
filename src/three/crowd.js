@@ -126,8 +126,8 @@ export function createCrowd(parent) {
   let source = null;
   let fill = 0;
   let max = 2000;
+  let boost = 1;
   let ground = 0.006;
-  let extraSource = null; // anneau supérieur des stades agrandis
   const cheer = [0, 0];
   const hold = [0, 0];
   const colors = { away: 0xf2f2f2 };
@@ -171,13 +171,13 @@ export function createCrowd(parent) {
 
   return {
     // nouveau modèle de stade (niveau) : les places sont recalculées au prochain affichage
-    setStadium(node, groundY = 0.006, extra = null) { source = node; extraSource = extra; ground = groundY; seats = []; if (fill > 0) this.refresh(); },
+    // big : arène des niveaux 5 et 6, un tiers de supporters en plus pour ne pas paraître vide (sauf en mode économie)
+    setStadium(node, groundY = 0.006, big = false) { source = node; ground = groundY; boost = big ? 1.3 : 1; seats = []; if (fill > 0) this.refresh(); },
     setQuality(q) { const next = q === 'economie' ? 800 : q === 'haute' ? 3200 : 1900; if (next !== max) { max = next; seats = []; if (fill > 0) this.refresh(); } },
     refresh() {
       if (!source) return;
       if (!seats.length) {
-        seats = sampleSeats(source, parent, max, ground);
-        if (extraSource) seats = [...seats, ...sampleSeats(extraSource, parent, Math.round(max * 0.45), ground, false)];
+        seats = sampleSeats(source, parent, max > 800 ? Math.round(max * boost) : max, ground);
         build();
       }
     },

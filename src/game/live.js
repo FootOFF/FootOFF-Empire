@@ -11,6 +11,7 @@ import { ratingAt } from './players';
 const CONVERSION = 0.3; // part des occasions transformées
 const YELLOW_PER_MIN = 0.021;
 const RED_PER_MIN = 0.00035; // ~0,2 rouge par match avec les doubles jaunes
+export const SUBS_MAX = 3; // changements à la mi-temps
 
 const T = {
   kickoff: [
@@ -148,6 +149,16 @@ function outcomeOdds({ pH, pA }, lead, durations) {
 export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength }) {
   const durations = HALF1.flatMap((a) => HALF2.map((b) => a + b));
   return outcomeOdds(minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation), 0, durations);
+}
+
+// Changements entre deux onzes : chaque entrant face au sortant qu'il remplace (celui de son poste s'il sort,
+// sinon un sortant resté sans remplaçant).
+export function pairSubs(before, next) {
+  const outs = before.filter((id) => !next.includes(id));
+  const pairs = next.filter((id) => !before.includes(id)).map((id) => [id, before[next.indexOf(id)]]);
+  const left = outs.filter((o) => !pairs.some(([, b]) => b === o));
+  for (const p of pairs) if (!outs.includes(p[1])) p[1] = left.shift();
+  return pairs;
 }
 
 export function createLiveMatch(s, ctx) {
@@ -393,18 +404,26 @@ export function createLiveMatch(s, ctx) {
       const chances = minuteGoalChances(s, lineup, tactic, m.oppStrength, sent, m.sent.home, m.formation);
       return outcomeOdds(chances, m.score.home - m.score.away, [m.halfLength[1]]);
     },
-    // changement à la mi-temps : un titulaire sort, un remplaçant prend son poste
-    substitute(outId, inId) {
-      const k = m.lineup.indexOf(outId);
-      if (k === -1 || m.lineup.includes(inId) || m.sent.home.has(outId)) return false;
-      const out = s.players.find((p) => p.id === outId);
-      const inn = s.players.find((p) => p.id === inId);
-      m.lineup[k] = inId;
-      m.played.add(inId);
-      perf(outId).out = 45;
-      perf(inId).in = 45;
-      m.subsUsed++;
-      push(45, 'sub', 'home', `Changement pour ${m.home} : ${inn.name} remplace ${out.name}.`, { half: 2 });
+    // onze de la seconde période composé sur le terrain : jusqu'à SUBS_MAX entrants, titulaires replacés à
+    // d'autres postes, expulsés laissés à leur place. Chaque entrant remplace le sortant de son poste.
+    applyLineup(next) {
+      const before = m.lineup;
+      if (!Array.isArray(next) || next.length !== before.length || new Set(next).size !== next.length) return false;
+      if (before.some((id, k) => m.sent.home.has(id) && next[k] !== id)) return false;
+      const ids = new Set(s.players.map((p) => p.id));
+      const ins = next.filter((id) => !before.includes(id));
+      if (ins.length > SUBS_MAX - m.subsUsed || ins.some((id) => !ids.has(id))) return false;
+      const nameOf = (id) => s.players.find((p) => p.id === id)?.name || '';
+      for (const [inId, outId] of pairSubs(before, next)) {
+        m.played.add(inId);
+        perf(outId).out = 45;
+        perf(inId).in = 45;
+        m.subsUsed++;
+        push(45, 'sub', 'home', `Changement pour ${m.home} : ${nameOf(inId)} remplace ${nameOf(outId)}.`, { half: 2 });
+      }
+      const moved = next.filter((id, k) => before.includes(id) && before[k] !== id).length;
+      m.lineup = [...next];
+      if (moved) push(45, 'info', 'home', `${m.home} réorganise son équipe pour la seconde période.`, { half: 2 });
       return true;
     },
     setTactic(t) {

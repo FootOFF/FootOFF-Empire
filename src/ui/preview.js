@@ -11,6 +11,7 @@ export const SCREENS = [
   ['parcelle', 'Inspecteur · parcelle libre'],
   ['effectif', 'Effectif · joueurs'],
   ['fiche', 'Fiche joueur'],
+  ['composition', 'Effectif · composition'],
   ['marche', 'Effectif · marché'],
   ['anciens', 'Effectif · anciens joueurs'],
   ['transferts', 'Marché des transferts'],
@@ -79,6 +80,7 @@ export function previewUi(screen, s) {
     case 'parcelle': return { sel: { plotId: 't2', sector: 'main' } };
     case 'effectif': return { panel: 'squad' };
     case 'fiche': return { panel: 'squad', squad: { sheet: s.players.find((p) => p.season?.apps)?.id ?? s.players[0].id } };
+    case 'composition': return { panel: 'squad', squadTab: 'lineup' };
     case 'marche': return { panel: 'squad', squadTab: 'market' };
     case 'anciens': return { panel: 'squad', squadTab: 'alumni' };
     case 'transferts': return { panel: 'squad', squadTab: 'transfers' };

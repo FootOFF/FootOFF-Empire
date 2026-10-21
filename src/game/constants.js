@@ -14,7 +14,7 @@ export const SQUAD_MAX = 25; // effectif professionnel : de quoi tourner sur le 
 export const SQUAD_MIN = 11;
 
 // Coût du niveau N = baseCost × mult^(N − first) ; le stade est livré au niveau 1. `costs` fixe le prix de
-// certains niveaux à la main (les deux agrandissements du stade, au-delà de l'arène moderne).
+// certains niveaux à la main (l'arène fermée des niveaux 5 et 6, au-delà de l'arène moderne).
 export const BUILDINGS = {
   terrain: { name: 'Stade', max: 6, baseCost: 40000, mult: 10, first: 2, costs: { 5: 22000000, 6: 55000000 } },
   training: { name: 'Centre d’entraînement', max: 5, baseCost: 4000, mult: 6.2, first: 1 },

@@ -136,6 +136,15 @@ Six formations (`FORMATIONS` dans `src/game/tactics.js`) : 4-3-3, 4-4-2, 4-2-3-1
 dispositif fixe les postes du onze, le schéma de l'avant-match et la place des joueurs 3D ; il agit sur les
 occasions des deux équipes et sur la possession. Le pronostic en tient compte (vérifié par simulation).
 
+## Composition sur le terrain
+
+Un seul composant (`LineupBoard`, `src/ui/lineup.jsx`) pour l'onglet Composition de l'Effectif (enregistré à chaque
+geste, repris à l'avant-match), l'avant-match et la mi-temps. On glisse un joueur sur un poste ou sur un coéquipier,
+ou on en touche deux ; au doigt, un remplaçant se saisit après un court maintien (sinon le banc défile). Le joueur
+choisi affiche sur chaque poste le niveau qu'il y aurait (vert s'il y ferait mieux). « Meilleur onze » annonce son
+gain et dit quand le onze est déjà optimal. À la mi-temps : notes de la première période en pastille, jusqu'à trois
+entrants (`SUBS_MAX`, `live.applyLineup`), expulsés figés, résumé des changements et pronostic recalculé.
+
 ## Stade et match en 3D
 
 Hors match, le stade est vide et immobile ; l'équipe s'entraîne au centre d'entraînement (rien tant qu'il n'est pas
@@ -147,4 +156,9 @@ et cartons (expulsé qui sort), les célébrations, les engagements, le changeme
 vestiaires. Une action qui ne peut plus aboutir à l'heure est abandonnée pour rester synchrone. Public
 (`src/three/crowd.js`) : supporters assis sur les sièges du modèle de stade (debout le long de la main courante
 dans les petits stades), nombre selon l'affluence, parcage visiteurs, le camp concerné se lève sur un but.
+Niveaux 5 et 6 : arène fermée générée dans Blender (`arena()` de `tools/blender/models/build_stadium.py`), une
+cuvette continue aux angles fermés, deux étages reliés par des loges au nord et sur les virages, toit en selle
+(haut au nord, bas et reculé côté caméra pour voir toute la pelouse), bande vitrée et nervures, façade vitrée à
+ailettes LED or, bandeau FootOFF Media et monogrammes côté caméra. Elle déborde sur les allées de l'esplanade
+(`ARENA_FOOTPRINT`, catégorie `arena` de `assets-src/budgets.json`) ; caméras de match un peu plus hautes.
 Le verre liquide reste réservé au menu du bas ; les onglets des panneaux gardent leur style simple (`Tabs`).

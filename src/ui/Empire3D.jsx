@@ -17,7 +17,7 @@ import { createCrowd } from '../three/crowd';
 import { HOME_KIT, kitOf } from '../game/kits';
 import { autoWeather, createWeather } from '../three/weather';
 import {
-  buildingMesh, padMesh, setProceduralNight, stadiumExtension, stadiumMesh, wastelandMesh,
+  buildingMesh, padMesh, setProceduralNight, stadiumMesh, wastelandMesh,
 } from '../three/procedural';
 
 function webglAvailable() {
@@ -128,6 +128,9 @@ const MATCH_VIEW = { pos: new THREE.Vector3(11, 8.5, 14), target: new THREE.Vect
 // match en direct : caméra « télé » en tribune latérale, et plan rapproché sur la surface pour les ralentis
 const TV_VIEW = { pos: new THREE.Vector3(0, 5.4, 10.8), target: new THREE.Vector3(0, 0, 0.8) };
 const GOAL_VIEW = { pos: new THREE.Vector3(3.2, 0.62, 1.95), target: new THREE.Vector3(4.4, 0.1, 0) }; // plan serré du ralenti
+// arène fermée (niveaux 5 et 6) : caméras un peu plus hautes pour passer au-dessus du toit côté caméra
+const MATCH_VIEW_ARENA = { pos: new THREE.Vector3(10.5, 11.2, 13.4), target: new THREE.Vector3(0, 0.4, -0.5) };
+const TV_VIEW_ARENA = { pos: new THREE.Vector3(0, 6.3, 10.2), target: new THREE.Vector3(0, 0, 0.8) };
 
 // Ce qu'une parcelle doit afficher : la scène n'est reconstruite que si cette signature change.
 function plotSpec(s, plotId, sectorId) {
@@ -264,13 +267,7 @@ export default function Empire3D({
       const real = node.name.startsWith('model:');
       // pelouse du stade : ~0,5 cm dans le GLB, plus haute dans le repli procédural
       if (entry.squad) entry.squad.setMode({ baseY: real ? 0.006 : 0.226 });
-      if (entry.id === 't0') {
-        // niveaux 5 et 6 : anneau supérieur ajouté sur l'arène du niveau 4
-        if (entry.extension) { entry.wrapper.remove(entry.extension); entry.extension = null; }
-        const lvl = Number(String(entry.sig || '').split(':')[1]) || 0;
-        if (lvl >= 5) { entry.extension = stadiumExtension(lvl); entry.wrapper.add(entry.extension); }
-        ctx.crowd?.setStadium(node, real ? 0.006 : 0.226, entry.extension);
-      }
+      if (entry.id === 't0') ctx.crowd?.setStadium(node, real ? 0.006 : 0.226, (Number(String(entry.sig || '').split(':')[1]) || 0) >= 5);
       entry.lights?.dispose();
       entry.lights = real ? plotLights(scene, node, entry.id === 't0' ? { max: 6, power: 5 } : { max: 2, power: 1.6 }) : null;
       const box = new THREE.Box3().setFromObject(node);
@@ -287,7 +284,7 @@ export default function Empire3D({
         if (entry.sig === spec.sig) continue;
         const isUpdate = animate && entry.sig !== null;
         entry.sig = spec.sig;
-        const fp = footprintOf(p.id);
+        const fp = footprintOf(p.id, spec.lvl);
         const proc = proceduralFor(spec);
         const model = spec.kind === 'building'
           ? resolveModel(spec.key, spec.lvl)
@@ -424,7 +421,7 @@ export default function Empire3D({
       setHover(id);
       if (id) {
         const [x, z] = PLOT_POS[id];
-        const fp = footprintOf(id);
+        const fp = footprintOf(id, stateRef.current.buildings?.terrain);
         frame.show(x, z, fp.w, fp.d);
       } else frame.hide();
       renderer.domElement.style.cursor = id ? 'pointer' : 'grab';
@@ -669,7 +666,8 @@ export default function Empire3D({
   useEffect(() => {
     const ctx = ctxRef.current;
     if (!ctx || !ready) return;
-    ctx.tweenCamera(live ? TV_VIEW : matchDay ? MATCH_VIEW : ctx.home);
+    const arena = (stateRef.current.buildings?.terrain || 0) >= 5;
+    ctx.tweenCamera(live ? (arena ? TV_VIEW_ARENA : TV_VIEW) : matchDay ? (arena ? MATCH_VIEW_ARENA : MATCH_VIEW) : ctx.home);
   }, [matchDay, live, recenter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { ctxRef.current?.setQuality?.(quality); ctxRef.current?.crowd?.setQuality(quality); }, [quality, ready]);
@@ -698,7 +696,7 @@ export default function Empire3D({
     ctx.sheetOpen = !!selectedPlot;
     if (selectedPlot) {
       const [x, z] = PLOT_POS[selectedPlot];
-      const fp = footprintOf(selectedPlot);
+      const fp = footprintOf(selectedPlot, stateRef.current.buildings?.terrain);
       ctx.selFrame.show(x, z, fp.w + 0.2, fp.d + 0.2);
       // hauteur réelle du bâtiment affiché (modèle chargé ou procédural), emprise de la parcelle
       const entry = ctx.plots.get(selectedPlot);
