@@ -194,7 +194,7 @@ def check_collection(coll, budgets, depsgraph):
     # Blender Z-up : X/Y = emprise au sol, Z = hauteur
     size = mx - mn
     fp = cat["footprint"]
-    if max(size) > 2000:
+    if max(size) > max(2000, fp["w"] * 1.5, fp["d"] * 1.5):  # au-dela de l'emprise prevue : centimetres ?
         rep.error(f"taille {max(size):.0f} : modele en centimetres ? Travailler en metres")
     else:
         # emprise centree sur l'origine (le jeu ne recentre pas) : mesuree depuis l'origine

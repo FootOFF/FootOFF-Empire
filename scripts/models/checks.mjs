@@ -54,7 +54,7 @@ export function checkSource(doc, { category, name }) {
   const size = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
   const fp = category.footprint;
   const maxDim = Math.max(...size);
-  if (maxDim > 2000) {
+  if (maxDim > Math.max(2000, fp.w * 1.5, fp.d * 1.5)) { // bien au-delà de l'emprise prévue : centimètres ?
     add('error', 'units', `Taille ${fmt(maxDim)} : le modèle semble exporté en centimètres. Exporter en mètres (Unit Scale = 1).`);
   } else if (maxDim < 2) {
     add('error', 'units', `Taille ${fmt(maxDim)} : modèle minuscule. Attendu en mètres (emprise ${fp.w} × ${fp.d} m).`);

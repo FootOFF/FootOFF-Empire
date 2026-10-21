@@ -1,6 +1,6 @@
 # Rapport du pipeline GLB
 
-Généré par `npm run models` le 21/10/2026 13:39:27.
+Généré par `npm run models` le 21/10/2026 14:00:04.
 
 | Modèle | Statut | Triangles | Draw calls | Matériaux | Poids final | Dimensions (L × H × P) | Nœuds spéciaux |
 |---|---|---|---|---|---|---|---|
@@ -30,6 +30,7 @@ Généré par `npm run models` le 21/10/2026 13:39:27.
 | training_L3 | ALERTES | 2 888 | 13 | 13 | 110 Ko | 60 × 18 × 60 m | 7 |
 | training_L4 | ALERTES | 3 116 | 13 | 13 | 116 Ko | 60 × 18 × 60 m | 7 |
 | training_L5 | ALERTES | 3 404 | 16 | 16 | 130 Ko | 60 × 21 × 60 m | 7 |
+| city | ALERTES | 144 853 | 30 | 30 | 3389 Ko | 2160 × 127 × 2000 m | 7 |
 | plot_empty | OK | 1 448 | 7 | 7 | 47.0 Ko | 59 × 9 × 59 m | 1 |
 | plot_locked | OK | 1 652 | 11 | 11 | 50.1 Ko | 58 × 39 × 58 m | 2 |
 | site | OK | 65 396 | 17 | 17 | 1539 Ko | 600 × 12 × 510 m | 2 |
@@ -90,3 +91,6 @@ Généré par `npm run models` le 21/10/2026 13:39:27.
 
 ### training_L5
 - **warn** `materials` — 16 matériaux > 10 conseillés : utiliser un atlas / trim sheet.
+
+### city
+- **warn** `textures` — 18 textures > 16 conseillées.

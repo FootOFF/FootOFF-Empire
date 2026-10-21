@@ -31,6 +31,7 @@ export const GENERATED_MODELS = {
 };
 
 export const GENERATED_PROPS = {
+  'city': {"url":"models/props/city.glb","scale":0.1},
   'plot_empty': {"url":"models/props/plot_empty.glb","scale":0.1},
   'plot_locked': {"url":"models/props/plot_locked.glb","scale":0.1},
   'site': {"url":"models/props/site.glb","scale":0.1},

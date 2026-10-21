@@ -75,6 +75,20 @@
       "maxMaterials": 14,
       "maxDrawCalls": 16
     },
+    "city": {
+      "_doc": "Ville autour du complexe (prop city) : immense mais basse, simplifiee au loin, perdue dans la brume.",
+      "footprint": {
+        "w": 2300,
+        "d": 2300
+      },
+      "maxHeight": 140,
+      "maxTriangles": 220000,
+      "maxBytes": 9000000,
+      "maxTextureSize": 1024,
+      "maxTextures": 16,
+      "maxMaterials": 32,
+      "maxDrawCalls": 34
+    },
     "site": {
       "footprint": {
         "w": 620,
@@ -119,6 +133,7 @@
     "_doc": "Categorie de chaque prop (assets-src/models/props/<nom>.glb ; collection Blender prop_<nom>). Defaut : prop.",
     "plot_empty": "plot",
     "plot_locked": "plot",
-    "site": "site"
+    "site": "site",
+    "city": "city"
   }
 }

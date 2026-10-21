@@ -173,7 +173,18 @@ circulation (`src/three/life.js`) suit les mêmes cotes : deux boucles du périp
 contournent l'îlot des ronds-points, plus la chaussée de transit. Parvis de prestige (`prestige()` de `build_site.py`) : axe
 d'honneur en granit clair du stade à la station du tram, place du trophée géant (éclairé la nuit par deux
 projecteurs au sol, `environment.js`), miroir d'eau, jardinières plantées, bannières FootOFF, bornes lumineuses et
-monogramme doré au sol. La zone au contact du stade reste libre pour les totems de l'arène. Aucun sol n'en recouvre un autre à moins de 4 cm,
+monogramme doré au sol. La zone au contact du stade reste libre pour les totems de l'arène.
+
+## Ville autour du complexe
+
+`tools/blender/models/build_city.py` (prop `city`, catégorie `city` de `assets-src/budgets.json`) : ville française
+fixe sur une trame de rues de 80 m peinte dans la texture du sol (marquages, et halos des réverbères la nuit).
+Îlots haussmanniens à toits de zinc (lucarnes, cheminées, balcons filants) mêlés d'immeubles modernes, détaillés
+près du complexe et simplifiés au loin. Le boulevard sud, son tram et sa circulation se prolongent jusqu'au bout
+de la ville. Repères : gare (horloge, verrière, TGV à quai), église à flèche, jardin public et son kiosque, places
+arborées, tours au loin. Fenêtres allumées la nuit (`emissive_*`) et façades assombries (`dimAtNight`) pour que
+le complexe reste au centre. La ville ne projette pas d'ombre ; le brouillard garde le complexe net et la fond peu
+à peu jusqu'à son bord. Aucun sol n'en recouvre un autre à moins de 4 cm,
 et les marquages sont 5 cm au-dessus de l'enrobé : de loin, des surfaces plus proches scintillent.
 Marquages au sol 5 cm au-dessus de l'enrobé : plus fins, ils scintillaient de loin (conflit de profondeur).
 Le verre liquide reste réservé au menu du bas ; les onglets des panneaux gardent leur style simple (`Tabs`).
