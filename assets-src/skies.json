@@ -59,7 +59,8 @@
       "md5": "acd645e92308841aa0c82eada9830f2d",
       "bytes": 21221482,
       "source": "Poly Haven (polyhaven.com)",
-      "license": "CC0"
+      "license": "CC0",
+      "tame": { "below": 20, "max": 1.6 }
     },
     {
       "moment": "rain",

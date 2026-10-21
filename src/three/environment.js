@@ -9,17 +9,25 @@ import { GRADE, MOMENTS, createPhotoSky, lookFor } from './sky';
 const lowEnd = () => (navigator.hardwareConcurrency || 4) <= 4 || Math.min(window.innerWidth, window.innerHeight) < 600;
 
 // Qualité graphique (menu) : économie = résolution 1 et pas d'ombres ; auto = selon l'appareil ; haute = tout.
+// densité de rendu maximale de la scène (pixels calculés par pixel CSS) : l'agrandisseur net (postfx.js) complète
+// jusqu'à la densité de l'écran
 export function pixelRatioFor(quality) {
   if (quality === 'economie') return 1;
   if (quality === 'haute') return Math.min(window.devicePixelRatio, 2);
   return Math.min(window.devicePixelRatio, lowEnd() ? 1.5 : 2);
 }
 
+// densité de la toile : celle de l'écran (au plus 3), image finale nette ; 1 en économie (rendu direct)
+export function outputRatioFor(quality) {
+  if (quality === 'economie') return 1;
+  return Math.min(window.devicePixelRatio, quality === 'haute' || !lowEnd() ? 3 : 2);
+}
+
 export function createRenderer(mount, quality = 'auto') {
-  // anticrénelage de la toile seulement sans post-traitement (économie) : sinon la scène est déjà rendue en
-  // multi-échantillons (postfx.js) et la dernière passe plein écran le paierait une seconde fois pour rien
+  // anticrénelage de la toile seulement sans post-traitement (économie) : sinon FXAA dans la chaîne de rendu
+  // (postfx.js), la dernière passe plein écran le paierait une seconde fois pour rien
   const renderer = new THREE.WebGLRenderer({ antialias: quality === 'economie', powerPreference: 'high-performance' });
-  renderer.setPixelRatio(pixelRatioFor(quality));
+  renderer.setPixelRatio(outputRatioFor(quality));
   renderer.setSize(mount.clientWidth, mount.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;

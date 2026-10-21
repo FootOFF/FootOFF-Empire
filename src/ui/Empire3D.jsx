@@ -6,7 +6,7 @@ import { PLOTS, PLOT_LABELS, SECTORS, plotBuilding } from '../game/map';
 import { fmtMoney } from './format';
 import { IconArrowUp } from './icons';
 import { PLOT_POS, PLAZA_CENTER, footprintOf, layoutOverlaps } from '../three/layout';
-import { createRenderer, createEnvironment, pixelRatioFor } from '../three/environment';
+import { createRenderer, createEnvironment, outputRatioFor, pixelRatioFor } from '../three/environment';
 import { assetsProgress, initAssets, instantiateModel, setAssetsBoost, setAssetsNight } from '../three/assets';
 import { resolveModel, resolveProp } from '../three/manifest';
 import { plotLights } from '../three/lights';
@@ -423,51 +423,55 @@ export default function Empire3D({
       ctx.syncSpots?.(); // projecteurs : tous dans le calcul de la lumière, ou aucun
     };
 
-    // Résolution adaptative : quand l'appareil ne tient plus ~50 images par seconde (grand écran très dense,
-    // téléphone), la résolution de rendu descend par paliers, puis remonte dès qu'il y a de la marge. Jamais sous un
-    // pixel de rendu par pixel d'écran (CSS) : tous les effets restent, l'interface reste nette. Un palier qui ne
-    // tient pas n'est réessayé qu'après un délai qui double à chaque échec (pas de va-et-vient).
+    // Résolution adaptative, en deux régimes. La toile garde la densité de l'écran ; la scène est calculée à une
+    // densité plus faible si besoin, puis agrandie nettement (postfx.js).
+    //  - Caméra en mouvement : fluidité d'abord. Quand l'appareil ne tient plus ~50 images par seconde, la densité de
+    //    calcul descend par paliers, puis remonte dès qu'il y a de la marge. Un palier qui ne tient pas n'est réessayé
+    //    qu'après un délai qui double à chaque échec (pas de va-et-vient).
+    //  - Caméra immobile : netteté d'abord, pleine densité tant que l'image reste au-dessus de ~22 images par seconde.
+    // Jamais sous un pixel de calcul par pixel d'écran (CSS) : tous les effets restent, l'interface reste nette.
     const DRS_LEVELS = [1, 0.85, 0.72, 0.6, 0.5];
-    const drs = { level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map(), active: false };
-    ctx.drs = drs; // inspection et essais (développement)
-    const drsRatio = (level = drs.level) => {
+    const REST_LEVELS = [1, 0.85, 0.72];
+    const regime = (levels, slow, fast) => ({ levels, slow, fast, level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map() });
+    const drs = {
+      motion: regime(DRS_LEVELS, 21, 18), // ms : au-delà, palier en dessous (~48 images/s) ; en deçà, on retente au-dessus
+      rest: regime(REST_LEVELS, 45, 36),
+      active: false,
+      get level() { return this.motion.level; }, // inspection (développement)
+    };
+    ctx.drs = drs;
+    const ratioOf = (r, level = r.level) => {
       const max = pixelRatioFor(ctx.quality);
-      return Math.max(Math.min(1, max), max * DRS_LEVELS[level]);
+      return Math.max(Math.min(1, max), max * r.levels[level]);
     };
-    const applyRatio = () => {
-      const pr = drsRatio();
-      if (Math.abs(renderer.getPixelRatio() - pr) < 0.01) return;
-      renderer.setPixelRatio(pr);
-      renderer.setSize(mount.clientWidth, mount.clientHeight);
-      post.setSize(mount.clientWidth, mount.clientHeight);
-    };
-    const drsStep = (raw) => {
+    const applyRatio = () => post.setRatios({ rest: ratioOf(drs.rest), motion: ratioOf(drs.motion) });
+    const drsStep = (r, raw) => {
       if (!drs.active || raw > 0.25) return; // retour d'un onglet caché, gros à-coup isolé : ne compte pas
-      drs.frames.push(raw * 1000);
-      drs.time += raw;
-      if (drs.time < 1) return;
-      const ms = drs.frames.sort((a, b) => a - b)[Math.floor(drs.frames.length / 2)]; // médiane : un à-coup isolé ne compte pas
-      drs.frames = [];
-      drs.time = 0;
+      r.frames.push(raw * 1000);
+      r.time += raw;
+      if (r.time < 1) return;
+      const ms = r.frames.sort((a, b) => a - b)[Math.floor(r.frames.length / 2)]; // médiane : un à-coup isolé ne compte pas
+      r.frames = [];
+      r.time = 0;
       const now = performance.now();
-      const lower = drs.level + 1 < DRS_LEVELS.length && drsRatio(drs.level + 1) < drsRatio() - 0.01;
-      if (ms > 21 && lower) { // moins de ~48 images par seconde : palier en dessous, celui-ci mis de côté
-        const fails = (drs.fails.get(drs.level) || 0) + 1;
-        drs.fails.set(drs.level, fails);
-        drs.until.set(drs.level, now + 30000 * 2 ** (fails - 1));
-        drs.level += 1;
-        drs.good = 0;
+      const lower = r.level + 1 < r.levels.length && ratioOf(r, r.level + 1) < ratioOf(r) - 0.01;
+      if (ms > r.slow && lower) { // trop lent : palier en dessous, celui-ci mis de côté
+        const fails = (r.fails.get(r.level) || 0) + 1;
+        r.fails.set(r.level, fails);
+        r.until.set(r.level, now + 30000 * 2 ** (fails - 1));
+        r.level += 1;
+        r.good = 0;
         applyRatio();
-      } else if (ms < 18 && drs.level > 0) { // fluide : après trois secondes, on retente le palier au-dessus
-        drs.good += 1;
-        if (drs.good >= 3 && !((drs.until.get(drs.level - 1) || 0) > now)) {
-          drs.level -= 1;
-          drs.good = 0;
+      } else if (ms < r.fast && r.level > 0) { // fluide : après trois secondes, on retente le palier au-dessus
+        r.good += 1;
+        if (r.good >= 3 && !((r.until.get(r.level - 1) || 0) > now)) {
+          r.level -= 1;
+          r.good = 0;
           applyRatio();
         }
-      } else drs.good = 0;
+      } else r.good = 0;
     };
-    drs.step = drsStep;
+    applyRatio();
 
     // Projecteurs (mâts, parcelles, stade, trophée) : tous dans le calcul de la lumière ou aucun. Le jour, aucun
     // n'éclaire : ils en sortent (sinon chaque pixel de l'image les paierait, même à zéro). Jamais une partie
@@ -508,10 +512,11 @@ export default function Empire3D({
     ctx.quality = quality;
     ctx.setQuality = (q) => {
       ctx.quality = q;
-      Object.assign(drs, { level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map() });
-      renderer.setPixelRatio(drsRatio());
+      for (const r of [drs.motion, drs.rest]) Object.assign(r, { level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map() });
+      renderer.setPixelRatio(outputRatioFor(q));
       renderer.setSize(mount.clientWidth, mount.clientHeight);
       post.setQuality(q);
+      applyRatio();
       landscape.setQuality(q);
       env.setQuality(q);
       const shadows = q !== 'economie';
@@ -703,7 +708,14 @@ export default function Empire3D({
     renderer.domElement.addEventListener('pointermove', onMove);
     renderer.domElement.addEventListener('pointerleave', onLeave);
 
-    const ro = new ResizeObserver(() => {
+    // densité de l'écran changée sans changement de taille (fenêtre passée sur un autre écran) : même traitement
+    let dprQuery = null;
+    const onDpr = () => {
+      dprQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+      dprQuery.addEventListener('change', onDprChange, { once: true });
+    };
+    const onDprChange = () => { if (!ctx.alive) return; refit(); onDpr(); };
+    const refit = () => {
       const w = mount.clientWidth, h = mount.clientHeight;
       if (w === 0 || h === 0) return;
       camera.aspect = w / h;
@@ -711,10 +723,16 @@ export default function Empire3D({
       camera.updateProjectionMatrix();
       ctx.home = homeView(w / h);
       controls.maxDistance = Math.max(80, ctx.home.dist * 1.25);
+      // densité de l'écran relue à chaque redimensionnement : zoom du navigateur, fenêtre passée sur un autre écran
+      const out = outputRatioFor(ctx.quality);
+      if (Math.abs(renderer.getPixelRatio() - out) > 0.01) renderer.setPixelRatio(out);
       renderer.setSize(w, h);
+      applyRatio();
       post.setSize(w, h);
-    });
+    };
+    const ro = new ResizeObserver(refit);
     ro.observe(mount);
+    onDpr();
 
     // --- Boucle de rendu (en pause hors écran / onglet caché) ---------------------------------------
     let onScreen = true;
@@ -724,12 +742,14 @@ export default function Empire3D({
     let time = 0;
     const viewShift = { x: 0, y: 0 };
     const tmp = new THREE.Vector3();
+    const lastCam = new THREE.Matrix4(); // dernière position de la caméra : immobile ou en mouvement
+    let lastMove = 0;
+    let switchedAt = 0;
     renderer.setAnimationLoop(() => {
       timer.update();
       const raw = timer.getDelta();
       const dt = Math.min(raw, 0.05);
       if (!onScreen || document.hidden) return;
-      drsStep(raw);
       time += dt;
       if (ctx.camTween) {
         const tw = ctx.camTween;
@@ -744,11 +764,15 @@ export default function Empire3D({
         }
       }
       controls.update();
+      const camDist = camera.position.distanceTo(controls.target);
+      // occlusion à quart de résolution en vue lointaine (seuils écartés : pas de va-et-vient)
+      if (camDist > 28) post.setAODetail(false);
+      else if (camDist < 24) post.setAODetail(true);
       const fogBase = scene.fog && scene.userData.fogBase;
       if (fogBase) {
         // Le brouillard suit le recul de la caméra : le complexe reste net (jusqu'à ~25 unités au-delà de la cible),
         // puis le décor se fond peu à peu au loin.
-        const d = camera.position.distanceTo(controls.target);
+        const d = camDist;
         const k = Math.max(1, d / HOME_DIST);
         scene.fog.near = Math.max(fogBase[0], d + 35);
         scene.fog.far = Math.max(scene.fog.near + 120, Math.min(fogBase[1] * k, d + 320));
@@ -810,6 +834,15 @@ export default function Empire3D({
       viewShift.y += (wantY - viewShift.y) * Math.min(1, dt * 2.6);
       if (Math.abs(viewShift.x) + Math.abs(viewShift.y) > 0.5) camera.setViewOffset(W, H, viewShift.x, viewShift.y, W, H);
       else if (camera.view?.enabled) camera.clearViewOffset();
+      // net à l'arrêt, fluide en mouvement : la caméra (déplacement, zoom, glissement du cadrage) a-t-elle bougé
+      // dans les 0,3 dernières secondes ? Chaque régime a sa résolution (postfx.js, deux chaînes déjà prêtes).
+      camera.updateMatrixWorld();
+      let moved = Math.abs(wantX - viewShift.x) + Math.abs(wantY - viewShift.y) > 0.5;
+      for (let i = 0; i < 16 && !moved; i++) moved = Math.abs(camera.matrixWorld.elements[i] - lastCam.elements[i]) > 1e-5;
+      if (moved) { lastMove = time; lastCam.copy(camera.matrixWorld); }
+      const moving = time - lastMove < 0.3;
+      if (moving !== post.moving) { post.setMoving(moving); switchedAt = time; }
+      else if (time - switchedAt > 0.25) drsStep(moving ? drs.motion : drs.rest, raw); // images de transition écartées
       env.update(dt, camera); // fondu du ciel et des lumières, brume couleur d'horizon
       post.setLook(env.grade, ctx.haloScale());
       landscape.setSun(env.sunDir);
@@ -824,6 +857,7 @@ export default function Empire3D({
       renderer.setAnimationLoop(null);
       io.disconnect();
       ro.disconnect();
+      dprQuery?.removeEventListener('change', onDprChange);
       ['pointerdown', 'pointerup', 'pointermove', 'pointerleave'].forEach((ev, i) => {
         renderer.domElement.removeEventListener(ev, [onDown, onUp, onMove, onLeave][i]);
       });

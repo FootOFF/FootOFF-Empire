@@ -197,7 +197,9 @@ d'horizon, environnement (reflets et lumière ambiante, sans le disque solaire) 
 direction du regard. L'heure réelle choisit un moment (aube, matin, journée, fin d'après-midi dorée, coucher,
 crépuscule, nuit) d'après le lever et le coucher de la saison ; chaque moment tourne sa photo pour placer le soleil
 là où il flatte la vue d'ensemble, et le soleil du jeu suit celui de la photo. Pluie et neige : ciels couverts.
-Fondu de quatre secondes entre deux ambiances (ciel, soleil, exposition, étalonnage).
+Fondu de quatre secondes entre deux ambiances (ciel, soleil, exposition, étalonnage). La nuit, la lueur de ville de la
+photo au ras de l'horizon (une douzaine de fois plus claire que le reste) est atténuée à la conversion (« tame » dans
+`skies.json`) : regardée en face, elle faisait une tache blanche (halo) et une brume claire sur tout le complexe.
 
 ## Arbres et jardins
 
@@ -258,11 +260,19 @@ Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone
   imposteurs gardent l'ombre de leur modèle 3D, dessiné seulement dans la carte d'ombres ;
 - projecteurs (mâts, parcelles, stade, trophée) tous dans le calcul de la lumière ou aucun : le jour, aucun ne coûte ;
   les deux combinaisons sont compilées d'avance, derrière l'écran de chargement (pas d'à-coup à la tombée du jour) ;
-- seule la scène est rendue en multi-échantillons ; occlusion à demi-résolution de l'écran, sans le ciel, l'eau, le
-  voile d'horizon, les imposteurs ni les cartes de feuillage ; garde-fou des pixels invalides à l'entrée du halo,
-  étalonnage dans la passe de sortie ; ciel peint en dernier, là où il se voit ; reflet du lac une image sur deux ;
-- résolution adaptative : si l'appareil ne tient plus ~50 images par seconde, la résolution de rendu descend par
-  paliers (jamais sous un pixel par pixel d'écran) puis remonte dès qu'il y a de la marge ;
+- chaîne de rendu (`src/three/postfx.js`) : scène dessinée sans multi-échantillons (il coûtait ~7,5 ms en
+  2880 × 1620 sur une puce graphique intégrée) ; occlusion (demi-résolution de l'écran, quart en vue lointaine, sans
+  le ciel, l'eau, le voile d'horizon, les imposteurs ni les cartes de feuillage) et halo calculés à basse résolution,
+  posés dans la passe de sortie avec le tone mapping et l'étalonnage ; garde-fou des pixels invalides à l'entrée du
+  halo ; anticrénelage FXAA (inutile, donc coupé, au repos sur écran très dense) ; ciel peint en dernier, là où il se
+  voit ; reflet du lac une image sur deux ;
+- net à l'arrêt, fluide en mouvement : la toile garde la densité de l'écran ; caméra immobile, la scène est calculée
+  en pleine résolution ; dès qu'elle bouge, une deuxième chaîne déjà prête (aucun à-coup) la calcule plus petite si
+  l'appareil ne tient plus ~50 images par seconde (paliers, jamais sous un pixel par pixel CSS). L'image est ensuite
+  agrandie nettement à la taille de l'écran : EASU et RCAS d'AMD FSR 1 au repos, RCAS seul en mouvement (EASU coûte
+  4 ms en 2880 × 1620 sur une puce intégrée). Mesuré, vue d'ensemble en 2880 × 1620 : 35 ms → 21 ms par image au
+  repos en pleine résolution, 15 ms en mouvement à 60 % (avant : la résolution tombait à un pixel sur quatre, étirée
+  par le navigateur). Densité de l'écran relue au zoom du navigateur et au changement d'écran ;
 - caméra sans inertie : elle s'arrête dès qu'on lâche ;
 - sols dessinés après tout le reste (les pixels de sol cachés par les arbres et les bâtiments ne sont pas calculés),
   couches posées dessus avant les surfaces qu'elles recouvrent, pelouse du site en dernier ; un sol plat ne projette

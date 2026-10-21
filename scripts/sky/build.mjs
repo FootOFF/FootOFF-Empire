@@ -73,8 +73,33 @@ const lum = (d, o) => 0.2126 * d[o] + 0.7152 * d[o + 1] + 0.0722 * d[o + 2];
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const rgb3 = (a) => a.map(r3);
 
+// --- Lueur au ras de l'horizon atténuée (« tame » dans skies.json) ---------------------------------------------
+// La nuit, la lueur de ville de la photo, une douzaine de fois plus claire que le reste de l'horizon, faisait une tache
+// blanche (halo) et une brume claire sur tout le complexe dès que la caméra se tournait vers elle. Sous `below` degrés,
+// ce qui dépasse `max` fois la médiane de sa ligne est ramené en douceur (compression logarithmique), avec un fondu sur
+// les cinq derniers degrés. La lune et les étoiles plus hautes ne bougent pas.
+function tame({ W, H, data }, { below, max }) {
+  const lums = new Float32Array(W);
+  for (let y = 0; y < H; y++) {
+    const el = 90 - ((y + 0.5) / H) * 180;
+    if (el > below) continue;
+    if (el < -6) break;
+    const fade = Math.min(1, (below - el) / 5);
+    for (let x = 0; x < W; x++) lums[x] = lum(data, (y * W + x) * 3);
+    const cap = max * Float32Array.from(lums).sort()[W >> 1];
+    for (let x = 0; x < W; x++) {
+      const l = lums[x];
+      if (l <= cap) continue;
+      const k = 1 + ((cap * (1 + 0.25 * Math.log(l / cap))) / l - 1) * fade;
+      const o = (y * W + x) * 3;
+      data[o] *= k; data[o + 1] *= k; data[o + 2] *= k;
+    }
+  }
+}
+
 // --- Mesures : soleil, ciel, horizon --------------------------------------------------------------------------
-function analyse({ W, H, data }) {
+// fixedMedian : unité imposée (ciel atténué : mêmes unités et même orientation que la photo d'origine)
+function analyse({ W, H, data }, fixedMedian = 0) {
   const elOf = (y) => (90 - ((y + 0.5) / H) * 180) * DEG;
   const dOmega = (y) => ((2 * Math.PI) / W) * (Math.PI / H) * Math.cos(elOf(y));
   const dirOf = (x, y) => {
@@ -93,6 +118,7 @@ function analyse({ W, H, data }) {
   const total = samples.reduce((s, v) => s + v[1], 0);
   let acc = 0, median = samples[samples.length >> 1][0];
   for (const [l, w] of samples) { acc += w; if (acc >= total / 2) { median = l; break; } }
+  if (fixedMedian) median = fixedMedian;
 
   // soleil : pixel le plus lumineux au-dessus de -2°, puis disque et auréole proche (< 5°) très au-dessus du ciel
   let best = -1, bx = 0, by = 0;
@@ -219,7 +245,11 @@ for (const sky of manifest.skies) {
   if (!existsSync(path)) { console.error(`manquant : ${path} (voir l'URL dans assets-src/skies.json)`); process.exitCode = 1; continue; }
   const t0 = Date.now();
   const img = readHDR(readFileSync(path));
-  const info = analyse(img);
+  let info = analyse(img);
+  if (sky.tame) { // soleil et lueur repérés sur la photo d'origine : le ciel garde son orientation
+    tame(img, sky.tame);
+    info = { ...analyse(img, info.median), sun: info.sun, glow: info.glow };
+  }
   const rows = Math.round(img.H * HEIGHT_FRACTION);
   const big = await writeWebp(encodeRows(img, info.median, rows), img.W, rows, join(OUT, `${sky.moment}.webp`));
   const half = halve(img);
