@@ -170,7 +170,10 @@ mètres) : arène au centre sur son esplanade, parcelles écartées (allées pla
 au nord), boulevard périphérique autour du complexe avec deux ronds-points au sud, parkings paysagers de part et
 d'autre du parvis, grand boulevard sud à deux chaussées avec le tram sur gazon et sa station face au parvis. La
 circulation (`src/three/life.js`) suit les mêmes cotes : deux boucles du périphérique en sens contraires qui
-contournent l'îlot des ronds-points, plus la chaussée de transit. Aucun sol n'en recouvre un autre à moins de 4 cm,
+contournent l'îlot des ronds-points, plus la chaussée de transit. Parvis de prestige (`prestige()` de `build_site.py`) : axe
+d'honneur en granit clair du stade à la station du tram, place du trophée géant (éclairé la nuit par deux
+projecteurs au sol, `environment.js`), miroir d'eau, jardinières plantées, bannières FootOFF, bornes lumineuses et
+monogramme doré au sol. La zone au contact du stade reste libre pour les totems de l'arène. Aucun sol n'en recouvre un autre à moins de 4 cm,
 et les marquages sont 5 cm au-dessus de l'enrobé : de loin, des surfaces plus proches scintillent.
 Marquages au sol 5 cm au-dessus de l'enrobé : plus fins, ils scintillaient de loin (conflit de profondeur).
 Le verre liquide reste réservé au menu du bas ; les onglets des panneaux gardent leur style simple (`Tabs`).

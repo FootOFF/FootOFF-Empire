@@ -88,6 +88,14 @@ export function createEnvironment(scene, renderer) {
   flood.position.set(0, 14, 6);
   flood.target.position.set(0, 0, 0);
   scene.add(flood, flood.target);
+  // Trophée géant du parvis (site, à 82 m au sud du centre) : deux projecteurs au sol l'éclairent la nuit.
+  const trophyLights = [-1, 1].map((s) => {
+    const l = new THREE.SpotLight(0xffe2b0, 0, 3.2, Math.PI / 5, 0.6, 1.4);
+    l.position.set(s * 0.45, 0.04, 8.75);
+    l.target.position.set(0, 1.0, 8.2);
+    scene.add(l, l.target);
+    return l;
+  });
 
   const setSunFromAngles = (elevation, azimuth) => {
     const phi = THREE.MathUtils.degToRad(90 - elevation);
@@ -140,6 +148,7 @@ export function createEnvironment(scene, renderer) {
 
     const dark = daylight < 0.35;
     flood.intensity = dark && hasStadiumLights ? 60 : 0;
+    trophyLights.forEach((l) => { l.intensity = dark ? 7 : 0; });
     return { dark, daylight };
   }
 

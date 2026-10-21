@@ -82,11 +82,11 @@
       },
       "maxHeight": 20,
       "maxTriangles": 90000,
-      "maxBytes": 4000000,
+      "maxBytes": 4500000,
       "maxTextureSize": 1024,
-      "maxTextures": 8,
-      "maxMaterials": 14,
-      "maxDrawCalls": 20
+      "maxTextures": 10,
+      "maxMaterials": 18,
+      "maxDrawCalls": 22
     }
   },
   "buildings": {

@@ -20,7 +20,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from footoff_lib import GOLD, Builder, Matrix, RNG, bpy, find_repo, fo_logo, material  # noqa: E402
+from footoff_lib import GOLD, GOLD_LIGHT, Builder, Matrix, RNG, bpy, fbm, find_repo, fo_logo, material, mix, np, to_image  # noqa: E402
 from footoff_modern import car, container_box, lawn, modern_materials, plinth, tree  # noqa: E402
 
 # Parcelles (centres en metres, repere Blender) = PLOT_POS de layout.js x 10, z -> -y
@@ -58,8 +58,9 @@ SIDEWALKS = [
     (-300, -187.5, 300, -184),                                                         # bord sud
 ]
 # esplanade pietonne : anneau dalle autour de l'emprise du stade (le modele du stade a son propre sol dedans)
-ESPLANADE = [(-130, -100, 130, -65), (-130, 65, 130, 110), (-130, -65, -80, 65), (80, -65, 130, 65)]
-FORECOURT = (-80, -142.5, 80, -100)  # parvis provisoire jusqu'au boulevard (etape 2 : parvis de prestige)
+ESPLANADE = [(-130, -100, -36, -65), (36, -100, 130, -65), (-130, 65, 130, 110), (-130, -65, -80, 65), (80, -65, 130, 65)]
+FORECOURT = (-80, -142.5, 80, -100)  # parvis jusqu'au boulevard ; l'axe d'honneur (PRESTIGE) en occupe le milieu
+FORECOURT_SIDES = [(-80, -142.5, -36, -100), (36, -142.5, 80, -100)]
 ALLEYS = [
     (-142, -105, -136, 113), (136, -105, 142, 113), (-142, 113, 142, 119),          # tour de l'esplanade
     (-220.5, 34.5, -142, 40.5), (-220.5, -40.5, -142, -34.5), (142, -3, 220.5, 3),  # entre les parcelles
@@ -110,8 +111,8 @@ def zebra(B, x0, x1, y0, y1, along_x=True):
 
 
 def flat_logo(B, mat, x, y, height, z=0.0):
-    """Monogramme FO incruste a plat dans le sol (haut du logo vers le nord)."""
-    fo_logo(B, mat, Matrix.Translation((x, y - height / 2, z + 0.15)) @ Matrix.Rotation(-math.pi / 2, 4, "X"), height, depth=0.04)
+    """Monogramme FO incruste a plat dans le sol (haut du logo vers le nord), 5 cm au-dessus du dallage."""
+    fo_logo(B, mat, Matrix.Translation((x, y - height / 2, z + 0.19)) @ Matrix.Rotation(-math.pi / 2, 4, "X"), height, depth=0.08)
 
 
 def roundabout(B, cx, cy):
@@ -179,6 +180,124 @@ def parking_lot(B, x0, y0, x1, y1):
                 k += 1
 
 
+PRESTIGE = (-36.0, -142.5, 36.0, -65.0)  # axe d'honneur : de l'entree sud du stade a la station du tram
+TROPHY = (0.0, -82.0)
+POOL = (-15.0, -126.0, 15.0, -100.0)  # miroir d'eau (bord interieur)
+
+
+def tex_granite(name, base, var=0.05):
+    """Granit flamme en dalles 1,2 x 0,6 m a joints decales, tuile 2,4 x 2,4 m (raccord sans couture)."""
+    S = 512
+    u, v = np.meshgrid((np.arange(S) + 0.5) / S, (np.arange(S) + 0.5) / S)
+    X, Y = u * 2.4, v * 2.4
+    row = np.floor(Y / 0.6)
+    xx = X + (row % 2) * 0.6
+    col = np.floor(xx / 1.2) % 2
+    jx = np.minimum(xx % 1.2, 1.2 - xx % 1.2)
+    jy = np.minimum(Y % 0.6, 0.6 - Y % 0.6)
+    joint = np.clip(1.0 - np.minimum(jx, jy) / 0.01, 0, 1)
+    tint = RNG.random((4, 2))[row.astype(int) % 4, col.astype(int)]
+    grain = fbm(S, S, 48, 3)
+    val = 1 + var * (tint - 0.5) * 2 + 0.1 * (grain - 0.5)
+    rgb = np.asarray(base)[None, None, :] * val[..., None]
+    return to_image(name, mix(rgb, np.asarray(base) * 0.55, joint))
+
+
+def prestige_materials(mats):
+    mats["granite_light"] = material("granite_light", image=tex_granite("granite_light", (0.62, 0.60, 0.56)), rough=0.7)
+    mats["granite_dark"] = material("granite_dark", image=tex_granite("granite_dark", (0.12, 0.12, 0.13), 0.08), rough=0.45)
+    mats["trophy_gold"] = material("trophy_gold", GOLD_LIGHT, rough=0.22, metal=0.95)
+    mats["mirror_water"] = material("mirror_water", (0.30, 0.40, 0.45), rough=0.03, metal=0.85)  # reflete le ciel
+
+
+def trophy(B, cx, cy, k=1.3):
+    """Trophee geant du championnat (coupe a deux anses, ~13 m) sur un socle noir cercle d'or."""
+    B.cyl("granite_dark", (cx, cy, 0.0), (cx, cy, 0.9), 4.2, segs=32)
+    B.cyl("black_metal", (cx, cy, 0.9), (cx, cy, 1.55), 3.5, segs=32)
+    B.cyl("trophy_gold", (cx, cy, 1.38), (cx, cy, 1.5), 3.54, segs=32)
+    profile = [  # (z, rayon) du pied au col de la coupe
+        (1.55, 1.7), (1.85, 1.55), (2.25, 1.0), (2.6, 0.55), (4.0, 0.42), (4.25, 0.75), (4.5, 0.42),
+        (4.85, 0.6), (5.4, 1.35), (6.2, 1.95), (7.2, 2.25), (8.3, 2.3), (9.0, 2.35), (9.35, 2.55), (9.6, 2.5),
+    ]
+    z = lambda v: 1.55 + (v - 1.55) * k  # noqa: E731
+    for (z0, r0), (z1, r1) in zip(profile, profile[1:]):
+        B.cyl("trophy_gold", (cx, cy, z(z0)), (cx, cy, z(z1)), r0 * k, r1 * k, segs=28)
+    for s in (-1, 1):  # anses en C, de la levre au ventre de la coupe
+        pts = [(2.25, 8.9), (3.1, 8.95), (3.75, 8.4), (3.85, 7.5), (3.4, 6.7), (2.5, 6.25), (1.9, 6.1)]
+        for (x0, z0), (x1, z1) in zip(pts, pts[1:]):
+            B.cyl("trophy_gold", (cx + s * x0 * k, cy, z(z0)), (cx + s * x1 * k, cy, z(z1)), 0.24 * k, segs=10)
+    fo_logo(B, "emissive_led", Matrix.Translation((cx, cy - 4.24, 0.18)), 0.62, depth=0.05)
+    for k in range(8):  # projecteurs encastres autour du socle
+        a = 2 * math.pi * (k + 0.5) / 8
+        x, y = cx + 5.0 * math.cos(a), cy + 5.0 * math.sin(a)
+        B.box("emissive_light", (x - 0.25, y - 0.25, 0.14), (x + 0.25, y + 0.25, 0.19))
+
+
+def banner(B, x, y, s, gold):
+    """Mat a banniere verticale, face a la camera (sud), monogramme FO."""
+    B.cyl("steel", (x, y, 0.14), (x, y, 11.0), 0.09, 0.07, segs=8)
+    B.cyl("trophy_gold", (x, y, 11.0), (x, y, 11.25), 0.14, segs=8)
+    xa, xb = (x + 0.12, x + 1.42) if s > 0 else (x - 1.42, x - 0.12)
+    B.box("trophy_gold" if gold else "black_metal", (xa, y - 0.03, 5.2), (xb, y + 0.03, 10.2))
+    B.box("steel", (min(xa, xb) - 0.05, y - 0.04, 10.15), (max(xa, xb) + 0.05, y + 0.04, 10.25))
+    fo_logo(B, "black_metal" if gold else "emissive_led", Matrix.Translation(((xa + xb) / 2, y - 0.05, 8.2)), 1.0, depth=0.03)
+
+
+def planter(B, x0, y0, x1, y1, tree_x, step=7.0):
+    """Jardiniere basse en granit sombre, gazon, alignement d'arbres."""
+    t = 0.3
+    for a, b in (((x0, y0), (x1, y0 + t)), ((x0, y1 - t), (x1, y1)), ((x0, y0 + t), (x0 + t, y1 - t)), ((x1 - t, y0 + t), (x1, y1 - t))):
+        B.box("granite_dark", (*a, 0.0), (*b, 0.5), tile=(2.4, 2.4))
+    B.box("lawn", (x0 + t, y0 + t, 0.0), (x1 - t, y1 - t, 0.42), tile=(8, 8))
+    y = y0 + step / 2
+    while y < y1 - 2:
+        tree(B, tree_x, y, 9.5, 2.4, z=0.42)
+        y += step
+
+
+def prestige(B):
+    """Parvis de prestige : axe en granit clair borde de bandes sombres, place du trophee, miroir d'eau,
+    jardinieres plantees, bannieres FootOFF, bornes lumineuses et monogramme dore au sol."""
+    x0, y0, x1, y1 = PRESTIGE
+    B.box("granite_light", (x0, y0, 0.0), (x1, y1, 0.14), tile=(2.4, 2.4))
+    tx, ty = TROPHY
+    near = lambda x, y, r: math.hypot(x - tx, y - ty) < r  # noqa: E731
+    # bandes de granit sombre : bordures de l'allee centrale et calepinage transversal tous les 12 m
+    for s in (-1, 1):
+        B.box("granite_dark", (min(s * 17, s * 18), y0, 0.0), (max(s * 17, s * 18), y1, 0.19), tile=(2.4, 2.4))
+    for y in (-141.3, -128.3, -97.3):  # entre le monogramme, le miroir d'eau et la place du trophee
+        B.box("granite_dark", (-17, y, 0.0), (17, y + 0.6, 0.19), tile=(2.4, 2.4))
+    # place du trophee : anneau sombre, cercle d'or lumineux, trophee au centre
+    B.sector("granite_dark", (tx, ty), 12.0, 13.2, 0, 2 * math.pi, 0.0, 0.19, segs=56, tile=(2.4, 2.4))
+    B.sector("emissive_led", (tx, ty), 11.55, 11.8, 0, 2 * math.pi, 0.0, 0.2, segs=56)
+    trophy(B, tx, ty)
+    # miroir d'eau : margelle sombre, eau 4 cm sous la margelle
+    p0, q0, p1, q1 = POOL
+    m = 0.6
+    for a, b in (((p0 - m, q0 - m), (p1 + m, q0)), ((p0 - m, q1), (p1 + m, q1 + m)), ((p0 - m, q0), (p0, q1)), ((p1, q0), (p1 + m, q1))):
+        B.box("granite_dark", (*a, 0.0), (*b, 0.32), tile=(2.4, 2.4))
+    B.box("mirror_water", (p0, q0, 0.0), (p1, q1, 0.28), tile=(8, 8))
+    for x in range(int(p0) + 3, int(p1) - 1, 6):  # buses lumineuses au fond, de part et d'autre
+        for y in (q0 + 1.2, q1 - 1.2):
+            B.box("emissive_light", (x - 0.12, y - 0.12, 0.28), (x + 0.12, y + 0.12, 0.33))
+    # monogramme dore au sol, avant la station
+    flat_logo(B, "gold_paint", 0, -134.0, 9.0)
+    # jardinieres plantees de part et d'autre, bannieres et bancs le long de l'allee
+    for s in (-1, 1):
+        xa, xb = sorted((s * 23.0, s * 33.5))
+        planter(B, xa, -139.5, xb, -104.0, s * 28.2)
+        planter(B, xa, -96.0, xb, -71.0, s * 28.2)
+        for k, y in enumerate(range(-136, -70, 10)):
+            banner(B, s * 20.0, y, s, gold=(k % 2 == 0))
+        for y in (-128, -110, -88):
+            B.box("granite_dark", (min(s * 21.4, s * 22.0), y - 1.2, 0.0), (max(s * 21.4, s * 22.0), y + 1.2, 0.48), tile=(2.4, 2.4))
+        for y in range(int(y0) + 4, int(y1), 8):  # bornes lumineuses
+            if near(s * 17.5, y, 14.5):
+                continue
+            B.cyl("black_metal", (s * 16.4, y, 0.14), (s * 16.4, y, 1.0), 0.12, segs=8)
+            B.cyl("emissive_light", (s * 16.4, y, 1.0), (s * 16.4, y, 1.12), 0.13, segs=8)
+
+
 def site(B, coll):
     x0, y0, x1, y1 = SITE
     B.box("lawn", (x0, y0, -0.02), (x1, y1, 0.0), tile=(8, 8))
@@ -195,7 +314,7 @@ def site(B, coll):
     for r in MEDIAN:
         B.box("lawn", (r[0], r[1], 0.0), (r[2], r[3], 0.1), tile=(8, 8))
     tram(B)
-    for r in SIDEWALKS + ESPLANADE + ALLEYS + [FORECOURT, PROMENADE]:
+    for r in SIDEWALKS + ESPLANADE + ALLEYS + FORECOURT_SIDES + [PROMENADE]:
         B.box("paving", (r[0], r[1], 0.0), (r[2], r[3], 0.14), tile=(4.8, 4.8))
     for p in PARKINGS:
         parking_lot(B, *p)
@@ -206,12 +325,12 @@ def site(B, coll):
     zebra(B, -236, -224, 34.5, 40.5, along_x=False)
     zebra(B, -236, -224, -40.5, -34.5, along_x=False)
     zebra(B, 224, 236, -3, 3, along_x=False)
-    # parvis (provisoire) : grand monogramme dore, alignements d'arbres, lampadaires
-    flat_logo(B, "gold_paint", 0, -121, 13.0)
-    for x in (-70, -56, -42, -28, 28, 42, 56, 70):
+    # parvis de prestige au centre, cotes plantes et eclaires
+    prestige(B)
+    for x in (-70, -56, -42, 42, 56, 70):
         for y in (-136, -107):
             tree(B, x, y, 8.5, 2.2, z=0.14)
-    for x in (-74, -36, 36, 74):
+    for x in (-74, -46, 46, 74):
         lamp(B, x, -121, 0.0, z=0.14)
     # promenade entre les parcelles nord : arbres en colonnes, bancs, lampadaires bas
     for y in range(126, 206, 10):
@@ -233,7 +352,8 @@ def site(B, coll):
         lamp(B, 142.6, y, math.pi, z=0.14)
     # lampadaires de l'esplanade (bord exterieur) et du peripherique (cote interieur)
     for x in range(-120, 121, 24):
-        lamp(B, x, -97, math.pi / 2, z=0.14)
+        if abs(x) > 40:
+            lamp(B, x, -97, math.pi / 2, z=0.14)
         lamp(B, x, 107, -math.pi / 2, z=0.14)
     for y in range(-60, 61, 24):
         lamp(B, -127, y, 0.0, z=0.14)
@@ -248,7 +368,7 @@ def site(B, coll):
     for x in range(-290, 291, 30):
         lamp(B, x, -185.8, math.pi / 2, z=0.14)
     # arbres des jardins (dans le peripherique) et de la bande exterieure (moins denses)
-    blocked = [STADIUM, ARENA, FORECOURT, PROMENADE] + ROADS + SIDEWALKS + ESPLANADE + ALLEYS + PARKINGS + MEDIAN
+    blocked = [STADIUM, ARENA, FORECOURT, PRESTIGE, PROMENADE] + ROADS + SIDEWALKS + ESPLANADE + ALLEYS + PARKINGS + MEDIAN
     blocked += [(cx - 33, cy - 33, cx + 33, cy + 33) for cx, cy in PLOTS.values()]
     blocked += [(cx - DISC_R, cy - DISC_R, cx + DISC_R, cy + DISC_R) for cx, cy in ROUNDABOUTS]
     for gx in range(int(x0) + 6, int(x1) - 4, 13):
@@ -330,6 +450,7 @@ def main():
     mats = modern_materials()
     mats["gravel"] = material("gravel", (0.30, 0.27, 0.23), rough=1.0)
     mats["gold_paint"] = material("gold_paint", GOLD, rough=0.4, metal=0.5)
+    prestige_materials(mats)
     for name, fn in (("site", site), ("plot_empty", plot_empty), ("plot_locked", plot_locked)):
         coll = bpy.data.collections.new(f"prop_{name}")
         scene.collection.children.link(coll)
