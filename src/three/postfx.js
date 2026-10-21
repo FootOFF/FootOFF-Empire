@@ -31,6 +31,21 @@ const GradeShader = {
     }`,
 };
 
+// Garde-fou avant le halo : un seul pixel invalide (NaN, infini : reflet du soleil rasant sur l'eau, cas limite
+// d'un calcul) serait étalé par le flou du halo sur tout l'écran, qui deviendrait noir. Pixels invalides ramenés
+// à zéro, reflets extrêmes bornés (ils restent éblouissants).
+const SanitizeShader = {
+  uniforms: { tDiffuse: { value: null }, uMax: { value: 48 } },
+  vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float uMax; varying vec2 vUv;
+    float safe(float v) { return v >= 0.0 ? min(v, uMax) : 0.0; } // NaN : toute comparaison est fausse
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      gl_FragColor = vec4(safe(c.r), safe(c.g), safe(c.b), 1.0);
+    }`,
+};
+
 const narrow = () => Math.min(window.innerWidth, window.innerHeight) < 600;
 
 export function createPostFX(renderer, scene, camera, quality = 'auto') {
@@ -39,12 +54,13 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
   let bloom = null;
   let grade = null;
   let look = null;
+  let sanitize = null;
   const size = new THREE.Vector2();
 
   function teardown() {
     composer?.passes.forEach((p) => p.dispose?.());
     composer?.dispose();
-    composer = gtao = bloom = grade = null;
+    composer = gtao = bloom = grade = sanitize = null;
   }
 
   function build(q) {
@@ -68,6 +84,8 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
       gtao.blendIntensity = 0.9;
       composer.addPass(gtao);
     }
+    sanitize = new ShaderPass(SanitizeShader);
+    composer.addPass(sanitize); // avant le halo : aucun pixel invalide ne s'étale
     const bloomScale = phone ? 0.5 : 1; // halo à demi-résolution sur téléphone
     bloom = new UnrealBloomPass(new THREE.Vector2(size.x * bloomScale, size.y * bloomScale), 0.18, 0.55, 0.92);
     composer.addPass(bloom);
@@ -101,7 +119,7 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
     setQuality(q) { build(q); },
     setLook,
     get enabled() { return !!composer; },
-    get passes() { return { gtao, bloom, grade }; }, // réglage et inspection
+    get passes() { return { gtao, bloom, grade, sanitize }; }, // réglage et inspection
     dispose: teardown,
   };
 }

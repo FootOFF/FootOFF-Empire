@@ -17,7 +17,7 @@ const templates = new Map(); // url -> Promise<THREE.Object3D>
 let requested = 0; // écran de chargement : modèles demandés / arrivés (réussis ou non)
 let settled = 0;
 const nightMats = new Set();
-let isNight = false; // état courant : un modèle chargé après la bascule doit le respecter
+let isNight = 0; // niveau d'éclairage courant (0 à 1) : un modèle chargé après la bascule doit le respecter
 
 export function initAssets(renderer) {
   if (loader) return;
@@ -39,7 +39,7 @@ function prepareTemplate(root) {
         if (!m.emissive) return;
         if (m.emissive.getHex() === 0) m.emissive.set(0xffe2b0);
         m.userData.nightEmissive = { day: 0, night: m.emissiveIntensity > 0 ? m.emissiveIntensity : 1.5 };
-        m.emissiveIntensity = isNight ? m.userData.nightEmissive.night : 0;
+        m.emissiveIntensity = m.userData.nightEmissive.night * isNight;
         nightMats.add(m);
       });
     }
@@ -97,11 +97,12 @@ export async function instantiateModel(entry, footprint) {
 export const assetsProgress = () => ({ requested, settled });
 
 let boost = 1;
-export function setAssetsNight(night) {
-  isNight = night;
+// Éclairage des fenêtres, LED et têtes de projecteurs : niveau de 0 (jour) à 1 (nuit) ; un booléen est accepté.
+export function setAssetsNight(level) {
+  isNight = typeof level === 'number' ? level : level ? 1 : 0;
   nightMats.forEach((m) => {
     const e = m.userData.nightEmissive;
-    m.emissiveIntensity = (night ? e.night : e.day) * boost;
+    m.emissiveIntensity = (e.day + (e.night - e.day) * isNight) * boost;
   });
 }
 

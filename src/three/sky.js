@@ -58,15 +58,17 @@ export const GRADE = {
 // (null = éclairement mesuré sur la photo, × sunMul) ; gain : luminosité du ciel, que la lumière ambiante et les
 // reflets suivent ; ambient : part de cette lumière ambiante (< 1 : ombres plus franches) ; haze : la brume prend
 // cette part de la couleur de l'horizon (< 1 : relief lointain en silhouette sur un ciel lumineux) ; fogDist : brume
-// repoussée ; dark : lumières du complexe allumées.
+// repoussée ; lights : éclairage du complexe (lampadaires, fenêtres, projecteurs, mâts), 0 à 1 ; fill : lumière
+// d'appoint venue du côté de la caméra (le complexe reste lisible quand le soleil est bas ou absent) ; dark : nuit
+// (eau sombre, trophées sous projecteurs).
 export const MOMENTS = {
-  dawn: { sky: 'dusk', az: 68, light: [68, 4], sunI: 0.3, sunColor: 0xffb48c, gain: 0.06, exposure: 1.15, haze: 0.45, fogDist: 1.4, dark: true, grade: 'blue' },
-  morning: { sky: 'morning', az: 112, light: [112, 24], sunI: 7.2, sunColor: 0xffd7aa, gain: 0.34, ambient: 1.05, exposure: 1.3, haze: 0.9, grade: 'morning' },
+  dawn: { sky: 'dusk', az: 68, light: [68, 4], sunI: 0.3, sunColor: 0xffb48c, gain: 0.06, ambient: 2.2, exposure: 1.15, haze: 0.45, fogDist: 1.4, lights: 0.9, fill: 0.55, dark: true, grade: 'blue' },
+  morning: { sky: 'morning', az: 112, light: [112, 24], sunI: 7.2, sunColor: 0xffd7aa, gain: 0.34, ambient: 1.05, exposure: 1.3, haze: 0.9, fill: 0.15, grade: 'morning' },
   day: { sky: 'day', az: 205, light: [205, 40], sunI: null, sunMul: 1.3, gain: 0.4, ambient: 0.8, grade: 'day' },
-  golden: { sky: 'golden', az: 248, light: [248, 22], sunI: 6.8, sunColor: 0xffb468, gain: 0.34, ambient: 1.0, exposure: 1.3, haze: 0.8, fogDist: 1.15, grade: 'golden' },
-  sunset: { sky: 'sunset', az: 298, light: [298, 5], sunI: 4.0, sunColor: 0xff9a55, gain: 0.11, ambient: 1.6, exposure: 1.15, haze: 0.5, fogDist: 1.5, grade: 'sunset' },
-  dusk: { sky: 'dusk', az: 298, light: [298, 4], sunI: 0.3, sunColor: 0xa9b4ff, gain: 0.06, exposure: 1.15, haze: 0.45, fogDist: 1.4, dark: true, grade: 'blue' },
-  night: { sky: 'night', az: 180, light: [140, 38], sunI: 1.1, sunColor: 0x9db0e0, gain: 0.06, ambient: 1.6, exposure: 1.1, haze: 0.7, fogDist: 1.2, dark: true, grade: 'night' },
+  golden: { sky: 'golden', az: 248, light: [248, 22], sunI: 6.8, sunColor: 0xffb468, gain: 0.34, ambient: 1.0, exposure: 1.3, haze: 0.8, fogDist: 1.15, lights: 0.2, fill: 0.45, grade: 'golden' },
+  sunset: { sky: 'sunset', az: 298, light: [298, 5], sunI: 4.0, sunColor: 0xff9a55, gain: 0.11, ambient: 1.6, exposure: 1.15, haze: 0.5, fogDist: 1.5, lights: 0.75, fill: 0.8, grade: 'sunset' },
+  dusk: { sky: 'dusk', az: 298, light: [298, 4], sunI: 0.3, sunColor: 0xa9b4ff, gain: 0.06, ambient: 2.2, exposure: 1.15, haze: 0.45, fogDist: 1.4, lights: 1, fill: 0.6, dark: true, grade: 'blue' },
+  night: { sky: 'night', az: 180, light: [140, 38], sunI: 1.1, sunColor: 0x9db0e0, gain: 0.06, ambient: 1.6, exposure: 1.1, haze: 0.7, fogDist: 1.2, lights: 1, fill: 0.15, dark: true, grade: 'night' },
 };
 
 // Pluie et neige : ciel couvert, soleil voilé, brume plus proche.
@@ -106,6 +108,10 @@ export function lookFor(moment = 'day', weather = 'clear') {
     fog: (w ? w.fog : [100, 420]).map((v) => v * (w ? 1 : m.fogDist ?? 1)), // air limpide : ~2 km de brume légère
     haze: m.haze ?? 1,
     dark: !!m.dark || (!!w && moment === 'sunset'),
+    lights: Math.min(1, (m.lights ?? 0) + (w ? 0.35 : 0)), // temps couvert : le complexe s'allume plus tôt
+    fill: (m.fill ?? 0) * (w ? 0.6 : 1),
+    fillDir: dirFrom(lAz + 180, 32), // à l'opposé du soleil : éclaire les façades tournées vers la caméra
+    fillColor: new THREE.Color(m.dark ? 0xb8c4ff : 0xffe4c8),
     grade: GRADE[w && !m.dark ? 'overcast' : m.grade],
   };
 }

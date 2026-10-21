@@ -20,7 +20,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from footoff_lib import GOLD, GOLD_LIGHT, Builder, Matrix, RNG, bpy, fbm, find_repo, fo_logo, material, mix, np, to_image  # noqa: E402
+from footoff_lib import GOLD, GOLD_LIGHT, Builder, Matrix, RNG, bpy, fbm, find_repo, fo_logo, mast, material, mix, np, to_image  # noqa: E402
 from footoff_modern import car, container_box, lawn, modern_materials, plinth  # noqa: E402
 from footoff_modern import tree as modern_tree  # noqa: E402
 
@@ -408,6 +408,10 @@ def site(B, coll):
     for y in range(-60, 61, 24):
         lamp(B, -127, y, 0.0, z=0.14)
         lamp(B, 127, y, math.pi, z=0.14)
+    # mats d'eclairage aux quatre coins de l'esplanade, tournes vers le stade : ils eclairent la plateforme quand
+    # le jour baisse (projecteurs reels du jeu aux empties light_site_*)
+    for i, (x, y) in enumerate(((-118, -88), (118, -88), (-118, 98), (118, 98))):
+        mast(B, coll, x, y, 30, 4, 2, f"light_site_{i}", target=(0, 0, 0))
     for x in range(-210, 211, 30):
         lamp(B, x, 212.3, math.pi / 2, z=0.14)
         if abs(x) > 12 and not 170 < abs(x) < 190:

@@ -12,7 +12,7 @@ import { resolveModel, resolveProp } from '../three/manifest';
 import { plotLights } from '../three/lights';
 import { BuildAnimation, Fireworks, hoverFrame } from '../three/fx';
 import { createLife } from '../three/life';
-import { createLandscape } from '../three/landscape';
+import { createLandscape, heightAt } from '../three/landscape';
 import { createPostFX } from '../three/postfx';
 import { momentAt } from '../three/sky';
 import { PARVIS, createTrophies } from '../three/trophies';
@@ -230,6 +230,21 @@ export default function Empire3D({
     controls.maxDistance = Math.max(80, home0.dist * 1.25);
     controls.maxPolarAngle = Math.PI * 0.46;
     controls.minPolarAngle = Math.PI * 0.08;
+    // Limites : la cible reste dans l'enceinte du complexe (on ne part pas se promener dans la campagne) et la
+    // caméra ne s'enfonce jamais dans les collines autour (dans l'enceinte, les plans de ralenti restent libres).
+    const LIMIT = { x: 25, zMin: -24, zMax: 20, y: 4 };
+    const shift = new THREE.Vector3();
+    controls.addEventListener('change', () => {
+      const t = controls.target;
+      shift.set(
+        THREE.MathUtils.clamp(t.x, -LIMIT.x, LIMIT.x) - t.x,
+        THREE.MathUtils.clamp(t.y, 0, LIMIT.y) - t.y,
+        THREE.MathUtils.clamp(t.z, LIMIT.zMin, LIMIT.zMax) - t.z,
+      );
+      if (shift.lengthSq() > 0) { t.add(shift); camera.position.add(shift); }
+      const ground = heightAt(camera.position.x, camera.position.z);
+      if (ground > 0.2 && camera.position.y < ground + 1) camera.position.y = ground + 1;
+    });
 
     const frame = hoverFrame();
     scene.add(frame.group);
@@ -368,19 +383,23 @@ export default function Empire3D({
       const moment = ctx.forceMoment || momentAt(now, { timeMode: tm, matchDay: md }); // forceMoment : réglages (dév.)
       const sky = ctx.forceWeather || (wm === 'auto' ? autoWeather(now) : wm);
       const stadiumLights = stadium.lights;
-      const { dark } = env.setAmbience({ moment, weather: sky, hasStadiumLights: !stadiumLights });
-      ctx.ambience = { moment, weather: sky, dark };
+      const { dark, lights } = env.setAmbience({ moment, weather: sky, hasStadiumLights: !stadiumLights });
+      ctx.ambience = { moment, weather: sky, dark, lights };
+      const lit = dark || lights > 0.5; // phares des voitures, bâtiments de repli allumés
       weather.set(sky);
-      life.setMode({ dark, matchDay: md });
-      setProceduralNight(dark);
-      setAssetsNight(dark);
+      life.setMode({ dark: lit, matchDay: md });
+      setProceduralNight(lit);
+      setAssetsNight(lights); // fenêtres, LED, têtes de projecteurs : progressif
       landscape.setDark(dark);
       ctx.trophies.setDark(dark);
+      ctx.trophies.setLights(lights);
+      ctx.siteLights?.setLevel(lights); // mâts d'éclairage de l'esplanade
       if (ctx.pendingShowcase && !md && !lv) setTimeout(() => ctxRef.current?.showcase(ctx.pendingShowcase), 900);
       ctx.plots.forEach((e) => {
         if (!e.lights) return;
-        if (e.id === 't0') e.lights.setLevel(md ? 1.5 : dark ? 1 : 0);
-        else e.lights.setLevel(dark ? 0.8 : 0);
+        // projecteurs du stade : à moitié au coucher du soleil, pleins au crépuscule et la nuit
+        if (e.id === 't0') e.lights.setLevel(md ? 1.5 : Math.max(0, lights - 0.5) * 2);
+        else e.lights.setLevel(lights * 0.8);
       });
       const lm = s.lastMatch;
       const won = !!lm && lm.gf > lm.ga;
@@ -430,6 +449,9 @@ export default function Empire3D({
           scene.add(node);
           env.setPlazaVisible(false);
           node.traverse((o) => { if (o.isMesh && /mirror_water/.test(o.material?.name || '')) landscape.adoptWater(o); }); // miroir d'eau animé
+          // mâts d'éclairage de l'esplanade (empties light_site_*) : projecteurs réels, deux seulement sur téléphone
+          ctx.siteLights = plotLights(scene, node, { max: Math.min(window.innerWidth, window.innerHeight) < 600 ? 2 : 4, power: 4.5 });
+          ctx.applyMode();
         })
         .catch((err) => console.warn('[Empire3D] site GLB indisponible, esplanade procédurale conservée.', err));
     }
@@ -704,6 +726,7 @@ export default function Empire3D({
       controls.dispose();
       ctx.anims.forEach((a) => a.finish());
       ctx.plots.forEach((e) => { e.lights?.dispose(); });
+      ctx.siteLights?.dispose();
       landscape.dispose();
       ctx.trophies.dispose();
       post.dispose();

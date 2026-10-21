@@ -96,6 +96,7 @@ export function createTrophies(scene, renderer) {
   let wanted = null;
   let first = true;
   let dark = false;
+  let lit = 0; // niveau d'éclairage du complexe (0 à 1)
   const placed = new Map(); // id -> { root, trophy, base, plaque, count, anim }
   const metals = new Set();
   const glows = new Set();
@@ -203,8 +204,14 @@ export function createTrophies(scene, renderer) {
       m.envMapRotation.set(d ? Math.PI : 0, 0, 0);
       m.envMapIntensity = d ? (/silver/.test(m.name) ? 0.22 : 0.42) : 1; // l'argent poli renvoie plus de lumière que l'or
     });
-    glows.forEach((m) => { m.emissiveIntensity = d ? 5 : 0; });
-    spots.forEach((l) => { l.intensity = d ? 3 : 0; });
+    setLights(d ? Math.max(lit, 1) : lit);
+  }
+
+  // projecteurs au sol de la Coupe d'Europe : allumés avec l'éclairage du complexe (dès le coucher du soleil)
+  function setLights(level) {
+    lit = level;
+    glows.forEach((m) => { m.emissiveIntensity = 5 * level; });
+    spots.forEach((l) => { l.intensity = 3 * level; });
   }
 
   // Apparition : le socle sort du sol, puis le trophée s'y pose.
@@ -240,5 +247,5 @@ export function createTrophies(scene, renderer) {
     studio.dispose();
   }
 
-  return { group, sync, setDark, update, viewOf, dispose, get placed() { return [...placed.keys()]; } };
+  return { group, sync, setDark, setLights, update, viewOf, dispose, get placed() { return [...placed.keys()]; } };
 }
