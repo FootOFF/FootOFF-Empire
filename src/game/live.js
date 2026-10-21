@@ -1,5 +1,6 @@
 import { clamp, pick, ri } from './utils';
 import { FIRST, LAST, capitalize, clubAfter, deName, isPluralClub } from './names';
+import { shootout } from './cups';
 import { SLOTS, TACTICS, expectedGoals, formationOf, lineupRating, slotsOf } from './tactics';
 import { ratingAt } from './players';
 
@@ -163,6 +164,9 @@ export function createLiveMatch(s, ctx) {
     oppStrength: ctx.opp.strength,
     lineup: [...s.lineup],
     formation: formationOf(s.formation).id,
+    comp: ctx.comp || 'league',
+    knockout: !!ctx.knockout, // coupe : pas de match nul, tirs au but
+    pens: null,
     awayRoster, // onze adverse (4-3-3), pour la scène 3D
     tactic: s.tactic,
     score: { home: 0, away: 0 },
@@ -337,9 +341,21 @@ export function createLiveMatch(s, ctx) {
     }
     const baseEnd = half === 1 ? 45 : 90;
     if (end > baseEnd) push(baseEnd + 0.01, 'info', null, `${end - baseEnd} minute${end - baseEnd > 1 ? 's' : ''} de temps additionnel.`);
+    if (half === 2 && m.knockout && m.score.home === m.score.away) { // égalité en coupe : séance de tirs au but
+      const on = playersOn();
+      const fin = on.filter((p) => p.pos !== 'G').map((p) => p.a.fin).sort((x, y) => y - x).slice(0, 5);
+      const homeSkill = clamp(0.62 + (fin.reduce((a, b) => a + b, 0) / Math.max(1, fin.length)) / 100, 0.66, 0.84);
+      const keeper = on.find((p) => p.pos === 'G');
+      const awaySkill = 0.77 - (keeper ? (keeper.g?.ref || 10) / 400 : 0) - (keeper && has(keeper, 'chat') ? 0.03 : 0);
+      const so = shootout(homeSkill, awaySkill);
+      m.pens = [so.home, so.away];
+      push(end - 0.02, 'info', null, `Égalité au bout du temps réglementaire : place aux tirs au but !`);
+      push(end - 0.01, 'pens', so.home > so.away ? 'home' : 'away',
+        so.home > so.away ? `Tirs au but : ${m.home} l’emporte ${so.home}–${so.away} et se qualifie !` : `Tirs au but : ${m.away} s’impose ${so.away}–${so.home}. ${m.home} est éliminé.`);
+    }
     push(end, half === 1 ? 'halftime' : 'fulltime', null, half === 1
       ? `Mi-temps : ${m.home} ${m.score.home} – ${m.score.away} ${m.away}.`
-      : `Coup de sifflet final ! ${m.home} ${m.score.home} – ${m.score.away} ${m.away}.`);
+      : `Coup de sifflet final ! ${m.home} ${m.score.home} – ${m.score.away} ${m.away}${m.pens ? ` (${m.pens[0]}–${m.pens[1]} aux tirs au but)` : ''}.`);
     m.events.sort((a, b) => a.half - b.half || a.at - b.at);
     return m.events.filter((e) => e.half === half);
   }
@@ -405,6 +421,8 @@ export function createLiveMatch(s, ctx) {
         scorers: m.scorers,
         myRating: Math.round(lineupRating(s.players, m.lineup, m.formation) * 10) / 10,
         formation: m.formation,
+        comp: m.comp,
+        pens: m.pens,
         oppStrength: m.oppStrength,
         oppName: m.away,
         tactic: m.tactic,

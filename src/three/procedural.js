@@ -127,6 +127,52 @@ export function stadiumMesh(lvl) {
   return g;
 }
 
+// Agrandissements du stade (niveaux 5 et 6), posés sur l'arène du niveau 4 : un anneau de tribunes supérieur au
+// nord, à l'est et à l'ouest (le côté caméra reste bas pour voir la pelouse), sur pilotis, sous un nouveau toit.
+// Le niveau 6 monte plus haut, ferme les angles et ajoute un bandeau lumineux et des pylônes d'éclairage.
+// Unités du jeu, repère de la parcelle du stade (le modèle du niveau 4 occupe x ±7,8 · z −6,6 / +6,1 · y ≤ 3,7).
+export function stadiumExtension(lvl) {
+  const g = new THREE.Group();
+  const big = lvl >= 6;
+  const y0 = 3.78;
+  const h = big ? 2.5 : 1.7;
+  const upper = (w, depth, x, z, rotY) => {
+    const st = new THREE.Group();
+    const steps = big ? 7 : 5;
+    for (let i = 0; i < steps; i++) {
+      const sh = (h * (steps - i)) / steps;
+      const sd = depth / steps;
+      st.add(mesh(box(w, 0.14, sd), M.concrete(), 0, y0 + sh - 0.07, -depth / 2 + sd * (i + 0.5)));
+      st.add(mesh(box(w * 0.97, 0.05, sd * 0.68), M.seats(), 0, y0 + sh + 0.025, -depth / 2 + sd * (i + 0.5)));
+    }
+    st.add(mesh(box(w, h + 0.2, 0.12), M.concreteDark(), 0, y0 + h / 2, -depth / 2)); // dos de la tribune
+    for (let px = -w / 2 + 0.3; px <= w / 2 - 0.2; px += big ? 1.6 : 2.2) { // pilotis
+      st.add(mesh(cyl(0.07, 0.09, y0 + h), M.steel(), px, (y0 + h) / 2, -depth / 2 + 0.08));
+    }
+    // toit en porte-à-faux vers la pelouse
+    const roofY = y0 + h + (big ? 1.0 : 0.8);
+    st.add(mesh(box(w + 0.3, 0.1, depth + (big ? 2.2 : 1.6)), M.roof(), 0, roofY, (big ? 1.1 : 0.8) - 0.2));
+    for (let px = -w / 2 + 0.3; px <= w / 2 - 0.2; px += big ? 1.6 : 2.2) st.add(mesh(cyl(0.05, 0.05, roofY - y0 - h), M.steel(), px, y0 + h + (roofY - y0 - h) / 2, -depth / 2 + 0.08));
+    if (big) st.add(mesh(box(w + 0.3, 0.22, 0.06), tickerMat(), 0, roofY - 0.16, (depth + 2.2) / 2 + 0.9 - 0.2)); // bandeau lumineux
+    st.position.set(x, 0, z);
+    st.rotation.y = rotY;
+    g.add(st);
+  };
+  upper(big ? 15.2 : 13.6, big ? 2.0 : 1.5, 0, -6.6 + (big ? 1.0 : 0.75), 0);
+  upper(big ? 11.6 : 9.4, big ? 1.8 : 1.4, -7.8 + (big ? 0.9 : 0.7), -0.6, Math.PI / 2);
+  upper(big ? 11.6 : 9.4, big ? 1.8 : 1.4, 7.8 - (big ? 0.9 : 0.7), -0.6, -Math.PI / 2);
+  if (big) { // pylônes d'éclairage aux quatre coins
+    for (const [x, z] of [[-7.6, -6.4], [7.6, -6.4], [-7.6, 5.6], [7.6, 5.6]]) {
+      g.add(mesh(cyl(0.09, 0.14, 8.2), M.steel(), x, 4.1, z));
+      const head = mesh(box(1.2, 0.6, 0.2), M.lampHead(), x, 8.2, z);
+      head.rotation.y = Math.atan2(-x, -z);
+      head.rotation.x = 0.45;
+      g.add(head);
+    }
+  }
+  return g;
+}
+
 // ---------- Bâtiments des parcelles ----------
 const S = PLOT_SIZE;
 

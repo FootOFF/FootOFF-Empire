@@ -62,7 +62,7 @@ function crowdMaterial(uniforms) {
 }
 
 // Places sur le dessus des rangées de sièges (matériaux « seats ») du stade, dans le repère de `root`.
-function sampleSeats(node, root, maxPts, groundY) {
+function sampleSeats(node, root, maxPts, groundY, standing = true) {
   node.updateMatrixWorld(true);
   root.updateMatrixWorld(true);
   const inv = root.matrixWorld.clone().invert();
@@ -100,7 +100,7 @@ function sampleSeats(node, root, maxPts, groundY) {
     }
   });
   // petit stade (peu de sièges) : le public se tient debout le long de la main courante, comme au stade de quartier
-  if (pts.length < 350) {
+  if (standing && pts.length < 350) {
     const stand = (x, z) => pts.push([x, groundY + 0.045, z, -1]);
     for (let x = -5.5; x <= 5.5; x += 0.055) {
       for (const row of [0, 1]) {
@@ -127,6 +127,7 @@ export function createCrowd(parent) {
   let fill = 0;
   let max = 2000;
   let ground = 0.006;
+  let extraSource = null; // anneau supérieur des stades agrandis
   const cheer = [0, 0];
   const hold = [0, 0];
   const colors = { away: 0xf2f2f2 };
@@ -170,11 +171,15 @@ export function createCrowd(parent) {
 
   return {
     // nouveau modèle de stade (niveau) : les places sont recalculées au prochain affichage
-    setStadium(node, groundY = 0.006) { source = node; ground = groundY; seats = []; if (fill > 0) this.refresh(); },
+    setStadium(node, groundY = 0.006, extra = null) { source = node; extraSource = extra; ground = groundY; seats = []; if (fill > 0) this.refresh(); },
     setQuality(q) { const next = q === 'economie' ? 800 : q === 'haute' ? 3200 : 1900; if (next !== max) { max = next; seats = []; if (fill > 0) this.refresh(); } },
     refresh() {
       if (!source) return;
-      if (!seats.length) { seats = sampleSeats(source, parent, max, ground); build(); }
+      if (!seats.length) {
+        seats = sampleSeats(source, parent, max, ground);
+        if (extraSource) seats = [...seats, ...sampleSeats(extraSource, parent, Math.round(max * 0.45), ground, false)];
+        build();
+      }
     },
     // fraction des places occupées (affluence / capacité) et couleur du parcage visiteurs
     show(fraction, awayColor) {

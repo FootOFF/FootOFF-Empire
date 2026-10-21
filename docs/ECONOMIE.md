@@ -6,7 +6,29 @@ dans `src/game/constants.js`. Les valeurs ci-dessous ont été calées par simul
 ## Le modèle
 
 **Stade** : 600 places (terrain municipal), 3 500 (tribune couverte), 14 000 (stade 4 tribunes),
-38 000 (arène moderne). Coût : 40 k€, 400 k€, 4 M€.
+38 000 (arène moderne), puis deux agrandissements : 55 000 (anneau supérieur) et 75 000 (enceinte géante).
+Coût : 40 k€, 400 k€, 4 M€, 22 M€, 55 M€. Loges et hospitalités à partir de 14 000 places (1,2 % à 3 % de la
+capacité, vendues dix fois le prix du billet, dans la limite de 5 % du public potentiel).
+
+**Tarif des billets** (fiche du stade) : Populaire (×0,75 sur le billet, +12 % de public), Normal, Premium
+(×1,35, −16 %), Prestige (×1,8, −36 %). Quand le stade refuse du monde, Premium ou Prestige gardent l'enceinte
+pleine et rapportent davantage ; le staff le conseille quand le stade est au maximum et la demande 30 % au-dessus.
+
+**Coupes** : la Coupe nationale (quatre tours à élimination directe, tirs au but en cas d'égalité, adversaires
+des divisions voisines) et la C1, réservée aux deux premiers de l'Elite la saison précédente (adversaires
+européens fictifs). Les tours s'intercalent entre les journées ; tous les matchs se jouent à domicile, avec un
+public en hausse (×1,15 en Coupe nationale, ×1,55 en C1, billets ×1,5 en C1) et 1,5 M€ de droits TV par match
+européen. Primes de la Coupe nationale : 6 %, 12 %, 25 % puis 75 % de la prime du champion de la division pour
+chaque tour gagné. C1 : 4 M€ de participation, puis 2,5 M€, 4 M€, 6,5 M€ et 15 M€ par tour gagné.
+
+**Trophées et titre** : champion de sa division → trophée, prime de titre (la moitié de la prime du champion et
+30 % des sponsors), +3 de réputation. Coupe gagnée → trophée et +3 de réputation (+6 pour la C1). Chaque trophée
+attire 3 % de public en plus (six au plus).
+
+Effet mesuré en Elite (club au niveau 15-16, bâtiments au maximum) : stade à 38 000 places, salaires ≈ 63 % des
+revenus ; à 75 000 places, recettes des matchs de 18 à 42 M€ et salaires ≈ 34 % ; avec la C1, ≈ 23 %.
+
+**Effectif** : 25 joueurs au plus (au lieu de 18).
 
 **Affluence** = min(capacité, public potentiel). Le public potentiel dépend de la division
 (650 → 40 000), de la réputation (rendement décroissant, ×0,45 à ×1,45), de l'espace supporters

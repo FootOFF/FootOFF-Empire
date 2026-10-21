@@ -10,12 +10,13 @@ export const DIVISIONS = [
 ];
 
 export const POS_LABELS = { G: 'Gardien', D: 'Défenseur', M: 'Milieu', A: 'Attaquant' };
-export const SQUAD_MAX = 18;
+export const SQUAD_MAX = 25; // effectif professionnel : de quoi tourner sur le championnat et les coupes
 export const SQUAD_MIN = 11;
 
-// Coût du niveau N = baseCost × mult^(N − first) ; le stade est livré au niveau 1.
+// Coût du niveau N = baseCost × mult^(N − first) ; le stade est livré au niveau 1. `costs` fixe le prix de
+// certains niveaux à la main (les deux agrandissements du stade, au-delà de l'arène moderne).
 export const BUILDINGS = {
-  terrain: { name: 'Stade', max: 4, baseCost: 40000, mult: 10, first: 2 },
+  terrain: { name: 'Stade', max: 6, baseCost: 40000, mult: 10, first: 2, costs: { 5: 22000000, 6: 55000000 } },
   training: { name: 'Centre d’entraînement', max: 5, baseCost: 4000, mult: 6.2, first: 1 },
   academy: { name: 'Académie', max: 5, baseCost: 5000, mult: 6.2, first: 1 },
   fans: { name: 'Espace supporters', max: 5, baseCost: 3500, mult: 6.2, first: 1 },
@@ -27,5 +28,6 @@ export const START_MONEY = 8000;
 
 export function upgradeCost(key, targetLevel) {
   const b = BUILDINGS[key];
+  if (b.costs?.[targetLevel]) return b.costs[targetLevel];
   return Math.round(b.baseCost * b.mult ** (targetLevel - b.first));
 }

@@ -1880,3 +1880,61 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
    « Copier / Traduire » à l'appui long, pas de flash bleu au toucher ; les champs de saisie restent normaux */
 .game, .game * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 .game input, .game textarea, .game [contenteditable="true"] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+
+/* ===================================================== coupes, trophées, tarifs */
+.trophy { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 14px rgba(199, 161, 90, .25)); }
+.hm-comp-cup, .hm-comp-c1 { color: var(--gold-light) !important; }
+.cup-run { list-style: none; margin: 0 0 var(--s-2); padding: 0; display: flex; flex-direction: column; }
+.cup-run li { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: baseline; gap: var(--s-3); padding: 7px 0; border-top: 1px solid var(--line); font-size: var(--t-sm); color: var(--text-2); }
+.cup-run .cr-stage { font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.cup-run .cr-opp { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cup-run .cr-opp em { display: block; font-style: normal; font-size: var(--t-xs); color: var(--muted); }
+.cup-run .cr-opp.muted { color: var(--muted); }
+.cup-run b { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text); }
+.cup-run li.won b { color: var(--green); }
+.cup-run li.lost b { color: var(--red); }
+.cup-run li.next .cr-stage { color: var(--gold-light); }
+.tc-empty { margin: 0 0 var(--s-3); font-size: var(--t-sm); color: var(--muted); }
+.tc-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); margin-bottom: var(--s-2); }
+.tc-counts > div { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--s-3) var(--s-2); border-radius: var(--r-md); border: 1px solid var(--line); background: rgba(255, 255, 255, .02); opacity: .45; }
+.tc-counts > div.on { opacity: 1; border-color: var(--gold-line); background: var(--gold-soft); }
+.tc-counts .trophy { width: 44px; }
+.tc-counts b { font-family: var(--font-title); font-size: var(--t-xl); font-weight: 600; color: var(--gold-light); line-height: 1.1; }
+.tc-counts span { font-size: var(--t-xs); color: var(--muted); text-align: center; }
+.tc-list { list-style: none; margin: 0 0 var(--s-3); padding: 0; display: flex; flex-direction: column; }
+.tc-list li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); padding: 6px 0; border-top: 1px solid var(--line); font-size: var(--t-sm); }
+.tc-list .trophy { width: 22px; filter: none; }
+.tc-list em { font-style: normal; font-size: var(--t-xs); color: var(--muted); }
+.post-cup { display: flex; align-items: center; gap: var(--s-3); margin-top: var(--s-3); padding: var(--s-3); border-radius: var(--r-md); border: 1px solid var(--line); background: rgba(255, 255, 255, .03); text-align: left; }
+.post-cup b { display: block; font-weight: 600; }
+.post-cup span { font-size: var(--t-sm); color: var(--text-2); }
+.post-cup.won { border-color: rgba(124, 196, 151, .4); }
+.post-cup.won b { color: var(--green); }
+.post-cup.out b { color: var(--red); }
+.post-cup.trophy { border-color: var(--gold-line); background: var(--gold-soft); }
+.post-cup.trophy b { color: var(--gold-light); font-family: var(--font-title); font-size: var(--t-lg); }
+.post-trophy { width: 64px; flex-shrink: 0; animation: trophy-lift 1.2s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes trophy-lift { 0% { transform: translateY(24px) scale(.6); opacity: 0; } 60% { transform: translateY(-6px) scale(1.06); opacity: 1; } 100% { transform: none; } }
+.cine-trophies { display: flex; justify-content: center; gap: var(--s-4); }
+.cine-trophy { width: 110px; animation: trophy-lift 1.4s cubic-bezier(.3, 1.4, .5, 1) both; }
+.cine-trophies .cine-trophy:nth-child(2) { animation-delay: .25s; }
+.cine-trophies .cine-trophy:nth-child(3) { animation-delay: .5s; }
+.cine-champ { font-family: var(--font-title); font-weight: 700; font-size: clamp(26px, 6vw, 40px); letter-spacing: -.01em; background: linear-gradient(180deg, #f1dca5, #c7a15a); -webkit-background-clip: text; background-clip: text; color: transparent; text-align: center; }
+.cine-champion .cine-card { position: relative; }
+.cine-champion::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(60% 45% at 50% 18%, rgba(222, 193, 127, .22), transparent 70%); }
+.cine-cups { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.cine-cups span { font-size: var(--t-sm); padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--text-2); }
+.cine-cups span.won { color: var(--gold-light); border-color: var(--gold-line); background: var(--gold-soft); }
+.st-comp { color: var(--gold-light); }
+.ins-pricing .tp-tabs { grid-template-columns: repeat(4, 1fr); margin: 6px 0; }
+.ins-pricing .tp-tabs button { padding: 7px 4px; font-size: var(--t-xs); }
+.tp-compare { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; }
+.tp-compare li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: var(--s-3); padding: 5px 0; border-top: 1px solid var(--line); font-size: var(--t-sm); color: var(--text-2); }
+.tp-compare li.on { color: var(--gold-light); }
+.tp-compare em { font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tp-compare b { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); }
+.tp-compare li.on b { color: var(--gold-light); }
+/* bilan de saison long (titres, coupes) : défile au lieu d'être rogné en haut ; carte calée en bas quand elle tient */
+.cine { overflow-y: auto; align-items: flex-start; }
+.cine > .cine-card { margin-top: auto; }
+.cine-champion .cine-card { padding-top: var(--s-3); }

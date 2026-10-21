@@ -7,6 +7,7 @@ import { ensureTutorial } from './tutorial';
 import { assignNumber, upgradePlayer } from './players';
 import { ensureLedger } from './ledger';
 import { renameRetired } from './names';
+import { buildCalendar } from './cups';
 
 export function saveGame(state) {
   try {
@@ -57,6 +58,19 @@ export function loadGame() {
       ensureLedger(y);
       y.buildings.transfers ??= 0; // bureau des transferts (ajouté après coup)
       y.alumni ||= []; // anciens joueurs (archivés à partir de cette version)
+      y.ticketPolicy ||= 'standard';
+      // trophées : les titres de champion déjà gagnés sont retrouvés dans l'historique des classements
+      if (!y.trophies) y.trophies = (y.history || []).filter((h) => h.position === 1).map((h) => ({ comp: 'league', season: h.season, division: h.division }));
+      // calendrier avec coupes : la saison en cours reprend à la bonne journée, la coupe au prochain tour au calendrier
+      if (!y.calendar) {
+        buildCalendar(y);
+        let leagues = 0;
+        let i = 0;
+        while (i < y.calendar.length && leagues < y.round) { if (y.calendar[i].comp === 'league') leagues++; i++; }
+        y.calIndex = i;
+        const nextCup = y.calendar.slice(i).find((f) => f.comp === 'cup');
+        if (nextCup) y.cups.cup.stage = nextCup.stage; else y.cups.cup.alive = false;
+      }
       y.transfers ||= [];
       const renamed = new Map(); // ancien nom → nouveau
       for (const p of [...y.players, ...(y.market || []), ...y.transfers]) {

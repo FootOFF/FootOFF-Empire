@@ -4,6 +4,8 @@ import { fmtMoney, fmtNum, fmtRating } from './format';
 import { AnimatedMoney } from './moneyfx';
 import { Card, Eyebrow, IconAssist, IconBall, IconStar, RatingBadge, SectionHead, VersusBar } from './kit';
 import { useKeydown } from './presence';
+import { Trophy } from './trophy';
+import { STAGES } from '../game/cups';
 
 // Après-match : un seul écran, au lieu de « coup de sifflet final » puis « résumé ».
 // Score au centre exact (grille 1fr auto 1fr), buteurs sous chaque équipe, notes du match sur 10 et homme du
@@ -39,7 +41,8 @@ export default function PostMatch({ state, onClose, onStats }) {
   useKeydown((e) => { if (e.key === 'Enter' || e.key === 'Escape') onClose(); });
   if (!lm) return null;
 
-  const outcome = lm.gf > lm.ga ? 'win' : lm.gf < lm.ga ? 'loss' : 'draw';
+  const outcome = lm.pens ? (lm.pens[0] > lm.pens[1] ? 'win' : 'loss') : lm.gf > lm.ga ? 'win' : lm.gf < lm.ga ? 'loss' : 'draw';
+  const cup = lm.cup;
   const hl = lm.highlights || [];
   const homeGoals = (lm.scorers || []).map((x) => ({ name: x.name, minute: x.minute }));
   const awayGoals = hl.filter((h) => h.type === 'goal' && h.side === 'away').map((h) => ({ name: h.player, minute: h.minute }));
@@ -53,8 +56,8 @@ export default function PostMatch({ state, onClose, onStats }) {
       <article className="post-card">
         <header className="post-head">
           <div className="post-meta">
-            <Eyebrow>Journée {lm.round}<span className="post-meta-long"> · coup de sifflet final</span></Eyebrow>
-            <span className={`post-outcome ${outcome}`}>{OUTCOME[outcome]}</span>
+            <Eyebrow>{lm.label || `Journée ${lm.round}`}<span className="post-meta-long"> · coup de sifflet final</span></Eyebrow>
+            <span className={`post-outcome ${outcome}`}>{lm.pens ? `${outcome === 'win' ? 'Qualifié' : 'Éliminé'} aux t.a.b. ${lm.pens[0]}–${lm.pens[1]}` : OUTCOME[outcome]}</span>
           </div>
           <div className="post-score">
             <div className="post-team home">
@@ -67,6 +70,15 @@ export default function PostMatch({ state, onClose, onStats }) {
               <Goals list={awayGoals} align="left" />
             </div>
           </div>
+          {cup && (
+            <div className={`post-cup ${cup.trophy ? 'trophy' : cup.won ? 'won' : 'out'}`}>
+              {cup.trophy && <Trophy comp={cup.comp} className="post-trophy" />}
+              <div>
+                <b>{cup.trophy ? `${cup.comp === 'c1' ? 'Vainqueur de la C1' : 'Vainqueur de la Coupe nationale'} !` : cup.won ? `Qualifié pour la suite : ${cup.next ? STAGES[cup.stage + 1].toLowerCase() : ''}` : `Éliminé en ${STAGES[cup.stage].toLowerCase()}`}</b>
+                <span>{cup.prize ? `Prime de ${fmtMoney(cup.prize)}` : 'Pas de prime pour ce tour'}{cup.next ? ` · prochain adversaire : ${cup.next.name}` : ''}{cup.trophy ? ' · le trophée rejoint la vitrine du club' : ''}</span>
+              </div>
+            </div>
+          )}
         </header>
 
         <div className="post-body">

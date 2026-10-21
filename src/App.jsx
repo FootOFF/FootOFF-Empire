@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import {
-  applyMatchResult, applyOffline, build, createInitialState, dismissOffline, dismissReview, endSeason, matchContext, upgrade,
+  applyMatchResult, applyOffline, build, setTicketPolicy, createInitialState, dismissOffline, dismissReview, endSeason, matchContext, upgrade,
 } from './game/engine';
 import { BUILDINGS, DIVISIONS } from './game/constants';
 import { clearGame, loadGame, saveGame } from './game/save';
@@ -273,6 +273,7 @@ export default function App({ preview = null }) {
             onUpgrade={onUpgrade}
             onMatchDay={() => { setSel(null); setMatchDay(true); }}
             onTransfers={() => { setSel(null); setSquadTab('transfers'); setPanel('squad'); }}
+            onTicketPolicy={(id) => run((s) => setTicketPolicy(s, id))}
           />
         )}
       </Presence>

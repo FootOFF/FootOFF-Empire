@@ -1,3 +1,4 @@
+import { nextFixture } from './cups';
 import { BUILDINGS, POS_LABELS, SQUAD_MAX, upgradeCost } from './constants';
 import { PLOTS, allowedBuildingsFor, isSectorUnlocked, nextLockedSector, plotBuilding } from './map';
 import { autoLineup, lineupRating, slotsOf } from './tactics';
@@ -78,14 +79,14 @@ export function dockSignals(s) {
   const gate = expectedGate(s, null);
   return {
     squad: forecast.net < 0 ? 'warn' : bestSigning(s) ? 'dot' : null,
-    stadium: plots.includes('t0') || (gate.demand > gate.capacity * 1.05 && s.buildings.terrain < 4) ? 'dot' : null,
+    stadium: plots.includes('t0') || (gate.demand > gate.capacity * 1.05 && s.buildings.terrain < BUILDINGS.terrain.max) ? 'dot' : null,
     empire: plots.some((id) => id !== 't0') ? 'dot' : null,
   };
 }
 
 // Le conseil le plus utile du moment, par ordre de priorité.
 export function staffTip(s) {
-  if (s.round >= 7) return null; // fin de saison : le bilan prend le relais
+  if (!nextFixture(s)) return null; // fin de saison : le bilan prend le relais
   const wages = wageBill(s);
   // comptes de fin de saison : ce qu'il restera après les salaires et l'entretien
   const position = standingsOf(s).findIndex((t) => t.i === 0) + 1;
@@ -115,7 +116,14 @@ export function staffTip(s) {
   }
   const gate = expectedGate(s, null);
   const lvl = s.buildings.terrain;
-  if (lvl < 4 && gate.demand > gate.capacity * 1.05) {
+  if (lvl >= BUILDINGS.terrain.max && gate.demand > gate.capacity * 1.3 && ['popular', 'standard'].includes(s.ticketPolicy || 'standard')) {
+    return {
+      id: `pricing-${s.seasonNumber}`, title: 'Ton stade affiche complet',
+      text: `${n(gate.demand - gate.capacity)} supporters restent dehors. Passe en tarif Premium ou Prestige : l’enceinte reste pleine et chaque billet rapporte plus.`,
+      action: { kind: 'plot', plot: 't0', sector: 'main', label: 'Régler les tarifs' },
+    };
+  }
+  if (lvl < BUILDINGS.terrain.max && gate.demand > gate.capacity * 1.05) {
     const cost = upgradeCost('terrain', lvl + 1);
     const out = gate.demand - gate.capacity;
     return {

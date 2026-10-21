@@ -91,7 +91,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
     <div className="matchscreen prematch">
       <header className="ms-head">
         <div>
-          <span className="eyebrow">Journée {state.round + 1} / 7 · à domicile</span>
+          <span className={`eyebrow hm-comp-${ctx.comp || 'league'}`}>{ctx.label || `Journée ${state.round + 1} / 7`} · à domicile</span>
           <h2>{state.clubName} <em>vs</em> {ctx.opp.name}</h2>
         </div>
         <button className="hud-icon" onClick={onCancel} aria-label="Retour"><IconClose /></button>
@@ -154,6 +154,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           <div className="glass pm-card">
             <span className="eyebrow">Pronostic</span>
             <OddsBar odds={odds} />
+            {ctx.knockout && <div className="pm-xg">Élimination directe : en cas d’égalité, tirs au but. Qualification ≈ <b>{Math.round((odds.win + odds.draw * 0.5) * 100)} %</b></div>}
             <div className="pm-xg">Buts attendus <b>{xg.for.toFixed(1)}</b> – <b>{xg.against.toFixed(1)}</b> · Adversaire niveau {fmtRating(ctx.opp.strength)}</div>
             {ctx.gate && (
               <div className="pm-xg">
@@ -419,7 +420,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
         <span className="sb-team">{m.home}</span>
         <span className="sb-score"><b key={`h${goalsH}`}>{goalsH}</b><i>–</i><b key={`a${goalsA}`}>{goalsA}</b></span>
         <span className="sb-team right">{m.away}</span>
-        <span className="sb-clock">{phase === 'halftime' ? 'Mi-temps' : phase === 'fulltime' ? 'Terminé' : <><i className="live-dot" />{minuteLabel}′</>}</span>
+        <span className="sb-clock">{phase === 'halftime' ? 'Mi-temps' : phase === 'fulltime' ? `Terminé${m.pens ? ` · t.a.b. ${m.pens[0]}–${m.pens[1]}` : ''}` : <><i className="live-dot" />{minuteLabel}′</>}</span>
       </div>
 
       {banner && (

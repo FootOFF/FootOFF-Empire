@@ -6,21 +6,46 @@ import { clamp, rnd } from './utils';
 // quelques dizaines de milliers d'euros) à l'élite (stade de 38 000 places, budgets de plusieurs millions).
 // Réglages validés par simulation de carrières sur 50 saisons (voir docs/ECONOMIE.md).
 
-// Capacité du stade par niveau : terrain municipal, tribune couverte, stade 4 tribunes, arène moderne.
-export const STADIUM_CAPACITY = [0, 600, 3500, 14000, 38000];
-export const capacity = (lvl) => STADIUM_CAPACITY[clamp(lvl, 1, 4)];
+// Capacité du stade par niveau : terrain municipal, tribune couverte, stade 4 tribunes, arène moderne, puis
+// deux agrandissements (anneau supérieur, enceinte géante).
+export const STADIUM_CAPACITY = [0, 600, 3500, 14000, 38000, 55000, 75000];
+export const capacity = (lvl) => STADIUM_CAPACITY[clamp(lvl, 1, 6)];
+
+// Politique tarifaire (inspecteur du stade) : prix du billet et effet sur le public. Quand le stade refuse du
+// monde, des billets plus chers remplissent quand même l'enceinte et rapportent davantage.
+export const TICKET_POLICIES = {
+  popular: { id: 'popular', name: 'Populaire', price: 0.75, demand: 1.12, blurb: 'Billets à prix doux : plus de monde, ambiance garantie.' },
+  standard: { id: 'standard', name: 'Normal', price: 1, demand: 1, blurb: 'Le tarif de la division.' },
+  premium: { id: 'premium', name: 'Premium', price: 1.35, demand: 0.84, blurb: 'Plus cher : un peu moins de monde, plus de recettes si le stade est plein.' },
+  prestige: { id: 'prestige', name: 'Prestige', price: 1.8, demand: 0.64, blurb: 'Places de luxe : rentable seulement quand la demande dépasse largement la capacité.' },
+};
+export const TICKET_ORDER = ['popular', 'standard', 'premium', 'prestige'];
+export const policyOf = (s) => TICKET_POLICIES[s.ticketPolicy] || TICKET_POLICIES.standard;
+
+// Soirées de coupe : plus de public, et la C1 se vend plus cher, avec ses droits TV européens.
+export const COMP_GATE = {
+  league: { demand: 1, ticket: 1, tv: 1 },
+  cup: { demand: 1.15, ticket: 1.1, tv: 1.5 },
+  c1: { demand: 1.55, ticket: 1.5, tv: 0 },
+};
+export const C1_TV = 1500000; // droits TV par match européen
+
+// Loges et hospitalités : une part des places vendues très cher, dans les grands stades (niveau 3 et plus).
+const LOGES_SHARE = [0, 0, 0, 0.012, 0.02, 0.025, 0.03];
 
 // Notoriété : plus le club est réputé, plus il attire (rendement décroissant, plafonné à ×1,45).
 export const repFactor = (rep) => 0.45 + Math.max(0, rep) / (Math.max(0, rep) + 12);
 
 // Public potentiel d'un match à domicile, avant la limite de capacité.
-export function demandFor(s, opp) {
+export function demandFor(s, opp, comp = 'league') {
   const div = DIVISIONS[s.divisionIndex];
   const me = s.table?.[0];
   const form = me && me.played > 0 ? 0.9 + 0.2 * (me.pts / (3 * me.played)) : 1; // une équipe qui gagne attire
   const mid = (div.oppMin + div.oppMax) / 2;
   const oppF = opp ? 1 + 0.08 * clamp((opp.strength - mid) / ((div.oppMax - div.oppMin) / 2), -1, 1) : 1; // affiche
-  return div.demand * repFactor(s.reputation) * (1 + 0.07 * s.buildings.fans) * form * oppF;
+  const titles = Math.min(6, (s.trophies || []).length); // chaque trophée attire de nouveaux supporters
+  return div.demand * repFactor(s.reputation) * (1 + 0.07 * s.buildings.fans) * form * oppF * (1 + titles * 0.03)
+    * policyOf(s).demand * (COMP_GATE[comp] || COMP_GATE.league).demand;
 }
 
 // Dépense moyenne par spectateur (hors billet) : buvette et boutique, dopées par l'espace supporters.
@@ -31,24 +56,29 @@ export function spendPerHead(s) {
 }
 
 // Affluence et recettes d'un match à domicile.
-export function matchGate(s, opp, noise = rnd(0.93, 1.07)) {
+export function matchGate(s, opp, noise = rnd(0.93, 1.07), comp = 'league') {
   const div = DIVISIONS[s.divisionIndex];
-  const cap = capacity(s.buildings.terrain);
-  const demand = Math.round(demandFor(s, opp) * noise);
+  const cg = COMP_GATE[comp] || COMP_GATE.league;
+  const lvl = s.buildings.terrain;
+  const cap = capacity(lvl);
+  const demand = Math.round(demandFor(s, opp, comp) * noise);
   const attendance = Math.min(cap, demand);
   const per = spendPerHead(s);
+  const ticket = div.ticket * policyOf(s).price * cg.ticket;
+  const loges = Math.min(Math.round(cap * (LOGES_SHARE[clamp(lvl, 0, 6)] || 0)), Math.round(demand * 0.05));
   const breakdown = {
-    billetterie: Math.round(attendance * div.ticket),
+    billetterie: Math.round(attendance * ticket),
     buvette: Math.round(attendance * per.food),
     boutique: Math.round(attendance * per.shop),
-    tv: div.tv,
+    loges: Math.round(loges * div.ticket * cg.ticket * 10),
+    tv: comp === 'c1' ? C1_TV : Math.round(div.tv * cg.tv),
   };
-  const revenue = breakdown.billetterie + breakdown.buvette + breakdown.boutique + breakdown.tv;
+  const revenue = breakdown.billetterie + breakdown.buvette + breakdown.boutique + breakdown.loges + breakdown.tv;
   return { capacity: cap, demand, attendance, breakdown, revenue };
 }
 
 // Estimation sans aléa (avant-match, inspecteur du stade).
-export const expectedGate = (s, opp) => matchGate(s, opp, 1);
+export const expectedGate = (s, opp, comp = 'league') => matchGate(s, opp, 1, comp);
 
 // --- Revenus et charges de saison ---------------------------------------------------------------
 
@@ -129,7 +159,7 @@ export function buildingEffect(key, lvl, divIndex) {
   const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n);
   switch (key) {
     case 'terrain':
-      return `Capacité d’accueil : ${fmt(capacity(lvl))} places.`;
+      return `Capacité d’accueil : ${fmt(capacity(lvl))} places${LOGES_SHARE[lvl] ? ` · ${fmt(Math.round(capacity(lvl) * LOGES_SHARE[lvl]))} places en loges` : ''}.`;
     case 'training':
       return `Progression estivale des joueurs : +${lvl * 25} %.`;
     case 'academy':

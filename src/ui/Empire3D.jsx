@@ -17,7 +17,7 @@ import { createCrowd } from '../three/crowd';
 import { HOME_KIT, kitOf } from '../game/kits';
 import { autoWeather, createWeather } from '../three/weather';
 import {
-  buildingMesh, padMesh, setProceduralNight, stadiumMesh, wastelandMesh,
+  buildingMesh, padMesh, setProceduralNight, stadiumExtension, stadiumMesh, wastelandMesh,
 } from '../three/procedural';
 
 function webglAvailable() {
@@ -264,7 +264,13 @@ export default function Empire3D({
       const real = node.name.startsWith('model:');
       // pelouse du stade : ~0,5 cm dans le GLB, plus haute dans le repli procédural
       if (entry.squad) entry.squad.setMode({ baseY: real ? 0.006 : 0.226 });
-      if (entry.id === 't0') ctx.crowd?.setStadium(node, real ? 0.006 : 0.226);
+      if (entry.id === 't0') {
+        // niveaux 5 et 6 : anneau supérieur ajouté sur l'arène du niveau 4
+        if (entry.extension) { entry.wrapper.remove(entry.extension); entry.extension = null; }
+        const lvl = Number(String(entry.sig || '').split(':')[1]) || 0;
+        if (lvl >= 5) { entry.extension = stadiumExtension(lvl); entry.wrapper.add(entry.extension); }
+        ctx.crowd?.setStadium(node, real ? 0.006 : 0.226, entry.extension);
+      }
       entry.lights?.dispose();
       entry.lights = real ? plotLights(scene, node, entry.id === 't0' ? { max: 6, power: 5 } : { max: 2, power: 1.6 }) : null;
       const box = new THREE.Box3().setFromObject(node);

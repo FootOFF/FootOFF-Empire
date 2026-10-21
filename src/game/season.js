@@ -8,6 +8,7 @@ import { quickMatch } from './live';
 import { ensureLineup } from './tactics';
 import { closeSeasonGoals, resetSeasonStats, sectorUnlockedEvent } from './goals';
 import { book, closeLedger, markTreasury } from './ledger';
+import { C1_ENTRY, COMPS, STAGES, buildCalendar, cupPrize, drawOpponent, fixtureLabel, nextFixture } from './cups';
 
 export function roundRobin(n) {
   const rounds = [];
@@ -50,6 +51,18 @@ export function startSeason(s) {
   }
   refreshTransfers(s, 'full');
   resetSeasonStats(s);
+  // C1 : qualifié par le classement de l'Elite la saison passée ; la participation est payée d'avance
+  s.c1 = !!s.c1Next;
+  s.c1Next = false;
+  buildCalendar(s);
+  if (s.c1) {
+    s.money += C1_ENTRY;
+    book(s, 'cups', C1_ENTRY);
+    pushJournal(s, {
+      season: s.seasonNumber, kind: 'club', title: `${s.clubName} dispute la C1`,
+      text: `Grand soir européen en vue : premier tour face ${clubAfter('à ', s.cups.c1.opp.name)}. Prime de participation : ${C1_ENTRY.toLocaleString('fr-FR')} €.`,
+    });
+  }
 }
 
 function applyResult(s, i, j, gi, gj) {
@@ -110,6 +123,7 @@ function recordMatch(s, res) {
   const st = res.stats;
   s.matches = [...(s.matches || []), {
     season: s.seasonNumber, round: s.round, division: DIVISIONS[s.divisionIndex].name,
+    comp: res.comp || 'league', stage: res.stage ?? null, label: res.label || null, pens: res.pens || null,
     opp: res.oppName, oppStrength: Math.round((res.oppStrength || 0) * 10) / 10, myRating: res.myRating,
     tactic: res.tactic || s.tactic, formation: res.formation || s.formation || '433', gf: res.gf, ga: res.ga,
     stats: st ? {
@@ -127,6 +141,38 @@ function recordMatch(s, res) {
     events: (res.highlights || []).map(({ minute, type, side, player }) => ({ minute, type, side, player })), // buts et cartons des deux équipes
     attendance: res.attendance, capacity: res.capacity, revenue: res.revenue,
   }].slice(-400);
+}
+
+// Coupe : qualification ou élimination, prime du tour gagné, tirage du tour suivant, trophée en finale.
+function cupResult(s, ctx, res) {
+  const c = s.cups[ctx.comp];
+  const won = res.gf > res.ga || (res.gf === res.ga && !!res.pens && res.pens[0] > res.pens[1]);
+  const stage = ctx.stage;
+  c.results.push({ stage, opp: res.oppName, gf: res.gf, ga: res.ga, pens: res.pens || null, won });
+  const note = { comp: ctx.comp, stage, won, trophy: false, prize: 0, next: null, text: '' };
+  if (!won) {
+    c.alive = false;
+    note.text = `L’aventure s’arrête en ${STAGES[stage].toLowerCase()}.`;
+    return note;
+  }
+  const prize = cupPrize(ctx.comp, stage, s.divisionIndex);
+  s.money += prize;
+  book(s, 'cups', prize);
+  note.prize = prize;
+  if (stage === STAGES.length - 1) {
+    c.alive = false;
+    c.won = true;
+    note.trophy = true;
+    s.trophies = [...(s.trophies || []), { comp: ctx.comp, season: s.seasonNumber, division: DIVISIONS[s.divisionIndex].name, opp: res.oppName }];
+    s.reputation = Math.round((s.reputation + (ctx.comp === 'c1' ? 6 : 3)) * 10) / 10;
+    note.text = `Le trophée rejoint la vitrine du club. Prime : ${prize.toLocaleString('fr-FR')} €.`;
+    return note;
+  }
+  c.stage = stage + 1;
+  c.opp = drawOpponent(s, ctx.comp, c.stage);
+  note.next = c.opp;
+  note.text = `Prime : ${prize.toLocaleString('fr-FR')} €. Prochain tour (${STAGES[c.stage].toLowerCase()}) : ${c.opp.name}${c.opp.division && c.opp.division !== 'Europe' ? `, ${c.opp.division}` : ''}.`;
+  return note;
 }
 
 function reportText(s, res) {
@@ -159,15 +205,26 @@ function reportText(s, res) {
 
 // Contexte du prochain match à domicile : adversaire et affluence attendue.
 export function matchContext(s) {
-  if (s.round >= 7) return null;
+  const f = nextFixture(s);
+  if (!f) return null;
+  const repMult = 1 + s.buildings.fans * 0.1;
+  if (f.comp !== 'league') { // coupe : élimination directe, tirs au but en cas d'égalité
+    const opp = s.cups[f.comp].opp;
+    return {
+      comp: f.comp, stage: f.stage, fixture: f.index, knockout: true, opp, oppIdx: -1,
+      label: fixtureLabel(f), gate: expectedGate(s, opp, f.comp), repMult: repMult * (f.comp === 'c1' ? 1.6 : 1.2),
+    };
+  }
   const pr = s.schedule[s.round].find((p) => p.includes(0));
   const oppIdx = pr[0] === 0 ? pr[1] : pr[0];
   const opp = s.rivals[oppIdx - 1];
   return {
+    comp: 'league', stage: null, fixture: f.index, knockout: false,
     opp,
     oppIdx,
+    label: fixtureLabel(f, s.round + 1),
     gate: expectedGate(s, opp), // estimation : affluence, recettes (sans l'aléa du jour)
-    repMult: 1 + s.buildings.fans * 0.1,
+    repMult,
   };
 }
 
@@ -175,12 +232,15 @@ export function matchContext(s) {
 export function applyMatchResult(s, live) {
   const ctx = matchContext(s);
   if (!ctx) return s;
-  for (const [i, j] of s.schedule[s.round]) {
-    if (i === 0 || j === 0) continue;
-    const [gi, gj] = quickSim(s.rivals[i - 1].strength, s.rivals[j - 1].strength);
-    applyResult(s, i, j, gi, gj);
+  const league = ctx.comp === 'league';
+  if (league) {
+    for (const [i, j] of s.schedule[s.round]) {
+      if (i === 0 || j === 0) continue;
+      const [gi, gj] = quickSim(s.rivals[i - 1].strength, s.rivals[j - 1].strength);
+      applyResult(s, i, j, gi, gj);
+    }
   }
-  const gate = matchGate(s, ctx.opp); // affluence et recettes du jour (avant mise à jour du classement)
+  const gate = matchGate(s, ctx.opp, undefined, ctx.comp); // affluence et recettes du jour
   const res = {
     ...live,
     attendance: gate.attendance,
@@ -190,7 +250,8 @@ export function applyMatchResult(s, live) {
     revenue: gate.revenue,
     repDelta: Math.round((live.gf > live.ga ? 1 : live.gf === live.ga ? 0.2 : -0.6) * ctx.repMult * 10) / 10,
   };
-  applyResult(s, 0, ctx.oppIdx, res.gf, res.ga);
+  if (league) applyResult(s, 0, ctx.oppIdx, res.gf, res.ga);
+  const cupNote = league ? null : cupResult(s, ctx, res);
   // vie des joueurs : matchs, buts, passes, cartons, note du match et forme (5 derniers matchs)
   for (const st of live.players || []) {
     const p = s.players.find((q) => q.id === st.id);
@@ -215,11 +276,22 @@ export function applyMatchResult(s, live) {
   s.seasonStats.gate = (s.seasonStats.gate || 0) + res.revenue; // recettes cumulées, pour le bilan
   if (gate.attendance >= gate.capacity * 0.6) s.seasonStats.crowd = true;
   s.reputation = Math.max(0, Math.round((s.reputation + res.repDelta) * 10) / 10);
-  s.round++;
-  s.lastMatch = { ...res, round: s.round };
-  recordMatch(s, res);
+  if (league) s.round++;
+  if (ctx.fixture >= 0) s.calIndex = ctx.fixture + 1;
+  s.lastMatch = { ...res, round: s.round, comp: ctx.comp, stage: ctx.stage, label: league ? fixtureLabel(null, s.round) : ctx.label, cup: cupNote };
+  recordMatch(s, s.lastMatch);
   refreshTransfers(s); // le marché des transferts bouge à chaque journée
-  const score = `${res.gf}–${res.ga}`;
+  const score = `${res.gf}–${res.ga}${res.pens ? ` (t.a.b. ${res.pens[0]}–${res.pens[1]})` : ''}`;
+  if (!league) {
+    pushJournal(s, {
+      season: s.seasonNumber, round: s.round, kind: 'match',
+      title: cupNote.trophy ? `${s.clubName} remporte ${cupNote.comp === 'c1' ? 'la C1' : 'la Coupe nationale'} !`
+        : cupNote.won ? `${COMPS[ctx.comp].short} : qualification contre ${clubAfter('', res.oppName)} (${score})`
+          : `${COMPS[ctx.comp].short} : élimination face ${clubAfter('à ', res.oppName)} (${score})`,
+      text: `${ctx.label}. ${cupNote.text}`,
+    });
+    return s;
+  }
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'match',
     title: res.gf > res.ga ? `Victoire ${score} face ${clubAfter('à ', res.oppName)}` : res.gf === res.ga ? `Match nul ${score} contre ${clubAfter('', res.oppName)}` : `Défaite ${score} face ${clubAfter('à ', res.oppName)}`,
@@ -243,15 +315,13 @@ export function standingsOf(s) {
 }
 
 export function nextOpponent(s) {
-  if (s.round >= 7) return null;
-  const pr = s.schedule[s.round].find((p) => p.includes(0));
-  const oppIdx = pr[0] === 0 ? pr[1] : pr[0];
-  return s.rivals[oppIdx - 1];
+  return matchContext(s)?.opp || null;
 }
 
 const n = (v) => new Intl.NumberFormat('fr-FR').format(v);
 
 export function endSeason(s) {
+  for (let guard = 0; nextFixture(s) && guard < 20; guard++) playRound(s); // dates restantes jouées d'un bloc
   const standings = standingsOf(s);
   const position = standings.findIndex((t) => t.i === 0) + 1;
   const div = DIVISIONS[s.divisionIndex];
@@ -268,6 +338,20 @@ export function endSeason(s) {
   book(s, 'wages', wages);
   book(s, 'upkeep', upkeep);
   const events = [];
+  // Champion : trophée, prime de titre (moitié de la prime du champion), bonus des sponsors et réputation
+  let titleBonus = 0;
+  if (position === 1) {
+    titleBonus = Math.round(prize * 0.5 + sponsors * 0.3);
+    s.money += titleBonus;
+    book(s, 'titles', titleBonus);
+    s.trophies = [...(s.trophies || []), { comp: 'league', season: s.seasonNumber, division: div.name }];
+    events.unshift(`Champion de ${div.name} ! Le trophée rejoint la vitrine et rapporte ${n(titleBonus)} € de primes de titre.`);
+  }
+  // C1 : les deux premiers de l'Elite disputent la coupe d'Europe la saison suivante
+  if (s.divisionIndex === DIVISIONS.length - 1 && position <= 2) {
+    s.c1Next = true;
+    events.push(`Qualifié pour la C1 : ${n(C1_ENTRY)} € de prime de participation dès la reprise.`);
+  }
   // Plan de redressement : saison bouclée dans le rouge → le conseil vend les plus gros salaires.
   while (s.money < 0 && s.players.length > SQUAD_MIN + 2) {
     const p = [...s.players].sort((a, b) => wageOf(b, s.divisionIndex) - wageOf(a, s.divisionIndex))[0];
@@ -279,7 +363,7 @@ export function endSeason(s) {
     events.push(`Plan de redressement : comptes dans le rouge, le conseil vend ${p.name} (${n(fee)} €).`);
   }
   const repBefore = s.reputation;
-  s.reputation = Math.max(0, Math.round((s.reputation + (promoted ? 4 : relegated ? -3 : 0)) * 10) / 10);
+  s.reputation = Math.max(0, Math.round((s.reputation + (promoted ? 4 : relegated ? -3 : 0) + (position === 1 ? 3 : 0)) * 10) / 10);
 
   for (const p of s.players) {
     // bilan individuel de la saison, puis progression de l'été
@@ -317,7 +401,16 @@ export function endSeason(s) {
   s.history.push({ season: s.seasonNumber, division: div.name, position });
   const nextDivName = DIVISIONS[clamp(s.divisionIndex + (promoted ? 1 : relegated ? -1 : 0), 0, 3)].name;
   const matchday = s.seasonStats?.gate || 0;
-  s.seasonReview = { position, division: div.name, matchday, prize, sponsors, wages, upkeep, promoted, relegated, events, nextDivision: nextDivName };
+  const cupsMoney = (s.ledger?.lines?.cups || 0);
+  const trophies = (s.trophies || []).filter((t) => t.season === s.seasonNumber);
+  const cupRuns = ['cup', 'c1'].filter((k) => s.cups?.[k]).map((k) => {
+    const c = s.cups[k];
+    return { comp: k, won: c.won, reached: c.won ? 'vainqueur' : `éliminé en ${STAGES[Math.max(0, (c.results.at(-1)?.stage ?? 0))].toLowerCase()}` };
+  });
+  s.seasonReview = {
+    position, division: div.name, matchday, prize, sponsors, wages, upkeep, promoted, relegated, events, nextDivision: nextDivName,
+    titleBonus, cups: cupsMoney, trophies, cupRuns, champion: position === 1, c1Next: !!s.c1Next,
+  };
   closeSeasonGoals(s, events);
   sectorUnlockedEvent(s, repBefore);
   pushJournal(s, {

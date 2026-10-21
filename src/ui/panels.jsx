@@ -6,6 +6,8 @@ import { fmtMoney, fmtNum } from './format';
 import { IconClose, IconCoin } from './icons';
 import { AnimatedMoney } from './moneyfx';
 import { Eyebrow, IconBall, RatingBadge, SectionHead, Stat } from './kit';
+import { Trophy, TROPHY_NAMES } from './trophy';
+import { STAGES_SHORT, STAGES, nextFixture } from '../game/cups';
 import { useDialogFocus, useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
 
@@ -85,9 +87,11 @@ export function SeasonPanel({ state, onClose }) {
         </tbody>
       </table>
 
+      <CupRuns state={state} />
+
       {lm && (
         <>
-          <SectionHead label={`Dernier match · journée ${lm.round}`} aside={lm.gf > lm.ga ? 'Victoire' : lm.gf < lm.ga ? 'Défaite' : 'Match nul'} />
+          <SectionHead label={`Dernier match · ${lm.comp && lm.comp !== 'league' ? `${lm.comp === 'c1' ? 'C1' : 'Coupe'} · ${STAGES_SHORT[lm.stage].toLowerCase()}` : `journée ${lm.round}`}`} aside={lm.gf > lm.ga ? 'Victoire' : lm.gf < lm.ga ? 'Défaite' : 'Match nul'} />
           <div className="last-match">
             <div className="lm-score">
               <span className="lm-team">{state.clubName}</span>
@@ -105,9 +109,11 @@ export function SeasonPanel({ state, onClose }) {
         </>
       )}
 
+      <TrophyCase trophies={state.trophies || []} />
+
       {state.history.length > 0 && (
         <>
-          <SectionHead label="Palmarès" />
+          <SectionHead label="Classements" />
           <ul className="honours">
             {state.history.slice().reverse().map((h) => (
               <li key={h.season}><span>Saison {h.season}</span><em>{h.division}</em><b>{ordinal(h.position)}</b></li>
@@ -116,6 +122,70 @@ export function SeasonPanel({ state, onClose }) {
         </>
       )}
     </Panel>
+  );
+}
+
+// Parcours en coupes de la saison : chaque tour joué (score, tirs au but), puis le prochain adversaire.
+function CupRuns({ state }) {
+  const cups = state.cups;
+  if (!cups) return null;
+  const next = nextFixture(state);
+  return ['cup', 'c1'].filter((k) => cups[k]).map((k) => {
+    const c = cups[k];
+    const status = c.won ? 'Vainqueur' : c.alive ? `En course · ${STAGES[c.stage].toLowerCase()}` : 'Éliminé';
+    return (
+      <React.Fragment key={k}>
+        <SectionHead label={k === 'c1' ? 'C1 · coupe d’Europe des champions' : 'Coupe nationale'} aside={status} />
+        <ol className="cup-run">
+          {STAGES.map((st, i) => {
+            const r = c.results.find((x) => x.stage === i);
+            const upcoming = c.alive && c.stage === i;
+            return (
+              <li key={st} className={r ? (r.won ? 'won' : 'lost') : upcoming ? 'next' : 'later'}>
+                <span className="cr-stage">{STAGES_SHORT[i]}</span>
+                {r ? (
+                  <>
+                    <span className="cr-opp">{r.opp}</span>
+                    <b>{r.gf}–{r.ga}{r.pens ? ` · t.a.b. ${r.pens[0]}–${r.pens[1]}` : ''}</b>
+                  </>
+                ) : upcoming ? (
+                  <>
+                    <span className="cr-opp">{c.opp.name}<em>{c.opp.division}{next?.comp === k ? ' · prochain match' : ''}</em></span>
+                    <b>niv. {String(c.opp.strength).replace('.', ',')}</b>
+                  </>
+                ) : <span className="cr-opp muted">—</span>}
+              </li>
+            );
+          })}
+        </ol>
+      </React.Fragment>
+    );
+  });
+}
+
+// Vitrine des trophées : chaque titre, avec sa saison et sa division.
+export function TrophyCase({ trophies }) {
+  const counts = ['league', 'cup', 'c1'].map((k) => [k, trophies.filter((t) => t.comp === k).length]);
+  return (
+    <>
+      <SectionHead label="Vitrine des trophées" aside={`${trophies.length} titre${trophies.length > 1 ? 's' : ''}`} />
+      {trophies.length === 0 ? (
+        <p className="tc-empty">Pas encore de trophée : sois champion, ou va au bout de la Coupe nationale.</p>
+      ) : (
+        <>
+          <div className="tc-counts">
+            {counts.map(([k, n]) => (
+              <div key={k} className={n ? 'on' : ''}><Trophy comp={k} /><b>{n}</b><span>{TROPHY_NAMES[k]}</span></div>
+            ))}
+          </div>
+          <ul className="tc-list">
+            {[...trophies].reverse().map((t, i) => (
+              <li key={i}><Trophy comp={t.comp} /><span>{t.comp === 'league' ? `Champion de ${t.division}` : t.comp === 'cup' ? 'Coupe nationale' : 'C1, coupe d’Europe des champions'}</span><em>Saison {t.season}</em></li>
+            ))}
+          </ul>
+        </>
+      )}
+    </>
   );
 }
 

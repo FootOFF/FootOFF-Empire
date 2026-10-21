@@ -34,6 +34,8 @@ export function createInitialState(clubName) {
     table: [],
     market: [],
     transfers: [],
+    trophies: [],
+    ticketPolicy: 'standard',
     journal: [],
     history: [],
     lastMatch: null,
@@ -94,6 +96,13 @@ export function build(s, sectorId, key) {
     season: s.seasonNumber, kind: 'infra', title: `${BUILDINGS[key].name} : premier coup de pioche`,
     text: `Le club investit ${upgradeCost(key, 1).toLocaleString('fr-FR')} € dans un nouveau bâtiment.`,
   });
+  return s;
+}
+
+// Politique tarifaire du stade (populaire, normal, premium, prestige).
+export function setTicketPolicy(s, id) {
+  if (!['popular', 'standard', 'premium', 'prestige'].includes(id)) return null;
+  s.ticketPolicy = id;
   return s;
 }
 

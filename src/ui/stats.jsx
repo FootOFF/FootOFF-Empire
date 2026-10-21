@@ -8,6 +8,8 @@ import { IconChevron, IconChevronLeft, IconClose } from './icons';
 import { Panel } from './panels';
 import { Tabs } from './glass';
 import { PlayerCareer } from './career';
+import { TrophyCase } from './panels';
+import { STAGES_SHORT } from '../game/cups';
 import { allCareers } from '../game/career';
 import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
@@ -16,7 +18,9 @@ import { PHONE, useSwipe } from './gestures';
 // match une fiche « Stats Pass » au format de footoff.media (en-tête, rapport de forces, fil du match, Note FootOFF,
 // compositions, dynamique, confrontations, chiffres). Domicile en or, adversaire en blanc cassé.
 
-const outcome = (m) => (m.gf > m.ga ? 'win' : m.gf < m.ga ? 'loss' : 'draw');
+const outcome = (m) => (m.pens ? (m.pens[0] > m.pens[1] ? 'win' : 'loss') : m.gf > m.ga ? 'win' : m.gf < m.ga ? 'loss' : 'draw');
+const mkey = (m) => `${m.season}-${m.round}-${m.comp || 'league'}-${m.stage ?? ''}`;
+const whenOf = (m) => (m.comp === 'cup' ? `Coupe ${STAGES_SHORT[m.stage]}` : m.comp === 'c1' ? `C1 ${STAGES_SHORT[m.stage]}` : `J${m.round}`);
 const LETTER = { win: 'V', draw: 'N', loss: 'D' };
 const WORD = { win: 'Victoire', draw: 'Match nul', loss: 'Défaite' };
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
@@ -48,7 +52,7 @@ function FormPills({ list, onOpen }) {
   return (
     <div className="st-form">
       {list.map((m) => (
-        <button key={`${m.season}-${m.round}`} className={`st-pill ${outcome(m)}`} onClick={() => onOpen?.(m)} title={`J${m.round} · ${m.gf}–${m.ga} contre ${m.opp}`}>
+        <button key={mkey(m)} className={`st-pill ${outcome(m)}`} onClick={() => onOpen?.(m)} title={`J${m.round} · ${m.gf}–${m.ga} contre ${m.opp}`}>
           {LETTER[outcome(m)]}
         </button>
       ))}
@@ -72,6 +76,7 @@ function ClubTab({ state, matches, season, onOpen, onCareer }) {
 
   return (
     <>
+      <TrophyCase trophies={state.trophies || []} />
       <SectionHead label={`Saison ${season}`} aside={list[0]?.division || DIVISIONS[state.divisionIndex].name} />
       {list.length === 0 ? <p className="st-muted">Aucun match enregistré pour cette saison : les statistiques détaillées démarrent au prochain match joué.</p> : (
         <>
@@ -204,9 +209,9 @@ function MatchesTab({ matches, onOpen }) {
       </div>
       <ul className="st-matches">
         {list.map((m) => (
-          <li key={`${m.season}-${m.round}`}>
+          <li key={mkey(m)}>
             <button className="st-match" onClick={() => onOpen(m)}>
-              <span className="st-when">S{m.season} · J{m.round}</span>
+              <span className={`st-when ${m.comp && m.comp !== 'league' ? `st-comp ${m.comp}` : ''}`}>S{m.season} · {whenOf(m)}</span>
               <span className="st-opp">{m.opp}</span>
               <span className={`st-score ${outcome(m)}`}>{m.gf}–{m.ga}</span>
               <span className="st-mini">{m.stats ? `${m.stats.possession} % · ${m.stats.shots[0]}–${m.stats.shots[1]} tirs` : ''}</span>
@@ -489,7 +494,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
         </header>
 
         <section className="sp-card">
-          <span className="sp-meta">Journée {m.round} · {m.division} · saison {m.season}</span>
+          <span className="sp-meta">{m.label || `Journée ${m.round}`} · {m.comp === 'c1' ? 'Europe' : m.division} · saison {m.season}</span>
           <div className="sp-grid">
             <div className="sp-team"><span className="sp-dot dom" />{state.clubName}</div>
             <div className={`sp-score ${o}`}>{m.gf}<i>–</i>{m.ga}</div>
@@ -561,7 +566,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
         <section className="sh-sec">
           <span className="sh-cap">Les dernières confrontations</span>
           {h2h.length === 0 ? <p className="st-muted">Première rencontre entre les deux clubs.</p> : (
-            <ul className="sp-h2h">{h2h.map((x) => <li key={`${x.season}-${x.round}`}><span>Saison {x.season} · J{x.round}</span><b className={outcome(x)}>{x.gf}–{x.ga}</b></li>)}</ul>
+            <ul className="sp-h2h">{h2h.map((x) => <li key={mkey(x)}><span>Saison {x.season} · J{x.round}</span><b className={outcome(x)}>{x.gf}–{x.ga}</b></li>)}</ul>
           )}
         </section>
 

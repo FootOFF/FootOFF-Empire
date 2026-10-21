@@ -21,6 +21,7 @@ export const SCREENS = [
   ['mi-temps', 'Mi-temps'],
   ['apres-match', 'Après-match'],
   ['bilan', 'Bilan de saison'],
+  ['bilan-champion', 'Bilan · titre de champion'],
   ['saison', 'Classement'],
   ['finances', 'Finances'],
   ['stats', 'Statistiques'],
@@ -56,9 +57,16 @@ export function previewState(screen) {
     upgrade(s, 'transfers');
     s.money = 60000;
   }
-  if (screen === 'bilan') {
+  if (screen === 'bilan' || screen === 'bilan-champion') {
     while (s.round < 7) playRound(s);
     endSeason(s);
+    if (screen === 'bilan-champion') { // titre et coupe : la célébration complète
+      const r = s.seasonReview;
+      Object.assign(r, { position: 1, champion: true, promoted: true, titleBonus: 9000, cups: 4200 });
+      r.trophies = [{ comp: 'league', season: 1, division: r.division }, { comp: 'cup', season: 1, division: r.division }];
+      r.cupRuns = [{ comp: 'cup', won: true, reached: 'vainqueur' }];
+      s.trophies = [...r.trophies];
+    }
   }
   s.offline = null;
   return s;

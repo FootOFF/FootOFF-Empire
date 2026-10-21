@@ -4,7 +4,7 @@ import { DIVISIONS } from '../game/constants';
 import { SECTORS, nextLockedSector } from '../game/map';
 import { activeGoal, tierOf } from '../game/goals';
 import { teamLevel } from '../game/match';
-import { nextOpponent } from '../game/season';
+import { matchContext } from '../game/season';
 import { FOMonogram } from './brand';
 import { AnimatedMoney } from './moneyfx';
 import { fmtRating } from './format';
@@ -122,7 +122,8 @@ export function Dock({ panel, onPanel, badges = {} }) {
 }
 
 export function MatchCta({ state, onPlay, onEndSeason }) {
-  const done = state.round >= 7;
+  const ctx = matchContext(state);
+  const done = !ctx;
   // carte compacte : même hauteur et même ligne de base que le dock
   if (done) {
     return (
@@ -135,13 +136,13 @@ export function MatchCta({ state, onPlay, onEndSeason }) {
       </div>
     );
   }
-  const opp = nextOpponent(state);
+  const opp = ctx.opp;
   const me = teamLevel(state);
   return (
     <div className="hud-match glass">
       <div className="hm-info">
         <span className="hm-line">
-          <span className="eyebrow">Journée {state.round + 1} / 7</span>
+          <span className={`eyebrow hm-comp-${ctx.comp}`}>{ctx.label}</span>
           <span className="hm-lvl" title="Niveau de ton onze · niveau de l’adversaire"><b>{fmtRating(me)}</b> · {fmtRating(opp.strength)}</span>
         </span>
         <strong className="hud-match-title" title={`${opp.name} (à domicile)`}>{opp.name}</strong>

@@ -3,16 +3,24 @@ import { DIVISIONS } from '../game/constants';
 import { FOMonogram } from './brand';
 import { fmtMoney, fmtNum } from './format';
 import { AnimatedMoney } from './moneyfx';
+import { Trophy } from './trophy';
 
 // Écrans « cinématiques » : résultat de match, bilan de saison, retour hors ligne.
 
 export function SeasonReview({ state, onClose }) {
   const r = state.seasonReview;
   if (!r) return null;
-  const net = (r.matchday || 0) + r.prize + r.sponsors - r.wages - (r.upkeep || 0);
+  const net = (r.matchday || 0) + r.prize + r.sponsors + (r.titleBonus || 0) + (r.cups || 0) - r.wages - (r.upkeep || 0);
+  const trophies = r.trophies || [];
   return (
-    <div className="cine">
+    <div className={`cine ${trophies.length ? 'cine-champion' : ''}`}>
       <div className="cine-card">
+        {trophies.length > 0 && (
+          <div className="cine-trophies">
+            {trophies.map((t, i) => <Trophy key={i} comp={t.comp} className="cine-trophy" />)}
+          </div>
+        )}
+        {r.champion && <span className="cine-champ">Champion de {r.division} !</span>}
         <span className="eyebrow">Bilan de saison</span>
         <div className="cine-rank"><b>{r.position}<sup>{r.position === 1 ? 'er' : 'e'}</sup></b><span>sur 8 · {r.division}</span></div>
         {r.promoted && <span className="cine-word win">Montée en {r.nextDivision}</span>}
@@ -21,11 +29,18 @@ export function SeasonReview({ state, onClose }) {
         <div className="cine-facts">
           {r.matchday > 0 && <div><span>Recettes des matchs</span><b className="up">+{fmtMoney(r.matchday)}</b></div>}
           <div><span>Prime</span><b className="up">+{fmtMoney(r.prize)}</b></div>
+          {r.titleBonus > 0 && <div><span>Primes de titre</span><b className="up">+{fmtMoney(r.titleBonus)}</b></div>}
+          {r.cups > 0 && <div><span>Primes de coupes</span><b className="up">+{fmtMoney(r.cups)}</b></div>}
           <div><span>Sponsors</span><b className="up">+{fmtMoney(r.sponsors)}</b></div>
           <div><span>Salaires</span><b className="down">−{fmtMoney(r.wages)}</b></div>
           {r.upkeep > 0 && <div><span>Entretien</span><b className="down">−{fmtMoney(r.upkeep)}</b></div>}
           <div><span>Bilan de la saison</span><b className={net >= 0 ? 'up' : 'down'}><AnimatedMoney value={Math.abs(net)} from={0} delay={600} duration={1300} prefix={net >= 0 ? '+' : '−'} /></b></div>
         </div>
+        {r.cupRuns?.length > 0 && (
+          <div className="cine-cups">
+            {r.cupRuns.map((c) => <span key={c.comp} className={c.won ? 'won' : ''}>{c.comp === 'c1' ? 'C1' : 'Coupe nationale'} · {c.reached}</span>)}
+          </div>
+        )}
         {r.events.length > 0 && <ul className="cine-events">{r.events.map((e, i) => <li key={i}>{e}</li>)}</ul>}
         <button className="btn btn-xl" onClick={onClose}>
           Saison {state.seasonNumber} · {DIVISIONS[state.divisionIndex].name}

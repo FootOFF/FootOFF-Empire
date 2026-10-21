@@ -2,7 +2,8 @@ import React, { useRef } from 'react';
 import { BUILDINGS, upgradeCost } from '../game/constants';
 import { PLOT_LABELS, SECTORS, allowedBuildingsFor, buildingEffect, plotBuilding } from '../game/map';
 import { fmtMoney, fmtNum } from './format';
-import { expectedGate, investmentPreview } from '../game/economy';
+import { TICKET_ORDER, TICKET_POLICIES, expectedGate, investmentPreview } from '../game/economy';
+import { Tabs } from './glass';
 import { IconAcademy, IconArrowUp, IconClose, IconFans, IconLock, IconSponsor, IconStadium, IconTraining, IconTransfer } from './icons';
 import { Eyebrow } from './kit';
 import { useKeydown } from './presence';
@@ -29,6 +30,27 @@ function Payoff({ state, k, compact = false }) {
   );
 }
 
+// Tarifs des billets : le joueur voit tout de suite le public et les recettes attendus à chaque match.
+function TicketPricing({ state, onChange }) {
+  const current = state.ticketPolicy || 'standard';
+  const at = (id) => expectedGate({ ...state, ticketPolicy: id }, null);
+  const g = at(current);
+  return (
+    <div className="ins-effect ins-pricing">
+      <Eyebrow muted>Tarif des billets</Eyebrow>
+      <Tabs className="segmented tp-tabs" role="radiogroup" label="Tarif des billets" items={TICKET_ORDER.map((id) => [id, TICKET_POLICIES[id].name])} value={current} onChange={onChange} />
+      <p>{TICKET_POLICIES[current].blurb}</p>
+      <ul className="tp-compare">
+        {TICKET_ORDER.map((id) => {
+          const x = at(id);
+          return <li key={id} className={id === current ? 'on' : ''}><span>{TICKET_POLICIES[id].name}</span><em>{fmtNum(x.attendance)} spect.</em><b>{fmtMoney(x.revenue)}</b></li>;
+        })}
+      </ul>
+      <p className="ins-hint">Par match de championnat à domicile : {fmtNum(g.attendance)} spectateurs{g.demand > g.capacity ? `, ${fmtNum(g.demand - g.capacity)} restent dehors` : ''}.</p>
+    </div>
+  );
+}
+
 function Pips({ lvl, max }) {
   return (
     <div className="pips" aria-label={`Niveau ${lvl} sur ${max}`}>
@@ -39,7 +61,7 @@ function Pips({ lvl, max }) {
 
 // Inspecteur de parcelle : même famille que les panneaux (en-tête, corps), en carte à gauche sur PC et en
 // feuille basse sur mobile, ouverte au clic dans la vue 3D.
-export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade, onMatchDay, onTransfers }) {
+export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade, onMatchDay, onTransfers, onTicketPolicy }) {
   const ref = useRef(null);
   useKeydown((e) => { if (e.key === 'Escape') onClose(); });
   useSwipe(ref, { onDown: onClose });
@@ -138,6 +160,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
         {key === 'transfers' && onTransfers && (
           <button className="btn ghost wide" onClick={onTransfers}><IconTransfer /> Ouvrir le marché des transferts · {(state.transfers || []).length} joueurs</button>
         )}
+        {key === 'terrain' && onTicketPolicy && <TicketPricing state={state} onChange={onTicketPolicy} />}
         {key === 'terrain' && onMatchDay && (
           <button className="btn ghost wide" onClick={onMatchDay}><IconStadium /> Voir le stade en jour de match</button>
         )}
