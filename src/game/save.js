@@ -8,6 +8,7 @@ import { assignNumber, upgradePlayer } from './players';
 import { ensureLedger } from './ledger';
 import { renameRetired } from './names';
 import { buildCalendar } from './cups';
+import { rebuildRecords } from './records';
 
 export function saveGame(state) {
   try {
@@ -59,6 +60,7 @@ export function loadGame() {
       y.buildings.transfers ??= 0; // bureau des transferts (ajouté après coup)
       y.alumni ||= []; // anciens joueurs (archivés à partir de cette version)
       y.ticketPolicy ||= 'standard';
+      y.records ||= rebuildRecords(y); // records du club : reconstitués depuis l'historique des matchs
       // trophées : les titres de champion déjà gagnés sont retrouvés dans l'historique des classements
       if (!y.trophies) y.trophies = (y.history || []).filter((h) => h.position === 1).map((h) => ({ comp: 'league', season: h.season, division: h.division }));
       // calendrier avec coupes : la saison en cours reprend à la bonne journée, la coupe au prochain tour au calendrier

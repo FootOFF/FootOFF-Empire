@@ -12,6 +12,11 @@ import { resolveModel, resolveProp } from '../three/manifest';
 import { plotLights } from '../three/lights';
 import { BuildAnimation, Fireworks, hoverFrame } from '../three/fx';
 import { createLife } from '../three/life';
+import { createLandscape } from '../three/landscape';
+import { createPostFX } from '../three/postfx';
+import { momentAt } from '../three/sky';
+import { PARVIS, createTrophies } from '../three/trophies';
+import { honoursOf, plural } from '../game/honours';
 import { createMatchScene } from '../three/matchplay';
 import { createCrowd } from '../three/crowd';
 import { HOME_KIT, kitOf } from '../game/kits';
@@ -161,11 +166,20 @@ function plotInfo(s, plotId) {
   return { eyebrow: sec.short || sec.name, title: b.name, level: `Niv. ${lvl}/${b.max}`, detail };
 }
 
+// Étiquette de survol du parvis : l'allée d'honneur mène à la salle des trophées.
+function parvisInfo(s) {
+  const n = honoursOf(s).length;
+  return {
+    eyebrow: 'Parvis', title: 'Salle des trophées', level: null,
+    detail: n ? `${plural(n, 'trophée')} sur l’allée d’honneur` : 'Aucun trophée pour l’instant',
+  };
+}
+
 // Vue 3D plein écran : décor permanent du jeu, pilotée par le HUD (nuit, jour de match, recentrage,
 // parcelle sélectionnée). Garde ses propres interactions : survol (étiquette) et clic (sélection).
 export default function Empire3D({
   state, onSelectPlot, onEmptyTap, onWebGLFail, timeMode = 'auto', weatherMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
-  live = false, matchFx = null, badges = [], quality = 'auto', onLoadProgress, onLoaded, matchInfo = null,
+  live = false, matchFx = null, badges = [], quality = 'auto', onLoadProgress, onLoaded, matchInfo = null, onOpenTrophies,
 }) {
   const mountRef = useRef(null);
   const labelRef = useRef(null);
@@ -179,6 +193,8 @@ export default function Empire3D({
   selectRef.current = onSelectPlot;
   const emptyRef = useRef(onEmptyTap);
   emptyRef.current = onEmptyTap;
+  const trophiesRef = useRef(onOpenTrophies);
+  trophiesRef.current = onOpenTrophies;
   const loadRef = useRef({ onLoadProgress, onLoaded });
   loadRef.current = { onLoadProgress, onLoaded };
   const modeRef = useRef({ timeMode: 'auto', weatherMode: 'auto', matchDay: false, live: false });
@@ -200,7 +216,7 @@ export default function Empire3D({
     initAssets(renderer);
 
     const scene = new THREE.Scene();
-    const env = createEnvironment(scene, renderer);
+    const env = createEnvironment(scene, renderer, { quality });
     const aspect0 = mount.clientWidth / Math.max(1, mount.clientHeight);
     const home0 = homeView(aspect0);
     const camera = new THREE.PerspectiveCamera(fovFor(aspect0), aspect0, 0.5, 600);
@@ -222,12 +238,22 @@ export default function Empire3D({
     const fireworks = new Fireworks(scene, new THREE.Vector3(0, 0, 0), 6);
     const life = createLife(scene);
     const weather = createWeather(scene);
+    // écrin naturel : plateau, collines boisées, lac, route bordée de platanes ; il plante aussi les arbres du site
+    const landscape = createLandscape(scene, { quality, siteTreesUrl: `${import.meta.env.BASE_URL}models/props/site_trees.json` });
+    env.setGroundVisible(false);
+    landscape.setVeilMaterial(env.veilMaterial(10, 52)); // le voile d'horizon montre le ciel qui est derrière lui
+    env.onSkyEnv((tex, dark) => landscape.setSkyEnv(tex, dark));
 
     const ctx = {
       home: home0, scene, env, camera, controls, plots: new Map(), anims: new Set(), fireworks, camTween: null, alive: true, selFrame,
       life: null, timeScale: 1, replay: null, shake: 0, ledBoost: 1,
     };
     ctx.life = life;
+    ctx.landscape = landscape;
+    ctx.trophies = createTrophies(scene, renderer); // allée d'honneur du parvis (trophées gagnés)
+    const post = createPostFX(renderer, scene, camera, quality); // ombres de contact, halo, étalonnage
+    ctx.post = post;
+    ctx.renderer = renderer; // mesures (développement)
     ctxRef.current = ctx;
     if (import.meta.env.DEV) window.__empire3d = ctx; // inspection en développement
 
@@ -312,23 +338,45 @@ export default function Empire3D({
             });
         }
       }
+      const fresh = ctx.trophies.sync(s);
+      if (animate && fresh.length) ctx.showcase(fresh[fresh.length - 1]);
     };
 
-    // Jour / nuit / jour de match : éclairage, foule, projecteurs, feux d'artifice.
-    // Heure : réelle (mode auto), forcée jour / nuit, ou coup d'envoi en soirée les jours de match.
+    // Nouveau trophée (première victoire) : la caméra va le voir se poser, puis revient à la vue d'ensemble. Les
+    // soirs de match, on attend le retour au complexe.
+    ctx.showcase = (id) => {
+      const { matchDay: md, live: lv } = modeRef.current;
+      if (md || lv || ctx.sheetOpen) { ctx.pendingShowcase = id; return; }
+      ctx.pendingShowcase = null;
+      const view = ctx.trophies.viewOf(id);
+      if (!view) return;
+      const since = performance.now();
+      ctx.tweenCamera(view, 1.8, () => setTimeout(() => {
+        // le joueur a repris la main entre-temps (ou une fiche s'est ouverte) : on le laisse
+        if (!ctxRef.current || (ctx.userCam && ctx.userCam - 5000 > since) || ctx.sheetOpen || modeRef.current.matchDay) return;
+        ctx.tweenCamera(ctx.home, 1.6);
+      }, 3400));
+    };
+
+    // Jour / nuit / jour de match : ciel, éclairage, foule, projecteurs, feux d'artifice.
+    // Moment de la journée : heure réelle (mode auto, lever et coucher de la saison), forcé jour / nuit, ou soirée
+    // les jours de match.
     ctx.applyMode = () => {
       const { timeMode: tm, weatherMode: wm, matchDay: md, live: lv } = modeRef.current;
       const s = stateRef.current;
       const now = new Date();
-      const hour = md ? 21.25 : tm === 'day' ? 13 : tm === 'night' ? 23 : now.getHours() + now.getMinutes() / 60;
-      const sky = wm === 'auto' ? autoWeather(now) : wm;
+      const moment = ctx.forceMoment || momentAt(now, { timeMode: tm, matchDay: md }); // forceMoment : réglages (dév.)
+      const sky = ctx.forceWeather || (wm === 'auto' ? autoWeather(now) : wm);
       const stadiumLights = stadium.lights;
-      const { dark } = env.setAmbience({ hour, weather: sky, hasStadiumLights: !stadiumLights });
-      ctx.ambience = { hour, weather: sky, dark };
+      const { dark } = env.setAmbience({ moment, weather: sky, hasStadiumLights: !stadiumLights });
+      ctx.ambience = { moment, weather: sky, dark };
       weather.set(sky);
       life.setMode({ dark, matchDay: md });
       setProceduralNight(dark);
       setAssetsNight(dark);
+      landscape.setDark(dark);
+      ctx.trophies.setDark(dark);
+      if (ctx.pendingShowcase && !md && !lv) setTimeout(() => ctxRef.current?.showcase(ctx.pendingShowcase), 900);
       ctx.plots.forEach((e) => {
         if (!e.lights) return;
         if (e.id === 't0') e.lights.setLevel(md ? 1.5 : dark ? 1 : 0);
@@ -345,6 +393,9 @@ export default function Empire3D({
     ctx.setQuality = (q) => {
       renderer.setPixelRatio(pixelRatioFor(q));
       renderer.setSize(mount.clientWidth, mount.clientHeight);
+      post.setQuality(q);
+      landscape.setQuality(q);
+      env.setQuality(q);
       const shadows = q !== 'economie';
       if (renderer.shadowMap.enabled !== shadows) {
         renderer.shadowMap.enabled = shadows;
@@ -357,9 +408,9 @@ export default function Empire3D({
       camera.position.copy(view.pos);
       controls.target.copy(view.target);
     };
-    ctx.tweenCamera = (view, duration = 1.6) => {
+    ctx.tweenCamera = (view, duration = 1.6, onDone = null) => {
       ctx.camTween = {
-        t: 0, duration,
+        t: 0, duration, onDone,
         fromPos: camera.position.clone(), fromTarget: controls.target.clone(),
         toPos: view.pos.clone(), toTarget: view.target.clone(),
       };
@@ -374,7 +425,12 @@ export default function Empire3D({
     const siteEntry = resolveProp('site');
     if (siteEntry) {
       instantiateModel(siteEntry, { w: 60, d: 51 })
-        .then((node) => { if (ctx.alive) { scene.add(node); env.setPlazaVisible(false); } })
+        .then((node) => {
+          if (!ctx.alive) return;
+          scene.add(node);
+          env.setPlazaVisible(false);
+          node.traverse((o) => { if (o.isMesh && /mirror_water/.test(o.material?.name || '')) landscape.adoptWater(o); }); // miroir d'eau animé
+        })
         .catch((err) => console.warn('[Empire3D] site GLB indisponible, esplanade procédurale conservée.', err));
     }
     setReady(true);
@@ -397,7 +453,7 @@ export default function Empire3D({
     // --- Pointeur : clic = sélection, survol = contour + étiquette ----------------------------------
     const ray = new THREE.Raycaster();
     const ptr = new THREE.Vector2();
-    const wrappers = [...ctx.plots.values()].map((e) => e.wrapper);
+    const wrappers = [...ctx.plots.values()].map((e) => e.wrapper).concat(ctx.trophies.group); // + parvis
     let down = null;
     let tapTimer = null;
     let hovered = null;
@@ -419,7 +475,8 @@ export default function Empire3D({
       if (id === hovered) return;
       hovered = id;
       setHover(id);
-      if (id) {
+      if (id === 'parvis') frame.show(PARVIS.x, PARVIS.z, PARVIS.w, PARVIS.d);
+      else if (id) {
         const [x, z] = PLOT_POS[id];
         const fp = footprintOf(id, stateRef.current.buildings?.terrain);
         frame.show(x, z, fp.w, fp.d);
@@ -434,6 +491,7 @@ export default function Empire3D({
       if (moved > 6) return;
       const id = pick(e.clientX, e.clientY);
       const act = () => {
+        if (id === 'parvis') { trophiesRef.current?.(); return; } // allée d'honneur : salle des trophées
         if (id && selectRef.current) { // parcelle verrouillée : l'inspecteur affiche la condition d'ouverture
           selectRef.current(id, PLOTS.find((p) => p.id === id).sector);
         } else if (!id) emptyRef.current?.(); // toucher à côté : on quitte la parcelle et la caméra revient
@@ -524,6 +582,7 @@ export default function Empire3D({
       ctx.home = homeView(w / h);
       controls.maxDistance = Math.max(80, ctx.home.dist * 1.25);
       renderer.setSize(w, h);
+      post.setSize(w, h);
     });
     ro.observe(mount);
 
@@ -548,6 +607,7 @@ export default function Empire3D({
         controls.target.lerpVectors(tw.fromTarget, tw.toTarget, k);
         if (tw.t >= 1) {
           ctx.camTween = null;
+          tw.onDone?.();
           if (!ctx.replay) controls.minDistance = ctx.sheetOpen ? Math.min(6, camera.position.distanceTo(controls.target) * 0.8) : 6;
         }
       }
@@ -558,8 +618,8 @@ export default function Empire3D({
         // puis le décor se fond peu à peu au loin.
         const d = camera.position.distanceTo(controls.target);
         const k = Math.max(1, d / HOME_DIST);
-        scene.fog.near = Math.max(fogBase[0], d + 25);
-        scene.fog.far = Math.max(scene.fog.near + 40, Math.min(fogBase[1] * k, d + 105));
+        scene.fog.near = Math.max(fogBase[0], d + 35);
+        scene.fog.far = Math.max(scene.fog.near + 120, Math.min(fogBase[1] * k, d + 320));
       }
       if (pointer) { setHovered(pick(pointer.x, pointer.y)); pointer = null; }
       frame.update(time);
@@ -585,7 +645,9 @@ export default function Empire3D({
       ctx.anims.forEach((a) => { a.update(dt); if (a.done) ctx.anims.delete(a); });
       fireworks.update(sdt);
       life.update(dt, time);
+      ctx.trophies.update(dt);
       weather.update(dt, time, controls.target);
+      landscape.update(dt, time);
       // pastilles dorées : projetées au-dessus de leur parcelle, masquées sous l'étiquette de survol
       for (const [id, el] of pinRefs.current) {
         const e = ctx.plots.get(id);
@@ -597,7 +659,8 @@ export default function Empire3D({
       }
       if (hovered && labelRef.current) {
         const e = ctx.plots.get(hovered);
-        tmp.set(e.wrapper.position.x, e.height * (e.content?.scale.y ?? 1) + 0.5, e.wrapper.position.z).project(camera);
+        if (e) tmp.set(e.wrapper.position.x, e.height * (e.content?.scale.y ?? 1) + 0.5, e.wrapper.position.z).project(camera);
+        else tmp.set(PARVIS.x, 1.1, PARVIS.z).project(camera); // parvis
         const x = (tmp.x * 0.5 + 0.5) * mount.clientWidth;
         const y = (-tmp.y * 0.5 + 0.5) * mount.clientHeight;
         labelRef.current.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
@@ -615,8 +678,11 @@ export default function Empire3D({
       viewShift.y += (wantY - viewShift.y) * Math.min(1, dt * 2.6);
       if (Math.abs(viewShift.x) + Math.abs(viewShift.y) > 0.5) camera.setViewOffset(W, H, viewShift.x, viewShift.y, W, H);
       else if (camera.view?.enabled) camera.clearViewOffset();
+      env.update(dt, camera); // fondu du ciel et des lumières, brume couleur d'horizon
+      post.setLook(env.grade);
+      landscape.setSun(env.sunDir);
       camera.position.x += shakeX; camera.position.y += shakeY;
-      renderer.render(scene, camera);
+      post.render(dt);
       camera.position.x -= shakeX; camera.position.y -= shakeY;
     });
 
@@ -638,6 +704,9 @@ export default function Empire3D({
       controls.dispose();
       ctx.anims.forEach((a) => a.finish());
       ctx.plots.forEach((e) => { e.lights?.dispose(); });
+      landscape.dispose();
+      ctx.trophies.dispose();
+      post.dispose();
       squad.dispose();
       crowd.dispose();
       clearInterval(clockTimer);
@@ -719,7 +788,7 @@ export default function Empire3D({
     }
   }, [selectedPlot, ready]);
 
-  const info = hover && hover !== selectedPlot ? plotInfo(state, hover) : null;
+  const info = hover === 'parvis' ? parvisInfo(state) : hover && hover !== selectedPlot ? plotInfo(state, hover) : null;
 
   return (
     <div className="scene3d">

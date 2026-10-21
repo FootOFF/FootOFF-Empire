@@ -14,8 +14,10 @@ export function plotLights(scene, contentNode, { max = 6, power = 4 } = {}) {
   center.y = 0;
   const step = positions.length / Math.min(max, positions.length);
   const picked = Array.from({ length: Math.min(max, positions.length) }, (_, i) => positions[Math.floor(i * step)]);
+  // portée limitée à la zone éclairée et bords de faisceau doux : pas de coin de lumière qui s'étire sur l'esplanade
+  const reach = Math.max(...picked.map((p) => p.distanceTo(center))) * 1.9 + 1;
   const lights = picked.map((p) => {
-    const spot = new THREE.SpotLight(0xfff1dc, 0, 0, Math.PI / 4.2, 0.6, 0);
+    const spot = new THREE.SpotLight(0xfff1dc, 0, reach, Math.PI / 4.2, 0.9, 0);
     spot.position.copy(p);
     spot.target.position.copy(center);
     scene.add(spot, spot.target);

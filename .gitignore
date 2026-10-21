@@ -5,3 +5,9 @@ dist/
 # fichiers de travail (anciens déploiements Netlify, bundles temporaires)
 .netlify/
 tmp/
+
+# ciels HDRI sources (lourds, retéléchargeables : voir assets-src/skies.json)
+assets-src/hdri/
+
+# caches Python (scripts Blender)
+__pycache__/

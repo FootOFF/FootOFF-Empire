@@ -29,6 +29,7 @@ export const SCREENS = [
   ['stats-pass', 'Stats Pass d’un match'],
   ['stats-detail', 'Stats Pass · statistiques détaillées'],
   ['journal', 'Journal du club'],
+  ['trophees', 'Salle des trophées (palmarès, succès, records)'],
   ['confirmation', 'Fenêtre de confirmation'],
   ['menu', 'Menu et réglages'],
   ['chargement', 'Écran de chargement'],
@@ -38,11 +39,19 @@ export function previewState(screen) {
   if (screen === 'accueil') return null;
   const s = createInitialState('FootOFF FC');
   s.tutorial = { step: screen === 'tutoriel' ? 'build' : 'done' };
-  if (screen === 'finances' || screen === 'stats' || screen === 'stats-pass' || screen === 'stats-detail' || screen === 'anciens') { // deux saisons bouclées, puis trois matchs : courbe et comptes remplis
+  if (screen === 'finances' || screen === 'stats' || screen === 'stats-pass' || screen === 'stats-detail' || screen === 'anciens' || screen === 'trophees') { // deux saisons bouclées, puis trois matchs : courbe et comptes remplis
     build(s, 'main', 'training');
     for (let k = 0; k < 2; k++) { while (s.round < 7) playRound(s); endSeason(s); s.seasonReview = null; }
     for (let k = 0; k < 3; k++) playRound(s);
     sellPlayer(s, [...s.players].sort((x, y) => (y.hist?.length || 0) - (x.hist?.length || 0))[0].id); // un ancien, pour les fiches carrière
+    if (screen === 'trophees') { // un palmarès fourni : titres, coupes, Coupe d'Europe
+      s.trophies = [
+        { comp: 'league', season: 1, division: 'Départementale' }, { comp: 'league', season: 2, division: 'Régionale' },
+        { comp: 'cup', season: 2, division: 'Régionale', opp: 'Olympique de Brévannes' }, { comp: 'league', season: 4, division: 'Nationale' },
+        { comp: 'league', season: 6, division: 'Elite' }, { comp: 'c1', season: 7, division: 'Elite', opp: 'Real Valdemoro' },
+      ];
+      delete s.achievements; // retrouvés d'un coup, sans notification (comme une partie déjà commencée)
+    }
     s.offline = null;
     return s;
   }
@@ -92,6 +101,7 @@ export function previewUi(screen, s) {
     case 'stats': return { panel: 'stats' };
     case 'stats-pass': return { panel: 'stats', statsMatch: 'last' };
     case 'stats-detail': return { panel: 'stats', statsMatch: 'last' };
+    case 'trophees': return { panel: 'trophies' };
     case 'avant-match': return { matchPhase: 'prematch', matchCtx: matchContext(s), matchDay: true };
     case 'direct': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34 } };
     case 'mi-temps': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime' } };

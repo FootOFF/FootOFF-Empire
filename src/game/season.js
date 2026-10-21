@@ -9,6 +9,7 @@ import { ensureLineup } from './tactics';
 import { closeSeasonGoals, resetSeasonStats, sectorUnlockedEvent } from './goals';
 import { book, closeLedger, markTreasury } from './ledger';
 import { C1_ENTRY, COMPS, STAGES, buildCalendar, cupPrize, drawOpponent, fixtureLabel, fixtureShort, nextFixture, ofDiv } from './cups';
+import { addMatch, rebuildRecords } from './records';
 
 export function roundRobin(n) {
   const rounds = [];
@@ -108,7 +109,7 @@ export function archivePlayer(s, p, { reason, fee = null, club = null }) {
   const peak = Math.max(Math.round(playerRating(p) * 10) / 10, ...hist.map((h) => h.rating || 0));
   s.alumni = [...(s.alumni || []).filter((a) => a.id !== p.id), {
     id: p.id, name: p.name, pos: p.pos, num: p.num, foot: p.foot, traits: p.traits || [],
-    joined: p.joined ?? 1, left: s.seasonNumber, leftRound: s.round, reason, fee, club,
+    joined: p.joined ?? 1, left: s.seasonNumber, leftRound: s.round, reason, fee, club, academy: !!p.academy,
     age: p.age, ageSeason: reason === 'retraite' ? s.seasonNumber + 1 : s.seasonNumber,
     rating: Math.round(playerRating(p) * 10) / 10, peak, hist,
     a: p.a ? { ...p.a } : null, g: p.g ? { ...p.g } : null, pot: p.pot, alt: p.alt || null, // qualités au départ
@@ -122,6 +123,7 @@ function recordMatch(s, res) {
   const star = best && s.players.find((q) => q.id === best.id);
   if (star) { star.season ||= freshSeason(); star.season.motm = (star.season.motm || 0) + 1; }
   const st = res.stats;
+  if (!s.records) s.records = rebuildRecords(s); // parties commencées avant les records
   s.matches = [...(s.matches || []), {
     season: s.seasonNumber, round: s.round, division: DIVISIONS[s.divisionIndex].name,
     comp: res.comp || 'league', stage: res.stage ?? null, label: res.label || null, pens: res.pens || null,
@@ -142,6 +144,7 @@ function recordMatch(s, res) {
     events: (res.highlights || []).map(({ minute, type, side, player }) => ({ minute, type, side, player })), // buts et cartons des deux équipes
     attendance: res.attendance, capacity: res.capacity, revenue: res.revenue,
   }].slice(-400);
+  addMatch(s.records, s.matches[s.matches.length - 1]);
 }
 
 // Coupe : qualification ou élimination, prime du tour gagné, tirage du tour suivant, trophée en finale.
@@ -386,6 +389,7 @@ export function endSeason(s) {
   if (s.buildings.academy > 0 && s.players.length < SQUAD_MAX) {
     const y = makePlayer({ youth: true, academy: s.buildings.academy });
     y.id = s.nextId++;
+    y.academy = true; // formé au club (succès « Fait maison »)
     y.joined = s.seasonNumber + 1;
     assignNumber(s.players, y);
     s.players.push(y);

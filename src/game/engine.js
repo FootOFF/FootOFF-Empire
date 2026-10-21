@@ -10,6 +10,7 @@ import { ensureLineup } from './tactics';
 import { prepareFirstSeason } from './tutorial';
 import { rnd } from './utils';
 import { book, ensureLedger } from './ledger';
+import { addSigning, emptyRecords, rebuildRecords } from './records';
 
 export { playRound, endSeason };
 export { applyMatchResult, matchContext } from './season';
@@ -35,6 +36,8 @@ export function createInitialState(clubName) {
     market: [],
     transfers: [],
     trophies: [],
+    records: emptyRecords(), // records du club, tenus match après match
+    achievements: {}, // succès débloqués : id -> { season, round }
     ticketPolicy: 'standard',
     journal: [],
     history: [],
@@ -155,6 +158,7 @@ export function signPlayer(s, id) {
   delete p.club; delete p.contract; delete p.listedAt;
   s.money -= fee;
   book(s, 'signings', fee);
+  addSigning(s.records ||= rebuildRecords(s), p, fee, s); // record : plus gros achat
   p.joined = s.seasonNumber;
   assignNumber(s.players, p);
   s.players.push(p);

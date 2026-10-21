@@ -1,0 +1,85 @@
+{
+  "about": "Ciels HDRI sources (non versionnes, dans assets-src/hdri/) : telecharger avec ces URL.",
+  "skies": [
+    {
+      "moment": "morning",
+      "id": "kloppenheim_06_puresky",
+      "file": "kloppenheim_06_puresky_4k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/kloppenheim_06_puresky_4k.hdr",
+      "md5": "63e9826c43b973f8b6ecb07cb6a89227",
+      "bytes": 17385661,
+      "source": "Poly Haven (polyhaven.com)",
+      "license": "CC0"
+    },
+    {
+      "moment": "day",
+      "id": "kloofendal_48d_partly_cloudy_puresky",
+      "file": "kloofendal_48d_partly_cloudy_puresky_4k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/kloofendal_48d_partly_cloudy_puresky_4k.hdr",
+      "md5": "816340c969d2e60d659051d13ac3c4dc",
+      "bytes": 20674857,
+      "source": "Poly Haven (polyhaven.com)",
+      "license": "CC0"
+    },
+    {
+      "moment": "golden",
+      "id": "evening_road_01_puresky",
+      "file": "evening_road_01_puresky_4k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/evening_road_01_puresky_4k.hdr",
+      "md5": "3461499a68e8fe03ec42592f4bc2d5ef",
+      "bytes": 18692813,
+      "source": "Poly Haven (polyhaven.com)",
+      "license": "CC0"
+    },
+    {
+      "moment": "sunset",
+      "id": "belfast_sunset_puresky",
+      "file": "belfast_sunset_puresky_4k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/belfast_sunset_puresky_4k.hdr",
+      "md5": "52d2339c16069a2aaa7fd37a320d8495",
+      "bytes": 17420114,
+      "source": "Poly Haven (polyhaven.com)",
+      "license": "CC0"
+    },
+    {
+      "moment": "dusk",
+      "id": "qwantani_dusk_2_puresky",
+      "file": "qwantani_dusk_2_puresky_4k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/qwantani_dusk_2_puresky_4k.hdr",
+      "md5": "a37e1a2ff49dea91e8be7a83f219557e",
+      "bytes": 17976514,
+      "source": "Poly Haven (polyhaven.com)",
+      "license": "CC0"
+    },
+    {
+      "moment": "night",
+      "id": "qwantani_night_puresky",
+      "file": "qwantani_night_puresky_4k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/qwantani_night_puresky_4k.hdr",
+      "md5": "acd645e92308841aa0c82eada9830f2d",
+      "bytes": 21221482,
+      "source": "Poly Haven (polyhaven.com)",
+      "license": "CC0"
+    },
+    {
+      "moment": "rain",
+      "id": "overcast_soil_puresky",
+      "file": "overcast_soil_puresky_4k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/overcast_soil_puresky_4k.hdr",
+      "md5": "8c05e24908d99a6c4c5c1a63d753df3f",
+      "bytes": 16949123,
+      "source": "Poly Haven (polyhaven.com)",
+      "license": "CC0"
+    },
+    {
+      "moment": "snow",
+      "id": "snow_field_puresky",
+      "file": "snow_field_puresky_4k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/snow_field_puresky_4k.hdr",
+      "md5": "5f111edeafa4cc723d78a74901a5c402",
+      "bytes": 16283255,
+      "source": "Poly Haven (polyhaven.com)",
+      "license": "CC0"
+    }
+  ]
+}

@@ -107,8 +107,10 @@ async function optimize(doc, category) {
     flatten({ cleanup: false }),
     // Les nœuds spéciaux (emissive_*, light_*, ...) gardent leur nom et leur identité.
     joinMeshes({ filter: (node) => !SPECIAL_NODE.test(node.getName()), cleanup: false }),
-    weld(),
+    // normals() désindexe toujours les maillages (même s'il ne calcule rien) : avant weld(), qui les réindexe ;
+    // sinon chaque triangle garde ses trois sommets (fichiers ~3 fois plus lourds, réordonnancement impossible).
     normals({ overwrite: false }),
+    weld(),
     resample(),
     pruneEmptyLeaves(),
     prune({ keepLeaves: true, keepExtras: true }),

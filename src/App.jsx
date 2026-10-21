@@ -12,6 +12,7 @@ import { Dock, GameMenu, MatchCta, ObjectiveWidget, SceneTools, Toasts, TopHud }
 import { JournalPanel, SeasonPanel } from './ui/panels';
 import { FinancesPanel } from './ui/finances';
 import { StatsPanel } from './ui/stats';
+import { TrophyRoom } from './ui/trophyroom';
 import { SquadView } from './ui/squad';
 import PlotInspector from './ui/inspector';
 import { OfflineReturn, SeasonReview } from './ui/overlays';
@@ -28,6 +29,7 @@ import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics
 import { actionablePlots, dockSignals, seasonEndForecast, staffTip } from './game/advice';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { createStadiumSound } from './ui/sound';
+import { achievementById, newAchievements } from './game/achievements';
 
 // three.js et la scène vivent dans un chunk séparé, chargé à l'entrée dans le jeu.
 const Empire3D = lazy(() => import('./ui/Empire3D'));
@@ -97,6 +99,16 @@ export default function App({ preview = null }) {
     setToasts((t) => [...t.slice(-2), { id, text, tone }]);
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2800);
   }, []);
+
+  // Succès : débloqués au fil du jeu, datés. Une partie déjà commencée les retrouve d'un coup, sans notification.
+  useEffect(() => {
+    if (!state) return;
+    const fresh = newAchievements(state);
+    const initial = !state.achievements;
+    if (!fresh.length && !initial) return;
+    setState((s) => (s ? { ...s, achievements: { ...(s.achievements || {}), ...Object.fromEntries(fresh) } } : s));
+    if (!initial) fresh.forEach(([id]) => toast(`Succès débloqué : ${achievementById(id).title}`, 'gold'));
+  }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!state) {
     return <Onboarding onCreate={(name) => setState(createInitialState(name))} />;
@@ -219,6 +231,7 @@ export default function App({ preview = null }) {
               onLoaded={() => setSceneLoaded(true)}
               onSelectPlot={selectPlot}
               onEmptyTap={() => setSel(null)}
+              onOpenTrophies={() => openPanel('trophies')}
               onWebGLFail={() => setWebglOk(false)}
             />
           </Suspense>
@@ -281,6 +294,7 @@ export default function App({ preview = null }) {
       </Presence>
       <Presence>{panel === 'season' && <SeasonPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
+      <Presence>{panel === 'trophies' && <TrophyRoom state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} onClose={() => { setPanel(null); setStatsMatch(null); }} onPlayerSheet={(id) => { setSquadSheet(id); setSquadTab('players'); setPanel('squad'); }} />}</Presence>
       <Presence>
         {panel === 'finances' && (

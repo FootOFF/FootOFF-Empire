@@ -6,7 +6,8 @@
     "light_",
     "crowd_",
     "flag_",
-    "club_color_"
+    "club_color_",
+    "trophy_"
   ],
   "categories": {
     "stadium": {
@@ -87,6 +88,20 @@
       "maxTextures": 10,
       "maxMaterials": 18,
       "maxDrawCalls": 22
+    },
+    "trophies": {
+      "_doc": "Trophees du parvis (build_trophies.py) : toutes les pieces modelees a l'origine, une par competition et materiau (prefixe special trophy_ : jamais fusionnees).",
+      "footprint": {
+        "w": 12,
+        "d": 12
+      },
+      "maxHeight": 14,
+      "maxTriangles": 90000,
+      "maxBytes": 2000000,
+      "maxTextureSize": 512,
+      "maxTextures": 2,
+      "maxMaterials": 9,
+      "maxDrawCalls": 40
     }
   },
   "buildings": {
@@ -119,6 +134,7 @@
     "_doc": "Categorie de chaque prop (assets-src/models/props/<nom>.glb ; collection Blender prop_<nom>). Defaut : prop.",
     "plot_empty": "plot",
     "plot_locked": "plot",
-    "site": "site"
+    "site": "site",
+    "trophies": "trophies"
   }
 }

@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { PLAZA_CENTER, PLAZA_SIZE } from './layout';
+import { GRADE, MOMENTS, createPhotoSky, lookFor } from './sky';
 
-// Rendu physique : sRGB + ACES, environment map PMREM, ciel physique, soleil avec ombres douces.
+// Rendu physique : sRGB + ACES, ciel photographié (dôme, environnement, brume) selon le moment de la journée,
+// soleil calé sur celui de la photo, ombres douces.
 
 const lowEnd = () => (navigator.hardwareConcurrency || 4) <= 4 || Math.min(window.innerWidth, window.innerHeight) < 600;
 
@@ -20,47 +21,45 @@ export function createRenderer(mount, quality = 'auto') {
   renderer.setSize(mount.clientWidth, mount.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.75;
+  renderer.toneMappingExposure = 0.85;
   renderer.shadowMap.enabled = quality !== 'economie';
   renderer.shadowMap.type = THREE.PCFShadowMap; // PCFSoft supprimé en r18x : PCF + shadow.radius
   return renderer;
 }
 
-const DAY = {
-  exposure: 0.75, env: 0.6, sun: 3.0, sunColor: 0xfff1dc, hemi: 0.5,
-  fog: 0xc9d6e3, elevation: 38, azimuth: 135,
-};
-const NIGHT = {
-  exposure: 0.85, env: 0.12, sun: 0.35, sunColor: 0x8ea4d8, hemi: 0.15,
-  fog: 0x0b0c10, background: 0x0b0c10, // nuit proche du noir FootOFF (#090909)
-};
+const FADE = 4; // secondes : les lumières suivent le fondu du ciel
 
-export function createEnvironment(scene, renderer) {
+export function createEnvironment(scene, renderer, { quality = 'auto' } = {}) {
+  // environnement provisoire (studio neutre) le temps que le premier ciel arrive
   const pmrem = new THREE.PMREMGenerator(renderer);
-  const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  const roomTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   pmrem.dispose();
-  scene.environment = envTex;
+  scene.environment = roomTex;
+  scene.environmentIntensity = 0.5;
 
-  const sky = new Sky();
-  sky.scale.setScalar(400);
-  const u = sky.material.uniforms;
-  u.turbidity.value = 4;
-  u.rayleigh.value = 1.6;
-  u.mieCoefficient.value = 0.004;
-  u.mieDirectionalG.value = 0.8;
-  if (u.showSunDisc) u.showSunDisc.value = false;
-  scene.add(sky);
+  scene.fog = new THREE.Fog(0xc9d6e3, 70, 190);
+  scene.background = new THREE.Color(0xc9d6e3); // couvert par le dôme du ciel dès qu'il est chargé
 
-  scene.fog = new THREE.Fog(DAY.fog, 70, 190);
-
-  const hemi = new THREE.HemisphereLight(0xdbe8ff, 0x4a5a3a, DAY.hemi);
+  const hemi = new THREE.HemisphereLight(0xdbe8ff, 0x4a5a3a, 0.5); // provisoire, éteinte avec le ciel photo
   scene.add(hemi);
 
-  const sun = new THREE.DirectionalLight(DAY.sunColor, DAY.sun);
+  // ciel photographié : dôme, environnement (reflets et lumière ambiante), couleur d'horizon pour la brume
+  const photo = createPhotoSky(renderer, { quality });
+  scene.add(photo.dome);
+  const skyEnvListeners = new Set();
+  let dark = false;
+  photo.onEnv((tex) => {
+    scene.environment = tex;
+    scene.environmentIntensity = cur ? cur.ambient : 1; // radiance du ciel : ambiance et soleil restent cohérents
+    hemi.intensity = 0;
+    skyEnvListeners.forEach((fn) => fn(tex, dark));
+  });
+
+  const sun = new THREE.DirectionalLight(0xfff1dc, 3);
   sun.castShadow = true;
   sun.shadow.mapSize.set(lowEnd() ? 1024 : 2048, lowEnd() ? 1024 : 2048);
   const sc = sun.shadow.camera;
-  sc.left = -32; sc.right = 32; sc.top = 32; sc.bottom = -32; // tout le complexe sc.near = 1; sc.far = 120;
+  sc.left = -32; sc.right = 32; sc.top = 32; sc.bottom = -32; // tout le complexe (profondeur : 0,5 - 500 par défaut)
   sun.shadow.bias = -0.0004;
   sun.shadow.normalBias = 0.03;
   sun.shadow.radius = 3;
@@ -88,79 +87,82 @@ export function createEnvironment(scene, renderer) {
   flood.position.set(0, 14, 6);
   flood.target.position.set(0, 0, 0);
   scene.add(flood, flood.target);
-  // Trophée géant du parvis (site, à 82 m au sud du centre) : deux projecteurs au sol l'éclairent la nuit.
-  const trophyLights = [-1, 1].map((s) => {
-    const l = new THREE.SpotLight(0xffe2b0, 0, 3.2, Math.PI / 5, 0.6, 1.4);
-    l.position.set(s * 0.45, 0.04, 8.75);
-    l.target.position.set(0, 1.0, 8.2);
-    scene.add(l, l.target);
-    return l;
+
+  // état des lumières, fondu d'une ambiance à l'autre en même temps que le ciel
+  const snap = (look) => ({
+    sunDir: look.sunDir.clone(), sunI: look.sunI, sunColor: look.sunColor.clone(), ambient: look.ambient, exposure: look.exposure, haze: look.haze,
+    grade: { ...look.grade, bloom: [...look.grade.bloom] },
   });
+  let cur = null;
+  let from = null;
+  let target = null;
+  let k = 1;
+  let ambienceKey = '';
+  const grade = { sat: 1, contrast: 1, warm: 0, vignette: 0, bloom: [0, 0, 1] };
 
-  const setSunFromAngles = (elevation, azimuth) => {
-    const phi = THREE.MathUtils.degToRad(90 - elevation);
-    const theta = THREE.MathUtils.degToRad(azimuth);
-    const dir = new THREE.Vector3().setFromSphericalCoords(1, phi, theta);
-    u.sunPosition.value.copy(dir);
-    sun.position.copy(dir).multiplyScalar(60).add(sun.target.position);
-  };
-  setSunFromAngles(DAY.elevation, DAY.azimuth);
-
-  // Ambiance continue selon l'heure (0-24) et la météo ('clear' | 'rain' | 'snow').
-  // Soleil levé vers 6 h, couché vers 20 h, culmine à ~55° ; lumière dorée à l'aube et au crépuscule,
-  // lune bleutée la nuit. Renvoie { dark, daylight } : dark déclenche fenêtres, LED et projecteurs.
-  const cA = new THREE.Color(), cB = new THREE.Color();
-  const mixHex = (a, b, t) => cA.set(a).lerp(cB.set(b), THREE.MathUtils.clamp(t, 0, 1));
-  const WEATHER = {
-    clear: { light: 1, fog: [70, 190], turbidity: 4, mie: 0.004, tint: null },
-    rain: { light: 0.42, fog: [32, 130], turbidity: 12, mie: 0.02, tint: 0x6d7682 },
-    snow: { light: 0.62, fog: [28, 120], turbidity: 9, mie: 0.015, tint: 0xc4cad2 },
-  };
-
-  function setAmbience({ hour = 13, weather = 'clear', hasStadiumLights = true } = {}) {
-    const w = WEATHER[weather] || WEATHER.clear;
-    const f = (hour - 6) / 14; // 0 au lever, 1 au coucher
-    const elev = f >= 0 && f <= 1 ? 55 * Math.sin(Math.PI * f) : -12;
-    const daylight = THREE.MathUtils.smoothstep(elev, -4, 14);
-    const golden = elev > -4 ? THREE.MathUtils.clamp(1 - Math.abs(elev - 4) / 14, 0, 1) : 0;
-    const az = 90 + 180 * THREE.MathUtils.clamp(f, 0, 1);
-    setSunFromAngles(Math.max(elev, 4), az);
-
-    renderer.toneMappingExposure = THREE.MathUtils.lerp(NIGHT.exposure, DAY.exposure, daylight);
-    scene.environmentIntensity = THREE.MathUtils.lerp(NIGHT.env, DAY.env, daylight) * (0.6 + 0.4 * w.light);
-    sun.intensity = THREE.MathUtils.lerp(NIGHT.sun, DAY.sun, daylight) * w.light;
-    sun.color.copy(mixHex(NIGHT.sunColor, DAY.sunColor, daylight)).lerp(cB.set(0xff8a3d), golden * 0.9 * w.light);
-    hemi.intensity = THREE.MathUtils.lerp(NIGHT.hemi, DAY.hemi, daylight);
-
-    const fog = mixHex(NIGHT.fog, DAY.fog, daylight).clone().lerp(cB.set(0xe0956a), golden * 0.8 * w.light);
-    if (w.tint) fog.lerp(cB.set(w.tint), 0.7 * daylight);
-    scene.fog.color.copy(fog);
-    scene.fog.near = w.fog[0];
-    scene.fog.far = w.fog[1];
-    scene.userData.fogBase = w.fog; // distances de référence, reculées avec la caméra (vue d'ensemble sur téléphone)
-
-    u.turbidity.value = w.turbidity;
-    u.mieCoefficient.value = w.mie;
-    u.rayleigh.value = 1.6 + golden * 1.8;
-    const showSky = daylight > 0.12 && weather === 'clear';
-    sky.visible = showSky;
-    scene.background = showSky ? null : fog.clone().multiplyScalar(weather === 'clear' ? 1 : 0.92);
-
-    const dark = daylight < 0.35;
+  // Ambiance : moment de la journée (sky.js) et météo ('clear' | 'rain' | 'snow'). Renvoie { dark } : dark allume
+  // fenêtres, LED et projecteurs.
+  function setAmbience({ moment = 'day', weather = 'clear', hasStadiumLights = true } = {}) {
+    const key = `${moment}|${weather}`;
+    if (key !== ambienceKey) {
+      ambienceKey = key;
+      target = lookFor(moment, weather);
+      if (!cur) cur = snap(target);
+      else { from = snap(cur); k = 0; }
+      photo.set(target);
+      dark = target.dark;
+      scene.userData.fogBase = target.fog; // distances de référence, reculées avec la caméra (vue d'ensemble)
+    }
     flood.intensity = dark && hasStadiumLights ? 60 : 0;
-    trophyLights.forEach((l) => { l.intensity = dark ? 7 : 0; });
-    return { dark, daylight };
+    return { dark };
   }
 
-  // Compatibilité : ancienne bascule jour / nuit.
-  function setNight(night, opts = {}) {
-    return setAmbience({ ...opts, hour: night ? 23 : 13 });
+  // réglage à chaud (développement) : réapplique l'ambiance courante après modification de MOMENTS ou GRADE
+  function retune() {
+    const [moment, weather] = ambienceKey.split('|');
+    target = lookFor(moment, weather);
+    cur = snap(target);
+    from = null;
+    k = 1;
+    photo.set(target);
+  }
+
+  const view = new THREE.Vector3();
+  const fogCol = new THREE.Color();
+  const lerpN = THREE.MathUtils.lerp;
+  function update(dt, camera) {
+    if (!target) return;
+    photo.update(dt);
+    if (from && k < 1) {
+      k = Math.min(1, k + dt / FADE);
+      const t = THREE.MathUtils.smoothstep(k, 0, 1);
+      cur.sunDir.copy(from.sunDir).lerp(target.sunDir, t).normalize();
+      cur.sunI = lerpN(from.sunI, target.sunI, t);
+      cur.ambient = lerpN(from.ambient, target.ambient, t);
+      cur.exposure = lerpN(from.exposure, target.exposure, t);
+      cur.haze = lerpN(from.haze, target.haze, t);
+      cur.sunColor.copy(from.sunColor).lerp(target.sunColor, t);
+      for (const g of ['sat', 'contrast', 'warm', 'vignette']) cur.grade[g] = lerpN(from.grade[g], target.grade[g], t);
+      cur.grade.bloom = from.grade.bloom.map((v, i) => lerpN(v, target.grade.bloom[i], t));
+      if (k >= 1) from = null;
+    }
+    sun.position.copy(cur.sunDir).multiplyScalar(60).add(sun.target.position);
+    sun.intensity = cur.sunI;
+    sun.color.copy(cur.sunColor);
+    if (photo.envTexture) scene.environmentIntensity = cur.ambient;
+    renderer.toneMappingExposure = cur.exposure;
+    Object.assign(grade, cur.grade);
+    // brume : couleur de l'horizon du ciel dans la direction du regard (le relief lointain s'y fond)
+    camera.getWorldDirection(view);
+    const phi = Math.atan2(view.x, -view.z);
+    if (!photo.horizon(phi, fogCol)) photo.horizonOfLook(target, phi, fogCol);
+    scene.fog.color.copy(fogCol.multiplyScalar(cur.haze));
+    scene.background.copy(fogCol);
   }
 
   function dispose() {
-    envTex.dispose();
-    sky.geometry.dispose();
-    sky.material.dispose();
+    photo.dispose();
+    roomTex.dispose();
     ground.geometry.dispose();
     ground.material.dispose();
     plaza.geometry.dispose();
@@ -170,5 +172,18 @@ export function createEnvironment(scene, renderer) {
   // Le site GLB (voirie, pelouses) remplace l'esplanade procédurale une fois chargé.
   const setPlazaVisible = (v) => { plaza.visible = v; };
 
-  return { setAmbience, setNight, dispose, sun, setPlazaVisible };
+  // L'écrin naturel (landscape.js) remplace le sol uni d'origine.
+  const setGroundVisible = (v) => { ground.visible = v; };
+
+  const onSkyEnv = (fn) => { skyEnvListeners.add(fn); if (photo.envTexture) fn(photo.envTexture, dark); };
+
+  return {
+    setAmbience, update, dispose, sun, setPlazaVisible, setGroundVisible, onSkyEnv,
+    setQuality: (q) => photo.setQuality(q),
+    veilMaterial: (lo, hi) => photo.veilMaterial(lo, hi),
+    tune: { MOMENTS, GRADE, retune },
+    get grade() { return grade; },
+    get skySettled() { return photo.settled; },
+    get sunDir() { return cur ? cur.sunDir : sun.position; },
+  };
 }

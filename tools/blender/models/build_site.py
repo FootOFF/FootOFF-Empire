@@ -21,7 +21,21 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from footoff_lib import GOLD, GOLD_LIGHT, Builder, Matrix, RNG, bpy, fbm, find_repo, fo_logo, material, mix, np, to_image  # noqa: E402
-from footoff_modern import car, container_box, lawn, modern_materials, plinth, tree  # noqa: E402
+from footoff_modern import car, container_box, lawn, modern_materials, plinth  # noqa: E402
+from footoff_modern import tree as modern_tree  # noqa: E402
+
+# Arbres du site : plus modelises dans le GLB, mais listes (site_trees.json) et plantes par le jeu avec les arbres
+# realistes de l'ecrin naturel (src/three/landscape.js). Format par arbre, en unites du jeu (1 = 10 m) :
+# [x, z, base, hauteur, largeur relative, espece].
+SITE_TREES = []
+
+
+def tree(B, x, y, h=9.0, r=2.6, z=0.0, columnar=False):
+    if columnar:
+        kind, w = "poplar", (r * 0.55 / 10) / 0.13
+    else:
+        kind, w = ("oak" if int(abs(x * 3.1 + y * 1.7)) % 3 else "beech"), (r / 10) / 0.36
+    SITE_TREES.append([round(x / 10, 3), round(-y / 10, 3), round(z / 10, 3), round(h / 10, 3), round(w, 3), kind])
 
 # Parcelles (centres en metres, repere Blender) = PLOT_POS de layout.js x 10, z -> -y
 PLOTS = {
@@ -181,7 +195,7 @@ def parking_lot(B, x0, y0, x1, y1):
 
 
 PRESTIGE = (-36.0, -142.5, 36.0, -65.0)  # axe d'honneur : de l'entree sud du stade a la station du tram
-TROPHY = (0.0, -82.0)
+TROPHY = (0.0, -82.0)  # place de la Coupe d'Europe (trophee pose par le jeu quand elle est gagnee)
 POOL = (-15.0, -126.0, 15.0, -100.0)  # miroir d'eau (bord interieur)
 
 
@@ -210,29 +224,6 @@ def prestige_materials(mats):
     mats["mirror_water"] = material("mirror_water", (0.30, 0.40, 0.45), rough=0.03, metal=0.85)  # reflete le ciel
 
 
-def trophy(B, cx, cy, k=1.3):
-    """Trophee geant du championnat (coupe a deux anses, ~13 m) sur un socle noir cercle d'or."""
-    B.cyl("granite_dark", (cx, cy, 0.0), (cx, cy, 0.9), 4.2, segs=32)
-    B.cyl("black_metal", (cx, cy, 0.9), (cx, cy, 1.55), 3.5, segs=32)
-    B.cyl("trophy_gold", (cx, cy, 1.38), (cx, cy, 1.5), 3.54, segs=32)
-    profile = [  # (z, rayon) du pied au col de la coupe
-        (1.55, 1.7), (1.85, 1.55), (2.25, 1.0), (2.6, 0.55), (4.0, 0.42), (4.25, 0.75), (4.5, 0.42),
-        (4.85, 0.6), (5.4, 1.35), (6.2, 1.95), (7.2, 2.25), (8.3, 2.3), (9.0, 2.35), (9.35, 2.55), (9.6, 2.5),
-    ]
-    z = lambda v: 1.55 + (v - 1.55) * k  # noqa: E731
-    for (z0, r0), (z1, r1) in zip(profile, profile[1:]):
-        B.cyl("trophy_gold", (cx, cy, z(z0)), (cx, cy, z(z1)), r0 * k, r1 * k, segs=28)
-    for s in (-1, 1):  # anses en C, de la levre au ventre de la coupe
-        pts = [(2.25, 8.9), (3.1, 8.95), (3.75, 8.4), (3.85, 7.5), (3.4, 6.7), (2.5, 6.25), (1.9, 6.1)]
-        for (x0, z0), (x1, z1) in zip(pts, pts[1:]):
-            B.cyl("trophy_gold", (cx + s * x0 * k, cy, z(z0)), (cx + s * x1 * k, cy, z(z1)), 0.24 * k, segs=10)
-    fo_logo(B, "emissive_led", Matrix.Translation((cx, cy - 4.24, 0.18)), 0.62, depth=0.05)
-    for k in range(8):  # projecteurs encastres autour du socle
-        a = 2 * math.pi * (k + 0.5) / 8
-        x, y = cx + 5.0 * math.cos(a), cy + 5.0 * math.sin(a)
-        B.box("emissive_light", (x - 0.25, y - 0.25, 0.14), (x + 0.25, y + 0.25, 0.19))
-
-
 def banner(B, x, y, s, gold):
     """Mat a banniere verticale, face a la camera (sud), monogramme FO."""
     B.cyl("steel", (x, y, 0.14), (x, y, 11.0), 0.09, 0.07, segs=8)
@@ -256,8 +247,9 @@ def planter(B, x0, y0, x1, y1, tree_x, step=7.0):
 
 
 def prestige(B):
-    """Parvis de prestige : axe en granit clair borde de bandes sombres, place du trophee, miroir d'eau,
-    jardinieres plantees, bannieres FootOFF, bornes lumineuses et monogramme dore au sol."""
+    """Parvis de prestige : axe en granit clair borde de bandes sombres, place de la Coupe d'Europe, miroir d'eau,
+    jardinieres plantees, bannieres FootOFF, bornes lumineuses et monogramme dore au sol. Les trophees et leurs socles
+    (allee d'honneur, x = +/-20,5 m) sont poses par le jeu, seulement pour les competitions gagnees."""
     x0, y0, x1, y1 = PRESTIGE
     B.box("granite_light", (x0, y0, 0.0), (x1, y1, 0.14), tile=(2.4, 2.4))
     tx, ty = TROPHY
@@ -267,10 +259,9 @@ def prestige(B):
         B.box("granite_dark", (min(s * 17, s * 18), y0, 0.0), (max(s * 17, s * 18), y1, 0.19), tile=(2.4, 2.4))
     for y in (-141.3, -128.3, -97.3):  # entre le monogramme, le miroir d'eau et la place du trophee
         B.box("granite_dark", (-17, y, 0.0), (17, y + 0.6, 0.19), tile=(2.4, 2.4))
-    # place du trophee : anneau sombre, cercle d'or lumineux, trophee au centre
+    # place de la Coupe d'Europe : anneau sombre et cercle d'or lumineux (le trophee est pose par le jeu)
     B.sector("granite_dark", (tx, ty), 12.0, 13.2, 0, 2 * math.pi, 0.0, 0.19, segs=56, tile=(2.4, 2.4))
     B.sector("emissive_led", (tx, ty), 11.55, 11.8, 0, 2 * math.pi, 0.0, 0.2, segs=56)
-    trophy(B, tx, ty)
     # miroir d'eau : margelle sombre, eau 4 cm sous la margelle
     p0, q0, p1, q1 = POOL
     m = 0.6
@@ -282,20 +273,79 @@ def prestige(B):
             B.box("emissive_light", (x - 0.12, y - 0.12, 0.28), (x + 0.12, y + 0.12, 0.33))
     # monogramme dore au sol, avant la station
     flat_logo(B, "gold_paint", 0, -134.0, 9.0)
-    # jardinieres plantees de part et d'autre, bannieres et bancs le long de l'allee
+    # jardinieres plantees de part et d'autre ; bannieres entre les socles de l'allee d'honneur ; bancs pres de la place
     for s in (-1, 1):
         xa, xb = sorted((s * 23.0, s * 33.5))
         planter(B, xa, -139.5, xb, -104.0, s * 28.2)
         planter(B, xa, -96.0, xb, -71.0, s * 28.2)
-        for k, y in enumerate(range(-136, -70, 10)):
-            banner(B, s * 20.0, y, s, gold=(k % 2 == 0))
-        for y in (-128, -110, -88):
-            B.box("granite_dark", (min(s * 21.4, s * 22.0), y - 1.2, 0.0), (max(s * 21.4, s * 22.0), y + 1.2, 0.48), tile=(2.4, 2.4))
+        for k, y in enumerate((-137, -124, -111, -98, -85, -74)):
+            banner(B, s * 22.3, y, s, gold=(k % 2 == 0))
+        for y in (-91, -79):
+            B.box("granite_dark", (min(s * 20.4, s * 21.0), y - 1.2, 0.0), (max(s * 20.4, s * 21.0), y + 1.2, 0.48), tile=(2.4, 2.4))
         for y in range(int(y0) + 4, int(y1), 8):  # bornes lumineuses
             if near(s * 17.5, y, 14.5):
                 continue
             B.cyl("black_metal", (s * 16.4, y, 0.14), (s * 16.4, y, 1.0), 0.12, segs=8)
             B.cyl("emissive_light", (s * 16.4, y, 1.0), (s * 16.4, y, 1.12), 0.13, segs=8)
+
+
+def height_to_normal(name, h, strength):
+    """Carte de normales (non couleur) depuis une carte de hauteur periodique."""
+    gx = (np.roll(h, -1, axis=1) - np.roll(h, 1, axis=1)) * strength
+    gy = (np.roll(h, -1, axis=0) - np.roll(h, 1, axis=0)) * strength
+    n = np.stack([-gx, -gy, np.ones_like(h)], -1)
+    n /= np.linalg.norm(n, axis=-1, keepdims=True)
+    return to_image(name, n * 0.5 + 0.5, non_color=True)
+
+
+def tex_esplanade():
+    """Dallage de l'esplanade, tuile 4,8 x 4,8 m : grandes dalles de granit 1,2 x 0,6 m a joints decales,
+    bandes de granit plus sombre de 20 cm qui quadrillent tous les 4,8 m, joints en creux (relief)."""
+    S, m = 1024, 4.8
+    u, v = np.meshgrid((np.arange(S) + 0.5) / S * m, (np.arange(S) + 0.5) / S * m)
+    band = (u < 0.2) | (v < 0.2)
+    uu, vv = u - 0.2, v - 0.2
+    row = np.floor(vv / 0.6)
+    xx = uu + (row % 2) * 0.6
+    col = np.floor(xx / 1.2)
+    jx = np.minimum(xx % 1.2, 1.2 - xx % 1.2)
+    jy = np.minimum(vv % 0.6, 0.6 - vv % 0.6)
+    joint = np.clip(1 - np.minimum(jx, jy) / 0.007, 0, 1) * ~band
+    edge = np.clip(1 - np.minimum(np.abs(u - 0.2), np.abs(v - 0.2)) / 0.008, 0, 1)
+    joint = np.maximum(joint, edge)
+    tint = RNG.random((8, 4))[row.astype(int) % 8, col.astype(int) % 4]
+    grain = fbm(S, S, 64, 3)
+    base = np.array([0.42, 0.405, 0.38]) * (0.92 + 0.12 * tint + 0.08 * (grain - 0.5))[..., None]
+    dark = np.array([0.30, 0.295, 0.285]) * (0.95 + 0.1 * grain)[..., None]
+    rgb = np.where(band[..., None], dark, base)
+    rgb = rgb * (1 - 0.3 * joint[..., None])
+    height = 1.0 - joint * 0.9 + 0.04 * grain
+    return to_image("esplanade", rgb), height_to_normal("esplanade_n", height, 6.0)
+
+
+def tex_site_lawn():
+    """Pelouse tondue, tuile 8 x 8 m : bandes de tonte de 2 m (claire / foncee), grain d'herbe en relief."""
+    S, m = 512, 8.0
+    u, v = np.meshgrid((np.arange(S) + 0.5) / S * m, (np.arange(S) + 0.5) / S * m)
+    n = fbm(S, S, 6, 5)
+    fine = fbm(S, S, 96, 2)
+    stripe = np.where((np.floor(u / 2.0) % 2) == 0, 1.05, 0.95)
+    g = np.stack([0.14 + 0.05 * n, 0.26 + 0.07 * n, 0.095 + 0.03 * n], -1) * (stripe * (0.94 + 0.12 * fine))[..., None]
+    return to_image("site_lawn", g), height_to_normal("site_lawn_n", fine, 3.0)
+
+
+def tex_asphalt_n():
+    """Grain d'enrobe (normales), tuile 8 x 8 m."""
+    S = 512
+    return height_to_normal("asphalt_n", fbm(S, S, 128, 2) + 0.4 * fbm(S, S, 32, 2), 2.5)
+
+
+def site_materials(mats):
+    esp, esp_n = tex_esplanade()
+    lawn_img, lawn_n = tex_site_lawn()
+    mats["paving"] = material("paving", image=esp, normal=esp_n, normal_strength=0.8, rough=0.78)
+    mats["lawn"] = material("lawn", image=lawn_img, normal=lawn_n, normal_strength=0.5, rough=0.95)
+    mats["asphalt"] = material("asphalt", image=bpy.data.images["asphalt"], normal=tex_asphalt_n(), normal_strength=0.6, rough=0.92)
 
 
 def site(B, coll):
@@ -395,7 +445,7 @@ def plot_empty(B, coll):
             B.box("emissive_led", (min(x, x - sx * 4), y - 0.25, 0.12), (max(x, x - sx * 4), y + 0.25, 0.35))
             B.box("emissive_led", (x - 0.25, min(y, y - sy * 4), 0.12), (x + 0.25, max(y, y - sy * 4), 0.35))
             B.box("concrete_dark", (sx * 26 - 1.4, sy * 26 - 1.4, 0.12), (sx * 26 + 1.4, sy * 26 + 1.4, 0.7))
-            tree(B, sx * 26, sy * 26, 8, 2.2, z=0.7)
+            modern_tree(B, sx * 26, sy * 26, 8, 2.2, z=0.7)
     # panneau "terrain disponible" face camera
     for x in (-2.2, 2.2):
         B.cyl("black_metal", (x, -24, 0.12), (x, -24, 3.6), 0.07, segs=6)
@@ -451,12 +501,18 @@ def main():
     mats["gravel"] = material("gravel", (0.30, 0.27, 0.23), rough=1.0)
     mats["gold_paint"] = material("gold_paint", GOLD, rough=0.4, metal=0.5)
     prestige_materials(mats)
+    site_materials(mats)  # dallage de l'esplanade, pelouse tondue, grain de l'enrobe (avec relief)
     for name, fn in (("site", site), ("plot_empty", plot_empty), ("plot_locked", plot_locked)):
         coll = bpy.data.collections.new(f"prop_{name}")
         scene.collection.children.link(coll)
         B = Builder(mats)
         fn(B, coll)
         B.finalize(coll, name)
+    import json
+    trees_out = os.path.join(find_repo(), "public", "models", "props", "site_trees.json")
+    with open(trees_out, "w", encoding="utf-8") as f:
+        json.dump(SITE_TREES, f, separators=(",", ":"))
+    print("SITE TREES", len(SITE_TREES), trees_out)
     out = os.path.join(find_repo(), "assets-src", "blend", "site.blend")
     bpy.ops.wm.save_as_mainfile(filepath=out, compress=True)
     print("SITE OK", out)

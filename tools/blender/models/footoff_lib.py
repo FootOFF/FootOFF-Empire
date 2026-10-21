@@ -156,12 +156,12 @@ def fbm(h, w, cells, octaves=4):
 
 def to_image(name, rgb, non_color=False):
     h, w = rgb.shape[:2]
-    img = bpy.data.images.new(name, w, h, alpha=False)
+    # données (normales) : espace « Non-Color » choisi dès la création. Le changer après coup régénère l'image et
+    # efface ses pixels (cartes de relief exportées noires).
+    img = bpy.data.images.new(name, w, h, alpha=False, is_data=non_color)
     rgba = np.ones((h, w, 4), dtype=np.float32)
     rgba[..., :3] = np.clip(rgb, 0, 1)
     img.pixels.foreach_set(rgba.ravel())
-    if non_color:
-        img.colorspace_settings.name = "Non-Color"
     img.pack()
     return img
 

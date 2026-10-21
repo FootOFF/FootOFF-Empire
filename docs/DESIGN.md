@@ -171,6 +171,30 @@ au nord), boulevard périphérique autour du complexe avec deux ronds-points au 
 d'autre du parvis, grand boulevard sud à deux chaussées avec le tram sur gazon et sa station face au parvis. La
 circulation (`src/three/life.js`) suit les mêmes cotes : deux boucles du périphérique en sens contraires qui
 contournent l'îlot des ronds-points, plus la chaussée de transit. Parvis de prestige (`prestige()` de `build_site.py`) : axe
-d'honneur en granit clair du stade à la station du tram, place du trophée géant (éclairé la nuit par deux
-projecteurs au sol, `environment.js`), miroir d'eau, jardinières plantées, bannières FootOFF, bornes lumineuses et
-monogramme doré au sol. La zone au contact du stade reste libre pour les totems de l'arène.
+d'honneur en granit clair du stade à la station du tram, place de la Coupe d'Europe, miroir d'eau, jardinières
+plantées, bannières FootOFF, bornes lumineuses et monogramme doré au sol. La zone au contact du stade reste libre pour
+les totems de l'arène.
+
+## Allée d'honneur et salle des trophées
+
+Le parvis n'affiche que les compétitions gagnées (`src/three/trophies.js`, palmarès commun `src/game/honours.js`) :
+une réplique monumentale par compétition, posée sur son socle de granit à la première victoire, avec une plaque de
+bronze (compétition, nombre de victoires, saisons) écrite par le jeu. Les trophées s'alignent de part et d'autre de
+l'axe dans l'ordre des premières victoires ; la Coupe d'Europe trône au centre de la place. Six dessins originaux
+modélisés dans `tools/blender/models/build_trophies.py` (coupe du District, trophée de la Ligue, plateau national,
+trophée Elite, Coupe nationale, Coupe d'Europe) ; leurs vignettes de la salle sont rendues sous un vrai ciel par
+`render_trophies.py`. Un nouveau trophée sort de terre sous l'œil de la caméra (après le match). La nuit, l'or et
+l'argent reflètent un studio retourné, comme éclairés par des projecteurs au sol. Un clic sur le parvis ouvre la
+salle des trophées (`src/ui/trophyroom.jsx`) : palmarès, succès datés (`src/game/achievements.js`) et records de
+toujours (`src/game/records.js`, tenus match après match : l'historique détaillé ne garde que 400 matchs).
+
+## Ciel et lumière
+
+Vrais ciels photographiés (HDRI CC0 de Poly Haven, liste et URL dans `assets-src/skies.json`, sources lourdes hors
+dépôt dans `assets-src/hdri/`). `npm run skies` mesure chaque ciel (soleil, lueur, éclairement, couleur de l'horizon)
+et le convertit en WebP léger (moitié haute, radiance compressée x / (1 + x)) pour `src/three/sky.js` : dôme, voile
+d'horizon, environnement (reflets et lumière ambiante, sans le disque solaire) et brume couleur d'horizon dans la
+direction du regard. L'heure réelle choisit un moment (aube, matin, journée, fin d'après-midi dorée, coucher,
+crépuscule, nuit) d'après le lever et le coucher de la saison ; chaque moment tourne sa photo pour placer le soleil
+là où il flatte la vue d'ensemble, et le soleil du jeu suit celui de la photo. Pluie et neige : ciels couverts.
+Fondu de quatre secondes entre deux ambiances (ciel, soleil, exposition, étalonnage).

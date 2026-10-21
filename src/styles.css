@@ -2021,3 +2021,48 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
   .pm-sub .lu-best { order: 3; flex-basis: 100%; margin-left: 0; text-align: left; }
   .pm-rating { white-space: nowrap; }
 }
+
+/* Salle des trophées (clic sur le parvis) : une carte par compétition, succès datés, records de toujours */
+.tr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s-3); margin-bottom: var(--s-5); }
+.tr-card { display: flex; flex-direction: column; border-radius: var(--r-md); border: 1px solid var(--line); overflow: hidden;
+  background: radial-gradient(120% 80% at 50% 0%, rgba(199, 161, 90, .08), transparent 60%), rgba(255, 255, 255, .02); }
+.tr-card.on { border-color: var(--gold-line); background: radial-gradient(120% 80% at 50% 0%, rgba(199, 161, 90, .16), transparent 62%), rgba(255, 255, 255, .02); }
+.tr-img { position: relative; aspect-ratio: 4 / 5; display: grid; place-items: center; padding: var(--s-2);
+  background: radial-gradient(55% 40% at 50% 64%, rgba(222, 193, 127, .14), transparent 72%); }
+.tr-img img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .55)); }
+.tr-card.locked .tr-img img { filter: brightness(0); opacity: .3; }
+.tr-count { position: absolute; right: var(--s-2); top: var(--s-2); padding: 2px 9px; border-radius: 999px; background: var(--gold-grad);
+  color: #141414; font-family: var(--font-mono); font-size: var(--t-sm); font-weight: 600; }
+.tr-body { padding: var(--s-2) var(--s-3) var(--s-3); display: flex; flex-direction: column; gap: 2px; }
+.tr-eyebrow { font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+.tr-body h4 { margin: 0; font-size: var(--t-md); }
+.tr-card.locked h4 { color: var(--text-2); }
+.tr-seasons { display: flex; flex-wrap: wrap; gap: 4px; margin: var(--s-1) 0 0; }
+.tr-seasons span { padding: 1px 7px; border-radius: 999px; border: 1px solid var(--gold-line); font-size: var(--t-xs); color: var(--gold-light); }
+.tr-meta { margin: var(--s-1) 0 0; font-size: var(--t-xs); color: var(--muted); }
+.ach-progress { height: 6px; border-radius: 999px; background: rgba(255, 255, 255, .06); overflow: hidden; margin: 0 0 var(--s-4); }
+.ach-progress i { display: block; height: 100%; background: var(--gold-grad); border-radius: inherit; }
+.ach-cat { margin-bottom: var(--s-4); }
+.ach-cat h5 { display: flex; justify-content: space-between; margin: 0 0 var(--s-2); font-family: var(--font-mono); font-size: var(--t-xs);
+  font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--text-2); }
+.ach-cat h5 em { font-style: normal; color: var(--muted); }
+.ach-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: var(--s-2); }
+.ach-list li { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) var(--s-3); border-radius: var(--r-sm);
+  border: 1px solid var(--line); background: rgba(255, 255, 255, .02); }
+.ach-list li > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ach-list b { font-size: var(--t-sm); font-weight: 600; color: var(--text-2); }
+.ach-list li > div span { font-size: var(--t-xs); color: var(--muted); }
+.ach-list em { font-style: normal; font-size: var(--t-xs); color: var(--muted); white-space: nowrap; }
+.ach-list li.on { border-color: var(--gold-line); background: var(--gold-soft); }
+.ach-list li.on b { color: var(--text); }
+.ach-list li.on em { color: var(--gold-light); }
+.ach-medal { flex: none; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #474747, #1d1d1d 70%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .07); }
+.ach-list li.on .ach-medal { background: radial-gradient(circle at 35% 30%, #fff3cf, #dec17f 34%, #b9924c 68%, #74561f);
+  box-shadow: 0 0 12px rgba(222, 193, 127, .32), inset 0 0 0 2px rgba(255, 255, 255, .25); }
+.rec-list em { margin-top: 1px; }
+@media (max-width: 600px) {
+  .tr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ach-list { grid-template-columns: minmax(0, 1fr); }
+  .ach-list em { white-space: normal; text-align: right; max-width: 92px; }
+}
