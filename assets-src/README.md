@@ -13,11 +13,11 @@ assets-src/
     props/<nom>.glb                  décor (phase 3) : lampadaire, arbre, voiture...
     REPORT.md                        rapport généré à chaque `npm run models`
   blend/                             fichiers .blend de travail (conseillé : Git LFS)
-  grounds.json                       matières photo CC0 des sols et du mobilier, à télécharger dans grounds/ (hors dépôt)
+  grounds.json                       matières photo CC0 des sols, du mobilier et du stade, à télécharger dans grounds/ (hors dépôt)
   grounds-baked/                     leurs textures aux tailles du jeu : python -I tools/grounds/prepare.py (hors dépôt)
 ```
 
-Bâtiments et niveaux : `terrain` (1 à 4), `training`, `academy`, `fans`, `sponsor` (1 à 5).
+Bâtiments et niveaux : `terrain` (1 à 6), `training`, `academy`, `fans`, `sponsor` (1 à 5).
 Un niveau sans modèle reprend le niveau inférieur le plus proche, sinon la version procédurale.
 
 ## Règles de modélisation (Blender)
@@ -39,7 +39,7 @@ Un niveau sans modèle reprend le niveau inférieur le plus proche, sinon la ver
 
 | Catégorie | Triangles | Poids | Texture max | Matériaux | Draw calls |
 |---|---|---|---|---|---|
-| Stade | 60 000 | 4 Mo | 2048 px | 16 | 40 |
+| Stade | 60 000 | 4 Mo | 2048 px | 20 | 40 |
 | Bâtiment | 25 000 | 1,5 Mo | 1024 px | 10 | 20 |
 | Décor | 2 000 | 200 Ko | 512 px | 3 | 3 |
 
@@ -70,8 +70,13 @@ blender -b --factory-startup -P tools/blender/models/build_site.py
 Les collections `prop_<nom>` sont exportées dans `models/props/` ; leur catégorie de budget est donnée
 par la section `props` de `budgets.json`.
 
-Le script régénère `assets-src/blend/stadium.blend` (collections `terrain_L1` à `terrain_L4`) ;
+Le script régénère `assets-src/blend/stadium.blend` (collections `terrain_L1` à `terrain_L6`) ;
 on enchaîne ensuite avec l'export et `npm run models` comme pour tout autre modèle.
+Matières photo du stade et du site : `photo_material()` de `tools/blender/models/footoff_photo.py` (textures de
+`assets-src/grounds-baked/`, extras glTF lus par `src/three/ground.js`) ; `relief=False` pour les grandes surfaces
+toujours vues de loin (couleur seule). Noms de matériaux reconnus par le jeu : `ground_*` (sols), `stand_concrete`,
+`stand_concrete_dark`, `roof_deck`, `roof_membrane`, `brick_wall`, `wood_bleacher`, `stadium_facade`, `seats`
+(nuances et ordre de dessin), `pitch_L<n>` (pelouse ; extras `stripes`, `cross`, `chalk`), `net` (filets).
 
 ## Exporter
 

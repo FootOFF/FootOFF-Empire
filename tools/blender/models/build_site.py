@@ -28,6 +28,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from footoff_lib import GOLD, GOLD_LIGHT, Builder, Matrix, RNG, bpy, find_repo, fo_logo, mast, material, np  # noqa: E402
 from footoff_modern import car, container_box, modern_materials, plinth  # noqa: E402
+from footoff_photo import photo_material, tile  # noqa: E402
 from footoff_modern import tree as modern_tree  # noqa: E402
 from footoff_street import (bench, bike_rack, bollard, drain, lantern, litter_bin, manhole, street_lamp,  # noqa: E402
                             tex_grate, tex_pool, tree_grate)
@@ -77,15 +78,6 @@ BAND_W, BAND_Z, BAND_STEP = 0.25, 0.165, 6.0  # calepinage de l'esplanade : band
 RES = 0.5  # trame du plan : toutes les cotes des sols sont des multiples de 50 cm
 # Ecarts verticaux entre sols superposes : au moins 2,5 cm (positions du site compressees sur 16 bits : pas de 9 mm)
 
-# Matieres photo (tools/grounds/prepare.py) : tuile de chaque texture en metres
-GROUNDS = os.path.join(find_repo(), "assets-src", "grounds-baked")
-with open(os.path.join(GROUNDS, "grounds_meta.json"), encoding="utf-8") as _f:
-    GROUND_META = json.load(_f)
-
-
-def tile(key):
-    t = GROUND_META[key]["tile"]
-    return (t, t)
 
 # Boulevard peripherique autour du complexe (axe x = +-230, nord y = 220) ; au sud il devient un grand
 # boulevard a deux chaussees separees par la plateforme du tram. Ronds-points aux deux angles sud.
@@ -307,47 +299,6 @@ def prestige(B):
                 continue
             B.cyl("black_metal", (s * 16.4, y, 0.14), (s * 16.4, y, 1.0), 0.12, segs=8)
             B.cyl("emissive_light", (s * 16.4, y, 1.0), (s * 16.4, y, 1.12), 0.13, segs=8)
-
-
-def ground_image(key, kind):
-    img = bpy.data.images.load(os.path.join(GROUNDS, f"{key}_{kind}.jpg"), check_existing=True)
-    img.colorspace_settings.name = "sRGB" if kind == "color" else "Non-Color"
-    return img
-
-
-def gltf_output():
-    """Groupe « glTF Material Output » : l'exportateur glTF y lit l'occlusion ambiante."""
-    g = bpy.data.node_groups.get("glTF Material Output")
-    if g is None:
-        g = bpy.data.node_groups.new("glTF Material Output", "ShaderNodeTree")
-        g.interface.new_socket("Occlusion", in_out="INPUT", socket_type="NodeSocketFloat")
-    return g
-
-
-def photo_material(name, key, color=None, tone=None):
-    """Matiere photo : couleur, relief et ARM (occlusion R, rugosite G, metal B) de assets-src/grounds-baked/.
-    Une seule image ARM, exportee a la fois en occlusionTexture et en metallicRoughnessTexture. tone : teinte sRGB
-    visee, obtenue en multipliant la photo dans le jeu (extras « factor », ground.js) : deux sols, une seule image."""
-    m = material(name, image=ground_image(color or key, "color"), normal=ground_image(key, "normal"))
-    nt = m.node_tree
-    b = nt.nodes.get("Principled BSDF")
-    t = nt.nodes.new("ShaderNodeTexImage")
-    t.image = ground_image(key, "arm")
-    sep = nt.nodes.new("ShaderNodeSeparateColor")
-    nt.links.new(t.outputs["Color"], sep.inputs["Color"])
-    nt.links.new(sep.outputs["Green"], b.inputs["Roughness"])
-    nt.links.new(sep.outputs["Blue"], b.inputs["Metallic"])
-    out = nt.nodes.new("ShaderNodeGroup")
-    out.node_tree = gltf_output()
-    nt.links.new(sep.outputs["Red"], out.inputs["Occlusion"])
-    # extras glTF (userData dans le jeu) : tuile en metres, dalles par tuile, couleur moyenne (lumiere lineaire)
-    m["tile"] = GROUND_META[key]["tile"]
-    m["slabs"] = GROUND_META[key].get("slabs", 0)
-    m["mean"] = GROUND_META[color or key]["mean_linear"]
-    if tone:
-        lin = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in tone]
-        m["factor"] = [round(t / mm, 4) for t, mm in zip(lin, m["mean"])]
-    return m
 
 
 def ground_materials(mats):

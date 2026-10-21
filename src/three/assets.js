@@ -54,7 +54,12 @@ function prepareTemplate(root) {
     }
     o.castShadow = true;
     o.receiveShadow = true;
-    [].concat(o.material).forEach(prepareGround); // sols photo ground_* (ground.js)
+    if (o.material?.name === 'net') { // filets de but : mailles fondues au loin en voile blanc, sans ombre pleine
+      Object.assign(o.material, { transparent: true, depthWrite: false, alphaTest: 0, side: THREE.DoubleSide });
+      o.castShadow = false;
+      o.userData.noAO = true;
+    }
+    [].concat(o.material).forEach(prepareGround); // matières photo : sols ground_*, stade (ground.js)
     placeGround(o); // ordre de dessin et ombres des sols
     // emissive_* : allumé la nuit, éteint le jour.
     if (/^emissive_/i.test(o.name) || /^emissive_/i.test(o.parent?.name || '')) {

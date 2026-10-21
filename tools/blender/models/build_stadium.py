@@ -8,6 +8,11 @@ puis enregistre assets-src/blend/stadium.blend. Ensuite :
 Lancement :
     blender -b --factory-startup -P tools/blender/models/build_stadium.py
 
+Matieres photo CC0 (phase 4, footoff_photo.py, textures de tools/grounds/prepare.py) : beton coule des gradins,
+beton des dalles, bac acier des toitures, brique du club-house, gravier, bois des petits gradins. Pelouse : teinte et
+usure ici ; bandes de tonte (selon le point de vue) et marquages dessines par le jeu (src/three/ground.js). Sieges
+coques (assise et dossier), filets de but.
+
 Conventions (voir assets-src/README.md) : metres, Z en haut, origine au centre du terrain et au sol,
 cote camera du jeu = -Y (sud) : il reste bas a tous les niveaux pour que la pelouse soit visible.
 Emprise max 160 x 130 m (x : +-80, y : +-65) jusqu'au niveau 4 ; l'arene des niveaux 5 et 6 deborde sur
@@ -23,6 +28,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from footoff_lib import *  # noqa: E402,F401,F403
 from footoff_lib import bpy, np, Matrix, Vector  # noqa: E402
+from footoff_photo import photo_material, tile  # noqa: E402
 
 # Terrain : surface d'herbe 120 x 80 m, aire de jeu 105 x 68 m
 GRASS_X, GRASS_Y = 60.0, 40.0
@@ -31,25 +37,20 @@ GRASS_TOP = 0.05
 
 
 def tex_pitch(level):
-    """Pelouse 120 x 80 m avec tonte en bandes et marquages reglementaires."""
-    W, H = 2048, 1024
+    """Pelouse 120 x 80 m : teinte du gazon (taches douces) et usure (surfaces de but, rond central, plaques). Les bandes
+    de tonte, qui changent selon le point de vue, et les marquages reglementaires, nets a toute distance, sont dessines
+    par le jeu (src/three/ground.js, reglages par les extras du materiau)."""
+    W, H = 1024, 512
     xs = (np.arange(W) + 0.5) / W * 2 * GRASS_X - GRASS_X
     ys = (np.arange(H) + 0.5) / H * 2 * GRASS_Y - GRASS_Y
     X, Y = np.meshgrid(xs, ys)
-    px = 2 * GRASS_X / W
-
-    light, dark = {
-        1: ((0.47, 0.56, 0.27), (0.43, 0.52, 0.25)),
-        2: ((0.36, 0.55, 0.22), (0.31, 0.49, 0.19)),
-        3: ((0.34, 0.58, 0.21), (0.26, 0.47, 0.16)),
-        4: ((0.33, 0.59, 0.21), (0.24, 0.46, 0.15)),
+    base = {  # sRGB : gazon sec du terrain municipal, puis de plus en plus dense et soigne
+        1: (0.31, 0.40, 0.20),
+        2: (0.27, 0.38, 0.17),
+        3: (0.25, 0.385, 0.16),
+        4: (0.24, 0.39, 0.155),
     }[level]
-    stripes = (np.floor((X + PITCH_X) / 5.25) % 2).astype(float)
-    if level == 4:  # damier pro : bandes croisees
-        cross = (np.floor((Y + PITCH_Y) / 5.0) % 2).astype(float)
-        stripes = np.abs(stripes - cross * 0.45)
-    col = mix(light, dark, stripes)
-    col *= (0.93 + 0.12 * fbm(H, W, 16))[..., None]
+    col = np.asarray(base)[None, None, :] * (0.94 + 0.12 * fbm(H, W, 16))[..., None]
 
     # usure : surfaces de but et rond central (fort au niveau 1, legere au niveau 2)
     wear_amt = {1: 1.0, 2: 0.45, 3: 0.12, 4: 0.0}[level]
@@ -58,68 +59,101 @@ def tex_pitch(level):
         blobs += 0.6 * np.exp(-((X / 4.5) ** 2 + (Y / 4.5) ** 2))
         patches = np.clip((fbm(H, W, 6) - 0.55) * 3, 0, 1) * (0.6 if level == 1 else 0.2)
         wear = np.clip((blobs * (0.4 + 0.6 * fbm(H, W, 24)) + patches) * wear_amt, 0, 0.92)
-        col = mix(col, (0.47, 0.39, 0.27), wear)
-
-    # marquages (12 cm)
-    w = 0.12
-    alpha = np.zeros((H, W))
-
-    def line(d):
-        nonlocal alpha
-        alpha = np.maximum(alpha, np.clip((w / 2 - d) / px + 0.5, 0, 1))
-
-    def disc(cx, cy, r):
-        nonlocal alpha
-        alpha = np.maximum(alpha, np.clip((r - np.hypot(X - cx, Y - cy)) / px + 0.5, 0, 1))
-
-    P, Q = PITCH_X, PITCH_Y
-    for (ax, ay, bx, by) in [(-P, -Q, P, -Q), (-P, Q, P, Q), (-P, -Q, -P, Q), (P, -Q, P, Q), (0, -Q, 0, Q)]:
-        line(seg_dist(X, Y, ax, ay, bx, by))
-    line(np.abs(np.hypot(X, Y) - 9.15))
-    disc(0, 0, 0.15)
-    for s in (-1, 1):
-        gx = s * P
-        for depth, half in ((16.5, 20.16), (5.5, 9.16)):
-            ix = gx - s * depth
-            line(seg_dist(X, Y, gx, -half, ix, -half))
-            line(seg_dist(X, Y, gx, half, ix, half))
-            line(seg_dist(X, Y, ix, -half, ix, half))
-        spot = gx - s * 11.0
-        disc(spot, 0, 0.15)
-        arc = np.abs(np.hypot(X - spot, Y) - 9.15)
-        arc[(s * X) > (P - 16.5)] = 1e9  # seulement hors de la surface
-        line(arc)
-        for sy in (-1, 1):
-            corner = np.abs(np.hypot(X - gx, Y - sy * Q) - 1.0)
-            corner[(s * X > P) | (sy * Y > Q)] = 1e9
-            line(corner)
-    if level == 1:
-        alpha *= 0.7 + 0.3 * fbm(H, W, 32)  # lignes a la chaux, irregulieres
-    col = mix(col, (0.93, 0.93, 0.9), alpha)
+        col = mix(col, (0.45, 0.38, 0.28), wear)
     return to_image(f"pitch_L{level}", col)
+
+
+def height_normal(name, h, strength):
+    """Carte de normales (non couleur) depuis une carte de hauteur periodique."""
+    gx = (np.roll(h, -1, axis=1) - np.roll(h, 1, axis=1)) * strength
+    gy = (np.roll(h, -1, axis=0) - np.roll(h, 1, axis=0)) * strength
+    n = np.stack([-gx, -gy, np.ones_like(h)], -1)
+    n /= np.linalg.norm(n, axis=-1, keepdims=True)
+    return to_image(name, n * 0.5 + 0.5, non_color=True)
+
+
+def tex_seat(name, color):
+    """Coques de sieges en plastique, tuile 0,5 x 0,5 m, pour la face avant du dossier et le dessus de l'assise (v vers
+    le haut du dossier / l'arriere de l'assise) : jour sombre de 4 cm entre deux coques, galbe transversal (relief),
+    tranche du dossier eclairee vers v = 0,88, levre avant de l'assise. Rend la couleur et le relief (normales)."""
+    S = 256
+    u, v = np.meshgrid((np.arange(S) + 0.5) / S, (np.arange(S) + 0.5) / S)  # ligne 0 = bas de l'image (v = 0)
+    dx = np.abs(u - 0.5) / 0.46  # 0 au centre, 1 au bord de la coque
+    shell = np.clip((1 - dx) * 8, 0, 1)
+    bulge = np.cos(np.clip(dx, 0, 1) * math.pi / 2)  # galbe transversal
+    rim = np.exp(-((v - 0.88) / 0.035) ** 2)  # tranche du dossier
+    lip = np.exp(-((v - 0.06) / 0.03) ** 2)  # levre avant de l'assise
+    shade = 0.85 + 0.1 * bulge + 0.2 * rim + 0.1 * lip
+    rgb = mix(np.array([0.03, 0.03, 0.035]), np.asarray(color)[None, None, :] * shade[..., None], shell)
+    height = shell * (0.4 + 1.2 * bulge + 0.3 * rim)
+    return to_image(name, rgb), height_normal(name + "_n", height, 6.0)
+
+
+def tex_net():
+    """Filet de but, tuile 1 x 1 m : mailles de 12,5 cm, fil blanc, transparent entre les fils."""
+    S = 256
+    u, v = np.meshgrid((np.arange(S) + 0.5) / S, (np.arange(S) + 0.5) / S)
+    cell = 8
+    du, dv = np.abs((u * cell) % 1 - 0.5), np.abs((v * cell) % 1 - 0.5)
+    thread = np.clip((np.maximum(du, dv) - 0.44) * 30, 0, 1)
+    img = bpy.data.images.new("net", S, S, alpha=True)
+    rgba = np.ones((S, S, 4), dtype=np.float32)
+    rgba[..., :3] = 0.92
+    rgba[..., 3] = thread
+    img.pixels.foreach_set(rgba.ravel())
+    img.pack()
+    return img
+
+
+def net_material():
+    """Filet : fils blancs, transparent entre les mailles (alphaMode BLEND : de loin, les mailles se fondent en voile
+    blanc au lieu de disparaitre), visible des deux cotes ; sans ombre ni occlusion dans le jeu (assets.js)."""
+    m = material("net", (0.92, 0.92, 0.92), rough=0.8, image=tex_net())
+    m.use_backface_culling = False
+    nt = m.node_tree
+    b = nt.nodes.get("Principled BSDF")
+    t = next(n for n in nt.nodes if n.type == "TEX_IMAGE")
+    nt.links.new(t.outputs["Alpha"], b.inputs["Alpha"])
+    return m
+
+
+def pitch_material(level):
+    """Pelouse (src/three/ground.js) : extras stripes (bandes de tonte), cross (bandes croisees du niveau 4, damier
+    vu de biais) et chalk (lignes a la chaux, usees, du terrain municipal)."""
+    m = material(f"pitch_L{level}", image=tex_pitch(level), rough=0.92)
+    m["stripes"] = {1: 0.35, 2: 0.7, 3: 0.9, 4: 1.0}[level]
+    m["cross"] = 0.8 if level == 4 else 0.0
+    m["chalk"] = 1.0 if level == 1 else 0.0
+    return m
+
+
+# echelle des textures photo par materiau (Builder) : UV en metres / tuile, quels que soient les appels
+TILES = {"concrete": tile("stand"), "concrete_dark": tile("concrete"), "roof": tile("roof"), "membrane": tile("roof"),
+         "brick": tile("brick"), "wood": tile("teak"), "gravel": tile("gravel")}
 
 
 def build_materials():
     # couleurs FootOFF : sieges anthracite, rangs d'accent or, toitures graphite
-    concrete, seats = tex_concrete(), tex_seats("seats", (0.16, 0.16, 0.17))
-    gold_seats = tex_seats("seats_accent", GOLD)
+    seats, seats_n = tex_seat("seats", (0.16, 0.16, 0.17))
+    gold_seats, gold_n = tex_seat("seats_accent", GOLD)
     boards = tex_boards()
     M = {
-        "concrete": material("concrete", image=concrete, rough=0.9),
-        "concrete_dark": material("concrete_dark", (0.24, 0.25, 0.27), rough=0.95),
-        "seats": material("seats", image=seats, rough=0.5),
-        "seats_accent": material("seats_accent", image=gold_seats, rough=0.5),
+        "concrete": photo_material("stand_concrete", "stand", relief=False),
+        "concrete_dark": photo_material("stand_concrete_dark", "concrete", tone=(0.24, 0.25, 0.27), relief=False),  # dalles, abords
+        "seats": material("seats", image=seats, normal=seats_n, normal_strength=0.8, rough=0.42),
+        "seats_accent": material("seats_accent", image=gold_seats, normal=gold_n, normal_strength=0.8, rough=0.42),
         "steel": material("steel", (0.62, 0.64, 0.68), rough=0.35, metal=0.85),
-        "roof": material("roof", (0.20, 0.20, 0.21), rough=0.45, metal=0.6, normal=tex_roof_normal(), normal_strength=0.8),
-        "membrane": material("membrane", (0.11, 0.11, 0.12), rough=0.5, normal=bpy.data.images["roof_normal"], normal_strength=0.4),
-        "brick": material("brick", image=tex_brick(), rough=0.85),
-        "facade": material("facade", image=tex_facade(), rough=0.25, metal=0.3),
+        "roof": photo_material("roof_deck", "roof"),
+        "membrane": photo_material("roof_membrane", "roof", tone=(0.12, 0.12, 0.13)),
+        "brick": photo_material("brick_wall", "brick"),
+        "net": net_material(),
+        "facade": material("stadium_facade", image=tex_facade(), rough=0.25, metal=0.3),  # nom propre au stade (ground.js)
         "glass": material("glass", (0.12, 0.17, 0.22), rough=0.08, metal=0.8),
         "roof_glass": material("roof_glass", (0.60, 0.65, 0.70), rough=0.2, metal=0.35),  # bande vitree du toit (arene)
         "white": material("white", (0.92, 0.92, 0.92), rough=0.45),
         "flag": material("flag", GOLD, rough=0.35, metal=0.55),
-        "wood": material("wood", (0.42, 0.29, 0.18), rough=0.8),
-        "gravel": material("gravel", (0.45, 0.40, 0.33), rough=1.0),
+        "wood": photo_material("wood_bleacher", "teak", tone=(0.40, 0.33, 0.26)),  # bois grise des petits gradins
+        "gravel": photo_material("ground_gravel", "gravel", relief=False),  # bande autour du terrain municipal
         "boards": material("boards", image=boards, rough=0.5),
         "emissive_boards": material("emissive_boards", image=boards, rough=0.4, strength=2.2, emission_image=True),
         "emissive_light": material("emissive_light", (0.85, 0.85, 0.82), rough=0.3, emission=(1.0, 0.96, 0.88), strength=8.0),
@@ -129,11 +163,98 @@ def build_materials():
         "emissive_windows": material("emissive_windows", (0.10, 0.14, 0.18), rough=0.1, metal=0.6, emission=(1.0, 0.82, 0.55), strength=2.0),
     }
     for lvl in range(1, 5):
-        M[f"pitch_L{lvl}"] = material(f"pitch_L{lvl}", image=tex_pitch(lvl), rough=0.95)
+        M[f"pitch_L{lvl}"] = pitch_material(lvl)
     return M
 
 
 # Nom de l'objet exporte par materiau (prefixe emissive_ conserve jusqu'au jeu)
+# =============================================================== reperes des textures
+# Le Builder projette les UV sur les axes du repere ou la piece est decrite. Les pieces decrites directement dans le
+# plan du stade (angles en eventail, arene, toit annulaire) passent par un repere local : coques calees sur leur rang,
+# nervures du bac acier dans le sens de la pente, coffrages qui suivent les gradins.
+
+def framed(B, mat, pts, ax, ay, origin, tile=(1, 1), skip=(), M=I4):
+    """hexa dont les UV suivent le repere (ax, ay, z) d'origine `origin` : ax, ay unitaires, perpendiculaires,
+    ax x ay = z (le sens des faces est conserve)."""
+    ox, oy, oz = origin
+    loc = [((x - ox) * ax[0] + (y - oy) * ax[1], (x - ox) * ay[0] + (y - oy) * ay[1], z - oz) for x, y, z in pts]
+    F = Matrix(((ax[0], ay[0], 0, ox), (ax[1], ay[1], 0, oy), (0, 0, 1, oz), (0, 0, 0, 1)))
+    B.hexa(mat, loc, M @ F, tile=tile, skip=skip)
+
+
+def seat_strip(B, mat, p0, p1, p2, p3, z, M=I4):
+    """Rang de sieges coques sur le trapeze p0 p1 (avant, gauche puis droite), p2 p3 (arriere, 0,62 m derriere),
+    marche a la hauteur z : assise de 6 cm a 0,44 m (seule surface plane : le public s'y assoit), dossier de 0,46 m
+    incline de 15 degres au haut arrondi, jour ouvert sous l'assise (ombre de la marche). Une coque de la texture
+    tous les 0,5 m, a partir de p0."""
+    ax = (p1[0] - p0[0], p1[1] - p0[1])
+    n = math.hypot(*ax)
+    ax = (ax[0] / n, ax[1] / n)
+    ay = (-ax[1], ax[0])
+    if (p3[0] - p0[0]) * ay[0] + (p3[1] - p0[1]) * ay[1] < 0:
+        ax, ay = (-ax[0], -ax[1]), (-ay[0], -ay[1])
+
+    def depth(f):  # points gauche et droit a la fraction f de la profondeur
+        return [(a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f) for a, b in ((p0, p3), (p1, p2))]
+
+    (l0, r0), (l1, r1) = depth(0.0), depth(0.68)
+    framed(B, mat, [(*l0, z + 0.38), (*r0, z + 0.38), (*r1, z + 0.38), (*l1, z + 0.38),
+                    (*l0, z + 0.44), (*r0, z + 0.44), (*r1, z + 0.44), (*l1, z + 0.44)],
+           ax, ay, (*p0, z), tile=(0.5, 0.5), skip={0}, M=M)
+    (a0, b0), (a1, b1), (c0, d0), (c1, d1) = depth(0.65), depth(0.74), depth(0.84), depth(1.0)
+    # haut du dossier arrondi vers l'arriere : le public (src/three/crowd.js) ne s'assoit que sur les surfaces planes
+    framed(B, mat, [(*a0, z + 0.4), (*b0, z + 0.4), (*b1, z + 0.4), (*a1, z + 0.4),
+                    (*c0, z + 0.86), (*d0, z + 0.86), (*d1, z + 0.76), (*c1, z + 0.76)],
+           ax, ay, (*a0, z + 0.4), tile=(0.5, 0.5), skip={0}, M=M)
+
+
+def fan_block(B, mat, center, r0, r1, a0, a1, z0, z1, segs=12):
+    """Builder.sector (gradin courbe) dont chaque troncon a son repere radial."""
+    cx, cy = center
+    r0 = max(r0, 0.02)
+    for j in range(segs):
+        t0, t1 = a0 + (a1 - a0) * j / segs, a0 + (a1 - a0) * (j + 1) / segs
+        tm = (t0 + t1) / 2
+        p = [(cx + r0 * math.cos(t0), cy + r0 * math.sin(t0)), (cx + r1 * math.cos(t0), cy + r1 * math.sin(t0)),
+             (cx + r1 * math.cos(t1), cy + r1 * math.sin(t1)), (cx + r0 * math.cos(t1), cy + r0 * math.sin(t1))]
+        skip = set()
+        if j > 0:
+            skip.add(2)  # face radiale interne
+        if j < segs - 1:
+            skip.add(4)
+        framed(B, mat, [(x, y, z0) for x, y in p] + [(x, y, z1) for x, y in p],
+               (math.sin(tm), -math.cos(tm)), (math.cos(tm), math.sin(tm)), (cx, cy, 0.0), skip=skip)
+
+
+def fan_seats(B, mat, center, r, a0, a1, z, segs=12):
+    """Sieges d'un gradin en eventail : un rang de coques par troncon."""
+    cx, cy = center
+
+    def pt(rr, t):
+        return (cx + rr * math.cos(t), cy + rr * math.sin(t))
+
+    for j in range(segs):
+        t0, t1 = a0 + (a1 - a0) * j / segs, a0 + (a1 - a0) * (j + 1) / segs
+        seat_strip(B, mat, pt(r, t0), pt(r, t1), pt(r + 0.62, t1), pt(r + 0.62, t0), z)
+
+
+def outward(dx, dy):
+    """Repere (ax, ay) d'un troncon de toiture ou de gradin, ay unitaire selon (dx, dy) (vers l'exterieur)."""
+    n = math.hypot(dx, dy)
+    ay = (dx / n, dy / n)
+    return (ay[1], -ay[0]), ay
+
+
+def roof_strip(B, mat, pairs, z_in, z_out, thick):
+    """Toiture en anneau (comme Builder.strip), nervures dans le sens de la pente : chaque troncon est oriente du
+    bord interieur vers le bord exterieur."""
+    for (i0, o0), (i1, o1) in zip(pairs, pairs[1:]):
+        ax, ay = outward(o0[0] - i0[0] + o1[0] - i1[0], o0[1] - i0[1] + o1[1] - i1[1])
+        bot = [(*i0, z_in - thick), (*o0, z_out - thick), (*o1, z_out - thick), (*i1, z_in - thick)]
+        top = [(*i0, z_in), (*o0, z_out), (*o1, z_out), (*i1, z_in)]
+        framed(B, mat, bot + top, ax, ay, (0.0, 0.0, 0.0))
+
+
 # =============================================================== elements du stade
 
 def pitch(B, level):
@@ -158,6 +279,11 @@ def goals(B):
             B.cyl("white", (x, y, top), (back, y, GRASS_TOP), 0.04, segs=6)
         B.cyl("white", (x, -3.66, top), (x, 3.66, top), 0.06, segs=8)
         B.cyl("white", (back, -3.66, GRASS_TOP + 0.03), (back, 3.66, GRASS_TOP + 0.03), 0.03, segs=6)
+        # filet : pan incline de la barre transversale a la barre du fond, deux flancs triangulaires
+        B.piece("net", [(x, -3.66, top), (x, 3.66, top), (back, 3.66, GRASS_TOP), (back, -3.66, GRASS_TOP)],
+                [(0, 1, 2, 3)])
+        for y in (-3.66, 3.66):
+            B.piece("net", [(x, y, GRASS_TOP), (x, y, top), (back, y, GRASS_TOP)], [(0, 1, 2)])
         for sy in (-1, 1):  # drapeaux de coin
             fx, fy = s * PITCH_X, sy * PITCH_Y
             B.cyl("white", (fx, fy, GRASS_TOP), (fx, fy, 1.5), 0.025, segs=6)
@@ -173,7 +299,7 @@ def dugout(B, x0, x1, y_front):
         B.box("concrete", (x, y_front + 0.4, 0), (x + 0.15, y1, 2.3))
     B.hexa("glass", [(x0 - 0.1, y_front - 0.2, 1.85), (x1 + 0.1, y_front - 0.2, 1.85), (x1 + 0.1, y1, 2.35), (x0 - 0.1, y1, 2.35),
                      (x0 - 0.1, y_front - 0.2, 1.93), (x1 + 0.1, y_front - 0.2, 1.93), (x1 + 0.1, y1, 2.43), (x0 - 0.1, y1, 2.43)])
-    B.box("seats", (x0 + 0.3, y1 - 0.8, 0.25), (x1 - 0.3, y1 - 0.2, 0.7), tile=(0.5, 0.5))
+    seat_strip(B, "seats", (x0 + 0.3, y1 - 0.8), (x1 - 0.3, y1 - 0.8), (x1 - 0.3, y1 - 0.18), (x0 + 0.3, y1 - 0.18), 0.25)
 
 
 def building(B, x0, y0, x1, y1, h, mat="brick", windows=True, face_y=None):
@@ -206,7 +332,7 @@ def stand(B, M, length, rows, row_d, row_h, y0, z0, block=14.0, aisle=1.2, accen
             for k in range(nblocks):
                 xa = -hx + k * bw + aisle / 2
                 xb = -hx + (k + 1) * bw - aisle / 2
-                B.box(mat, (xa, ya + 0.08, zt), (xb, ya + 0.58, zt + 0.42), M, tile=(0.5, 0.5))
+                seat_strip(B, mat, (xa, ya + 0.08), (xb, ya + 0.08), (xb, ya + 0.7), (xa, ya + 0.7), zt, M)
         elif terrace_rails and i % 2 == 1:  # gradin debout : barrieres
             B.cyl("steel", (-hx + 1, ya + 0.2, zt + 1.0), (hx - 1, ya + 0.2, zt + 1.0), 0.04, segs=6, M=M)
     y1 = y0 + rows * row_d
@@ -383,10 +509,9 @@ def level_4(B, coll):
         for i in range(rows):
             ra, rb = i * rd, (i + 1) * rd
             zt = z0 + (i + 1) * rh
-            B.sector("concrete", (cx, 42.0), ra, rb, a0, a1, 0, zt, segs=12, tile=(4, 4))
+            fan_block(B, "concrete", (cx, 42.0), ra, rb, a0, a1, 0, zt)
             if i > 1:
-                B.sector("seats_accent" if i in accent else "seats", (cx, 42.0), ra + 0.08, ra + 0.58, a0, a1,
-                         zt, zt + 0.42, segs=12, tile=(0.5, 0.5))
+                fan_seats(B, "seats_accent" if i in accent else "seats", (cx, 42.0), ra + 0.08, a0, a1, zt)
     # etage haut au nord (centre)
     yu0 = 42.0 + depth + 0.2
     y2, z2 = stand(B, NORTH, 100, 9, 0.85, 0.65, yu0, ztop + 1.2, accent=(0,))
@@ -403,7 +528,7 @@ def level_4(B, coll):
     upper = (50.0, y2 + 0.4)
     pairs = roof_ring_path(6.0, r_out, upper)
     z_in, z_out = 22.0, 24.0
-    B.strip("membrane", pairs, z_in, z_out, 1.0, tile=(1.0, 8.0))
+    roof_strip(B, "membrane", pairs, z_in, z_out, 1.0)
     # grand monogramme or sur la toiture nord, lisible depuis la camera du jeu
     slope = math.atan2(z_out - z_in, upper[1] - (42.0 - 6.0))
     roof_logo(B, "emissive_led", 39.0, z_in + 3.0 * math.tan(slope), slope, 21.0)
@@ -494,6 +619,7 @@ def north_of(S):
 def tier(B, S0, S1, rows, rd, rh, off, z0, zbase, prev_rows, next_rows, accent=(), seats_from=0.0):
     """Gradins d'un segment entre deux stations : un bloc beton par rang (dessus + contremarche), sieges en
     dessus. Les flancs ne sont dessines que la ou le segment voisin s'arrete plus tot (gradins en escalier)."""
+    ax, ay = outward(S0[2] + S1[2], S0[3] + S1[3])
     for i in range(rows):
         d0, d1 = off + i * rd, off + (i + 1) * rd
         zt = z0 + (i + 1) * rh
@@ -503,10 +629,10 @@ def tier(B, S0, S1, rows, rd, rh, off, z0, zbase, prev_rows, next_rows, accent=(
             skip.add(3)
         if prev_rows > i:
             skip.add(5)
-        B.hexa("concrete", [(*a0, zbase), (*b0, zbase), (*b1, zbase), (*a1, zbase),
-                            (*a0, zt), (*b0, zt), (*b1, zt), (*a1, zt)], tile=(4, 4), skip=skip)
-        # sieges : un bloc par segment, allee de 1,2 m entre deux segments droits (joint fin dans les angles)
-        sa, sb = d0 + 0.08, d0 + 0.58
+        framed(B, "concrete", [(*a0, zbase), (*b0, zbase), (*b1, zbase), (*a1, zbase),
+                               (*a0, zt), (*b0, zt), (*b1, zt), (*a1, zt)], ax, ay, (S0[0], S0[1], 0.0), skip=skip)
+        # sieges : un rang par segment, allee de 1,2 m entre deux segments droits (joint fin dans les angles)
+        sa, sb = d0 + 0.08, d0 + 0.7
         pa, pb = at(S0, sa), at(S1, sa)
         length = math.hypot(pb[0] - pa[0], pb[1] - pa[1])
         aisle = 1.2 if (S0[2], S0[3]) == (S1[2], S1[3]) else 0.15
@@ -516,10 +642,7 @@ def tier(B, S0, S1, rows, rd, rh, off, z0, zbase, prev_rows, next_rows, accent=(
         lerp = lambda p, q, f: (p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f)  # noqa: E731
         f0, f1 = lerp(at(S0, sa), at(S1, sa), t), lerp(at(S0, sa), at(S1, sa), 1 - t)
         g1, g0 = lerp(at(S0, sb), at(S1, sb), 1 - t), lerp(at(S0, sb), at(S1, sb), t)
-        mat = "seats_accent" if i in accent else "seats"
-        B.hexa(mat, [(*f0, zt), (*f1, zt), (*g1, zt), (*g0, zt),
-                     (*f0, zt + 0.42), (*f1, zt + 0.42), (*g1, zt + 0.42), (*g0, zt + 0.42)],
-               tile=(0.5, 0.5), skip={0})
+        seat_strip(B, "seats_accent" if i in accent else "seats", f0, f1, g1, g0, zt)
 
 
 def quad(B, mat, p0, p1, p2, p3, z0, z1, tile=(4, 4), skip=(), origin=(0, 0, 0)):
@@ -607,8 +730,9 @@ def arena(B, coll, lvl):
         e0, e1 = at(S0, m0), at(S1, m1)
         B.hexa("roof_glass", [(*a, zi0 - 1.0), (*b, zi1 - 1.0), (*e1, zm1 - 1.0), (*e0, zm0 - 1.0),
                               (*a, zi0), (*b, zi1), (*e1, zm1), (*e0, zm0)], tile=(1.0, 8.0), skip={3, 4, 5})
-        B.hexa("membrane", [(*e0, zm0 - 1.0), (*e1, zm1 - 1.0), (*c, zo1 - 1.0), (*d, zo0 - 1.0),
-                            (*e0, zm0), (*e1, zm1), (*c, zo1), (*d, zo0)], tile=(1.0, 8.0), skip={2, 3, 5})
+        rx, ry = outward(S0[2] + S1[2], S0[3] + S1[3])  # nervures du bac acier dans le sens de la pente
+        framed(B, "membrane", [(*e0, zm0 - 1.0), (*e1, zm1 - 1.0), (*c, zo1 - 1.0), (*d, zo0 - 1.0),
+                               (*e0, zm0), (*e1, zm1), (*c, zo1), (*d, zo0)], rx, ry, (0.0, 0.0, 0.0), skip={2, 3, 5})
         # nervure acier sur le dessus, a chaque station (une sur deux dans les angles)
         straight = (S0[2], S0[3]) == (S1[2], S1[3])
         if straight or k % 2 == 0:
@@ -709,7 +833,7 @@ def main():
     for lvl, fn in ((1, level_1), (2, level_2), (3, level_3), (4, level_4), (5, level_5), (6, level_6)):
         coll = bpy.data.collections.new(f"terrain_L{lvl}")
         scene.collection.children.link(coll)
-        B = Builder(mats)
+        B = Builder(mats, tiles=TILES)
         fn(B, coll)
         B.finalize(coll, f"L{lvl}")
     repo = find_repo()

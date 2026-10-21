@@ -233,6 +233,24 @@ chaude au sol sous chaque lampadaire et lanterne (ajoutée à l'image, cachée l
 Écarts verticaux entre sols superposés : au moins 2,5 cm (positions du site compressées sur 16 bits, pas de 9 mm ;
 sur 14 bits, le paillage passait sous la pelouse).
 
+## Matières du stade
+
+Les mêmes matières photographiées (`assets-src/grounds.json`, `tools/grounds/prepare.py`), posées par
+`footoff_photo.py` dans `tools/blender/models/build_stadium.py` : béton coulé des gradins (joints de coffrage, trous de
+banches), béton des dalles et des abords, bac acier nervuré des toitures (nervures dans le sens de la pente, y compris
+sur les toits en anneau et en selle), brique du club-house, bois grisé des petits gradins, gravier autour du terrain
+municipal. Sièges coques en deux pièces (assise, et dossier incliné au haut arrondi ; jour ouvert sous l'assise), une
+coque tous les 50 cm calée sur son rang ; le public ne s'assoit que sur les assises. Filets de but : mailles fondues
+en voile blanc au loin, sans ombre ni occlusion.
+Pelouse (`src/three/ground.js`) : l'image du modèle ne porte que la teinte du gazon et l'usure ; le jeu dessine les
+bandes de tonte selon le point de vue (brins couchés vers la caméra ou à l'opposé : elles s'inversent quand on fait le
+tour du stade ; croisées au niveau 4), les touffes et les marquages réglementaires de 12 cm, calculés au pixel, nets
+et sans scintillement à toute distance (à la chaux et usés au terrain municipal). La caméra reste à 60 m et plus :
+une photo de gazon s'y fondait en aplat, elle n'a pas été gardée.
+La nuit : les quatre mâts de l'esplanade éclairent l'esplanade devant eux (ils visaient le stade, déjà éclairé par ses
+projecteurs, un peu adoucis) ; de près, au-dessus du stade, le halo garde 40 % de sa force : les LED de l'arène et
+les gradins sous les projecteurs le changeaient en voile blanc sur tout l'écran.
+
 ## Fluidité
 
 Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone, sans rien retirer à l'image :
@@ -248,4 +266,8 @@ Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone
 - caméra sans inertie : elle s'arrête dès qu'on lâche ;
 - sols dessinés après tout le reste (les pixels de sol cachés par les arbres et les bâtiments ne sont pas calculés),
   couches posées dessus avant les surfaces qu'elles recouvrent, pelouse du site en dernier ; un sol plat ne projette
-  pas d'ombre (mesuré en vue rapprochée, 4 Mpx : les sols photo coûtent ainsi autant que les anciens sols unis).
+  pas d'ombre (mesuré en vue rapprochée, 4 Mpx : les sols photo coûtent ainsi autant que les anciens sols unis) ;
+- stade : toits et sièges dessinés d'abord, béton des gradins et façades en dernier (face à une tribune, 4 Mpx :
+  -3 ms) ; béton des gradins, des dalles et gravier en couleur photo seule (relief et rugosité ne changeaient pas
+  l'image à la distance du jeu) ; axes de la pelouse calculés une fois par image, marquages seulement près d'un trait
+  (mesuré image par image contre l'ancien stade, 3 niveaux, 9 vues : à égalité en moyenne).

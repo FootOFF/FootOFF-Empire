@@ -1,8 +1,9 @@
-"""Matieres photo des sols, routes et mobilier (phase 3), depuis les sources CC0 de assets-src/grounds.json.
+"""Matieres photo des sols, routes et mobilier (phase 3) et du stade (phase 4), depuis les sources CC0 de
+assets-src/grounds.json.
 
     python -I tools/grounds/prepare.py
     -> assets-src/grounds-baked/<matiere>_color.jpg, _normal.jpg, _arm.jpg (tailles du jeu) et grounds_meta.json,
-       lus par tools/blender/models/build_site.py
+       lus par tools/blender/models/footoff_photo.py (build_site.py, build_stadium.py)
 
 Par matiere :
   - couleur recalee sur une teinte cible (moyenne en lumiere lineaire, canal par canal) : les photos gardent leur
@@ -36,9 +37,13 @@ MATS = {
     'gravel': ('gravel_floor_03', 2.5, (512, 512, 512), (0.330, 0.312, 0.285), 1.0, 0),
     'teak': ('teak_veneer', 1.0, (512, 256, 256), (0.400, 0.265, 0.160), 1.0, 0),
     'mulch': ('wood_chips', 2.0, (512, 512, 512), (0.215, 0.150, 0.095), 1.0, 0),
+    # stade (phase 4)
+    'stand': ('concrete_wall_008', 2.71, (512, 512, 512), (0.574, 0.568, 0.551), 1.0, 0),  # gradins, murs, coursives
+    'roof': ('box_profile_metal_sheet', 2.0, (512, 512, 512), (0.200, 0.200, 0.210), 1.0, 0),  # bac acier graphite
+    'brick': ('red_brick_03', 1.0, (512, 512, 512), (0.520, 0.300, 0.230), 1.0, 0),  # club-house
 }
 # Retouches du relief et de l'ARM : relief (pentes multipliees), occlusion (assombrissement multiplie), rugosite
-# (moyenne visee, ecarts gardes). Le gazon photo (ambientCG) a une rugosite de sol mouille (0,26) : brillant, il
+# (moyenne visee, ecarts gardes) ; sat : saturation de la couleur multipliee (teinte cible gardee). Le gazon photo (ambientCG) a une rugosite de sol mouille (0,26) : brillant, il
 # paraissait sombre et gris au soleil ; une pelouse est mate. Beton, enrobe et granit : photos de surfaces polies,
 # trop brillantes face au soleil couchant. Les occlusions photo assombrissaient aussi toute la dalle.
 TUNE = {
@@ -50,6 +55,8 @@ TUNE = {
     'concrete': {'rough': 0.86},  # beton desactive (photo : beton poli 0,52, miroir au soleil couchant)
     'gravel': {'ao': 0.7},
     'mulch': {'ao': 0.7},
+    'brick': {'rough': 0.82},  # brique (photo : 0,53, trop brillante)
+    'roof': {'sat': 0.25},  # bac acier graphite (photo : vis et rondelles bleutees)
 }
 PAINT = (0.80, 0.80, 0.78)  # peinture routiere (sRGB)
 BAND = (0.300, 0.296, 0.288)  # granit des bandes de l'esplanade : plus clair que celui des bordures (sRGB)
@@ -177,6 +184,11 @@ def main():
             color, normal, arm = (warp_axis(warp_axis(m, cols, 0), rows, 1) for m in (color, normal, arm))
         reduced = reduce(color, sizes[0], 'color')
         color = calibrate(reduced, target, contrast)
+        tune = TUNE.get(key, {})
+        if 'sat' in tune:
+            x = lin(color)
+            lum = x.mean(2, keepdims=True)
+            color = calibrate(srgb(lum + (x - lum) * tune['sat']), target, 1.0)
         if key == 'granite':  # meme granit, plus clair, pour le calepinage de l'esplanade (relief et ARM partages)
             band = calibrate(reduced, BAND, contrast)
             save(band, 'band_color.jpg')
@@ -185,7 +197,6 @@ def main():
         normal = reduce(normal, sizes[1], 'normal')
         arm = reduce(arm, sizes[2], 'arm')
         arm[..., 2] = 0  # aucun metal au sol
-        tune = TUNE.get(key, {})
         if 'normal' in tune:
             v = normal * 2 - 1
             v[..., :2] *= tune['normal']

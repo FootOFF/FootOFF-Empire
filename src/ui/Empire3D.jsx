@@ -302,6 +302,16 @@ export default function Empire3D({
     squad.on.miss = ooh;
     controls.addEventListener('start', () => { ctx.userCam = performance.now() + 5000; }); // le joueur reprend la main
 
+    // Halo des lumières : de près, au-dessus du stade, les grandes surfaces lumineuses (LED de l'arène, gradins et
+    // lignes sous les projecteurs) le changeaient en voile sur tout l'écran ; il y garde 40 % de sa force (comme
+    // un œil qui s'habitue à la lumière), intact ailleurs et dès qu'on recule.
+    ctx.haloScale = () => {
+      const st = ctx.plots.get('t0')?.wrapper.position;
+      if (!st) return 1;
+      const near = 1 - THREE.MathUtils.smoothstep(camera.position.distanceTo(controls.target), 6, 18);
+      const over = 1 - THREE.MathUtils.smoothstep(Math.hypot(controls.target.x - st.x, controls.target.z - st.z), 8, 14);
+      return 1 - 0.6 * near * over;
+    };
     ctx.setContent = (entry, node) => {
       if (entry.content) entry.wrapper.remove(entry.content); // ressources partagées : pas de dispose ici
       entry.content = node;
@@ -311,7 +321,8 @@ export default function Empire3D({
       if (entry.squad) entry.squad.setMode({ baseY: real ? 0.006 : 0.226 });
       if (entry.id === 't0') ctx.crowd?.setStadium(node, real ? 0.006 : 0.226, (Number(String(entry.sig || '').split(':')[1]) || 0) >= 5);
       entry.lights?.dispose();
-      entry.lights = real ? plotLights(scene, node, entry.id === 't0' ? { max: 6, power: 5 } : { max: 2, power: 1.6 }) : null;
+      // stade : pelouse bien éclairée la nuit, sans voile de halo sur les gradins quand on s'approche
+      entry.lights = real ? plotLights(scene, node, entry.id === 't0' ? { max: 6, power: 3 } : { max: 2, power: 1.6 }) : null;
       const box = new THREE.Box3().setFromObject(node);
       entry.height = Number.isFinite(box.max.y) ? Math.max(0.4, box.max.y) : 1;
       ctx.applyMode();
@@ -539,7 +550,7 @@ export default function Empire3D({
           node.traverse((o) => { if (o.isMesh && /mirror_water/.test(o.material?.name || '')) landscape.adoptWater(o); }); // miroir d'eau animé
           landscape.adoptGround(node); // gazon et enrobé photo du site sur la prairie et la route extérieure
           // mâts d'éclairage de l'esplanade (empties light_site_*) : projecteurs réels, deux seulement sur téléphone
-          ctx.siteLights = plotLights(scene, node, { max: Math.min(window.innerWidth, window.innerHeight) < 600 ? 2 : 4, power: 4.5 });
+          ctx.siteLights = plotLights(scene, node, { max: Math.min(window.innerWidth, window.innerHeight) < 600 ? 2 : 4, power: 4.5, aim: 0.4 });
           ctx.applyMode();
         })
         .catch((err) => console.warn('[Empire3D] site GLB indisponible, esplanade procédurale conservée.', err));
@@ -800,7 +811,7 @@ export default function Empire3D({
       if (Math.abs(viewShift.x) + Math.abs(viewShift.y) > 0.5) camera.setViewOffset(W, H, viewShift.x, viewShift.y, W, H);
       else if (camera.view?.enabled) camera.clearViewOffset();
       env.update(dt, camera); // fondu du ciel et des lumières, brume couleur d'horizon
-      post.setLook(env.grade);
+      post.setLook(env.grade, ctx.haloScale());
       landscape.setSun(env.sunDir);
       camera.position.x += shakeX; camera.position.y += shakeY;
       renderer.shadowMap.needsUpdate = true; // ombres : une fois par image, au premier rendu de la scène

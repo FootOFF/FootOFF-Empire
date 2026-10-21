@@ -339,8 +339,9 @@ BOX_FACES = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6
 class Builder:
     """Accumule la geometrie par materiau (un objet, donc un draw call, par materiau)."""
 
-    def __init__(self, mats):
+    def __init__(self, mats, tiles=None):
         self.mats = mats
+        self.tiles = tiles or {}  # echelle de texture imposee par materiau (matieres photo : tuile en metres)
         self.bms = {}
         self.spots = []  # reperes tree_spot_* : (position, proprietes)
 
@@ -355,6 +356,7 @@ class Builder:
         """UV calculees en coordonnees locales (avant transformation) : textures repetees a l'echelle reelle."""
         bm = self.bm(mat)
         uvl = bm.loops.layers.uv.active
+        tile = self.tiles.get(mat, tile)
         local = [Vector(v) for v in verts]
         vs = [bm.verts.new(M @ v) for v in local]
         o = Vector(origin)

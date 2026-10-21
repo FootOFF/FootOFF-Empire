@@ -151,10 +151,11 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
     if (look) setLook(look);
   }
 
-  // étalonnage de l'ambiance (sky.js) : saturation, contraste, chaleur, vignettage, halo [force, rayon, seuil]
-  function setLook(g) {
+  // étalonnage de l'ambiance (sky.js) : saturation, contraste, chaleur, vignettage, halo [force, rayon, seuil] ;
+  // halo : part de la force du halo gardée (Empire3D.haloScale)
+  function setLook(g, halo = 1) {
     look = g;
-    if (bloom) { [bloom.strength, bloom.radius, bloom.threshold] = g.bloom; }
+    if (bloom) { [bloom.strength, bloom.radius, bloom.threshold] = g.bloom; bloom.strength *= halo; }
     if (output) {
       const u = output.uniforms;
       u.uSat.value = g.sat;

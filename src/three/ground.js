@@ -18,6 +18,9 @@ import * as THREE from 'three';
 // Extras glTF lus dans material.userData : tile (mètres par répétition), slabs (dalles par tuile), mean (couleur
 // moyenne, lumière linéaire : sert aussi au terrain et aux routes du paysage, landscape.js), factor (teinte
 // multipliée : l'esplanade et l'axe d'honneur, plus clair, partagent la même photo).
+// Le stade (build_stadium.py) reprend ces matières photo pour ses gradins, toits, murs et petits gradins en bois (taches
+// et rugosité nuancées de même, mais ombres et ordre de dessin ordinaires), et sa pelouse a son propre traitement
+// (pitch_L*, plus bas).
 
 // x : taches (couleur), y : rugosité, z : nuance par dalle, w : bandes de tonte
 const VARIATION = {
@@ -32,6 +35,19 @@ const VARIATION = {
   ground_concrete: [0.1, 0.1, 0, 0],
   ground_gravel: [0.1, 0.06, 0, 0],
   ground_mulch: [0.1, 0.04, 0, 0],
+  // stade
+  stand_concrete: [0.08, 0.1, 0, 0],
+  stand_concrete_dark: [0.08, 0.1, 0, 0],
+  roof_deck: [0.06, 0.1, 0, 0],
+  roof_membrane: [0.06, 0.1, 0, 0],
+  brick_wall: [0.06, 0.06, 0, 0],
+  wood_bleacher: [0.08, 0.05, 0, 0],
+};
+const PITCH_NAME = /^pitch_L\d+$/;
+// Ordre de dessin du stade (mesuré, vue face à une tribune en 4 Mpx : -3 ms) : toits et sièges d'abord, puis le reste,
+// béton des gradins et façades en dernier : les parties que cachent sièges, garde-corps et toits ne sont plus calculées.
+const STADIUM_ORDER = {
+  roof_deck: -1, roof_membrane: -1, seats: -1, seats_accent: -1, stand_concrete: 1, stand_concrete_dark: 1, stadium_facade: 1,
 };
 
 let noise = null;
@@ -42,10 +58,17 @@ export function setGroundAnisotropy(renderer) {
   anisotropy = Math.min(2, renderer.capabilities.getMaxAnisotropy());
 }
 
-// Place d'un maillage de sol dans l'ordre de dessin et ses ombres (assets.js, au chargement du modèle).
+// Place d'un maillage dans l'ordre de dessin et ses ombres : sols, pelouse et pièces du stade (assets.js, au
+// chargement du modèle).
 export function placeGround(mesh) {
   const m = mesh.material;
-  if (!m?.userData?.ground) return;
+  if (STADIUM_ORDER[m?.name] !== undefined) { mesh.renderOrder = STADIUM_ORDER[m.name]; return; }
+  if (m?.userData?.pitch) { // pelouse du stade : plate, dessinée après ce qui en cache une partie (tribune sud, buts)
+    mesh.renderOrder = 2;
+    mesh.castShadow = false;
+    return;
+  }
+  if (!m?.userData?.ground || !m.name.startsWith('ground_')) return; // gradins, toits, murs : ordinaires
   mesh.renderOrder = TOP_LAYERS.has(m.name) ? 1 : m.name === 'ground_lawn' ? 3 : 2;
   mesh.castShadow = m.name === 'ground_granite';
 }
@@ -199,8 +222,105 @@ function groundCompile(shader) {
 }
 function groundKey() { return this.userData.ground.slabs > 0 ? 'ground-slabs' : 'ground'; }
 
-// Matériau ground_* d'un modèle chargé (assets.js, une fois par modèle source : les clones le partagent).
+// Pelouse du stade (pitch_L*, build_stadium.py). L'image du modèle ne porte que la teinte du gazon et l'usure : la
+// caméra du jeu reste à 60 m et plus, où une photo de gazon se fond en aplat et où une image de 120 m rendrait les
+// lignes floues. Le jeu dessine donc :
+//  - les bandes de tonte (5,25 m ; croisées de 5 m au niveau 4) selon le point de vue, comme un vrai gazon : brins
+//    couchés vers la caméra (sombres) ou à l'opposé (clairs) ; les bandes s'inversent quand on fait le tour du stade
+//    et s'effacent vues dans l'autre sens ;
+//  - touffes (bruit des pelouses du complexe), atténuées sur l'usure (les grandes taches sont dans l'image) ;
+//  - les marquages réglementaires de 12 cm, calculés au pixel : nets et sans scintillement à toute distance (à la chaux
+//    et usés au terrain municipal).
+// Réglages par niveau : extras stripes, cross, chalk.
+const PITCH_DECLARE = /* glsl */`
+uniform sampler2D uGroundNoise;
+uniform vec3 uPitchStyle;
+uniform vec3 uPitchAxX, uPitchAxY; // axes du terrain (longueur, largeur vers le nord) dans l'espace de vue
+// couverture d'un trait de 12 cm par un pixel qui couvre w mètres en travers du trait (d : distance à son axe)
+float pCov( float d, float w ) {
+	w = max( w, 1e-4 );
+	return clamp( ( min( d + 0.5 * w, 0.06 ) - max( d - 0.5 * w, - 0.06 ) ) / w, 0.0, 1.0 );
+}
+// marquages réglementaires ; p : mètres depuis le centre (x le long du terrain), a = |p| : un quart du terrain suffit ;
+// r0, r1, r2 : distances aux centres du rond central, des points de réparation et des coins. Largeur du pixel mesurée
+// en travers de chaque famille de traits (fw : x, y ; fr : rayons) : aucun trait ne se hache au loin. Couvertures
+// calculées seulement près d'un trait.
+float pLines( vec2 p, vec2 a, float r0, float r1, float r2, vec2 fw, vec3 fr ) {
+	const float P = 52.5, Q = 34.0, E = 0.06;
+	float dx = a.y < Q + E ? min( a.x, abs( a.x - P ) ) : 1e3; // ligne médiane, lignes de but
+	dx = min( dx, a.y < 20.16 + E ? abs( a.x - P + 16.5 ) : 1e3 ); // surfaces de réparation
+	dx = min( dx, a.y < 9.16 + E ? abs( a.x - P + 5.5 ) : 1e3 ); // surfaces de but
+	float dy = a.x < P + E ? abs( a.y - Q ) : 1e3; // touches
+	dy = min( dy, a.x > P - 16.5 - E && a.x < P ? abs( a.y - 20.16 ) : 1e3 );
+	dy = min( dy, a.x > P - 5.5 - E && a.x < P ? abs( a.y - 9.16 ) : 1e3 );
+	float d0 = min( abs( r0 - 9.15 ), max( r0 - 0.09, 0.0 ) ); // rond et point central (15 cm)
+	float d1 = min( a.x < P - 16.5 ? abs( r1 - 9.15 ) : 1e3, max( r1 - 0.09, 0.0 ) ); // arcs et points de réparation
+	float d2 = a.x < P && a.y < Q ? abs( r2 - 1.0 ) : 1e3; // arcs de coin
+	if ( min( min( dx, dy ), min( d0, min( d1, d2 ) ) ) > 0.06 + max( max( fw.x, fw.y ), max( fr.x, max( fr.y, fr.z ) ) ) ) return 0.0;
+	float c = max( pCov( dx, fw.x ), pCov( dy, fw.y ) );
+	c = max( c, pCov( d0, fr.x ) );
+	c = max( c, pCov( d1, fr.y ) );
+	return max( c, pCov( d2, fr.z ) );
+}
+`;
+
+const PITCH = /* glsl */`
+vec2 pM = vec2( vMapUv.x * 120.0 - 60.0, 40.0 - vMapUv.y * 80.0 ); // mètres depuis le centre (y vers le nord)
+vec3 pV = normalize( vViewPosition ); // vers la caméra
+float pVx = dot( uPitchAxX, pV ), pVy = dot( uPitchAxY, pV );
+vec2 pFw = vec2( fwidth( pM.x ), fwidth( pM.y ) );
+float pFade = clamp( 2.0 - 0.5 * ( pFw.x + pFw.y ), 0.0, 1.0 ); // bandes plus fines qu'un pixel : unies
+float pBx = clamp( sin( ( pM.x + 52.5 ) * 0.5983986 ) * 8.0, - 1.0, 1.0 ); // bandes de 5,25 m, tondues en largeur
+float pBy = clamp( sin( ( pM.y + 34.0 ) * 0.6283185 ) * 8.0, - 1.0, 1.0 ); // bandes croisées de 5 m, tondues en long
+float pWear = smoothstep( 0.8, 1.3, diffuseColor.r / max( diffuseColor.g, 1e-4 ) ); // terre
+float pStripe = ( uPitchStyle.x * pBx * ( 0.015 - 0.12 * pVy ) + uPitchStyle.y * pBy * ( 0.015 - 0.12 * pVx ) )
+	* pFade * ( 1.0 - pWear );
+vec4 pN = texture2D( uGroundNoise, pM / 9.0 ); // touffes (g) ; chaux usée par plaques de quelques mètres (r)
+diffuseColor.rgb *= ( 1.0 + pStripe ) * ( 1.0 + 0.14 * ( pN.g - 0.5 ) * ( 1.0 - 0.5 * pWear ) );
+vec2 pA = abs( pM );
+float pR0 = length( pM ), pR1 = length( vec2( pA.x - 41.5, pM.y ) ), pR2 = length( pA - vec2( 52.5, 34.0 ) );
+float pLine = pLines( pM, pA, pR0, pR1, pR2, pFw, vec3( fwidth( pR0 ), fwidth( pR1 ), fwidth( pR2 ) ) ); // marquages
+pLine *= 1.0 - uPitchStyle.z * 0.5 * smoothstep( 0.4, 0.7, pN.r );
+diffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.7 ) * ( 1.0 + 0.5 * pStripe ), pLine );
+`;
+
+function pitchCompile(shader) {
+  const u = this.userData;
+  shader.uniforms.uGroundNoise = { value: noiseTexture() };
+  shader.uniforms.uPitchStyle = { value: u.pitch };
+  shader.uniforms.uPitchAxX = { value: u.pitchAxes.x };
+  shader.uniforms.uPitchAxY = { value: u.pitchAxes.y };
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', `#include <common>\n${PITCH_DECLARE}`)
+    .replace('#include <map_fragment>', `#include <map_fragment>\n${PITCH}`);
+}
+// axes du terrain dans l'espace de vue, une fois par dessin plutôt qu'à chaque pixel : longueur (+x du modèle) et
+// largeur vers le nord (-z du modèle, +y de Blender)
+const _mv = new THREE.Matrix4();
+function pitchView(renderer, scene, camera, geometry, object) {
+  const a = this.userData.pitchAxes;
+  _mv.multiplyMatrices(camera.matrixWorldInverse, object.matrixWorld);
+  a.x.set(1, 0, 0).transformDirection(_mv);
+  a.y.set(0, 0, -1).transformDirection(_mv);
+}
+function pitchKey() { return 'pitch'; }
+
+function preparePitch(m) {
+  if (!m.map || m.userData.pitch) return;
+  const u = m.userData;
+  u.pitch = new THREE.Vector3(u.stripes ?? 1, u.cross ?? 0, u.chalk ?? 0);
+  u.pitchAxes = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 0, -1) };
+  m.map.anisotropy = anisotropy;
+  m.roughness = 0.92;
+  m.metalness = 0;
+  m.onBeforeCompile = pitchCompile;
+  m.onBeforeRender = pitchView;
+  m.customProgramCacheKey = pitchKey;
+}
+
+// Matériau photo d'un modèle chargé (assets.js, une fois par modèle source : les clones le partagent).
 export function prepareGround(m) {
+  if (PITCH_NAME.test(m.name)) { preparePitch(m); return; }
   const variation = VARIATION[m.name];
   if (!variation || !m.map || m.userData.ground) return;
   m.userData.ground = {

@@ -1,5 +1,5 @@
 {
-  "about": "Sources des sols, routes et mobilier (phase 3, non versionnees, dans assets-src/grounds/) : telecharger avec ces URL. Grass004 : archive ambientCG decompressee dans assets-src/grounds/Grass004_1K-JPG/.",
+  "about": "Sources des sols, routes, mobilier (phase 3) et du stade (phase 4), non versionnees, dans assets-src/grounds/ : telecharger avec ces URL. Grass004 : archive ambientCG decompressee dans assets-src/grounds/Grass004_1K-JPG/.",
   "files": [
     {
       "file": "large_floor_tiles_02_diff_2k.jpg",
@@ -225,6 +225,87 @@
       "source": "ambientCG",
       "license": "CC0",
       "use": "pelouses du site et prairie (gazon dense)"
+    },
+    {
+      "file": "concrete_wall_008_diff_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_wall_008/concrete_wall_008_diff_2k.jpg",
+      "md5": "9e834dad5c07a3ba452a2ad0f1454c9f",
+      "bytes": 2666189,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "stade : gradins, murs, coursives (beton coule lisse)"
+    },
+    {
+      "file": "concrete_wall_008_nor_gl_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_wall_008/concrete_wall_008_nor_gl_2k.jpg",
+      "md5": "deca87f9fa074c7f041d23178f74ec95",
+      "bytes": 2342650,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "stade : gradins, murs, coursives (beton coule lisse)"
+    },
+    {
+      "file": "concrete_wall_008_arm_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_wall_008/concrete_wall_008_arm_2k.jpg",
+      "md5": "b2f992f83c82627c5e4a05ac0caff50d",
+      "bytes": 2585631,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "stade : gradins, murs, coursives (beton coule lisse)"
+    },
+    {
+      "file": "box_profile_metal_sheet_diff_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/box_profile_metal_sheet/box_profile_metal_sheet_diff_2k.jpg",
+      "md5": "965ed6379d3468a1fe1beb7297a3487d",
+      "bytes": 1473974,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "stade : toitures des tribunes (bac acier nervure)"
+    },
+    {
+      "file": "box_profile_metal_sheet_nor_gl_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/box_profile_metal_sheet/box_profile_metal_sheet_nor_gl_2k.jpg",
+      "md5": "6aae76d513237050435d0fbc77f29a54",
+      "bytes": 2481787,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "stade : toitures des tribunes (bac acier nervure)"
+    },
+    {
+      "file": "box_profile_metal_sheet_arm_2k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/box_profile_metal_sheet/box_profile_metal_sheet_arm_2k.jpg",
+      "md5": "3783562c428e1c13944f4e3e2232949a",
+      "bytes": 2879869,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "stade : toitures des tribunes (bac acier nervure)"
+    },
+    {
+      "file": "red_brick_03_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_brick_03/red_brick_03_diff_1k.jpg",
+      "md5": "d157c6d6dd774762b4269927a87fe9b5",
+      "bytes": 694500,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "stade : club-house (niveaux 1 et 2)"
+    },
+    {
+      "file": "red_brick_03_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_brick_03/red_brick_03_nor_gl_1k.jpg",
+      "md5": "e89ce432d9160edb7c902f901756865f",
+      "bytes": 955430,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "stade : club-house (niveaux 1 et 2)"
+    },
+    {
+      "file": "red_brick_03_arm_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_brick_03/red_brick_03_arm_1k.jpg",
+      "md5": "1b5472dd06888c7cf7db63e692e03978",
+      "bytes": 162734,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "stade : club-house (niveaux 1 et 2)"
     }
   ]
 }
