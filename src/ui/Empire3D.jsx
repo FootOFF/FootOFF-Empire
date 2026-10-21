@@ -7,7 +7,7 @@ import { fmtMoney } from './format';
 import { IconArrowUp } from './icons';
 import { PLOT_POS, PLAZA_CENTER, footprintOf, layoutOverlaps } from '../three/layout';
 import { createRenderer, createEnvironment, pixelRatioFor } from '../three/environment';
-import { assetsProgress, dimAtNight, initAssets, instantiateModel, setAssetsBoost, setAssetsNight } from '../three/assets';
+import { assetsProgress, initAssets, instantiateModel, setAssetsBoost, setAssetsNight } from '../three/assets';
 import { resolveModel, resolveProp } from '../three/manifest';
 import { plotLights } from '../three/lights';
 import { BuildAnimation, Fireworks, hoverFrame } from '../three/fx';
@@ -377,18 +377,6 @@ export default function Empire3D({
         .then((node) => { if (ctx.alive) { scene.add(node); env.setPlazaVisible(false); } })
         .catch((err) => console.warn('[Empire3D] site GLB indisponible, esplanade procédurale conservée.', err));
     }
-    // Ville autour du complexe : immense mais lointaine, elle ne projette pas d'ombre (coût) et se perd dans la brume.
-    const cityEntry = resolveProp('city');
-    if (cityEntry) {
-      instantiateModel(cityEntry, { w: 216, d: 200 })
-        .then((node) => {
-          if (!ctx.alive) return;
-          node.traverse((o) => { if (o.isMesh) o.castShadow = false; });
-          dimAtNight(node, 0.28);
-          scene.add(node);
-        })
-        .catch((err) => console.warn('[Empire3D] ville GLB indisponible.', err));
-    }
     setReady(true);
 
     // Écran de chargement : progression des modèles demandés par la scène. Fini quand tout est arrivé et que
@@ -567,7 +555,7 @@ export default function Empire3D({
       const fogBase = scene.fog && scene.userData.fogBase;
       if (fogBase) {
         // Le brouillard suit le recul de la caméra : le complexe reste net (jusqu'à ~25 unités au-delà de la cible),
-        // puis la ville se fond peu à peu et disparaît avant son bord (~110 unités du centre).
+        // puis le décor se fond peu à peu au loin.
         const d = camera.position.distanceTo(controls.target);
         const k = Math.max(1, d / HOME_DIST);
         scene.fog.near = Math.max(fogBase[0], d + 25);

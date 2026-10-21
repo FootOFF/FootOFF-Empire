@@ -83,8 +83,8 @@ function ringLane(outer) {
 const LANES = [
   { path: ringLane(true), cars: 18 }, // périphérique, sens trigonométrique
   { path: ringLane(false), cars: 16 }, // périphérique, sens horaire
-  { path: polyline([[-106, 17.5], [106, 17.5]], false), cars: 22 }, // boulevard sud (transit) vers l'est, jusqu'au bout de la ville
-  { path: polyline([[106, 18.1], [-106, 18.1]], false), cars: 22 }, // boulevard sud (transit) vers l'ouest
+  { path: polyline([[-30, 17.5], [30, 17.5]], false), cars: 8 }, // boulevard sud (transit) vers l'est
+  { path: polyline([[30, 18.1], [-30, 18.1]], false), cars: 8 }, // boulevard sud (transit) vers l'ouest
 ];
 const CAR_LEN = 0.45;
 const MIN_GAP = CAR_LEN + 0.35; // distance pare-chocs à pare-chocs minimale ~3,5 m

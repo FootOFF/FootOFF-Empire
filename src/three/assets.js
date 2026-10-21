@@ -17,7 +17,6 @@ const templates = new Map(); // url -> Promise<THREE.Object3D>
 let requested = 0; // écran de chargement : modèles demandés / arrivés (réussis ou non)
 let settled = 0;
 const nightMats = new Set();
-const dimMats = new Map(); // matériau -> teinte de nuit (la ville s'assombrit, ses fenêtres et réverbères ressortent)
 let isNight = false; // état courant : un modèle chargé après la bascule doit le respecter
 
 export function initAssets(renderer) {
@@ -103,20 +102,6 @@ export function setAssetsNight(night) {
   nightMats.forEach((m) => {
     const e = m.userData.nightEmissive;
     m.emissiveIntensity = (night ? e.night : e.day) * boost;
-  });
-  dimMats.forEach((k, m) => m.color.setScalar(night ? k : 1));
-}
-
-// Matériaux d'un modèle à assombrir la nuit (façades et toits de la ville, éclairés seulement par leurs fenêtres
-// et par les réverbères). k : facteur appliqué à la couleur de base la nuit.
-export function dimAtNight(root, k = 0.3) {
-  root.traverse((o) => {
-    if (!o.isMesh) return;
-    [].concat(o.material).forEach((m) => {
-      if (!m?.color || dimMats.has(m)) return;
-      dimMats.set(m, /ground/i.test(m.name) ? Math.min(1, k * 1.6) : k);
-      if (isNight) m.color.setScalar(dimMats.get(m));
-    });
   });
 }
 
