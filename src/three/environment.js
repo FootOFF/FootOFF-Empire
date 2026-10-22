@@ -6,22 +6,17 @@ import { GRADE, MOMENTS, createPhotoSky, lookFor } from './sky';
 // Rendu physique : sRGB + ACES, ciel photographié (dôme, environnement, brume) selon le moment de la journée,
 // soleil calé sur celui de la photo, ombres douces.
 
-const lowEnd = () => (navigator.hardwareConcurrency || 4) <= 4 || Math.min(window.innerWidth, window.innerHeight) < 600;
-
 // Qualité graphique (menu) : économie = résolution 1 et pas d'ombres ; auto = selon l'appareil ; haute = tout.
-// densité de rendu maximale de la scène (pixels calculés par pixel CSS) : l'agrandisseur net (postfx.js) complète
-// jusqu'à la densité de l'écran
-export function pixelRatioFor(quality) {
-  if (quality === 'economie') return 1;
-  if (quality === 'haute') return Math.min(window.devicePixelRatio, 2);
-  return Math.min(window.devicePixelRatio, lowEnd() ? 1.5 : 2);
-}
-
 // densité de la toile : celle de l'écran (au plus 3), image finale nette ; 1 en économie (rendu direct)
 export function outputRatioFor(quality) {
   if (quality === 'economie') return 1;
-  return Math.min(window.devicePixelRatio, quality === 'haute' || !lowEnd() ? 3 : 2);
+  return Math.min(window.devicePixelRatio, 3);
 }
+
+// densité de rendu maximale de la scène (pixels calculés par pixel CSS) : celle de la toile, sur ordinateur comme sur
+// téléphone, au repos comme en mouvement ; la résolution adaptative (Empire3D) ne la baisse d'un palier que si
+// l'appareil ne suit plus, et l'agrandisseur net (postfx.js) complète alors jusqu'à la densité de l'écran
+export const pixelRatioFor = (quality) => outputRatioFor(quality);
 
 export function createRenderer(mount, quality = 'auto') {
   // anticrénelage de la toile seulement sans post-traitement (économie) : sinon FXAA dans la chaîne de rendu
@@ -70,7 +65,7 @@ export function createEnvironment(scene, renderer, { quality = 'auto' } = {}) {
 
   const sun = new THREE.DirectionalLight(0xfff1dc, 3);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(lowEnd() ? 1024 : 2048, lowEnd() ? 1024 : 2048);
+  sun.shadow.mapSize.set(2048, 2048); // téléphone compris : ombres aussi fines qu'à l'écran d'ordinateur
   const sc = sun.shadow.camera;
   sc.left = -32; sc.right = 32; sc.top = 32; sc.bottom = -32; // tout le complexe (profondeur : 0,5 - 500 par défaut)
   sun.shadow.bias = -0.0004;

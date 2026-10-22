@@ -174,9 +174,8 @@ const EASU = /* glsl */`
     gl_FragColor = vec4( clamp( aC / max( aW, 1e-5 ), mn, mx ), 1.0 );
   }`;
 
-// RCAS (Robust Contrast Adaptive Sharpening) d'AMD FSR 1 : accentuation bornée par le contraste local (pas de halo).
-// Lit l'image à un pixel de sortie d'écart : derrière EASU, ou directement l'image source (filtrage bilinéaire) pour
-// l'agrandisseur rapide.
+// RCAS (Robust Contrast Adaptive Sharpening) d'AMD FSR 1 : accentuation bornée par le contraste local (pas de halo),
+// derrière EASU, à un pixel de sortie d'écart.
 const RCAS = /* glsl */`
   uniform sampler2D tDiffuse;
   uniform vec2 uSize;
@@ -199,13 +198,11 @@ const RCAS = /* glsl */`
   }`;
 
 // Agrandisseur net, toujours la dernière passe, désactivée quand la scène est déjà calculée à la taille de l'écran :
-//  - complet : EASU vers une image à la taille de l'écran, puis RCAS vers l'écran ;
-//  - rapide (image en mouvement « fluide » seulement) : RCAS seul sur l'image source étirée (une passe ; EASU coûte
-//    4 ms à lui seul en 2880 × 1620 sur une puce graphique intégrée, RCAS 1 à 2 ms), au prix de marches d'escalier.
+// EASU vers une image à la taille de l'écran, puis RCAS vers l'écran (jamais d'étirement simple : il faisait des
+// marches d'escalier dès que la caméra bougeait).
 class UpscalePass extends Pass {
   constructor() {
     super();
-    this.fast = false;
     this.needsSwap = false;
     this.target = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false });
     this.out = new THREE.Vector2();
@@ -222,15 +219,13 @@ class UpscalePass extends Pass {
   render(renderer, writeBuffer, readBuffer) {
     renderer.getDrawingBufferSize(this.out);
     const rcas = this.rcas.material.uniforms;
-    if (!this.fast) {
-      if (this.target.width !== this.out.x || this.target.height !== this.out.y) this.target.setSize(this.out.x, this.out.y);
-      const easu = this.easu.material.uniforms;
-      easu.tDiffuse.value = readBuffer.texture;
-      easu.uIn.value.set(readBuffer.width, readBuffer.height);
-      renderer.setRenderTarget(this.target);
-      this.easu.render(renderer);
-      rcas.tDiffuse.value = this.target.texture;
-    } else rcas.tDiffuse.value = readBuffer.texture;
+    if (this.target.width !== this.out.x || this.target.height !== this.out.y) this.target.setSize(this.out.x, this.out.y);
+    const easu = this.easu.material.uniforms;
+    easu.tDiffuse.value = readBuffer.texture;
+    easu.uIn.value.set(readBuffer.width, readBuffer.height);
+    renderer.setRenderTarget(this.target);
+    this.easu.render(renderer);
+    rcas.tDiffuse.value = this.target.texture;
     rcas.uSize.value.copy(this.out);
     // accentuation un peu plus franche quand l'agrandissement est fort (au-delà de ×1,5)
     rcas.uSharp.value = Math.min(1, 0.55 + 0.3 * (this.out.x / readBuffer.width - 1));
@@ -252,7 +247,7 @@ BLACK.needsUpdate = true;
 
 // Une chaîne de rendu complète, à la densité `ratio` (pixels de rendu par pixel CSS).
 function createChain(renderer, scene, camera, q) {
-  const chain = { ratio: 1, aoScale: 0.5, aoMax: 0.5, gtao: null };
+  const chain = { ratio: 1, aoScale: 0.5, gtao: null };
   const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }));
   chain.composer = composer;
   composer.addPass(new ScenePass(scene, camera));
@@ -271,11 +266,11 @@ function createChain(renderer, scene, camera, q) {
         if (o.userData.noAO && o.visible) { o.visible = false; gtao._visibilityCache.push(o); }
       });
     };
-    // calcul à une fraction de la résolution de l'écran (pixels CSS) : moitié, quart en vue lointaine (setAODetail)
-    // ou en mouvement « fluide » (aoMax) ; effet doux, débruité puis étiré
+    // calcul à une fraction de la résolution de l'écran (pixels CSS) : moitié, quart en vue lointaine (setAODetail) ;
+    // effet doux, débruité puis étiré
     const setSize = gtao.setSize.bind(gtao);
     gtao.setSize = (w, h) => {
-      const k = Math.min(chain.aoScale, chain.aoMax) / chain.ratio;
+      const k = chain.aoScale / chain.ratio;
       setSize(Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k)));
     };
     // occlusion posée par la passe de sortie : ici, seulement calculée
@@ -318,7 +313,6 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
   let rest = null; // densité du repos (pleine résolution), aussi en mouvement tant que l'appareil suit
   let motion = null; // caméra en mouvement à une densité plus faible : tampons alloués seulement quand il le faut
   let moving = false;
-  let fast = false; // image en mouvement « fluide » : agrandisseur rapide et anticrénelage dès qu'on agrandit
   let look = null;
   let halo = 1;
   let aoNear = true;
@@ -338,18 +332,13 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
     renderer.getSize(css);
     renderer.getDrawingBufferSize(out);
     chain.ratio = ratio;
-    // mouvement « fluide » : agrandisseur rapide, occlusion au quart (son coût suit la taille de l'écran, pas la
-    // densité de calcul : 3,7 ms sur 17 en 2880 × 1620 à densité 1, de quoi manquer les 60 images par seconde)
-    chain.upscale.fast = chain === motion && fast;
-    chain.aoMax = chain.upscale.fast ? 0.25 : 0.5;
     // tailles en pixels entiers (le composer multiplierait la taille CSS par la densité sans arrondir)
     chain.composer.setPixelRatio(1);
     chain.composer.setSize(Math.max(1, Math.round(css.x * ratio)), Math.max(1, Math.round(css.y * ratio)));
-    // l'agrandisseur ne sert que si la scène est calculée plus petite que l'écran ; l'anticrénelage, sur un écran peu
-    // dense, et avec l'agrandisseur rapide (sans EASU pour suivre les bords)
-    const upscaling = css.x * ratio < out.x - 0.5;
-    chain.upscale.enabled = upscaling;
-    chain.fxaa.enabled = (upscaling && chain.upscale.fast) || out.x / Math.max(1, css.x) < 1.75;
+    // l'agrandisseur ne sert que si la scène est calculée plus petite que l'écran ; l'anticrénelage, seulement sur un
+    // écran peu dense
+    chain.upscale.enabled = css.x * ratio < out.x - 0.5;
+    chain.fxaa.enabled = out.x / Math.max(1, css.x) < 1.75;
   }
 
   // la caméra en mouvement a sa propre densité (plus faible) : sa chaîne est dimensionnée, sinon réduite au minimum
@@ -415,12 +404,6 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
       if (changed.rest || changed.motion) sizeMotion();
     },
     get ratios() { return { ...ratios }; },
-    // image en mouvement « fluide » (Empire3D) : agrandisseur rapide pour la chaîne du mouvement
-    setFastMotion(v) {
-      if (v === fast) return;
-      fast = v;
-      if (motion && split()) size(motion, ratios.motion);
-    },
     setMoving(v) { moving = v; },
     get moving() { return moving; },
     // occlusion : demi-résolution de près, quart en vue lointaine (Empire3D, selon le recul de la caméra)

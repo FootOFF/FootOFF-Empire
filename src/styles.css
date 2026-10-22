@@ -2033,8 +2033,6 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 .ts-col > .ts-sub, .pm-col > .pm-settings { min-height: 0; flex-shrink: 1; display: flex; flex-direction: column; }
 .cm-row { min-height: 68px; padding: 12px var(--s-5) 12px 26px; color: var(--text-2); }
 .cm-row:disabled { opacity: .45; cursor: not-allowed; }
-.cm-row.off { opacity: .45; }
-.cm-seg button:disabled { cursor: not-allowed; }
 .cm-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .cm-row-text strong { font-family: var(--font-title); font-weight: 600; font-size: var(--t-lg); color: inherit; }
 .cm-row-text span { font-size: var(--t-sm); color: var(--muted); }

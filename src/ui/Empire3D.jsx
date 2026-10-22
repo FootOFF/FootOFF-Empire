@@ -180,7 +180,7 @@ function parvisInfo(s) {
 // parcelle sélectionnée). Garde ses propres interactions : survol (étiquette) et clic (sélection).
 export default function Empire3D({
   state, onSelectPlot, onEmptyTap, onWebGLFail, timeMode = 'auto', weatherMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
-  live = false, matchFx = null, badges = [], quality = 'auto', motion = 'nette', onLoadProgress, onLoaded, matchInfo = null, onOpenTrophies,
+  live = false, matchFx = null, badges = [], quality = 'auto', onLoadProgress, onLoaded, matchInfo = null, onOpenTrophies,
   attract = false, paused = false,
 }) {
   const mountRef = useRef(null);
@@ -434,15 +434,11 @@ export default function Empire3D({
     // et réessayé après un délai qui double à chaque échec (pas de va-et-vient, jamais coincé en basse résolution :
     // l'écran affichant 60 ou 30 images par seconde, la marge ne se voit pas toujours au chronomètre). Jamais sous un
     // pixel de calcul par pixel d'écran (CSS) : tous les effets restent, l'interface reste nette.
-    // Réglage « image en mouvement » (settings.js) : « nette » ci-dessus ; « fluide » vise ~50 images par seconde
-    // pendant les déplacements, quitte à descendre jusqu'à la moitié de la densité, agrandie par l'agrandisseur rapide.
-    const LEVELS = { nette: [1, 0.75], fluide: [1, 0.85, 0.72, 0.6, 0.5] };
-    const regime = (levels, slow, fast, check) => ({ levels, slow, fast, check, level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map(), probe: null });
+    const DRS_LEVELS = [1, 0.75];
+    const regime = (slow, fast) => ({ levels: DRS_LEVELS, slow, fast, level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map(), probe: null });
     const drs = {
-      // ms : au-delà, palier en dessous ; en deçà pendant trois secondes, on retente au-dessus. check : palier du
-      // dessous gardé seulement s'il fait gagner du temps
-      motion: regime(LEVELS.nette, 34, 24, true),
-      rest: regime(LEVELS.nette, 45, 36, true),
+      motion: regime(34, 24), // ms : au-delà, palier en dessous ; en deçà pendant trois secondes, on retente au-dessus
+      rest: regime(45, 36),
       active: false,
       get level() { return this.motion.level; }, // inspection (développement)
     };
@@ -482,7 +478,7 @@ export default function Empire3D({
       const lower = r.level + 1 < r.levels.length && ratioOf(r, r.level + 1) < ratioOf(r) - 0.01 && !blocked(r.level + 1);
       if (ms > r.slow && lower) { // trop lent : palier en dessous, celui-ci mis de côté
         setAside(r, r.level, now, 30000);
-        if (r.check) r.probe = { from: r.level, ms };
+        r.probe = { from: r.level, ms };
         r.level += 1;
         r.good = 0;
         applyRatio();
@@ -532,16 +528,6 @@ export default function Empire3D({
       if (loaded && spots.length !== compiledFor) { compiledFor = spots.length; return precompile(spots); }
       return Promise.resolve();
     };
-
-    // image en mouvement appliquée à chaud : paliers et seuils du régime « mouvement », agrandisseur de sa chaîne
-    ctx.setMotion = (m) => {
-      const fluid = m === 'fluide';
-      Object.assign(drs.motion, fluid ? { levels: LEVELS.fluide, slow: 21, fast: 18, check: false } : { levels: LEVELS.nette, slow: 34, fast: 24, check: true });
-      Object.assign(drs.motion, { level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map(), probe: null });
-      post.setFastMotion(fluid);
-      applyRatio();
-    };
-    ctx.setMotion(motion);
 
     // qualité graphique appliquée à chaud : résolution, puis ombres (les matériaux se recompilent)
     ctx.quality = quality;
@@ -904,8 +890,8 @@ export default function Empire3D({
       viewShift.y += (wantY - viewShift.y) * Math.min(1, dt * 2.6);
       if (Math.abs(viewShift.x) + Math.abs(viewShift.y) > 0.5) camera.setViewOffset(W, H, viewShift.x, viewShift.y, W, H);
       else if (camera.view?.enabled) camera.clearViewOffset();
-      // net à l'arrêt, fluide en mouvement : la caméra (déplacement, zoom, glissement du cadrage) a-t-elle bougé
-      // dans les 0,3 dernières secondes ? Chaque régime a sa résolution (postfx.js, deux chaînes déjà prêtes).
+      // la caméra (déplacement, zoom, glissement du cadrage) a-t-elle bougé dans les 0,3 dernières secondes ? Les
+      // deux régimes calculent en pleine résolution ; chacun a sa résolution adaptative (palier de secours à part).
       camera.updateMatrixWorld();
       let moved = Math.abs(wantX - viewShift.x) + Math.abs(wantY - viewShift.y) > 0.5;
       for (let i = 0; i < 16 && !moved; i++) moved = Math.abs(camera.matrixWorld.elements[i] - lastCam.elements[i]) > 1e-5;
@@ -999,7 +985,6 @@ export default function Empire3D({
   }, [matchDay, live, recenter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { ctxRef.current?.setQuality?.(quality); ctxRef.current?.crowd?.setQuality(quality); }, [quality, ready]);
-  useEffect(() => { ctxRef.current?.setMotion?.(motion); }, [motion, ready]);
 
   // Jour de match : couleurs de l'adversaire, remplissage des tribunes selon l'affluence attendue (ou réelle).
   useEffect(() => {

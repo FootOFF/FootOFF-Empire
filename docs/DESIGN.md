@@ -87,12 +87,11 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
     d'Europe des clubs (2 premiers de l'Elite, bleu) ; descente (2 derniers, rouge). Hors Elite, la légende
     rappelle que l'Europe se gagne en Elite.
 - Réglages (écran titre et menu pause, voir plus bas) : Son et Vibrations en interrupteurs, Qualité graphique en
-  choix à trois positions, Image en mouvement en choix à deux positions. La qualité est enregistrée par appareil
-  (`fo-quality`) : Économie = sans ombres et résolution 1, Auto = selon l'appareil, Haute = ombres et netteté
-  maximales ; elle s'applique sans recharger. Image en mouvement (`fo-motion`), comme les modes qualité et
-  performance des consoles : Nette (par défaut) = pleine résolution en permanence, même pendant les déplacements et
-  le zoom ; Fluide = résolution plus basse le temps du mouvement si l'appareil ne suit pas (sans objet en Économie).
-  Sur un écran peu haut, la liste des réglages défile sous son titre, l'entrée choisie toujours visible.
+  choix à trois positions. La qualité est enregistrée par appareil (`fo-quality`) : Économie = sans ombres et
+  résolution 1, Auto = selon l'appareil, Haute = ombres et netteté maximales ; elle s'applique sans recharger. Auto et
+  Haute calculent l'image à la pleine résolution de l'écran (jusqu'à 3 pixels par pixel CSS), téléphone compris, au
+  repos comme en mouvement. Sur un écran peu haut, la liste des réglages défile sous son titre, l'entrée choisie
+  toujours visible.
 
 ## Finitions
 
@@ -341,15 +340,14 @@ Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone
   pixels invalides à l'entrée du halo ; anticrénelage FXAA seulement sur écran peu dense (sur un écran très dense, une
   marche d'escalier fait un demi-pixel CSS) ; ciel peint en dernier, là où il se voit ; reflet du lac une image sur
   deux ;
-- net en permanence (réglage Image en mouvement : Nette) : la toile garde la densité de l'écran et la scène est
-  calculée en pleine résolution au repos comme pendant les déplacements et le zoom. Sur une puce intégrée, agrandir
-  une image calculée plus petite (FXAA, EASU, RCAS : 5 à 7 ms en 2880 × 1620) coûte presque autant que la pleine
-  résolution : seulement si l'appareil ne tient plus ~30 images par seconde, la densité descend d'un palier (×0,75,
-  agrandi par EASU et RCAS d'AMD FSR 1), gardé seulement s'il fait vraiment gagner du temps, et la pleine résolution
-  est retentée ensuite (délai doublé à chaque échec). Fluide : en mouvement, paliers jusqu'à la moitié de la densité,
-  RCAS seul et occlusion au quart, pour viser 60 images par seconde. Mesuré en 2880 × 1620 (puce intégrée AMD,
-  écran 60 Hz) : Nette = 30 images par seconde régulières en mouvement (avant : image agrandie ×1,7, floue et
-  crénelée) ; Fluide = 45 à 60. Densité de l'écran relue au zoom du navigateur et au changement d'écran ;
+- net en permanence : la toile garde la densité de l'écran et la scène est calculée en pleine résolution (ordinateur
+  et téléphone), au repos comme pendant les déplacements et le zoom ; ombres en 2048 partout. Sur une puce intégrée,
+  agrandir une image calculée plus petite (FXAA, EASU, RCAS : 5 à 7 ms en 2880 × 1620) coûte presque autant que la
+  pleine résolution : seulement si l'appareil ne tient plus ~30 images par seconde, la densité descend d'un palier
+  (×0,75, agrandi par EASU et RCAS d'AMD FSR 1, jamais étiré), gardé seulement s'il fait vraiment gagner du temps, et
+  la pleine résolution est retentée ensuite (délai doublé à chaque échec). Mesuré en 2880 × 1620 (puce intégrée AMD,
+  écran 60 Hz) : 30 images par seconde régulières en mouvement, toujours en pleine résolution (avant : image agrandie
+  ×1,7 en mouvement, floue et crénelée). Densité de l'écran relue au zoom du navigateur et au changement d'écran ;
 - feuillage des arbres : profondeur écrite d'abord par une passe qui ne lit que l'image des feuilles (même vent, même
   découpe), puis feuillage éclairé sans écrire la profondeur : chaque pixel n'est éclairé que pour la feuille visible
   (vue rapprochée, 2880 × 1620 : scène 22,1 → 18,4 ms) ;

@@ -380,7 +380,7 @@ export function createForest(group, list, { quality = 'auto', site }) {
   const loader = new THREE.TextureLoader();
   const atlas = { color: { value: null }, normal: { value: null }, half: null };
   const loadAtlas = () => {
-    const half = q === 'economie' || (q === 'auto' && narrow());
+    const half = q === 'economie'; // atlas complet dès la qualité auto : imposteurs nets en pleine résolution
     if (atlas.half === half) return;
     atlas.half = half;
     for (const [key, file, srgb] of [['color', 'impostors_color', true], ['normal', 'impostors_normal', false]]) {
