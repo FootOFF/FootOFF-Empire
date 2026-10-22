@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { DIVISIONS } from '../game/constants';
-import { TACTICS } from '../game/tactics';
+import { TACTICS, formationOf } from '../game/tactics';
+import { TICKET_POLICIES } from '../game/economy';
 import { ordinal } from '../game/utils';
-import { fmtMoney, fmtNum, fmtRating } from './format';
+import { fmtMoney, fmtNum, fmtPrice, fmtRating } from './format';
 import { IconBall, RatingBadge, SectionHead, Stat, VersusBar } from './kit';
 import { IconChevron, IconChevronLeft, IconClose } from './icons';
 import { Panel } from './panels';
@@ -215,7 +216,7 @@ function MatchesTab({ matches, onOpen }) {
               <span className={`st-when ${m.comp && m.comp !== 'league' ? `st-comp ${m.comp}` : ''}`}>S{m.season} · {whenOf(m)}</span>
               <span className="st-opp">{m.opp}</span>
               <span className={`st-score ${outcome(m)}`}>{m.gf}–{m.ga}{m.pens && <small>t.a.b. {m.pens[0]}–{m.pens[1]}</small>}</span>
-              <span className="st-mini">{m.stats ? `${m.stats.possession} % · ${m.stats.shots[0]}–${m.stats.shots[1]} tirs` : ''}</span>
+              <span className="st-mini">{formationOf(m.formation).name}{m.stats ? ` · ${m.stats.possession} % · ${m.stats.shots[0]}–${m.stats.shots[1]} tirs` : ''}</span>
               <IconChevron />
             </button>
           </li>
@@ -467,6 +468,61 @@ function MatchTimeline({ m }) {
   );
 }
 
+// Composition du match sur le terrain : le onze de départ à son poste dans la formation utilisée, note du match
+// dans la pastille (vert ≥ 7,5, rouge < 5,5), flèche sur les remplacés ; puis les changements.
+function MatchLineup({ m, onCareer }) {
+  const f = formationOf(m.formation);
+  const byId = Object.fromEntries((m.players || []).map((p) => [p.id, p]));
+  const out = new Set((m.subs || []).map((x) => x.out));
+  const nameOf = (id) => byId[id]?.name || '—';
+  return (
+    <>
+      <div className="pitch2d sp-pitch">
+        <div className="p2-lines"><i className="half" /><i className="circle" /><i className="box top" /><i className="box bottom" /></div>
+        {m.lineup.map((id, k) => {
+          const p = byId[id];
+          if (!p || !f.pitch[k]) return null;
+          const tone = p.rating >= 7.5 ? 'good' : p.rating < 5.5 ? 'bad' : '';
+          return (
+            <button key={id} type="button" className={`p2-chip sp-pchip ${tone}`} style={{ left: `${f.pitch[k][0]}%`, top: `${f.pitch[k][1]}%` }} onClick={() => onCareer?.(id)} title={`${p.name} · note ${fmtRating(p.rating)}${out.has(id) ? ' · remplacé' : ''}`}>
+              <span className="p2-num">{fmtRating(p.rating)}{out.has(id) && <i className="sp-subout" aria-label="remplacé" />}</span>
+              <span className="p2-name">{shortName(p.name)}</span>
+            </button>
+          );
+        })}
+      </div>
+      {m.subs?.length > 0 && (
+        <ul className="sp-subs">
+          {m.subs.map((x, i) => (
+            <li key={i}>
+              <span className="sp-min">{x.minute}′</span>
+              <span className="sub-way in">Entre</span><b>{shortName(nameOf(x.in))}</b>
+              <span className="sub-way out">Sort</span><b>{shortName(nameOf(x.out))}</b>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+const GATE_LABEL = { billetterie: 'Billetterie', buvette: 'Buvette', boutique: 'Boutique', loges: 'Loges', tv: 'Droits TV' };
+
+// Billetterie du match : formule des billets du jour, prix, affluence, recettes détaillées.
+function MatchGate({ m }) {
+  const policy = TICKET_POLICIES[m.tickets];
+  const refused = m.demand && m.capacity && m.demand > m.capacity ? m.demand - m.capacity : 0;
+  return (
+    <ul className="sp-facts">
+      <li><span>Formule des billets</span><b>{policy ? `${policy.name}${m.ticketPrice ? ` · ${fmtPrice(m.ticketPrice)} le billet` : ''}` : 'Non enregistrée (match ancien)'}</b></li>
+      <li><span>Affluence</span><b>{fmtNum(m.attendance || 0)}{m.capacity ? ` / ${fmtNum(m.capacity)} · ${pct(m.attendance, m.capacity)} %` : ''}</b></li>
+      {refused > 0 && <li><span>Restés aux guichets</span><b>{fmtNum(refused)}</b></li>}
+      {m.breakdown && Object.entries(m.breakdown).filter(([, v]) => v > 0).map(([k, v]) => <li key={k}><span>{GATE_LABEL[k] || k}</span><b>{fmtMoney(v)}</b></li>)}
+      <li className="sp-total"><span>Recette du match</span><b>{fmtMoney(m.revenue || 0)}</b></li>
+    </ul>
+  );
+}
+
 function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
   const ref = useRef(null);
   const [view, setView] = useState('resume');
@@ -553,18 +609,23 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
           )}
         </section>
 
+        <section className="sh-sec">
+          <span className="sh-cap">Composition · {formationOf(m.formation).name}</span>
+          {m.lineup ? <MatchLineup m={m} onCareer={onCareer} /> : <p className="st-muted">Formation {formationOf(m.formation).name} · le détail du onze n’était pas encore enregistré pour ce match.</p>}
+        </section>
+
         {motm && (
           <section className="sh-sec">
             <span className="sh-cap">Note FootOFF</span>
             <div className="sp-motm"><RatingBadge value={motm.rating} /><div><b>{motm.name}</b><span>Homme du match{motm.goals ? ` · ${plural(motm.goals, 'but', 'buts')}` : ''}{motm.assists ? ` · ${plural(motm.assists, 'passe déc.', 'passes déc.')}` : ''}</span></div></div>
-            <div className="sp-lines">
+            {!m.lineup && <div className="sp-lines">
               {lines.filter(([, ps]) => ps.length).map(([pos, ps]) => (
                 <div key={pos} className="sp-line">
                   <span className={`pos-pill ${pos}`}>{pos}</span>
                   <div>{ps.map((p) => <button key={p.id} className="sp-chip" onClick={() => onCareer?.(p.id)}><RatingBadge value={p.rating} />{shortName(p.name)}</button>)}</div>
                 </div>
               ))}
-            </div>
+            </div>}
           </section>
         )}
 
@@ -581,8 +642,14 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
         </section>
 
         <section className="sh-sec">
+          <span className="sh-cap">La billetterie</span>
+          <MatchGate m={m} />
+        </section>
+
+        <section className="sh-sec">
           <span className="sh-cap">Les chiffres</span>
           <ul className="sp-facts">
+            <li><span>Formation</span><b>{formationOf(m.formation).name}</b></li>
             <li><span>Tactique</span><b>{TACTICS[m.tactic]?.name || '—'}</b></li>
             {st && <li><span>Efficacité</span><b>{pct(m.gf, st.shots[0])} % des tirs transformés</b></li>}
             {st && <li><span>Précision</span><b>{pct(st.onTarget[0], st.shots[0])} % de tirs cadrés</b></li>}
@@ -600,7 +667,8 @@ export function StatsPanel({ state, onClose, initialMatch = null, onPlayerSheet 
   const [tab, setTab] = useState(initialMatch ? 'matches' : 'club');
   const seasons = [...new Set([state.seasonNumber, ...matches.map((m) => m.season)])].sort((a, b) => b - a);
   const [season, setSeason] = useState(state.seasonNumber);
-  const [open, setOpen] = useState(initialMatch === 'last' ? matches[matches.length - 1] || null : null);
+  // initialMatch : 'last' (dernier match) ou la fiche d'un match (ouverte depuis le calendrier)
+  const [open, setOpen] = useState(initialMatch === 'last' ? matches[matches.length - 1] || null : initialMatch && typeof initialMatch === 'object' ? initialMatch : null);
   const [career, setCareer] = useState(null); // fiche carrière ouverte (identifiant du joueur)
   const go = (d) => {
     const i = matches.indexOf(open);

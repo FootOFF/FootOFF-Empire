@@ -1,5 +1,5 @@
 import { build, createInitialState, endSeason, playRound, sellPlayer, upgrade } from '../game/engine';
-import { matchContext } from '../game/season';
+import { matchContext, startSeason } from '../game/season';
 
 // Mode aperçu (galerie d'écrans) : une partie fictive, jamais sauvegardée, et l'écran demandé déjà ouvert.
 
@@ -22,11 +22,14 @@ export const SCREENS = [
   ['comparateur', 'Comparateur radar'],
   ['avant-match', 'Avant-match'],
   ['direct', 'Match en direct'],
-  ['mi-temps', 'Mi-temps'],
+  ['mi-temps', 'Mi-temps (composition repliée)'],
+  ['mi-temps-compo', 'Mi-temps · composition déployée'],
   ['apres-match', 'Après-match'],
   ['bilan', 'Bilan de saison'],
   ['bilan-champion', 'Bilan · titre de champion'],
-  ['saison', 'Classement'],
+  ['saison', 'Saison · calendrier'],
+  ['classement', 'Saison · classement'],
+  ['europe', 'Saison en Elite · Coupe d’Europe, places européennes'],
   ['finances', 'Finances'],
   ['stats', 'Statistiques'],
   ['stats-pass', 'Stats Pass d’un match'],
@@ -57,6 +60,12 @@ export function previewState(screen) {
     }
     s.offline = null;
     return s;
+  }
+  if (screen === 'europe') { // Elite et Coupe d'Europe : places européennes au classement, dates européennes au calendrier
+    s.divisionIndex = 3;
+    s.reputation = 60;
+    s.c1Next = true;
+    startSeason(s);
   }
   if (screen !== 'tutoriel') {
     build(s, 'main', 'training');
@@ -102,6 +111,8 @@ export function previewUi(screen, s) {
     case 'bureau': return { sel: { plotId: 't3', sector: 'supporters' } };
     case 'comparateur': return { panel: 'squad', squadTab: 'market', squad: { compare: true } };
     case 'saison': return { panel: 'season' };
+    case 'classement': return { panel: 'season', seasonTab: 'table' };
+    case 'europe': return { panel: 'season', seasonTab: 'table' };
     case 'journal': return { panel: 'journal' };
     case 'finances': return { panel: 'finances' };
     case 'stats': return { panel: 'stats' };
@@ -111,6 +122,7 @@ export function previewUi(screen, s) {
     case 'avant-match': return { matchPhase: 'prematch', matchCtx: matchContext(s), matchDay: true };
     case 'direct': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34 } };
     case 'mi-temps': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime' } };
+    case 'mi-temps-compo': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime', board: true } };
     case 'apres-match': return { showResult: true, matchDay: true };
     case 'menu': return { menu: true };
     case 'chargement': return { loading: 0.42 };

@@ -2230,3 +2230,146 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
   .ts-main .cm-sub { display: none; }
   .ts-side { bottom: 72px; }
 }
+
+/* =========================================================== calendrier de la saison (panneau Saison)
+   Frise des dates (pastille par match, couleur du résultat), puis une carte par date le long d'un fil. Couleur de
+   la compétition : championnat or, Coupe nationale argent, Coupe d'Europe bleu. */
+:root { --comp-league: var(--gold); --comp-cup: #c9d1db; --comp-c1: #6f9ef5; }
+.season-tabs { width: 100%; }
+.season-tabs button { flex: 1; }
+.cal { display: flex; flex-direction: column; gap: var(--s-4); }
+.cal-head {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-3) var(--s-4); padding: var(--s-4);
+  border-radius: var(--r-md); border: 1px solid var(--gold-line);
+  background: linear-gradient(135deg, rgba(199, 161, 90, .13), rgba(255, 255, 255, .02) 62%);
+}
+.cal-count { display: flex; flex-direction: column; gap: 2px; }
+.cal-count b { font-family: var(--font-title); font-weight: 700; font-size: var(--t-3xl); line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.cal-count small { font-size: .45em; font-weight: 500; color: var(--muted); }
+.cal-count span { font-size: var(--t-xs); color: var(--muted); }
+.cal-tally { display: flex; gap: var(--s-2); align-self: center; justify-self: end; }
+.cal-tally span { display: inline-flex; align-items: baseline; gap: 4px; padding: 6px 10px; border-radius: 999px; background: rgba(255, 255, 255, .05); font-size: var(--t-xs); color: var(--text-2); }
+.cal-tally b { font-family: var(--font-title); font-weight: 600; font-size: var(--t-lg); color: var(--text); font-variant-numeric: tabular-nums; }
+.cal-tally .win b { color: var(--green); }
+.cal-tally .loss b { color: var(--red); }
+.cal-upnext { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); font-size: var(--t-sm); color: var(--muted); }
+.cal-upnext strong { font-weight: 600; color: var(--text); text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-strip { grid-column: 1 / -1; list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 4px; }
+.cs-dot { --c: var(--comp-league); display: flex; flex-direction: column; align-items: center; gap: 3px; width: 30px; }
+.cs-dot.cup { --c: var(--comp-cup); }
+.cs-dot.c1 { --c: var(--comp-c1); }
+.cs-dot i {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-style: normal;
+  font-family: var(--font-title); font-weight: 700; font-size: 11px; color: #0d0b07; border: 2px solid var(--c); background: rgba(255, 255, 255, .03);
+}
+.cs-dot.o-win i { background: var(--green); }
+.cs-dot.o-draw i { background: #a3a8ae; }
+.cs-dot.o-loss i { background: var(--red); }
+.cs-dot.next i { background: var(--gold-grad); box-shadow: 0 0 0 4px rgba(199, 161, 90, .25); animation: cs-pulse 1.8s ease-in-out infinite; }
+.cs-dot.out i, .cs-dot.tbd i { border-style: dashed; opacity: .4; }
+.cs-dot span { font-family: var(--font-mono); font-size: 9px; letter-spacing: .02em; color: var(--muted); white-space: nowrap; }
+@keyframes cs-pulse { 50% { box-shadow: 0 0 0 7px rgba(199, 161, 90, .06); } }
+.cal-legend { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin: 0; font-size: var(--t-xs); color: var(--muted); }
+.cal-legend span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--c); }
+.cal-legend .league { --c: var(--comp-league); }
+.cal-legend .cup { --c: var(--comp-cup); }
+.cal-legend .c1 { --c: var(--comp-c1); }
+
+.cal-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
+.cal-item { --c: var(--comp-league); display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: var(--s-3); }
+.cal-item.cup { --c: var(--comp-cup); }
+.cal-item.c1 { --c: var(--comp-c1); }
+.cal-when { position: relative; display: flex; justify-content: center; }
+.cal-when::before { content: ''; position: absolute; top: -8px; bottom: -8px; left: 50%; width: 2px; transform: translateX(-50%); background: rgba(255, 255, 255, .08); }
+.cal-item:first-child .cal-when::before { top: 50%; }
+.cal-item:last-child .cal-when::before { bottom: 50%; }
+.cal-tag {
+  position: relative; align-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 3px; min-width: 48px; padding: 5px 6px;
+  border-radius: 999px; border: 1.5px solid var(--c); background: #101012; color: var(--c);
+  font-family: var(--font-mono); font-size: 11px; font-weight: 500; white-space: nowrap;
+}
+.cal-tag svg { width: 11px; height: 11px; }
+.cal-item.played .cal-tag { background: var(--c); color: #0d0b07; }
+.cal-item.next .cal-tag { background: var(--gold-grad); border-color: var(--gold-light); color: #0d0b07; box-shadow: 0 0 0 4px rgba(199, 161, 90, .22); }
+.cal-item.out .cal-tag, .cal-item.tbd .cal-tag { border-style: dashed; opacity: .55; }
+.cal-card {
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3); width: 100%; min-width: 0; padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md); border: 1px solid var(--line); background: rgba(255, 255, 255, .03); color: var(--text); text-align: left;
+}
+button.cal-card { transition: border-color .2s, background .2s; }
+@media (hover: hover) { button.cal-card:hover { border-color: var(--gold-line); background: rgba(199, 161, 90, .06); } button.cal-card:hover .cal-go { color: var(--gold-light); } }
+.cal-item.next .cal-card { border-color: var(--gold-line); background: linear-gradient(135deg, rgba(199, 161, 90, .18), rgba(199, 161, 90, .04)); box-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
+.cal-item.out .cal-card { opacity: .45; }
+.cal-item.tbd .cal-card { border-style: dashed; }
+.crest { width: 34px; height: 39px; flex-shrink: 0; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .45)); }
+.crest text { font-family: var(--font-title); }
+.cal-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cal-comp { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-opp { font-family: var(--font-title); font-weight: 600; font-size: var(--t-md); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-facts { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: var(--t-xs); color: var(--muted); }
+.cal-side { display: flex; align-items: center; gap: var(--s-2); flex-shrink: 0; }
+.cal-score { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.cal-score b { font-family: var(--font-title); font-weight: 700; font-size: var(--t-lg); padding: 2px 10px; border-radius: 8px; background: rgba(255, 255, 255, .08); font-variant-numeric: tabular-nums; }
+.cal-score small { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.cal-score.win b { background: rgba(124, 196, 151, .18); color: var(--green); }
+.cal-score.loss b { background: rgba(224, 122, 111, .18); color: var(--red); }
+.cal-next-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-light); white-space: nowrap; }
+.cal-later { font-size: var(--t-xs); color: var(--muted); }
+.cal-go { width: 16px; height: 16px; color: var(--muted); transition: color .2s; }
+.cal-play { margin-left: auto; }
+
+/* classement : zones (montée, Coupe d'Europe, descente) et légende */
+.table tr.europe .t-pos { box-shadow: inset 2px 0 0 var(--comp-c1); }
+.t-zone { display: inline-block; margin-left: 8px; padding: 1px 6px; border-radius: 999px; font-family: var(--font-mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; vertical-align: 2px; }
+.t-zone.promo { color: var(--gold-light); background: var(--gold-soft); }
+.t-zone.europe { color: #a9c4fa; background: rgba(111, 158, 245, .16); }
+.t-zone.releg { color: var(--red); background: rgba(224, 122, 111, .14); }
+.zone-legend { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--t-xs); color: var(--text-2); }
+.zone-legend li { display: flex; align-items: baseline; gap: var(--s-2); }
+.zone-legend b { flex-shrink: 0; min-width: 56px; padding: 1px 6px; border-radius: 999px; text-align: center; font-family: var(--font-mono); font-weight: 500; font-size: 10px; }
+.zone-legend .promo b { color: var(--gold-light); background: var(--gold-soft); }
+.zone-legend .europe b { color: #a9c4fa; background: rgba(111, 158, 245, .16); }
+.zone-legend .releg b { color: var(--red); background: rgba(224, 122, 111, .14); }
+
+/* Stats Pass : composition sur le terrain, changements, billetterie */
+.sp-pitch { width: min(100%, 420px); margin: var(--s-2) auto 0; }
+.sp-pchip .p2-num { position: relative; font-family: var(--font-title); font-weight: 600; }
+.sp-pchip.good .p2-num { border-color: rgba(124, 196, 151, .85); color: var(--green); }
+.sp-pchip.bad .p2-num { border-color: rgba(224, 122, 111, .85); color: var(--red); }
+.sp-subout { position: absolute; right: -4px; bottom: -4px; width: 15px; height: 15px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 2px #0b0b0c; }
+.sp-subout::after { content: ''; position: absolute; left: 5px; top: 3px; width: 4px; height: 4px; border-right: 1.6px solid #fff; border-bottom: 1.6px solid #fff; transform: rotate(45deg); }
+.sp-subs { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sp-subs li { display: grid; grid-template-columns: 30px auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 6px; font-size: var(--t-sm); }
+.sp-subs b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-facts li.sp-total { border-top-color: var(--line-strong); }
+.sp-facts li.sp-total b { color: var(--gold-light); }
+
+/* mi-temps : la composition se déploie depuis une carte dédiée */
+.halftime.board-closed { max-width: 480px; grid-template-columns: minmax(0, 1fr); }
+.halftime.board-closed .ht-col:first-child { padding-right: 0; border-right: 0; margin-right: 0; }
+.ht-compo {
+  display: flex; align-items: center; gap: var(--s-3); width: 100%; padding: var(--s-3) var(--s-4); border-radius: var(--r-md);
+  border: 1px solid var(--gold-line); background: linear-gradient(135deg, rgba(199, 161, 90, .2), rgba(199, 161, 90, .05));
+  color: var(--text); text-align: left; transition: background .2s, transform .2s var(--ease);
+}
+@media (hover: hover) { .ht-compo:hover { background: linear-gradient(135deg, rgba(199, 161, 90, .28), rgba(199, 161, 90, .08)); } }
+.ht-compo:active { transform: scale(.99); }
+.ht-compo-icon { width: 40px; height: 40px; display: grid; place-items: center; flex-shrink: 0; border-radius: 12px; background: rgba(0, 0, 0, .35); color: var(--gold-light); }
+.ht-compo-icon svg { width: 22px; height: 22px; }
+.ht-compo-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ht-compo-text b { font-weight: 600; font-size: var(--t-md); }
+.ht-compo-text em { font-style: normal; font-size: var(--t-sm); color: var(--text-2); }
+.ht-compo-go { width: 18px; height: 18px; flex-shrink: 0; color: var(--gold-light); }
+.ht-board-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); }
+.ht-board-close { font-size: var(--t-sm); text-decoration: none; color: var(--gold-light); }
+.halftime.board-open .ht-board { animation: fo-up .35s var(--ease); }
+
+@media (max-width: 760px) {
+  .cal-item { grid-template-columns: 46px minmax(0, 1fr); gap: var(--s-2); }
+  .cal-tag { min-width: 42px; padding: 4px 4px; font-size: 10px; }
+  .cal-card { padding: var(--s-3); gap: var(--s-2) var(--s-3); }
+  .crest { width: 28px; height: 32px; }
+  .cs-dot { width: 26px; }
+  .cs-dot i { width: 22px; height: 22px; font-size: 10px; }
+  .t-zone { display: none; } /* téléphone : la couleur de la place et la légende suffisent */
+}

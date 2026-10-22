@@ -354,7 +354,7 @@ export default function App({ preview = null }) {
           />
         )}
       </Presence>
-      <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} onClose={() => setPanel(null)} />}</Presence>
+      <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} initialTab={boot.ui.seasonTab} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); setPanel('stats'); }} />}</Presence>
       <Presence>{inGame && panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'trophies' && <TrophyRoom state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} onClose={() => { setPanel(null); setStatsMatch(null); }} onPlayerSheet={(id) => { setSquadSheet(id); setSquadTab('players'); setPanel('squad'); }} />}</Presence>

@@ -11,7 +11,7 @@ import { ratingAt } from './players';
 const CONVERSION = 0.3; // part des occasions transformées
 const YELLOW_PER_MIN = 0.021;
 const RED_PER_MIN = 0.00035; // ~0,2 rouge par match avec les doubles jaunes
-export const SUBS_MAX = 3; // changements à la mi-temps
+export const SUBS_MAX = 5; // changements à la mi-temps (cinq, comme en championnat professionnel)
 
 const T = {
   kickoff: [
@@ -174,6 +174,8 @@ export function createLiveMatch(s, ctx) {
     away: ctx.opp.name,
     oppStrength: ctx.opp.strength,
     lineup: [...s.lineup],
+    startLineup: [...s.lineup], // onze de départ (historique du match : composition sur le terrain)
+    subsList: [], // changements faits : entrant, sortant, minute
     formation: formationOf(s.formation).id,
     comp: ctx.comp || 'league',
     knockout: !!ctx.knockout, // coupe : pas de match nul, tirs au but
@@ -419,6 +421,7 @@ export function createLiveMatch(s, ctx) {
         perf(outId).out = 45;
         perf(inId).in = 45;
         m.subsUsed++;
+        m.subsList.push({ in: inId, out: outId, minute: 45 });
         push(45, 'sub', 'home', `Changement pour ${m.home} : ${nameOf(inId)} remplace ${nameOf(outId)}.`, { half: 2 });
       }
       const moved = next.filter((id, k) => before.includes(id) && before[k] !== id).length;
@@ -440,6 +443,8 @@ export function createLiveMatch(s, ctx) {
         scorers: m.scorers,
         myRating: Math.round(lineupRating(s.players, m.lineup, m.formation) * 10) / 10,
         formation: m.formation,
+        lineup: [...m.startLineup],
+        subs: m.subsList.map((x) => ({ ...x })),
         comp: m.comp,
         pens: m.pens,
         oppStrength: m.oppStrength,

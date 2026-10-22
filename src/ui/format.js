@@ -11,6 +11,10 @@ export const fmtMoney = (n) => {
 
 export const fmtNum = (n) => new Intl.NumberFormat('fr-FR').format(n);
 
+// Prix d'un billet, au centime quand il n'est pas rond : 6 €, 4,50 €.
+const price = [0, 2].map((d) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: d, maximumFractionDigits: d }));
+export const fmtPrice = (n) => price[Number.isInteger(Math.round(n * 100) / 100) ? 0 : 1].format(n);
+
 // Montant complet, sans abréviation (écran Finances : une colonne de chiffres se lit à l'euro près).
 export const fmtEuros = (n) => euros.format(n);
 

@@ -3,7 +3,7 @@ import { TACTICS, TACTIC_ORDER, expectedGoals, formationOf, lineupRating, reshap
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
 import { SUBS_MAX, createLiveMatch, pairSubs, prematchOdds } from '../game/live';
 import { BestEleven, FormationPicker, LineupBoard, displayNames } from './lineup';
-import { IconClose, IconMute, IconPlay, IconSound } from './icons';
+import { IconChevron, IconClose, IconMute, IconPlay, IconSound, IconUsers } from './icons';
 import { IconBall, IconSwap, IconWhistle } from './kit';
 import { useKeydown } from './presence';
 import { SEC_PER_MIN, matchFeed } from '../game/matchFeed';
@@ -168,6 +168,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
   };
   const [plan, setPlan] = useState(null); // onze de la seconde période, composé sur le terrain à la mi-temps
   const [tactic2, setTactic2] = useState(live.state.tactic);
+  const [board, setBoard] = useState(false); // composition repliée à la mi-temps : on la déploie pour faire ses changements
 
   useEffect(() => { sound.start(); sound.whistle(1); return () => sound.stop(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -282,8 +283,9 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
   };
 
   const m = live.state;
-  useEffect(() => { if (phase === 'halftime') setPlan([...m.lineup]); }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (phase === 'halftime') { setPlan([...m.lineup]); setBoard(!!preview?.board); } }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   const planned = plan || m.lineup;
+  const subsLeft = SUBS_MAX - m.subsUsed - pairSubs(m.lineup, planned).length; // changements encore possibles
   // notes du match à la pause (aide à choisir qui sort)
   const notes = useMemo(() => (phase === 'halftime'
     ? Object.fromEntries(live.result().players.filter(Boolean).map((x) => [x.id, x.rating])) : {}), [phase]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -339,7 +341,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
       )}
 
       {phase === 'halftime' && (
-        <div className="halftime glass">
+        <div className={`halftime glass ${board ? 'board-open' : 'board-closed'}`}>
           <div className="ht-col">
             <span className="eyebrow">Mi-temps · tes consignes</span>
             <div className="ht-stats">
@@ -351,6 +353,16 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
               <span className="eyebrow muted-eyebrow">Pronostic final</span>
               <OddsBar odds={live.secondHalfOdds({ lineup: planned, tactic: tactic2 })} />
             </div>
+            {!board && (
+              <button type="button" className="ht-compo" onClick={() => setBoard(true)} aria-expanded="false">
+                <span className="ht-compo-icon"><IconUsers /></span>
+                <span className="ht-compo-text">
+                  <b>Composition et changements</b>
+                  <em>{formationOf(m.formation).name} · {subsLeft} changement{subsLeft > 1 ? 's' : ''} possible{subsLeft > 1 ? 's' : ''} sur {SUBS_MAX}</em>
+                </span>
+                <IconChevron className="ht-compo-go" />
+              </button>
+            )}
             <div className="ht-block ht-b-changes">
               <span className="eyebrow muted-eyebrow">Changements</span>
               <HalftimeChanges state={state} m={m} plan={planned} onReset={() => setPlan([...m.lineup])} />
@@ -360,8 +372,11 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
               <TacticPicker value={tactic2} onChange={setTactic2} compact />
             </div>
           </div>
-          <div className="ht-col ht-board">
-            <span className="eyebrow muted-eyebrow">Ton équipe · pastille : note de la première période</span>
+          {board && <div className="ht-col ht-board">
+            <div className="ht-board-head">
+              <span className="eyebrow muted-eyebrow">Ton équipe · pastille : note de la première période</span>
+              <button type="button" className="linkbtn ht-board-close" onClick={() => setBoard(false)}>Replier</button>
+            </div>
             <LineupBoard
               players={state.players}
               lineup={planned}
@@ -373,7 +388,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
               booked={m.booked.home}
               notes={notes}
             />
-          </div>
+          </div>}
           <div className="ht-go"><button className="btn btn-xl" onClick={resume}><IconPlay /> Reprendre la seconde période</button></div>
         </div>
       )}

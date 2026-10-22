@@ -1,6 +1,6 @@
 import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from './constants';
 import { refreshTransfers } from './transfers';
-import { expectedGate, matchGate, prizeFor, sponsorIncome, upkeepOf } from './economy';
+import { expectedGate, matchGate, prizeFor, sponsorIncome, ticketPrice, upkeepOf } from './economy';
 import { clamp, ordinal, pick, rnd } from './utils';
 import { clubAfter, randomClubName } from './names';
 import { assignNumber, freshSeason, makePlayer, playerRating, progressPlayer, saleValue, wageOf, wantsRetirement } from './players';
@@ -142,7 +142,12 @@ function recordMatch(s, res) {
     })),
     motm: best ? best.id : null,
     events: (res.highlights || []).map(({ minute, type, side, player }) => ({ minute, type, side, player })), // buts et cartons des deux équipes
-    attendance: res.attendance, capacity: res.capacity, revenue: res.revenue,
+    lineup: res.lineup ? [...res.lineup] : null, // onze de départ, dans l'ordre des postes du dispositif
+    subs: (res.subs || []).map(({ in: inId, out, minute }) => ({ in: inId, out, minute })),
+    attendance: res.attendance, capacity: res.capacity, revenue: res.revenue, demand: res.demand ?? null,
+    // formule des billets du jour et recettes détaillées (billetterie, buvette, boutique, loges, droits TV)
+    tickets: s.ticketPolicy || 'standard', ticketPrice: Math.round(ticketPrice(s, res.comp || 'league') * 100) / 100,
+    breakdown: res.breakdown ? { ...res.breakdown } : null,
   }].slice(-400);
   addMatch(s.records, s.matches[s.matches.length - 1]);
 }

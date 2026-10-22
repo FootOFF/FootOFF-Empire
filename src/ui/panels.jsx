@@ -10,6 +10,8 @@ import { Trophy, TROPHY_NAMES } from './trophy';
 import { STAGES_SHORT, STAGES, nextFixture, ofDiv } from '../game/cups';
 import { useDialogFocus, useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
+import { Tabs } from './glass';
+import { SeasonCalendar } from './calendar';
 
 // Panneau du jeu : un seul modèle pour l'Effectif, la Saison et le Journal (en-tête, barre d'outils, corps
 // défilant, trésorerie à droite quand on y dépense). Glisse depuis la droite sur PC, plein écran sur mobile.
@@ -40,9 +42,20 @@ export function Panel({ title, eyebrow, size = 'md', money = null, toolbar = nul
   );
 }
 
-// --- Saison : situation, classement, dernier match, palmarès -----------------------------------------------
+// --- Saison : calendrier, classement, dernier match, palmarès ---------------------------------------------
 
-export function SeasonPanel({ state, onClose }) {
+// Zone d'une place au classement : montée (2 premiers, hors Elite), Coupe d'Europe des clubs (2 premiers de
+// l'Elite, qualifiés pour la saison suivante), descente (2 derniers, hors Départementale).
+export function zoneOf(divisionIndex, i) {
+  const elite = divisionIndex === DIVISIONS.length - 1;
+  if (i < 2) return elite ? 'europe' : 'promo';
+  if (i >= 6 && divisionIndex > 0) return 'releg';
+  return null;
+}
+const ZONE_TAG = { promo: 'Montée', europe: 'Europe', releg: 'Descente' };
+
+export function SeasonPanel({ state, onClose, initialTab = 'calendar', onOpenMatch, onPlay }) {
+  const [tab, setTab] = useState(initialTab);
   const standings = standingsOf(state);
   const div = DIVISIONS[state.divisionIndex];
   const lm = state.lastMatch;
@@ -53,9 +66,10 @@ export function SeasonPanel({ state, onClose }) {
   const pos = standings.findIndex((t) => t.i === 0) + 1;
   const me = standings[pos - 1];
   let goal;
-  if (promo && pos > 2) goal = `${standings[1].pts - me.pts} pt${standings[1].pts - me.pts > 1 ? 's' : ''} de la montée`;
+  const gap = (n) => `${n} pt${n > 1 ? 's' : ''}`;
+  if (promo && pos > 2) goal = `${gap(standings[1].pts - me.pts)} de la montée`;
   else if (promo) goal = 'En zone de montée';
-  else goal = pos === 1 ? 'En tête de l’Elite' : `${standings[0].pts - me.pts} pts du titre`;
+  else goal = pos === 1 ? 'En tête de l’Elite' : pos === 2 ? 'Place européenne' : `${gap(standings[1].pts - me.pts)} de l’Europe`;
   if (rel && pos >= 7) goal = 'En zone de descente';
   const motm = lm?.players?.length ? [...lm.players].sort((a, b) => b.rating - a.rating)[0] : null;
 
@@ -65,29 +79,46 @@ export function SeasonPanel({ state, onClose }) {
       eyebrow={`Saison ${state.seasonNumber} · journée ${Math.min(state.round, 7)} / 7`}
       onClose={onClose}
       toolbar={(
-        <div className="season-stats">
-          <Stat label="Position" value={ordinal(pos)} sub="sur 8" tone={promo && pos <= 2 ? 'up' : rel && pos >= 7 ? 'down' : ''} />
+        <>
+          <div className="season-stats">
+          <Stat label="Position" value={ordinal(pos)} sub="sur 8" tone={pos <= 2 ? 'up' : rel && pos >= 7 ? 'down' : ''} />
           <Stat label="Points" value={me.pts} sub={`${me.played} match${me.played > 1 ? 's' : ''}`} />
           <Stat label="Diff." value={`${me.gd > 0 ? '+' : ''}${me.gd}`} />
-          <Stat label="Objectif" value={promo ? 'Top 2' : 'Titre'} sub={goal} />
-        </div>
+          <Stat label="Objectif" value={promo ? 'Top 2' : 'Europe'} sub={goal} />
+          </div>
+          <Tabs className="sq-tabs season-tabs" items={[['calendar', 'Calendrier'], ['table', 'Classement']]} value={tab} onChange={setTab} label="Saison" />
+        </>
       )}
     >
-      <SectionHead label="Classement" aside={[promo && 'or : montée', rel && 'rouge : descente'].filter(Boolean).join(' · ')} />
+      {tab === 'calendar' && <SeasonCalendar state={state} onOpenMatch={onOpenMatch} onPlay={onPlay} />}
+      {tab === 'table' && <>
+      <SectionHead label="Classement" aside={`${div.name} · ${standings.length} clubs`} />
       <table className="table standings">
         <thead><tr><th>#</th><th>Club</th><th>J</th><th>Diff</th><th>Pts</th></tr></thead>
         <tbody>
-          {standings.map((t, i) => (
-            <tr key={t.i} className={[t.i === 0 && 'me', promo && i < 2 && 'promo', rel && i >= 6 && 'releg'].filter(Boolean).join(' ')}>
-              <td className="t-pos">{i + 1}</td>
-              <td className="t-club">{t.name}</td>
-              <td>{t.played}</td>
-              <td>{t.gd > 0 ? '+' : ''}{t.gd}</td>
-              <td className="t-pts">{t.pts}</td>
-            </tr>
-          ))}
+          {standings.map((t, i) => {
+            const zone = zoneOf(state.divisionIndex, i);
+            return (
+              <tr key={t.i} className={[t.i === 0 && 'me', zone].filter(Boolean).join(' ')}>
+                <td className="t-pos">{i + 1}</td>
+                <td className="t-club">{t.name}{zone && <span className={`t-zone ${zone}`}>{ZONE_TAG[zone]}</span>}</td>
+                <td>{t.played}</td>
+                <td>{t.gd > 0 ? '+' : ''}{t.gd}</td>
+                <td className="t-pts">{t.pts}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
+      <ul className="zone-legend">
+        {promo ? (
+          <li className="promo"><b>1 – 2</b>Montée en {DIVISIONS[state.divisionIndex + 1].name}</li>
+        ) : (
+          <li className="europe"><b>1 – 2</b>Qualifiés pour la Coupe d’Europe des clubs la saison prochaine</li>
+        )}
+        {rel && <li className="releg"><b>7 – 8</b>Descente en {DIVISIONS[state.divisionIndex - 1].name}</li>}
+        {promo && <li className="europe"><b>Europe</b>La Coupe d’Europe des clubs se joue depuis l’Elite : ses deux premiers s’y qualifient.</li>}
+      </ul>
 
       <CupRuns state={state} />
 
@@ -123,6 +154,7 @@ export function SeasonPanel({ state, onClose }) {
           </ul>
         </>
       )}
+      </>}
     </Panel>
   );
 }

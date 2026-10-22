@@ -75,6 +75,17 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 - Puces de filtre : toujours sur une ligne ; sur téléphone elles se resserrent et défilent en secours.
 - Inspecteur de parcelle : même famille (en-tête séparé, corps), largeur de la colonne de gauche sur PC,
   feuille basse opaque avec poignée sur téléphone.
+- Saison : onglets Calendrier (ouvert d'emblée) et Classement dans la barre fixe, sous la situation du club.
+  - Calendrier (`src/ui/calendar.jsx`, dates calculées par `seasonFixtures` dans `src/game/fixtures.js`) : toutes
+    les dates dans l'ordre où elles se jouent, championnat en or, Coupe nationale en argent, Coupe d'Europe en
+    bleu. En tête, le bilan (dates jouées, V / N / D, prochain match) et une frise d'une pastille par date (couleur
+    du résultat, anneau de la compétition, tirets pour un tour à tirer au sort ou non disputé). Puis une carte par
+    date le long d'un fil : écusson aux couleurs du maillot adverse (`kitOf`), compétition, adversaire, et pour un
+    match joué le score, la formation, la formule des billets et son prix, l'affluence et la recette ; la carte
+    ouvre le Stats Pass du match. Le prochain match se lance depuis sa carte.
+  - Classement : zones colorées avec leur légende sous le tableau. Montée (2 premiers, or) hors Elite ; Coupe
+    d'Europe des clubs (2 premiers de l'Elite, bleu) ; descente (2 derniers, rouge). Hors Elite, la légende
+    rappelle que l'Europe se gagne en Elite.
 - Réglages (écran titre et menu pause, voir plus bas) : Son et Vibrations en interrupteurs, Qualité graphique en
   choix à trois positions. La qualité est enregistrée par appareil (`fo-quality`) : Économie = sans ombres et
   résolution 1, Auto = selon l'appareil, Haute = ombres et netteté maximales ; elle s'applique sans recharger.
@@ -167,8 +178,15 @@ Un seul composant (`LineupBoard`, `src/ui/lineup.jsx`) pour l'onglet Composition
 geste, repris à l'avant-match), l'avant-match et la mi-temps. On glisse un joueur sur un poste ou sur un coéquipier,
 ou on en touche deux ; au doigt, un remplaçant se saisit après un court maintien (sinon le banc défile). Le joueur
 choisi affiche sur chaque poste le niveau qu'il y aurait (vert s'il y ferait mieux). « Meilleur onze » annonce son
-gain et dit quand le onze est déjà optimal. À la mi-temps : notes de la première période en pastille, jusqu'à trois
-entrants (`SUBS_MAX`, `live.applyLineup`), expulsés figés, résumé des changements et pronostic recalculé.
+gain et dit quand le onze est déjà optimal. À la mi-temps, la composition est repliée : une carte « Composition et
+changements » (formation, changements restants) la déploie, un lien « Replier » la referme. Notes de la première
+période en pastille, jusqu'à cinq entrants (`SUBS_MAX`, `live.applyLineup`), expulsés figés, résumé des changements
+toujours visible, pronostic recalculé.
+
+Chaque match enregistre son onze de départ (dans l'ordre des postes de la formation), ses changements, la formule
+des billets du jour, le prix du billet et les recettes détaillées (`recordMatch`, `src/game/season.js`). Le Stats
+Pass montre le onze sur le terrain (note du match dans la pastille, flèche sur les remplacés, changements dessous)
+et une section Billetterie (formule, prix, affluence, spectateurs restés aux guichets, recettes par poste).
 
 ## Stade et match en 3D
 

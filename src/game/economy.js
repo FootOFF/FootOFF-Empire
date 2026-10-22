@@ -55,6 +55,9 @@ export function spendPerHead(s) {
   return { food: div.food * (1 + 0.1 * fans), shop: div.shop * (1 + 0.12 * fans) * repFactor(s.reputation) };
 }
 
+// Prix moyen d'un billet : tarif de la division × formule choisie (inspecteur du stade) × affiche de la compétition.
+export const ticketPrice = (s, comp = 'league') => DIVISIONS[s.divisionIndex].ticket * policyOf(s).price * (COMP_GATE[comp] || COMP_GATE.league).ticket;
+
 // Affluence et recettes d'un match à domicile.
 export function matchGate(s, opp, noise = rnd(0.93, 1.07), comp = 'league') {
   const div = DIVISIONS[s.divisionIndex];
@@ -64,7 +67,7 @@ export function matchGate(s, opp, noise = rnd(0.93, 1.07), comp = 'league') {
   const demand = Math.round(demandFor(s, opp, comp) * noise);
   const attendance = Math.min(cap, demand);
   const per = spendPerHead(s);
-  const ticket = div.ticket * policyOf(s).price * cg.ticket;
+  const ticket = ticketPrice(s, comp);
   const loges = Math.min(Math.round(cap * (LOGES_SHARE[clamp(lvl, 0, 6)] || 0)), Math.round(demand * 0.05));
   const breakdown = {
     billetterie: Math.round(attendance * ticket),
