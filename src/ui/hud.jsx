@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Tabs, useGlass } from './glass';
+import React, { useState } from 'react';
+import { useGlass } from './glass';
 import { DIVISIONS } from '../game/constants';
 import { SECTORS, nextLockedSector } from '../game/map';
 import { activeGoal, tierOf } from '../game/goals';
@@ -8,11 +8,9 @@ import { matchContext } from '../game/season';
 import { FOMonogram } from './brand';
 import { AnimatedMoney } from './moneyfx';
 import { fmtRating } from './format';
-import { useDialogFocus, useKeydown } from './presence';
-import { PHONE, useSwipe } from './gestures';
 import {
   IconCal, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
-  IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow, IconEye, IconClose, IconStats,
+  IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow, IconEye, IconStats,
 } from './icons';
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran.
@@ -191,57 +189,6 @@ export function Toasts({ items }) {
       {items.map((t) => (
         <div key={t.id} className={`hud-toast glass ${t.tone || ''}`}>{t.text}</div>
       ))}
-    </div>
-  );
-}
-
-export function GameMenu({ onClose, onReset, muted, onToggleSound, quality, onQuality, qualities, vibration, canVibrate, onToggleVibration }) {
-  const ref = useRef(null);
-  useDialogFocus(ref);
-  useSwipe(ref, { onDown: onClose, downMedia: PHONE });
-  useKeydown((e) => { if (e.key === 'Escape') { e.stopImmediatePropagation(); onClose(); } }, { capture: true }); // pas le panneau dessous
-  return (
-    <div className="scrim" onClick={onClose}>
-      <div ref={ref} tabIndex={-1} className="menu-card glass" role="dialog" aria-modal="true" aria-label="Menu" onClick={(e) => e.stopPropagation()}>
-        <span className="grip" aria-hidden="true" />
-        <header className="menu-head">
-          <FOMonogram className="menu-mark" />
-          <div className="panel-title">
-            <span className="eyebrow">FootOFF Empire</span>
-            <h2>Menu</h2>
-          </div>
-          <button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button>
-        </header>
-
-        <section className="menu-section">
-          <span className="eyebrow muted-eyebrow">Réglages</span>
-          <div className="setting">
-            <div className="setting-text"><strong>Son</strong><span>Ambiance du stade, sifflet, pièces.</span></div>
-            <button className={`switch ${muted ? '' : 'on'}`} role="switch" aria-checked={!muted} aria-label="Son" onClick={onToggleSound}><i /></button>
-          </div>
-          <div className="setting">
-            <div className="setting-text">
-              <strong>Vibrations</strong>
-              <span>{canVibrate ? 'But marqué, vente, construction.' : 'Non disponibles sur ce navigateur (c’est le cas sur iPhone).'}</span>
-            </div>
-            <button className={`switch ${vibration && canVibrate ? 'on' : ''}`} role="switch" aria-checked={vibration && canVibrate} aria-label="Vibrations" disabled={!canVibrate} onClick={onToggleVibration}><i /></button>
-          </div>
-          <div className="setting column">
-            <div className="setting-text"><strong>Qualité graphique</strong><span>{qualities.find((q) => q.id === quality)?.hint}</span></div>
-            <Tabs className="segmented" role="radiogroup" label="Qualité graphique" items={qualities.map((q) => [q.id, q.label])} value={quality} onChange={onQuality} />
-          </div>
-        </section>
-
-        <section className="menu-section">
-          <span className="eyebrow muted-eyebrow">Partie</span>
-          <button className="btn btn-xl" onClick={onClose}>Reprendre</button>
-          <div className="menu-links">
-            <a className="linkbtn menu-link" href="https://footoff.media" target="_blank" rel="noreferrer">FootOFF Media ↗</a>
-            <button className="linkbtn menu-link danger" onClick={onReset}>Nouvelle partie</button>
-          </div>
-        </section>
-        <span className="menu-foot">Un jeu FootOFF Media · bêta</span>
-      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { instantiateModel } from './assets';
+import { instantiateModel, trackLoad } from './assets';
 import { resolveProp } from './manifest';
 import { TREES } from './trees.generated';
 
@@ -346,7 +346,8 @@ export function createForest(group, list, { quality = 'auto', site }) {
     atlas.half = half;
     for (const [key, file, srgb] of [['color', 'impostors_color', true], ['normal', 'impostors_normal', false]]) {
       atlas[key].value?.dispose();
-      const t = loader.load(`${BASE}vegetation/${file}${half ? '-half' : ''}.webp`);
+      const job = trackLoad(half ? 250e3 : 700e3); // écran de chargement : taille supposée de l'atlas
+      const t = loader.load(`${BASE}vegetation/${file}${half ? '-half' : ''}.webp`, job.done, undefined, job.done);
       t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
       t.anisotropy = 4;
       atlas[key].value = t;

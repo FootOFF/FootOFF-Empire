@@ -133,6 +133,29 @@ export function createStadiumSound() {
       osc.start(t);
       osc.stop(t + 0.14);
     },
+    // sons des menus (écran titre, pause) : déplacement (petit clic), validation (deux notes qui montent), retour
+    // (une note qui descend). Rien avant le premier geste de l'utilisateur (le navigateur refuserait le son).
+    ui(kind) {
+      if (muted || (navigator.userActivation && !navigator.userActivation.hasBeenActive) || !ensure()) return;
+      ctx.resume?.();
+      const t = ctx.currentTime;
+      const tone = (f0, f1, at, len, vol, type = 'sine') => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(f0, t + at);
+        osc.frequency.exponentialRampToValueAtTime(f1, t + at + len);
+        g.gain.setValueAtTime(0, t + at);
+        g.gain.linearRampToValueAtTime(vol, t + at + 0.006);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + at + len);
+        osc.connect(g).connect(master);
+        osc.start(t + at);
+        osc.stop(t + at + len + 0.02);
+      };
+      if (kind === 'move') tone(1500, 1250, 0, 0.045, 0.018);
+      else if (kind === 'select') { tone(660, 680, 0, 0.09, 0.035, 'triangle'); tone(990, 1010, 0.06, 0.14, 0.03, 'triangle'); }
+      else if (kind === 'back') tone(720, 480, 0, 0.11, 0.03, 'triangle');
+    },
     stop() {
       if (!ctx) return;
       const old = ctx;

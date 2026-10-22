@@ -15,8 +15,11 @@ let loader = null;
 let ktx2 = null;
 let draco = null;
 const templates = new Map(); // url -> Promise<THREE.Object3D>
-let requested = 0; // écran de chargement : modèles demandés / arrivés (réussis ou non)
+// Écran de chargement : fichiers demandés / arrivés (réussis ou non) et octets reçus / attendus. Un fichier dont
+// la taille n'est pas encore connue (réponse pas encore commencée) compte pour une taille supposée.
+let requested = 0;
 let settled = 0;
+const jobs = new Set();
 const nightMats = new Set();
 const poolMats = new Set(); // flaques de lumière au sol (lampadaires du site) : ajoutées à l'image, la nuit seulement
 const POOL = 0.28; // intensité d'une flaque en pleine nuit (lumière linéaire ajoutée au sol)
@@ -76,12 +79,33 @@ function prepareTemplate(root) {
   return root;
 }
 
+// Suivi d'un fichier pour l'écran de chargement : progress(octets reçus, taille) puis done() (une seule fois).
+export function trackLoad(estimate = 400e3) {
+  const job = { loaded: 0, total: 0, estimate, done: false };
+  jobs.add(job);
+  requested += 1;
+  return {
+    progress(loaded, total) {
+      job.loaded = loaded;
+      if (total) job.total = Math.max(total, loaded); // réponse compressée : les octets reçus dépassent l'annonce
+    },
+    done() {
+      if (job.done) return;
+      job.done = true;
+      settled += 1;
+      job.total = job.total || job.loaded || job.estimate;
+      job.loaded = job.total;
+    },
+  };
+}
+
 function loadTemplate(url) {
   if (!templates.has(url)) {
-    const p = loader.loadAsync(`${BASE}${url}`).then((gltf) => prepareTemplate(gltf.scene));
+    const job = trackLoad();
+    const p = loader.loadAsync(`${BASE}${url}`, (e) => job.progress(e.loaded, e.lengthComputable ? e.total : 0))
+      .then((gltf) => prepareTemplate(gltf.scene));
     p.catch(() => templates.delete(url)); // autorise un nouvel essai plus tard
-    requested += 1;
-    p.finally(() => { settled += 1; }).catch(() => {});
+    p.finally(job.done).catch(() => {});
     templates.set(url, p);
   }
   return templates.get(url);
@@ -123,7 +147,16 @@ export async function instantiateModel(entry, footprint) {
   return wrapper;
 }
 
-export const assetsProgress = () => ({ requested, settled });
+export function assetsProgress() {
+  let loaded = 0;
+  let total = 0;
+  for (const j of jobs) {
+    const t = j.total || Math.max(j.estimate, j.loaded);
+    total += t;
+    loaded += Math.min(j.loaded, t);
+  }
+  return { requested, settled, loaded, total };
+}
 
 let boost = 1;
 // Éclairage des fenêtres, LED et têtes de projecteurs : niveau de 0 (jour) à 1 (nuit) ; un booléen est accepté.

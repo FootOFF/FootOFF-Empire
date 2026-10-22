@@ -6,9 +6,8 @@ import { BUILDINGS, DIVISIONS, upgradeCost } from './game/constants';
 import { fmtMoney } from './ui/format';
 import { clearGame, loadGame, saveGame } from './game/save';
 import { clone } from './game/utils';
-import Onboarding from './ui/Onboarding';
 import Empire2D from './ui/EmpireView';
-import { Dock, GameMenu, MatchCta, ObjectiveWidget, SceneTools, Toasts, TopHud } from './ui/hud';
+import { Dock, MatchCta, ObjectiveWidget, SceneTools, Toasts, TopHud } from './ui/hud';
 import { JournalPanel, SeasonPanel } from './ui/panels';
 import { FinancesPanel } from './ui/finances';
 import { StatsPanel } from './ui/stats';
@@ -22,6 +21,10 @@ import { CoachCard, StaffTip } from './ui/guide';
 import ConfirmDialog from './ui/confirm';
 import { Presence } from './ui/presence';
 import { LoadingScreen } from './ui/loading';
+import { TitleScreen } from './ui/title';
+import { PauseMenu } from './ui/pause';
+import { setUiSound } from './ui/console';
+import './ui/input'; // manette : traduite en touches du clavier pour tous les menus
 import { moneyBurst } from './ui/moneyfx';
 import { previewState, previewUi, silentSound } from './ui/preview';
 import { QUALITIES, loadQuality, saveQuality } from './ui/settings';
@@ -31,7 +34,7 @@ import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { createStadiumSound } from './ui/sound';
 import { achievementById, newAchievements } from './game/achievements';
 
-// three.js et la scène vivent dans un chunk séparé, chargé à l'entrée dans le jeu.
+// three.js et la scène vivent dans un chunk séparé, chargé dès le démarrage (derrière l'écran de chargement).
 const Empire3D = lazy(() => import('./ui/Empire3D'));
 
 function cycle(current, order, storageKey) {
@@ -40,14 +43,21 @@ function cycle(current, order, storageKey) {
   return next;
 }
 
+// Parcours, façon jeu de console : écran de chargement (progression réelle) → écran titre devant le complexe en 3D
+// (Continuer, Nouvelle partie, Réglages) → la caméra plonge vers la vue d'ensemble et le HUD apparaît. En jeu,
+// Échap (ou Start à la manette) ouvre le menu pause, qui fige la scène.
 // preview : nom d'un écran à afficher d'emblée avec une partie fictive (galerie), sans sauvegarde ni 3D.
 export default function App({ preview = null }) {
   const [boot] = useState(() => {
     if (!preview) return { state: loadGame(), ui: {} };
     const st = previewState(preview);
-    return { state: st, ui: st ? previewUi(preview, st) : {} };
+    return { state: st, ui: previewUi(preview, st) };
   });
   const [state, setState] = useState(boot.state);
+  const [screen, setScreen] = useState(boot.ui.screen || (preview ? 'game' : 'title')); // 'title' | 'game'
+  const [titleView, setTitleView] = useState(boot.ui.titleView || 'menu'); // menu, réglages, création du club
+  const [booted, setBooted] = useState(!!preview); // écran de chargement terminé (barre à 100 %)
+  const demo = useRef(null); // complexe de départ montré derrière l'écran titre avant la création du club
   const [panel, setPanel] = useState(boot.ui.panel || null);
   const [sel, setSel] = useState(boot.ui.sel || null);
   const [toasts, setToasts] = useState([]);
@@ -61,13 +71,13 @@ export default function App({ preview = null }) {
   const [menu, setMenu] = useState(!!boot.ui.menu);
   const [quality, setQuality] = useState(loadQuality); // qualité graphique (par appareil)
   const [vibration, setVibrationState] = useState(vibrationEnabled);
-  const [sceneLoaded, setSceneLoaded] = useState(false); // écran de chargement jusqu'à l'arrivée des modèles 3D
+  const [sceneLoaded, setSceneLoaded] = useState(false); // écran de chargement jusqu'à ce que la scène 3D soit prête
   const [loadProgress, setLoadProgress] = useState(null);
   useEffect(() => { // filet de sécurité : l'écran de chargement ne reste jamais plus de 20 s
-    if (sceneLoaded || !state) return undefined;
+    if (sceneLoaded || preview) return undefined;
     const t = setTimeout(() => setSceneLoaded(true), 20000);
     return () => clearTimeout(t);
-  }, [sceneLoaded, !state]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sceneLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
   const [webglOk, setWebglOk] = useState(true);
   // match : null → 'prematch' (onze + tactique) → 'live' (direct) → résumé (showResult)
   const [matchPhase, setMatchPhase] = useState(boot.ui.matchPhase || null);
@@ -82,6 +92,7 @@ export default function App({ preview = null }) {
   if (!sound.current) sound.current = preview ? silentSound : createStadiumSound();
   const toastId = useRef(0);
   const [, bumpSound] = useState(0); // le son se coupe aussi pendant le direct : on relit sound.current.muted
+  useEffect(() => { setUiSound((kind) => sound.current.ui?.(kind)); }, []);
 
   useEffect(() => { if (state && !preview) saveGame(state); }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   // chaque gain ou dépense s'anime (pièces vers la trésorerie, « +1 252 € », tintement)
@@ -110,9 +121,21 @@ export default function App({ preview = null }) {
     if (!initial) fresh.forEach(([id]) => toast(`Succès débloqué : ${achievementById(id).title}`, 'gold'));
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!state) {
-    return <Onboarding onCreate={(name) => setState(createInitialState(name))} />;
-  }
+  const inGame = screen === 'game' && !!state;
+  const cinematic = !!state && (!!matchPhase || showResult || !!state.seasonReview || !!state.offline);
+
+  // En jeu, Échap (ou Start à la manette) ouvre le menu pause, quand aucune fenêtre n'est ouverte (sinon Échap la
+  // ferme, elle). Réinscrit à chaque rendu : lit toujours l'état courant.
+  useEffect(() => {
+    if (preview) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape' || e.defaultPrevented || !inGame || menu || panel || sel || confirm || cinematic) return;
+      e.preventDefault();
+      setMenu(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   const run = (fn, failMsg) => {
     const ns = fn(clone(state));
@@ -148,7 +171,7 @@ export default function App({ preview = null }) {
   const closeResult = () => { setShowResult(false); setMatchDay(false); };
   // jour de match : adversaire et affluence pour la scène 3D (match à venir, en cours, ou qui vient de finir)
   const matchInfo = (() => {
-    if (!matchDay) return null;
+    if (!matchDay || !state) return null;
     const lm = state.lastMatch;
     if (showResult && lm) return { opp: lm.oppName, attendance: lm.attendance, capacity: lm.capacity, played: true };
     const c = matchCtx || matchContext(state);
@@ -186,11 +209,44 @@ export default function App({ preview = null }) {
     }
   });
 
-  const cinematic = !!matchPhase || showResult || !!state.seasonReview || !!state.offline;
+  // Réglages partagés par l'écran titre et le menu pause.
+  const settings = {
+    muted: sound.current.muted,
+    onToggleSound: () => { sound.current.setMuted(!sound.current.muted); bumpSound((n) => n + 1); },
+    quality,
+    qualities: QUALITIES,
+    onQuality: (q) => { setQuality(q); if (!preview) saveQuality(q); },
+    vibration,
+    canVibrate: canVibrate(),
+    onToggleVibration: () => { setVibration(!vibration); setVibrationState(!vibration); },
+  };
+  // Retour à l'écran titre (la partie reste sauvegardée) : la caméra repart en vitrine autour du complexe.
+  const toTitle = () => {
+    setMenu(false); setSel(null); setPanel(null); setMatchDay(false);
+    setTitleView('menu');
+    setScreen('title');
+  };
+  const askNewGame = () => {
+    if (!state) { setTitleView('create'); return; }
+    setConfirm({
+      tone: 'danger',
+      title: 'Recommencer une nouvelle aventure ?',
+      text: `La sauvegarde de ${state.clubName} (saison ${state.seasonNumber}, ${DIVISIONS[state.divisionIndex].name}) sera effacée définitivement.`,
+      confirmLabel: 'Effacer et recommencer',
+      cancelLabel: 'Garder ma partie',
+      onConfirm: () => {
+        clearGame();
+        setState(null);
+        setMenu(false); setSel(null); setPanel(null); setMatchDay(false); setShowResult(false); setMatchPhase(null);
+        setTitleView('create');
+        setScreen('title');
+      },
+    });
+  };
 
   // Guidage : tutoriel des premières minutes, puis conseils du staff et pastilles dorées.
-  const tutoStep = state.tutorial?.step || 'done';
-  const tuto = tutoStep !== 'done' ? stepContent(tutoStep, state) : null;
+  const tutoStep = state?.tutorial?.step || 'done';
+  const tuto = state && tutoStep !== 'done' ? stepContent(tutoStep, state) : null;
   const doAction = (a) => {
     if (!a) return;
     if (a.kind === 'plot') selectPlot(a.plot, a.sector);
@@ -203,20 +259,22 @@ export default function App({ preview = null }) {
     else if (tutoStep === 'stadium') { setTuto('done'); toast('À toi de jouer, président !', 'gold'); }
     else doAction(tuto.action);
   };
-  const tip = !tuto && !sel && !panel ? staffTip(state) : null;
+  const tip = state && !tuto && !sel && !panel ? staffTip(state) : null;
   const shownTip = tip && !dismissedTips.has(tip.id) ? tip : null;
-  const signals = dockSignals(state);
-  const plotBadges = cinematic ? [] : actionablePlots(state);
+  const signals = state ? dockSignals(state) : {};
+  const plotBadges = inGame && !cinematic ? actionablePlots(state) : [];
+  // avant la création du club, la scène montre le complexe de départ
+  const sceneState = state || (demo.current ||= createInitialState('FootOFF FC'));
 
   return (
-    <div className={`game ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${panel === 'squad' ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''}`} data-tuto={tuto ? tutoStep : undefined}>
+    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${panel === 'squad' ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
       <div className="stage">
         {preview ? (
           <div className="stage-preview" aria-hidden="true" />
         ) : webglOk ? (
           <Suspense fallback={null}>
             <Empire3D
-              state={state}
+              state={sceneState}
               timeMode={timeMode}
               weatherMode={weatherMode}
               matchDay={matchDay}
@@ -224,62 +282,66 @@ export default function App({ preview = null }) {
               matchFx={matchFx}
               matchInfo={matchInfo}
               recenter={recenter}
-              selectedPlot={sel?.plotId || null}
+              selectedPlot={inGame ? sel?.plotId || null : null}
               badges={plotBadges}
               quality={quality}
+              attract={!inGame}
+              paused={menu}
               onLoadProgress={setLoadProgress}
               onLoaded={() => setSceneLoaded(true)}
               onSelectPlot={selectPlot}
               onEmptyTap={() => setSel(null)}
               onOpenTrophies={() => openPanel('trophies')}
-              onWebGLFail={() => setWebglOk(false)}
+              onWebGLFail={() => { setWebglOk(false); setBooted(true); }}
             />
           </Suspense>
         ) : (
-          <Empire2D state={state} onSelect={selectPlot} />
+          <Empire2D state={sceneState} onSelect={selectPlot} />
         )}
       </div>
 
-      <div className="hud">
-        <TopHud state={state} onMenu={() => setMenu(true)} onFinances={() => openPanel('finances')} />
-        <div className="hud-left">
-        {tuto ? (
-          <CoachCard
-            content={tuto}
-            onPrimary={onCoachPrimary}
-            onSecondary={() => { doAction(tuto.secondary?.action); setTuto('done'); }}
-            onSkip={() => { setTuto('done'); toast('Tutoriel passé : le staff continuera de te conseiller.', 'gold'); }}
-          />
-        ) : (
-          <ObjectiveWidget state={state} collapsed={goalCollapsed} onToggle={() => setGoalCollapsed((c) => !c)} />
-        )}
-        <Presence>
-          {shownTip && (
-            <StaffTip
-              tip={shownTip}
-              onAction={() => doAction(shownTip.action)}
-              onDismiss={() => setDismissedTips((d) => new Set(d).add(shownTip.id))}
+      {inGame && (
+        <div className="hud">
+          <TopHud state={state} onMenu={() => setMenu(true)} onFinances={() => openPanel('finances')} />
+          <div className="hud-left">
+          {tuto ? (
+            <CoachCard
+              content={tuto}
+              onPrimary={onCoachPrimary}
+              onSecondary={() => { doAction(tuto.secondary?.action); setTuto('done'); }}
+              onSkip={() => { setTuto('done'); toast('Tutoriel passé : le staff continuera de te conseiller.', 'gold'); }}
+            />
+          ) : (
+            <ObjectiveWidget state={state} collapsed={goalCollapsed} onToggle={() => setGoalCollapsed((c) => !c)} />
+          )}
+          <Presence>
+            {shownTip && (
+              <StaffTip
+                tip={shownTip}
+                onAction={() => doAction(shownTip.action)}
+                onDismiss={() => setDismissedTips((d) => new Set(d).add(shownTip.id))}
+              />
+            )}
+          </Presence>
+          </div>
+          {webglOk && (
+            <SceneTools
+              timeMode={timeMode}
+              weatherMode={weatherMode}
+              matchDay={matchDay}
+              onTime={() => setTimeMode((m) => cycle(m, ['auto', 'day', 'night'], 'fo-time'))}
+              onWeather={() => setWeatherMode((m) => cycle(m, ['auto', 'clear', 'rain', 'snow'], 'fo-weather'))}
+              onMatchDay={() => setMatchDay((m) => !m)}
+              onRecenter={() => { setMatchDay(false); setRecenter((r) => r + 1); }}
             />
           )}
-        </Presence>
+          <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} />
+          <Dock panel={panel} onPanel={openPanel} badges={signals} />
         </div>
-        {webglOk && (
-          <SceneTools
-            timeMode={timeMode}
-            weatherMode={weatherMode}
-            matchDay={matchDay}
-            onTime={() => setTimeMode((m) => cycle(m, ['auto', 'day', 'night'], 'fo-time'))}
-            onWeather={() => setWeatherMode((m) => cycle(m, ['auto', 'clear', 'rain', 'snow'], 'fo-weather'))}
-            onMatchDay={() => setMatchDay((m) => !m)}
-            onRecenter={() => { setMatchDay(false); setRecenter((r) => r + 1); }}
-          />
-        )}
-        <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} />
-        <Dock panel={panel} onPanel={openPanel} badges={signals} />
-      </div>
+      )}
 
       <Presence>
-        {panel === 'squad' && (
+        {inGame && panel === 'squad' && (
           <SquadView
             state={state}
             run={run}
@@ -292,17 +354,17 @@ export default function App({ preview = null }) {
           />
         )}
       </Presence>
-      <Presence>{panel === 'season' && <SeasonPanel state={state} onClose={() => setPanel(null)} />}</Presence>
-      <Presence>{panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
-      <Presence>{panel === 'trophies' && <TrophyRoom state={state} onClose={() => setPanel(null)} />}</Presence>
-      <Presence>{panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} onClose={() => { setPanel(null); setStatsMatch(null); }} onPlayerSheet={(id) => { setSquadSheet(id); setSquadTab('players'); setPanel('squad'); }} />}</Presence>
+      <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} onClose={() => setPanel(null)} />}</Presence>
+      <Presence>{inGame && panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
+      <Presence>{inGame && panel === 'trophies' && <TrophyRoom state={state} onClose={() => setPanel(null)} />}</Presence>
+      <Presence>{inGame && panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} onClose={() => { setPanel(null); setStatsMatch(null); }} onPlayerSheet={(id) => { setSquadSheet(id); setSquadTab('players'); setPanel('squad'); }} />}</Presence>
       <Presence>
-        {panel === 'finances' && (
+        {inGame && panel === 'finances' && (
           <FinancesPanel state={state} onClose={() => setPanel(null)} onOpenSquad={() => { setSquadTab('players'); openPanel('squad'); }} />
         )}
       </Presence>
       <Presence>
-        {sel && (
+        {inGame && sel && (
           <PlotInspector
             state={state}
             sel={sel}
@@ -317,11 +379,11 @@ export default function App({ preview = null }) {
       </Presence>
 
       <Presence>
-        {matchPhase === 'prematch' && matchCtx && (
+        {inGame && matchPhase === 'prematch' && matchCtx && (
           <PreMatch state={state} ctx={matchCtx} onCancel={cancelMatch} onKickoff={kickoff} />
         )}
       </Presence>
-      {matchPhase === 'live' && matchCtx && (
+      {inGame && matchPhase === 'live' && matchCtx && (
         <LiveMatch
           state={state}
           ctx={matchCtx}
@@ -331,31 +393,33 @@ export default function App({ preview = null }) {
           onFinish={finishMatch}
         />
       )}
-      <Presence>{showResult && <PostMatch state={state} onClose={closeResult} onStats={() => { closeResult(); setStatsMatch('last'); setPanel('stats'); }} />}</Presence>
-      <Presence>{!matchPhase && !showResult && state.seasonReview && <SeasonReview state={state} onClose={() => run(dismissReview)} />}</Presence>
-      <Presence>{!matchPhase && !showResult && !state.seasonReview && state.offline && <OfflineReturn data={state.offline} onClose={() => run(dismissOffline)} />}</Presence>
-      <Presence>{menu && (
-        <GameMenu
-          onClose={() => setMenu(false)}
-          muted={sound.current.muted}
-          onToggleSound={() => { sound.current.setMuted(!sound.current.muted); bumpSound((n) => n + 1); }}
-          quality={quality}
-          qualities={QUALITIES}
-          onQuality={(q) => { setQuality(q); if (!preview) saveQuality(q); }}
-          vibration={vibration}
-          canVibrate={canVibrate()}
-          onToggleVibration={() => { setVibration(!vibration); setVibrationState(!vibration); }}
-          onReset={() => {
-            setMenu(false);
-            setConfirm({
-              tone: 'danger',
-              title: 'Recommencer une nouvelle aventure ?',
-              text: `La sauvegarde de ${state.clubName} (saison ${state.seasonNumber}, ${DIVISIONS[state.divisionIndex].name}) sera effacée définitivement.`,
-              confirmLabel: 'Effacer et recommencer',
-              cancelLabel: 'Garder ma partie',
-              onConfirm: () => { clearGame(); setState(null); setSceneLoaded(false); setLoadProgress(null); },
-            });
-          }}
+      <Presence>{inGame && showResult && <PostMatch state={state} onClose={closeResult} onStats={() => { closeResult(); setStatsMatch('last'); setPanel('stats'); }} />}</Presence>
+      <Presence>{inGame && !matchPhase && !showResult && state.seasonReview && <SeasonReview state={state} onClose={() => run(dismissReview)} />}</Presence>
+      <Presence>{inGame && !matchPhase && !showResult && !state.seasonReview && state.offline && <OfflineReturn data={state.offline} onClose={() => run(dismissOffline)} />}</Presence>
+
+      <Presence ms={450}>
+        {screen === 'title' && booted && (
+          <TitleScreen
+            state={state}
+            view={titleView}
+            onView={setTitleView}
+            settings={settings}
+            blocked={!!confirm}
+            onContinue={() => setScreen('game')}
+            onNewGame={askNewGame}
+            onCreate={(name) => { setState(createInitialState(name)); setTitleView('menu'); setScreen('game'); }}
+          />
+        )}
+      </Presence>
+      <Presence>{inGame && menu && (
+        <PauseMenu
+          state={state}
+          settings={settings}
+          inMatch={!!matchPhase}
+          blocked={!!confirm}
+          onResume={() => setMenu(false)}
+          onTitle={toTitle}
+          onNewGame={askNewGame}
         />
       )}</Presence>
       <Presence>
@@ -369,7 +433,9 @@ export default function App({ preview = null }) {
       </Presence>
       <Toasts items={toasts} />
       <Presence ms={500}>
-        {((webglOk && !preview && !sceneLoaded) || boot.ui.loading != null) && <LoadingScreen progress={boot.ui.loading ?? loadProgress} />}
+        {((webglOk && !preview && !booted) || boot.ui.loading != null) && (
+          <LoadingScreen info={loadProgress} done={sceneLoaded} fixed={boot.ui.loading ?? null} onFinished={() => setBooted(true)} />
+        )}
       </Presence>
     </div>
   );

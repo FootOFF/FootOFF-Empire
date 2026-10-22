@@ -4,7 +4,10 @@ import { matchContext } from '../game/season';
 // Mode aperçu (galerie d'écrans) : une partie fictive, jamais sauvegardée, et l'écran demandé déjà ouvert.
 
 export const SCREENS = [
-  ['accueil', 'Accueil (création du club)'],
+  ['titre', 'Écran titre · partie en cours'],
+  ['accueil', 'Écran titre · nouveau joueur'],
+  ['creation', 'Création du club'],
+  ['reglages', 'Écran titre · réglages'],
   ['empire', 'Empire (HUD)'],
   ['tutoriel', 'Tutoriel des premiers pas'],
   ['inspecteur', 'Inspecteur du stade'],
@@ -31,12 +34,12 @@ export const SCREENS = [
   ['journal', 'Journal du club'],
   ['trophees', 'Salle des trophées (palmarès, succès, records)'],
   ['confirmation', 'Fenêtre de confirmation'],
-  ['menu', 'Menu et réglages'],
+  ['menu', 'Menu pause'],
   ['chargement', 'Écran de chargement'],
 ];
 
 export function previewState(screen) {
-  if (screen === 'accueil') return null;
+  if (screen === 'accueil' || screen === 'creation') return null;
   const s = createInitialState('FootOFF FC');
   s.tutorial = { step: screen === 'tutoriel' ? 'build' : 'done' };
   if (screen === 'finances' || screen === 'stats' || screen === 'stats-pass' || screen === 'stats-detail' || screen === 'anciens' || screen === 'trophees') { // deux saisons bouclées, puis trois matchs : courbe et comptes remplis
@@ -82,9 +85,12 @@ export function previewState(screen) {
   return s;
 }
 
-// État d'interface de départ pour chaque écran.
+// État d'interface de départ pour chaque écran (s est nul pour les écrans d'avant la création du club).
 export function previewUi(screen, s) {
   switch (screen) {
+    case 'titre': case 'accueil': return { screen: 'title' };
+    case 'reglages': return { screen: 'title', titleView: 'settings' };
+    case 'creation': return { screen: 'title', titleView: 'create' };
     case 'inspecteur': return { sel: { plotId: 't0', sector: 'main' } };
     case 'parcelle': return { sel: { plotId: 't2', sector: 'main' } };
     case 'effectif': return { panel: 'squad' };
@@ -126,5 +132,5 @@ export function previewUi(screen, s) {
 
 // Son coupé en aperçu (pas d'AudioContext dans les vignettes).
 export const silentSound = {
-  muted: true, start() {}, setMuted() {}, whistle() {}, chance() {}, goal() {}, conceded() {}, card() {}, coins() {}, spend() {}, stop() {},
+  muted: true, start() {}, setMuted() {}, whistle() {}, chance() {}, goal() {}, conceded() {}, card() {}, coins() {}, spend() {}, ui() {}, stop() {},
 };

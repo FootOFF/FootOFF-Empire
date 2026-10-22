@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { SKIES } from './skies.generated';
+import { trackLoad } from './assets';
 
 // Ciels photographiés (HDRI Poly Haven, CC0, convertis par scripts/sky/build.mjs) : dôme du ciel, environnement
 // (reflets, lumière ambiante) et couleur de l'horizon pour la brume. L'heure réelle choisit un « moment » de la
@@ -231,8 +232,10 @@ export function createPhotoSky(renderer, { quality = 'auto' } = {}) {
     let e = cache.get(url);
     if (!e) {
       e = { tex: null, used: 0 };
+      const job = trackLoad(big() ? 360e3 : 160e3); // écran de chargement : taille supposée du ciel
       e.promise = new Promise((resolve, reject) => {
         loader.load(url, (t) => {
+          job.done();
           t.colorSpace = THREE.NoColorSpace; // radiance encodée, décodée par le shader
           t.wrapS = THREE.RepeatWrapping;
           t.wrapT = THREE.ClampToEdgeWrapping;
@@ -241,7 +244,7 @@ export function createPhotoSky(renderer, { quality = 'auto' } = {}) {
           renderer.initTexture(t); // envoi au GPU maintenant, pas au premier affichage
           e.tex = t;
           resolve(t);
-        }, undefined, reject);
+        }, undefined, (err) => { job.done(); reject(err); });
       });
       cache.set(url, e);
       // au plus trois ciels en mémoire : on libère le plus ancien qui n'est pas affiché

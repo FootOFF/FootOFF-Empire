@@ -181,6 +181,7 @@ function parvisInfo(s) {
 export default function Empire3D({
   state, onSelectPlot, onEmptyTap, onWebGLFail, timeMode = 'auto', weatherMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
   live = false, matchFx = null, badges = [], quality = 'auto', onLoadProgress, onLoaded, matchInfo = null, onOpenTrophies,
+  attract = false, paused = false,
 }) {
   const mountRef = useRef(null);
   const labelRef = useRef(null);
@@ -198,7 +199,8 @@ export default function Empire3D({
   trophiesRef.current = onOpenTrophies;
   const loadRef = useRef({ onLoadProgress, onLoaded });
   loadRef.current = { onLoadProgress, onLoaded };
-  const modeRef = useRef({ timeMode: 'auto', weatherMode: 'auto', matchDay: false, live: false });
+  // attract : écran titre (caméra en vitrine, sans interaction) ; paused : menu pause (la dernière image reste figée)
+  const modeRef = useRef({ timeMode: 'auto', weatherMode: 'auto', matchDay: false, live: false, attract, paused });
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -524,6 +526,7 @@ export default function Empire3D({
         renderer.shadowMap.enabled = shadows;
         scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); });
       }
+      ctx.frameOnce = true; // en pause : une image à la nouvelle qualité
     };
     ctx.cutCamera = (view) => { // plan de coupe (ralenti) : pas de transition
       ctx.camTween = null;
@@ -562,22 +565,25 @@ export default function Empire3D({
     }
     setReady(true);
 
-    // Écran de chargement : progression des modèles demandés par la scène. Fini quand tout est arrivé et que
-    // rien de neuf n'a été demandé pendant deux relevés (les modèles arrivent par vagues), ou au bout de 12 s.
+    // Écran de chargement : octets reçus des modèles, textures et ciels demandés par la scène (phase « assets »),
+    // puis décodage et compilation (phase « prepare »). Fini quand tout est arrivé et que rien de neuf n'a été
+    // demandé pendant deux relevés (les fichiers arrivent par vagues), ou au bout de 12 s.
     const loadStart = performance.now();
     let calm = 0;
     const loadTimer = setInterval(() => {
-      const { requested, settled } = assetsProgress();
-      loadRef.current.onLoadProgress?.(requested ? settled / requested : 1);
-      calm = requested && settled >= requested ? calm + 1 : 0;
+      const a = assetsProgress();
+      const allIn = a.requested > 0 && a.settled >= a.requested;
+      loadRef.current.onLoadProgress?.({ phase: allIn ? 'prepare' : 'assets', download: allIn ? 1 : a.total ? a.loaded / a.total : 0 });
+      calm = allIn ? calm + 1 : 0;
       if (calm >= 2 || performance.now() - loadStart > 12000) {
         clearInterval(loadTimer);
+        loadRef.current.onLoadProgress?.({ phase: 'prepare', download: 1 });
         // tous les matériaux compilés d'avance (projecteurs allumés et éteints), derrière l'écran de chargement : pas
         // d'à-coup quand un arbre passe en 3D, qu'un bâtiment apparaît ou que les projecteurs s'allument le soir
         loaded = true;
         const ready = () => {
           if (!ctx.alive) return;
-          loadRef.current.onLoadProgress?.(1);
+          loadRef.current.onLoadProgress?.({ phase: 'done', download: 1 });
           loadRef.current.onLoaded?.();
           setTimeout(() => { drs.active = true; }, 3000); // résolution adaptative : après les compilations du départ
         };
@@ -623,7 +629,7 @@ export default function Empire3D({
       if (!down) return;
       const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
       down = null;
-      if (moved > 6) return;
+      if (moved > 6 || modeRef.current.attract) return;
       const id = pick(e.clientX, e.clientY);
       const act = () => {
         if (id === 'parvis') { trophiesRef.current?.(); return; } // allée d'honneur : salle des trophées
@@ -729,6 +735,7 @@ export default function Empire3D({
       renderer.setSize(w, h);
       applyRatio();
       post.setSize(w, h);
+      ctx.frameOnce = true; // la toile redimensionnée est vide : en pause, une image pour la remplir
     };
     const ro = new ResizeObserver(refit);
     ro.observe(mount);
@@ -745,12 +752,40 @@ export default function Empire3D({
     const lastCam = new THREE.Matrix4(); // dernière position de la caméra : immobile ou en mouvement
     let lastMove = 0;
     let switchedAt = 0;
+    // Écran titre : la caméra tourne lentement autour du complexe (un tour en un peu plus de deux minutes), un peu
+    // plus près et plus bas que la vue d'ensemble. Elle part de là où elle est (pas de saut) et rejoint l'orbite en
+    // douceur ; au retour au jeu, elle glisse vers la vue d'ensemble.
+    const orbitStep = (dt) => {
+      const t = controls.target;
+      let o = ctx.orbit;
+      if (!o) {
+        const off = camera.position.clone().sub(t);
+        const r = Math.max(1, off.length());
+        o = ctx.orbit = { az: Math.atan2(off.x, off.z), el: Math.asin(THREE.MathUtils.clamp(off.y / r, -1, 1)), r };
+      }
+      const want = ctx.home.pos.clone().sub(ctx.home.target);
+      const k = Math.min(1, dt * 0.6);
+      o.az += dt * 0.045;
+      o.r += (want.length() * 0.86 - o.r) * k;
+      o.el += (Math.asin(want.y / want.length()) * 0.82 - o.el) * k;
+      t.lerp(ctx.home.target, k);
+      camera.position.set(
+        t.x + Math.sin(o.az) * Math.cos(o.el) * o.r,
+        t.y + Math.sin(o.el) * o.r,
+        t.z + Math.cos(o.az) * Math.cos(o.el) * o.r,
+      );
+    };
     renderer.setAnimationLoop(() => {
       timer.update();
       const raw = timer.getDelta();
       const dt = Math.min(raw, 0.05);
       if (!onScreen || document.hidden) return;
+      // menu pause : plus rien ne bouge ni ne se dessine, la dernière image reste à l'écran (floutée derrière le
+      // menu) ; une image de plus seulement si la toile change de taille ou de qualité
+      if (modeRef.current.paused && !ctx.frameOnce) return;
+      ctx.frameOnce = false;
       time += dt;
+      if (modeRef.current.attract && !ctx.camTween) orbitStep(dt);
       if (ctx.camTween) {
         const tw = ctx.camTween;
         tw.t = Math.min(1, tw.t + dt / tw.duration);
@@ -777,7 +812,7 @@ export default function Empire3D({
         scene.fog.near = Math.max(fogBase[0], d + 35);
         scene.fog.far = Math.max(scene.fog.near + 120, Math.min(fogBase[1] * k, d + 320));
       }
-      if (pointer) { setHovered(pick(pointer.x, pointer.y)); pointer = null; }
+      if (pointer) { setHovered(modeRef.current.attract ? null : pick(pointer.x, pointer.y)); pointer = null; }
       frame.update(time);
       selFrame.update(time * 0.6);
       let shakeX = 0, shakeY = 0;
@@ -827,9 +862,11 @@ export default function Empire3D({
       const narrow = W <= 760;
       // Fiche d'une parcelle ouverte : la parcelle glisse au-dessus de la feuille (mobile) ou à droite de la
       // carte de l'inspecteur (PC), pour rester visible.
+      // Écran titre : le complexe se décale vers la droite (PC) ou vers le haut (téléphone), hors du menu.
       const sheet = ctx.sheetOpen && ctx.frameShift && !modeRef.current.live;
-      const wantX = modeRef.current.live && !narrow ? 188 : sheet ? ctx.frameShift.x : 0;
-      const wantY = modeRef.current.live && narrow ? H * 0.18 : sheet ? ctx.frameShift.y : 0;
+      const attract = modeRef.current.attract;
+      const wantX = attract ? (narrow ? 0 : -W * 0.15) : modeRef.current.live && !narrow ? 188 : sheet ? ctx.frameShift.x : 0;
+      const wantY = attract ? (narrow ? H * 0.14 : 0) : modeRef.current.live && narrow ? H * 0.18 : sheet ? ctx.frameShift.y : 0;
       viewShift.x += (wantX - viewShift.x) * Math.min(1, dt * 2.6);
       viewShift.y += (wantY - viewShift.y) * Math.min(1, dt * 2.6);
       if (Math.abs(viewShift.x) + Math.abs(viewShift.y) > 0.5) camera.setViewOffset(W, H, viewShift.x, viewShift.y, W, H);
@@ -899,9 +936,25 @@ export default function Empire3D({
   }, [state]);
 
   useEffect(() => {
-    modeRef.current = { timeMode, weatherMode, matchDay, live };
+    Object.assign(modeRef.current, { timeMode, weatherMode, matchDay, live });
     ctxRef.current?.applyMode();
   }, [timeMode, weatherMode, matchDay, live, ready]);
+
+  useEffect(() => {
+    modeRef.current.paused = paused;
+    if (ctxRef.current) ctxRef.current.frameOnce = true;
+  }, [paused]);
+
+  // Écran titre : caméra en vitrine, sans interaction ; au retour au jeu, elle glisse vers la vue d'ensemble.
+  useEffect(() => {
+    modeRef.current.attract = attract;
+    const ctx = ctxRef.current;
+    if (!ctx || !ready) return;
+    ctx.controls.enabled = !attract;
+    ctx.orbit = null;
+    if (attract) ctx.camTween = null;
+    else ctx.tweenCamera(ctx.home, 2.2);
+  }, [attract, ready]);
 
   useEffect(() => {
     const ctx = ctxRef.current;

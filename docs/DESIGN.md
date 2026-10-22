@@ -75,9 +75,9 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 - Puces de filtre : toujours sur une ligne ; sur téléphone elles se resserrent et défilent en secours.
 - Inspecteur de parcelle : même famille (en-tête séparé, corps), largeur de la colonne de gauche sur PC,
   feuille basse opaque avec poignée sur téléphone.
-- Menu : réglages (Son en interrupteur, Qualité graphique en sélecteur à trois positions), puis la partie.
-  La qualité est enregistrée par appareil (`fo-quality`) : Économie = sans ombres et résolution 1, Auto = selon
-  l'appareil, Haute = ombres et netteté maximales ; elle s'applique sans recharger.
+- Réglages (écran titre et menu pause, voir plus bas) : Son et Vibrations en interrupteurs, Qualité graphique en
+  choix à trois positions. La qualité est enregistrée par appareil (`fo-quality`) : Économie = sans ombres et
+  résolution 1, Auto = selon l'appareil, Haute = ombres et netteté maximales ; elle s'applique sans recharger.
 
 ## Finitions
 
@@ -88,17 +88,16 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
   d'origine à la fermeture (`useDialogFocus`).
 - Survol : seulement avec une souris (`@media (hover: hover)`) ; appui : léger enfoncement partout.
 - Toucher : sur écran tactile, chaque commande se touche sur 44 × 44 px au moins (zone invisible `::after`).
-- Gestes (`src/ui/gestures.js`) : sur téléphone, panneaux, menu, confirmation, inspecteur et fiche se ferment en
+- Gestes (`src/ui/gestures.js`) : sur téléphone, panneaux, confirmation, inspecteur et fiche se ferment en
   glissant vers le bas (poignée visible) ; la fiche passe au joueur suivant ou précédent en glissant à gauche ou
   à droite. Le défilement reste prioritaire. L'action principale (Améliorer, Signer, Vendre) reste collée en bas ;
-  menu et confirmation deviennent des feuilles qui montent du bas.
-- Vibrations (`src/ui/haptics.js`) : but marqué, vente, dépense, construction ; désactivables dans le menu
+  la confirmation devient une feuille qui monte du bas.
+- Vibrations (`src/ui/haptics.js`) : but marqué, vente, dépense, construction ; désactivables dans les réglages
   (indisponibles sur iPhone, Safari ne les permet pas).
 - Typographie : le code écrit des espaces ordinaires ; `src/ui/typography.js` pose à l'affichage les insécables
   (avant `: ; ! ?`, dans les guillemets, entre un nombre et son unité), l'apostrophe ’ et les points de
   suspension. Ordinaux avec `ordinal()` : 1er, 1re, 2e.
-- Chargement : écran HTML dans `index.html` avant l'arrivée du code, puis `LoadingScreen` (progression réelle des
-  modèles 3D, astuces) jusqu'à ce que la scène soit prête ; même mise en page, aucun saut.
+- Chargement : voir « Écran titre, pause et chargement ».
 
 ## Contrôle
 
@@ -107,10 +106,33 @@ La galerie (`?galerie` dans l'adresse du jeu) affiche chaque écran avec des don
 
 ## Sélection en verre liquide
 
-Le menu du bas, les onglets des panneaux et les choix segmentés utilisent la même pastille en verre
-(`src/ui/glass.jsx`, `useGlass` et `GlassTabs`) : elle glisse vers la section choisie en s'étirant, et on peut la
-faire glisser au doigt ; la section s'ouvre au relâché. Les barres portent `data-noswipe` pour que ce geste ne
-fasse pas changer de fiche.
+Réservée au menu du bas (`src/ui/glass.jsx`, `useGlass`) : la pastille glisse vers la section choisie en
+s'étirant, et on peut la faire glisser au doigt (elle reste sous le doigt) ; la section s'ouvre au relâché.
+Position par `translate`, étirement par `scale` : deux propriétés distinctes, sinon l'animation d'étirement coupe
+le glissement et la loupe du doigt décale la pastille.
+
+## Écran titre, pause et chargement
+
+Façon jeu de console : un seul chargement au démarrage, puis l'écran titre devant le complexe en 3D, puis le jeu.
+
+- Chargement (`index.html` puis `src/ui/loading.jsx`, mêmes styles dans `index.html`) : logo au centre, astuce en
+  bas à gauche, étape et pourcentage en bas à droite, barre dorée sur toute la largeur. La progression est réelle
+  et ne recule jamais : code du jeu jusqu'à 18 %, octets reçus des modèles, textures et ciels jusqu'à 84 %
+  (`trackLoad` dans `src/three/assets.js`), décodage et compilation pour la carte graphique jusqu'à 100 %. Un
+  reflet parcourt la barre, animé par la carte graphique : elle vit même quand le processeur est occupé.
+- Écran titre (`src/ui/title.jsx`) : la caméra tourne lentement autour du complexe (`attract` d'Empire3D, le
+  complexe décalé hors du menu). Titre FootOFF Empire, menu Continuer, Nouvelle partie, Réglages, FootOFF Media ;
+  à droite (PC) la carte de l'entrée active (classement, points, journée, forme, prochain match, trésorerie).
+  Avant la création du club, la scène montre le complexe de départ. Sous-écrans avec leur propre en-tête :
+  réglages, création du club (nom proposé au hasard, dé pour en tirer un autre). Continuer : la caméra plonge
+  vers la vue d'ensemble et le HUD apparaît.
+- Menu pause (`src/ui/pause.jsx`) : Échap, le bouton menu du HUD, ou Start à la manette. La scène se fige (Empire3D
+  ne dessine plus, `paused`) et se floute ; Reprendre, Réglages, Écran titre, Nouvelle partie (confirmation),
+  FootOFF Media ; à droite la saison en cours et l'objectif.
+- Commandes (`src/ui/console.jsx`, `src/ui/input.js`) : flèches, Entrée, Échap ; souris (l'entrée suit le
+  survol) ; doigt ; manette (croix ou stick, A, B, Start), traduite en touches du clavier. Les aides en bas
+  d'écran suivent le dernier moyen utilisé (touches, boutons de manette, rien au doigt). Petits sons de menu,
+  coupés avec le son.
 
 ## Caméra sur téléphone
 

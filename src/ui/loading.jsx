@@ -1,9 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { FootOFFLockup } from './brand';
+import React, { useEffect, useRef, useState } from 'react';
+import { FOMonogram } from './brand';
 
-// Écran de chargement de l'Empire : logo, progression réelle des modèles 3D, étape en cours et une astuce de
-// jeu qui change toutes les quelques secondes. La même mise en page existe en HTML pur dans index.html, pour
-// l'instant où le code du jeu n'est pas encore arrivé : on passe de l'un à l'autre sans saut.
+// Écran de chargement, façon jeu de console : logo au centre, astuce en bas à gauche, étape et pourcentage en bas
+// à droite, fine barre dorée sur toute la largeur. La même mise en page existe en HTML pur dans index.html (où
+// vivent aussi ses styles), pour l'instant où le code du jeu n'est pas encore arrivé : on passe de l'un à l'autre
+// sans saut (même progression, mêmes animations, reprises là où elles en étaient).
+//
+// Progression : chaque phase a sa part de la barre et avance pour de vrai.
+// - code du jeu : index.html avance seul jusqu'à 10 %, puis le moteur 3D arrive (jusqu'à 18 %) ;
+// - fichiers 3D (modèles, textures, ciel) : octets reçus sur octets attendus (jusqu'à 84 %) ;
+// - préparation (décodage, compilation des matériaux pour la carte graphique) : jusqu'à 98 %, puis 100 %.
+// L'affichage glisse vers la valeur visée sans jamais reculer, et la barre garde un reflet animé par la carte
+// graphique : elle vit même quand le processeur est occupé à décoder un modèle.
 
 const TIPS = [
   'Un stade plus grand accueille plus de spectateurs : billetterie, buvette et boutique en profitent.',
@@ -15,34 +23,105 @@ const TIPS = [
   'L’académie révèle un jeune talent à fort potentiel à chaque fin de saison.',
   'Surveille la part des salaires dans tes revenus : c’est elle qui fait basculer une saison dans le rouge.',
   'Avant le match, « Meilleur onze » aligne d’un geste ta meilleure équipe.',
+  'Le bureau des transferts ouvre un marché de joueurs sous contrat, avec des indemnités négociées.',
+  'Échap (ou Start à la manette) met le jeu en pause à tout moment.',
 ];
 
-const stepOf = (p) => (p < 0.34 ? 'Ouverture des grilles' : p < 0.75 ? 'Mise en place des tribunes' : p < 1 ? 'Dernier coup de tondeuse' : 'Coup d’envoi');
+const stepOf = (p, done) => (done && p >= 1 ? 'Prêt' : p < 0.18 ? 'Démarrage du moteur' : p < 0.5 ? 'Chargement du complexe' : p < 0.84 ? 'Mise en place du décor' : 'Réglage des projecteurs');
 
-// progress : null tant que la scène n'a pas commencé à charger (barre en attente), puis de 0 à 1.
-export function LoadingScreen({ progress = null }) {
+function targetOf(info, done, now, marks) {
+  if (done) return 1;
+  const phase = info?.phase || 'code';
+  if (marks[phase] == null) marks[phase] = now;
+  const t = (now - marks[phase]) / 1000;
+  const ease = (tau) => 1 - Math.exp(-t / tau);
+  if (phase === 'code') return 0.1 + 0.08 * ease(1.6);
+  if (phase === 'assets') return 0.18 + 0.66 * Math.max(info.download || 0, 0.06 * ease(2.5));
+  return 0.84 + 0.14 * ease(1.5);
+}
+
+// info : null tant que le moteur 3D n'est pas arrivé, puis { phase: 'assets' | 'prepare', download: 0 à 1 }.
+// done : scène prête ; la barre file à 100 %, puis onFinished. fixed : valeur figée (galerie d'écrans).
+export function LoadingScreen({ info = null, done = false, fixed = null, onFinished }) {
+  const boot = typeof window !== 'undefined' ? window.__foBoot : null;
+  const [t0] = useState(() => boot?.t0 ?? performance.now());
   const [tip, setTip] = useState(() => Math.floor(Math.random() * TIPS.length));
+  const bar = useRef(null);
+  const pct = useRef(null);
+  const step = useRef(null);
+  const live = useRef({ info, done, onFinished });
+  live.current = { info, done, onFinished };
+
   useEffect(() => {
-    const t = setInterval(() => setTip((i) => (i + 1) % TIPS.length), 4500);
+    const t = setInterval(() => setTip((i) => (i + 1) % TIPS.length), 5200);
     return () => clearInterval(t);
   }, []);
-  const waiting = progress === null;
-  const pct = waiting ? 0 : Math.round(progress * 100);
+
+  useEffect(() => {
+    if (boot) boot.done = true; // l'écran HTML de départ passe la main
+    let shown = fixed ?? Math.min(0.1, boot?.p || 0);
+    let label = '';
+    let lastPct = -1;
+    const trace = import.meta.env.DEV ? (window.__ldLog = []) : null; // relevé de la progression (mesures)
+    const paint = (isDone) => {
+      if (bar.current) bar.current.style.transform = `scaleX(${shown})`;
+      const p = Math.floor(shown * 100);
+      if (p !== lastPct) {
+        lastPct = p;
+        if (pct.current) pct.current.textContent = String(p);
+        trace?.push([Math.round(performance.now()), p, live.current.info?.phase || 'code']);
+      }
+      const l = stepOf(shown, isDone);
+      if (l !== label && step.current) { label = l; step.current.textContent = l; }
+    };
+    paint(false);
+    if (fixed != null) return undefined;
+    const marks = {};
+    let last = performance.now();
+    let finished = 0;
+    let raf = requestAnimationFrame(function tick(now) {
+      raf = requestAnimationFrame(tick);
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      const { info: inf, done: isDone } = live.current;
+      const target = targetOf(inf, isDone, now, marks);
+      if (target > shown) {
+        const k = 1 - Math.exp(-dt / (isDone ? 0.12 : 0.35));
+        shown = Math.min(target, Math.max(shown + (target - shown) * k, shown + dt * 0.004)); // jamais figée
+        if (isDone && shown > 0.996) shown = 1;
+      }
+      paint(isDone);
+      if (isDone && shown >= 1 && !finished) finished = now;
+      if (finished && now - finished > 280) {
+        cancelAnimationFrame(raf);
+        live.current.onFinished?.();
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [fixed]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // animations de fond reprises là où l'écran HTML les avait laissées (calculé une fois : changer le délai d'une
+  // animation en cours la ferait sauter)
+  const [style] = useState(() => ({ '--ld-delay': `${-Math.round(performance.now() - t0)}ms` }));
   return (
-    <div className="loading" role="status" aria-label={waiting ? 'Chargement de l’Empire' : `Chargement de l’Empire, ${pct} %`}>
-      <div className="loading-inner">
-        <FootOFFLockup sub="Empire" size="lg" />
-        <div className="loading-progress">
-          <div className={`loading-bar ${waiting ? 'wait' : ''}`}>
-            <i style={waiting ? undefined : { transform: `scaleX(${Math.max(0.04, progress)})` }} />
-          </div>
-          <div className="loading-meta">
-            <span>{waiting ? 'Chargement…' : `${stepOf(progress)}${progress < 1 ? '…' : ' !'}`}</span>
-            {!waiting && <b>{pct} %</b>}
-          </div>
+    <div className="ld" style={style} role="status" aria-label="Chargement de FootOFF Empire">
+      <div className="ld-glow" aria-hidden="true" />
+      <div className="ld-center">
+        <div className="ld-logo">
+          <FOMonogram className="ld-mono" />
+          <span className="ld-sep" aria-hidden="true" />
+          <span className="ld-words"><span className="ld-name">Foot<b>OFF</b></span><span className="ld-sub">Empire</span></span>
         </div>
-        <p className="loading-tip" key={tip}><span className="eyebrow">Astuce</span>{TIPS[tip]}</p>
       </div>
+      <div className="ld-bottom">
+        <p className="ld-tip" key={tip}><span className="ld-tip-label">Astuce</span><span className="ld-tip-text">{TIPS[tip]}</span></p>
+        <div className="ld-status">
+          <svg className="ld-spin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /></svg>
+          <span className="ld-step" ref={step} />
+          <span className="ld-pct"><b ref={pct}>0</b> %</span>
+        </div>
+      </div>
+      <div className="ld-bar" aria-hidden="true"><i ref={bar} /></div>
     </div>
   );
 }
