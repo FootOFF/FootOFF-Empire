@@ -333,6 +333,10 @@ Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone
   imposteurs gardent l'ombre de leur modèle 3D, dessiné seulement dans la carte d'ombres ;
 - projecteurs (mâts, parcelles, stade, trophée) tous dans le calcul de la lumière ou aucun : le jour, aucun ne coûte ;
   les deux combinaisons sont compilées d'avance, derrière l'écran de chargement (pas d'à-coup à la tombée du jour) ;
+  chaque pixel ne calcule que les projecteurs qui l'atteignent (`src/three/lights.js`) : test de portée d'abord,
+  modèle de lumière seulement dans le cône (three évaluait sinon les 11 projecteurs en entier sur chaque pixel, même
+  là où leur lumière vaut zéro). Même image ; mesuré la nuit en 2880 × 1620 (puce intégrée, image par image) : scène
+  37,9 → 25,8 ms, rotation de caméra la nuit et les soirs de match 16 à 17 → 22 à 25 images par seconde ;
 - chaîne de rendu (`src/three/postfx.js`) : scène dessinée sans multi-échantillons (il coûtait ~7,5 ms en
   2880 × 1620 sur une puce graphique intégrée) ; occlusion (demi-résolution de l'écran de près comme de loin, sans
   le ciel, l'eau, le voile d'horizon, les imposteurs ni les cartes de feuillage) et halo calculés à basse résolution,
@@ -346,8 +350,9 @@ Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone
   sans résolution adaptative ni agrandisseur (sur une puce intégrée, agrandir une image calculée plus petite coûtait
   presque autant que la pleine résolution : FXAA, EASU, RCAS, 5 à 7 ms en 2880 × 1620) ; ombres en 2048, ciel photo
   et images des arbres lointains en pleine définition partout. Mesuré en 2880 × 1620 (puce intégrée AMD, écran
-  60 Hz) : 30 images par seconde en mouvement, chaque image à la taille exacte de l'écran (avant : image agrandie
-  ×1,7 en mouvement, floue et crénelée). Densité de l'écran relue au zoom du navigateur et au changement d'écran ;
+  60 Hz) : environ 30 images par seconde en mouvement le jour, chaque image à la taille exacte de l'écran (avant :
+  image agrandie ×1,7 en mouvement, floue et crénelée). Densité de l'écran relue au zoom du navigateur et au
+  changement d'écran ;
 - feuillage des arbres : profondeur écrite d'abord par une passe qui ne lit que l'image des feuilles (même vent, même
   découpe), puis feuillage éclairé sans écrire la profondeur : chaque pixel n'est éclairé que pour la feuille visible
   (vue rapprochée, 2880 × 1620 : scène 22,1 → 18,4 ms) ;

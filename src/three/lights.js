@@ -1,5 +1,38 @@
 import * as THREE from 'three';
 
+// Chaque pixel ne calcule que les projecteurs qui l'atteignent. three évalue sinon, sur chaque pixel de l'image, le
+// modèle de lumière complet (reflets GGX, Fresnel) de tous les projecteurs, même hors de leur portée ou de leur cône
+// où leur lumière vaut exactement zéro. Ici, un test de portée (distance au carré, presque gratuit) écarte d'abord
+// les projecteurs trop loin, puis le modèle de lumière n'est calculé que dans le cône. Image identique. Mesuré la
+// nuit (11 projecteurs, 2880 × 1620, puce intégrée, variantes alternées image par image) : scène 37,9 -> 25,8 ms
+// (une vraie boucle ou le seul test du cône : ~28 ms).
+// Projecteurs avec ombre ou image projetée (aucun dans le jeu) : calcul d'origine.
+{
+  const src = THREE.ShaderChunk.lights_fragment_begin;
+  const call = 'RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );';
+  const head = '#if ( NUM_SPOT_LIGHTS > 0 ) && defined( RE_Direct )';
+  const from = src.indexOf(head);
+  const to = src.indexOf('#endif', src.indexOf('#pragma unroll_loop_end', from));
+  if (from < 0 || to < 0 || src.slice(from, to).split(call).length !== 2) throw new Error('lights.js : lights_fragment_begin a changé (three)');
+  THREE.ShaderChunk.lights_fragment_begin = `${src.slice(0, from)}${head}
+	#if ( NUM_SPOT_LIGHT_SHADOWS == 0 ) && ( NUM_SPOT_LIGHT_MAPS == 0 )
+	#pragma unroll_loop_start
+	for ( int i = 0; i < NUM_SPOT_LIGHTS; i ++ ) {
+		{
+		vec3 spotReach = spotLights[ i ].position - geometryPosition;
+		if ( spotLights[ i ].distance == 0.0 || dot( spotReach, spotReach ) < spotLights[ i ].distance * spotLights[ i ].distance ) {
+			getSpotLightInfo( spotLights[ i ], geometryPosition, directLight );
+			if ( directLight.visible ) ${call}
+		}
+		}
+	}
+	#pragma unroll_loop_end
+	#else
+${src.slice(from + head.length, to)}
+	#endif
+${src.slice(to)}`;
+}
+
 // Projecteurs réels aux positions « light_* » d'un modèle (mâts, pylônes, bord de toiture).
 // Ils visent le centre de la zone éclairée (barycentre des projecteurs, au sol), sans ombres pour rester
 // légers. Ici, seule l'intensité varie ; Empire3D (syncSpots) les sort tous ensemble du calcul de la lumière
