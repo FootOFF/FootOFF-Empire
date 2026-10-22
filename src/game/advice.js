@@ -146,7 +146,7 @@ export function staffTip(s) {
     return {
       id: `sign-${sign.player.id}`,
       title: weak && weak.pos === pos ? `${LINE[pos]} est ta ligne la plus faible` : 'Une recrue renforcerait ton onze',
-      text: `${sign.player.name} (${POS_LABELS[pos].toLowerCase()}, note ${ratingAt(sign.player, pos).toFixed(1)}) ${sign.player.club ? `est à vendre (${sign.player.club}) pour` : 'est libre pour'} ${money(sign.fee)}.`,
+      text: `${sign.player.name} (${POS_LABELS[pos].toLowerCase()}, note ${ratingAt(sign.player, pos).toFixed(1).replace('.', ',')}) ${sign.player.club ? `est à vendre (${sign.player.club}) pour` : 'est libre pour'} ${money(sign.fee)}.`,
       action: { kind: 'panel', panel: 'squad', tab: 'market', label: 'Voir le mercato' },
     };
   }
