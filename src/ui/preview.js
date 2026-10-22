@@ -44,6 +44,7 @@ export const SCREENS = [
   ['journal', 'Journal du club'],
   ['trophees', 'Salle des trophées (palmarès, succès, records)'],
   ['confirmation', 'Fenêtre de confirmation'],
+  ['notification', 'Notification · succès débloqué'],
   ['menu', 'Menu pause'],
   ['chargement', 'Écran de chargement'],
 ];
@@ -82,7 +83,7 @@ export function previewState(screen) {
   if (screen === 'transferts' || screen === 'bureau') { // bureau construit au niveau 2 chez les supporters
     s.reputation = 8;
     s.money = 1e6;
-    build(s, 'supporters', 'transfers');
+    build(s, 't3', 'transfers');
     upgrade(s, 'transfers');
     s.money = 60000;
   }
@@ -155,7 +156,7 @@ export function previewUi(screen, s) {
     case 'suivis': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'watch' } };
     case 'offres': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'offers' } };
     case 'bilan-mercato': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'log' } };
-    case 'bureau': return { sel: { plotId: 't3', sector: 'supporters' } };
+    case 'bureau': return { sel: { plotId: 't3', sector: 'main' } };
     case 'comparateur': return { panel: 'squad', squadTab: 'market', squad: { compare: true } };
     case 'saison': return { panel: 'season' };
     case 'classement': return { panel: 'season', seasonTab: 'table' };
@@ -172,6 +173,12 @@ export function previewUi(screen, s) {
     case 'mi-temps-compo': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime', board: true } };
     case 'apres-match': return { showResult: true, matchDay: true };
     case 'menu': return { menu: true };
+    case 'notification': return {
+      notes: [
+        { kind: 'achievement', eyebrow: 'Succès débloqué', title: 'Première victoire', text: 'Gagner un premier match officiel.', action: { panel: 'trophies', tab: 'achievements' } },
+        { kind: 'mercato', eyebrow: 'Mercato · pendant la journée', title: '2 offres reçues pour tes joueurs', action: { panel: 'squad', tab: 'market' } },
+      ],
+    };
     case 'chargement': return { loading: 0.42 };
     case 'confirmation': {
       const p = s.players[s.players.length - 1];

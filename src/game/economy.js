@@ -1,5 +1,6 @@
 import { BUILDINGS, DIVISIONS, upgradeCost } from './constants';
 import { clamp, rnd } from './utils';
+import { REP_START, mercatoRep, sponsorRep } from './reputation';
 
 // Économie du club : affluence, recettes d'un match, revenus de saison, salaires, entretien.
 // Ordres de grandeur réalistes, du football amateur (quelques centaines de spectateurs, budgets de
@@ -85,7 +86,14 @@ export const expectedGate = (s, opp, comp = 'league') => matchGate(s, opp, 1, co
 
 // --- Revenus et charges de saison ---------------------------------------------------------------
 
-export const sponsorIncome = (lvl, divIndex) => Math.round(DIVISIONS[divIndex].sponsor * (1 + 0.4 * lvl));
+// rep : réputation du club (les sponsors paient mieux un club réputé, reputation.js) ; celle de la fondation par défaut
+export const sponsorIncome = (lvl, divIndex, rep = REP_START) => Math.round(DIVISIONS[divIndex].sponsor * (1 + 0.4 * lvl) * sponsorRep(rep));
+
+// Ce que la notoriété apporte aujourd'hui, en écart par rapport à la fondation (panneau Notoriété).
+export function repEffects(rep) {
+  const crowd = repFactor(rep) / repFactor(REP_START) - 1;
+  return { crowd, shop: crowd, sponsors: sponsorRep(rep) - 1, mercato: mercatoRep(rep) };
+}
 
 // Prime de classement : le champion touche la prime pleine, le dernier 10 %.
 export const prizeFor = (position, divIndex) => Math.round(DIVISIONS[divIndex].prize * (0.1 + (0.9 * (8 - position)) / 7));
@@ -123,7 +131,7 @@ export const upkeepOf = (s) => Math.round(Object.keys(BUILDINGS).reduce((a, k) =
 // de l'effectif quand la masse salariale devient trop lourde.
 export function seasonForecast(s, wages) {
   const gate = expectedGate(s, null);
-  const income = gate.revenue * 7 + sponsorIncome(s.buildings.sponsor, s.divisionIndex) + prizeFor(4, s.divisionIndex);
+  const income = gate.revenue * 7 + sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation) + prizeFor(4, s.divisionIndex);
   const upkeep = upkeepOf(s);
   return { income, wages, upkeep, net: income - wages - upkeep, wageShare: wages / Math.max(1, income) };
 }
@@ -134,7 +142,7 @@ export function endOfSeasonForecast(s, position, wages) {
   const left = Math.max(0, 7 - s.round);
   const perMatch = expectedGate(s, null).revenue;
   const matches = perMatch * left;
-  const sponsors = sponsorIncome(s.buildings.sponsor, s.divisionIndex);
+  const sponsors = sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation);
   const prize = prizeFor(position, s.divisionIndex);
   const upkeep = upkeepOf(s);
   return { left, perMatch, matches, sponsors, prize, wages, upkeep, end: s.money + matches + sponsors + prize - wages - upkeep };
@@ -147,7 +155,7 @@ export function investmentPreview(s, key) {
   const lvl = s.buildings[key] || 0;
   const cost = upgradeCost(key, lvl + 1);
   const next = { ...s, buildings: { ...s.buildings, [key]: lvl + 1 } };
-  const seasonIncome = (x) => expectedGate(x, null).revenue * 7 + sponsorIncome(x.buildings.sponsor, x.divisionIndex);
+  const seasonIncome = (x) => expectedGate(x, null).revenue * 7 + sponsorIncome(x.buildings.sponsor, x.divisionIndex, x.reputation);
   const gain = seasonIncome(next) - seasonIncome(s);
   const upkeep = Math.round(cost * 0.04);
   const net = gain - upkeep;
@@ -160,7 +168,7 @@ export function investmentPreview(s, key) {
 export const officeSize = (lvl) => (lvl > 0 ? 8 + lvl * 4 : 4);
 
 // Effet d'un bâtiment à un niveau donné (inspecteur).
-export function buildingEffect(key, lvl, divIndex) {
+export function buildingEffect(key, lvl, divIndex, rep = REP_START) {
   const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n);
   switch (key) {
     case 'terrain':
@@ -178,7 +186,7 @@ export function buildingEffect(key, lvl, divIndex) {
         ? `Réseau de recruteurs : ${officeSize(lvl)} joueurs sous contrat sur ton mercato · indemnités −${lvl * 3} % · vendeurs plus conciliants · potentiel mieux cerné.`
         : `Sans bureau, ton mercato ne montre que ${officeSize(0)} joueurs sous contrat listés publiquement, en plus des joueurs libres.`;
     case 'sponsor':
-      return `Sponsors : ${fmt(sponsorIncome(lvl, divIndex))} € par saison · ${fmt(offlinePerHour(lvl, divIndex))} € par heure, même hors ligne.`;
+      return `Sponsors : ${fmt(sponsorIncome(lvl, divIndex, rep))} € par saison · ${fmt(offlinePerHour(lvl, divIndex))} € par heure, même hors ligne.`;
     default:
       return '';
   }

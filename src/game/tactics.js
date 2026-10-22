@@ -27,17 +27,17 @@ export const FORMATIONS = {
   '352': {
     id: '352', name: '3-5-2', lines: [3, 5, 2], for: 1.04, against: 1.04,
     blurb: 'Cinq milieux pour dominer l’entrejeu, deux attaquants, mais trois défenseurs seulement.',
-    pitch: [[50, 88], [26, 72], [50, 75], [74, 72], [10, 46], [32, 52], [50, 43], [68, 52], [90, 46], [36, 20], [64, 20]],
+    pitch: [[50, 88], [26, 72], [50, 70], [74, 72], [10, 46], [32, 52], [50, 43], [68, 52], [90, 46], [36, 20], [64, 20]],
   },
   '343': {
     id: '343', name: '3-4-3', lines: [3, 4, 3], for: 1.12, against: 1.12,
     blurb: 'Tout pour l’attaque : beaucoup d’occasions, et beaucoup d’espace laissé derrière.',
-    pitch: [[50, 88], [26, 72], [50, 75], [74, 72], [14, 48], [38, 52], [62, 52], [86, 48], [20, 22], [50, 15], [80, 22]],
+    pitch: [[50, 88], [26, 72], [50, 70], [74, 72], [14, 48], [38, 52], [62, 52], [86, 48], [20, 22], [50, 15], [80, 22]],
   },
   '532': {
     id: '532', name: '5-3-2', lines: [5, 3, 2], for: 0.86, against: 0.86,
     blurb: 'Cinq défenseurs et des contres : match fermé, très difficile à battre.',
-    pitch: [[50, 88], [8, 62], [28, 72], [50, 75], [72, 72], [92, 62], [28, 48], [50, 52], [72, 48], [36, 22], [64, 22]],
+    pitch: [[50, 88], [8, 62], [28, 72], [50, 70], [72, 72], [92, 62], [28, 48], [50, 52], [72, 48], [36, 22], [64, 22]],
   },
 };
 export const FORMATION_ORDER = ['433', '442', '4231', '352', '343', '532'];

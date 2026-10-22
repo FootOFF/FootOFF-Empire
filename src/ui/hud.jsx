@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useGlass } from './glass';
 import { DIVISIONS } from '../game/constants';
-import { SECTORS, nextLockedSector } from '../game/map';
+import { repLevel } from '../game/reputation';
 import { activeGoal, tierOf } from '../game/goals';
 import { teamLevel } from '../game/match';
 import { matchContext } from '../game/season';
-import { FOMonogram } from './brand';
+import { ClubCrest, Crest } from './crest';
 import { AnimatedMoney } from './moneyfx';
 import { fmtRating } from './format';
 import {
@@ -15,15 +15,13 @@ import {
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran.
 
-export function TopHud({ state, onMenu, onFinances }) {
+export function TopHud({ state, onMenu, onFinances, onReputation }) {
   const div = DIVISIONS[state.divisionIndex];
-  const next = nextLockedSector(state);
-  const prevNeed = next ? Math.max(0, ...SECTORS.filter((s) => s.repNeeded <= state.reputation).map((s) => s.repNeeded)) : 0;
-  const repPct = next ? Math.min(1, (state.reputation - prevNeed) / (next.repNeeded - prevNeed)) : 1;
+  const rl = repLevel(state.reputation); // statut de notoriété et avancée vers le suivant (reputation.js)
   return (
     <header className="hud-top">
       <div className="hud-club glass">
-        <FOMonogram className="hud-mark" />
+        <ClubCrest crest={state.crest} name={state.clubName} className="hud-mark" />
         <div className="hud-club-text">
           <span className="hud-club-name">{state.clubName}</span>
           <span className="hud-club-meta">{div.name}<span className="meta-season"> · Saison {state.seasonNumber}</span></span>
@@ -34,12 +32,13 @@ export function TopHud({ state, onMenu, onFinances }) {
           <IconCoin />
           <span className="hud-val"><AnimatedMoney value={state.money} /></span>
         </button>
-        <div className="hud-chip glass hud-rep" title={next ? `Prochaine ouverture : ${next.name} à ${next.repNeeded} de réputation` : 'Tous les secteurs sont ouverts'}>
+        <button className="hud-chip glass hud-rep" onClick={onReputation} aria-label={`Notoriété : ${rl.level.name}, réputation ${Math.round(state.reputation)}`}
+          title={`${rl.level.name}${rl.next ? ` · prochain statut : ${rl.next.name} à ${rl.next.min} de réputation` : ''} · voir ce qu’elle apporte`}>
           <IconStar />
           <span className="hud-val">{Math.round(state.reputation)}</span>
-          <span className="hud-rep-bar"><i style={{ width: `${repPct * 100}%` }} /></span>
-          {next && <span className="hud-rep-next">{next.repNeeded}</span>}
-        </div>
+          <span className="hud-rep-bar"><i style={{ width: `${rl.progress * 100}%` }} /></span>
+          {rl.next && <span className="hud-rep-next">{rl.next.min}</span>}
+        </button>
         <button className="hud-icon glass" onClick={onMenu} aria-label="Menu"><IconMenu /></button>
       </div>
     </header>
@@ -86,19 +85,47 @@ function DockBadge({ value }) {
   return <i className="dock-badge" aria-label={`${value} à traiter`}>{value}</i>;
 }
 
+// Raccourci clavier du HUD (PC) : touche physique (code), sans modificateur, jamais pendant une saisie ; actif
+// seulement quand le HUD est utilisable (pas de menu, d'écran de match ni de confirmation).
+export function useHudKey(codes, onKey, enabled) {
+  const fn = useRef(onKey);
+  fn.current = onKey;
+  useEffect(() => {
+    if (!enabled) return undefined;
+    const h = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.defaultPrevented) return;
+      const t = e.target;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      const i = codes.indexOf(e.code);
+      if (i < 0) return;
+      e.preventDefault();
+      fn.current(i);
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [enabled]); // eslint-disable-line react-hooks/exhaustive-deps
+}
+const DOCK_KEYS = [1, 2, 3, 4, 5];
+const DOCK_CODES = [...DOCK_KEYS.map((n) => `Digit${n}`), ...DOCK_KEYS.map((n) => `Numpad${n}`)];
+
 // Menu du bas : la sélection est une pastille en verre liquide (façon iOS) qui glisse d'un bouton à l'autre en
-// s'étirant ; on peut aussi la faire glisser au doigt le long du menu, la section s'ouvre au relâché.
-export function Dock({ panel, onPanel, badges = {} }) {
+// s'étirant ; on peut aussi la faire glisser au doigt le long du menu, la section s'ouvre au relâché. Sur PC, les
+// touches 1 à 5 ouvrent les sections (rappelées au survol).
+export function Dock({ panel, onPanel, badges = {}, keys = false }) {
   const active = DOCK.some((d) => d.id === panel) ? panel : null; // panneau hors menu : l'Empire reste sélectionné
   const keyOf = (id) => id || 'empire';
   const { ref, glass, handlers, hoverKey } = useGlass(keyOf(active), (k) => {
     const d = DOCK.find((x) => keyOf(x.id) === k);
     if (d) onPanel(d.id);
   });
+  useHudKey(DOCK_CODES, (i) => {
+    const { id } = DOCK[i % DOCK.length];
+    onPanel(active === id ? null : id);
+  }, keys);
   return (
     <nav ref={ref} className="hud-dock glass" aria-label="Navigation" {...handlers}>
       {glass}
-      {DOCK.map(({ id, label, Icon }) => {
+      {DOCK.map(({ id, label, Icon }, i) => {
         const lit = hoverKey === null ? active === id : hoverKey === keyOf(id);
         return (
           <button
@@ -108,9 +135,11 @@ export function Dock({ panel, onPanel, badges = {} }) {
             data-key={keyOf(id)}
             onClick={() => onPanel(active === id ? null : id)}
             aria-current={active === id ? 'page' : undefined}
+            aria-keyshortcuts={String(DOCK_KEYS[i])}
           >
             <Icon />
             <span>{label}</span>
+            <kbd className="dock-key" aria-hidden="true">{DOCK_KEYS[i]}</kbd>
             <DockBadge value={badges[keyOf(id)]} />
           </button>
         );
@@ -119,9 +148,10 @@ export function Dock({ panel, onPanel, badges = {} }) {
   );
 }
 
-export function MatchCta({ state, onPlay, onEndSeason }) {
+export function MatchCta({ state, onPlay, onEndSeason, keys = false }) {
   const ctx = matchContext(state);
   const done = !ctx;
+  useHudKey(['KeyJ'], () => (done ? onEndSeason() : onPlay()), keys); // J : jouer (ou bilan de fin de saison)
   // carte compacte : même hauteur et même ligne de base que le dock
   if (done) {
     return (
@@ -130,7 +160,7 @@ export function MatchCta({ state, onPlay, onEndSeason }) {
           <span className="eyebrow">Saison {state.seasonNumber} terminée</span>
           <strong className="hud-match-title">Place au bilan</strong>
         </div>
-        <button className="btn" onClick={onEndSeason}><IconTrophy /> Bilan</button>
+        <button className="btn" onClick={onEndSeason} aria-keyshortcuts="J"><IconTrophy /> Bilan<kbd className="hm-key" aria-hidden="true">J</kbd></button>
       </div>
     );
   }
@@ -138,6 +168,7 @@ export function MatchCta({ state, onPlay, onEndSeason }) {
   const me = teamLevel(state);
   return (
     <div className="hud-match glass">
+      <Crest name={opp.name} className="hm-crest" />
       <div className="hm-info">
         <span className="hm-line">
           <span className={`eyebrow hm-comp-${ctx.comp}`} title={ctx.label}>{ctx.short || ctx.label}</span>
@@ -145,7 +176,7 @@ export function MatchCta({ state, onPlay, onEndSeason }) {
         </span>
         <strong className="hud-match-title" title={`${opp.name} (à domicile)`}>{opp.name}</strong>
       </div>
-      <button className="btn" onClick={onPlay} title="Jouer le match" aria-label="Jouer le match"><IconPlay /> Jouer</button>
+      <button className="btn" onClick={onPlay} title="Jouer le match (J)" aria-label="Jouer le match" aria-keyshortcuts="J"><IconPlay /> Jouer<kbd className="hm-key" aria-hidden="true">J</kbd></button>
     </div>
   );
 }
@@ -179,16 +210,6 @@ export function SceneTools({ timeMode, weatherMode, matchDay, onTime, onWeather,
         <IconStadium />
       </button>
       <button onClick={onRecenter} title="Recentrer la vue"><IconTarget /></button>
-    </div>
-  );
-}
-
-export function Toasts({ items }) {
-  return (
-    <div className="hud-toasts" aria-live="polite">
-      {items.map((t) => (
-        <div key={t.id} className={`hud-toast glass ${t.tone || ''}`}>{t.text}</div>
-      ))}
     </div>
   );
 }

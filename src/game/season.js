@@ -7,7 +7,7 @@ import { clubAfter, randomClubName } from './names';
 import { assignNumber, freshSeason, makePlayer, playerRating, progressPlayer, saleValue, wageOf, wantsRetirement } from './players';
 import { quickMatch } from './live';
 import { ensureLineup } from './tactics';
-import { closeSeasonGoals, resetSeasonStats, sectorUnlockedEvent } from './goals';
+import { closeSeasonGoals, reputationStatusEvent, resetSeasonStats } from './goals';
 import { book, closeLedger, markTreasury } from './ledger';
 import { C1_ENTRY, COMPS, STAGES, buildCalendar, cupPrize, drawOpponent, fixtureLabel, fixtureShort, nextFixture, ofDiv } from './cups';
 import { addMatch, rebuildRecords } from './records';
@@ -280,10 +280,12 @@ export function applyMatchResult(s, live) {
   markTreasury(s);
   s.seasonStats.gate = (s.seasonStats.gate || 0) + res.revenue; // recettes cumulées, pour le bilan
   if (gate.attendance >= gate.capacity * 0.6) s.seasonStats.crowd = true;
+  const repWas = s.reputation;
   s.reputation = Math.max(0, Math.round((s.reputation + res.repDelta) * 10) / 10);
+  const status = reputationStatusEvent(s, repWas); // nouveau statut de notoriété atteint sur ce match
   if (league) s.round++;
   if (ctx.fixture >= 0) s.calIndex = ctx.fixture + 1;
-  s.lastMatch = { ...res, round: s.round, comp: ctx.comp, stage: ctx.stage, label: league ? fixtureLabel(null, s.round) : ctx.label, cup: cupNote };
+  s.lastMatch = { ...res, round: s.round, comp: ctx.comp, stage: ctx.stage, label: league ? fixtureLabel(null, s.round) : ctx.label, cup: cupNote, status: status?.name || null };
   recordMatch(s, s.lastMatch);
   refreshTransfers(s); // le marché des transferts bouge à chaque journée
   const score = `${res.gf}–${res.ga}${res.pens ? ` (t.a.b. ${res.pens[0]}–${res.pens[1]})` : ''}`;
@@ -331,7 +333,7 @@ export function endSeason(s) {
   const position = standings.findIndex((t) => t.i === 0) + 1;
   const div = DIVISIONS[s.divisionIndex];
   const prize = prizeFor(position, s.divisionIndex);
-  const sponsors = sponsorIncome(s.buildings.sponsor, s.divisionIndex);
+  const sponsors = sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation);
   const wages = s.players.reduce((sum, p) => sum + wageOf(p, s.divisionIndex), 0);
   const upkeep = upkeepOf(s);
   const promoted = position <= 2 && s.divisionIndex < 3;
@@ -420,7 +422,7 @@ export function endSeason(s) {
     titleBonus, cups: cupsMoney, trophies, cupRuns, champion: position === 1, c1Next: !!s.c1Next,
   };
   closeSeasonGoals(s, events);
-  sectorUnlockedEvent(s, repBefore);
+  reputationStatusEvent(s, repBefore);
   pushJournal(s, {
     season: s.seasonNumber,
     kind: 'saison',

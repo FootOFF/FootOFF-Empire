@@ -20,6 +20,7 @@ import { careerOf } from '../game/career';
 import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { FollowButton, Mercato, Negotiation, SaleToggle, heat } from './mercato';
+import { Portrait } from './portrait';
 
 // Effectif : tableau d'analyste (PC) ou liste compacte (mobile), fiche joueur façon magazine FootOFF Media,
 // comparateur radar. Les couleurs des cases disent si une valeur est forte ou faible pour ta division.
@@ -237,9 +238,15 @@ function PlayerTable({ title, cols, players, state, refLvl, onOpen, showPos }) {
     return (p.pos === 'G' ? p.g : p.a)[key];
   };
   const rows = sort.key ? [...players].sort((a, b) => (value(a, sort.key) - value(b, sort.key)) * sort.dir) : players;
-  const th = (key, label, cls = '') => (
-    <th key={key} className={`${cls} ${sort.key === key ? 'sorted' : ''}`} onClick={() => setSort({ key, dir: sort.key === key ? -sort.dir : -1 })} title="Trier">
-      {label}{sort.key === key ? (sort.dir < 0 ? ' ↓' : ' ↑') : ''}
+  const th = (key, label, cls = '', name = label) => (
+    <th
+      key={key}
+      className={`${cls} ${sort.key === key ? 'sorted' : ''}`}
+      onClick={() => setSort({ key, dir: sort.key === key ? -sort.dir : -1 })}
+      title={`${name} · trier`}
+      aria-sort={sort.key === key ? (sort.dir < 0 ? 'descending' : 'ascending') : undefined}
+    >
+      {label}{sort.key === key && <IconChevron className={`sq-sort ${sort.dir < 0 ? 'down' : 'up'}`} aria-hidden="true" />}
     </th>
   );
   return (
@@ -252,7 +259,7 @@ function PlayerTable({ title, cols, players, state, refLvl, onOpen, showPos }) {
             {showPos && <th>Poste</th>}
             {th('age', 'Âge')}
             {th('lvl', 'Niveau', 'c-lvl')}
-            {cols.map((c) => th(c.key, c.short))}
+            {cols.map((c) => th(c.key, c.short, '', c.name))}
             {th('form', 'Forme')}
             {th('wage', 'Salaire', 'c-wage')}
           </tr>
@@ -264,11 +271,16 @@ function PlayerTable({ title, cols, players, state, refLvl, onOpen, showPos }) {
             return (
               <tr key={p.id} onClick={() => onOpen(p)} tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(p); }}>
                 <td className="c-name">
-                  <span className="sq-num">{p.num ?? '–'}</span>
-                  <span className="sq-name">{p.name}</span>
-                  {starter && <i className="sq-starter" title="Titulaire" />}
-                  {onSale(state, p) && <em className="sq-sale">En vente</em>}
-                  {p.traits?.length > 0 && <span className="sq-traits">{p.traits.map((t) => TRAITS[t]?.name).join(' · ')}</span>}
+                  <span className="sq-who">
+                    <Portrait p={p} size={34} />
+                    <span className="sq-who-text">
+                      <span className="sq-num">{p.num ?? '–'}</span>
+                      <span className="sq-name">{p.name}</span>
+                      {starter && <i className="sq-starter" title="Titulaire" />}
+                      {onSale(state, p) && <em className="sq-sale">En vente</em>}
+                      {p.traits?.length > 0 && <span className="sq-traits">{p.traits.map((t) => TRAITS[t]?.name).join(' · ')}</span>}
+                    </span>
+                  </span>
                 </td>
                 {showPos && <td><span className={`pos-pill ${p.pos}`}>{p.pos}</span></td>}
                 <td>{p.age}</td>
@@ -296,7 +308,7 @@ function PlayerRow({ p, state, refLvl, onOpen, extra }) {
   return (
     <li>
       <button className="sq-row" onClick={onOpen}>
-        <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
+        <span className="sq-face"><Portrait p={p} size={42} /><span className={`pos-pill ${p.pos}`}>{p.pos}</span></span>
         <span className="sq-row-main">
           <span className="sq-row-name">{p.num ? <em>{p.num}</em> : null}{p.name}{state.lineup?.includes(p.id) && <i className="sq-starter" title="Titulaire" />}{onSale(state, p) && <em className="sq-sale">En vente</em>}</span>
           <span className="sq-row-meta">
@@ -331,7 +343,7 @@ function Alumni({ state, onOpen }) {
           return (
             <li key={a.id}>
               <button className="sq-row" onClick={() => onOpen(a.id)}>
-                <span className={`pos-pill ${a.pos}`}>{a.pos}</span>
+                <span className="sq-face"><Portrait p={{ id: a.id, name: a.name, pos: a.pos, age: c.age }} size={42} /><span className={`pos-pill ${a.pos}`}>{a.pos}</span></span>
                 <span className="sq-row-main">
                   <span className="sq-row-name">{a.name}<em className={`al-tag ${a.reason}`}>{reasonTag(c)}</em></span>
                   <span className="sq-row-meta">{departureText(c)}</span>
@@ -397,6 +409,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
         </header>
 
         <section className="sh-hero">
+          <Portrait p={p} size={76} club={market ? p.club || null : null} free={market && !p.club} className="sh-face" />
           <div className="sh-id">
             <div className="sh-meta">
               <span className={`pos-pill ${p.pos}`}>{p.pos}</span>

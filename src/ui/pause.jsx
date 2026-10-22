@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ClubCard, Hints, MenuList, SettingsView, useMenu } from './console';
 import { IconCheck } from './icons';
+import { ClubCrest } from './crest';
 import { DIVISIONS } from '../game/constants';
 
 // Menu pause, façon jeu de console : le jeu se fige (la vue 3D s'arrête et se floute derrière), le menu à gauche,
@@ -24,7 +25,10 @@ export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMat
       <div className="pz-col">
         <header className="pz-head">
           <span className="eyebrow">Pause</span>
-          <h2>{state.clubName}</h2>
+          <div className="pz-club">
+            <ClubCrest crest={state.crest} name={state.clubName} className="pz-crest" />
+            <h2>{state.clubName}</h2>
+          </div>
           <p>{div.name} · Saison {state.seasonNumber} · journée {Math.min(state.round, total)}/{total}</p>
         </header>
         {view === 'menu' ? (

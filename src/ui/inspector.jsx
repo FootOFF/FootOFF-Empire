@@ -5,10 +5,11 @@ import { fmtMoney, fmtNum } from './format';
 import { TICKET_ORDER, TICKET_POLICIES, expectedGate, investmentPreview } from '../game/economy';
 import { Tabs } from './glass';
 import { seasonEndForecast } from '../game/advice';
-import { IconAcademy, IconArrowUp, IconClose, IconFans, IconLock, IconSponsor, IconStadium, IconTraining, IconTransfer } from './icons';
+import { IconAcademy, IconArrowUp, IconClose, IconFans, IconSponsor, IconStadium, IconTraining, IconTransfer } from './icons';
 import { Eyebrow } from './kit';
 import { useKeydown } from './presence';
 import { useSwipe } from './gestures';
+import { usePanelSound } from './panels';
 
 const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor, transfers: IconTransfer };
 
@@ -66,30 +67,18 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
   const ref = useRef(null);
   useKeydown((e) => { if (e.key === 'Escape') onClose(); });
   useSwipe(ref, { onDown: onClose });
+  usePanelSound();
 
-  const sec = SECTORS.find((s) => s.id === sel.sector);
-  const unlocked = state.reputation >= sec.repNeeded;
+  const sec = SECTORS.find((s) => s.id === sel.sector) || SECTORS[0];
   const key = plotBuilding(state, sel.plotId);
-  const Icon = key ? ICONS[key] : unlocked ? IconArrowUp : IconLock;
+  const Icon = key ? ICONS[key] : IconArrowUp;
 
   let body;
   let title;
   let foot = null; // action principale, toujours visible en bas (sous le pouce sur téléphone)
-  if (!unlocked) {
-    title = 'Secteur verrouillé';
-    const pct = Math.min(1, state.reputation / sec.repNeeded);
-    body = (
-      <>
-        <p className="ins-text">{sec.blurb}</p>
-        <div className="ins-req">
-          <div className="ins-req-head"><span>Réputation</span><b>{Math.round(state.reputation)} / {sec.repNeeded}</b></div>
-          <span className="ins-bar"><i style={{ width: `${pct * 100}%` }} /></span>
-        </div>
-      </>
-    );
-  } else if (!key) {
+  if (!key) {
     title = `${PLOT_LABELS[sel.plotId]} · libre`;
-    const available = allowedBuildingsFor(state, sec.id);
+    const available = allowedBuildingsFor(state);
     body = available.length ? (
       <div className="ins-options">
         {available.map((k) => {
@@ -99,20 +88,20 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
           return (
             <div className="ins-option" key={k} data-key={k}>
               <span className="ins-option-icon"><B /></span>
-              <div className="ins-option-main">
-                <strong>{BUILDINGS[k].name}</strong>
-                <span>{buildingEffect(k, 1, state.divisionIndex)}</span>
-                <Payoff state={state} k={k} compact />
-              </div>
-              <button className={`btn btn-sm ${short ? '' : 'glow'}`} disabled={short} onClick={() => onBuild(sec.id, k)} title={short ? `Il manque ${fmtMoney(cost - state.money)}` : ''}>
+              <strong className="ins-option-name">{BUILDINGS[k].name}</strong>
+              <button className={`btn btn-sm ${short ? '' : 'glow'}`} disabled={short} onClick={() => onBuild(sel.plotId, k)} title={short ? `Il manque ${fmtMoney(cost - state.money)}` : ''}>
                 {fmtMoney(cost)}
               </button>
+              <div className="ins-option-main">
+                <span>{buildingEffect(k, 1, state.divisionIndex, state.reputation)}</span>
+                <Payoff state={state} k={k} compact />
+              </div>
             </div>
           );
         })}
       </div>
     ) : (
-      <p className="ins-text">Tous les bâtiments de ce secteur sont déjà construits.</p>
+      <p className="ins-text">Tous les bâtiments sont déjà construits : cette parcelle reste libre.</p>
     );
   } else {
     const b = BUILDINGS[key];
@@ -137,7 +126,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
         <div className="ins-level"><Pips lvl={lvl} max={b.max} /><span>Niveau {lvl}/{b.max}</span></div>
         <div className="ins-effect">
           <Eyebrow muted>Actuellement</Eyebrow>
-          <p>{buildingEffect(key, lvl, state.divisionIndex)}</p>
+          <p>{buildingEffect(key, lvl, state.divisionIndex, state.reputation)}</p>
           {key === 'terrain' && (() => {
             const gate = expectedGate(state, null);
             return (
@@ -152,7 +141,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
           <>
             <div className="ins-effect next">
               <Eyebrow>Niveau {lvl + 1}</Eyebrow>
-              <p>{buildingEffect(key, lvl + 1, state.divisionIndex)}</p>
+              <p>{buildingEffect(key, lvl + 1, state.divisionIndex, state.reputation)}</p>
               <Payoff state={state} k={key} />
             </div>
           </>

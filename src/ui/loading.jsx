@@ -20,7 +20,7 @@ const TIPS = [
   'Les deux premiers montent, les deux derniers descendent : chaque point compte.',
   'À la mi-temps, change de tactique ou fais entrer un remplaçant pour renverser le match.',
   'L’espace supporters remplit mieux le stade et augmente la réputation gagnée à chaque match.',
-  'La zone des partenaires rapporte même quand tu n’es pas là.',
+  'Le siège des partenaires rapporte même quand tu n’es pas là.',
   'L’académie révèle un jeune talent à fort potentiel à chaque fin de saison.',
   'Surveille la part des salaires dans tes revenus : c’est elle qui fait basculer une saison dans le rouge.',
   'Avant le match, « Meilleur onze » aligne d’un geste ta meilleure équipe.',

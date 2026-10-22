@@ -30,6 +30,9 @@ export function Presence({ children, ms = EXIT_MS }) {
   );
 }
 
+// Vrai pendant l'animation de sortie du contenu (pour un son de fermeture, par exemple).
+export const useLeaving = () => useContext(LeavingContext);
+
 // Raccourci clavier d'une fenêtre, actif seulement tant qu'elle est à l'écran. capture : passe avant les
 // fenêtres dessous (qui peuvent alors être protégées par e.stopImmediatePropagation()).
 export function useKeydown(onKey, { capture = false } = {}) {

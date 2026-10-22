@@ -155,6 +155,17 @@ export function createStadiumSound() {
       if (kind === 'move') tone(1500, 1250, 0, 0.045, 0.018);
       else if (kind === 'select') { tone(660, 680, 0, 0.09, 0.035, 'triangle'); tone(990, 1010, 0.06, 0.14, 0.03, 'triangle'); }
       else if (kind === 'back') tone(720, 480, 0, 0.11, 0.03, 'triangle');
+      // en jeu : onglet (clic très bref), panneau qui s'ouvre (souffle qui monte) ou se ferme (qui descend),
+      // notification (une note claire), succès (trois notes qui montent, scintillantes), geste refusé (deux notes
+      // graves). Toujours discrets : le jeu se joue des heures.
+      else if (kind === 'tab') tone(1800, 1600, 0, 0.03, 0.012);
+      else if (kind === 'open') tone(420, 620, 0, 0.12, 0.016, 'triangle');
+      else if (kind === 'close') tone(560, 380, 0, 0.1, 0.014, 'triangle');
+      else if (kind === 'notify') { tone(1320, 1330, 0, 0.18, 0.02); tone(1980, 1990, 0.05, 0.16, 0.008); }
+      else if (kind === 'achievement') {
+        [[1047, 0], [1319, 0.09], [1568, 0.18], [2093, 0.27]].forEach(([f, at], k) => tone(f, f * 1.004, at, k === 3 ? 0.5 : 0.22, k === 3 ? 0.026 : 0.022, 'triangle'));
+        tone(3136, 3150, 0.3, 0.35, 0.006);
+      } else if (kind === 'error') { tone(260, 240, 0, 0.09, 0.03, 'triangle'); tone(220, 200, 0.11, 0.12, 0.03, 'triangle'); }
     },
     stop() {
       if (!ctx) return;

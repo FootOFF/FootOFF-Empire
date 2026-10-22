@@ -12,15 +12,17 @@ import { prepareFirstSeason } from './tutorial';
 import { rnd } from './utils';
 import { book, ensureLedger } from './ledger';
 import { addSigning, emptyRecords, rebuildRecords } from './records';
+import { normalizeCrest } from './crest';
 
 export { playRound, endSeason };
 export { applyMatchResult, matchContext } from './season';
 export { upkeepOf, capacity } from './economy';
 
-export function createInitialState(clubName) {
+export function createInitialState(clubName, crest = null) {
   const s = {
     version: 4,
     clubName,
+    crest: normalizeCrest(crest), // écusson composé à la fondation, toujours noir et or (crest.js)
     createdAt: Date.now(),
     lastSeen: Date.now(),
     money: START_MONEY,
@@ -87,9 +89,10 @@ export function addReserves(s) {
   return s;
 }
 
-export function build(s, sectorId, key) {
-  // jamais sur une parcelle réservée (le stade occupe t0)
-  const plot = PLOTS.find((p) => p.sector === sectorId && !p.building && s.slots[plotIndexOf(p.id)] === null);
+// where : la parcelle choisie (t1…t7), où que ce soit ; à défaut (ancien appel par secteur), la première libre.
+export function build(s, where, key) {
+  const free = (p) => !p.building && s.slots[plotIndexOf(p.id)] === null; // jamais sur le stade (t0)
+  const plot = PLOTS.some((p) => p.id === where) ? PLOTS.find((p) => p.id === where && free(p)) : PLOTS.find(free);
   if (!plot || s.buildings[key] > 0 || s.money < upgradeCost(key, 1)) return null;
   s.slots[plotIndexOf(plot.id)] = key;
   s.buildings[key] = 1;

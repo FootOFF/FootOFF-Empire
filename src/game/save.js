@@ -10,6 +10,7 @@ import { renameRetired } from './names';
 import { buildCalendar } from './cups';
 import { refreshTransfers } from './transfers';
 import { rebuildRecords } from './records';
+import { normalizeCrest } from './crest';
 
 export function saveGame(state) {
   try {
@@ -59,6 +60,7 @@ export function loadGame() {
       const y = ensureTutorial(ensureLineup(addReserves(ensureFixedPlots(migratePlayers(x)))));
       ensureLedger(y);
       y.buildings.transfers ??= 0; // bureau des transferts (ajouté après coup)
+      y.crest = normalizeCrest(y.crest); // écusson du club (ajouté après coup : écusson par défaut, noir et or)
       y.alumni ||= []; // anciens joueurs (archivés à partir de cette version)
       y.ticketPolicy ||= 'standard';
       y.records ||= rebuildRecords(y); // records du club : reconstitués depuis l'historique des matchs

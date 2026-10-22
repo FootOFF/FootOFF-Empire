@@ -22,10 +22,13 @@ export class Agent {
     this.h = h; this.speed = 0; this.gait = 0;
     this.phase = Math.random() * Math.PI * 2;
     this.kick = 0; // progression de la frappe (0 = pas de frappe)
+    this.lean = 0; this.leanTo = 0; this.leanHold = 0; // bascule latérale (plongeon du gardien : -1 .. 1, vers -z / +z)
+    this.cheer = 0; // joie (0 .. 1) : bras levés pendant la célébration d'un but
   }
 
-  // Se dirige vers (tx, tz) à la vitesse voulue en ralentissant à l'arrivée ; regarde (fx, fz) à l'arrêt.
-  steer(tx, tz, speed, dt, fx, fz) {
+  // Se dirige vers (tx, tz) à la vitesse voulue en ralentissant à l'arrivée ; regarde (fx, fz) à l'arrêt, ou tout
+  // le temps avec look (gardien en pas chassés, face au jeu).
+  steer(tx, tz, speed, dt, fx, fz, look = false) {
     const dx = tx - this.x, dz = tz - this.z;
     const d = Math.hypot(dx, dz);
     const want = d > 0.004 ? Math.min(speed, d * 1.6) : 0;
@@ -37,7 +40,8 @@ export class Agent {
     this.x += this.vx * dt; this.z += this.vz * dt;
     this.speed = Math.hypot(this.vx, this.vz);
     let target = this.h;
-    if (this.speed > 0.05) target = Math.atan2(this.vz, this.vx);
+    if (look && fx !== undefined) target = Math.atan2(fz - this.z, fx - this.x);
+    else if (this.speed > 0.05) target = Math.atan2(this.vz, this.vx);
     else if (fx !== undefined) target = Math.atan2(fz - this.z, fx - this.x);
     const diff = wrapAngle(target - this.h);
     this.h += THREE.MathUtils.clamp(diff, -TURN * dt, TURN * dt);
@@ -249,7 +253,7 @@ export class PassingGame {
 
 // Ballon : icosaèdre à facettes sombres et claires (lecture du roulement), mis à l'échelle du jeu.
 export function createBallMesh() {
-  const geo = new THREE.IcosahedronGeometry(BALL_R, 1).toNonIndexed();
+  const geo = new THREE.IcosahedronGeometry(BALL_R, 1); // déjà une face par triangle (non indexé)
   const n = geo.attributes.position.count;
   const col = new Float32Array(n * 3);
   for (let f = 0; f < n / 3; f++) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useKeydown } from './presence';
 import { useInputMode } from './input';
-import { FOMonogram } from './brand';
+import { ClubCrest } from './crest';
 import { fmtMoney } from './format';
 import { IconChevron, IconChevronLeft, IconExternal } from './icons';
 import { DIVISIONS } from '../game/constants';
@@ -12,10 +12,10 @@ import { ordinal } from '../game/utils';
 // Briques des écrans « console » (écran titre, menu pause) : liste de menu pilotée au clavier, à la souris, au
 // doigt et à la manette (voir input.js), aides de commandes, réglages, carte du club, horloge.
 
-// Sons du menu (déplacement, validation, retour) : branchés par App sur l'ambiance sonore du stade.
-let playUi = () => {};
-export function setUiSound(fn) { playUi = fn || (() => {}); }
-export const uiSound = (kind) => playUi(kind);
+// Sons du menu (déplacement, validation, retour) : branchés par App sur l'ambiance sonore du stade (uisound.js).
+import { uiSound } from './uisound';
+
+export { setUiSound, uiSound } from './uisound';
 
 const firstEnabled = (items, from) => {
   for (let k = 0; k < items.length; k++) {
@@ -210,7 +210,7 @@ export function ClubCard({ state, eyebrow, objective = false, head = true }) {
       <span className="eyebrow">{eyebrow}</span>
       {head && (
         <header className="cm-card-head">
-          <FOMonogram className="cm-card-mark" />
+          <ClubCrest crest={state.crest} name={state.clubName} className="cm-card-mark" />
           <div>
             <strong>{state.clubName}</strong>
             <span>{div.name} · Saison {state.seasonNumber}</span>

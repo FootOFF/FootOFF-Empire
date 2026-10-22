@@ -9,13 +9,14 @@ import { acceptCounter, answerOffer, makeOffer, setForSale, toggleShortlist } fr
 import { endOfSeasonForecast, officeSize, seasonForecast } from '../game/economy';
 import { standingsOf } from '../game/season';
 import { capitalize, clubAfter, isPluralClub, withArticle } from '../game/names';
-import { Crest } from './calendar';
+import { Crest } from './crest';
 import { fmtMoney, fmtRating } from './format';
 import { Tabs } from './glass';
 import { IconCheck, IconChevron, IconClose, IconRadar, IconStar, IconTransfer, IconTrend } from './icons';
 import { useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { haptic } from './haptics';
+import { Portrait } from './portrait';
 
 // Mercato : un seul marché pour recruter (joueurs libres et joueurs sous contrat), des offres négociées, une liste
 // de joueurs suivis, les offres reçues pour ses propres joueurs et le bilan des transferts. Le marché bouge à chaque
@@ -73,7 +74,10 @@ export function MarketCard({ p, state, refLvl, followed, recommended, onOpen, on
     <li className={`mc-card ${recommended ? 'rec' : ''} ${p.club ? 'pro' : 'free'}`}>
       <div className="mc-head">
         <button type="button" className="mc-main" onClick={() => onOpen(p)} aria-label={`Fiche de ${p.name}`}>
-          <span className={`mc-medal ${heat(r, refLvl)}`}><b>{fmtRating(r)}</b><span>{p.pos}</span></span>
+          <span className="mc-face">
+            <Portrait p={p} size={58} club={p.club || null} free={!p.club} />
+            <span className={`mc-medal ${heat(r, refLvl)}`}><b>{fmtRating(r)}</b><span>{p.pos}</span></span>
+          </span>
           <span className="mc-id">
             <span className="mc-name">{p.name}</span>
             <span className="mc-club">
@@ -169,7 +173,7 @@ function Network({ state }) {
       {lvl ? (
         <p><b>Réseau de recrutement · bureau niveau {lvl}</b>{plural((state.transfers || []).length, 'joueur sous contrat suivi', 'joueurs sous contrat suivis')} par tes recruteurs · indemnités −{lvl * 3} % · vendeurs plus conciliants · potentiel mieux cerné.</p>
       ) : (
-        <p><b>Envie de plus de choix ?</b>Sans réseau de recruteurs, seuls {officeSize(0)} joueurs sous contrat sont listés publiquement. Le Bureau des transferts (quartier des supporters ou zone des partenaires) en suit {officeSize(1)} dès le niveau 1 et fait baisser les indemnités.</p>
+        <p><b>Envie de plus de choix ?</b>Sans réseau de recruteurs, seuls {officeSize(0)} joueurs sous contrat sont listés publiquement. Le Bureau des transferts (sur n’importe quelle parcelle libre) en suit {officeSize(1)} dès le niveau 1 et fait baisser les indemnités.</p>
       )}
     </li>
   );

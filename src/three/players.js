@@ -86,6 +86,13 @@ const SKELETON_GLSL = `
     float kneeA = -(0.06 * g + K * max(0.0, -sin(ph - 0.6)));
     float kneeB = -(0.06 * g + K * max(0.0, sin(ph - 0.6)));
     float armA = -hipA * 0.85, armB = hipA * 0.85;
+    float elbowCheer = -1.0;
+    if (k < 0.0) { // joie (k = -intensité) : bras levés au-dessus de la tête, qui battent un peu au rythme de la course
+      float c = -k;
+      armA = mix(armA, 2.75 + 0.22 * sin(ph * 2.0), c);
+      armB = mix(armB, 2.75 + 0.22 * sin(ph * 2.0 + 1.3), c);
+      elbowCheer = c;
+    }
     if (k > 0.0) { // frappe : armé (jambe en arrière, genou plié), frappe, accompagnement
       hipA = k < 0.42 ? foSeg(k, 0.0, 0.42, 0.0, -0.8) : k < 0.62 ? foSeg(k, 0.42, 0.62, -0.8, 1.15) : foSeg(k, 0.62, 1.0, 1.15, 0.0);
       kneeA = k < 0.42 ? foSeg(k, 0.0, 0.42, 0.0, -1.5) : k < 0.58 ? foSeg(k, 0.42, 0.58, -1.5, -0.05) : foSeg(k, 0.58, 1.0, -0.05, 0.0);
@@ -94,6 +101,7 @@ const SKELETON_GLSL = `
       armB = 0.9 * s; armA = -0.45 * s; // bras opposé vers l'avant pour l'équilibre
     }
     float elbow = 0.25 + 1.15 * g;
+    if (elbowCheer > 0.0) elbow = mix(elbow, 0.3, elbowCheer);
     if (aPart > 4.5 && aPart < 6.5) p = foRot(p, ${KNEE.toFixed(2)}, aPart < 5.5 ? kneeA : kneeB);
     if (aPart > 6.5) p = foRot(p, ${ELBOW.toFixed(2)}, elbow);
     if (aPart == 1.0 || aPart == 5.0) p = foRot(p, ${HIP.toFixed(2)}, hipA);
@@ -137,8 +145,9 @@ export function createPlayers(parent, max = 64) {
     m.count = 0;
     parent.add(m);
   });
-  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), P = new THREE.Vector3(), S = new THREE.Vector3();
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), Q2 = new THREE.Quaternion(), P = new THREE.Vector3(), S = new THREE.Vector3();
   const UP = new THREE.Vector3(0, 1, 0);
+  const FWD = new THREE.Vector3(1, 0, 0);
   return {
     max,
     setKit(i, hex) { mKit.setColorAt(i, col.setHex(hex)); mKit.instanceColor.needsUpdate = true; },
@@ -146,11 +155,16 @@ export function createPlayers(parent, max = 64) {
     setAgent(i, ag, y, scale = 0.1) {
       P.set(ag.x, y, ag.z);
       Q.setFromAxisAngle(UP, -ag.h);
+      if (ag.lean) { // plongeon : le corps bascule vers le côté du ballon (vers +z ou -z du terrain) et s'y décale
+        Q2.setFromAxisAngle(FWD, ag.lean * 1.25 * Math.cos(ag.h));
+        Q.multiply(Q2);
+        P.z += ag.lean * 0.035;
+      }
       S.setScalar(scale);
       M.compose(P, Q, S);
       mKit.setMatrixAt(i, M);
       mBody.setMatrixAt(i, M);
-      anim.setXYZ(i, ag.phase, ag.gait, ag.kick);
+      anim.setXYZ(i, ag.phase, ag.gait, ag.cheer > 0.01 && !ag.kick ? -ag.cheer : ag.kick);
     },
     commit(count) {
       mKit.count = mBody.count = count;

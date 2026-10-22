@@ -7,10 +7,13 @@ import { SEC_PER_MIN, matchFeed } from '../game/matchFeed';
 // Le match sur la pelouse du stade : notre onze contre le onze adverse, seulement les jours de match.
 //  - Avant le coup d'envoi (jour de match, pas encore de direct) : échauffement, chaque équipe dans sa moitié.
 //  - En direct : jeu ouvert (conduites, passes, pressing, tacles, interceptions, sans tir), et chaque action du
-//    commentaire est jouée au bon moment et du bon côté : l'attaque se construit, le bon joueur frappe, et le tir
-//    finit comme dans le commentaire (but, arrêt du gardien, à côté, poteau). Cartons : faute, carton au-dessus du
-//    fautif, expulsé qui sort. But : célébration au poteau de corner, puis engagement. Les équipes changent de
-//    côté à la mi-temps, rentrent aux vestiaires à la pause et au coup de sifflet final.
+//    commentaire est jouée au bon moment et du bon côté : l'attaque se construit vers un point de frappe dans les
+//    20 derniers mètres, le tireur (celui du commentaire s'il peut y être à temps) frappe, et le tir finit comme dans
+//    le commentaire (but, arrêt du gardien souvent en plongeant, à côté, poteau). Le ballon arrive à l'instant où
+//    le commentaire affiche l'action ; si la 3D est en retard, le direct l'attend quelques secondes au plus
+//    (matchFeed.waitAt). Cartons : faute, carton au-dessus du fautif, expulsé qui sort. But : course de joie du
+//    buteur vers le public, ses coéquipiers l'entourent bras levés le temps du bandeau « BUT ! », puis engagement.
+//    Les équipes changent de côté à la mi-temps, rentrent aux vestiaires à la pause et au coup de sifflet final.
 // Unités du jeu (1 = 10 m), repère du stade : pelouse 10,5 × 6,8, buts en x = ±5,25.
 
 const N = 22;
@@ -23,7 +26,11 @@ const KICK_CONTACT = 0.55;
 const GRAVITY = 0.98;
 const ROLL_DECEL = 0.15;
 const BALL_R = 0.011;
-const LEAD = 2.6; // secondes réelles de construction avant une frappe (vitesse normale)
+const LEAD = 5.4; // secondes réelles de construction avant l'arrivée du ballon (vitesse normale)
+const SLOW = 0.45; // ralenti des derniers mètres d'un but
+const SLOW_ZONE = 0.9; // distance au but où le ralenti commence
+const KEEPER_LINE = 0.1; // le gardien se tient 1 m devant sa ligne : un arrêt se fait là
+const HOLD_MAX = 2.5; // secondes réelles (vitesse normale) pendant lesquelles le commentaire peut attendre la 3D
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const clamp = THREE.MathUtils.clamp;
@@ -132,7 +139,8 @@ export function createMatchScene(parent) {
   function placeAll(spotFn) { for (let i = 0; i < N; i++) { const [x, z] = spotFn(i); const a = agents[i]; a.x = x; a.z = z; a.vx = a.vz = 0; a.speed = 0; a.h = teamOf(i) === 0 ? (S.dir[0] > 0 ? 0 : Math.PI) : (S.dir[1] > 0 ? 0 : Math.PI); } }
 
   function give(i, phase = 'control') {
-    b.state = 'held'; b.owner = i; b.team = teamOf(i); b.receiver = -1; b.vx = b.vz = b.vy = 0; b.y = 0;
+    // le ballon garde sa hauteur : un ballon aérien amorti redescend au pied pendant le contrôle (carrier)
+    b.state = 'held'; b.owner = i; b.team = teamOf(i); b.receiver = -1; b.vx = b.vz = b.vy = 0;
     S.hold = { phase, timer: phase === 'control' ? 0.24 : rnd(0.7, 1.6), t: null, held: 0 };
   }
   function deadBall(x, z) { b.state = 'dead'; b.owner = -1; b.x = x; b.z = z; b.y = 0; b.vx = b.vz = b.vy = 0; }
@@ -148,13 +156,18 @@ export function createMatchScene(parent) {
     let v0;
     b.vy = 0;
     if (kind === 'shot') {
-      v0 = rnd(2.9, 3.4) + Math.max(0, d - 1.6) * 0.35; // une frappe de loin part plus fort
+      // Vitesse choisie pour que le ballon ARRIVE à l'instant où le commentaire affiche l'action : au fond des
+      // filets quand « BUT ! » s'affiche, dans les gants du gardien pour un arrêt, sur le poteau, au-delà de la
+      // ligne pour un tir à côté (ralenti des buts compris). Une frappe imprévue garde une vitesse réaliste.
+      const remain = extra.seq ? extra.seq.tAt - S.now : 0;
+      // (au plus 36 m/s, une frappe puissante : plus en retard, le commentaire attend le ballon)
+      v0 = remain > 0.2 ? clamp(shotPath(extra.outcome, extra.team, d) / remain, 1.5, 3.6) : rnd(2.9, 3.4) + Math.max(0, d - 1.6) * 0.2;
       const T = d / v0;
       b.vy = (extra.height + 0.5 * GRAVITY * T * T) / T;
     } else if (kind === 'long' || d > 3.2) { // passe longue, relance : ballon aérien qui retombe devant le receveur
       const T = 0.7 + d * 0.18;
       b.vy = (GRAVITY * T) / 2;
-      v0 = (d * 0.85) / T;
+      v0 = (d * 0.95) / T;
     } else {
       v0 = Math.min(kind === 'fast' ? 2.5 : 2.2, Math.sqrt((kind === 'fast' ? 1.2 : 1.0) ** 2 + 2 * ROLL_DECEL * d));
     }
@@ -166,6 +179,38 @@ export function createMatchScene(parent) {
     b.passer = extra.passer ?? -1;
     b.flight = 0;
   }
+
+  // Trajet d'un tir, en « distance à vitesse normale » : jusqu'aux gants du gardien pour un arrêt ; jusqu'à la
+  // ligne sinon, les derniers mètres d'un but comptant plus (ralenti). Sert à choisir l'instant de la frappe et
+  // sa vitesse, pour que le ballon arrive à l'heure du commentaire.
+  function shotPath(outcome, team, d, fromX = b.x, fromZ = b.z) {
+    if (outcome === 's') {
+      const [bu] = local(team, fromX, fromZ);
+      const f = clamp((GOAL_X - KEEPER_LINE - bu) / Math.max(0.05, GOAL_X - bu), 0.2, 1);
+      return d * f;
+    }
+    if (outcome === 'g') { const slow = Math.min(SLOW_ZONE, d); return d - slow + slow / SLOW; }
+    return d;
+  }
+  // Durée d'une passe, de la frappe à la réception, d'après la physique de launch() : ballon aérien qui retombe
+  // devant le receveur, ou ballon au sol qui ralentit en roulant.
+  function passTime(kind, d) {
+    if (kind === 'long' || d > 3.2) return 0.7 + d * 0.18 + 0.1;
+    const vEnd = kind === 'fast' ? 1.2 : 1.0;
+    const v0 = Math.min(kind === 'fast' ? 2.5 : 2.2, Math.sqrt(vEnd * vEnd + 2 * ROLL_DECEL * d));
+    return (v0 - Math.sqrt(Math.max(0, v0 * v0 - 2 * ROLL_DECEL * d))) / ROLL_DECEL;
+  }
+  const ARMED = KICK_CONTACT * KICK_TIME; // de l'élan au contact du pied
+  // Avance de la frappe sur l'instant du commentaire : armé de la jambe, puis vol du ballon à la vitesse prévue,
+  // depuis (x, z) ; kickLead : depuis le tireur s'il a le ballon, sinon depuis son point de frappe.
+  function leadFrom(seq, x, z) {
+    const [gx, gz] = world(seq.team, GOAL_X, 0);
+    return ARMED + shotPath(seq.outcome, seq.team, Math.hypot(gx - x, gz - z), x, z) / seq.v;
+  }
+  const spotOf = (seq) => world(seq.team, seq.spot[0], seq.spot[1]);
+  const kickLead = (seq, i) => (b.owner === i ? leadFrom(seq, agents[i].x, agents[i].z) : leadFrom(seq, ...spotOf(seq)));
+  // Distance d'un joueur au point de frappe du tireur (là où arrive la passe décisive)
+  const toSpot = (seq, x, z) => { const [sx, sz] = spotOf(seq); return Math.hypot(sx - x, sz - z); };
 
   // --- Directeur : les actions du commentaire, au bon moment -------------------------------------------------
   // temps réel avant qu'un événement s'affiche dans le commentaire (une pause en cours le repousse d'autant ; un
@@ -187,13 +232,15 @@ export function createMatchScene(parent) {
     for (const e of matchFeed.events) {
       if (S.handled.has(e)) continue;
       if (!['chance', 'goal', 'yellow', 'red'].includes(e.type)) continue;
-      if (realUntil(e) > lead() + 0.4) break;
+      if (realUntil(e) > Math.max(lead(), 6.2 / Math.sqrt(Math.max(1, matchFeed.speed))) + 0.4) break; // buildUp() compris
       S.handled.add(e);
+      if (realUntil(e) < -1) continue; // déjà annoncé depuis longtemps (scène remise en place en cours de jeu) : jamais rejoué
       const t = sideTeam(e.side);
       if (e.type === 'chance' || e.type === 'goal') {
         const shooter = nameToAgent(e.side, e.player);
         const [su, sv] = [rnd(3.5, 4.15), clamp(rnd(-0.9, 0.9), -1.2, 1.2)];
-        S.queue.push({ kind: 'attack', e, team: t, shooter, outcome: e.type === 'goal' ? 'g' : (e.outcome || 'wide')[0], spot: [su, sv], started: false, passed: false, shot: false });
+        // v : vitesse prévue de la frappe (u/s), recalculée au contact pour arriver pile à l'heure
+        S.queue.push({ kind: 'attack', e, team: t, shooter, outcome: e.type === 'goal' ? 'g' : (e.outcome || 'wide')[0], spot: [su, sv], started: false, passed: false, shot: false, v: rnd(2.8, 3.3) });
       } else {
         S.queue.push({ kind: 'card', e, team: t, offender: nameToAgent(e.side, e.player), color: e.type, started: false, done: false });
       }
@@ -202,6 +249,9 @@ export function createMatchScene(parent) {
   function director() {
     scan();
     let it = S.queue[0];
+    // 3D en retard sur le direct (×4, actions rapprochées) : une action déjà annoncée qui n'a pas encore commencé
+    // est sautée, sauf un but, pour rattraper le commentaire (jouée après coup, elle le contredirait)
+    while (it && !it.started && it.e.type !== 'goal' && realUntil(it.e) < -0.2) { finishItem(it); it = S.queue[0]; }
     if (!it) return;
     it.tAt = S.now + realUntil(it.e);
     // une action qui n'a pas pu aboutir bien après son instant est abandonnée : la suivante reste à l'heure
@@ -213,35 +263,63 @@ export function createMatchScene(parent) {
       it.tAt = S.now + realUntil(it.e);
     }
     if (!it.started) {
-      const start = it.kind === 'attack' ? lead() : 1.25 / Math.sqrt(Math.max(1, matchFeed.speed));
+      const start = it.kind === 'attack' ? Math.max(lead(), buildUp(it)) : 2.2 / Math.sqrt(Math.max(1, matchFeed.speed));
       if (it.tAt - S.now > start) return;
       it.started = true;
       if (it.kind === 'attack') {
-        // zone de frappe à portée de course du tireur (un tir de loin s'il est encore bas sur le terrain)
+        // point de frappe dans les 20 derniers mètres, à portée de course du tireur avant la frappe. Le tireur
+        // nommé par le commentaire, sauf s'il est trop bas pour y arriver à temps : alors le partenaire le mieux
+        // placé (les noms ne s'affichent pas sur la pelouse ; une frappe de 40 m, si)
+        const avail = Math.max(0, it.tAt - S.now - 1.6); // course possible avant la passe décisive et la frappe
+        const reachOf = (j) => local(it.team, agents[j].x, agents[j].z)[0] + avail * 0.6;
+        if (reachOf(it.shooter) < 3.0) {
+          let best = it.shooter;
+          for (const j of teamIdx(it.team)) if (active(j) && slotOf(j) > 0 && reachOf(j) > reachOf(best) + 0.3) best = j;
+          it.shooter = best;
+        }
         const sh = agents[it.shooter];
-        const [u0, v0] = local(it.team, sh.x, sh.z);
-        it.spot = [clamp(u0 + 1.3, 2.7, 4.15), clamp(v0 * 0.7 + rnd(-0.3, 0.3), -1.1, 1.1)];
+        const [, v0] = local(it.team, sh.x, sh.z);
+        it.spot = [clamp(Math.min(rnd(3.3, 4.1), reachOf(it.shooter)), 2.2, 4.2), clamp(v0 * 0.5 + rnd(-0.35, 0.35), -1.0, 1.0)];
         S.seq = it; S.foul = null;
       } else { S.foul = it; }
-      // ballon arrêté (engagement, dégagement) : on relance tout de suite, l'action n'attend pas
-      if (['kickoff', 'restart'].includes(S.play)) { S.play = 'play'; if (b.state === 'dead') give(nearestAll(b.x, b.z), 'dribble'); }
+      // ballon arrêté (dégagement, touche) : on relance tout de suite, l'action n'attend pas ; un engagement se
+      // joue normalement, sans traîner (update), sauf en accéléré où le temps manque
+      if (S.play === 'restart' || (S.play === 'kickoff' && matchFeed.speed > 1)) { S.play = 'play'; if (b.state === 'dead') give(nearestAll(b.x, b.z), 'dribble'); }
+    }
+    // Le commentaire n'annonce pas ce que la 3D n'a pas encore montré : tant que le ballon n'est pas arrivé (ou la
+    // faute pas commise), l'événement attend dans le direct, au plus quelques secondes (matchFeed.js, match.jsx).
+    if (it.tAt - S.now < 0.25 && !it.contact && matchFeed.waitAt !== it.e.at) {
+      matchFeed.waitAt = it.e.at;
+      matchFeed.waitUntil = performance.now() + (HOLD_MAX / Math.sqrt(Math.max(1, matchFeed.speed))) * 1000;
     }
   }
-  const finishItem = (it) => { if (S.queue[0] === it) S.queue.shift(); if (S.seq === it) S.seq = null; if (S.foul === it) S.foul = null; };
+  // Temps qu'il faut pour amener le ballon au tireur et frapper, d'après où est le ballon maintenant : une attaque
+  // qui part de loin (ballon dans sa moitié, chez l'adversaire) commence plus tôt, au plus 6,2 s avant.
+  function buildUp(it) {
+    if (S.play !== 'play' && S.play !== 'restart') return 0;
+    const d = toSpot(it, b.x, b.z);
+    const ours = b.team === it.team && (b.state === 'held' || b.state === 'pass');
+    return Math.min(6.2 / Math.sqrt(Math.max(1, matchFeed.speed)), (ours ? 0.3 : 0.9) + ARMED + passTime(d > 2.6 ? 'long' : 'fast', d) + 0.3 + kickLead(it, it.shooter));
+  }
+  const release = (it) => { if (matchFeed.waitAt === it.e.at) matchFeed.waitAt = -1; };
+  const finishItem = (it) => { release(it); if (S.queue[0] === it) S.queue.shift(); if (S.seq === it) S.seq = null; if (S.foul === it) S.foul = null; };
 
-  // L'équipe qui doit frapper a besoin du ballon à temps : pressing appuyé, puis récupération assurée ; un tir qui
-  // n'est pas parti un peu après l'instant prévu part quand même (le ballon revient au tireur).
+  // L'équipe qui doit frapper a besoin du ballon à temps : pressing appuyé, puis récupération assurée au plus tard
+  // quand il reste juste le temps de servir le tireur ; un tir qui n'est pas parti un peu après l'instant prévu
+  // part quand même (le ballon revient au tireur).
   function seqControl() {
     const s = S.seq;
     if (!s || s.shot) return;
-    const left = s.tAt - S.now;
+    const left = s.tAt - S.now - kickLead(s, s.shooter); // temps restant avant la frappe
     const ours = b.state === 'held' && b.team === s.team;
-    const theirPass = b.state === 'pass' && b.passer >= 0 && teamOf(b.passer) !== s.team;
+    const theirPass = b.state === 'pass' && b.passer >= 0 && teamOf(b.passer) !== s.team && b.y < 0.05;
     if (!ours && (b.state === 'held' || b.state === 'loose' || b.state === 'dead' || theirPass)) {
       const j = nearestOf(s.team, b.x, b.z);
-      if (j >= 0 && (left < 1.7 || dist(j, b.x, b.z) < 0.06)) give(j, 'dribble');
+      const far = j >= 0 ? toSpot(s, agents[j].x, agents[j].z) : 0;
+      const serve = j === s.shooter ? 0.3 : 0.45 + ARMED + passTime(far > 2.6 ? 'long' : 'fast', far); // comme carrier()
+      if (j >= 0 && (left < serve || dist(j, b.x, b.z) < 0.06)) give(j, 'dribble');
     }
-    if (left < -0.5 && b.owner !== s.shooter && b.state !== 'pass') give(s.shooter, 'dribble');
+    if (left < -0.25 && b.owner !== s.shooter && b.state !== 'pass') give(s.shooter, 'dribble');
   }
 
   // --- Porteur du ballon -------------------------------------------------------------------------------------
@@ -266,7 +344,7 @@ export function createMatchScene(parent) {
   function passTo(i, j, kind = 'pass', target = null) {
     const r = agents[j];
     const d = Math.hypot(r.x - agents[i].x, r.z - agents[i].z);
-    const T = kind === 'long' || d > 3.2 ? 0.7 + d * 0.18 + 0.33 : d / (kind === 'fast' ? 1.8 : 1.4) + 0.33; // vol + armé de la frappe
+    const T = passTime(kind, d) + ARMED; // armé de la frappe, puis vol
     let [tx, tz] = target || [r.x + r.vx * T, r.z + r.vz * T];
     tx = clamp(tx, -LIM_X, LIM_X); tz = clamp(tz, -LIM_Z, LIM_Z);
     startKick(i, tx, tz, kind, { receiver: j });
@@ -288,19 +366,32 @@ export function createMatchScene(parent) {
       }
       return;
     }
-    if (h.phase === 'keep') { // gardien : ballon dans les mains, puis relance
-      p.steer(p.x + S.dir[t] * 0.15, p.z * 0.9, 0.12, dt);
-      b.x = p.x + Math.cos(p.h) * 0.02; b.z = p.z + Math.sin(p.h) * 0.02; b.y = 0.09;
+    if (h.phase === 'keep') { // gardien : ballon dans les mains (au bout des bras s'il a plongé), puis relance
+      const down = Math.abs(p.lean) > 0.25; // encore au sol après un plongeon : il se relève avant de relancer
+      if (down) { p.vx = p.vz = 0; p.speed = 0; } else p.steer(p.x + S.dir[t] * 0.15, p.z * 0.9, 0.12, dt);
+      b.x = p.x + Math.cos(p.h) * 0.02; b.z = p.z + Math.sin(p.h) * 0.02 + p.lean * 0.11; b.y = 0.09 * (1 - Math.abs(p.lean) * 0.55);
+      if (seq && h.timer > 0.35) h.timer = 0.35; // une action de son équipe arrive : le gardien relance vite
+      if (down) h.timer = Math.max(h.timer, 0.25);
       if ((h.timer -= dt) <= 0) {
         b.y = 0;
-        const j = choosePass(i, {}) ?? nearestOf(t, p.x, p.z, i);
+        if (seq) { // contre-attaque : relance longue vers le point de frappe du tireur si le temps presse
+          const d = toSpot(seq, p.x, p.z);
+          if (seq.tAt - S.now <= passTime('long', d) + ARMED + 0.12 + kickLead(seq, seq.shooter) + 0.6) {
+            seq.passed = true;
+            passTo(i, seq.shooter, 'long', spotOf(seq));
+            return;
+          }
+        }
+        let j = choosePass(i, seq ? { prefer: seq.shooter } : {});
+        if (j < 0) j = nearestOf(t, p.x, p.z, i);
         if (j >= 0) passTo(i, j, dist(j, p.x, p.z) > 2.2 ? 'long' : 'pass');
         else give(i, 'dribble');
       }
       return;
     }
     const [sx, sz] = footSpot(p, h.phase === 'dribble' ? 0.04 + 0.03 * Math.abs(Math.sin(p.phase * 0.5)) : 0.042);
-    b.x += (sx - b.x) * Math.min(1, dt * 12); b.z += (sz - b.z) * Math.min(1, dt * 12); b.y = 0;
+    b.x += (sx - b.x) * Math.min(1, dt * 12); b.z += (sz - b.z) * Math.min(1, dt * 12);
+    b.y = Math.max(0, b.y - dt * 1.2); // ballon amorti (poitrine, cuisse) qui redescend au pied
     if (h.phase === 'control') {
       p.steer(p.x, p.z, 0, dt, p.x + Math.cos(p.h), p.z + Math.sin(p.h));
       if ((h.timer -= dt) <= 0) S.hold = { phase: 'dribble', timer: rnd(0.6, 1.4), held: h.held };
@@ -312,27 +403,59 @@ export function createMatchScene(parent) {
     if (seq) {
       const left = seq.tAt - S.now;
       if (i === seq.shooter) {
-        const [gu] = [GOAL_X];
-        tu = Math.min(pu + 0.35, gu - 0.95); tv = pv * 0.9;
+        // le tireur fonce vers le but (conduite rapide de loin) et frappe à l'heure ; trop loin (plus de 23 m), il
+        // s'approche encore jusqu'à une seconde de plus : le commentaire attend le ballon (director). Ballon reçu
+        // très bas (plus de 30 m) avec du temps devant lui : il le remet à un partenaire et file vers son point de
+        // frappe, où la passe décisive lui revient.
+        const dGoal = Math.hypot(...world(t, GOAL_X, 0).map((g, k) => g - (k ? p.z : p.x)));
+        if (dGoal > 3.0 && !seq.laid && h.held > 0.2) {
+          const j = nearestOf(t, p.x, p.z, i);
+          if (j >= 0) {
+            const dj = dist(j, p.x, p.z), dS = toSpot(seq, agents[j].x, agents[j].z);
+            const back = ARMED + passTime('pass', dj) + 0.45 + ARMED + passTime(dS > 2.6 ? 'long' : 'fast', dS) + 0.12 + leadFrom(seq, ...spotOf(seq));
+            if (left > back) { seq.laid = true; passTo(i, j, 'pass'); return; }
+          }
+        }
+        tu = Math.min(pu + 0.35, GOAL_X - 0.95); tv = pv * 0.9;
         const [wx, wz] = world(t, tu, tv);
-        p.steer(wx, wz, 0.32, dt);
-        if (left <= KICK_CONTACT * KICK_TIME + 0.02) shoot(i, seq);
+        p.steer(wx, wz, 0.32 + 0.24 * clamp((dGoal - 1.6) / 1.6, 0, 1), dt);
+        const early = left - kickLead(seq, i);
+        if (early <= 0.02 && (dGoal < 2.3 || early < -1)) shoot(i, seq);
         return;
       }
       tu = pu + 0.6; tv = pv + (seq.spot[1] - pv) * 0.2;
       const [wx, wz] = world(t, clamp(tu, -4.5, 4.3), clamp(tv, -3, 3));
       p.steer(wx, wz, 0.48, dt);
-      const d = dist(seq.shooter, p.x, p.z);
+      const d = toSpot(seq, p.x, p.z);
       const longWay = d > 2.6; // ballon loin de la surface : transversale ou passe en profondeur aérienne
       // la passe part juste à temps : vol du ballon, puis frappe immédiate du tireur (armé de la jambe compris)
-      const passAt = (longWay ? 0.7 + d * 0.18 : d / 1.7) + 0.8;
+      const passAt = passTime(longWay ? 'long' : 'fast', d) + ARMED + 0.12 + kickLead(seq, seq.shooter);
       if (!seq.passed && h.held > 0.15 && left <= passAt + 0.1) {
         seq.passed = true;
-        passTo(i, seq.shooter, longWay ? 'long' : 'fast'); // dans la course du tireur, là où il sera à l'arrivée
+        // au point de frappe si le tireur y sera à l'arrivée du ballon, sinon sur sa course vers ce point, là où
+        // il sera (jamais dans ses pieds, loin du but)
+        const sh = agents[seq.shooter];
+        const T = passTime(longWay ? 'long' : 'fast', d) + ARMED;
+        const [sx, sz] = spotOf(seq);
+        const run = Math.hypot(sx - sh.x, sz - sh.z);
+        const k = run > 1e-3 ? Math.min(1, (0.62 * T) / run) : 1;
+        passTo(i, seq.shooter, longWay ? 'long' : 'fast', [sh.x + (sx - sh.x) * k, sh.z + (sz - sh.z) * k]);
       } else if (!seq.passed && h.held > 0.9 && left > passAt + 1.0) { // une passe vers l'avant pour faire progresser
         const j = choosePass(i, { prefer: seq.shooter });
-        if (j >= 0 && j !== seq.shooter) passTo(i, j, 'pass');
+        if (j >= 0 && j !== seq.shooter) {
+          // seulement si le relais aura encore le temps de servir le tireur (réception, contrôle, passe, frappe)
+          const dj = dist(j, p.x, p.z);
+          const dS = toSpot(seq, agents[j].x, agents[j].z);
+          const relay = ARMED + passTime('pass', dj) + 0.45 + passTime(dS > 2.6 ? 'long' : 'fast', dS) + ARMED + 0.12 + kickLead(seq, seq.shooter);
+          if (left > relay) passTo(i, j, 'pass');
+        }
       }
+      return;
+    }
+    const f = S.foul && !S.foul.contact && S.foul.team !== t ? S.foul : null;
+    if (f) { // un adversaire va commettre la faute : le porteur garde le ballon et file droit sur lui
+      const o = agents[f.offender];
+      p.steer(o.x, o.z, 0.36, dt);
       return;
     }
     const finalThird = pu > 3.0;
@@ -355,7 +478,7 @@ export function createMatchScene(parent) {
     let v;
     let height = rnd(0.02, 0.14);
     if (seq.outcome === 'g') v = (kz > 0 ? -1 : 1) * rnd(0.16, 0.31);
-    else if (seq.outcome === 's') v = clamp(kz + rnd(-0.07, 0.07), -0.3, 0.3); // à portée du gardien
+    else if (seq.outcome === 's') v = clamp(kz + (Math.random() < 0.5 ? -1 : 1) * rnd(0.02, 0.2), -0.32, 0.32); // à portée du gardien, souvent en plongeant
     else if (seq.outcome === 'p') { v = (Math.random() < 0.5 ? -1 : 1) * GOAL_HALF; height = rnd(0.03, 0.18); }
     else { v = (Math.random() < 0.5 ? -1 : 1) * rnd(0.55, 1.0); height = rnd(0.02, 0.25); }
     const [tx, tz] = world(t, GOAL_X + 0.02, v);
@@ -396,10 +519,12 @@ export function createMatchScene(parent) {
       if (b.y > 0.2) { b.y = 0.2; b.vy = 0; }
       return;
     }
-    // passe ou ballon libre : réception par le receveur, interception par un adversaire tout proche
-    if (b.y < 0.05) {
+    // passe ou ballon libre : réception par le receveur (un ballon aérien qui redescend s'amortit de la poitrine),
+    // interception par un adversaire tout proche (ballon au sol)
+    if (b.y < 0.15) {
       for (let j = 0; j < N; j++) {
         if (!active(j) || j === b.passer) continue;
+        if (b.y > 0.05 && !(j === b.receiver && b.vy <= 0)) continue;
         const a = agents[j];
         const [fx, fz] = a.forward();
         if (segDist(a.x + fx * 0.03, a.z + fz * 0.03, x0, z0, b.x, b.z) > (j === b.receiver ? 0.07 : 0.05)) continue;
@@ -423,11 +548,16 @@ export function createMatchScene(parent) {
   function shotFlight(x0, z0) {
     const { outcome, team } = b.shot;
     const dirT = S.dir[team];
-    if (outcome === 'g' && GOAL_X - b.x * dirT < 0.9) S.slow = 0.45; // ralenti : le ballon file au fond des filets
+    if (outcome === 'g' && GOAL_X - b.x * dirT < SLOW_ZONE) S.slow = SLOW; // ralenti : le ballon file au fond des filets
     const keeper = (1 - team) * 11;
     const kp = agents[keeper];
-    // arrêt : le gardien se jette sur la trajectoire et capte le ballon
-    if (outcome === 's' && segDist(kp.x, kp.z, x0, z0, b.x, b.z) < 0.1 && b.y < 0.22) {
+    // arrêt : le gardien se jette sur la trajectoire et capte le ballon ; au plus tard quand le ballon atteint sa
+    // ligne (un arrêt annoncé par le commentaire n'est jamais un tir à côté), en plongeant vers lui
+    const [bu1] = local(team, b.x, b.z);
+    if (outcome === 's' && ((segDist(kp.x, kp.z, x0, z0, b.x, b.z) < 0.1 && b.y < 0.22) || bu1 >= GOAL_X - KEEPER_LINE)) {
+      kp.z += clamp(b.z - kp.z - kp.lean * 0.11, -0.04, 0.04); // dernier ajustement
+      kp.leanTo = clamp((b.z - kp.z) / 0.11, -1, 1); // plongeon du côté du ballon : les gants vont au ballon
+      kp.leanHold = 0.7;
       b.vx = b.vz = b.vy = 0;
       give(keeper, 'keep');
       S.hold.timer = 1.1;
@@ -462,8 +592,13 @@ export function createMatchScene(parent) {
   // --- Phases arrêtées -------------------------------------------------------------------------------------
   function startCelebration(team) {
     const scorer = S.seq ? S.seq.shooter : nearestOf(team, b.x, b.z);
-    const [, sv] = local(team, agents[scorer].x, agents[scorer].z);
-    S.celebrate = { team, scorer, corner: world(team, 4.95, (sv >= 0 ? 1 : -1) * 3.05), t: 0 };
+    const sc = agents[scorer];
+    const [, sv] = local(team, sc.x, sc.z);
+    // course de joie vers le poteau de corner le plus proche (au plus 18 m : elle tient dans la pause du direct)
+    const [fx, fz] = world(team, 4.95, (sv >= 0 ? 1 : -1) * 3.05);
+    const d = Math.hypot(fx - sc.x, fz - sc.z);
+    const k = d > 1.8 ? 1.8 / d : 1;
+    S.celebrate = { team, scorer, corner: [sc.x + (fx - sc.x) * k, sc.z + (fz - sc.z) * k], fans: [fx * 1.15, fz * 1.25], t: 0 };
     S.play = 'celebrate';
     on.goal?.(team);
     if (S.seq) finishItem(S.seq);
@@ -496,17 +631,22 @@ export function createMatchScene(parent) {
     const f = S.foul;
     const off = agents[f.offender];
     if (!f.contact) {
-      // le fautif fonce sur le porteur adverse ; sans porteur adverse, on lui en donne un
-      if (!(b.state === 'held' && b.team !== f.team)) {
+      // le fautif fonce sur le porteur adverse ; sans porteur adverse, le joueur adverse le plus proche du ballon le
+      // récupère (une passe adverse en vol est d'abord reçue)
+      const theirPass = b.state === 'pass' && b.team !== f.team;
+      if (!(b.state === 'held' && b.team !== f.team) && !theirPass) {
         const j = nearestOf(1 - f.team, b.x, b.z);
-        if (j >= 0) { b.x = agents[j].x; b.z = agents[j].z; give(j, 'dribble'); }
+        if (j >= 0) give(j, 'dribble');
       }
-      const c = agents[b.owner];
+      const c = b.state === 'held' ? agents[b.owner] : b;
       off.steer(c.x, c.z, 0.8, dt);
-      if (Math.hypot(off.x - c.x, off.z - c.z) < 0.05 || f.tAt - S.now < -0.4) {
+      // au plus tard un peu après l'heure du commentaire, qui attend la faute (director)
+      if (f.tAt - S.now < 0.05) f.late = (f.late || 0) + dt;
+      if (b.state === 'held' && (Math.hypot(off.x - c.x, off.z - c.z) < 0.05 || f.late > 0.8 / Math.sqrt(Math.max(1, matchFeed.speed)))) {
         f.contact = true;
+        release(f); // la faute est commise : le carton peut s'afficher
         f.victim = b.owner;
-        f.timer = 2.0;
+        f.timer = 2.0 / Math.sqrt(Math.max(1, matchFeed.speed)); // arrêt de jeu, carton brandi
         deadBall(b.x, b.z);
         card.material = cardMats[f.color === 'red' ? 'red' : 'yellow'];
         S.cardTimer = 2.2;
@@ -542,11 +682,19 @@ export function createMatchScene(parent) {
       if (b.state === 'shot' && b.shot && b.shot.team !== t) {
         const T = Math.abs(own - b.x) / Math.max(0.3, Math.abs(b.vx));
         const zAt = b.z + b.vz * T;
-        if (b.shot.outcome === 's') { tz = clamp(zAt, -0.36, 0.36); speed = 0.95; }
-        else if (b.shot.outcome === 'g') { tz = clamp(-zAt * 0.6, -0.3, 0.3); speed = 0.7; } // plonge du mauvais côté
+        const o = b.shot.outcome;
+        if (o === 's') { tz = clamp(zAt, -0.36, 0.36); speed = 0.4; } // pas chassés, puis plongeon
+        else if (o === 'g') { tz = clamp(-zAt * 0.6, -0.3, 0.3); speed = 0.7; } // plonge du mauvais côté
         else { tz = clamp(zAt, -0.36, 0.36); speed = 0.6; }
+        if (T < 0.45) { // plongeon dans les derniers instants
+          a.leanTo = o === 'g' ? -Math.sign(zAt - a.z || 1) * 0.95 : clamp((zAt - a.z) / 0.12, -1, 1) * (o === 's' ? 1 : 0.6);
+          a.leanHold = 0.6;
+        }
       }
-      a.steer(own + S.dir[t] * 0.1, tz, speed, dt, b.x, b.z);
+      // toujours face au jeu : au ballon, ou pendant un tir à d'où il vient (le plongeon reste de côté, face au
+      // tireur, même quand le ballon passe à sa hauteur)
+      const shot = b.state === 'shot' && b.shot && b.shot.team !== t;
+      a.steer(own + S.dir[t] * 0.1, tz, speed, dt, shot ? b.x - b.vx * 0.6 : b.x, shot ? b.z - b.vz * 0.6 : b.z, true);
       return;
     }
     if (stopped) { // arrêt de jeu : chacun reprend calmement sa place
@@ -569,9 +717,9 @@ export function createMatchScene(parent) {
       return;
     }
     const seq = S.seq && !S.seq.shot ? S.seq : null;
-    if (seq && i === seq.shooter && b.owner !== i) { // le tireur file vers sa zone de frappe
-      const [wx, wz] = world(t, seq.spot[0], seq.spot[1]);
-      a.steer(wx, wz, 0.62, dt, b.x, b.z);
+    if (seq && i === seq.shooter && b.owner !== i) { // le tireur file vers son point de frappe (appel de balle)
+      const [wx, wz] = spotOf(seq);
+      a.steer(wx, wz, Math.hypot(wx - a.x, wz - a.z) > 0.5 ? 0.7 : 0.45, dt, b.x, b.z);
       return;
     }
     const attacking = b.team === t && b.state !== 'loose';
@@ -664,6 +812,7 @@ export function createMatchScene(parent) {
     S.queue = [];
     S.handled = new WeakSet();
     S.seq = S.foul = S.restart = S.celebrate = null;
+    matchFeed.waitAt = -1;
     if (half === 1) { S.out.fill(false); S.leaving.clear(); }
     setFormation(matchFeed.formation);
     setKickoff(half === 1 ? 0 : 1);
@@ -687,12 +836,12 @@ export function createMatchScene(parent) {
       return;
     }
     if (want === 'break' || want === 'walkoff') {
-      if (S.play !== want) { S.play = want; S.seq = S.foul = null; S.queue = []; deadBall(0, 0); }
+      if (S.play !== want) { S.play = want; S.seq = S.foul = null; S.queue = []; matchFeed.waitAt = -1; deadBall(0, 0); }
       return;
     }
     // direct
     if (matchFeed.half !== S.half || ['off', 'gone', 'warmup', 'break', 'walkoff'].includes(S.play)) setupHalf(matchFeed.half);
-    if (matchFeed.skipped !== S.skipped) { S.skipped = matchFeed.skipped; S.queue = []; S.seq = S.foul = null; }
+    if (matchFeed.skipped !== S.skipped) { S.skipped = matchFeed.skipped; S.queue = []; S.seq = S.foul = null; matchFeed.waitAt = -1; }
   }
 
   function walkTo(tx, tz, dt, speed) {
@@ -732,15 +881,21 @@ export function createMatchScene(parent) {
         const c = S.celebrate;
         c.t += dt;
         const [cx, cz] = c.corner;
+        const sc = agents[c.scorer];
         for (let i = 0; i < N; i++) {
           if (!active(i)) continue;
           const a = agents[i];
-          if (i === c.scorer) a.steer(cx, cz, 0.62, dt);
-          else if (teamOf(i) === c.team && slotOf(i) !== 0) a.steer(agents[c.scorer].x - Math.sign(cx) * 0.12 * (1 + (i % 3)), agents[c.scorer].z - Math.sign(cz) * 0.08 * (i % 4), 0.5, dt);
-          else { const [kx, kz] = kickoffSpot(i); a.steer(kx, kz, 0.12, dt, 0, 0); }
+          // le buteur file vers le public, puis s'arrête face à la tribune ; ses coéquipiers le rejoignent et
+          // l'entourent ; les autres regagnent leur moitié au pas
+          if (i === c.scorer) a.steer(cx, cz, 0.7, dt, ...c.fans);
+          else if (teamOf(i) === c.team && slotOf(i) !== 0) {
+            const ang = slotOf(i) * 2.4, r = 0.075 + (slotOf(i) % 3) * 0.03;
+            a.steer(sc.x + Math.cos(ang) * r, sc.z + Math.sin(ang) * r, 0.62, dt, sc.x, sc.z);
+          } else { const [kx, kz] = kickoffSpot(i); a.steer(kx, kz, 0.12, dt, 0, 0); }
         }
         if (b.state === 'net') freeBall(dt);
-        if (c.t > 2.8 || (c.t > 1.2 && !(matchFeed.pause > 0))) setKickoff(1 - c.team); // replacement pendant la fin de la pause
+        // la joie dure le temps de la pause du direct (bandeau « BUT ! »), puis chacun se replace pour l'engagement
+        if ((c.t > 1.2 && !(matchFeed.pause > 0)) || c.t > 6) setKickoff(1 - c.team);
       } else if (S.play === 'restart') {
         restartUpdate(dt);
         for (let i = 0; i < N; i++) if (active(i) && i !== S.restart?.taker) offBall(i, dt, true);
@@ -763,8 +918,17 @@ export function createMatchScene(parent) {
     }
 
     S.lastPlay = S.play;
-    // frappes, rendu des joueurs, ballon, carton
-    agents.forEach((a) => { if (a.kick > 0) { a.kick += dt / KICK_TIME; if (a.kick >= 1) a.kick = 0; } });
+    // frappes, plongeons, joie (bras levés de l'équipe qui vient de marquer), rendu des joueurs, ballon, carton
+    const cheerTeam = S.play === 'celebrate' ? S.celebrate.team : -1;
+    agents.forEach((a, i) => {
+      if (a.kick > 0) { a.kick += dt / KICK_TIME; if (a.kick >= 1) a.kick = 0; }
+      if (a.leanHold > 0) a.leanHold -= dt; else a.leanTo *= Math.max(0, 1 - dt * 2.5); // le gardien se relève
+      a.lean += (a.leanTo - a.lean) * Math.min(1, dt * 12);
+      if (Math.abs(a.lean) < 0.003 && Math.abs(a.leanTo) < 0.003) a.lean = a.leanTo = 0;
+      const cheer = teamOf(i) === cheerTeam && slotOf(i) !== 0 ? 1 : 0;
+      a.cheer += (cheer - a.cheer) * Math.min(1, dt * (cheer ? 5 : 2.5));
+      if (a.cheer < 0.005) a.cheer = 0;
+    });
     for (let i = 0; i < N; i++) {
       if (S.out[i]) players.setAgent(i, agents[i], -2, 0.0001);
       else players.setAgent(i, agents[i], S.baseY);
@@ -781,8 +945,17 @@ export function createMatchScene(parent) {
       card.visible = true;
       card.position.set(a.x, S.baseY + 0.27 + Math.sin(time * 4) * 0.008, a.z);
     } else card.visible = false;
-    const focus = S.play === 'celebrate' ? agents[S.celebrate.scorer] : b;
-    return { x: focus.x, z: focus.z, live: ['kickoff', 'play', 'celebrate', 'restart', 'foul'].includes(S.play) || (S.play === 'play'), slow: S.slow < 1 };
+    // Plan demandé à la réalisation (Empire3D) : jeu, attaque (ballon dans le dernier tiers, tir, et la seconde qui
+    // suit), carton brandi (sur le fautif), joie du buteur (sur lui). vx, vz : le ballon (ou son porteur) en
+    // mouvement, pour cadrer un peu devant l'action.
+    const seq = S.seq && S.seq.started ? S.seq : null;
+    if (seq && (b.state === 'shot' || (b.team === seq.team && local(seq.team, b.x, b.z)[0] > 1.8))) S.camHold = 1.2;
+    else S.camHold = Math.max(0, (S.camHold || 0) - dtReal);
+    const booked = S.foul && S.foul.contact && S.cardTimer > 0;
+    const cam = S.play === 'celebrate' ? 'celebrate' : booked ? 'card' : S.camHold > 0 ? 'attack' : 'play';
+    const focus = S.play === 'celebrate' ? agents[S.celebrate.scorer] : booked ? agents[S.cardOf] : b;
+    const mover = b.state === 'held' && b.owner >= 0 ? agents[b.owner] : b;
+    return { x: focus.x, z: focus.z, vx: mover.vx, vz: mover.vz, cam, live: ['kickoff', 'play', 'celebrate', 'restart', 'foul'].includes(S.play), slow: S.slow < 1 };
   }
 
   return {
@@ -798,6 +971,7 @@ export function createMatchScene(parent) {
     },
     on,
     get ball() { return b; },
+    get agents() { return agents; }, // lecture seule (inspection en développement)
     get debug() { return { play: S.play, half: S.half, queue: S.queue.map((q) => `${q.kind}:${q.e.minute}:${q.outcome || q.color}:${q.started ? 'go' : '…'}`), seq: S.seq && { shooter: S.seq.shooter, left: +(S.seq.tAt - S.now).toFixed(2), passed: S.seq.passed, shot: S.seq.shot }, ball: { state: b.state, owner: b.owner, x: +b.x.toFixed(2), z: +b.z.toFixed(2) }, clock: +matchFeed.clock.toFixed(1), pause: +(+matchFeed.pause).toFixed(1) }; },
     dispose() {
       players.dispose();

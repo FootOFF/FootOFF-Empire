@@ -42,5 +42,6 @@ export const IconShield = I(<path d="M12 3 4.5 6v5.5c0 4.5 3.2 8.2 7.5 9.5 4.3-1
 export const IconEye = I(<><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3" /></>);
 export const IconExternal = I(<path d="M13.5 5.5H18.5V10.5M18.5 5.5l-8 8M16.5 13.5v4a1.5 1.5 0 0 1-1.5 1.5H7a1.5 1.5 0 0 1-1.5-1.5V9.5A1.5 1.5 0 0 1 7 8h4" />);
 export const IconCheck = I(<path d="m5 12.5 4.2 4.2L19 7" />);
+export const IconAlert = I(<><path d="M12 4 21.5 20h-19Z" /><path d="M12 10v4.5M12 17.3v.2" /></>);
 export const IconDice = I(<><rect x="4" y="4" width="16" height="16" rx="3.5" /><circle cx="9" cy="9" r="1.1" /><circle cx="15" cy="15" r="1.1" /><circle cx="15" cy="9" r="1.1" /><circle cx="9" cy="15" r="1.1" /><circle cx="12" cy="12" r="1.1" /></>);
 export const IconGear = I(<><circle cx="12" cy="12" r="3" /><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M6 18l1.6-1.6M16.4 7.6 18 6" /></>);

@@ -40,8 +40,9 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 - Un préfixe de classes par écran, jamais partagé : `pm-` avant-match, `pz-` menu pause, `ts-` écran titre, `ld-`
   chargement, `cm-` menus façon console. Le menu pause avait repris `.pm-side` de l'avant-match : sa règle « masqué
   sur téléphone » cachait la colonne du coup d'envoi, et les matchs ne se lançaient plus sur téléphone.
-- L'action principale d'un écran qui défile reste visible : le coup d'envoi est collé au bas de l'écran pendant
-  que l'avant-match défile (sur téléphone, sur toute la largeur).
+- L'action principale d'un écran qui défile reste visible, avec ce qui aide à la décider : le pronostic et le coup
+  d'envoi sont collés ensemble au bas de l'écran pendant que l'avant-match défile (sur téléphone, sur toute la
+  largeur).
 - Icônes dessinées uniquement (jamais ‹ › ou ⬠ en caractères) ; « Comparer » = bouton rond avec l'icône radar.
 
 ## Zones du HUD
@@ -56,7 +57,7 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 
 - La 3D occupe tout l'écran. `--hb` réserve la place du badge imposé par l'hébergeur de test (0 sur footoff.media) :
   seuls les éléments posés en bas l'utilisent (`--hud-bottom`).
-- Mobile (≤ 760 px) : barre du haut (nom du club, ressources), objectif replié, puis en bas, de haut en bas :
+- Mobile (≤ 760 px) : barre du haut (écusson et nom du club, ressources), objectif replié, puis en bas, de haut en bas :
   conseil du staff, carte de match, dock. Jamais plus de six éléments à l'écran.
 - Un contrôle automatique (galerie) vérifie qu'aucun élément ne se chevauche ni ne sort de l'écran à
   1440, 1280, 1000, 800 et 375 px.
@@ -98,6 +99,39 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
   repos comme en mouvement ; la ligne Qualité graphique affiche cette résolution réelle (« Image calculée en
   2880 × 1620 pixels »). Sur un écran peu haut, la liste des réglages défile sous son titre, l'entrée choisie toujours
   visible.
+
+## Notifications, infobulles, portraits, raccourcis
+
+- Notifications (`src/ui/notify.jsx`, classes `nt-`) : un seul bandeau à la fois, qui descend du haut puis repart
+  (au centre sur la ligne de la barre du haut à partir de 1100 px, juste dessous en dessous de 1100 px, par-dessus
+  la barre sur téléphone, comme une notification du système). File d'attente : rien pendant l'avant-match, le
+  direct, l'après-match, un bilan, le menu pause ou une confirmation (le bandeau en cours s'efface et reviendra
+  en entier) ; seul un avertissement qui répond à un geste du joueur passe devant. Plusieurs succès d'un coup :
+  un seul bandeau (« 3 succès débloqués »). Types : succès (médaille dorée qui surgit, reflet, trois notes qui
+  montent), complexe, mercato, réussite, information, avertissement. Un filet doré montre le temps restant ;
+  survol ou doigt posé : il reste ; geste vers le haut : il part ; flèche à droite : un clic ouvre ce qu'il
+  annonce (succès → salle des trophées, onglet Succès ; offres → Mercato). Aperçu : `?ecran=notification`.
+- Infobulles (`src/ui/tips.jsx`) : à la souris seulement, tout `title` devient une bulle du jeu après 280 ms, au-dessus
+  de l'élément (dessous près du haut de l'écran), toujours dans l'écran ; jamais l'infobulle du navigateur. Les
+  en-têtes du tableau de l'effectif donnent le nom complet de la caractéristique (« Finition · trier ») ; le tri
+  se montre par une flèche dessinée.
+- Portraits des joueurs (`src/ui/portrait.jsx`) : dessinés, toujours les mêmes pour un même joueur (teint, visage,
+  coiffure, cheveux qui grisonnent avec l'âge, barbe), buste au maillot de son club (notre or, l'anthracite de nos
+  gardiens, les couleurs du club adverse, un haut d'entraînement pour un joueur libre), liseré doré pour nos
+  joueurs. Tableau et cartes de l'effectif (poste en pastille sur le portrait au téléphone), fiche joueur, cartes du
+  mercato (médaille de niveau posée sur le portrait), homme du match, classements des Stats.
+- Raccourcis clavier (PC) : 1 à 5 ouvrent les sections du menu du bas (une seconde fois : retour à l'Empire), J lance
+  le match (ou le bilan) ; touches physiques (AZERTY compris), jamais pendant une saisie, un menu ou un match. La
+  touche s'affiche au survol du menu ou du bouton Jouer.
+- Sons d'interface (`src/ui/uisound.js`, joués par l'ambiance du stade) : onglet (clic très bref), panneau ou fiche
+  qui s'ouvre (souffle qui monte) ou se ferme (qui descend), notification, succès, geste refusé ; discrets, coupés
+  avec le son.
+- Panneaux : leurs blocs arrivent l'un après l'autre (40 ms d'écart, 200 ms au plus) à l'ouverture et à chaque
+  changement d'onglet. Effectif, Stats et salle des trophées, plus larges, effacent tout le HUD ; Saison, Journal et
+  Finances gardent le menu du bas, recentré dans l'espace libre.
+- Fiche de parcelle (PC) : toujours sous la carte du club, corps qui défile (le titre de la fiche du stade sortait
+  de l'écran en 810 px de haut) ; elle efface l'objectif et le conseil du staff. Options de construction sur deux
+  lignes : icône, nom et prix, puis l'effet et la rentabilité sur toute la largeur.
 
 ## Finitions
 
@@ -153,7 +187,7 @@ Façon jeu de console : un seul chargement au démarrage, puis l'écran titre de
   réglages, création du club (nom proposé au hasard, dé pour en tirer un autre). Continuer : la caméra plonge
   vers la vue d'ensemble et le HUD apparaît.
 - Menu pause (`src/ui/pause.jsx`) : Échap, le bouton menu du HUD, ou Start à la manette. La scène se fige (Empire3D
-  ne dessine plus, `paused`) et se floute ; Reprendre, Réglages, Écran titre, Nouvelle partie (confirmation),
+  ne dessine plus, `paused`) et se floute ; le nom du club avec son écusson ; Reprendre, Réglages, Écran titre, Nouvelle partie (confirmation),
   FootOFF Media ; à droite la saison en cours et l'objectif. Ses classes portent le préfixe `pz-` : le préfixe
   `pm-` appartient à l'avant-match (un `.pm-side` commun masquait le coup d'envoi sur téléphone).
 - Commandes (`src/ui/console.jsx`, `src/ui/input.js`) : flèches, Entrée, Échap ; souris (l'entrée suit le
@@ -218,9 +252,17 @@ geste, repris à l'avant-match), l'avant-match et la mi-temps. On glisse un joue
 ou on en touche deux ; au doigt, un remplaçant se saisit après un court maintien (sinon le banc défile). Le joueur
 choisi affiche sur chaque poste le niveau qu'il y aurait (vert s'il y ferait mieux). « Meilleur onze » annonce son
 gain et dit quand le onze est déjà optimal. À la mi-temps, la composition est repliée : une carte « Composition et
-changements » (formation, changements restants) la déploie, un lien « Replier » la referme. Notes de la première
-période en pastille, jusqu'à cinq entrants (`SUBS_MAX`, `live.applyLineup`), expulsés figés, résumé des changements
-toujours visible, pronostic recalculé.
+changements » (formation, changements prévus et restants) la déploie, un lien « Replier » la referme ; repliée,
+rien d'autre de la composition n'est à l'écran (la carte résume les changements). Notes de la première période en
+pastille, jusqu'à cinq entrants (`SUBS_MAX`, `live.applyLineup`), expulsés figés, résumé des changements visible
+une fois la composition dépliée, pronostic recalculé.
+
+Avant-match (`PreMatch`, `src/ui/match.jsx`), même principe : sous l'affiche, des pastilles (niveau contre niveau,
+affluence, recettes) ; puis la composition, le dispositif et la tactique ; en bas, collés à l'écran et ensemble, le
+pronostic (victoire, nul, défaite, buts attendus) et le coup d'envoi : chaque réglage montre aussitôt son effet sur
+les chances, juste au-dessus du bouton qui lance le match. La composition est dépliée d'office sur PC (le onze à
+gauche, les réglages à droite) et repliée sur téléphone dans la même carte qu'à la mi-temps (`CompoCard`), avec
+« Meilleur onze » dessous ; dépliée, elle cachait sur téléphone le pronostic et tout le reste de l'avant-match.
 
 Chaque match enregistre son onze de départ (dans l'ordre des postes de la formation), ses changements, la formule
 des billets du jour, le prix du billet et les recettes détaillées (`recordMatch`, `src/game/season.js`). Le Stats
@@ -233,16 +275,39 @@ Hors match, le stade est vide et immobile ; l'équipe s'entraîne au centre d'en
 construit). Le jour de match (`src/three/matchplay.js`) : échauffement des deux équipes avant le coup d'envoi,
 puis 11 contre 11 en direct, maillots adverses propres à chaque club (`src/game/kits.js`). L'écran du direct
 écrit l'horloge et les événements de la mi-temps dans `src/game/matchFeed.js` ; la scène construit chaque action
-pour que la frappe parte à l'instant où le commentaire l'annonce (but, arrêt, à côté, poteau), joue les fautes
-et cartons (expulsé qui sort), les célébrations, les engagements, le changement de côté et le retour aux
-vestiaires. Une action qui ne peut plus aboutir à l'heure est abandonnée pour rester synchrone. Public
+pour que le ballon ARRIVE à l'instant où le commentaire l'affiche : au fond des filets quand « BUT ! » apparaît, dans
+les gants du gardien pour un arrêt, sur le poteau, au-delà de la ligne pour un tir à côté. Règles :
+- le commentaire n'annonce jamais ce que la 3D n'a pas encore montré : si le ballon est en retard (ou la faute pas
+  commise), l'horloge du direct attend, au plus 2,5 s (1,25 s en accéléré), puis reprend quoi qu'il arrive
+  (`matchFeed.waitAt`, `waitUntil`) ;
+- l'attaque se construit vers un point de frappe dans les 20 derniers mètres : le tireur y fait son appel, la
+  passe décisive est jouée dans sa course, la frappe part à une vitesse réaliste (36 m/s au plus) choisie pour
+  arriver à l'heure ; le tireur nommé frappe s'il peut y être à temps, sinon le partenaire le mieux placé (les noms
+  ne s'affichent pas sur la pelouse, une frappe de 40 m se voit) ;
+- en accéléré, une action déjà annoncée que la 3D n'a pas pu commencer est sautée, jamais un but ; une action
+  déjà annoncée n'est jamais rejouée ;
+- gardien face au jeu (pas chassés), arrêts souvent en plongeant, ballon dans les gants ; contrôle de la poitrine
+  des ballons aériens ; la faute se commet sur le porteur, près du ballon (plus de ballon téléporté) ;
+- but : course de joie du buteur vers le public, ses coéquipiers l'entourent bras levés, le temps du bandeau
+  « BUT ! », puis engagement.
+Réalisation télé (`broadcastStep`, `src/ui/Empire3D.jsx`) : caméra dans l'axe de la tribune principale qui suit le
+ballon et serre le plan selon l'action (jeu, attaque dans le dernier tiers, carton, joie du buteur) ; la largeur de
+pelouse montrée se règle sur la zone libre de l'écran (à gauche du fil sur PC, au-dessus sur téléphone) ; le joueur
+reprend la main en bougeant la caméra, la réalisation revient en douceur. Plus proche de la pelouse, elle coûte
+moins que l'ancienne vue large (soir de match, 2880 × 1620 : 26,1 → 22,4 ms au stade 6). Bancs de développement :
+`tmp/ph3/matchbench.js` (synchronisme, mi-temps simulées) et `tmp/ph3/matchdemo.js` (démo en temps réel, arrêt sur
+image). Fautes et cartons (expulsé qui sort), engagements, changement de côté et retour aux vestiaires. Public
 (`src/three/crowd.js`) : supporters assis sur les sièges du modèle de stade (debout le long de la main courante
 dans les petits stades), nombre selon l'affluence, parcage visiteurs, le camp concerné se lève sur un but.
 Niveaux 5 et 6 : arène fermée générée dans Blender (`arena()` de `tools/blender/models/build_stadium.py`), une
 cuvette continue aux angles fermés, deux étages reliés par des loges au nord et sur les virages, toit en selle
 (haut au nord, bas et reculé côté caméra pour voir toute la pelouse), bande vitrée et nervures, façade vitrée à
-ailettes LED or, bandeau FootOFF Media et monogrammes côté caméra. Elle déborde sur les allées de l'esplanade
-(`ARENA_FOOTPRINT`, catégorie `arena` de `assets-src/budgets.json`) ; caméras de match un peu plus hautes.
+ailettes LED or, bandeau sombre souligné d'un filet lumineux sous le bord du toit. Marque sur le stade : un seul
+monogramme en façade côté caméra, au centre (sans ailette qui le traverse), et le monogramme du toit, du niveau 3
+au niveau 6 (le bandeau reprenait les panneaux publicitaires, avec un logo tous les 6 m, plus deux grands
+monogrammes et, au niveau 6, deux totems à logo : trop de marques sur une façade). L'arène déborde sur les allées
+de l'esplanade (`ARENA_FOOTPRINT`, catégorie `arena` de `assets-src/budgets.json`) ; caméras de match un peu plus
+hautes.
 Le stade est posé sur une esplanade piétonne (plus de route autour).
 
 ## Plateforme du complexe

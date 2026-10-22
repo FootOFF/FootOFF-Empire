@@ -1,17 +1,25 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { DIVISIONS } from '../game/constants';
 import { standingsOf } from '../game/season';
 import { ordinal } from '../game/utils';
 import { fmtMoney, fmtNum } from './format';
 import { IconClose, IconCoin } from './icons';
+import { ClubCrest, Crest } from './crest';
 import { AnimatedMoney } from './moneyfx';
 import { Eyebrow, IconBall, RatingBadge, SectionHead, Stat } from './kit';
 import { Trophy, TROPHY_NAMES } from './trophy';
 import { STAGES_SHORT, STAGES, nextFixture, ofDiv } from '../game/cups';
-import { useDialogFocus, useKeydown } from './presence';
+import { useDialogFocus, useKeydown, useLeaving } from './presence';
+import { uiSound } from './uisound';
 import { PHONE, useSwipe } from './gestures';
 import { Tabs } from './glass';
 import { SeasonCalendar } from './calendar';
+
+// Un panneau ou une fiche qui s'ouvre fait un léger souffle qui monte, qui descend quand il se ferme.
+export function usePanelSound() {
+  const leaving = useLeaving();
+  useEffect(() => { uiSound(leaving ? 'close' : 'open'); }, [leaving]);
+}
 
 // Panneau du jeu : un seul modèle pour l'Effectif, la Saison et le Journal (en-tête, barre d'outils, corps
 // défilant, trésorerie à droite quand on y dépense). Glisse depuis la droite sur PC, plein écran sur mobile.
@@ -20,6 +28,7 @@ export function Panel({ title, eyebrow, size = 'md', money = null, toolbar = nul
   useDialogFocus(ref);
   useKeydown((e) => { if (e.key === 'Escape') (onEscape || onClose)(); });
   useSwipe(ref, { onDown: onClose, downMedia: PHONE });
+  usePanelSound();
   return (
     <section ref={ref} tabIndex={-1} className={`panel ${size}`} role="dialog" aria-label={title}>
       <span className="grip" aria-hidden="true" />
@@ -101,7 +110,10 @@ export function SeasonPanel({ state, onClose, initialTab = 'calendar', onOpenMat
             return (
               <tr key={t.i} className={[t.i === 0 && 'me', zone].filter(Boolean).join(' ')}>
                 <td className="t-pos">{i + 1}</td>
-                <td className="t-club">{t.name}{zone && <span className={`t-zone ${zone}`}>{ZONE_TAG[zone]}</span>}</td>
+                <td className="t-club">
+                  {t.i === 0 ? <ClubCrest crest={state.crest} name={t.name} className="t-crest" /> : <Crest name={t.name} className="t-crest" />}
+                  <span className="t-name">{t.name}</span>{zone && <span className={`t-zone ${zone}`}>{ZONE_TAG[zone]}</span>}
+                </td>
                 <td>{t.played}</td>
                 <td>{t.gd > 0 ? '+' : ''}{t.gd}</td>
                 <td className="t-pts">{t.pts}</td>

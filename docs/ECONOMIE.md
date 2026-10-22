@@ -77,8 +77,7 @@ refusée, ±3 selon le caractère du vendeur. Autour du seuil, la chance d'accor
 seuil appelle une contre-offre (signature assurée à ce prix, plafonnée à 125 % du prix demandé) ; trois offres par
 joueur et par journée.
 
-**Bureau des transferts** (4,5 k€ au niveau 1, ×6,2 par niveau, quartier des supporters ou zone des
-partenaires) : sans lui, seuls 4 joueurs sous contrat sont listés publiquement ; son réseau de recruteurs en suit
+**Bureau des transferts** (4,5 k€ au niveau 1, ×6,2 par niveau, sur n'importe quelle parcelle) : sans lui, seuls 4 joueurs sous contrat sont listés publiquement ; son réseau de recruteurs en suit
 12 au niveau 1 puis 4 de plus par niveau (28 au niveau 5), avec des profils de plus en plus forts (jusqu'à environ 2,5 niveaux de
 division au-dessus du club). Un joueur sur quatre est un espoir (18 à 21 ans, potentiel relevé).
 L'indemnité de transfert vaut 2,5 saisons de salaire × âge (×1,35 jusqu'à 21 ans, ×1,15 jusqu'à 24,
@@ -93,6 +92,21 @@ resserrent aussi la fourchette de potentiel affichée et rendent les vendeurs pl
 
 **Plan de redressement** : une saison bouclée dans le rouge déclenche la vente des plus gros salaires
 par le conseil (jusqu'à revenir au-dessus de zéro, sans descendre sous 13 joueurs).
+
+## Parcelles et notoriété
+
+Les sept parcelles autour du stade sont ouvertes dès la fondation, sans quartier réservé : chaque bâtiment
+(entraînement, académie, espace supporters, siège et partenaires, bureau des transferts) se construit une fois, sur
+la parcelle choisie (`build(s, parcelle, bâtiment)`, `src/game/engine.js`). La réputation n'ouvre plus rien : elle
+attire (`src/game/reputation.js`), à rendement décroissant, comparée à la fondation (réputation 5) :
+
+- public et boutique : `repFactor` (×0,45 à ×1,45, voir plus haut) ;
+- sponsors : ×0,9 (club sans nom) à ×1,25 environ (légende), ×1 à la fondation (`sponsorRep`) ;
+- mercato : seuil d'acceptation des vendeurs abaissé jusqu'à 6 points (−2 points pour un club sans nom), avec sa
+  raison affichée dans la négociation (`mercatoRep`, `stanceOf`) ;
+- statuts nommés (Club de quartier 0, Club qui monte 6, Club régional 10, Club national 15, Grand club 25, Club
+  de légende 40) : une ligne au journal et une mention à l'après-match quand le club en change ; les paliers des
+  objectifs de saison suivent la même échelle. Panneau Notoriété : bouton étoile du HUD.
 
 ## Simulation (200 carrières × 50 saisons, `sim_eco.mjs`)
 

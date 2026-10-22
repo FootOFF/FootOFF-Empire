@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { haptic } from './haptics';
+import { uiSound } from './uisound';
 
 // Sélection en verre liquide (façon iOS) : une pastille posée sous l'élément actif, qui glisse vers le nouvel
 // élément choisi en s'étirant, et qu'on peut aussi faire glisser au doigt : elle suit le doigt image par image,
@@ -149,7 +150,7 @@ export function Tabs({ items, value, onChange, className = 'sq-tabs', role = 'ta
             aria-selected={radio ? undefined : on}
             aria-checked={radio ? on : undefined}
             className={on ? 'on' : ''}
-            onClick={() => onChange(id)}
+            onClick={() => { if (!on) uiSound('tab'); onChange(id); }}
           >
             {text}{extra || null}
           </button>

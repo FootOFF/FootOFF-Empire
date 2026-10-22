@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { FOMonogram, FootOFFLockup } from './brand';
+import { FootOFFLockup } from './brand';
 import { ClubCard, Hints, MenuList, SettingsView, uiSound, useMenu } from './console';
 import { useInputMode } from './input';
-import { IconDice } from './icons';
+import { useKeydown } from './presence';
+import { IconChevron, IconChevronLeft, IconDice } from './icons';
+import { ClubCrest } from './crest';
 import { randomClubName } from '../game/names';
 import { DIVISIONS } from '../game/constants';
+import { CREST_EMBLEMS, CREST_GROUNDS, CREST_PATTERNS, CREST_SHAPES, randomCrest } from '../game/crest';
 
 // Écran titre, façon jeu de console : le complexe tourne lentement en 3D derrière (mode vitrine d'Empire3D), le
 // menu à gauche (en bas sur téléphone), la carte de l'entrée choisie à droite. Trois vues : menu, réglages,
@@ -17,9 +20,9 @@ export function Wordmark() {
 }
 
 const PILLARS = [
-  ['Construis', 'Ton complexe grandit secteur par secteur : entraînement, académie, supporters, partenaires.'],
+  ['Construis', 'Ton complexe grandit parcelle après parcelle, dans l’ordre que tu veux : entraînement, académie, supporters, partenaires.'],
   ['Développe', 'Forme tes talents, déniche les futurs cracks, accomplis l’objectif de saison.'],
-  ['Gravis', 'De la Départementale jusqu’à l’Elite, ta réputation ouvre les quartiers de ton Empire.'],
+  ['Gravis', 'De la Départementale jusqu’à l’Elite : ta réputation attire le public, les sponsors et les joueurs.'],
 ];
 
 function Pillars() {
@@ -80,19 +83,41 @@ function menuItems(state, { onContinue, onNew, onSettings }) {
   ];
 }
 
-// Création du club : nom (proposé au hasard, modifiable), puis « Fonder le club ». Au doigt, le champ n'est pas
-// sélectionné d'office (le clavier du téléphone masquerait la moitié de l'écran).
+// Création du club : nom (proposé au hasard, modifiable), écusson composé ici (forme, emblème, motif, fond) avec son
+// aperçu, puis « Fonder le club ». Les couleurs ne se choisissent pas : notre club est noir et or, la charte
+// FootOFF. Au doigt, le champ du nom n'est pas sélectionné d'office (le clavier du téléphone masquerait la moitié
+// de l'écran). Au clavier et à la manette : haut / bas pour choisir la ligne, gauche / droite pour changer.
+const CREST_ROWS = [
+  ['shape', 'Forme', CREST_SHAPES],
+  ['emblem', 'Emblème', CREST_EMBLEMS],
+  ['pattern', 'Motif', CREST_PATTERNS],
+  ['ground', 'Fond', CREST_GROUNDS],
+];
+
 function CreateClub({ onCreate, onBack, active }) {
   const [name, setName] = useState(randomClubName);
+  const [crest, setCrest] = useState(() => randomCrest());
   const mode = useInputMode();
-  const fields = [{ id: 'name' }, { id: 'go' }, { id: 'back' }];
+  const fields = [{ id: 'name' }, ...CREST_ROWS.map(([id]) => ({ id })), { id: 'go' }, { id: 'back' }];
   const menu = useMenu(fields, { onBack, active: active && mode !== 'touch' });
+  const GO = CREST_ROWS.length + 1;
   const ok = name.trim().length > 0;
+  const step = (key, list, d) => {
+    const i = Math.max(0, list.findIndex(([id]) => id === crest[key]));
+    setCrest((c) => ({ ...c, [key]: list[(i + d + list.length) % list.length][0] }));
+    uiSound('move');
+  };
+  useKeydown((e) => {
+    const row = CREST_ROWS[menu.cur - 1];
+    if (!active || e.defaultPrevented || !row) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); step(row[0], row[2], -1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); step(row[0], row[2], 1); }
+  });
   const submit = (e) => {
     e.preventDefault();
     if (!ok) return;
     uiSound('select');
-    onCreate(name.trim());
+    onCreate(name.trim(), crest);
   };
   return (
     <form className="ts-main ts-form" onSubmit={submit}>
@@ -117,11 +142,38 @@ function CreateClub({ onCreate, onBack, active }) {
           </button>
         </span>
       </label>
+      <div className="ts-crest">
+        <div className="ts-crest-side">
+          <ClubCrest crest={crest} name={name} className="ts-crest-art" title={`Écusson de ${name || 'ton club'}`} />
+          <button type="button" className="ts-dice" onClick={() => { setCrest(randomCrest()); uiSound('move'); }} aria-label="Écusson au hasard" title="Écusson au hasard">
+            <IconDice />
+          </button>
+        </div>
+        <div className="ts-crest-rows">
+          <span className="ts-field-label">Écusson · noir et or, aux couleurs FootOFF</span>
+          {CREST_ROWS.map(([key, label, list], k) => (
+            <div
+              key={key}
+              ref={(el) => { menu.refs.current[k + 1] = el; }}
+              tabIndex={0}
+              role="group"
+              aria-label={`${label} : ${list.find(([id]) => id === crest[key])?.[1]}`}
+              onFocus={() => menu.setCur(k + 1)}
+              className={`ts-pick ${menu.cur === k + 1 ? 'on' : ''}`}
+            >
+              <span className="ts-pick-label">{label}</span>
+              <button type="button" tabIndex={-1} className="ts-pick-arrow" aria-label={`${label} précédent`} onClick={() => step(key, list, -1)}><IconChevronLeft /></button>
+              <span className="ts-pick-value">{list.find(([id]) => id === crest[key])?.[1]}</span>
+              <button type="button" tabIndex={-1} className="ts-pick-arrow" aria-label={`${label} suivant`} onClick={() => step(key, list, 1)}><IconChevron /></button>
+            </div>
+          ))}
+        </div>
+      </div>
       <div className="ts-actions">
-        <button ref={(el) => { menu.refs.current[1] = el; }} onFocus={() => menu.setCur(1)} type="submit" className={`btn btn-xl ${menu.cur === 1 ? 'on' : ''}`} disabled={!ok}>
+        <button ref={(el) => { menu.refs.current[GO] = el; }} onFocus={() => menu.setCur(GO)} type="submit" className={`btn btn-xl ${menu.cur === GO ? 'on' : ''}`} disabled={!ok}>
           Fonder le club
         </button>
-        <button ref={(el) => { menu.refs.current[2] = el; }} onFocus={() => menu.setCur(2)} type="button" className={`btn ghost btn-xl ${menu.cur === 2 ? 'on' : ''}`} onClick={() => { uiSound('back'); onBack(); }}>
+        <button ref={(el) => { menu.refs.current[GO + 1] = el; }} onFocus={() => menu.setCur(GO + 1)} type="button" className={`btn ghost btn-xl ${menu.cur === GO + 1 ? 'on' : ''}`} onClick={() => { uiSound('back'); onBack(); }}>
           Retour
         </button>
       </div>
@@ -147,7 +199,7 @@ export function TitleScreen({ state, view, onView, onContinue, onNewGame, onCrea
       <header className="ts-top">
         <span className="ts-presents">FootOFF Media présente</span>
         <div className="ts-status">
-          {state && <span className="ts-profile"><FOMonogram className="ts-profile-mark" />{state.clubName}</span>}
+          {state && <span className="ts-profile"><ClubCrest crest={state.crest} name={state.clubName} className="ts-profile-mark" />{state.clubName}</span>}
         </div>
       </header>
       <div className="ts-col">

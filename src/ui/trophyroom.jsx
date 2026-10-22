@@ -132,8 +132,8 @@ function Records({ state }) {
   );
 }
 
-export function TrophyRoom({ state, onClose }) {
-  const [tab, setTab] = useState('honours');
+export function TrophyRoom({ state, initialTab = 'honours', onClose }) {
+  const [tab, setTab] = useState(initialTab);
   const won = honoursOf(state).length;
   const pick = (id) => {
     setTab(id);

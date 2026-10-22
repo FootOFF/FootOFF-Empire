@@ -5,7 +5,9 @@ import { AnimatedMoney } from './moneyfx';
 import { Card, Eyebrow, IconAssist, IconBall, IconStar, RatingBadge, SectionHead, VersusBar } from './kit';
 import { useKeydown } from './presence';
 import { Trophy } from './trophy';
+import { ClubCrest, Crest } from './crest';
 import { STAGES } from '../game/cups';
+import { Portrait } from './portrait';
 
 // Après-match : un seul écran, au lieu de « coup de sifflet final » puis « résumé ».
 // Score au centre exact (grille 1fr auto 1fr), buteurs sous chaque équipe, notes du match sur 10 et homme du
@@ -61,11 +63,13 @@ export default function PostMatch({ state, onClose, onStats }) {
           </div>
           <div className="post-score">
             <div className="post-team home">
+              <ClubCrest crest={state.crest} name={state.clubName} className="post-crest" />
               <strong>{state.clubName}</strong>
               <Goals list={homeGoals} align="right" />
             </div>
             <div className="post-num"><b>{lm.gf}</b><i>–</i><b>{lm.ga}</b></div>
             <div className="post-team away">
+              <Crest name={lm.oppName} className="post-crest" />
               <strong>{lm.oppName}</strong>
               <Goals list={awayGoals} align="left" />
             </div>
@@ -88,6 +92,7 @@ export default function PostMatch({ state, onClose, onStats }) {
               <div className="post-motm">
                 <span className="post-motm-tag"><IconStar /> Homme du match</span>
                 <div className="post-motm-row">
+                  <Portrait p={state.players.find((x) => x.id === motm.id) || motm} size={52} />
                   <RatingBadge value={motm.rating} size="lg" />
                   <div>
                     <strong>{motm.name}</strong>
@@ -144,7 +149,7 @@ export default function PostMatch({ state, onClose, onStats }) {
         </div>
 
         <footer className="post-foot">
-          <span className={`post-rep ${lm.repDelta >= 0 ? 'up' : 'down'}`}>Réputation {lm.repDelta >= 0 ? '+' : '−'}{fmtRating(Math.abs(lm.repDelta))}</span>
+          <span className={`post-rep ${lm.repDelta >= 0 ? 'up' : 'down'}`}>Réputation {lm.repDelta >= 0 ? '+' : '−'}{fmtRating(Math.abs(lm.repDelta))}{lm.status && <b className="post-status"> · Nouveau statut : {lm.status}</b>}</span>
           {onStats && <button className="btn ghost btn-xl" onClick={onStats}>Stats du match</button>}
           <button className="btn btn-xl" onClick={onClose} autoFocus>Continuer</button>
         </footer>

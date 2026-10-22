@@ -7,6 +7,7 @@ import { IconChevron, IconClose, IconMute, IconPlay, IconSound, IconUsers } from
 import { IconBall, IconSwap, IconWhistle } from './kit';
 import { useKeydown } from './presence';
 import { SEC_PER_MIN, matchFeed } from '../game/matchFeed';
+import { ClubCrest, Crest } from './crest';
 
 // Avant-match (onze + tactique + pronostic) et match en direct (score, chrono, fil de commentaires,
 // vitesse, mi-temps avec changements sur le terrain). La 3D derrière est en mode « jour de match ».
@@ -42,62 +43,96 @@ function TacticPicker({ value, onChange, compact }) {
   );
 }
 
+// Carte de la composition repliée (avant-match, mi-temps) : un toucher la déploie.
+function CompoCard({ title, detail, onOpen }) {
+  return (
+    <button type="button" className="compo-card" onClick={onOpen} aria-expanded="false">
+      <span className="compo-card-icon"><IconUsers /></span>
+      <span className="compo-card-text"><b>{title}</b><em>{detail}</em></span>
+      <IconChevron className="compo-card-go" />
+    </button>
+  );
+}
+
+const narrowScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches;
+
 // --- Avant-match -------------------------------------------------------------------------------------
+// En haut, l'affiche et ce qui l'entoure (niveaux, affluence, recettes) ; puis la composition, le dispositif et la
+// tactique ; en bas, collés à l'écran, le pronostic et le coup d'envoi : chaque réglage montre aussitôt son effet sur
+// les chances de victoire, juste au-dessus du bouton qui lance le match. Sur téléphone, la composition est repliée
+// dans une carte, comme à la mi-temps (dépliée, elle cachait tout le reste de l'avant-match).
 
 export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const [lineup, setLineup] = useState(() => [...state.lineup]);
   const [tactic, setTactic] = useState(state.tactic || 'balanced');
   const [formation, setFormation] = useState(formationOf(state.formation).id);
+  const [board, setBoard] = useState(() => !narrowScreen()); // composition dépliée sur PC, repliée sur téléphone
   const rating = lineupRating(state.players, lineup, formation);
   const xg = expectedGoals(rating, ctx.opp.strength, tactic, formation);
   const odds = prematchOdds(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength }); // calculé sur le moteur
   const reshape = (f) => { setFormation(f); setLineup(reshapeLineup(state.players, lineup, f)); };
+  const form = formationOf(formation);
 
   useKeydown((e) => { if (e.key === 'Escape') onCancel(); });
 
   return (
-    <div className="matchscreen prematch">
+    <div className={`matchscreen prematch ${board ? 'board-open' : 'board-closed'}`}>
       <header className="ms-head">
         <div>
           <span className={`eyebrow hm-comp-${ctx.comp || 'league'}`}>{ctx.label || `Journée ${state.round + 1} / 7`} · à domicile</span>
-          <h2>{state.clubName} <em>vs</em> {ctx.opp.name}</h2>
+          <h2 className="ms-versus">
+            <span className="ms-side"><ClubCrest crest={state.crest} name={state.clubName} className="ms-crest" />{state.clubName}</span>
+            <em>vs</em>
+            <span className="ms-side"><Crest name={ctx.opp.name} className="ms-crest" />{ctx.opp.name}</span>
+          </h2>
+          <div className="pm-facts">
+            <span>Niveau <b>{fmtRating(rating)}</b> contre <b>{fmtRating(ctx.opp.strength)}</b></span>
+            {ctx.gate && <span>Affluence <b>{fmtNum(ctx.gate.attendance)}</b> / {fmtNum(ctx.gate.capacity)}</span>}
+            {ctx.gate && <span>Recettes ≈ <b>{fmtMoney(ctx.gate.revenue)}</b></span>}
+          </div>
         </div>
         <button className="hud-icon" onClick={onCancel} aria-label="Retour"><IconClose /></button>
       </header>
 
       <div className="pm-grid">
-        <section className="pm-pitch-wrap glass">
-          <div className="pm-sub">
-            <span className="eyebrow">Onze de départ · <span className="nowrap">{formationOf(formation).name}</span></span>
-            <BestEleven players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
-            <span className="pm-rating">Niveau <b>{fmtRating(rating)}</b></span>
-          </div>
-          <LineupBoard players={state.players} lineup={lineup} formation={formation} onChange={setLineup} />
-        </section>
+        {board && (
+          <section className="pm-pitch-wrap glass">
+            <div className="pm-sub">
+              <span className="eyebrow">Onze de départ · <span className="nowrap">{form.name}</span></span>
+              <BestEleven players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
+              <span className="pm-rating">Niveau <b>{fmtRating(rating)}</b></span>
+              <button type="button" className="linkbtn pm-fold" onClick={() => setBoard(false)}>Replier</button>
+            </div>
+            <LineupBoard players={state.players} lineup={lineup} formation={formation} onChange={setLineup} />
+          </section>
+        )}
 
         <section className="pm-side">
-          <div className="glass pm-card">
-            <span className="eyebrow">Pronostic</span>
-            <OddsBar odds={odds} />
-            {ctx.knockout && <div className="pm-xg">Élimination directe : en cas d’égalité, tirs au but. Qualification ≈ <b>{Math.round((odds.win + odds.draw * 0.5) * 100)} %</b></div>}
-            <div className="pm-xg">Buts attendus <b>{xg.for.toFixed(1)}</b> – <b>{xg.against.toFixed(1)}</b> · Adversaire niveau {fmtRating(ctx.opp.strength)}</div>
-            {ctx.gate && (
-              <div className="pm-xg">
-                Affluence attendue <b>{fmtNum(ctx.gate.attendance)}</b> / {fmtNum(ctx.gate.capacity)} · Recettes ≈ <b>{fmtMoney(ctx.gate.revenue)}</b>
-              </div>
-            )}
-          </div>
+          {!board && (
+            <div className="pm-compo">
+              <CompoCard title="Composition" detail={`Onze en ${form.name} · niveau ${fmtRating(rating)}`} onOpen={() => setBoard(true)} />
+              <BestEleven players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
+            </div>
+          )}
           <div className="glass pm-card">
             <span className="eyebrow">Dispositif</span>
             <FormationPicker value={formation} onChange={reshape} />
-            <p className="pm-blurb">{formationOf(formation).blurb}</p>
+            <p className="pm-blurb">{form.blurb}</p>
           </div>
           <div className="glass pm-card">
             <span className="eyebrow">Tactique</span>
             <TacticPicker value={tactic} onChange={setTactic} />
           </div>
           <div className="pm-go">
-            <button className="btn btn-xl" onClick={() => onKickoff(lineup, tactic, formation)}><IconPlay /> Coup d’envoi</button>
+            <div className="pm-odds glass">
+              <div className="pm-odds-head">
+                <span className="eyebrow">Pronostic</span>
+                <span className="pm-xg">Buts attendus <b>{fmtRating(xg.for)}</b> – <b>{fmtRating(xg.against)}</b></span>
+              </div>
+              <OddsBar odds={odds} />
+              {ctx.knockout && <div className="pm-xg">Élimination directe : tirs au but en cas d’égalité · qualification ≈ <b>{Math.round((odds.win + odds.draw * 0.5) * 100)} %</b></div>}
+              <button className="btn btn-xl" onClick={() => onKickoff(lineup, tactic, formation)}><IconPlay /> Coup d’envoi</button>
+            </div>
           </div>
         </section>
       </div>
@@ -111,7 +146,8 @@ const ICON = { goal: <IconBall />, sub: <IconSwap />, kickoff: <IconWhistle />, 
 
 // Les classes tirées des données du match sont toujours préfixées (ev-side-…, ev-out-…) : un nom nu comme
 // « post » (tir sur le poteau) prenait les styles de l'écran d'après-match (.post) et figeait la ligne en haut du fil.
-function EventRow({ e }) {
+// Ligne mémorisée : l'horloge du direct avance vingt fois par seconde, le fil ne se redessine pas pour autant.
+const EventRow = React.memo(function EventRow({ e }) {
   return (
     <li className={['ev', `ev-${e.type}`, e.side && `ev-side-${e.side}`, e.outcome && `ev-out-${e.outcome}`].filter(Boolean).join(' ')}>
       <span className="ev-min">{e.minute}′</span>
@@ -119,7 +155,7 @@ function EventRow({ e }) {
       <span className="ev-text">{e.type === 'goal' && e.lead ? <><span className="ev-lead">{e.lead}</span> {e.text}</> : e.text}</span>
     </li>
   );
-}
+});
 
 // Changements de la mi-temps : ce qui change entre le onze de la première période et celui composé sur le terrain
 // (entrants face aux sortants de leur poste, et niveau du onze avant → après).
@@ -222,10 +258,14 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
       if (pause.current > 0) { pause.current -= dt; matchFeed.pause = Math.max(0, pause.current); return; }
       matchFeed.pause = 0;
       const end = live.halfEnd;
-      const next = Math.min(end, clockRef.current + (dt * speed) / SEC_PER_MIN);
+      let next = Math.min(end, clockRef.current + (dt * speed) / SEC_PER_MIN);
+      // la 3D finit son action (tir en vol, faute pas encore commise) : le commentaire attend que le ballon arrive,
+      // au plus quelques secondes (matchFeed.js)
+      const up = events[revealed.current];
+      if (up && matchFeed.waitAt === up.at && now < matchFeed.waitUntil && next >= up.at) next = Math.max(clockRef.current, up.at - 1e-6);
       clockRef.current = next;
       matchFeed.clock = next;
-      setClock(next);
+      setClock(Math.ceil(next)); // l'écran n'affiche que la minute : un rendu par minute de jeu, pas vingt par seconde
       while (revealed.current < events.length && events[revealed.current].at <= next) {
         const e = events[revealed.current++];
         setShown((s) => [e, ...s]);
@@ -287,7 +327,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
   const m = live.state;
   useEffect(() => { if (phase === 'halftime') { setPlan([...m.lineup]); setBoard(!!preview?.board); } }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   const planned = plan || m.lineup;
-  const subsLeft = SUBS_MAX - m.subsUsed - pairSubs(m.lineup, planned).length; // changements encore possibles
+  const plannedSubs = pairSubs(m.lineup, planned).length; // changements prévus sur le terrain de la mi-temps
+  const subsLeft = SUBS_MAX - m.subsUsed - plannedSubs; // changements encore possibles
   // notes du match à la pause (aide à choisir qui sort)
   const notes = useMemo(() => (phase === 'halftime'
     ? Object.fromEntries(live.result().players.filter(Boolean).map((x) => [x.id, x.rating])) : {}), [phase]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -301,9 +342,9 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
   return (
     <div className={`matchscreen live ${phase !== 'playing' ? 'paused' : ''}`}>
       <div className="scoreboard glass">
-        <span className="sb-team">{m.home}</span>
+        <span className="sb-team"><ClubCrest crest={state.crest} name={m.home} className="sb-crest" /><span className="sb-name">{m.home}</span></span>
         <span className="sb-score"><b key={`h${goalsH}`}>{goalsH}</b><i>–</i><b key={`a${goalsA}`}>{goalsA}</b></span>
-        <span className="sb-team right">{m.away}</span>
+        <span className="sb-team right"><span className="sb-name">{m.away}</span><Crest name={m.away} className="sb-crest" /></span>
         <span className="sb-clock">{phase === 'halftime' ? 'Mi-temps' : phase === 'fulltime' ? `Terminé${m.pens ? ` · t.a.b. ${m.pens[0]}–${m.pens[1]}` : ''}` : <><i className="live-dot" />{minuteLabel}′</>}</span>
       </div>
 
@@ -356,19 +397,18 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
               <OddsBar odds={live.secondHalfOdds({ lineup: planned, tactic: tactic2 })} />
             </div>
             {!board && (
-              <button type="button" className="ht-compo" onClick={() => setBoard(true)} aria-expanded="false">
-                <span className="ht-compo-icon"><IconUsers /></span>
-                <span className="ht-compo-text">
-                  <b>Composition et changements</b>
-                  <em>{formationOf(m.formation).name} · {subsLeft} changement{subsLeft > 1 ? 's' : ''} possible{subsLeft > 1 ? 's' : ''} sur {SUBS_MAX}</em>
-                </span>
-                <IconChevron className="ht-compo-go" />
-              </button>
+              <CompoCard
+                title="Composition et changements"
+                detail={`${formationOf(m.formation).name} · ${plannedSubs ? `${plannedSubs} changement${plannedSubs > 1 ? 's' : ''} prévu${plannedSubs > 1 ? 's' : ''} · ` : ''}${subsLeft} possible${subsLeft > 1 ? 's' : ''} sur ${SUBS_MAX}`}
+                onOpen={() => setBoard(true)}
+              />
             )}
-            <div className="ht-block ht-b-changes">
-              <span className="eyebrow muted-eyebrow">Changements</span>
-              <HalftimeChanges state={state} m={m} plan={planned} onReset={() => setPlan([...m.lineup])} />
-            </div>
+            {board && ( /* repliée, la carte résume les changements : rien d'autre de la composition à l'écran */
+              <div className="ht-block ht-b-changes">
+                <span className="eyebrow muted-eyebrow">Changements</span>
+                <HalftimeChanges state={state} m={m} plan={planned} onReset={() => setPlan([...m.lineup])} />
+              </div>
+            )}
             <div className="ht-block ht-b-tactic">
               <span className="eyebrow muted-eyebrow">Tactique de la seconde période</span>
               <TacticPicker value={tactic2} onChange={setTactic2} compact />

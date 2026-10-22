@@ -2,6 +2,7 @@ import { SQUAD_MAX } from './constants';
 import { costOf, playerRating, potentialRange, ratingAt, saleValue } from './players';
 import { slotsOf } from './tactics';
 import { clamp } from './utils';
+import { mercatoRep } from './reputation';
 
 // Mercato : un seul marché (joueurs libres et joueurs sous contrat), des offres négociées et des ventes aux clubs
 // adverses. Ce module ne contient que des calculs : les actions (offre, signature, vente) sont dans engine.js.
@@ -80,6 +81,9 @@ export function stanceOf(s, p) {
   else if ((p.listedRounds || 0) >= 3 && !p.interest) { t -= 0.02; reasons.push(['down', `Sans preneur depuis ${p.listedRounds} journées : le prix se discute.`]); }
   const tries = p.talks?.tries || 0;
   if (tries) { t += 0.015 * tries; reasons.push(['up', `${tries} offre${tries > 1 ? 's' : ''} refusée${tries > 1 ? 's' : ''} : le vendeur se braque.`]); }
+  const fame = mercatoRep(s.reputation); // notoriété du club (reputation.js)
+  if (fame >= 0.005) { t -= fame; reasons.push(['down', 'Ta notoriété attire : le vendeur écoute plus volontiers un club réputé.']); }
+  else if (fame <= -0.005) { t -= fame; reasons.push(['up', 'Club encore peu connu : le vendeur se méfie un peu.']); }
   t += ((((p.id || 1) * 7919) % 100) / 100 - 0.5) * 0.06; // chaque vendeur a son caractère
   return { t: clamp(t, 0.6, 1.05), w: SPREAD, reasons };
 }

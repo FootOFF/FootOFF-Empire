@@ -29,7 +29,7 @@ export function AnimatedMoney({ value, from, delay = 0, duration = 800, prefix =
     const timer = setTimeout(() => {
       const t0 = performance.now();
       const tick = (now) => {
-        const k = Math.min(1, (now - t0) / duration);
+        const k = Math.min(1, Math.max(0, (now - t0) / duration)); // l'heure de l'image peut précéder t0 : jamais en dessous du départ
         cur.current = Math.round(a + (b - a) * (1 - (1 - k) ** 3));
         setShown(cur.current);
         if (k < 1) raf = requestAnimationFrame(tick);

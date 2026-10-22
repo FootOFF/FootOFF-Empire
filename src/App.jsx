@@ -7,8 +7,11 @@ import { fmtMoney } from './ui/format';
 import { clearGame, loadGame, saveGame } from './game/save';
 import { clone } from './game/utils';
 import Empire2D from './ui/EmpireView';
-import { Dock, MatchCta, ObjectiveWidget, SceneTools, Toasts, TopHud } from './ui/hud';
+import { Dock, MatchCta, ObjectiveWidget, SceneTools, TopHud } from './ui/hud';
+import { Notifications, useNotifications } from './ui/notify';
+import { TipLayer } from './ui/tips';
 import { JournalPanel, SeasonPanel } from './ui/panels';
+import { ReputationPanel } from './ui/reputation';
 import { FinancesPanel } from './ui/finances';
 import { StatsPanel } from './ui/stats';
 import { TrophyRoom } from './ui/trophyroom';
@@ -61,7 +64,6 @@ export default function App({ preview = null }) {
   const demo = useRef(null); // complexe de départ montré derrière l'écran titre avant la création du club
   const [panel, setPanel] = useState(boot.ui.panel || null);
   const [sel, setSel] = useState(boot.ui.sel || null);
-  const [toasts, setToasts] = useState([]);
   // préférences de vue (confort, par navigateur) : heure réelle / jour / nuit, météo auto / forcée
   const [timeMode, setTimeMode] = useState(() => { try { return localStorage.getItem('fo-time') || 'auto'; } catch { return 'auto'; } });
   const [weatherMode, setWeatherMode] = useState(() => { try { return localStorage.getItem('fo-weather') || 'auto'; } catch { return 'auto'; } });
@@ -89,11 +91,12 @@ export default function App({ preview = null }) {
   const [squadTab, setSquadTab] = useState(boot.ui.squadTab || 'players'); // onglet d'ouverture de l'effectif
   const [squadSheet, setSquadSheet] = useState(null); // fiche joueur ouverte d'emblée (depuis une fiche carrière)
   const [statsMatch, setStatsMatch] = useState(boot.ui.statsMatch || null); // 'last' : Stats Pass du dernier match ouvert d'emblée
+  const [trophyTab, setTrophyTab] = useState('honours'); // onglet d'ouverture de la salle des trophées
   const sound = useRef(null);
   if (!sound.current) sound.current = preview ? silentSound : createStadiumSound();
-  const toastId = useRef(0);
   const [, bumpSound] = useState(0); // le son se coupe aussi pendant le direct : on relit sound.current.muted
-  useEffect(() => { setUiSound((kind) => sound.current.ui?.(kind)); }, []);
+  const uiSound = useCallback((kind) => sound.current.ui?.(kind), []);
+  useEffect(() => { setUiSound(uiSound); }, [uiSound]);
 
   useEffect(() => { if (state && !preview) saveGame(state); }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   // chaque gain ou dépense s'anime (pièces vers la trésorerie, « +1 252 € », tintement)
@@ -106,24 +109,35 @@ export default function App({ preview = null }) {
   // revenus hors ligne calculés une seule fois au chargement
   useEffect(() => { if (!preview) setState((prev) => (prev ? applyOffline(clone(prev)) : prev)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const toast = useCallback((text, tone) => {
-    const id = ++toastId.current;
-    setToasts((t) => [...t.slice(-2), { id, text, tone }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2800);
-  }, []);
+  const inGame = screen === 'game' && !!state;
+  const cinematic = !!state && (!!matchPhase || showResult || !!state.seasonReview || !!state.offline);
+  // Notifications (src/ui/notify.jsx) : en attente tant qu'un écran ne doit pas être couvert ; jamais dans les
+  // aperçus de la galerie, sauf celui des notifications.
+  const notes = useNotifications(preview ? preview !== 'notification' : !inGame || menu || cinematic || !!confirm);
+  const { notify } = notes;
+  useEffect(() => {
+    (boot.ui.notes || []).forEach(notify);
+    if (import.meta.env.DEV) window.__notify = notify; // essais en développement
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Succès : débloqués au fil du jeu, datés. Une partie déjà commencée les retrouve d'un coup, sans notification.
+  // Plusieurs d'un coup : un seul bandeau.
   useEffect(() => {
     if (!state) return;
     const fresh = newAchievements(state);
     const initial = !state.achievements;
     if (!fresh.length && !initial) return;
     setState((s) => (s ? { ...s, achievements: { ...(s.achievements || {}), ...Object.fromEntries(fresh) } } : s));
-    if (!initial) fresh.forEach(([id]) => toast(`Succès débloqué : ${achievementById(id).title}`, 'gold'));
+    if (initial || !fresh.length) return;
+    const list = fresh.map(([id]) => achievementById(id));
+    notify({
+      kind: 'achievement',
+      eyebrow: list.length > 1 ? `${list.length} succès débloqués` : 'Succès débloqué',
+      title: list[0].title,
+      text: list.length > 1 ? `Et aussi : ${list.slice(1).map((a) => a.title).join(' · ')}` : list[0].desc,
+      action: { panel: 'trophies', tab: 'achievements' },
+    });
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const inGame = screen === 'game' && !!state;
-  const cinematic = !!state && (!!matchPhase || showResult || !!state.seasonReview || !!state.offline);
 
   // En jeu, Échap (ou Start à la manette) ouvre le menu pause, quand aucune fenêtre n'est ouverte (sinon Échap la
   // ferme, elle). Réinscrit à chaque rendu : lit toujours l'état courant.
@@ -140,7 +154,7 @@ export default function App({ preview = null }) {
 
   const run = (fn, failMsg) => {
     const ns = fn(clone(state));
-    if (!ns) { toast(failMsg || 'Action impossible.', 'warn'); return false; }
+    if (!ns) { notify({ kind: 'warn', title: failMsg || 'Action impossible.' }); return false; }
     setState(advanceTutorial(ns)); // une étape du tutoriel se valide dès que son objectif est atteint
     return true;
   };
@@ -151,6 +165,12 @@ export default function App({ preview = null }) {
     if (id) setSel(null);
   };
   const selectPlot = (plotId, sector) => { setSel({ plotId, sector }); setPanel(null); };
+  // une notification ouvre ce qu'elle annonce (succès, offres du mercato)
+  const onNoteAction = (a) => {
+    if (a.panel === 'trophies') setTrophyTab(a.tab || 'honours');
+    if (a.panel === 'squad') setSquadTab(a.tab || 'players');
+    openPanel(a.panel);
+  };
   const play = () => { // ouvre l'avant-match, le stade passe en configuration jour de match
     const ctx = matchContext(state);
     if (!ctx) return;
@@ -179,7 +199,7 @@ export default function App({ preview = null }) {
     const bits = [];
     if (n.offers) bits.push(`${n.offers} offre${n.offers > 1 ? 's' : ''} reçue${n.offers > 1 ? 's' : ''} pour tes joueurs`);
     if (gone.length) bits.push(`${gone.join(', ')} ${gone.length > 1 ? 'ont' : 'a'} signé ailleurs`);
-    if (bits.length) toast(`Mercato : ${bits.join(' · ')}`, 'gold');
+    if (bits.length) notify({ kind: 'mercato', eyebrow: 'Mercato · pendant la journée', title: bits[0][0].toUpperCase() + bits[0].slice(1), text: bits[1], action: { panel: 'squad', tab: 'market' } });
   };
   // jour de match : adversaire et affluence pour la scène 3D (match à venir, en cours, ou qui vient de finir)
   const matchInfo = (() => {
@@ -211,13 +231,13 @@ export default function App({ preview = null }) {
       onConfirm: go,
     });
   };
-  const onBuild = (sectorId, key) => guardSpend(upgradeCost(key, 1), `Construire : ${BUILDINGS[key].name} ?`, () => {
-    if (run((s) => build(s, sectorId, key), 'Fonds insuffisants.')) { haptic('build'); toast(`Chantier lancé : ${BUILDINGS[key].name}`, 'gold'); }
+  const onBuild = (plotId, key) => guardSpend(upgradeCost(key, 1), `Construire : ${BUILDINGS[key].name} ?`, () => {
+    if (run((s) => build(s, plotId, key), 'Fonds insuffisants.')) { haptic('build'); notify({ kind: 'build', eyebrow: 'Chantier lancé', title: BUILDINGS[key].name }); }
   });
   const onUpgrade = (key) => guardSpend(upgradeCost(key, state.buildings[key] + 1), `${BUILDINGS[key].name} : passer au niveau ${state.buildings[key] + 1} ?`, () => {
     if (run((s) => upgrade(s, key), 'Fonds insuffisants ou niveau maximum.')) {
       haptic('build');
-      toast(`${BUILDINGS[key].name} : niveau ${state.buildings[key] + 1}`, 'gold');
+      notify({ kind: 'build', eyebrow: 'Amélioration', title: `${BUILDINGS[key].name} · niveau ${state.buildings[key] + 1}` });
     }
   });
 
@@ -268,18 +288,19 @@ export default function App({ preview = null }) {
   const setTuto = (step) => run((s) => setTutorialStep(s, step));
   const onCoachPrimary = () => {
     if (tutoStep === 'welcome') setTuto('build');
-    else if (tutoStep === 'stadium') { setTuto('done'); toast('À toi de jouer, président !', 'gold'); }
+    else if (tutoStep === 'stadium') { setTuto('done'); notify({ kind: 'success', title: 'À toi de jouer, président !' }); }
     else doAction(tuto.action);
   };
   const tip = state && !tuto && !sel && !panel ? staffTip(state) : null;
   const shownTip = tip && !dismissedTips.has(tip.id) ? tip : null;
   const signals = state ? dockSignals(state) : {};
+  const hudKeys = inGame && !menu && !cinematic && !confirm && !preview; // raccourcis clavier du HUD (PC)
   const plotBadges = inGame && !cinematic ? actionablePlots(state) : [];
   // avant la création du club, la scène montre le complexe de départ
   const sceneState = state || (demo.current ||= createInitialState('FootOFF FC'));
 
   return (
-    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${panel === 'squad' ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
+    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
       <div className="stage">
         {preview ? (
           <div className="stage-preview" aria-hidden="true" />
@@ -314,14 +335,14 @@ export default function App({ preview = null }) {
 
       {inGame && (
         <div className="hud">
-          <TopHud state={state} onMenu={() => setMenu(true)} onFinances={() => openPanel('finances')} />
+          <TopHud state={state} onMenu={() => setMenu(true)} onFinances={() => openPanel('finances')} onReputation={() => openPanel('reputation')} />
           <div className="hud-left">
           {tuto ? (
             <CoachCard
               content={tuto}
               onPrimary={onCoachPrimary}
               onSecondary={() => { doAction(tuto.secondary?.action); setTuto('done'); }}
-              onSkip={() => { setTuto('done'); toast('Tutoriel passé : le staff continuera de te conseiller.', 'gold'); }}
+              onSkip={() => { setTuto('done'); notify({ kind: 'info', title: 'Tutoriel passé', text: 'Le staff continuera de te conseiller.' }); }}
             />
           ) : (
             <ObjectiveWidget state={state} collapsed={goalCollapsed} onToggle={() => setGoalCollapsed((c) => !c)} />
@@ -347,8 +368,8 @@ export default function App({ preview = null }) {
               onRecenter={() => { setMatchDay(false); setRecenter((r) => r + 1); }}
             />
           )}
-          <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} />
-          <Dock panel={panel} onPanel={openPanel} badges={signals} />
+          <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} keys={hudKeys && !panel && !sel} />
+          <Dock panel={panel} onPanel={openPanel} badges={signals} keys={hudKeys} />
         </div>
       )}
 
@@ -368,7 +389,8 @@ export default function App({ preview = null }) {
       </Presence>
       <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} initialTab={boot.ui.seasonTab} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); setPanel('stats'); }} />}</Presence>
       <Presence>{inGame && panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
-      <Presence>{inGame && panel === 'trophies' && <TrophyRoom state={state} onClose={() => setPanel(null)} />}</Presence>
+      <Presence>{inGame && panel === 'reputation' && <ReputationPanel state={state} onClose={() => setPanel(null)} />}</Presence>
+      <Presence>{inGame && panel === 'trophies' && <TrophyRoom state={state} initialTab={trophyTab} onClose={() => { setPanel(null); setTrophyTab('honours'); }} />}</Presence>
       <Presence>{inGame && panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} onClose={() => { setPanel(null); setStatsMatch(null); }} onPlayerSheet={(id) => { setSquadSheet(id); setSquadTab('players'); setPanel('squad'); }} />}</Presence>
       <Presence>
         {inGame && panel === 'finances' && (
@@ -419,7 +441,7 @@ export default function App({ preview = null }) {
             blocked={!!confirm}
             onContinue={() => setScreen('game')}
             onNewGame={askNewGame}
-            onCreate={(name) => { setState(createInitialState(name)); setTitleView('menu'); setScreen('game'); }}
+            onCreate={(name, crest) => { setState(createInitialState(name, crest)); setTitleView('menu'); setScreen('game'); }}
           />
         )}
       </Presence>
@@ -443,7 +465,8 @@ export default function App({ preview = null }) {
           />
         )}
       </Presence>
-      <Toasts items={toasts} />
+      <Notifications current={notes.current} done={notes.done} onAction={onNoteAction} sound={uiSound} />
+      <TipLayer />
       <Presence ms={500}>
         {((webglOk && !preview && !booted) || boot.ui.loading != null) && (
           <LoadingScreen info={loadProgress} done={sceneLoaded} fixed={boot.ui.loading ?? null} onFinished={() => setBooted(true)} />

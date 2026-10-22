@@ -14,6 +14,8 @@ import { STAGES_SHORT } from '../game/cups';
 import { allCareers } from '../game/career';
 import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
+import { ClubCrest, Crest } from './crest';
+import { Portrait } from './portrait';
 
 // Stats : le club (saison et records), tous les matchs, les joueurs (classements saison ou carrière), et pour chaque
 // match une fiche « Stats Pass » au format de footoff.media (en-tête, rapport de forces, fil du match, Note FootOFF,
@@ -272,7 +274,7 @@ function PlayersTab({ state, onCareer }) {
                     <li key={r.id}>
                       <button className="st-player" onClick={() => onCareer(r.id)}>
                         <span className="st-rank">{i + 1}</span>
-                        <span className={`pos-pill ${r.p.pos}`}>{r.p.pos}</span>
+                        <Portrait p={r.p} size={28} />
                         <span className="st-name">{shortName(r.p.name)}{r.old && <em className="st-old">ancien</em>}</span>
                         <b>{label(r)}</b>
                       </button>
@@ -553,9 +555,9 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
         <section className="sp-card">
           <span className="sp-meta">{m.label || `Journée ${m.round}`} · {m.comp === 'c1' ? 'Europe' : m.division} · saison {m.season}</span>
           <div className="sp-grid">
-            <div className="sp-team"><span className="sp-dot dom" />{state.clubName}</div>
+            <div className="sp-team"><ClubCrest crest={state.crest} name={state.clubName} className="sp-crest" />{state.clubName}</div>
             <div className={`sp-score ${o}`}>{m.gf}<i>–</i>{m.ga}</div>
-            <div className="sp-team ext">{m.opp}<span className="sp-dot ext" /></div>
+            <div className="sp-team ext">{m.opp}<Crest name={m.opp} className="sp-crest" /></div>
           </div>
           <span className={`sp-state ${o}`}>{m.pens ? `${o === 'win' ? 'Qualifié' : 'Éliminé'} aux tirs au but ${m.pens[0]}–${m.pens[1]}` : WORD[o]}</span>
           <div className="sp-strip">

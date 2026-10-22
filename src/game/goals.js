@@ -1,4 +1,4 @@
-import { SECTORS } from './map';
+import { REP_LEVELS, repLevel } from './reputation';
 import { book } from './ledger';
 
 // Système d'objectifs : 4 paliers, chacun lié à un seuil de réputation.
@@ -57,7 +57,7 @@ export const GOALS = [
     tier: 3,
     repNeeded: 15,
     name: 'L’Empire',
-    blurb: 'Ton complexe sportif tient sa promesse : trois quartiers, une légende.',
+    blurb: 'Ton complexe sportif tient sa promesse : un club que tout le pays connaît.',
     reward: { label: '3 M€ + 2 de réputation', apply: (s) => { s.money += 3000000; s.reputation = Math.round((s.reputation + 2) * 10) / 10; } },
     active: () => ({
       id: 'elite',
@@ -126,17 +126,24 @@ export function resetSeasonStats(s) {
   return s;
 }
 
-// Franchit-elle un nouveau seuil de secteur ?
-export function sectorUnlockedEvent(s, before) {
-  for (const sec of SECTORS) {
-    if (before < sec.repNeeded && s.reputation >= sec.repNeeded) {
+// La réputation franchit-elle un palier de notoriété (reputation.js) ? Le club change de statut : une ligne au
+// journal, et la nouvelle est rendue à l'interface (bandeau doré). Un statut ne s'annonce qu'une fois : un club
+// qui redescend sous un palier puis le repasse ne le regagne pas (repTop : plus haut statut déjà atteint).
+export function reputationStatusEvent(s, before) {
+  let reached = null;
+  const top = s.repTop ?? repLevel(before).index;
+  for (let i = 0; i < REP_LEVELS.length; i++) {
+    const lvl = REP_LEVELS[i];
+    if (i > top && before < lvl.min && s.reputation >= lvl.min) {
+      reached = lvl;
       s.journal.unshift({
         season: s.seasonNumber,
         kind: 'club',
-        title: `${sec.name} s’ouvre à l’Empire`,
-        text: `Avec ${sec.repNeeded} de réputation, le club gagne un nouveau quartier à bâtir.`,
+        title: `Nouveau statut : ${lvl.name}`,
+        text: `Avec ${lvl.min} de réputation, ${s.clubName} attire davantage : plus de public, de meilleurs sponsors, des vendeurs plus conciliants.`,
       });
     }
   }
-  return s;
+  s.repTop = Math.max(top, repLevel(s.reputation).index);
+  return reached;
 }

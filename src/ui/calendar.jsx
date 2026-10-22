@@ -1,7 +1,7 @@
 import React from 'react';
 import { outcomeOf, seasonFixtures } from '../game/fixtures';
 import { STAGES, STAGES_SHORT } from '../game/cups';
-import { kitOf } from '../game/kits';
+import { Crest } from './crest';
 import { TICKET_POLICIES } from '../game/economy';
 import { formationOf } from '../game/tactics';
 import { fmtMoney, fmtNum, fmtPrice, fmtRating } from './format';
@@ -15,29 +15,7 @@ import { IconChevron, IconPlay, IconStar, IconTrophy } from './icons';
 const COMP_NAME = { league: 'Championnat', cup: 'Coupe nationale', c1: 'Coupe d’Europe' };
 const WORD = { win: 'Victoire', draw: 'Nul', loss: 'Défaite' };
 const LETTER = { win: 'V', draw: 'N', loss: 'D' };
-const hex = (n) => `#${n.toString(16).padStart(6, '0')}`;
-const light = (n) => ((n >> 16) & 255) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114 > 150;
 export const fmtFormation = (f) => formationOf(f).name;
-
-// Monogramme d'un club : initiale du premier et du dernier mot qui comptent (« US des Fontaines » → UF).
-function initials(name = '') {
-  const words = name.replace(/[’']/g, ' ').split(/[\s-]+/).filter((w) => w && !/^(de|des|du|la|le|les|l|d)$/i.test(w));
-  if (!words.length) return '?';
-  return (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')).toUpperCase();
-}
-
-// Écusson aux couleurs du maillot du club (les mêmes que sur le terrain en 3D).
-export function Crest({ name, className = '' }) {
-  const kit = kitOf(name || '');
-  return (
-    <svg className={`crest ${className}`} viewBox="0 0 40 46" aria-hidden="true">
-      <path d="M20 2 37 8v14c0 11-7.5 18.5-17 22C10.5 40.5 3 33 3 22V8Z" fill={hex(kit.shirt)} />
-      <path d="M20 2 37 8v14c0 11-7.5 18.5-17 22Z" fill="rgba(0, 0, 0, .16)" />
-      <path d="M20 2 37 8v14c0 11-7.5 18.5-17 22C10.5 40.5 3 33 3 22V8Z" fill="none" stroke="rgba(255, 255, 255, .45)" strokeWidth="1.4" />
-      <text x="20" y="27.5" textAnchor="middle" fontSize="13" fontWeight="700" fill={light(kit.shirt) ? '#141414' : '#ffffff'}>{initials(name)}</text>
-    </svg>
-  );
-}
 
 const tagOf = (f) => (f.comp === 'league' ? `J${f.round}` : STAGES_SHORT[f.stage]);
 const DOT_STAGE = ['8es', '¼', '½', 'F']; // frise : libellés courts sous chaque pastille

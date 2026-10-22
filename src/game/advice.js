@@ -1,6 +1,6 @@
 import { nextFixture } from './cups';
 import { BUILDINGS, POS_LABELS, SQUAD_MAX, upgradeCost } from './constants';
-import { PLOTS, allowedBuildingsFor, isSectorUnlocked, nextLockedSector, plotBuilding } from './map';
+import { PLOTS, allowedBuildingsFor, plotBuilding } from './map';
 import { autoLineup, lineupRating, slotsOf } from './tactics';
 import { costOf, ratingAt, wageOf } from './players';
 import { fitGain, pendingCounters, poolOf } from './mercato';
@@ -57,18 +57,17 @@ export function seasonEndForecast(s) {
 }
 
 // Parcelles où une construction ou une amélioration est payable tout de suite (pastilles dorées 3D).
-// Une seule pastille par secteur pour les parcelles libres.
+// Une seule pastille pour les parcelles libres (la première), toutes ouvertes à tous les bâtiments.
 export function actionablePlots(s) {
   const out = [];
-  const freeSectors = new Set();
+  let free = false;
   for (const p of PLOTS) {
-    if (!isSectorUnlocked(s, p.sector)) continue;
     const key = plotBuilding(s, p.id);
     if (key) {
       const lvl = s.buildings[key];
       if (lvl < BUILDINGS[key].max && s.money >= upgradeCost(key, lvl + 1)) out.push(p.id);
-    } else if (!freeSectors.has(p.sector) && allowedBuildingsFor(s, p.sector).some((k) => s.money >= upgradeCost(k, 1))) {
-      freeSectors.add(p.sector);
+    } else if (!free && allowedBuildingsFor(s).some((k) => s.money >= upgradeCost(k, 1))) {
+      free = true;
       out.push(p.id);
     }
   }
@@ -154,20 +153,12 @@ export function staffTip(s) {
   if (plot) {
     const p = PLOTS.find((q) => q.id === plot);
     const key = plotBuilding(s, plot);
-    const name = key ? BUILDINGS[key].name : BUILDINGS[allowedBuildingsFor(s, p.sector).find((k) => s.money >= upgradeCost(k, 1))].name;
+    const name = key ? BUILDINGS[key].name : BUILDINGS[allowedBuildingsFor(s).find((k) => s.money >= upgradeCost(k, 1))].name;
     return {
       id: `build-${plot}-${key ? s.buildings[key] : 0}`,
       title: key ? `Améliore : ${name}` : `Construis : ${name}`,
       text: key ? `Le niveau ${s.buildings[key] + 1} est à ta portée.` : 'Une parcelle libre t’attend, et tu as les fonds.',
       action: { kind: 'plot', plot, sector: p.sector, label: key ? 'Voir le bâtiment' : 'Voir la parcelle' },
-    };
-  }
-  const locked = nextLockedSector(s);
-  if (locked && locked.repNeeded - s.reputation <= 2) {
-    return {
-      id: `sector-${locked.id}`, title: `${locked.name} en approche`,
-      text: `Plus que ${Math.ceil(locked.repNeeded - s.reputation)} de réputation : chaque victoire te rapproche de l’ouverture.`,
-      action: { kind: 'match', label: 'Jouer le match' },
     };
   }
   const opp = nextOpponent(s);
