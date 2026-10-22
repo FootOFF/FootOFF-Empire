@@ -87,8 +87,12 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
     d'Europe des clubs (2 premiers de l'Elite, bleu) ; descente (2 derniers, rouge). Hors Elite, la légende
     rappelle que l'Europe se gagne en Elite.
 - Réglages (écran titre et menu pause, voir plus bas) : Son et Vibrations en interrupteurs, Qualité graphique en
-  choix à trois positions. La qualité est enregistrée par appareil (`fo-quality`) : Économie = sans ombres et
-  résolution 1, Auto = selon l'appareil, Haute = ombres et netteté maximales ; elle s'applique sans recharger.
+  choix à trois positions, Image en mouvement en choix à deux positions. La qualité est enregistrée par appareil
+  (`fo-quality`) : Économie = sans ombres et résolution 1, Auto = selon l'appareil, Haute = ombres et netteté
+  maximales ; elle s'applique sans recharger. Image en mouvement (`fo-motion`), comme les modes qualité et
+  performance des consoles : Nette (par défaut) = pleine résolution en permanence, même pendant les déplacements et
+  le zoom ; Fluide = résolution plus basse le temps du mouvement si l'appareil ne suit pas (sans objet en Économie).
+  Sur un écran peu haut, la liste des réglages défile sous son titre, l'entrée choisie toujours visible.
 
 ## Finitions
 
@@ -332,16 +336,26 @@ Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone
 - chaîne de rendu (`src/three/postfx.js`) : scène dessinée sans multi-échantillons (il coûtait ~7,5 ms en
   2880 × 1620 sur une puce graphique intégrée) ; occlusion (demi-résolution de l'écran, quart en vue lointaine, sans
   le ciel, l'eau, le voile d'horizon, les imposteurs ni les cartes de feuillage) et halo calculés à basse résolution,
-  posés dans la passe de sortie avec le tone mapping et l'étalonnage ; garde-fou des pixels invalides à l'entrée du
-  halo ; anticrénelage FXAA (inutile, donc coupé, au repos sur écran très dense) ; ciel peint en dernier, là où il se
-  voit ; reflet du lac une image sur deux ;
-- net à l'arrêt, fluide en mouvement : la toile garde la densité de l'écran ; caméra immobile, la scène est calculée
-  en pleine résolution ; dès qu'elle bouge, une deuxième chaîne déjà prête (aucun à-coup) la calcule plus petite si
-  l'appareil ne tient plus ~50 images par seconde (paliers, jamais sous un pixel par pixel CSS). L'image est ensuite
-  agrandie nettement à la taille de l'écran : EASU et RCAS d'AMD FSR 1 au repos, RCAS seul en mouvement (EASU coûte
-  4 ms en 2880 × 1620 sur une puce intégrée). Mesuré, vue d'ensemble en 2880 × 1620 : 35 ms → 21 ms par image au
-  repos en pleine résolution, 15 ms en mouvement à 60 % (avant : la résolution tombait à un pixel sur quatre, étirée
-  par le navigateur). Densité de l'écran relue au zoom du navigateur et au changement d'écran ;
+  posés dans la passe de sortie avec le tone mapping et l'étalonnage ; halo au quart de la résolution de la scène,
+  zones claires lues sur 4 × 4 pixels et noyaux de flou divisés par deux (4,5 → 1,7 ms, même image) ; garde-fou des
+  pixels invalides à l'entrée du halo ; anticrénelage FXAA seulement sur écran peu dense (sur un écran très dense, une
+  marche d'escalier fait un demi-pixel CSS) ; ciel peint en dernier, là où il se voit ; reflet du lac une image sur
+  deux ;
+- net en permanence (réglage Image en mouvement : Nette) : la toile garde la densité de l'écran et la scène est
+  calculée en pleine résolution au repos comme pendant les déplacements et le zoom. Sur une puce intégrée, agrandir
+  une image calculée plus petite (FXAA, EASU, RCAS : 5 à 7 ms en 2880 × 1620) coûte presque autant que la pleine
+  résolution : seulement si l'appareil ne tient plus ~30 images par seconde, la densité descend d'un palier (×0,75,
+  agrandi par EASU et RCAS d'AMD FSR 1), gardé seulement s'il fait vraiment gagner du temps, et la pleine résolution
+  est retentée ensuite (délai doublé à chaque échec). Fluide : en mouvement, paliers jusqu'à la moitié de la densité,
+  RCAS seul et occlusion au quart, pour viser 60 images par seconde. Mesuré en 2880 × 1620 (puce intégrée AMD,
+  écran 60 Hz) : Nette = 30 images par seconde régulières en mouvement (avant : image agrandie ×1,7, floue et
+  crénelée) ; Fluide = 45 à 60. Densité de l'écran relue au zoom du navigateur et au changement d'écran ;
+- feuillage des arbres : profondeur écrite d'abord par une passe qui ne lit que l'image des feuilles (même vent, même
+  découpe), puis feuillage éclairé sans écrire la profondeur : chaque pixel n'est éclairé que pour la feuille visible
+  (vue rapprochée, 2880 × 1620 : scène 22,1 → 18,4 ms) ;
+- panneaux du HUD sans flou d'arrière-plan (fond sombre plus couvrant) : le flou, recalculé à chaque image puisque la
+  3D bouge derrière, coûtait ~4 ms en 2880 × 1620 et faisait tomber l'image sous 30 par seconde ; le verre liquide
+  reste au menu du bas ;
 - caméra sans inertie : elle s'arrête dès qu'on lâche ;
 - sols dessinés après tout le reste (les pixels de sol cachés par les arbres et les bâtiments ne sont pas calculés),
   couches posées dessus avant les surfaces qu'elles recouvrent, pelouse du site en dernier ; un sol plat ne projette

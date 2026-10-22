@@ -76,6 +76,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border: 1px solid var(--line);
   box-shadow: 0 12px 40px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .04);
 }
+/* panneaux du HUD au-dessus de la 3D : sombres, sans flou d'arrière-plan. Le flou était recalculé à chaque image (la 3D
+   bouge derrière) : neuf panneaux, ~4 ms par image en 2880 × 1620 sur une puce graphique intégrée, de quoi casser les
+   30 images par seconde régulières en pleine résolution. Le verre liquide reste au menu du bas. */
+.hud .glass:not(.hud-dock) { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(11, 11, 12, .86); }
 
 /* ---- boutons ---- */
 .btn {
@@ -2020,9 +2024,17 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 .cm-clock { font-family: var(--font-title); font-weight: 500; font-size: var(--t-lg); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
 
 /* réglages : une ligne par réglage, interrupteur ou choix à trois positions (flèches gauche / droite) */
-.cm-settings { display: flex; flex-direction: column; gap: 2px; }
+.cm-settings { display: flex; flex-direction: column; gap: 2px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.cm-settings::-webkit-scrollbar { display: none; }
+.cm-settings > * { flex-shrink: 0; } /* les entrées gardent leur hauteur : c'est la liste qui défile */
+.cm-settings { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 24px), transparent); }
+/* écran peu haut : la liste des réglages défile dans la colonne (le titre reste), l'entrée choisie toujours visible */
+.ts-col > *, .pm-col > * { flex-shrink: 0; }
+.ts-col > .ts-sub, .pm-col > .pm-settings { min-height: 0; flex-shrink: 1; display: flex; flex-direction: column; }
 .cm-row { min-height: 68px; padding: 12px var(--s-5) 12px 26px; color: var(--text-2); }
 .cm-row:disabled { opacity: .45; cursor: not-allowed; }
+.cm-row.off { opacity: .45; }
+.cm-seg button:disabled { cursor: not-allowed; }
 .cm-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .cm-row-text strong { font-family: var(--font-title); font-weight: 600; font-size: var(--t-lg); color: inherit; }
 .cm-row-text span { font-size: var(--t-sm); color: var(--muted); }
@@ -2189,6 +2201,7 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 }
 @media (max-height: 760px) and (min-width: 761px) { /* écran d'ordinateur portable : tout un peu plus serré */
   .ts-col, .pm-col { padding: 80px 0 88px; gap: 28px; }
+  .cm-row.column { gap: var(--s-2); padding-top: 10px; padding-bottom: 10px; }
   .ts-mono { height: 72px; }
   .ts-empire { font-size: clamp(56px, 6.2vw, 92px); }
   .cm-item { min-height: 58px; }

@@ -51,6 +51,7 @@ function SideCard({ id, state, settings }) {
   }
   if (id === 'settings') {
     const q = settings.qualities.find((x) => x.id === settings.quality);
+    const m = settings.motions.find((x) => x.id === settings.motion);
     return (
       <section className="cm-card">
         <span className="eyebrow">Réglages</span>
@@ -58,6 +59,7 @@ function SideCard({ id, state, settings }) {
           <div><dt>Son</dt><dd>{settings.muted ? 'Coupé' : 'Activé'}</dd></div>
           <div><dt>Vibrations</dt><dd>{!settings.canVibrate ? 'Indisponibles' : settings.vibration ? 'Activées' : 'Coupées'}</dd></div>
           <div><dt>Qualité graphique</dt><dd>{q?.label}</dd></div>
+          {settings.quality !== 'economie' && <div><dt>Image en mouvement</dt><dd>{m?.label}</dd></div>}
         </dl>
         <p className="cm-card-note">Enregistrés sur cet appareil.</p>
       </section>

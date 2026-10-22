@@ -7,21 +7,25 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
 
 // Rendu « cinéma » : ombres de contact (occlusion ambiante GTAO), halo des lumières (bloom, plus présent la nuit),
-// étalonnage des couleurs selon l'ambiance (saturation, contraste, chaleur, vignettage discret), anticrénelage FXAA,
-// puis agrandisseur net (FSR 1) quand la scène est calculée plus petite que l'écran.
+// étalonnage des couleurs selon l'ambiance (saturation, contraste, chaleur, vignettage discret), anticrénelage FXAA
+// sur les écrans peu denses, puis agrandisseur net (FSR 1) si la scène est calculée plus petite que l'écran.
 // Qualité économie : rendu direct, sans post-traitement. Téléphone en qualité auto : halo et étalonnage seulement.
 //
 // Mesuré sur une puce graphique intégrée (écran 2880 × 1620) : l'anticrénelage multi-échantillons coûtait ~7,5 ms en
-// pleine résolution (tampons HDR) et chaque passe plein écran 1 à 2 ms ; faute de tenir 60 images par seconde, la
-// résolution tombait à un pixel sur quatre, étiré par le navigateur. D'où :
+// pleine résolution (tampons HDR) et chaque passe plein écran 1 à 2 ms ; agrandir une image calculée plus petite
+// (FXAA, EASU, RCAS : 5 à 7 ms) coûte presque autant que la calculer en pleine résolution. D'où :
 //  - scène dessinée directement dans le tampon du composer, sans multi-échantillons ;
 //  - occlusion et halo calculés à basse résolution puis posés dans la passe de sortie, avec le tone mapping et
-//    l'étalonnage (deux passes plein écran de moins) ;
-//  - anticrénelage FXAA, une passe (sauf au repos sur écran très dense, où il ne se voit pas) ;
-//  - agrandissement à la taille de l'écran, au lieu de l'étirement flou du navigateur : EASU et accentuation RCAS
-//    d'AMD FidelityFX Super Resolution 1 (licence MIT) au repos, RCAS seul en mouvement.
-// Deux chaînes de rendu : « repos » (caméra immobile, pleine résolution) et « mouvement » (résolution réglée par
-// Empire3D pour rester fluide), allouées une fois : passer de l'une à l'autre ne crée aucun à-coup.
+//    l'étalonnage (deux passes plein écran de moins) ; halo au quart de la résolution de la scène (4,5 -> 1,7 ms,
+//    même image) ;
+//  - pleine résolution au repos comme en mouvement (image nette pendant les déplacements et le zoom) ; seulement si
+//    l'appareil ne suit plus, une densité plus faible, agrandie par EASU et accentuée par RCAS (AMD FidelityFX Super
+//    Resolution 1, licence MIT) au lieu de l'étirement flou du navigateur ;
+//  - anticrénelage FXAA seulement sur écran peu dense : sur un écran très dense, une marche d'escalier fait un
+//    demi-pixel CSS (4 à 6 ms économisées en 2880 × 1620 pour une différence invisible), et l'agrandisseur suit les
+//    bords.
+// Chaîne « mouvement » à part, réservée à la demande : seulement quand la caméra en mouvement doit descendre sous la
+// densité du repos (passer de l'une à l'autre ne crée alors aucun à-coup).
 
 // Étalonnage (espace d'affichage, après le tone mapping) : saturation, contraste, chaleur, vignettage.
 const GRADE = /* glsl */`
@@ -42,6 +46,30 @@ const COMPOSE = /* glsl */`
       gl_FragColor.rgb *= mix( vec3( 1.0 ), texture2D( tAO, vUv ).rgb, uAO );
       gl_FragColor.rgb += texture2D( tBloom, vUv ).rgb * uBloom;
 `;
+
+// Sélection des zones claires du halo, au quart de la résolution de la scène : moyenne de quatre lectures bilinéaires
+// qui couvrent les 4 × 4 pixels de la scène (une petite lampe ne scintille pas quand la caméra bouge), seuil appliqué
+// à chaque lecture. Garde-fou : un seul pixel invalide (NaN, infini : reflet du soleil rasant sur l'eau, cas limite
+// d'un calcul) serait étalé par le flou sur tout l'écran, qui deviendrait noir ; pixels invalides ramenés à zéro,
+// reflets extrêmes bornés (ils restent éblouissants).
+const HIGH_PASS = /* glsl */`
+  #include <common>
+  uniform sampler2D tDiffuse;
+  uniform vec3 defaultColor;
+  uniform float defaultOpacity;
+  uniform float luminosityThreshold;
+  uniform float smoothWidth;
+  varying vec2 vUv;
+  float safe( float v ) { return v >= 0.0 ? min( v, 48.0 ) : 0.0; } // NaN : toute comparaison est fausse
+  vec3 bright( vec2 uv ) {
+    vec3 c = texture2D( tDiffuse, uv ).rgb;
+    c = vec3( safe( c.r ), safe( c.g ), safe( c.b ) );
+    return mix( defaultColor, c, smoothstep( luminosityThreshold, luminosityThreshold + smoothWidth, luminance( c ) ) );
+  }
+  void main() {
+    vec2 t = 1.0 / vec2( textureSize( tDiffuse, 0 ) );
+    gl_FragColor = vec4( 0.25 * ( bright( vUv - t ) + bright( vUv + vec2( t.x, - t.y ) ) + bright( vUv + vec2( - t.x, t.y ) ) + bright( vUv + t ) ), 1.0 );
+  }`;
 
 // Scène dessinée directement dans le tampon du composer.
 class ScenePass extends Pass {
@@ -170,14 +198,14 @@ const RCAS = /* glsl */`
     gl_FragColor = vec4( ( lobe * ( b + d + f + h ) + e ) / ( 4.0 * lobe + 1.0 ), 1.0 );
   }`;
 
-// Agrandisseur net, toujours la dernière passe, désactivée quand la scène est déjà calculée à la taille de l'écran.
-//  - complet (repos) : EASU vers une image à la taille de l'écran, puis RCAS vers l'écran ;
-//  - rapide (mouvement) : RCAS seul sur l'image source étirée (une passe ; EASU coûtait 4 ms à lui seul en 2880 × 1620
-//    sur une puce graphique intégrée, RCAS 1 ms).
+// Agrandisseur net, toujours la dernière passe, désactivée quand la scène est déjà calculée à la taille de l'écran :
+//  - complet : EASU vers une image à la taille de l'écran, puis RCAS vers l'écran ;
+//  - rapide (image en mouvement « fluide » seulement) : RCAS seul sur l'image source étirée (une passe ; EASU coûte
+//    4 ms à lui seul en 2880 × 1620 sur une puce graphique intégrée, RCAS 1 à 2 ms), au prix de marches d'escalier.
 class UpscalePass extends Pass {
-  constructor(full) {
+  constructor() {
     super();
-    this.full = full;
+    this.fast = false;
     this.needsSwap = false;
     this.target = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false });
     this.out = new THREE.Vector2();
@@ -194,7 +222,7 @@ class UpscalePass extends Pass {
   render(renderer, writeBuffer, readBuffer) {
     renderer.getDrawingBufferSize(this.out);
     const rcas = this.rcas.material.uniforms;
-    if (this.full) {
+    if (!this.fast) {
       if (this.target.width !== this.out.x || this.target.height !== this.out.y) this.target.setSize(this.out.x, this.out.y);
       const easu = this.easu.material.uniforms;
       easu.tDiffuse.value = readBuffer.texture;
@@ -222,9 +250,9 @@ WHITE.needsUpdate = true;
 const BLACK = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
 BLACK.needsUpdate = true;
 
-// Une chaîne de rendu complète, à la densité `ratio` (pixels de rendu par pixel CSS) ; full : agrandisseur complet.
-function createChain(renderer, scene, camera, q, full) {
-  const chain = { ratio: 1, aoScale: 0.5, gtao: null };
+// Une chaîne de rendu complète, à la densité `ratio` (pixels de rendu par pixel CSS).
+function createChain(renderer, scene, camera, q) {
+  const chain = { ratio: 1, aoScale: 0.5, aoMax: 0.5, gtao: null };
   const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }));
   chain.composer = composer;
   composer.addPass(new ScenePass(scene, camera));
@@ -243,11 +271,11 @@ function createChain(renderer, scene, camera, q, full) {
         if (o.userData.noAO && o.visible) { o.visible = false; gtao._visibilityCache.push(o); }
       });
     };
-    // calcul à une fraction de la résolution de l'écran (pixels CSS) : moitié, quart en vue lointaine (setAODetail) ;
-    // effet doux, débruité puis étiré
+    // calcul à une fraction de la résolution de l'écran (pixels CSS) : moitié, quart en vue lointaine (setAODetail)
+    // ou en mouvement « fluide » (aoMax) ; effet doux, débruité puis étiré
     const setSize = gtao.setSize.bind(gtao);
     gtao.setSize = (w, h) => {
-      const k = chain.aoScale / chain.ratio;
+      const k = Math.min(chain.aoScale, chain.aoMax) / chain.ratio;
       setSize(Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k)));
     };
     // occlusion posée par la passe de sortie : ici, seulement calculée
@@ -257,13 +285,13 @@ function createChain(renderer, scene, camera, q, full) {
     chain.gtao = gtao;
   }
   const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.18, 0.55, 0.92);
-  // garde-fou à l'entrée du halo : un seul pixel invalide (NaN, infini : reflet du soleil rasant sur l'eau, cas
-  // limite d'un calcul) serait étalé par son flou sur tout l'écran, qui deviendrait noir. Pixels invalides
-  // ramenés à zéro, reflets extrêmes bornés (ils restent éblouissants).
-  const hp = bloom.materialHighPassFilter;
-  hp.fragmentShader = hp.fragmentShader
-    .replace('void main() {', 'float safe(float v) { return v >= 0.0 ? min(v, 48.0) : 0.0; } // NaN : toute comparaison est fausse\nvoid main() {')
-    .replace('vec4 texel = texture2D( tDiffuse, vUv );', 'vec4 texel = texture2D( tDiffuse, vUv );\n\t\t\ttexel = vec4( safe( texel.r ), safe( texel.g ), safe( texel.b ), 1.0 );');
+  // halo au quart de la résolution de la scène (three le calcule à la moitié) : zones claires lues sur 4 × 4 pixels,
+  // noyaux de flou divisés par deux, même étendue à l'écran pour quatre fois moins de pixels
+  bloom.materialHighPassFilter.fragmentShader = HIGH_PASS;
+  bloom.separableBlurMaterials.forEach((m) => m.dispose());
+  bloom.separableBlurMaterials = [3, 5, 7, 9, 11].map((k) => bloom._getSeparableBlurMaterial(k));
+  const bloomSize = bloom.setSize.bind(bloom);
+  bloom.setSize = (w, h) => bloomSize(Math.max(1, Math.round(w / 2)), Math.max(1, Math.round(h / 2)));
   bloom.blendMaterial.visible = false; // halo ajouté par la passe de sortie (une passe plein écran de moins)
   composer.addPass(bloom);
   chain.bloom = bloom;
@@ -281,15 +309,16 @@ function createChain(renderer, scene, camera, q, full) {
   chain.output = output;
   chain.fxaa = new FXAAPass();
   composer.addPass(chain.fxaa);
-  chain.upscale = new UpscalePass(full);
+  chain.upscale = new UpscalePass();
   composer.addPass(chain.upscale);
   return chain;
 }
 
 export function createPostFX(renderer, scene, camera, quality = 'auto') {
-  let rest = null; // caméra immobile : pleine résolution
-  let motion = null; // caméra en mouvement : résolution réglée pour rester fluide
+  let rest = null; // densité du repos (pleine résolution), aussi en mouvement tant que l'appareil suit
+  let motion = null; // caméra en mouvement à une densité plus faible : tampons alloués seulement quand il le faut
   let moving = false;
+  let fast = false; // image en mouvement « fluide » : agrandisseur rapide et anticrénelage dès qu'on agrandit
   let look = null;
   let halo = 1;
   let aoNear = true;
@@ -309,24 +338,35 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
     renderer.getSize(css);
     renderer.getDrawingBufferSize(out);
     chain.ratio = ratio;
+    // mouvement « fluide » : agrandisseur rapide, occlusion au quart (son coût suit la taille de l'écran, pas la
+    // densité de calcul : 3,7 ms sur 17 en 2880 × 1620 à densité 1, de quoi manquer les 60 images par seconde)
+    chain.upscale.fast = chain === motion && fast;
+    chain.aoMax = chain.upscale.fast ? 0.25 : 0.5;
     // tailles en pixels entiers (le composer multiplierait la taille CSS par la densité sans arrondir)
     chain.composer.setPixelRatio(1);
     chain.composer.setSize(Math.max(1, Math.round(css.x * ratio)), Math.max(1, Math.round(css.y * ratio)));
-    // l'agrandisseur ne sert que si la scène est calculée plus petite que l'écran ; l'anticrénelage, dès qu'on agrandit
-    // ou sur un écran peu dense (sur un écran très dense, une marche d'escalier fait un demi-pixel CSS : 4 à 6 ms
-    // économisées en 2880 × 1620, pour une différence invisible)
+    // l'agrandisseur ne sert que si la scène est calculée plus petite que l'écran ; l'anticrénelage, sur un écran peu
+    // dense, et avec l'agrandisseur rapide (sans EASU pour suivre les bords)
     const upscaling = css.x * ratio < out.x - 0.5;
     chain.upscale.enabled = upscaling;
-    chain.fxaa.enabled = upscaling || out.x / Math.max(1, css.x) < 1.75;
+    chain.fxaa.enabled = (upscaling && chain.upscale.fast) || out.x / Math.max(1, css.x) < 1.75;
+  }
+
+  // la caméra en mouvement a sa propre densité (plus faible) : sa chaîne est dimensionnée, sinon réduite au minimum
+  const split = () => ratios.motion < ratios.rest - 1e-3;
+  function sizeMotion() {
+    if (!motion) return;
+    if (split()) size(motion, ratios.motion);
+    else if (motion.composer._width !== 1) { motion.ratio = 1; motion.composer.setPixelRatio(1); motion.composer.setSize(1, 1); }
   }
 
   function build(q) {
     teardown();
     if (q === 'economie') return;
-    rest = createChain(renderer, scene, camera, q, true);
-    motion = createChain(renderer, scene, camera, q, false);
+    rest = createChain(renderer, scene, camera, q);
+    motion = createChain(renderer, scene, camera, q);
     size(rest, ratios.rest);
-    size(motion, ratios.motion);
+    sizeMotion();
     applyLook();
   }
 
@@ -355,7 +395,7 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
   }
 
   build(quality);
-  const active = () => (moving ? motion : rest);
+  const active = () => (moving && split() ? motion : rest);
 
   return {
     render(dt) {
@@ -364,7 +404,7 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
       else renderer.render(scene, camera);
     },
     // taille de l'écran changée (pixels CSS ou densité de la toile)
-    setSize() { if (rest) { size(rest, ratios.rest); size(motion, ratios.motion); } },
+    setSize() { if (rest) { size(rest, ratios.rest); sizeMotion(); } },
     // densités de rendu (pixels de rendu par pixel CSS) au repos et en mouvement ; seule la chaîne changée est
     // réallouée
     setRatios({ rest: r = ratios.rest, motion: m = ratios.motion }) {
@@ -372,9 +412,15 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
       ratios.rest = r;
       ratios.motion = m;
       if (rest && changed.rest) size(rest, r);
-      if (motion && changed.motion) size(motion, m);
+      if (changed.rest || changed.motion) sizeMotion();
     },
     get ratios() { return { ...ratios }; },
+    // image en mouvement « fluide » (Empire3D) : agrandisseur rapide pour la chaîne du mouvement
+    setFastMotion(v) {
+      if (v === fast) return;
+      fast = v;
+      if (motion && split()) size(motion, ratios.motion);
+    },
     setMoving(v) { moving = v; },
     get moving() { return moving; },
     // occlusion : demi-résolution de près, quart en vue lointaine (Empire3D, selon le recul de la caméra)
@@ -384,7 +430,7 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
       [rest, motion].forEach((c) => {
         if (!c?.gtao) return;
         c.aoScale = near ? 0.5 : 0.25;
-        c.gtao.setSize(c.composer._width, c.composer._height);
+        if (c.composer._width > 1) c.gtao.setSize(c.composer._width, c.composer._height);
       });
     },
     setQuality(q) { build(q); },

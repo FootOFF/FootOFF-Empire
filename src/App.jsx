@@ -27,7 +27,7 @@ import { setUiSound } from './ui/console';
 import './ui/input'; // manette : traduite en touches du clavier pour tous les menus
 import { moneyBurst } from './ui/moneyfx';
 import { previewState, previewUi, silentSound } from './ui/preview';
-import { QUALITIES, loadQuality, saveQuality } from './ui/settings';
+import { MOTIONS, QUALITIES, loadMotion, loadQuality, saveMotion, saveQuality } from './ui/settings';
 import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics';
 import { actionablePlots, dockSignals, seasonEndForecast, staffTip } from './game/advice';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
@@ -71,6 +71,7 @@ export default function App({ preview = null }) {
   const [goalCollapsed, setGoalCollapsed] = useState(() => window.innerWidth < 760); // replié sur mobile
   const [menu, setMenu] = useState(!!boot.ui.menu);
   const [quality, setQuality] = useState(loadQuality); // qualité graphique (par appareil)
+  const [motion, setMotion] = useState(loadMotion); // image en mouvement : nette ou fluide (par appareil)
   const [vibration, setVibrationState] = useState(vibrationEnabled);
   const [sceneLoaded, setSceneLoaded] = useState(false); // écran de chargement jusqu'à ce que la scène 3D soit prête
   const [loadProgress, setLoadProgress] = useState(null);
@@ -228,6 +229,9 @@ export default function App({ preview = null }) {
     quality,
     qualities: QUALITIES,
     onQuality: (q) => { setQuality(q); if (!preview) saveQuality(q); },
+    motion,
+    motions: MOTIONS,
+    onMotion: (m) => { setMotion(m); if (!preview) saveMotion(m); },
     vibration,
     canVibrate: canVibrate(),
     onToggleVibration: () => { setVibration(!vibration); setVibrationState(!vibration); },
@@ -297,6 +301,7 @@ export default function App({ preview = null }) {
               selectedPlot={inGame ? sel?.plotId || null : null}
               badges={plotBadges}
               quality={quality}
+              motion={motion}
               attract={!inGame}
               paused={menu}
               onLoadProgress={setLoadProgress}

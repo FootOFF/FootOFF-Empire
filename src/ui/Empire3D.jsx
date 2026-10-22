@@ -180,7 +180,7 @@ function parvisInfo(s) {
 // parcelle sélectionnée). Garde ses propres interactions : survol (étiquette) et clic (sélection).
 export default function Empire3D({
   state, onSelectPlot, onEmptyTap, onWebGLFail, timeMode = 'auto', weatherMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
-  live = false, matchFx = null, badges = [], quality = 'auto', onLoadProgress, onLoaded, matchInfo = null, onOpenTrophies,
+  live = false, matchFx = null, badges = [], quality = 'auto', motion = 'nette', onLoadProgress, onLoaded, matchInfo = null, onOpenTrophies,
   attract = false, paused = false,
 }) {
   const mountRef = useRef(null);
@@ -425,19 +425,24 @@ export default function Empire3D({
       ctx.syncSpots?.(); // projecteurs : tous dans le calcul de la lumière, ou aucun
     };
 
-    // Résolution adaptative, en deux régimes. La toile garde la densité de l'écran ; la scène est calculée à une
-    // densité plus faible si besoin, puis agrandie nettement (postfx.js).
-    //  - Caméra en mouvement : fluidité d'abord. Quand l'appareil ne tient plus ~50 images par seconde, la densité de
-    //    calcul descend par paliers, puis remonte dès qu'il y a de la marge. Un palier qui ne tient pas n'est réessayé
-    //    qu'après un délai qui double à chaque échec (pas de va-et-vient).
-    //  - Caméra immobile : netteté d'abord, pleine densité tant que l'image reste au-dessus de ~22 images par seconde.
-    // Jamais sous un pixel de calcul par pixel d'écran (CSS) : tous les effets restent, l'interface reste nette.
-    const DRS_LEVELS = [1, 0.85, 0.72, 0.6, 0.5];
-    const REST_LEVELS = [1, 0.85, 0.72];
-    const regime = (levels, slow, fast) => ({ levels, slow, fast, level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map() });
+    // Résolution adaptative. La toile garde la densité de l'écran ; la scène est calculée à la densité maximale de la
+    // qualité choisie (pleine résolution sur ordinateur), la même au repos et en mouvement : l'image reste nette pendant
+    // les déplacements et le zoom. Seulement quand l'appareil ne suit plus (sous ~30 images par seconde en mouvement,
+    // ~22 au repos), la densité descend d'un palier, agrandie nettement (postfx.js) ; ce palier n'est gardé que s'il
+    // accélère vraiment l'image (sur une puce graphique intégrée, agrandir coûte presque autant que calculer en pleine
+    // résolution : on ne perdrait que de la netteté). Un palier qui ne tient pas, ou qui ne sert à rien, est mis de côté
+    // et réessayé après un délai qui double à chaque échec (pas de va-et-vient, jamais coincé en basse résolution :
+    // l'écran affichant 60 ou 30 images par seconde, la marge ne se voit pas toujours au chronomètre). Jamais sous un
+    // pixel de calcul par pixel d'écran (CSS) : tous les effets restent, l'interface reste nette.
+    // Réglage « image en mouvement » (settings.js) : « nette » ci-dessus ; « fluide » vise ~50 images par seconde
+    // pendant les déplacements, quitte à descendre jusqu'à la moitié de la densité, agrandie par l'agrandisseur rapide.
+    const LEVELS = { nette: [1, 0.75], fluide: [1, 0.85, 0.72, 0.6, 0.5] };
+    const regime = (levels, slow, fast, check) => ({ levels, slow, fast, check, level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map(), probe: null });
     const drs = {
-      motion: regime(DRS_LEVELS, 21, 18), // ms : au-delà, palier en dessous (~48 images/s) ; en deçà, on retente au-dessus
-      rest: regime(REST_LEVELS, 45, 36),
+      // ms : au-delà, palier en dessous ; en deçà pendant trois secondes, on retente au-dessus. check : palier du
+      // dessous gardé seulement s'il fait gagner du temps
+      motion: regime(LEVELS.nette, 34, 24, true),
+      rest: regime(LEVELS.nette, 45, 36, true),
       active: false,
       get level() { return this.motion.level; }, // inspection (développement)
     };
@@ -447,6 +452,11 @@ export default function Empire3D({
       return Math.max(Math.min(1, max), max * r.levels[level]);
     };
     const applyRatio = () => post.setRatios({ rest: ratioOf(drs.rest), motion: ratioOf(drs.motion) });
+    const setAside = (r, level, now, base) => { // palier écarté : délai doublé à chaque échec
+      const fails = (r.fails.get(level) || 0) + 1;
+      r.fails.set(level, fails);
+      r.until.set(level, now + base * 2 ** (fails - 1));
+    };
     const drsStep = (r, raw) => {
       if (!drs.active || raw > 0.25) return; // retour d'un onglet caché, gros à-coup isolé : ne compte pas
       r.frames.push(raw * 1000);
@@ -456,17 +466,30 @@ export default function Empire3D({
       r.frames = [];
       r.time = 0;
       const now = performance.now();
-      const lower = r.level + 1 < r.levels.length && ratioOf(r, r.level + 1) < ratioOf(r) - 0.01;
+      if (r.probe) { // premier bilan du palier du dessous : gardé seulement s'il fait gagner au moins 15 %
+        const { from, ms: before } = r.probe;
+        r.probe = null;
+        if (ms > before * 0.85) {
+          setAside(r, r.level, now, 60000);
+          r.until.delete(from);
+          r.level = from;
+          r.good = 0;
+          applyRatio();
+          return;
+        }
+      }
+      const blocked = (level) => (r.until.get(level) || 0) > now;
+      const lower = r.level + 1 < r.levels.length && ratioOf(r, r.level + 1) < ratioOf(r) - 0.01 && !blocked(r.level + 1);
       if (ms > r.slow && lower) { // trop lent : palier en dessous, celui-ci mis de côté
-        const fails = (r.fails.get(r.level) || 0) + 1;
-        r.fails.set(r.level, fails);
-        r.until.set(r.level, now + 30000 * 2 ** (fails - 1));
+        setAside(r, r.level, now, 30000);
+        if (r.check) r.probe = { from: r.level, ms };
         r.level += 1;
         r.good = 0;
         applyRatio();
-      } else if (ms < r.fast && r.level > 0) { // fluide : après trois secondes, on retente le palier au-dessus
-        r.good += 1;
-        if (r.good >= 3 && !((r.until.get(r.level - 1) || 0) > now)) {
+      } else if (r.level > 0 && !blocked(r.level - 1)) {
+        // de la marge pendant trois secondes, ou délai de mise à l'écart écoulé : on retente le palier au-dessus
+        r.good = ms < r.fast ? r.good + 1 : 0;
+        if (r.good >= 3 || r.until.has(r.level - 1)) {
           r.level -= 1;
           r.good = 0;
           applyRatio();
@@ -510,11 +533,21 @@ export default function Empire3D({
       return Promise.resolve();
     };
 
+    // image en mouvement appliquée à chaud : paliers et seuils du régime « mouvement », agrandisseur de sa chaîne
+    ctx.setMotion = (m) => {
+      const fluid = m === 'fluide';
+      Object.assign(drs.motion, fluid ? { levels: LEVELS.fluide, slow: 21, fast: 18, check: false } : { levels: LEVELS.nette, slow: 34, fast: 24, check: true });
+      Object.assign(drs.motion, { level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map(), probe: null });
+      post.setFastMotion(fluid);
+      applyRatio();
+    };
+    ctx.setMotion(motion);
+
     // qualité graphique appliquée à chaud : résolution, puis ombres (les matériaux se recompilent)
     ctx.quality = quality;
     ctx.setQuality = (q) => {
       ctx.quality = q;
-      for (const r of [drs.motion, drs.rest]) Object.assign(r, { level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map() });
+      for (const r of [drs.motion, drs.rest]) Object.assign(r, { level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map(), probe: null });
       renderer.setPixelRatio(outputRatioFor(q));
       renderer.setSize(mount.clientWidth, mount.clientHeight);
       post.setQuality(q);
@@ -966,6 +999,7 @@ export default function Empire3D({
   }, [matchDay, live, recenter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { ctxRef.current?.setQuality?.(quality); ctxRef.current?.crowd?.setQuality(quality); }, [quality, ready]);
+  useEffect(() => { ctxRef.current?.setMotion?.(motion); }, [motion, ready]);
 
   // Jour de match : couleurs de l'adversaire, remplissage des tribunes selon l'affluence attendue (ou réelle).
   useEffect(() => {

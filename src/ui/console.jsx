@@ -46,7 +46,16 @@ export function useMenu(items, { initial = 0, onBack, active = true } = {}) {
     else if (e.key === 'Escape' && onBack) { e.preventDefault(); uiSound('back'); onBack(); }
   });
   useEffect(() => {
-    if (active) refs.current[cur]?.focus({ preventScroll: true });
+    const el = refs.current[cur];
+    if (!active || !el) return;
+    el.focus({ preventScroll: true });
+    // liste qui défile (réglages sur un écran peu haut) : l'entrée choisie est ramenée dans la partie visible
+    const box = el.closest('.cm-settings');
+    if (box && box.scrollHeight > box.clientHeight) {
+      const top = el.offsetTop - box.offsetTop;
+      if (top < box.scrollTop) box.scrollTop = top;
+      else if (top + el.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = top + el.offsetHeight - box.clientHeight;
+    }
   }, [cur, active]);
   // survol à la souris : l'entrée devient active (pas au doigt, où un appui suffit)
   const hover = (i) => (e) => {
@@ -124,21 +133,29 @@ export function Clock() {
   return <time className="cm-clock">{now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</time>;
 }
 
-// Réglages partagés par l'écran titre et le menu pause : son, vibrations, qualité graphique, retour.
+// Réglages partagés par l'écran titre et le menu pause : son, vibrations, qualité graphique, image en mouvement
+// (sans objet en qualité Économie, rendue sans post-traitement), retour.
 export function SettingsView({ settings, onBack, active = true }) {
-  const { muted, onToggleSound, vibration, canVibrate, onToggleVibration, quality, qualities, onQuality } = settings;
-  const rows = [{ id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'quality' }, { id: 'back' }];
+  const { muted, onToggleSound, vibration, canVibrate, onToggleVibration, quality, qualities, onQuality, motion, motions, onMotion } = settings;
+  const rows = [
+    { id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'quality' }, { id: 'motion', disabled: quality === 'economie' }, { id: 'back' },
+  ];
   const menu = useMenu(rows, { onBack, active });
   const { cur, setCur, refs, hover } = menu;
   const qi = Math.max(0, qualities.findIndex((q) => q.id === quality));
-  const setQ = (i) => {
-    const n = Math.min(qualities.length - 1, Math.max(0, i));
-    if (n !== qi) { onQuality(qualities[n].id); uiSound('move'); }
+  const mi = Math.max(0, motions.findIndex((m) => m.id === motion));
+  const pick = (list, at, on) => (i) => {
+    const n = Math.min(list.length - 1, Math.max(0, i));
+    if (n !== at) { on(list[n].id); uiSound('move'); }
   };
+  const setQ = pick(qualities, qi, onQuality);
+  const setM = pick(motions, mi, onMotion);
   useKeydown((e) => {
-    if (!active || e.defaultPrevented || rows[cur].id !== 'quality') return;
-    if (e.key === 'ArrowLeft') { e.preventDefault(); setQ(qi - 1); }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); setQ(qi + 1); }
+    const id = rows[cur].id;
+    if (!active || e.defaultPrevented || (id !== 'quality' && id !== 'motion')) return;
+    const [at, set] = id === 'quality' ? [qi, setQ] : [mi, setM];
+    if (e.key === 'ArrowLeft') { e.preventDefault(); set(at - 1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); set(at + 1); }
   });
   const row = (i) => ({ ref: (el) => { refs.current[i] = el; }, onPointerEnter: hover(i), onFocus: () => setCur(i), style: { '--i': i } });
   const vibOn = vibration && canVibrate;
@@ -166,7 +183,19 @@ export function SettingsView({ settings, onBack, active = true }) {
           ))}
         </span>
       </div>
-      <button type="button" className={`cm-row back ${cur === 3 ? 'on' : ''}`} {...row(3)} onClick={() => { uiSound('back'); onBack(); }}>
+      <div role="menuitem" tabIndex={quality === 'economie' ? -1 : 0} aria-disabled={quality === 'economie'} aria-label={`Image en mouvement : ${motions[mi].label}`} className={`cm-row column ${cur === 3 ? 'on' : ''} ${quality === 'economie' ? 'off' : ''}`} {...row(3)}>
+        <span className="cm-bar" aria-hidden="true" />
+        <span className="cm-row-text">
+          <strong>Image en mouvement</strong>
+          <span>{quality === 'economie' ? 'En qualité Économie, l’image reste la même en mouvement.' : motions[mi].hint}</span>
+        </span>
+        <span className="cm-seg">
+          {motions.map((m, i) => (
+            <button key={m.id} type="button" tabIndex={-1} disabled={quality === 'economie'} className={i === mi ? 'on' : ''} aria-pressed={i === mi} onClick={() => setM(i)}>{m.label}</button>
+          ))}
+        </span>
+      </div>
+      <button type="button" className={`cm-row back ${cur === 4 ? 'on' : ''}`} {...row(4)} onClick={() => { uiSound('back'); onBack(); }}>
         <span className="cm-bar" aria-hidden="true" />
         <IconChevronLeft className="cm-back-icon" />
         <span className="cm-row-text"><strong>Retour</strong></span>

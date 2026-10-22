@@ -144,6 +144,10 @@ function impostorMaterial(atlas) {
 // léger (le haut du houppier ondule, le pied reste immobile). Faces avant seulement : les cartes vues de dos sont
 // surtout au fond du houppier, cachées par celles de devant, et coûtaient la moitié du rendu du feuillage ; les
 // ombres, elles, prennent les deux faces.
+// Profondeur d'abord (leafPrepass) : les cartes d'un houppier se recouvrent, et chaque couche était éclairée en entier
+// avant d'être cachée par la suivante. Une passe ne fait qu'écrire la profondeur des feuilles (même découpe, même
+// vent, lecture de la seule image) ; le feuillage éclairé, dessiné ensuite sans écrire la profondeur, n'est calculé
+// que pour la feuille visible de chaque pixel (-3,7 ms sur 22 en vue rapprochée, 2880 × 1620, puce intégrée).
 function leafMaterial(base, tint) {
   const m = base.clone();
   m.color.setRGB(...tint, THREE.SRGBColorSpace);
@@ -152,6 +156,7 @@ function leafMaterial(base, tint) {
   m.alphaTest = 0.42;
   m.transparent = false;
   m.alphaToCoverage = true;
+  m.depthWrite = false; // profondeur écrite par la passe de profondeur (leafPrepass)
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = time;
     shader.vertexShader = shader.vertexShader
@@ -179,6 +184,37 @@ function leafMaterial(base, tint) {
   return m;
 }
 
+// Passe de profondeur du feuillage : mêmes sommets (le même onBeforeCompile : vent, instances), même découpe (alpha
+// de l'image, seuil, lissage du bord), aucune couleur écrite, rien d'autre de calculé. Profondeur repoussée d'un
+// cheveu (polygonOffset) : le feuillage éclairé, à la même profondeur, passe toujours le test.
+function leafPrepass(leaf) {
+  const m = new THREE.MeshBasicMaterial({
+    map: leaf.map, alphaTest: leaf.alphaTest, side: leaf.side, colorWrite: false,
+    polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
+  });
+  m.alphaToCoverage = leaf.alphaToCoverage;
+  m.onBeforeCompile = leaf.onBeforeCompile;
+  return m;
+}
+
+// Maillage de la passe de profondeur d'un feuillage instancié : enfant du maillage (même repère, même visibilité),
+// mêmes instances (tampon partagé), dessiné avant tout le reste ; ni ombre, ni occlusion, ni clic.
+function withPrepass(mesh, material) {
+  const pre = new THREE.InstancedMesh(mesh.geometry, material, mesh.instanceMatrix.count);
+  pre.instanceMatrix = mesh.instanceMatrix;
+  pre.count = mesh.count;
+  pre.frustumCulled = mesh.frustumCulled;
+  pre.renderOrder = -1;
+  pre.castShadow = false;
+  pre.receiveShadow = false;
+  pre.userData.noAO = true;
+  pre.raycast = noRaycast;
+  pre.name = `${mesh.name}_profondeur`;
+  pre.onBeforeRender = () => { pre.count = mesh.count; }; // niveau de détail : nombre d'instances suivi
+  mesh.add(pre);
+  return pre;
+}
+
 // Modèle des arbres, chargé une fois (comme tous les GLB, assets.js) : espèce -> parties
 // [{ geometry, material, depth, leaves, local }], local = repère de la partie dans le modèle, en mètres.
 let treesPromise = null;
@@ -195,9 +231,11 @@ function loadTrees() {
         if (!m) return;
         const leaves = m[2] === 'leaves';
         if (!lib.has(m[1])) lib.set(m[1], []);
+        const material = leaves ? leafMaterial(o.material, TINT[m[1]] || [1, 1, 1]) : o.material;
         lib.get(m[1]).push({
           geometry: o.geometry,
-          material: leaves ? leafMaterial(o.material, TINT[m[1]] || [1, 1, 1]) : o.material,
+          material,
+          prepass: leaves ? leafPrepass(material) : null,
           depth: leaves ? new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: o.material.map, alphaTest: 0.42 }) : null,
           leaves,
           part: m[2],
@@ -264,6 +302,7 @@ function plantMeshes(lib, items, parent) {
       mesh.userData.noAO = part.leaves; // cartes de feuillage : pleines pour l'occlusion (carrés sombres)
       mesh.raycast = noRaycast;
       mesh.name = `forest_${key}_${part.part}`;
+      if (part.prepass) withPrepass(mesh, part.prepass);
       parent.add(mesh);
       meshes.push(mesh);
     }
@@ -364,7 +403,7 @@ export function createForest(group, list, { quality = 'auto', site }) {
   let alive = true; // le modèle peut arriver après dispose() (liste replantée entre-temps)
 
   function clearNear() {
-    nearMeshes.forEach((m) => { group.remove(m); m.dispose(); ghosts.delete(m); });
+    nearMeshes.forEach((m) => { group.remove(m); m.children.forEach((c) => c.dispose?.()); m.dispose(); ghosts.delete(m); });
     nearMeshes = [];
     lodGroups = [];
     if (nearImp) { group.remove(nearImp.mesh); nearImp.dispose(); nearImp = null; }
@@ -406,6 +445,7 @@ export function createForest(group, list, { quality = 'auto', site }) {
         mesh.userData.noAO = part.leaves;
         mesh.raycast = noRaycast;
         mesh.name = `forest_${key}_${part.part}`;
+        if (part.prepass) withPrepass(mesh, part.prepass);
         group.add(mesh);
         nearMeshes.push(mesh);
         if (shadows) {
