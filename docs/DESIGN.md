@@ -37,6 +37,11 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
   division), note de match sur 10 en pastille (vert, neutre, rouge). Une légende dès qu'une couleur a un sens.
 - Classes tirées des données du jeu toujours préfixées (`ev-side-home`, `ev-out-post`…) : un nom nu peut tomber
   sur celui d'un écran (« post », tir sur le poteau, prenait les styles de l'écran d'après-match `.post`).
+- Un préfixe de classes par écran, jamais partagé : `pm-` avant-match, `pz-` menu pause, `ts-` écran titre, `ld-`
+  chargement, `cm-` menus façon console. Le menu pause avait repris `.pm-side` de l'avant-match : sa règle « masqué
+  sur téléphone » cachait la colonne du coup d'envoi, et les matchs ne se lançaient plus sur téléphone.
+- L'action principale d'un écran qui défile reste visible : le coup d'envoi est collé au bas de l'écran pendant
+  que l'avant-match défile (sur téléphone, sur toute la largeur).
 - Icônes dessinées uniquement (jamais ‹ › ou ⬠ en caractères) ; « Comparer » = bouton rond avec l'icône radar.
 
 ## Zones du HUD
@@ -131,7 +136,9 @@ le glissement et la loupe du doigt décale la pastille.
 Façon jeu de console : un seul chargement au démarrage, puis l'écran titre devant le complexe en 3D, puis le jeu.
 
 - Chargement (`index.html` puis `src/ui/loading.jsx`, mêmes styles dans `index.html`) : logo au centre, astuce en
-  bas à gauche, étape et pourcentage en bas à droite, barre dorée sur toute la largeur. La progression est réelle
+  bas à gauche, étape et pourcentage en bas à droite, barre dorée sur toute la largeur. Sur téléphone, barre, étape
+  et pourcentage sous le rond central, l'astuce en bas (collée au bord du bas, la barre passait sous la barre
+  d'outils du navigateur ou le trait d'accueil du téléphone). La progression est réelle
   et ne recule jamais : démarrage (le lancement du moteur 3D occupe le processeur une à deux secondes : le début
   de la barre est animé par la carte graphique, sans pourcentage), puis octets reçus des modèles, textures et
   ciels de 15 à 84 % (`trackLoad` dans `src/three/assets.js`), puis décodage et compilation jusqu'à 100 %. Un
@@ -139,14 +146,16 @@ Façon jeu de console : un seul chargement au démarrage, puis l'écran titre de
   est dessinée derrière l'écran de chargement : chaque modèle compile ses matériaux dès son arrivée (tout
   compiler à la fin prenait 8 s au lieu de 3,5). Onglet en arrière-plan : une minuterie termine le chargement.
 - Écran titre (`src/ui/title.jsx`) : la caméra tourne lentement autour du complexe (`attract` d'Empire3D, le
-  complexe décalé hors du menu). Titre FootOFF Empire, menu Continuer, Nouvelle partie, Réglages, FootOFF Media ;
+  complexe décalé hors du menu). Logo FootOFF Empire (monogramme, FootOFF, « Empire » en sous-titre espacé, comme
+  sur l'écran de chargement), sans horloge ; menu Continuer, Nouvelle partie, Réglages, FootOFF Media ;
   à droite (PC) la carte de l'entrée active (classement, points, journée, forme, prochain match, trésorerie).
   Avant la création du club, la scène montre le complexe de départ. Sous-écrans avec leur propre en-tête :
   réglages, création du club (nom proposé au hasard, dé pour en tirer un autre). Continuer : la caméra plonge
   vers la vue d'ensemble et le HUD apparaît.
 - Menu pause (`src/ui/pause.jsx`) : Échap, le bouton menu du HUD, ou Start à la manette. La scène se fige (Empire3D
   ne dessine plus, `paused`) et se floute ; Reprendre, Réglages, Écran titre, Nouvelle partie (confirmation),
-  FootOFF Media ; à droite la saison en cours et l'objectif.
+  FootOFF Media ; à droite la saison en cours et l'objectif. Ses classes portent le préfixe `pz-` : le préfixe
+  `pm-` appartient à l'avant-match (un `.pm-side` commun masquait le coup d'envoi sur téléphone).
 - Commandes (`src/ui/console.jsx`, `src/ui/input.js`) : flèches, Entrée, Échap ; souris (l'entrée suit le
   survol) ; doigt ; manette (croix ou stick, A, B, Start), traduite en touches du clavier. Les aides en bas
   d'écran suivent le dernier moyen utilisé (touches, boutons de manette, rien au doigt). Petits sons de menu,

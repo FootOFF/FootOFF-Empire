@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { FOMonogram } from './brand';
-import { Clock, ClubCard, Hints, MenuList, SettingsView, uiSound, useMenu } from './console';
+import { FOMonogram, FootOFFLockup } from './brand';
+import { ClubCard, Hints, MenuList, SettingsView, uiSound, useMenu } from './console';
 import { useInputMode } from './input';
 import { IconDice } from './icons';
 import { randomClubName } from '../game/names';
@@ -10,16 +10,10 @@ import { DIVISIONS } from '../game/constants';
 // menu à gauche (en bas sur téléphone), la carte de l'entrée choisie à droite. Trois vues : menu, réglages,
 // création du club. Clavier, souris, doigt et manette (voir console.jsx et input.js).
 
+// Logo FootOFF Empire, le même que sur l'écran de chargement : monogramme, FootOFF, et « Empire » intégré au logo en
+// sous-titre espacé (comme « Media » sur le logo FootOFF Media).
 export function Wordmark() {
-  return (
-    <div className="ts-mark">
-      <FOMonogram className="ts-mono" />
-      <div className="ts-words">
-        <span className="ts-foot">Foot<b>OFF</b></span>
-        <span className="ts-empire">Empire</span>
-      </div>
-    </div>
-  );
+  return <FootOFFLockup sub="Empire" size="lg" className="ts-mark" />;
 }
 
 const PILLARS = [
@@ -154,7 +148,6 @@ export function TitleScreen({ state, view, onView, onContinue, onNewGame, onCrea
         <span className="ts-presents">FootOFF Media présente</span>
         <div className="ts-status">
           {state && <span className="ts-profile"><FOMonogram className="ts-profile-mark" />{state.clubName}</span>}
-          <Clock />
         </div>
       </header>
       <div className="ts-col">

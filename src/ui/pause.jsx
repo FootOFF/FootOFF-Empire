@@ -19,10 +19,10 @@ export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMat
   ];
   const menu = useMenu(items, { onBack: onResume, active: view === 'menu' && !blocked });
   return (
-    <div className={`pm pm-${view}`} role="dialog" aria-modal="true" aria-label="Pause">
-      <div className="pm-shade" aria-hidden="true" />
-      <div className="pm-col">
-        <header className="pm-head">
+    <div className={`pz pz-view-${view}`} role="dialog" aria-modal="true" aria-label="Pause">
+      <div className="pz-shade" aria-hidden="true" />
+      <div className="pz-col">
+        <header className="pz-head">
           <span className="eyebrow">Pause</span>
           <h2>{state.clubName}</h2>
           <p>{div.name} · Saison {state.seasonNumber} · journée {Math.min(state.round, total)}/{total}</p>
@@ -30,20 +30,20 @@ export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMat
         {view === 'menu' ? (
           <MenuList items={items} menu={menu} label="Menu pause" />
         ) : (
-          <div className="pm-settings">
-            <span className="eyebrow pm-view-title">Réglages</span>
+          <div className="pz-settings">
+            <span className="eyebrow pz-view-title">Réglages</span>
             <SettingsView settings={settings} active={!blocked} onBack={() => setView('menu')} />
           </div>
         )}
       </div>
       {view === 'menu' && (
-        <aside className="pm-side">
+        <aside className="pz-side">
           <ClubCard state={state} eyebrow="Ta saison" objective head={false} />
         </aside>
       )}
-      <footer className="pm-bottom">
+      <footer className="pz-bottom">
         <Hints items={view === 'menu' ? [['nav', 'Choisir'], ['select', 'Valider'], ['back', 'Reprendre']] : [['nav', 'Choisir'], ['lr', 'Modifier'], ['select', 'Valider'], ['back', 'Retour']]} />
-        <span className="pm-save"><IconCheck /> Sauvegarde automatique</span>
+        <span className="pz-save"><IconCheck /> Sauvegarde automatique</span>
       </footer>
     </div>
   );

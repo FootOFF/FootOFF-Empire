@@ -72,13 +72,21 @@
       @keyframes ld-sheen { from { transform: translateX(-100%); } to { transform: translateX(560%); } }
       .leaving > .ld { animation: ld-out .5s ease both !important; }
       @keyframes ld-out { to { opacity: 0; } }
+      /* Téléphone : la progression sous le logo, juste sous le rond central (collée au bas de l'écran, la barre
+         passait sous la barre d'outils du navigateur ou le trait d'accueil du téléphone) ; l'astuce en bas. Le bloc
+         du bas n'est plus positionné : la barre, l'étape et l'astuce se placent chacune par rapport à l'écran. */
       @media (max-width: 760px) {
-        .ld-center { bottom: 26vh; }
+        .ld { --ld-mid: 41%; --ld-w: min(320px, calc(100% - 48px)); }
+        .ld-center { bottom: 18%; }
         .ld-logo { gap: 14px; } .ld-mono { height: 58px; } .ld-name { font-size: 32px; } .ld-sub { font-size: 12px; margin-top: 7px; }
-        .ld-bottom { left: 20px; right: 20px; bottom: calc(28px + var(--host-badge-h, 0px)); flex-direction: column; align-items: stretch; gap: 20px; }
-        .ld-tip { min-height: 92px; font-size: 13px; }
-        .ld-status { justify-content: space-between; }
-        .ld-step { flex: 1; }
+        .ld-bottom { position: static; }
+        .ld-bar { left: 50%; right: auto; bottom: auto; top: calc(var(--ld-mid) + 176px); width: var(--ld-w); transform: translateX(-50%); border-radius: 2px; }
+        .ld-status { position: absolute; left: 50%; top: calc(var(--ld-mid) + 192px); width: var(--ld-w); transform: translateX(-50%); justify-content: space-between; gap: 10px; }
+        .ld-spin { width: 18px; height: 18px; }
+        .ld-step { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; letter-spacing: .14em; }
+        .ld-pct { min-width: 0; }
+        .ld-pct b { font-size: 28px; }
+        .ld-tip { position: absolute; left: 24px; right: 24px; bottom: calc(28px + env(safe-area-inset-bottom, 0px) + var(--host-badge-h, 0px)); min-height: 92px; font-size: 13px; }
       }
       @media (prefers-reduced-motion: reduce) { .ld-glow, .ld-logo, .ld-bar::after { animation: none; } .ld-spin { animation-duration: 3s; } .ld-bar b { animation-duration: 1ms; } }
     </style>

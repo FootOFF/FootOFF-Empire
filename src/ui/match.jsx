@@ -96,7 +96,9 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
             <span className="eyebrow">Tactique</span>
             <TacticPicker value={tactic} onChange={setTactic} />
           </div>
-          <button className="btn btn-xl" onClick={() => onKickoff(lineup, tactic, formation)}><IconPlay /> Coup d’envoi</button>
+          <div className="pm-go">
+            <button className="btn btn-xl" onClick={() => onKickoff(lineup, tactic, formation)}><IconPlay /> Coup d’envoi</button>
+          </div>
         </section>
       </div>
     </div>

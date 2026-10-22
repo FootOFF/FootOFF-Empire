@@ -962,6 +962,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .ins-demand.full { color: var(--gold-light); }
 
 .pm-side { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 0; }
+/* coup d'envoi toujours visible : collé au bas de l'écran pendant que la page défile (en 1440 × 810, il tombait sous
+   le bas de l'écran ; sur téléphone, sous tout l'avant-match). bottom négatif : jusqu'au bord de l'écran, sous la
+   marge basse de la page qui défile */
+.pm-go {
+  position: sticky; z-index: 2; bottom: calc(-28px - var(--hb));
+  padding: 16px 0 calc(28px + var(--hb));
+  background: linear-gradient(180deg, rgba(5, 5, 6, 0), rgba(5, 5, 6, .9) 34%);
+}
 .pm-card { border-radius: var(--r-lg); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 .pm-xg { font-size: var(--t-sm); color: var(--muted); }
 .pm-xg b { font-family: var(--font-mono); font-weight: 400; color: var(--text); }
@@ -1120,7 +1128,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @media (max-width: 760px) {
   .matchscreen.prematch { padding: 16px 12px 24px; }
   .pm-grid { grid-template-columns: 1fr; }
-  .pm-side { position: static; }
+  /* les cartes de la colonne passent sous le onze ; le coup d'envoi (.pm-go) reste collé au bas de l'écran sur toute
+     la page, sur toute la largeur */
+  .pm-side { display: contents; }
+  .pm-go { margin: 0 -12px; padding: 20px 12px calc(12px + var(--hb) + env(safe-area-inset-bottom, 0px)); }
   .pitch2d { width: 100%; aspect-ratio: .95; }
   .p2-num { width: 36px; height: 36px; font-size: var(--t-xs); }
   .p2-name { font-size: var(--t-xs); max-width: 78px; padding: 1px 8px; }
@@ -1202,8 +1213,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .post-ratings li { grid-template-columns: auto minmax(0, 1fr); }
   .post-goals .g-short { display: inline; }
   .post-breakdown { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .post-foot { padding: var(--s-3) var(--s-4) var(--s-4); }
-  .post-foot .btn-xl { flex: 1; min-width: 0; }
+  /* réputation sur sa ligne, puis les deux boutons côte à côte (à trois sur une ligne, « Stats du match » se
+     tassait en un cercle de trois lignes) */
+  .post-foot { flex-wrap: wrap; row-gap: var(--s-3); padding: var(--s-3) var(--s-4) var(--s-4); }
+  .post-rep { flex-basis: 100%; text-align: center; }
+  .post-foot .btn-xl { flex: 1; min-width: 0; padding-inline: var(--s-3); white-space: nowrap; }
   .sq-budget { max-width: none; min-width: 0; flex-basis: 100%; }
   .sq-tabs { width: 100%; }
   .sq-tabs button { flex: 1; }
@@ -2021,7 +2035,6 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 .cm-pad.back { border: 1.5px solid rgba(255, 255, 255, .5); color: var(--text); }
 .cm-pad.dpad { color: var(--text); }
 .cm-pad.dpad svg { width: 20px; height: 20px; fill: rgba(255, 255, 255, .14); }
-.cm-clock { font-family: var(--font-title); font-weight: 500; font-size: var(--t-lg); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
 
 /* réglages : une ligne par réglage, interrupteur ou choix à trois positions (flèches gauche / droite) */
 .cm-settings { display: flex; flex-direction: column; gap: 2px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
@@ -2029,8 +2042,8 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 .cm-settings > * { flex-shrink: 0; } /* les entrées gardent leur hauteur : c'est la liste qui défile */
 .cm-settings { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 24px), transparent); }
 /* écran peu haut : la liste des réglages défile dans la colonne (le titre reste), l'entrée choisie toujours visible */
-.ts-col > *, .pm-col > * { flex-shrink: 0; }
-.ts-col > .ts-sub, .pm-col > .pm-settings { min-height: 0; flex-shrink: 1; display: flex; flex-direction: column; }
+.ts-col > *, .pz-col > * { flex-shrink: 0; }
+.ts-col > .ts-sub, .pz-col > .pz-settings { min-height: 0; flex-shrink: 1; display: flex; flex-direction: column; }
 .cm-row { min-height: 68px; padding: 12px var(--s-5) 12px 26px; color: var(--text-2); }
 .cm-row:disabled { opacity: .45; cursor: not-allowed; }
 .cm-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -2101,24 +2114,18 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 .ts-profile-mark { width: 24px; height: 24px; flex-shrink: 0; }
 .ts-col { position: absolute; top: 0; bottom: 0; left: 56px; width: min(520px, 44vw); display: flex; flex-direction: column; justify-content: center; gap: 44px; padding: 96px 0 104px; }
 .ts-head { display: flex; flex-direction: column; gap: var(--s-4); }
-.ts-mark { display: flex; align-items: center; gap: 22px; animation: ts-rise 1s var(--ease) both; }
+/* logo FootOFF Empire (FootOFFLockup : le même que sur l'écran de chargement), à la taille de l'écran titre */
+.ts-mark { gap: 24px; animation: ts-rise 1s var(--ease) both; }
 @keyframes ts-rise { from { opacity: 0; transform: translateY(22px); } }
-.ts-mono { height: 88px; width: auto; flex-shrink: 0; filter: drop-shadow(0 8px 24px rgba(0, 0, 0, .5)); }
-.ts-words { display: flex; flex-direction: column; line-height: 1; }
-.ts-foot { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 17px; letter-spacing: .5em; text-transform: uppercase; margin-left: 4px; }
-.ts-foot b { font-weight: 500; color: var(--gold); }
-.ts-empire {
-  font-family: var(--font-title); font-weight: 800; font-size: clamp(64px, 7.4vw, 112px); line-height: .9; letter-spacing: -.045em; text-transform: uppercase; margin-top: 6px;
-  background: linear-gradient(100deg, #b9924c 0%, #dec17f 30%, #fff3d6 45%, #dec17f 60%, #c7a15a 100%) 100% 0 / 250% 100%;
-  -webkit-background-clip: text; background-clip: text; color: transparent; animation: ts-shine 7s ease-in-out 1.2s infinite;
-}
-@keyframes ts-shine { 0%, 62% { background-position: 100% 0; } 88%, 100% { background-position: 0% 0; } }
+.ts-mark .lockup-mark { height: clamp(84px, 7vw, 104px); filter: drop-shadow(0 8px 24px rgba(0, 0, 0, .5)); }
+.ts-mark .lockup-name { font-size: clamp(50px, 4.4vw, 66px); text-shadow: 0 4px 24px rgba(0, 0, 0, .45); }
+.ts-mark .lockup-sub { font-size: clamp(15px, 1.3vw, 19px); margin-top: 12px; }
 .ts-tag { font-size: var(--t-md); color: var(--text-2); animation: fo-fade .8s .5s ease both; }
 .ts-tag em { font-style: normal; color: var(--gold-light); }
 .ts-main { display: flex; flex-direction: column; gap: var(--s-3); }
 .ts-main .cm-item, .ts-main .cm-row { animation-delay: calc(.35s + var(--i, 0) * 60ms); }
 .ts.entered .ts-main .cm-item, .ts.entered .ts-main .cm-row { animation-delay: calc(var(--i, 0) * 40ms); }
-.ts-view-title, .pm-view-title { margin-left: 26px; }
+.ts-view-title, .pz-view-title { margin-left: 26px; }
 .ts-side { position: absolute; right: 48px; bottom: 104px; width: min(380px, 34vw); }
 .ts-bottom { position: absolute; left: 56px; right: 48px; bottom: calc(32px + var(--hb)); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); animation: fo-fade .8s .6s ease both; }
 .ts-legal { font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
@@ -2152,18 +2159,18 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 .stage { transition: filter .45s var(--ease), transform .6s var(--ease); }
 .game.paused .stage { filter: blur(14px) brightness(.62) saturate(1.1); transform: scale(1.04); }
 .game.paused :is(.hud > *, .hud-left > *, .hud-left > .presence > *) { opacity: 0; pointer-events: none; }
-.pm { position: absolute; inset: 0; z-index: 28; color: var(--text); animation: fo-fade .3s ease both; }
-.pm-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5, 5, 6, .86) 0%, rgba(5, 5, 6, .55) 45%, rgba(5, 5, 6, .3) 100%); }
-.pm-col { position: absolute; top: 0; bottom: 0; left: 56px; width: min(480px, 44vw); display: flex; flex-direction: column; justify-content: center; gap: 36px; padding: 88px 0 104px; }
-.pm-head { display: flex; flex-direction: column; gap: var(--s-2); padding-left: 26px; animation: fo-up .4s var(--ease) both; }
-.pm-head h2 { font-family: var(--font-title); font-weight: 800; font-size: clamp(40px, 4.4vw, 60px); line-height: 1; letter-spacing: -.035em; text-transform: uppercase; overflow-wrap: anywhere; }
-.pm-head p { color: var(--text-2); font-size: var(--t-md); }
-.pm-settings { display: flex; flex-direction: column; gap: var(--s-3); }
-.pm-side { position: absolute; right: 48px; top: 50%; width: min(380px, 34vw); transform: translateY(-50%); }
-.pm-bottom { position: absolute; left: 56px; right: 48px; bottom: calc(32px + var(--hb)); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
-.pm-save { display: inline-flex; align-items: center; gap: var(--s-2); font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
-.pm-save svg { width: 16px; height: 16px; color: var(--green); }
-.leaving > .pm { animation: fo-out .2s var(--ease-in) forwards !important; }
+.pz { position: absolute; inset: 0; z-index: 28; color: var(--text); animation: fo-fade .3s ease both; }
+.pz-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5, 5, 6, .86) 0%, rgba(5, 5, 6, .55) 45%, rgba(5, 5, 6, .3) 100%); }
+.pz-col { position: absolute; top: 0; bottom: 0; left: 56px; width: min(480px, 44vw); display: flex; flex-direction: column; justify-content: center; gap: 36px; padding: 88px 0 104px; }
+.pz-head { display: flex; flex-direction: column; gap: var(--s-2); padding-left: 26px; animation: fo-up .4s var(--ease) both; }
+.pz-head h2 { font-family: var(--font-title); font-weight: 800; font-size: clamp(40px, 4.4vw, 60px); line-height: 1; letter-spacing: -.035em; text-transform: uppercase; overflow-wrap: anywhere; }
+.pz-head p { color: var(--text-2); font-size: var(--t-md); }
+.pz-settings { display: flex; flex-direction: column; gap: var(--s-3); }
+.pz-side { position: absolute; right: 48px; top: 50%; width: min(380px, 34vw); transform: translateY(-50%); }
+.pz-bottom { position: absolute; left: 56px; right: 48px; bottom: calc(32px + var(--hb)); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
+.pz-save { display: inline-flex; align-items: center; gap: var(--s-2); font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.pz-save svg { width: 16px; height: 16px; color: var(--green); }
+.leaving > .pz { animation: fo-out .2s var(--ease-in) forwards !important; }
 
 /* entrée en jeu : le HUD arrive pendant que la caméra plonge vers la vue d'ensemble */
 .game.playing .hud { animation: fo-fade .6s .5s ease both; }
@@ -2176,9 +2183,9 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
   .ts-col { left: 0; right: 0; width: auto; padding: 76px 16px calc(44px + var(--hb)); justify-content: space-between; gap: var(--s-4); }
   .ts-head { align-items: center; text-align: center; gap: var(--s-2); }
   .ts-mark { gap: 14px; }
-  .ts-mono { height: 56px; }
-  .ts-foot { font-size: 12px; }
-  .ts-empire { font-size: 58px; }
+  .ts-mark .lockup-mark { height: 62px; }
+  .ts-mark .lockup-name { font-size: 38px; }
+  .ts-mark .lockup-sub { font-size: 13px; margin-top: 8px; }
   .ts-tag { font-size: var(--t-sm); }
   .ts-side { display: none; }
   .ts-bottom { left: 16px; right: 16px; bottom: calc(14px + var(--hb)); justify-content: center; }
@@ -2192,26 +2199,28 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
   .ts-sub h2, .ts-form h2 { font-size: 30px; }
   .ts-input input { font-size: 24px; }
   .ts-actions { flex-direction: column; }
-  .pm-col { left: 0; right: 0; width: auto; padding: 64px 16px calc(56px + var(--hb)); justify-content: flex-end; gap: var(--s-6); }
-  .pm-head h2 { font-size: 36px; }
-  .pm-side { display: none; }
-  .pm-bottom { left: 16px; right: 16px; bottom: calc(16px + var(--hb)); justify-content: center; }
-  .pm-bottom .cm-hints { display: none; }
+  .pz-col { left: 0; right: 0; width: auto; padding: 64px 16px calc(56px + var(--hb)); justify-content: flex-end; gap: var(--s-6); }
+  .pz-head h2 { font-size: 36px; }
+  .pz-side { display: none; }
+  .pz-bottom { left: 16px; right: 16px; bottom: calc(16px + var(--hb)); justify-content: center; }
+  .pz-bottom .cm-hints { display: none; }
 }
 @media (max-height: 760px) and (min-width: 761px) { /* écran d'ordinateur portable : tout un peu plus serré */
-  .ts-col, .pm-col { padding: 80px 0 88px; gap: 28px; }
+  .ts-col, .pz-col { padding: 80px 0 88px; gap: 28px; }
   .cm-row.column { gap: var(--s-2); padding-top: 10px; padding-bottom: 10px; }
-  .ts-mono { height: 72px; }
-  .ts-empire { font-size: clamp(56px, 6.2vw, 92px); }
+  .ts-mark .lockup-mark { height: 80px; }
+  .ts-mark .lockup-name { font-size: clamp(44px, 4vw, 58px); }
   .cm-item { min-height: 58px; }
   .cm-label { font-size: 24px; }
   .cm-row { min-height: 60px; }
   .ts-sub h2, .ts-form h2 { font-size: 34px; }
 }
 @media (max-height: 560px) and (min-width: 761px) { /* PC peu haut, téléphone à l'horizontale */
-  .ts-col, .pm-col { padding: 64px 0 72px; gap: 20px; }
-  .ts-mono { height: 56px; }
-  .ts-empire { font-size: 56px; }
+  .ts-col, .pz-col { padding: 64px 0 72px; gap: 20px; }
+  .ts-mark { gap: 16px; }
+  .ts-mark .lockup-mark { height: 60px; }
+  .ts-mark .lockup-name { font-size: 40px; }
+  .ts-mark .lockup-sub { font-size: 13px; margin-top: 8px; }
   .ts-tag { display: none; }
   .cm-item { min-height: 48px; }
   .cm-label { font-size: 20px; }

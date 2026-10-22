@@ -123,16 +123,6 @@ function PadGlyph({ k }) {
   return <i className={`cm-pad ${k}`}>{k === 'select' ? 'A' : 'B'}</i>;
 }
 
-// Horloge discrète, comme sur une console.
-export function Clock() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 15000);
-    return () => clearInterval(t);
-  }, []);
-  return <time className="cm-clock">{now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</time>;
-}
-
 // Taille réelle de l'image 3D : la toile couvre la fenêtre, un pixel calculé par pixel physique de l'écran (Empire3D).
 function useScreenPixels() {
   const read = () => { const k = window.devicePixelRatio || 1; return [Math.floor(window.innerWidth * k), Math.floor(window.innerHeight * k)]; };
