@@ -27,9 +27,9 @@ export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMat
           <span className="eyebrow">Pause</span>
           <div className="pz-club">
             <ClubCrest crest={state.crest} name={state.clubName} className="pz-crest" />
-            <h2>{state.clubName}</h2>
+            <h2 className={state.clubName.length > 16 ? 'long' : ''}>{state.clubName}</h2>
           </div>
-          <p>{div.name} · Saison {state.seasonNumber} · journée {Math.min(state.round, total)}/{total}</p>
+          <p>{div.name} · Saison {state.seasonNumber} · {state.round ? `journée ${Math.min(state.round, total)}/${total}` : 'avant la 1re journée'}</p>
         </header>
         {view === 'menu' ? (
           <MenuList items={items} menu={menu} label="Menu pause" />

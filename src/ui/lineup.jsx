@@ -161,8 +161,8 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
   const chosen = playerOf(sel) || ghost?.p || null;
   const left = original ? maxIn - entering(lineup) : null;
   const hint = sel
-    ? `${playerOf(sel)?.name} : touche un poste ou un joueur pour l’y placer`
-    : 'Glisse un joueur sur un poste, ou touches-en deux pour les échanger';
+    ? `${playerOf(sel)?.name} : choisis un poste ou un joueur pour l’y placer`
+    : 'Glisse un joueur sur un poste, ou choisis-en deux pour les échanger';
 
   return (
     <div className={`lu ${ghost ? 'dragging' : ''}`} ref={root}>

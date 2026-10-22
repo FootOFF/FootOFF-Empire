@@ -104,11 +104,11 @@ function Records({ state }) {
     r.best.clean && ['Plus longue série sans encaisser', plural(r.best.clean.n, 'match'), span(r.best.clean)],
     r.crowd && ['Record d’affluence', `${fmtNum(r.crowd.attendance)} spectateurs`, matchCtx(r.crowd)],
     r.gate && ['Recette record', fmtMoney(r.gate.revenue), matchCtx(r.gate)],
-    bestSeason?.goals > 0 && ['Meilleur buteur sur une saison', plural(bestSeason.goals, 'but'), `${bestSeason.name} · saison ${bestSeason.season}`],
+    bestSeason?.goals > 0 && ['Meilleur buteur sur une saison', plural(bestSeason.goals, 'but'), `${bestSeason.name} · Saison ${bestSeason.season}`],
     scorer?.totals.goals > 0 && ['Meilleur buteur de l’histoire', plural(scorer.totals.goals, 'but'), scorer.p.name],
     loyal?.totals.apps > 0 && ['Le plus capé', plural(loyal.totals.apps, 'match'), loyal.p.name],
-    sale && ['Plus grosse vente', fmtMoney(sale.fee), `${sale.name}${sale.club ? ` · vers ${sale.club}` : ''} · saison ${sale.left}`],
-    r.bestBuy && ['Plus gros achat', fmtMoney(r.bestBuy.fee), `${r.bestBuy.name} · saison ${r.bestBuy.season}`],
+    sale && ['Plus grosse vente', fmtMoney(sale.fee), `${sale.name}${sale.club ? ` · vers ${sale.club}` : ''} · Saison ${sale.left}`],
+    r.bestBuy && ['Plus gros achat', fmtMoney(r.bestBuy.fee), `${r.bestBuy.name} · Saison ${r.bestBuy.season}`],
   ].filter(Boolean);
   return (
     <>

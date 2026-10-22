@@ -88,7 +88,7 @@ function ClubTab({ state, matches, season, onOpen, onCareer }) {
             <Stat label="Matchs" value={t.played} sub={`${t.win} V · ${t.draw} N · ${t.loss} D`} />
             <Stat label="Buts" value={`${t.gf} – ${t.ga}`} sub={`diff. ${t.gf - t.ga > 0 ? '+' : ''}${t.gf - t.ga}`} />
             <Stat label="Possession" value={`${Math.round(t.poss / withStats)} %`} sub="en moyenne" />
-            <Stat label="Clean sheets" value={t.clean} sub={plural(t.clean, 'match sans but', 'matchs sans but')} />
+            <Stat label="Cages inviolées" value={t.clean} sub={plural(t.clean, 'match sans encaisser', 'matchs sans encaisser')} />
             <Stat label="Tirs par match" value={fmtRating(t.shots / withStats)} sub={`${fmtRating(t.shotsA / withStats)} concédés`} />
             <Stat label="Précision" value={`${pct(t.onT, t.shots)} %`} sub="tirs cadrés" />
             <Stat label="Efficacité" value={`${pct(t.gf, t.shots)} %`} sub="tirs transformés" />
@@ -168,7 +168,7 @@ function Legends({ state, matches, onCareer }) {
     star?.totals.motm ? ['Le plus d’hommes du match', name(star), `${star.totals.motm} fois`, star.id] : null,
     rated ? ['Meilleure note moyenne (10 matchs min.)', name(rated), `${fmtRating(rated.totals.avg)} / 10`, rated.id] : null,
     keeper?.totals.clean ? ['Le plus de matchs sans encaisser', name(keeper), plural(keeper.totals.clean, 'match', 'matchs'), keeper.id] : null,
-    bestSeason ? ['Record de buts sur une saison', `${name(bestSeason.c)} · saison ${bestSeason.h.season}`, plural(bestSeason.h.goals, 'but', 'buts'), bestSeason.c.id] : null,
+    bestSeason ? ['Record de buts sur une saison', `${name(bestSeason.c)} · Saison ${bestSeason.h.season}`, plural(bestSeason.h.goals, 'but', 'buts'), bestSeason.c.id] : null,
     bestGame ? ['Record de buts sur un match', `${bestGame.r.name} · contre ${bestGame.m.opp}`, plural(bestGame.r.goals, 'but', 'buts'), bestGame.r.id] : null,
   ].filter(Boolean);
   return (
@@ -286,7 +286,7 @@ function PlayersTab({ state, onCareer }) {
           );
         })}
       </div>
-      <p className="st-muted">{season ? 'Joueurs actuellement au club.' : 'Tous les joueurs passés par le club, anciens compris.'} Touche un joueur pour ouvrir sa carrière.</p>
+      <p className="st-muted">{season ? 'Joueurs actuellement au club.' : 'Tous les joueurs passés par le club, anciens compris.'} Choisis un joueur pour ouvrir sa carrière.</p>
     </>
   );
 }
@@ -409,7 +409,7 @@ function MatchPlayers({ m, clubName, onCareer }) {
             </tbody>
           </table>
         </div>
-        <p className="sp-note">En or : l’homme du match. Les tirs entre parenthèses sont ceux cadrés. Touche un joueur pour ouvrir sa carrière.</p>
+        <p className="sp-note">En or : l’homme du match. Les tirs entre parenthèses sont ceux cadrés. Choisis un joueur pour ouvrir sa carrière.</p>
       </section>
       <section className="sh-sec">
         <span className="sh-cap">{m.opp}</span>
@@ -553,7 +553,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
         </header>
 
         <section className="sp-card">
-          <span className="sp-meta">{m.label || `Journée ${m.round}`} · {m.comp === 'c1' ? 'Europe' : m.division} · saison {m.season}</span>
+          <span className="sp-meta">{m.label || `Journée ${m.round}`} · {m.comp === 'c1' ? 'Europe' : m.division} · Saison {m.season}</span>
           <div className="sp-grid">
             <div className="sp-team"><ClubCrest crest={state.crest} name={state.clubName} className="sp-crest" />{state.clubName}</div>
             <div className={`sp-score ${o}`}>{m.gf}<i>–</i>{m.ga}</div>

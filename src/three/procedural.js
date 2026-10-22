@@ -386,24 +386,6 @@ export function buildingMesh(key, lvl) {
   return (BUILDERS[key] || trainingMesh)(Math.max(1, lvl));
 }
 
-// Parcelle verrouillée : terrain vague clôturé.
-export function wastelandMesh() {
-  const g = new THREE.Group();
-  const dirt = mesh(box(S, 0.08, S), M.dirt(), 0, 0.04, 0);
-  dirt.castShadow = false; g.add(dirt);
-  const s = S / 2 - 0.1;
-  for (const [x, z] of [[-s, -s], [s, -s], [-s, s], [s, s], [0, -s], [0, s], [-s, 0], [s, 0]]) {
-    g.add(mesh(box(0.08, 0.45, 0.08), M.wood(), x, 0.225, z));
-  }
-  g.add(mesh(box(s * 2, 0.05, 0.05), M.wood(), 0, 0.32, -s));
-  g.add(mesh(box(s * 2, 0.05, 0.05), M.wood(), 0, 0.32, s));
-  g.add(mesh(box(0.05, 0.05, s * 2), M.wood(), -s, 0.32, 0));
-  g.add(mesh(box(0.05, 0.05, s * 2), M.wood(), s, 0.32, 0));
-  g.add(mesh(box(0.06, 0.7, 0.06), M.wood(), 0, 0.35, s));
-  g.add(mesh(box(0.8, 0.4, 0.04), M.gold(), 0, 0.75, s));
-  return g;
-}
-
 // Parcelle ouverte et vide : dalle prête à bâtir.
 export function padMesh() {
   const g = new THREE.Group();

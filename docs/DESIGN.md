@@ -32,7 +32,20 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 - Peu de cadres : un cadre pour un vrai bloc, de simples filets fins ailleurs (fiche joueur, comparateur).
 - Capitales espacées (Geist Mono) réservées aux titres de section et sur-titres ; les petits libellés (tuiles,
   statistiques, lignes de confirmation, puces de filtre) sont en texte normal discret.
-- Libellés sur une seule ligne, pour que les chiffres d'une même rangée tombent au même niveau.
+- Dans une rangée de cases, les montants tombent au même niveau : libellés courts, et valeurs calées en bas de la
+  case quand un libellé passe sur deux lignes (bilan de saison) ; une dernière rangée incomplète se centre, avec des
+  cases de même largeur que les autres.
+- Un score posé entre deux écussons se centre sur eux : c'est l'encre des chiffres qui compte, pas la boîte de ligne
+  (après-match : même retrait et même hauteur que les écussons, chiffres descendus de 2 % de leur taille).
+- Un nom trop long passe sur deux lignes équilibrées (`text-wrap: balance`), jamais coupé par « … » : carte du
+  prochain match, tableau d'affichage, calendrier, dernier match, mercato, menu pause ; la barre du téléphone le
+  passe en plus petit sur deux lignes s'il ne tient pas.
+- Des tableaux qui se suivent partagent leur grille : gardiens et joueurs de champ de l'Effectif ont les mêmes
+  colonnes (cases vides pour les caractéristiques que les gardiens n'ont pas).
+- Un repère ne se sépare pas de son numéro (Saison 3, journée 2, niveau 4), ni une unité de son nombre, et un
+  séparateur « · » termine une ligne sans jamais ouvrir la suivante (`src/ui/typography.js`) ; « 53 % » toujours
+  avec son espace fine.
+- Consignes neutres, valables à la souris, au doigt et à la manette : « Choisis un joueur… » plutôt que « Touche… ».
 - Une seule façon d'afficher chaque échelle : niveau sur 20 en grand chiffre (doré s'il est fort pour la
   division), note de match sur 10 en pastille (vert, neutre, rouge). Une légende dès qu'une couleur a un sens.
 - Classes tirées des données du jeu toujours préfixées (`ev-side-home`, `ev-out-post`…) : un nom nu peut tomber
@@ -180,7 +193,8 @@ Façon jeu de console : un seul chargement au démarrage, puis l'écran titre de
   est dessinée derrière l'écran de chargement : chaque modèle compile ses matériaux dès son arrivée (tout
   compiler à la fin prenait 8 s au lieu de 3,5). Onglet en arrière-plan : une minuterie termine le chargement.
 - Écran titre (`src/ui/title.jsx`) : la caméra tourne lentement autour du complexe (`attract` d'Empire3D, le
-  complexe décalé hors du menu). Logo FootOFF Empire (monogramme, FootOFF, « Empire » en sous-titre espacé, comme
+  complexe décalé hors du menu), sur téléphone comme sur PC. La page elle-même ne se zoome pas au doigt
+  (`index.html`, `main.jsx`) ; seule la caméra 3D du jeu garde son zoom. Logo FootOFF Empire (monogramme, FootOFF, « Empire » en sous-titre espacé, comme
   sur l'écran de chargement), sans horloge ; menu Continuer, Nouvelle partie, Réglages, FootOFF Media ;
   à droite (PC) la carte de l'entrée active (classement, points, journée, forme, prochain match, trésorerie).
   Avant la création du club, la scène montre le complexe de départ. Sous-écrans avec leur propre en-tête :
@@ -254,7 +268,9 @@ choisi affiche sur chaque poste le niveau qu'il y aurait (vert s'il y ferait mie
 gain et dit quand le onze est déjà optimal. À la mi-temps, la composition est repliée : une carte « Composition et
 changements » (formation, changements prévus et restants) la déploie, un lien « Replier » la referme ; repliée,
 rien d'autre de la composition n'est à l'écran (la carte résume les changements). Notes de la première période en
-pastille, jusqu'à cinq entrants (`SUBS_MAX`, `live.applyLineup`), expulsés figés, résumé des changements visible
+petite pastille collée au coin du cercle (gardien placé à 90 % de la hauteur, joueurs de champ remontés : aucune
+pastille ne mord sur un nom, vérifié sur les six dispositifs, PC et téléphone) ; « Reprendre la seconde période »
+reste collé au bas de la carte quand la composition dépliée la fait défiler. Jusqu'à cinq entrants (`SUBS_MAX`, `live.applyLineup`), expulsés figés, résumé des changements visible
 une fois la composition dépliée, pronostic recalculé.
 
 Avant-match (`PreMatch`, `src/ui/match.jsx`), même principe : sous l'affiche, des pastilles (niveau contre niveau,

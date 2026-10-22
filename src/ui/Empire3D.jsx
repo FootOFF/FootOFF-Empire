@@ -23,7 +23,7 @@ import { createCrowd } from '../three/crowd';
 import { HOME_KIT, kitOf } from '../game/kits';
 import { autoWeather, createWeather } from '../three/weather';
 import {
-  buildingMesh, padMesh, setProceduralNight, stadiumMesh, wastelandMesh,
+  buildingMesh, padMesh, setProceduralNight, stadiumMesh,
 } from '../three/procedural';
 
 function webglAvailable() {
@@ -102,21 +102,22 @@ function freeRegion(mount) {
 }
 const FRAME_ELEV = 0.5; // ~30° au-dessus de l'horizon
 const FRAME_DIR = new THREE.Vector3(HOME_DIR.x, 0, HOME_DIR.z).normalize().multiplyScalar(Math.cos(FRAME_ELEV)).setY(Math.sin(FRAME_ELEV));
-// Distance qui fait tenir des points dans une zone de l'écran (décalage de vue : la zone n'est pas forcément au
-// centre), vus depuis `dir`.
-function fitView(camera, points, center, region, dir) {
+function frameView(camera, box, region) {
   const { W, H } = region;
   const cam = camera.clone();
   const shift = { x: W / 2 - (region.left + region.right) / 2, y: H / 2 - (region.top + region.bottom) / 2 };
   cam.aspect = W / H;
   cam.setViewOffset(W, H, shift.x, shift.y, W, H);
+  const center = box.getCenter(new THREE.Vector3());
+  const corners = [];
+  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) corners.push(new THREE.Vector3(x, y, z));
   const v = new THREE.Vector3();
   const fits = (d) => {
-    cam.position.copy(center).addScaledVector(dir, d);
+    cam.position.copy(center).addScaledVector(FRAME_DIR, d);
     cam.lookAt(center);
     cam.updateMatrixWorld();
     cam.updateProjectionMatrix();
-    return points.every((p) => {
+    return corners.every((p) => {
       v.copy(p).project(cam);
       const sx = (v.x * 0.5 + 0.5) * W;
       const sy = (-v.y * 0.5 + 0.5) * H;
@@ -124,30 +125,9 @@ function fitView(camera, points, center, region, dir) {
     });
   };
   let lo = 2;
-  let hi = 260;
-  for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (fits(m)) hi = m; else lo = m; }
-  return { pos: center.clone().addScaledVector(dir, hi), target: center.clone(), dist: hi, shift };
-}
-function frameView(camera, box, region) {
-  const corners = [];
-  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) corners.push(new THREE.Vector3(x, y, z));
-  return fitView(camera, corners, box.getCenter(new THREE.Vector3()), region, FRAME_DIR);
-}
-
-// Écran titre sur téléphone : la bande libre entre le logo et le menu, où le complexe entier doit tenir.
-const FIT_CENTER = new THREE.Box3().setFromPoints(FIT_POINTS).getCenter(new THREE.Vector3());
-function titleRegion(mount) {
-  const r = mount.getBoundingClientRect();
-  const W = r.width;
-  const H = r.height;
-  let top = H * 0.24;
-  let bottom = H * 0.6;
-  const head = document.querySelector('.ts-head');
-  const menu = document.querySelector('.ts-main');
-  if (head && head.offsetHeight) top = head.getBoundingClientRect().bottom - r.top;
-  if (menu && menu.offsetHeight) bottom = menu.getBoundingClientRect().top - r.top;
-  const pad = 14;
-  return { left: pad, right: W - pad, top: top + pad, bottom: Math.max(top + pad + 140, bottom - pad), W, H };
+  let hi = 160;
+  for (let i = 0; i < 22; i++) { const m = (lo + hi) / 2; if (fits(m)) hi = m; else lo = m; }
+  return { pos: center.clone().addScaledVector(FRAME_DIR, hi), target: center, dist: hi, shift };
 }
 
 const MATCH_VIEW = { pos: new THREE.Vector3(11, 8.5, 14), target: new THREE.Vector3(0, 0.4, -0.5) };
@@ -159,16 +139,14 @@ const MATCH_VIEW_ARENA = { pos: new THREE.Vector3(10.5, 11.2, 13.4), target: new
 const TV_VIEW_ARENA = { pos: new THREE.Vector3(0, 6.3, 10.2), target: new THREE.Vector3(0, 0, 0.8) };
 
 // Ce qu'une parcelle doit afficher : la scène n'est reconstruite que si cette signature change.
-function plotSpec(s, plotId, sectorId) {
+function plotSpec(s, plotId) {
   const key = plotBuilding(s, plotId);
-  const unlocked = s.reputation >= SECTORS.find((x) => x.id === sectorId).repNeeded;
   if (key) return { kind: 'building', key, lvl: s.buildings[key], sig: `${key}:${s.buildings[key]}` };
-  return unlocked ? { kind: 'pad', sig: 'pad' } : { kind: 'waste', sig: 'waste' };
+  return { kind: 'pad', sig: 'pad' }; // toutes les parcelles sont ouvertes (map.js)
 }
 
 function proceduralFor(spec) {
   if (spec.kind === 'pad') return padMesh();
-  if (spec.kind === 'waste') return wastelandMesh();
   return spec.key === 'terrain' ? stadiumMesh(spec.lvl) : buildingMesh(spec.key, spec.lvl);
 }
 
@@ -177,9 +155,6 @@ function plotInfo(s, plotId) {
   const plot = PLOTS.find((p) => p.id === plotId);
   const sec = SECTORS.find((x) => x.id === plot.sector);
   const key = plotBuilding(s, plotId);
-  if (s.reputation < sec.repNeeded) {
-    return { eyebrow: sec.short || sec.name, title: 'Secteur verrouillé', detail: `Réputation ${sec.repNeeded} requise`, locked: true };
-  }
   if (!key) return { eyebrow: `${sec.short} · ${PLOT_LABELS[plotId]}`, title: 'Parcelle libre', detail: 'Cliquer pour construire' };
   const b = BUILDINGS[key];
   const lvl = s.buildings[key];
@@ -355,7 +330,7 @@ export default function Empire3D({
     ctx.sync = (s, animate) => {
       for (const p of PLOTS) {
         const entry = ctx.plots.get(p.id);
-        const spec = plotSpec(s, p.id, p.sector);
+        const spec = plotSpec(s, p.id);
         if (entry.sig === spec.sig) continue;
         const isUpdate = animate && entry.sig !== null;
         entry.sig = spec.sig;
@@ -363,7 +338,7 @@ export default function Empire3D({
         const proc = proceduralFor(spec);
         const model = spec.kind === 'building'
           ? resolveModel(spec.key, spec.lvl)
-          : resolveProp(spec.kind === 'pad' ? 'plot_empty' : 'plot_locked');
+          : resolveProp('plot_empty');
         let anim = null;
         if (isUpdate) {
           entry.anim?.finish();
@@ -764,20 +739,7 @@ export default function Empire3D({
     // Écran titre : la caméra tourne lentement autour du complexe (un tour en un peu plus de deux minutes), un peu
     // plus près et plus bas que la vue d'ensemble. Elle part de là où elle est (pas de saut) et rejoint l'orbite en
     // douceur ; au retour au jeu, elle glisse vers la vue d'ensemble.
-    // Sur téléphone, pas d'orbite : une vue fixe, du même angle que la vue d'ensemble, reculée juste assez pour que
-    // tout le complexe tienne entre le logo et le menu (en tournant, des parcelles sortaient de l'écran en portrait).
-    // Zone remesurée deux fois par seconde : le cadrage suit l'arrivée de l'écran titre, les réglages, la création.
-    const titleStep = (dt) => {
-      if (!ctx.titleView || time - ctx.titleViewAt > 0.5) {
-        ctx.titleView = fitView(camera, FIT_POINTS, FIT_CENTER, titleRegion(mount), HOME_DIR);
-        ctx.titleViewAt = time;
-      }
-      const k = Math.min(1, dt * 2.2);
-      camera.position.lerp(ctx.titleView.pos, k);
-      controls.target.lerp(ctx.titleView.target, k);
-    };
     const orbitStep = (dt) => {
-      if (mount.clientWidth <= 760) { titleStep(dt); return; }
       const t = controls.target;
       let o = ctx.orbit;
       if (!o) {
@@ -879,7 +841,7 @@ export default function Empire3D({
       const sheet = ctx.sheetOpen && ctx.frameShift && !modeRef.current.live;
       const attract = modeRef.current.attract;
       const wantX = attract ? (narrow ? 0 : -W * 0.15) : modeRef.current.live && !narrow ? 188 : sheet ? ctx.frameShift.x : 0;
-      const wantY = attract ? (narrow ? (ctx.titleView?.shift.y ?? H * 0.14) : 0) : modeRef.current.live && narrow ? H * 0.18 : sheet ? ctx.frameShift.y : 0;
+      const wantY = attract ? (narrow ? H * 0.14 : 0) : modeRef.current.live && narrow ? H * 0.18 : sheet ? ctx.frameShift.y : 0;
       viewShift.x += (wantX - viewShift.x) * Math.min(1, dt * 2.6);
       viewShift.y += (wantY - viewShift.y) * Math.min(1, dt * 2.6);
       if (Math.abs(viewShift.x) + Math.abs(viewShift.y) > 0.5) camera.setViewOffset(W, H, viewShift.x, viewShift.y, W, H);
@@ -959,7 +921,6 @@ export default function Empire3D({
     if (!ctx || !ready) return;
     ctx.controls.enabled = !attract;
     ctx.orbit = null;
-    ctx.titleView = null;
     if (attract) ctx.camTween = null;
     else ctx.tweenCamera(ctx.home, 2.2);
   }, [attract, ready]);
@@ -1035,7 +996,7 @@ export default function Empire3D({
         </button>
       ))}
       {info && (
-        <div className={`plotlabel ${info.locked ? 'locked' : ''}`} ref={labelRef}>
+        <div className="plotlabel" ref={labelRef}>
           <span className="pl-eyebrow">{info.eyebrow}</span>
           <span className="pl-title">{info.title}{info.level && <em>{info.level}</em>}</span>
           <span className="pl-detail">{info.detail}</span>

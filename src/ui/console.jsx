@@ -231,7 +231,7 @@ export function ClubCard({ state, eyebrow, objective = false, head = true }) {
         ) : (
           <div><dt>Prochain match</dt><dd>Saison terminée, place au bilan</dd></div>
         )}
-        {goal && <div className="stack"><dt>Objectif de saison</dt><dd>{goal.active.name}</dd></div>}
+        {goal && <div className="stack"><dt>Objectif de saison{!state.goals.completed[goal.tier] && goal.active.done(state) ? ' · atteint, prime au bilan' : ''}</dt><dd>{goal.active.name}</dd></div>}
         <div><dt>Trésorerie</dt><dd className={state.money < 0 ? 'neg' : ''}>{fmtMoney(state.money)}</dd></div>
       </dl>
     </section>

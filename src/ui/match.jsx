@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { TACTICS, TACTIC_ORDER, expectedGoals, formationOf, lineupRating, reshapeLineup } from '../game/tactics';
+import { TACTICS, TACTIC_ORDER, formationOf, lineupRating, reshapeLineup } from '../game/tactics';
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
-import { SUBS_MAX, createLiveMatch, pairSubs, prematchOdds } from '../game/live';
+import { SUBS_MAX, createLiveMatch, pairSubs, prematchOdds, prematchXg } from '../game/live';
 import { BestEleven, FormationPicker, LineupBoard, displayNames } from './lineup';
 import { IconChevron, IconClose, IconMute, IconPlay, IconSound, IconUsers } from './icons';
 import { IconBall, IconSwap, IconWhistle } from './kit';
@@ -68,7 +68,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const [formation, setFormation] = useState(formationOf(state.formation).id);
   const [board, setBoard] = useState(() => !narrowScreen()); // composition dépliée sur PC, repliée sur téléphone
   const rating = lineupRating(state.players, lineup, formation);
-  const xg = expectedGoals(rating, ctx.opp.strength, tactic, formation);
+  const xg = prematchXg(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength }); // même moteur que le pronostic
   const odds = prematchOdds(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength }); // calculé sur le moteur
   const reshape = (f) => { setFormation(f); setLineup(reshapeLineup(state.players, lineup, f)); };
   const form = formationOf(formation);
@@ -82,8 +82,8 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           <span className={`eyebrow hm-comp-${ctx.comp || 'league'}`}>{ctx.label || `Journée ${state.round + 1} / 7`} · à domicile</span>
           <h2 className="ms-versus">
             <span className="ms-side"><ClubCrest crest={state.crest} name={state.clubName} className="ms-crest" />{state.clubName}</span>
-            <em>vs</em>
-            <span className="ms-side"><Crest name={ctx.opp.name} className="ms-crest" />{ctx.opp.name}</span>
+            {/* « vs » reste avec l'adversaire : sur une ligne étroite, il passe à la ligne avec lui */}
+            <span className="ms-side"><em>vs</em><Crest name={ctx.opp.name} className="ms-crest" />{ctx.opp.name}</span>
           </h2>
           <div className="pm-facts">
             <span>Niveau <b>{fmtRating(rating)}</b> contre <b>{fmtRating(ctx.opp.strength)}</b></span>
@@ -359,8 +359,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
         <div className="feed-head">
           <span className="eyebrow">En direct</span>
           <div className="feed-stats">
-            <span>Possession <b>{m.stats.possession}%</b></span>
-            <span>Tirs <b>{shown.filter((e) => (e.type === 'chance' || e.type === 'goal') && e.side === 'home').length}–{shown.filter((e) => (e.type === 'chance' || e.type === 'goal') && e.side === 'away').length}</b></span>
+            <span>Possession <b>{m.stats.possession} %</b></span>
+            <span>Tirs <b>{shown.filter((e) => (e.type === 'chance' || e.type === 'goal') && e.side === 'home').length} – {shown.filter((e) => (e.type === 'chance' || e.type === 'goal') && e.side === 'away').length}</b></span>
           </div>
         </div>
         <ol className="feed-list">{shown.map((e) => <EventRow key={keyOf(e)} e={e} />)}</ol>
@@ -388,7 +388,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
           <div className="ht-col">
             <span className="eyebrow">Mi-temps · tes consignes</span>
             <div className="ht-stats">
-              <span>Possession <b>{m.stats.possession}%</b></span>
+              <span>Possession <b>{m.stats.possession} %</b></span>
               <span>Tirs <b>{m.stats.shots[0]} – {m.stats.shots[1]}</b></span>
               <span>Cadrés <b>{m.stats.onTarget[0]} – {m.stats.onTarget[1]}</b></span>
             </div>

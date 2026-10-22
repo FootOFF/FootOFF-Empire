@@ -40,6 +40,7 @@ export function Notifications({ current, done, onAction, sound }) {
   const [paused, setPaused] = useState(false);
   const left = useRef(0); // temps d'affichage restant (ms)
   const drag = useRef(null);
+  const swiped = useRef(false); // chassé d'un geste vers le haut : le clic qui suit n'ouvre rien
 
   // un nouveau bandeau entre après la sortie du précédent et une courte respiration
   useEffect(() => {
@@ -76,7 +77,11 @@ export function Notifications({ current, done, onAction, sound }) {
 
   if (!shown) return <div className="nt-lane" aria-live="polite" />;
   const K = KINDS[shown.kind] || KINDS.info;
-  const go = () => { if (shown.action) onAction?.(shown.action); leave(); };
+  const go = () => {
+    if (swiped.current) { swiped.current = false; return; }
+    if (shown.action) onAction?.(shown.action);
+    leave();
+  };
   return (
     <div className="nt-lane" aria-live="polite">
       <button
@@ -86,8 +91,8 @@ export function Notifications({ current, done, onAction, sound }) {
         onClick={go}
         onPointerEnter={(e) => { if (e.pointerType === 'mouse') setPaused(true); }}
         onPointerLeave={(e) => { if (e.pointerType === 'mouse') setPaused(false); }}
-        onPointerDown={(e) => { drag.current = e.clientY; if (e.pointerType !== 'mouse') setPaused(true); }}
-        onPointerMove={(e) => { if (drag.current !== null && e.clientY - drag.current < -24) { drag.current = null; leave(); } }}
+        onPointerDown={(e) => { drag.current = e.clientY; swiped.current = false; if (e.pointerType !== 'mouse') setPaused(true); }}
+        onPointerMove={(e) => { if (drag.current !== null && e.clientY - drag.current < -24) { drag.current = null; swiped.current = true; leave(); } }}
         onPointerUp={(e) => { drag.current = null; if (e.pointerType !== 'mouse') setPaused(false); }}
         onPointerCancel={() => { drag.current = null; setPaused(false); }}
       >

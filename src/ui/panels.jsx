@@ -75,17 +75,21 @@ export function SeasonPanel({ state, onClose, initialTab = 'calendar', onOpenMat
   const pos = standings.findIndex((t) => t.i === 0) + 1;
   const me = standings[pos - 1];
   let goal;
-  const gap = (n) => `${n} pt${n > 1 ? 's' : ''}`;
-  if (promo && pos > 2) goal = `${gap(standings[1].pts - me.pts)} de la montée`;
+  // écart avec le 2e : « 2 pts de la montée », ou l'égalité de points (départagés à la différence de buts)
+  const behind = (what) => {
+    const n = standings[1].pts - me.pts;
+    return n > 0 ? `${n} pt${n > 1 ? 's' : ''} ${what}` : 'À égalité de points avec le 2e';
+  };
+  if (promo && pos > 2) goal = behind('de la montée');
   else if (promo) goal = 'En zone de montée';
-  else goal = pos === 1 ? 'En tête de l’Elite' : pos === 2 ? 'Place européenne' : `${gap(standings[1].pts - me.pts)} de l’Europe`;
+  else goal = pos === 1 ? 'En tête de l’Elite' : pos === 2 ? 'Place européenne' : behind('de l’Europe');
   if (rel && pos >= 7) goal = 'En zone de descente';
   const motm = lm?.players?.length ? [...lm.players].sort((a, b) => b.rating - a.rating)[0] : null;
 
   return (
     <Panel
       title={div.name}
-      eyebrow={`Saison ${state.seasonNumber} · journée ${Math.min(state.round, 7)} / 7`}
+      eyebrow={`Saison ${state.seasonNumber} · ${state.round ? `journée ${Math.min(state.round, 7)} / 7` : 'avant la 1re journée'}`}
       onClose={onClose}
       toolbar={(
         <>
@@ -93,7 +97,8 @@ export function SeasonPanel({ state, onClose, initialTab = 'calendar', onOpenMat
           <Stat label="Position" value={ordinal(pos)} sub="sur 8" tone={pos <= 2 ? 'up' : rel && pos >= 7 ? 'down' : ''} />
           <Stat label="Points" value={me.pts} sub={`${me.played} match${me.played > 1 ? 's' : ''}`} />
           <Stat label="Diff." value={`${me.gd > 0 ? '+' : ''}${me.gd}`} />
-          <Stat label="Objectif" value={promo ? 'Top 2' : 'Europe'} sub={goal} />
+          {/* « Ambition » : la place visée au classement (l'« objectif de saison » du HUD est celui des primes de palier) */}
+          <Stat label="Ambition" value={promo ? 'Top 2' : 'Europe'} sub={goal} />
           </div>
           <Tabs className="sq-tabs season-tabs" items={[['calendar', 'Calendrier'], ['table', 'Classement']]} value={tab} onChange={setTab} label="Saison" />
         </>
@@ -269,7 +274,7 @@ export function JournalPanel({ state, onClose }) {
   return (
     <Panel
       title="Le journal du club"
-      eyebrow={`FootOFF Media · saison ${state.seasonNumber}`}
+      eyebrow={`FootOFF Media · Saison ${state.seasonNumber}`}
       onClose={onClose}
       toolbar={(
         <div className="chips journal-filters">

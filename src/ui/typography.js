@@ -2,7 +2,8 @@
 // clubs saisis) : le code garde des espaces ordinaires, l'écran reçoit les bons caractères.
 // - espace insécable fine avant ; ! ? et insécable avant : (jamais de « ? » seul en début de ligne) ;
 // - insécables à l'intérieur des « guillemets » ;
-// - un nombre ne se sépare pas de son unité : 600 places, 42 000 €, 46 %, 3 pts ;
+// - un nombre ne se sépare pas de son unité : 600 places, 42 000 €, 46 %, 3 pts ; ni un repère de son numéro :
+//   Saison 3, journée 2, niveau 4 ; un séparateur « · » reste en fin de ligne ;
 // - apostrophe typographique (l’Empire) et points de suspension (…).
 
 const NBSP = '\u00a0';
@@ -17,6 +18,10 @@ const RULES = [
   [/ »/g, `${NBSP}»`],
   [/(\d) (%|€|k€|M€)/g, `$1${NNBSP}$2`],
   [new RegExp(String.raw`(\d) (${UNITS})(?!\p{L})`, 'gu'), `$1${NBSP}$2`],
+  // un repère ne se sépare pas de son numéro : Saison 3, journée 2, niveau 4, parcelle 5, N°7
+  [/(^|[^\p{L}])((?:[Ss]aison|[Jj]ourn[ée]e|[Nn]iveau|[Pp]arcelle|N°)) (\d)/gu, `$1$2${NBSP}$3`],
+  // un séparateur « · » termine la ligne, il n'ouvre jamais la suivante
+  [/ · /g, `${NBSP}· `],
   [/(\p{L})'(\p{L})/gu, '$1’$2'],
   [/\.\.\./g, '…'],
 ];

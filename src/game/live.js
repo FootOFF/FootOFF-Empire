@@ -151,6 +151,14 @@ export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formatio
   return outcomeOdds(minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation), 0, durations);
 }
 
+// Buts attendus du match selon le même moteur que le pronostic (traits des tireurs et du gardien, temps
+// additionnel compris) : l'avant-match ne peut plus afficher des buts attendus qui contredisent ses pourcentages.
+const MEAN_MINUTES = [HALF1, HALF2].reduce((t, h) => t + h.reduce((a, b) => a + b, 0) / h.length, 0);
+export function prematchXg(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength }) {
+  const { pH, pA } = minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation);
+  return { for: pH * MEAN_MINUTES, against: pA * MEAN_MINUTES };
+}
+
 // Changements entre deux onzes : chaque entrant face au sortant qu'il remplace (celui de son poste s'il sort,
 // sinon un sortant resté sans remplaçant).
 export function pairSubs(before, next) {

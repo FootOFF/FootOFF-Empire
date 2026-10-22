@@ -273,7 +273,7 @@ function BuyView({ state, run, refLvl, recommended, followed, onOpen, onCompare,
 function WatchView({ state, refLvl, recommended, onOpen, onCompare, onFollow, onOffer, run }) {
   const list = state.shortlist || [];
   if (!list.length) {
-    return <p className="mc-empty"><IconStar /> Touche l’étoile d’une carte pour suivre un joueur : son prix, l’intérêt des autres clubs et son départ éventuel s’afficheront ici.</p>;
+    return <p className="mc-empty"><IconStar /> Suis un joueur avec l’étoile de sa carte : son prix, l’intérêt des autres clubs et son départ éventuel s’afficheront ici.</p>;
   }
   const live = list.map((x) => ({ x, p: findOnMarket(state, x.id) })).filter((e) => e.p);
   const gone = list.filter((x) => !findOnMarket(state, x.id));
@@ -471,7 +471,7 @@ function LogView({ state }) {
               <span className={`mc-way ${x.kind}`}>{x.kind === 'in' ? 'Arrivée' : 'Départ'}</span>
               <span className="mc-row-main">
                 <b>{x.name}</b>
-                <em>{x.pos} · {x.age} ans · {fmtRating(x.rating)} · {x.kind === 'in' ? (x.club ? clubAfter('de ', x.club) : 'joueur libre') : `vers ${withArticle(x.club)}${x.board ? ' (vendu par le conseil)' : ''}`} · saison {x.season}{x.round ? `, après la journée ${x.round}` : ', avant la reprise'}</em>
+                <em>{x.pos} · {x.age} ans · {fmtRating(x.rating)} · {x.kind === 'in' ? (x.club ? clubAfter('de ', x.club) : 'joueur libre') : `vers ${withArticle(x.club)}${x.board ? ' (vendu par le conseil)' : ''}`} · Saison {x.season}{x.round ? `, après la journée ${x.round}` : ', avant la reprise'}</em>
               </span>
               <b className={`mc-fee ${x.kind === 'in' ? 'down' : 'up'}`}>{x.kind === 'in' ? '−' : '+'}{fmtMoney(x.fee)}</b>
             </li>
@@ -525,7 +525,9 @@ export function Negotiation({ state, p, run, refLvl, onClose, onSheet, onLineup 
   const step = stepFor(ask || 1000);
   const lo = roundTo(ask * 0.6, step);
   const hi = roundTo(ask * 1.25, step);
-  const [offer, setOffer] = useState(() => Math.min(ask, Math.max(lo, Math.floor(state.money / step) * step)));
+  // départ : le prix demandé, ou la contre-offre du vendeur si elle est moins chère (signature assurée à ce prix),
+  // dans la limite de la trésorerie
+  const [offer, setOffer] = useState(() => Math.min(ask, p.talks?.counter || ask, Math.max(lo, Math.floor(state.money / step) * step)));
   // réponse du vendeur à la dernière offre faite dans cette fenêtre
   const result = state.lastDeal && state.lastDeal.id === p.id && state.lastDeal.at >= opened ? state.lastDeal : null;
   useEffect(() => { if (result?.result === 'accepted') haptic('build'); }, [result?.at]); // eslint-disable-line react-hooks/exhaustive-deps

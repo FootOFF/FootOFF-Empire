@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useGlass } from './glass';
 import { DIVISIONS } from '../game/constants';
 import { repLevel } from '../game/reputation';
@@ -9,7 +9,7 @@ import { ClubCrest, Crest } from './crest';
 import { AnimatedMoney } from './moneyfx';
 import { fmtRating } from './format';
 import {
-  IconCal, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
+  IconCal, IconCheck, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
   IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow, IconEye, IconStats,
 } from './icons';
 
@@ -18,12 +18,28 @@ import {
 export function TopHud({ state, onMenu, onFinances, onReputation }) {
   const div = DIVISIONS[state.divisionIndex];
   const rl = repLevel(state.reputation); // statut de notoriété et avancée vers le suivant (reputation.js)
+  // Nom du club trop long pour une ligne (barre du téléphone) : classe « long », il passe sur deux lignes un peu
+  // plus petites au lieu d'être coupé. Remesuré quand la barre change de largeur et quand la police arrive.
+  const nameRef = useRef(null);
+  useLayoutEffect(() => {
+    const el = nameRef.current;
+    if (!el) return undefined;
+    const check = () => {
+      el.classList.remove('long');
+      el.classList.toggle('long', el.scrollWidth > el.clientWidth + 1);
+    };
+    check();
+    document.fonts?.ready.then(() => { if (nameRef.current === el) check(); });
+    const ro = new ResizeObserver(check);
+    ro.observe(el.parentElement);
+    return () => ro.disconnect();
+  }, [state.clubName]);
   return (
     <header className="hud-top">
       <div className="hud-club glass">
         <ClubCrest crest={state.crest} name={state.clubName} className="hud-mark" />
         <div className="hud-club-text">
-          <span className="hud-club-name">{state.clubName}</span>
+          <span className="hud-club-name" ref={nameRef}>{state.clubName}</span>
           <span className="hud-club-meta">{div.name}<span className="meta-season"> · Saison {state.seasonNumber}</span></span>
         </div>
       </div>
@@ -50,8 +66,10 @@ export function ObjectiveWidget({ state, collapsed, onToggle }) {
   const g = activeGoal(state);
   const tier = tierOf(state.reputation);
   const done = state.goals.completed.filter(Boolean).length;
+  // atteint en cours de saison (stade comblé, académie au niveau 3) : la prime n'arrive qu'au bilan, on le dit
+  const achieved = !state.goals.completed[g.tier] && g.active.done(state);
   return (
-    <aside className={`hud-goal glass ${collapsed ? 'collapsed' : ''}`}>
+    <aside className={`hud-goal glass ${collapsed ? 'collapsed' : ''} ${achieved ? 'achieved' : ''}`}>
       <button className="hud-goal-head" onClick={onToggle} aria-expanded={!collapsed}>
         <IconTrophy />
         <span className="eyebrow">Objectif de saison</span>
@@ -61,7 +79,7 @@ export function ObjectiveWidget({ state, collapsed, onToggle }) {
         <div className="hud-goal-body">
           <strong>{g.active.name}</strong>
           <p>{typeof g.active.desc === 'function' ? g.active.desc(state) : g.active.desc}</p>
-          <span className="hud-goal-reward">{g.goal.reward.label}</span>
+          <span className="hud-goal-reward">{achieved ? <><IconCheck /> Atteint · {g.goal.reward.label} au bilan de la saison</> : g.goal.reward.label}</span>
         </div>
       )}
     </aside>

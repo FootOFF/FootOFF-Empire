@@ -195,10 +195,10 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
             </div>
             <div className="sq-tables">
               {shown.some((p) => p.pos === 'G') && (
-                <PlayerTable title="Gardiens" cols={GK_ATTRS} players={shown.filter((p) => p.pos === 'G')} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
+                <PlayerTable title="Gardiens" cols={GK_ATTRS} span={ATTRS.length} players={shown.filter((p) => p.pos === 'G')} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
               )}
               {shown.some((p) => p.pos !== 'G') && (
-                <PlayerTable title="Joueurs de champ" cols={ATTRS} players={shown.filter((p) => p.pos !== 'G')} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} showPos />
+                <PlayerTable title="Joueurs de champ" cols={ATTRS} span={ATTRS.length} players={shown.filter((p) => p.pos !== 'G')} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
               )}
             </div>
             <ul className="sq-list">
@@ -227,8 +227,12 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
 }
 
 // --- Tableau d'analyste (PC) ------------------------------------------------------------------------
+// Gardiens et joueurs de champ partagent la même grille (largeurs fixes, styles.css) : les 6 caractéristiques des
+// gardiens sont complétées par des cases vides jusqu'aux 9 des joueurs de champ (span), pour que Poste, Âge,
+// Niveau, Forme et Salaire tombent exactement l'une sous l'autre d'un tableau à l'autre.
 
-function PlayerTable({ title, cols, players, state, refLvl, onOpen, showPos }) {
+function PlayerTable({ title, cols, span = cols.length, players, state, refLvl, onOpen }) {
+  const pad = Array.from({ length: Math.max(0, span - cols.length) }, (_, i) => i);
   const [sort, setSort] = useState({ key: null, dir: -1 });
   const value = (p, key) => {
     if (key === 'lvl') return playerRating(p);
@@ -256,11 +260,12 @@ function PlayerTable({ title, cols, players, state, refLvl, onOpen, showPos }) {
         <thead>
           <tr>
             <th className="c-name">Joueur</th>
-            {showPos && <th>Poste</th>}
-            {th('age', 'Âge')}
+            <th className="c-pos">Poste</th>
+            {th('age', 'Âge', 'c-age')}
             {th('lvl', 'Niveau', 'c-lvl')}
-            {cols.map((c) => th(c.key, c.short, '', c.name))}
-            {th('form', 'Forme')}
+            {cols.map((c) => th(c.key, c.short, 'c-attr', c.name))}
+            {pad.map((i) => <th key={`pad${i}`} className="c-attr c-pad" aria-hidden="true" />)}
+            {th('form', 'Forme', 'c-form')}
             {th('wage', 'Salaire', 'c-wage')}
           </tr>
         </thead>
@@ -282,13 +287,14 @@ function PlayerTable({ title, cols, players, state, refLvl, onOpen, showPos }) {
                     </span>
                   </span>
                 </td>
-                {showPos && <td><span className={`pos-pill ${p.pos}`}>{p.pos}</span></td>}
-                <td>{p.age}</td>
+                <td className="c-pos"><span className={`pos-pill ${p.pos}`}>{p.pos}</span></td>
+                <td className="c-age">{p.age}</td>
                 <td className={`c-lvl ${heat(playerRating(p), refLvl)}`}>{fmtRating(playerRating(p))}</td>
                 {cols.map((c) => {
                   const v = (p.pos === 'G' ? p.g : p.a)[c.key];
                   return <td key={c.key} className={`c-attr ${heat(v, refLvl)}`}>{Math.round(v)}</td>;
                 })}
+                {pad.map((i) => <td key={`pad${i}`} className="c-attr c-pad" aria-hidden="true" />)}
                 <td className="c-form">{f === null ? '–' : fmtRating(f)}</td>
                 <td className="c-wage">{fmtMoney(wageOf(p, state.divisionIndex))}</td>
               </tr>
@@ -335,7 +341,7 @@ function Alumni({ state, onOpen }) {
   }
   return (
     <>
-      <p className="sq-hint">{list.length} {list.length > 1 ? 'anciens joueurs' : 'ancien joueur'}. Touche un nom pour revoir sa carrière au club.</p>
+      <p className="sq-hint">{list.length} {list.length > 1 ? 'anciens joueurs' : 'ancien joueur'}. Choisis un joueur pour revoir sa carrière au club.</p>
       <ul className="sq-list al-list">
         {list.map((a) => {
           const c = careerOf(state, a.id);
@@ -413,7 +419,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
           <div className="sh-id">
             <div className="sh-meta">
               <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
-              <span>{p.num ? `N°${p.num} · ` : ''}{p.age} ans · pied {p.foot}</span>
+              <span>{p.num ? `N°${p.num} · ` : ''}{p.age} ans · {p.foot === 'les deux' ? 'des deux pieds' : `pied ${p.foot}`}</span>
             </div>
             <h3>{p.name}</h3>
             <div className="sh-tags">

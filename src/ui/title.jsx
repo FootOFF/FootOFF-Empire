@@ -76,7 +76,7 @@ function SideCard({ id, state, settings }) {
 function menuItems(state, { onContinue, onNew, onSettings }) {
   const div = state && DIVISIONS[state.divisionIndex];
   return [
-    ...(state ? [{ id: 'continue', label: 'Continuer', sub: `${state.clubName} · ${div.name} · saison ${state.seasonNumber}`, onSelect: onContinue }] : []),
+    ...(state ? [{ id: 'continue', label: 'Continuer', sub: `${state.clubName} · ${div.name} · Saison ${state.seasonNumber}`, onSelect: onContinue }] : []),
     { id: 'new', label: 'Nouvelle partie', sub: state ? 'Fonder un autre club' : 'Fonde ton club et bâtis ton empire', onSelect: onNew },
     { id: 'settings', label: 'Réglages', sub: 'Son, vibrations, qualité graphique', onSelect: onSettings },
     { id: 'media', label: 'FootOFF Media', sub: 'footoff.media', href: 'https://footoff.media' },

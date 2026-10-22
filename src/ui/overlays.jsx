@@ -1,5 +1,6 @@
 import React from 'react';
 import { DIVISIONS } from '../game/constants';
+import { OFFLINE_CAP } from '../game/economy';
 import { FOMonogram } from './brand';
 import { fmtMoney, fmtNum } from './format';
 import { AnimatedMoney } from './moneyfx';
@@ -51,14 +52,24 @@ export function SeasonReview({ state, onClose }) {
   );
 }
 
+// durée d'absence à la française : « 45 min », « 4 h 42 »
+const duration = (h) => {
+  const m = Math.round(h * 60);
+  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${String(m % 60).padStart(2, '0')}` : ''}`;
+};
+
 export function OfflineReturn({ data, onClose }) {
   return (
     <div className="cine">
       <div className="cine-card small">
         <FOMonogram className="cine-mark" />
-        <span className="eyebrow">Pendant votre absence</span>
+        <span className="eyebrow">Pendant ton absence</span>
         <div className="cine-big"><AnimatedMoney value={data.amount} from={0} delay={400} duration={1200} prefix="+" /></div>
-        <p className="muted">Vos partenaires sont restés fidèles : revenus encaissés en {data.hours} h.</p>
+        <p className="muted">
+          {data.hours >= OFFLINE_CAP
+            ? `Tes partenaires sont restés fidèles : ${OFFLINE_CAP} h de revenus encaissés, le maximum pendant une absence.`
+            : `Tes partenaires sont restés fidèles : revenus encaissés en ${duration(data.hours)}.`}
+        </p>
         <button className="btn btn-xl" onClick={onClose}>Reprendre</button>
       </div>
     </div>
