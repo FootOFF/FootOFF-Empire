@@ -7,8 +7,9 @@ import { FOMonogram } from './brand';
 // sans saut (même progression, mêmes animations, reprises là où elles en étaient).
 //
 // Progression : chaque phase a sa part de la barre et avance pour de vrai.
-// - code du jeu : index.html avance seul jusqu'à 10 %, puis le moteur 3D arrive (jusqu'à 18 %) ;
-// - fichiers 3D (modèles, textures, ciel) : octets reçus sur octets attendus (jusqu'à 84 %) ;
+// - démarrage (code du jeu, lancement du moteur 3D : le processeur est pris, rien ne peut se dessiner) : le début
+//   de la barre est animé par la carte graphique (index.html), le pourcentage n'est pas encore affiché ;
+// - fichiers 3D (modèles, textures, ciel) : octets reçus sur octets attendus, de 18 à 84 % ;
 // - préparation (décodage, compilation des matériaux pour la carte graphique) : jusqu'à 98 %, puis 100 %.
 // L'affichage glisse vers la valeur visée sans jamais reculer, et la barre garde un reflet animé par la carte
 // graphique : elle vit même quand le processeur est occupé à décoder un modèle.
@@ -72,8 +73,7 @@ export function LoadingScreen({ info = null, done = false, fixed = null, onFinis
   }, [done]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (boot) boot.done = true; // l'écran HTML de départ passe la main
-    let shown = fixed ?? Math.min(0.1, boot?.p || 0);
+    let shown = fixed ?? 0; // sous le début de barre animé d'index.html tant qu'elle ne le dépasse pas
     let label = '';
     let lastPct = -1;
     const trace = import.meta.env.DEV ? (window.__ldLog = []) : null; // relevé de la progression (mesures)
@@ -118,7 +118,7 @@ export function LoadingScreen({ info = null, done = false, fixed = null, onFinis
   // animation en cours la ferait sauter)
   const [style] = useState(() => ({ '--ld-delay': `${-Math.round(performance.now() - t0)}ms` }));
   return (
-    <div className="ld" style={style} role="status" aria-label="Chargement de FootOFF Empire">
+    <div className="ld" style={style} data-live={info || fixed != null ? '' : undefined} role="status" aria-label="Chargement de FootOFF Empire">
       <div className="ld-glow" aria-hidden="true" />
       <div className="ld-center">
         <div className="ld-logo">
@@ -135,7 +135,7 @@ export function LoadingScreen({ info = null, done = false, fixed = null, onFinis
           <span className="ld-pct"><b ref={pct}>0</b> %</span>
         </div>
       </div>
-      <div className="ld-bar" aria-hidden="true"><i ref={bar} /></div>
+      <div className="ld-bar" aria-hidden="true"><b /><i ref={bar} /></div>
     </div>
   );
 }

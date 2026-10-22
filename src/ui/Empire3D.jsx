@@ -885,6 +885,8 @@ export default function Empire3D({
       landscape.setSun(env.sunDir);
       camera.position.x += shakeX; camera.position.y += shakeY;
       renderer.shadowMap.needsUpdate = true; // ombres : une fois par image, au premier rendu de la scène
+      // dessinée aussi derrière l'écran de chargement : chaque modèle compile ses matériaux dès son arrivée, pendant
+      // que les suivants se téléchargent (sans cela, tout se compilait d'un bloc à la fin : 8 s au lieu de 3,5 s)
       post.render(dt);
       camera.position.x -= shakeX; camera.position.y -= shakeY;
     });

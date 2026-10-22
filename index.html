@@ -53,13 +53,18 @@
       .ld-tip-label { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #c7a15a; }
       @keyframes ld-in { from { opacity: 0; transform: translateY(6px); } }
       .ld-status { display: flex; align-items: center; gap: 14px; white-space: nowrap; flex-shrink: 0; }
-      .ld-spin { width: 22px; height: 22px; fill: none; stroke: #c7a15a; stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 30 100; animation: ld-spin 1.1s linear infinite; }
+      .ld-spin { width: 22px; height: 22px; fill: none; stroke: #c7a15a; stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 30 100; animation: ld-spin 1.1s linear var(--ld-delay, 0s) infinite; }
       @keyframes ld-spin { to { transform: rotate(360deg); } }
       .ld-step { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #8b8b8b; }
-      .ld-pct { font-family: Geist, Inter, system-ui, sans-serif; font-size: 15px; color: #8b8b8b; min-width: 84px; text-align: right; }
+      .ld-pct { font-family: Geist, Inter, system-ui, sans-serif; font-size: 15px; color: #8b8b8b; min-width: 84px; text-align: right; opacity: 0; transition: opacity .4s ease; }
+      .ld[data-live] .ld-pct { opacity: 1; } /* le pourcentage n'apparaît qu'avec le vrai comptage (jamais un « 0 % » figé) */
       .ld-pct b { font-weight: 600; font-size: 36px; letter-spacing: -.02em; color: #f3f2ee; font-variant-numeric: tabular-nums; }
       .ld-bar { position: absolute; left: 0; right: 0; bottom: var(--host-badge-h, 0px); height: 3px; background: rgba(255, 255, 255, .07); overflow: hidden; }
-      .ld-bar i { position: absolute; inset: 0; transform-origin: left center; transform: scaleX(0); background: linear-gradient(90deg, #b9924c, #c7a15a 60%, #dec17f); }
+      .ld-bar i, .ld-bar b { position: absolute; inset: 0; transform-origin: left center; transform: scaleX(0); background: linear-gradient(90deg, #b9924c, #c7a15a 60%, #dec17f); }
+      /* démarrage : la barre avance seule, animée par la carte graphique (le processeur est alors occupé à lancer le
+         moteur 3D et ne peut rien dessiner) ; la progression réelle (i, par-dessus) prend le relais */
+      .ld-bar b { animation: ld-boot 7s cubic-bezier(.12, .7, .3, 1) var(--ld-delay, 0s) forwards; }
+      @keyframes ld-boot { to { transform: scaleX(.16); } }
       .ld-bar::after { /* reflet qui parcourt la barre (animé par la carte graphique : vivant même quand le processeur décode un modèle) */
         content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 18%;
         background: linear-gradient(90deg, transparent, rgba(255, 236, 196, .55), transparent);
@@ -75,7 +80,7 @@
         .ld-status { justify-content: space-between; }
         .ld-step { flex: 1; }
       }
-      @media (prefers-reduced-motion: reduce) { .ld-glow, .ld-logo, .ld-bar::after { animation: none; } .ld-spin { animation-duration: 3s; } }
+      @media (prefers-reduced-motion: reduce) { .ld-glow, .ld-logo, .ld-bar::after { animation: none; } .ld-spin { animation-duration: 3s; } .ld-bar b { animation-duration: 1ms; } }
     </style>
   </head>
   <body>
@@ -102,28 +107,15 @@
           <div class="ld-status">
             <svg class="ld-spin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /></svg>
             <span class="ld-step">Démarrage du moteur</span>
-            <span class="ld-pct"><b id="ld-pct">0</b> %</span>
+            <span class="ld-pct"><b>0</b> %</span>
           </div>
         </div>
-        <div class="ld-bar" aria-hidden="true"><i id="ld-fill"></i></div>
+        <div class="ld-bar" aria-hidden="true"><b></b><i></i></div>
       </div>
     </div>
     <script>
-      // Progression du démarrage : avance seule pendant l'arrivée du code du jeu (jusqu'à 10 %) ; l'écran React
-      // (src/ui/loading.jsx) reprend la même valeur, puis la progression réelle de la scène 3D.
-      (function () {
-        var b = (window.__foBoot = { t0: performance.now(), p: 0, done: false });
-        function tick() {
-          if (b.done) return;
-          b.p = 0.1 * (1 - Math.exp(-(performance.now() - b.t0) / 900));
-          var fill = document.getElementById('ld-fill');
-          var pct = document.getElementById('ld-pct');
-          if (fill) fill.style.transform = 'scaleX(' + b.p + ')';
-          if (pct) pct.textContent = String(Math.floor(b.p * 100));
-          requestAnimationFrame(tick);
-        }
-        requestAnimationFrame(tick);
-      })();
+      // Instant de départ : l'écran React (src/ui/loading.jsx) reprend les animations là où elles en sont.
+      window.__foBoot = { t0: performance.now() };
     </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
