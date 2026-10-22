@@ -340,14 +340,14 @@ Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone
   pixels invalides à l'entrée du halo ; anticrénelage FXAA seulement sur écran peu dense (sur un écran très dense, une
   marche d'escalier fait un demi-pixel CSS) ; ciel peint en dernier, là où il se voit ; reflet du lac une image sur
   deux ;
-- net en permanence : la toile garde la densité de l'écran et la scène est calculée en pleine résolution (ordinateur
-  et téléphone), au repos comme pendant les déplacements et le zoom ; ombres en 2048 partout. Sur une puce intégrée,
-  agrandir une image calculée plus petite (FXAA, EASU, RCAS : 5 à 7 ms en 2880 × 1620) coûte presque autant que la
-  pleine résolution : seulement si l'appareil ne tient plus ~30 images par seconde, la densité descend d'un palier
-  (×0,75, agrandi par EASU et RCAS d'AMD FSR 1, jamais étiré), gardé seulement s'il fait vraiment gagner du temps, et
-  la pleine résolution est retentée ensuite (délai doublé à chaque échec). Mesuré en 2880 × 1620 (puce intégrée AMD,
-  écran 60 Hz) : 30 images par seconde régulières en mouvement, toujours en pleine résolution (avant : image agrandie
-  ×1,7 en mouvement, floue et crénelée). Densité de l'écran relue au zoom du navigateur et au changement d'écran ;
+- net en permanence : la toile garde la densité de l'écran (au plus 3) et la scène est toujours calculée à cette
+  densité, sur ordinateur comme sur téléphone, au repos comme pendant les déplacements et le zoom, sans résolution
+  adaptative ni agrandisseur (sur une puce intégrée, agrandir une image calculée plus petite coûtait presque autant
+  que la pleine résolution : FXAA, EASU, RCAS, 5 à 7 ms en 2880 × 1620) ; ombres en 2048 partout. Mesuré en
+  2880 × 1620 (puce intégrée AMD, écran 60 Hz) : 30 images par seconde régulières en mouvement, chaque image à la
+  taille exacte de l'écran (avant : image agrandie ×1,7 en mouvement, floue et crénelée). Seule la qualité Économie,
+  choisie dans les réglages, dessine à un pixel par pixel CSS. Densité de l'écran relue au zoom du navigateur et au
+  changement d'écran ;
 - feuillage des arbres : profondeur écrite d'abord par une passe qui ne lit que l'image des feuilles (même vent, même
   découpe), puis feuillage éclairé sans écrire la profondeur : chaque pixel n'est éclairé que pour la feuille visible
   (vue rapprochée, 2880 × 1620 : scène 22,1 → 18,4 ms) ;

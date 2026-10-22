@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { FullScreenQuad, Pass } from 'three/examples/jsm/postprocessing/Pass.js';
+import { Pass } from 'three/examples/jsm/postprocessing/Pass.js';
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
@@ -8,24 +8,18 @@ import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
 
 // Rendu « cinéma » : ombres de contact (occlusion ambiante GTAO), halo des lumières (bloom, plus présent la nuit),
 // étalonnage des couleurs selon l'ambiance (saturation, contraste, chaleur, vignettage discret), anticrénelage FXAA
-// sur les écrans peu denses, puis agrandisseur net (FSR 1) si la scène est calculée plus petite que l'écran.
+// sur les écrans peu denses. La scène est toujours calculée à la densité de l'écran (Empire3D), au repos comme en
+// mouvement : aucune image agrandie.
 // Qualité économie : rendu direct, sans post-traitement. Téléphone en qualité auto : halo et étalonnage seulement.
 //
 // Mesuré sur une puce graphique intégrée (écran 2880 × 1620) : l'anticrénelage multi-échantillons coûtait ~7,5 ms en
-// pleine résolution (tampons HDR) et chaque passe plein écran 1 à 2 ms ; agrandir une image calculée plus petite
-// (FXAA, EASU, RCAS : 5 à 7 ms) coûte presque autant que la calculer en pleine résolution. D'où :
+// pleine résolution (tampons HDR) et chaque passe plein écran 1 à 2 ms. D'où :
 //  - scène dessinée directement dans le tampon du composer, sans multi-échantillons ;
 //  - occlusion et halo calculés à basse résolution puis posés dans la passe de sortie, avec le tone mapping et
 //    l'étalonnage (deux passes plein écran de moins) ; halo au quart de la résolution de la scène (4,5 -> 1,7 ms,
 //    même image) ;
-//  - pleine résolution au repos comme en mouvement (image nette pendant les déplacements et le zoom) ; seulement si
-//    l'appareil ne suit plus, une densité plus faible, agrandie par EASU et accentuée par RCAS (AMD FidelityFX Super
-//    Resolution 1, licence MIT) au lieu de l'étirement flou du navigateur ;
 //  - anticrénelage FXAA seulement sur écran peu dense : sur un écran très dense, une marche d'escalier fait un
-//    demi-pixel CSS (4 à 6 ms économisées en 2880 × 1620 pour une différence invisible), et l'agrandisseur suit les
-//    bords.
-// Chaîne « mouvement » à part, réservée à la demande : seulement quand la caméra en mouvement doit descendre sous la
-// densité du repos (passer de l'une à l'autre ne crée alors aucun à-coup).
+//    demi-pixel CSS (4 à 6 ms économisées en 2880 × 1620 pour une différence invisible).
 
 // Étalonnage (espace d'affichage, après le tone mapping) : saturation, contraste, chaleur, vignettage.
 const GRADE = /* glsl */`
@@ -84,158 +78,6 @@ class ScenePass extends Pass {
     renderer.setRenderTarget(readBuffer);
     renderer.clear();
     renderer.render(this.scene, this.camera);
-  }
-}
-
-const QUAD_VERTEX = /* glsl */`
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-  }`;
-
-// EASU (Edge Adaptive Spatial Upsampling) d'AMD FSR 1 : noyau de 12 pixels source, orienté et étiré le long des
-// bords, sans halo (borné par les quatre pixels les plus proches).
-const EASU = /* glsl */`
-  uniform sampler2D tDiffuse;
-  uniform vec2 uIn;
-  varying vec2 vUv;
-  vec3 tx( vec2 p ) { return texture2D( tDiffuse, ( p + 0.5 ) / uIn ).rgb; }
-  float lu( vec3 c ) { return c.g + 0.5 * ( c.r + c.b ); }
-  void easuSet( inout vec2 dir, inout float len, float w, float lA, float lB, float lC, float lD, float lE ) {
-    float lenX = max( abs( lD - lC ), abs( lC - lB ) );
-    float dirX = lD - lB;
-    dir.x += dirX * w;
-    lenX = clamp( abs( dirX ) / max( lenX, 1e-5 ), 0.0, 1.0 );
-    len += lenX * lenX * w;
-    float lenY = max( abs( lE - lC ), abs( lC - lA ) );
-    float dirY = lE - lA;
-    dir.y += dirY * w;
-    lenY = clamp( abs( dirY ) / max( lenY, 1e-5 ), 0.0, 1.0 );
-    len += lenY * lenY * w;
-  }
-  void easuTap( inout vec3 aC, inout float aW, vec2 off, vec2 dir, vec2 len, float lob, float clp, vec3 c ) {
-    vec2 v = vec2( dot( off, dir ), dot( off, vec2( - dir.y, dir.x ) ) ) * len;
-    float d2 = min( dot( v, v ), clp );
-    float wB = 0.4 * d2 - 1.0;
-    float wA = lob * d2 - 1.0;
-    wB *= wB;
-    wA *= wA;
-    wB = 1.5625 * wB - 0.5625;
-    float w = wB * wA;
-    aC += c * w;
-    aW += w;
-  }
-  void main() {
-    vec2 pp = vUv * uIn - 0.5;
-    vec2 fp = floor( pp );
-    pp -= fp;
-    //    b c
-    //  e f g h
-    //  i j k l
-    //    n o
-    vec3 b = tx( fp + vec2( 0.0, - 1.0 ) ), c = tx( fp + vec2( 1.0, - 1.0 ) );
-    vec3 e = tx( fp + vec2( - 1.0, 0.0 ) ), f = tx( fp ), g = tx( fp + vec2( 1.0, 0.0 ) ), h = tx( fp + vec2( 2.0, 0.0 ) );
-    vec3 i = tx( fp + vec2( - 1.0, 1.0 ) ), j = tx( fp + vec2( 0.0, 1.0 ) ), k = tx( fp + vec2( 1.0, 1.0 ) ), l = tx( fp + vec2( 2.0, 1.0 ) );
-    vec3 n = tx( fp + vec2( 0.0, 2.0 ) ), o = tx( fp + vec2( 1.0, 2.0 ) );
-    float bL = lu( b ), cL = lu( c ), eL = lu( e ), fL = lu( f ), gL = lu( g ), hL = lu( h );
-    float iL = lu( i ), jL = lu( j ), kL = lu( k ), lL = lu( l ), nL = lu( n ), oL = lu( o );
-    vec2 dir = vec2( 0.0 );
-    float len = 0.0;
-    easuSet( dir, len, ( 1.0 - pp.x ) * ( 1.0 - pp.y ), bL, eL, fL, gL, jL );
-    easuSet( dir, len, pp.x * ( 1.0 - pp.y ), cL, fL, gL, hL, kL );
-    easuSet( dir, len, ( 1.0 - pp.x ) * pp.y, fL, iL, jL, kL, nL );
-    easuSet( dir, len, pp.x * pp.y, gL, jL, kL, lL, oL );
-    float dirR = dot( dir, dir );
-    bool zro = dirR < 1.0 / 32768.0;
-    dir = zro ? vec2( 1.0, 0.0 ) : dir * inversesqrt( dirR );
-    len *= 0.5;
-    len *= len;
-    float stretch = 1.0 / max( abs( dir.x ), abs( dir.y ) );
-    vec2 len2 = vec2( 1.0 + ( stretch - 1.0 ) * len, 1.0 - 0.5 * len );
-    float lob = 0.5 + ( ( 1.0 / 4.0 - 0.04 ) - 0.5 ) * len;
-    float clp = 1.0 / lob;
-    vec3 aC = vec3( 0.0 );
-    float aW = 0.0;
-    easuTap( aC, aW, vec2( 0.0, - 1.0 ) - pp, dir, len2, lob, clp, b );
-    easuTap( aC, aW, vec2( 1.0, - 1.0 ) - pp, dir, len2, lob, clp, c );
-    easuTap( aC, aW, vec2( - 1.0, 1.0 ) - pp, dir, len2, lob, clp, i );
-    easuTap( aC, aW, vec2( 0.0, 1.0 ) - pp, dir, len2, lob, clp, j );
-    easuTap( aC, aW, vec2( 0.0, 0.0 ) - pp, dir, len2, lob, clp, f );
-    easuTap( aC, aW, vec2( - 1.0, 0.0 ) - pp, dir, len2, lob, clp, e );
-    easuTap( aC, aW, vec2( 1.0, 1.0 ) - pp, dir, len2, lob, clp, k );
-    easuTap( aC, aW, vec2( 2.0, 1.0 ) - pp, dir, len2, lob, clp, l );
-    easuTap( aC, aW, vec2( 2.0, 0.0 ) - pp, dir, len2, lob, clp, h );
-    easuTap( aC, aW, vec2( 1.0, 0.0 ) - pp, dir, len2, lob, clp, g );
-    easuTap( aC, aW, vec2( 1.0, 2.0 ) - pp, dir, len2, lob, clp, o );
-    easuTap( aC, aW, vec2( 0.0, 2.0 ) - pp, dir, len2, lob, clp, n );
-    vec3 mn = min( min( f, g ), min( j, k ) );
-    vec3 mx = max( max( f, g ), max( j, k ) );
-    gl_FragColor = vec4( clamp( aC / max( aW, 1e-5 ), mn, mx ), 1.0 );
-  }`;
-
-// RCAS (Robust Contrast Adaptive Sharpening) d'AMD FSR 1 : accentuation bornée par le contraste local (pas de halo),
-// derrière EASU, à un pixel de sortie d'écart.
-const RCAS = /* glsl */`
-  uniform sampler2D tDiffuse;
-  uniform vec2 uSize;
-  uniform float uSharp;
-  varying vec2 vUv;
-  void main() {
-    vec2 px = 1.0 / uSize;
-    vec3 b = texture2D( tDiffuse, vUv + vec2( 0.0, - px.y ) ).rgb;
-    vec3 d = texture2D( tDiffuse, vUv + vec2( - px.x, 0.0 ) ).rgb;
-    vec3 e = texture2D( tDiffuse, vUv ).rgb;
-    vec3 f = texture2D( tDiffuse, vUv + vec2( px.x, 0.0 ) ).rgb;
-    vec3 h = texture2D( tDiffuse, vUv + vec2( 0.0, px.y ) ).rgb;
-    vec3 mn4 = min( min( b, d ), min( f, h ) );
-    vec3 mx4 = max( max( b, d ), max( f, h ) );
-    vec3 hitMin = min( mn4, e ) / max( 4.0 * mx4, vec3( 1e-5 ) );
-    vec3 hitMax = ( 1.0 - max( mx4, e ) ) / min( 4.0 * mn4 - 4.0, vec3( - 1e-5 ) );
-    vec3 lobeRGB = max( - hitMin, hitMax );
-    float lobe = max( - 0.1875, min( max( lobeRGB.r, max( lobeRGB.g, lobeRGB.b ) ), 0.0 ) ) * uSharp;
-    gl_FragColor = vec4( ( lobe * ( b + d + f + h ) + e ) / ( 4.0 * lobe + 1.0 ), 1.0 );
-  }`;
-
-// Agrandisseur net, toujours la dernière passe, désactivée quand la scène est déjà calculée à la taille de l'écran :
-// EASU vers une image à la taille de l'écran, puis RCAS vers l'écran (jamais d'étirement simple : il faisait des
-// marches d'escalier dès que la caméra bougeait).
-class UpscalePass extends Pass {
-  constructor() {
-    super();
-    this.needsSwap = false;
-    this.target = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false });
-    this.out = new THREE.Vector2();
-    this.easu = new FullScreenQuad(new THREE.ShaderMaterial({
-      uniforms: { tDiffuse: { value: null }, uIn: { value: new THREE.Vector2() } },
-      vertexShader: QUAD_VERTEX, fragmentShader: EASU, depthTest: false, depthWrite: false,
-    }));
-    this.rcas = new FullScreenQuad(new THREE.ShaderMaterial({
-      uniforms: { tDiffuse: { value: null }, uSize: { value: new THREE.Vector2() }, uSharp: { value: 0.8 } },
-      vertexShader: QUAD_VERTEX, fragmentShader: RCAS, depthTest: false, depthWrite: false,
-    }));
-  }
-
-  render(renderer, writeBuffer, readBuffer) {
-    renderer.getDrawingBufferSize(this.out);
-    const rcas = this.rcas.material.uniforms;
-    if (this.target.width !== this.out.x || this.target.height !== this.out.y) this.target.setSize(this.out.x, this.out.y);
-    const easu = this.easu.material.uniforms;
-    easu.tDiffuse.value = readBuffer.texture;
-    easu.uIn.value.set(readBuffer.width, readBuffer.height);
-    renderer.setRenderTarget(this.target);
-    this.easu.render(renderer);
-    rcas.tDiffuse.value = this.target.texture;
-    rcas.uSize.value.copy(this.out);
-    // accentuation un peu plus franche quand l'agrandissement est fort (au-delà de ×1,5)
-    rcas.uSharp.value = Math.min(1, 0.55 + 0.3 * (this.out.x / readBuffer.width - 1));
-    renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer);
-    this.rcas.render(renderer);
-  }
-
-  dispose() {
-    this.target.dispose();
-    [this.easu, this.rcas].forEach((q) => { q.material.dispose(); q.dispose(); });
   }
 }
 
@@ -304,75 +146,57 @@ function createChain(renderer, scene, camera, q) {
   chain.output = output;
   chain.fxaa = new FXAAPass();
   composer.addPass(chain.fxaa);
-  chain.upscale = new UpscalePass();
-  composer.addPass(chain.upscale);
   return chain;
 }
 
 export function createPostFX(renderer, scene, camera, quality = 'auto') {
-  let rest = null; // densité du repos (pleine résolution), aussi en mouvement tant que l'appareil suit
-  let motion = null; // caméra en mouvement à une densité plus faible : tampons alloués seulement quand il le faut
-  let moving = false;
+  let chain = null;
   let look = null;
   let halo = 1;
   let aoNear = true;
-  const ratios = { rest: 1, motion: 1 };
+  let ratio = 1;
   const css = new THREE.Vector2();
   const out = new THREE.Vector2();
 
   function teardown() {
-    [rest, motion].forEach((c) => {
-      c?.composer.passes.forEach((p) => p.dispose?.());
-      c?.composer.dispose();
-    });
-    rest = motion = null;
+    chain?.composer.passes.forEach((p) => p.dispose?.());
+    chain?.composer.dispose();
+    chain = null;
   }
 
-  function size(chain, ratio) {
+  function size() {
+    if (!chain) return;
     renderer.getSize(css);
     renderer.getDrawingBufferSize(out);
     chain.ratio = ratio;
     // tailles en pixels entiers (le composer multiplierait la taille CSS par la densité sans arrondir)
     chain.composer.setPixelRatio(1);
     chain.composer.setSize(Math.max(1, Math.round(css.x * ratio)), Math.max(1, Math.round(css.y * ratio)));
-    // l'agrandisseur ne sert que si la scène est calculée plus petite que l'écran ; l'anticrénelage, seulement sur un
-    // écran peu dense
-    chain.upscale.enabled = css.x * ratio < out.x - 0.5;
+    // anticrénelage seulement sur un écran peu dense
     chain.fxaa.enabled = out.x / Math.max(1, css.x) < 1.75;
   }
 
-  // la caméra en mouvement a sa propre densité (plus faible) : sa chaîne est dimensionnée, sinon réduite au minimum
-  const split = () => ratios.motion < ratios.rest - 1e-3;
-  function sizeMotion() {
-    if (!motion) return;
-    if (split()) size(motion, ratios.motion);
-    else if (motion.composer._width !== 1) { motion.ratio = 1; motion.composer.setPixelRatio(1); motion.composer.setSize(1, 1); }
+  function applyLook() {
+    if (!chain) return;
+    if (look) {
+      [chain.bloom.strength, chain.bloom.radius, chain.bloom.threshold] = look.bloom;
+      chain.bloom.strength *= halo;
+      const u = chain.output.uniforms;
+      u.uSat.value = look.sat;
+      u.uContrast.value = look.contrast;
+      u.uWarm.value = look.warm;
+      u.uVignette.value = look.vignette;
+    }
+    chain.output.uniforms.uBloom.value = chain.bloom.strength > 0 ? 1 : 0;
   }
 
   function build(q) {
     teardown();
     if (q === 'economie') return;
-    rest = createChain(renderer, scene, camera, q);
-    motion = createChain(renderer, scene, camera, q);
-    size(rest, ratios.rest);
-    sizeMotion();
+    chain = createChain(renderer, scene, camera, q);
+    chain.aoScale = aoNear ? 0.5 : 0.25;
+    size();
     applyLook();
-  }
-
-  function applyLook() {
-    [rest, motion].forEach((c) => {
-      if (!c) return;
-      if (look) {
-        [c.bloom.strength, c.bloom.radius, c.bloom.threshold] = look.bloom;
-        c.bloom.strength *= halo;
-        const u = c.output.uniforms;
-        u.uSat.value = look.sat;
-        u.uContrast.value = look.contrast;
-        u.uWarm.value = look.warm;
-        u.uVignette.value = look.vignette;
-      }
-      c.output.uniforms.uBloom.value = c.bloom.strength > 0 ? 1 : 0;
-    });
   }
 
   // étalonnage de l'ambiance (sky.js) : saturation, contraste, chaleur, vignettage, halo [force, rayon, seuil] ;
@@ -384,45 +208,36 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
   }
 
   build(quality);
-  const active = () => (moving && split() ? motion : rest);
 
   return {
     render(dt) {
-      const c = active();
-      if (c) c.composer.render(dt);
+      if (chain) chain.composer.render(dt);
       else renderer.render(scene, camera);
     },
     // taille de l'écran changée (pixels CSS ou densité de la toile)
-    setSize() { if (rest) { size(rest, ratios.rest); sizeMotion(); } },
-    // densités de rendu (pixels de rendu par pixel CSS) au repos et en mouvement ; seule la chaîne changée est
-    // réallouée
-    setRatios({ rest: r = ratios.rest, motion: m = ratios.motion }) {
-      const changed = { rest: Math.abs(r - ratios.rest) > 1e-3, motion: Math.abs(m - ratios.motion) > 1e-3 };
-      ratios.rest = r;
-      ratios.motion = m;
-      if (rest && changed.rest) size(rest, r);
-      if (changed.rest || changed.motion) sizeMotion();
+    setSize: size,
+    // densité de rendu (pixels de rendu par pixel CSS) : celle de la toile (Empire3D)
+    setRatio(r) {
+      if (Math.abs(r - ratio) < 1e-3) return;
+      ratio = r;
+      size();
     },
-    get ratios() { return { ...ratios }; },
-    setMoving(v) { moving = v; },
-    get moving() { return moving; },
+    get ratio() { return ratio; },
     // occlusion : demi-résolution de près, quart en vue lointaine (Empire3D, selon le recul de la caméra)
     setAODetail(near) {
       if (near === aoNear) return;
       aoNear = near;
-      [rest, motion].forEach((c) => {
-        if (!c?.gtao) return;
-        c.aoScale = near ? 0.5 : 0.25;
-        if (c.composer._width > 1) c.gtao.setSize(c.composer._width, c.composer._height);
-      });
+      if (!chain?.gtao) return;
+      chain.aoScale = near ? 0.5 : 0.25;
+      if (chain.composer._width > 1) chain.gtao.setSize(chain.composer._width, chain.composer._height);
     },
     setQuality(q) { build(q); },
     setLook,
-    get enabled() { return !!rest; },
-    get passes() { const c = active(); return c ? { gtao: c.gtao, bloom: c.bloom, output: c.output, fxaa: c.fxaa, upscale: c.upscale } : {}; }, // réglage et inspection
-    get composer() { return active()?.composer ?? null; }, // mesures (développement)
+    get enabled() { return !!chain; },
+    get passes() { return chain ? { gtao: chain.gtao, bloom: chain.bloom, output: chain.output, fxaa: chain.fxaa } : {}; }, // réglage et inspection
+    get composer() { return chain?.composer ?? null; }, // mesures (développement)
     // cible où la scène est dessinée (null : écran) : compiler les matériaux d'avance dans la même configuration
-    get sceneTarget() { return rest ? rest.composer.readBuffer : null; },
+    get sceneTarget() { return chain ? chain.composer.readBuffer : null; },
     dispose: teardown,
   };
 }

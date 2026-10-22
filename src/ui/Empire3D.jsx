@@ -425,73 +425,10 @@ export default function Empire3D({
       ctx.syncSpots?.(); // projecteurs : tous dans le calcul de la lumière, ou aucun
     };
 
-    // Résolution adaptative. La toile garde la densité de l'écran ; la scène est calculée à la densité maximale de la
-    // qualité choisie (pleine résolution sur ordinateur), la même au repos et en mouvement : l'image reste nette pendant
-    // les déplacements et le zoom. Seulement quand l'appareil ne suit plus (sous ~30 images par seconde en mouvement,
-    // ~22 au repos), la densité descend d'un palier, agrandie nettement (postfx.js) ; ce palier n'est gardé que s'il
-    // accélère vraiment l'image (sur une puce graphique intégrée, agrandir coûte presque autant que calculer en pleine
-    // résolution : on ne perdrait que de la netteté). Un palier qui ne tient pas, ou qui ne sert à rien, est mis de côté
-    // et réessayé après un délai qui double à chaque échec (pas de va-et-vient, jamais coincé en basse résolution :
-    // l'écran affichant 60 ou 30 images par seconde, la marge ne se voit pas toujours au chronomètre). Jamais sous un
-    // pixel de calcul par pixel d'écran (CSS) : tous les effets restent, l'interface reste nette.
-    const DRS_LEVELS = [1, 0.75];
-    const regime = (slow, fast) => ({ levels: DRS_LEVELS, slow, fast, level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map(), probe: null });
-    const drs = {
-      motion: regime(34, 24), // ms : au-delà, palier en dessous ; en deçà pendant trois secondes, on retente au-dessus
-      rest: regime(45, 36),
-      active: false,
-      get level() { return this.motion.level; }, // inspection (développement)
-    };
-    ctx.drs = drs;
-    const ratioOf = (r, level = r.level) => {
-      const max = pixelRatioFor(ctx.quality);
-      return Math.max(Math.min(1, max), max * r.levels[level]);
-    };
-    const applyRatio = () => post.setRatios({ rest: ratioOf(drs.rest), motion: ratioOf(drs.motion) });
-    const setAside = (r, level, now, base) => { // palier écarté : délai doublé à chaque échec
-      const fails = (r.fails.get(level) || 0) + 1;
-      r.fails.set(level, fails);
-      r.until.set(level, now + base * 2 ** (fails - 1));
-    };
-    const drsStep = (r, raw) => {
-      if (!drs.active || raw > 0.25) return; // retour d'un onglet caché, gros à-coup isolé : ne compte pas
-      r.frames.push(raw * 1000);
-      r.time += raw;
-      if (r.time < 1) return;
-      const ms = r.frames.sort((a, b) => a - b)[Math.floor(r.frames.length / 2)]; // médiane : un à-coup isolé ne compte pas
-      r.frames = [];
-      r.time = 0;
-      const now = performance.now();
-      if (r.probe) { // premier bilan du palier du dessous : gardé seulement s'il fait gagner au moins 15 %
-        const { from, ms: before } = r.probe;
-        r.probe = null;
-        if (ms > before * 0.85) {
-          setAside(r, r.level, now, 60000);
-          r.until.delete(from);
-          r.level = from;
-          r.good = 0;
-          applyRatio();
-          return;
-        }
-      }
-      const blocked = (level) => (r.until.get(level) || 0) > now;
-      const lower = r.level + 1 < r.levels.length && ratioOf(r, r.level + 1) < ratioOf(r) - 0.01 && !blocked(r.level + 1);
-      if (ms > r.slow && lower) { // trop lent : palier en dessous, celui-ci mis de côté
-        setAside(r, r.level, now, 30000);
-        r.probe = { from: r.level, ms };
-        r.level += 1;
-        r.good = 0;
-        applyRatio();
-      } else if (r.level > 0 && !blocked(r.level - 1)) {
-        // de la marge pendant trois secondes, ou délai de mise à l'écart écoulé : on retente le palier au-dessus
-        r.good = ms < r.fast ? r.good + 1 : 0;
-        if (r.good >= 3 || r.until.has(r.level - 1)) {
-          r.level -= 1;
-          r.good = 0;
-          applyRatio();
-        }
-      } else r.good = 0;
-    };
+    // Résolution : la toile garde la densité de l'écran (au plus 3) et la scène est toujours calculée à cette densité,
+    // sur ordinateur comme sur téléphone, au repos comme pendant les déplacements et le zoom : jamais d'image calculée
+    // plus petite puis agrandie (postfx.js). Économie : rendu direct, un pixel par pixel CSS (réglage choisi).
+    const applyRatio = () => post.setRatio(pixelRatioFor(ctx.quality));
     applyRatio();
 
     // Projecteurs (mâts, parcelles, stade, trophée) : tous dans le calcul de la lumière ou aucun. Le jour, aucun
@@ -533,7 +470,6 @@ export default function Empire3D({
     ctx.quality = quality;
     ctx.setQuality = (q) => {
       ctx.quality = q;
-      for (const r of [drs.motion, drs.rest]) Object.assign(r, { level: 0, frames: [], time: 0, good: 0, fails: new Map(), until: new Map(), probe: null });
       renderer.setPixelRatio(outputRatioFor(q));
       renderer.setSize(mount.clientWidth, mount.clientHeight);
       post.setQuality(q);
@@ -604,7 +540,6 @@ export default function Empire3D({
           if (!ctx.alive) return;
           loadRef.current.onLoadProgress?.({ phase: 'done', download: 1 });
           loadRef.current.onLoaded?.();
-          setTimeout(() => { drs.active = true; }, 3000); // résolution adaptative : après les compilations du départ
         };
         Promise.race([ctx.syncSpots(), new Promise((r) => { setTimeout(r, 4000); })]).then(ready);
       }
@@ -768,9 +703,6 @@ export default function Empire3D({
     let time = 0;
     const viewShift = { x: 0, y: 0 };
     const tmp = new THREE.Vector3();
-    const lastCam = new THREE.Matrix4(); // dernière position de la caméra : immobile ou en mouvement
-    let lastMove = 0;
-    let switchedAt = 0;
     // Écran titre : la caméra tourne lentement autour du complexe (un tour en un peu plus de deux minutes), un peu
     // plus près et plus bas que la vue d'ensemble. Elle part de là où elle est (pas de saut) et rejoint l'orbite en
     // douceur ; au retour au jeu, elle glisse vers la vue d'ensemble.
@@ -890,15 +822,7 @@ export default function Empire3D({
       viewShift.y += (wantY - viewShift.y) * Math.min(1, dt * 2.6);
       if (Math.abs(viewShift.x) + Math.abs(viewShift.y) > 0.5) camera.setViewOffset(W, H, viewShift.x, viewShift.y, W, H);
       else if (camera.view?.enabled) camera.clearViewOffset();
-      // la caméra (déplacement, zoom, glissement du cadrage) a-t-elle bougé dans les 0,3 dernières secondes ? Les
-      // deux régimes calculent en pleine résolution ; chacun a sa résolution adaptative (palier de secours à part).
       camera.updateMatrixWorld();
-      let moved = Math.abs(wantX - viewShift.x) + Math.abs(wantY - viewShift.y) > 0.5;
-      for (let i = 0; i < 16 && !moved; i++) moved = Math.abs(camera.matrixWorld.elements[i] - lastCam.elements[i]) > 1e-5;
-      if (moved) { lastMove = time; lastCam.copy(camera.matrixWorld); }
-      const moving = time - lastMove < 0.3;
-      if (moving !== post.moving) { post.setMoving(moving); switchedAt = time; }
-      else if (time - switchedAt > 0.25) drsStep(moving ? drs.motion : drs.rest, raw); // images de transition écartées
       env.update(dt, camera); // fondu du ciel et des lumières, brume couleur d'horizon
       post.setLook(env.grade, ctx.haloScale());
       landscape.setSun(env.sunDir);
