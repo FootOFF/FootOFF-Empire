@@ -51,11 +51,25 @@ export function LoadingScreen({ info = null, done = false, fixed = null, onFinis
   const step = useRef(null);
   const live = useRef({ info, done, onFinished });
   live.current = { info, done, onFinished };
+  const ended = useRef(false);
+  const finish = () => { // une seule fois : par l'animation de la barre, ou par la minuterie de secours
+    if (ended.current) return;
+    ended.current = true;
+    live.current.onFinished?.();
+  };
 
   useEffect(() => {
     const t = setInterval(() => setTip((i) => (i + 1) % TIPS.length), 5200);
     return () => clearInterval(t);
   }, []);
+
+  // Onglet en arrière-plan (lien ouvert dans un nouvel onglet) : le navigateur ne dessine plus d'images, la barre
+  // n'avance plus ; la scène prête, on termine quand même pour que l'écran titre attende le joueur à son retour.
+  useEffect(() => {
+    if (!done || fixed != null) return undefined;
+    const t = setTimeout(finish, 1600);
+    return () => clearTimeout(t);
+  }, [done]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (boot) boot.done = true; // l'écran HTML de départ passe la main
@@ -94,7 +108,7 @@ export function LoadingScreen({ info = null, done = false, fixed = null, onFinis
       if (isDone && shown >= 1 && !finished) finished = now;
       if (finished && now - finished > 280) {
         cancelAnimationFrame(raf);
-        live.current.onFinished?.();
+        finish();
       }
     });
     return () => cancelAnimationFrame(raf);
