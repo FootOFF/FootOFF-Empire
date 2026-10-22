@@ -166,8 +166,14 @@ export function transferFee(p, divisionIndex = 0, officeLvl = 0) {
   const contract = 0.8 + 0.1 * (p.contract || 2);
   return Math.round((wageOf(p, divisionIndex) * 2.5 * age * room * contract * (1 - 0.03 * officeLvl)) / 50) * 50;
 }
-// Ce que coûte une recrue : indemnité de transfert (joueur sous contrat) ou prime de signature (joueur libre).
-export const costOf = (p, s) => (p.club ? transferFee(p, s.divisionIndex, s.buildings.transfers || 0) : signingFee(p, s.divisionIndex));
+// Prix demandé pour une recrue : indemnité de transfert (joueur sous contrat) ou prime de signature (joueur libre),
+// selon le cours du joueur sur le marché (priceMod : le prix monte s'il est courtisé, baisse s'il ne trouve pas
+// preneur). Arrondi à une somme ronde à l'échelle du montant.
+export const costOf = (p, s) => {
+  const base = (p.club ? transferFee(p, s.divisionIndex, s.buildings.transfers || 0) : signingFee(p, s.divisionIndex)) * (p.priceMod || 1);
+  const step = base < 5000 ? 50 : base < 50000 ? 250 : base < 500000 ? 2500 : 25000;
+  return Math.max(step, Math.round(base / step) * step);
+};
 
 // Potentiel estimé : une fourchette, d'autant plus précise que l'académie est développée et que le joueur
 // est au club depuis longtemps. Null quand le joueur a atteint son plafond.

@@ -31,6 +31,7 @@ import { QUALITIES, loadQuality, saveQuality } from './ui/settings';
 import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics';
 import { actionablePlots, dockSignals, seasonEndForecast, staffTip } from './game/advice';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
+import { roundKey } from './game/mercato';
 import { createStadiumSound } from './ui/sound';
 import { achievementById, newAchievements } from './game/achievements';
 
@@ -168,7 +169,18 @@ export default function App({ preview = null }) {
     setMatchFx(null);
     setShowResult(true);
   };
-  const closeResult = () => { setShowResult(false); setMatchDay(false); };
+  const closeResult = () => {
+    setShowResult(false);
+    setMatchDay(false);
+    // ce qui a bougé au mercato pendant la journée : offres reçues, joueurs suivis partis ailleurs
+    const n = state.mercatoNews;
+    if (!n || n.key !== roundKey(state) || n.season) return;
+    const gone = n.followedGone || [];
+    const bits = [];
+    if (n.offers) bits.push(`${n.offers} offre${n.offers > 1 ? 's' : ''} reçue${n.offers > 1 ? 's' : ''} pour tes joueurs`);
+    if (gone.length) bits.push(`${gone.join(', ')} ${gone.length > 1 ? 'ont' : 'a'} signé ailleurs`);
+    if (bits.length) toast(`Mercato : ${bits.join(' · ')}`, 'gold');
+  };
   // jour de match : adversaire et affluence pour la scène 3D (match à venir, en cours, ou qui vient de finir)
   const matchInfo = (() => {
     if (!matchDay || !state) return null;
@@ -372,7 +384,7 @@ export default function App({ preview = null }) {
             onBuild={onBuild}
             onUpgrade={onUpgrade}
             onMatchDay={() => { setSel(null); setMatchDay(true); }}
-            onTransfers={() => { setSel(null); setSquadTab('transfers'); setPanel('squad'); }}
+            onTransfers={() => { setSel(null); setSquadTab('market'); setPanel('squad'); }}
             onTicketPolicy={(id) => run((s) => setTicketPolicy(s, id))}
           />
         )}

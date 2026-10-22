@@ -56,20 +56,38 @@ point, multiplié par 1 / 2,7 / 6,2 / 10 selon la division. Un onze adapté à s
 des revenus ; en Elite, la masse salariale grimpe avec la qualité de l'effectif (80 à 90 %), ce qui
 stabilise la fin de partie.
 
-**Transferts** : signer un joueur libre coûte 1,5 saison de salaire ; le vendre rapporte 1,2 saison.
-Acheter puis revendre fait perdre de l'argent, former un jeune et le revendre en fait gagner.
+**Transferts** : un seul mercato (`src/game/transfers.js`, `src/game/mercato.js`). Un joueur libre demande une
+prime de signature de 1,5 saison de salaire. Vendre un joueur tout de suite rapporte sa valeur (1,2 saison) ; mis
+en vente, il reçoit des offres après chaque journée : 60 % de chances par journée (75 % en grande forme), de 0,95 à
+1,3 fois sa valeur (+8 % en forme, +8 % jusqu'à 23 ans). Un joueur en grande forme (moyenne ≥ 7,3, niveau ≥ 6)
+peut aussi recevoir une offre spontanée (5 % par journée, 1,25 à 1,6 fois sa valeur). « Demander +10 % » : une
+chance sur deux, sinon le club retire son offre. Une offre vaut jusqu'à la journée suivante. Acheter puis revendre
+fait perdre de l'argent, former un jeune et le revendre en fait gagner.
+
+**Cours du marché** : le prix demandé suit un cours (×0,8 à ×1,3) qui bouge à chaque journée (±5 %), monte quand
+des clubs rivaux courtisent le joueur (+2,5 % par club) et baisse après trois journées sans preneur. Un joueur
+courtisé part plus souvent ailleurs (26 % + 12 % par club et par journée, 10 % sinon).
+
+**Négociation** : chaque vendeur a un seuil, la part du prix demandé à laquelle il accepte une fois sur deux : 86 %
+pour un club (−7 points en dernière année de contrat, −2 à 2 ans, +2 à 3 ans, +5 à 4 ans, −1,2 par niveau du
+bureau des transferts), 90 % pour l'agent d'un joueur libre ; −4 dès 31 ans, +4 pour un jeune à fort potentiel,
++4 par club rival intéressé, −2 si son prix baisse ou s'il est sans preneur depuis trois journées, +1,5 par offre
+refusée, ±3 selon le caractère du vendeur. Autour du seuil, la chance d'accord passe de 0 à 100 % sur ±7 points
+(courbe en S) ; la chance affichée est celle qui décide. Une offre refusée qui reste à moins de 14 points sous le
+seuil appelle une contre-offre (signature assurée à ce prix, plafonnée à 125 % du prix demandé) ; trois offres par
+joueur et par journée.
 
 **Bureau des transferts** (4,5 k€ au niveau 1, ×6,2 par niveau, quartier des supporters ou zone des
-partenaires) : il donne accès aux joueurs sous contrat dans d'autres clubs, 12 au niveau 1 puis 4 de plus
-par niveau (28 au niveau 5), avec des profils de plus en plus forts (jusqu'à environ 2,5 niveaux de
+partenaires) : sans lui, seuls 4 joueurs sous contrat sont listés publiquement ; son réseau de recruteurs en suit
+12 au niveau 1 puis 4 de plus par niveau (28 au niveau 5), avec des profils de plus en plus forts (jusqu'à environ 2,5 niveaux de
 division au-dessus du club). Un joueur sur quatre est un espoir (18 à 21 ans, potentiel relevé).
 L'indemnité de transfert vaut 2,5 saisons de salaire × âge (×1,35 jusqu'à 21 ans, ×1,15 jusqu'à 24,
 ×0,85 à 29-30, ×0,7 dès 31) × marge de progression (+7 % par point de potentiel, ×1,5 au plus) ×
 contrat (0,9 à 1,2 selon 1 à 4 ans restants) × réseau du bureau (−3 % par niveau). Ordres de grandeur
 (médiane) : 3 à 11 k€ en Départementale, 45 k€ en Régionale, 230 à 380 k€ en Nationale, 1,2 à 1,5 M€ en
-Elite. La liste est renouvelée chaque saison ; après chaque journée, environ un joueur sur cinq signe
-ailleurs et de nouveaux arrivent (marqués « Nouveau »). Les rapports des recruteurs resserrent aussi la
-fourchette de potentiel affichée.
+Elite. Le mercato (5 joueurs libres et les joueurs sous contrat) est renouvelé chaque saison ; après chaque
+journée, des joueurs signent ailleurs et de nouveaux arrivent (marqués « Nouveau »). Les rapports des recruteurs
+resserrent aussi la fourchette de potentiel affichée et rendent les vendeurs plus conciliants.
 
 **Charges** : entretien des installations, 4 % de ce qui a été investi chaque saison.
 

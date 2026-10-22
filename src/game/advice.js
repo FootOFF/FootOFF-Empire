@@ -2,7 +2,8 @@ import { nextFixture } from './cups';
 import { BUILDINGS, POS_LABELS, SQUAD_MAX, upgradeCost } from './constants';
 import { PLOTS, allowedBuildingsFor, isSectorUnlocked, nextLockedSector, plotBuilding } from './map';
 import { autoLineup, lineupRating, slotsOf } from './tactics';
-import { ratingAt, signingFee, wageOf } from './players';
+import { costOf, ratingAt, wageOf } from './players';
+import { fitGain, pendingCounters, poolOf } from './mercato';
 import { capacity, endOfSeasonForecast, expectedGate, seasonForecast } from './economy';
 import { nextOpponent, standingsOf } from './season';
 
@@ -32,19 +33,15 @@ export function weakestLine(s) {
 }
 
 // Recrue abordable qui améliore le plus l'onze (elle remplace le titulaire le plus faible à son poste).
+// Recrue recommandée : sur tout le mercato (joueurs libres et sous contrat), celle qui renforce le plus l'onze parmi
+// celles qu'on peut s'offrir au prix demandé.
 export function bestSigning(s) {
   if (s.players.length >= SQUAD_MAX) return null;
   let best = null;
-  for (const p of s.market) {
-    const fee = signingFee(p, s.divisionIndex);
+  for (const p of poolOf(s)) {
+    const fee = costOf(p, s);
     if (fee > s.money) continue;
-    let gain = 0;
-    const slots = slotsOf(s.formation);
-    s.lineup.forEach((id, k) => {
-      if (slots[k] !== p.pos) return;
-      const q = s.players.find((x) => x.id === id);
-      gain = Math.max(gain, ratingAt(p, p.pos) - (q ? ratingAt(q, p.pos) : 0));
-    });
+    const gain = fitGain(s, p);
     if (gain >= 0.5 && (!best || gain > best.gain)) best = { player: p, fee, gain };
   }
   return best;
@@ -85,7 +82,8 @@ export function dockSignals(s) {
   const plots = actionablePlots(s);
   const gate = expectedGate(s, null);
   return {
-    squad: forecast.net < 0 ? 'warn' : bestSigning(s) ? 'dot' : null,
+    // mercato : offres reçues et contre-propositions à traiter avant la prochaine journée, en nombre
+    squad: forecast.net < 0 ? 'warn' : ((s.offers || []).length + pendingCounters(s).length) || (bestSigning(s) ? 'dot' : null),
     stadium: plots.includes('t0') || (gate.demand > gate.capacity * 1.05 && s.buildings.terrain < BUILDINGS.terrain.max) ? 'dot' : null,
     empire: plots.some((id) => id !== 't0') ? 'dot' : null,
   };
@@ -148,8 +146,8 @@ export function staffTip(s) {
     return {
       id: `sign-${sign.player.id}`,
       title: weak && weak.pos === pos ? `${LINE[pos]} est ta ligne la plus faible` : 'Une recrue renforcerait ton onze',
-      text: `${sign.player.name} (${POS_LABELS[pos].toLowerCase()}, note ${ratingAt(sign.player, pos).toFixed(1)}) est libre pour ${money(sign.fee)}.`,
-      action: { kind: 'panel', panel: 'squad', tab: 'market', label: 'Voir le marché' },
+      text: `${sign.player.name} (${POS_LABELS[pos].toLowerCase()}, note ${ratingAt(sign.player, pos).toFixed(1)}) ${sign.player.club ? `est à vendre (${sign.player.club}) pour` : 'est libre pour'} ${money(sign.fee)}.`,
+      action: { kind: 'panel', panel: 'squad', tab: 'market', label: 'Voir le mercato' },
     };
   }
   const plot = actionablePlots(s).find((id) => id !== 't0');

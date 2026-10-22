@@ -1,8 +1,9 @@
 import { BUILDINGS, DIVISIONS, SQUAD_MAX, SQUAD_MIN, START_MONEY, upgradeCost } from './constants';
 import { OFFLINE_CAP, offlinePerHour } from './economy';
 import { assignNumber, costOf, makePlayer, saleValue } from './players';
+import { HAGGLE_CHANCE, TRIES, acceptChance, counterFor, findOnMarket, isSerious, logMove, roundKey, roundTo } from './mercato';
 import { refreshTransfers } from './transfers';
-import { clubAfter, randomClubName } from './names';
+import { clubAfter, randomClubName, withArticle } from './names';
 import { archivePlayer, endSeason, playRound, pushJournal, startSeason } from './season';
 import { initGoals } from './goals';
 import { PLOTS, ensureFixedPlots, plotIndexOf } from './map';
@@ -94,7 +95,7 @@ export function build(s, sectorId, key) {
   s.buildings[key] = 1;
   s.money -= upgradeCost(key, 1);
   book(s, 'works', upgradeCost(key, 1));
-  if (key === 'transfers') refreshTransfers(s, 'full'); // les recruteurs livrent leur première liste
+  if (key === 'transfers') refreshTransfers(s, 'grow'); // les recruteurs livrent leur première liste
   pushJournal(s, {
     season: s.seasonNumber, kind: 'infra', title: `${BUILDINGS[key].name} : premier coup de pioche`,
     text: `Le club investit ${upgradeCost(key, 1).toLocaleString('fr-FR')} € dans un nouveau bâtiment.`,
@@ -124,38 +125,37 @@ export function upgrade(s, key) {
   return s;
 }
 
-// Vente d'un joueur : il rejoint un autre club, sa valeur de revente entre en caisse.
-export function sellPlayer(s, id) {
+// --- Mercato (voir mercato.js et transfers.js) ------------------------------------------------------------
+
+// Vente d'un joueur à un autre club : au prix d'une offre reçue, ou à sa valeur (vente immédiate).
+export function sellPlayer(s, id, fee = null, club = null) {
   if (s.players.length <= SQUAD_MIN) return null;
   const idx = s.players.findIndex((p) => p.id === id);
   if (idx === -1) return null;
-  const fee = saleValue(s.players[idx], s.divisionIndex);
-  const club = randomClubName();
-  archivePlayer(s, s.players[idx], { reason: 'vente', fee, club });
+  const amount = fee ?? saleValue(s.players[idx], s.divisionIndex);
+  const to = club || randomClubName();
+  archivePlayer(s, s.players[idx], { reason: 'vente', fee: amount, club: to });
   const [p] = s.players.splice(idx, 1);
-  s.money += fee;
-  book(s, 'sales', fee);
+  s.money += amount;
+  book(s, 'sales', amount);
+  logMove(s, 'out', p, amount, to);
+  s.saleList = (s.saleList || []).filter((x) => x.id !== id);
+  s.offers = (s.offers || []).filter((o) => o.playerId !== id);
   ensureLineup(s);
   pushJournal(s, {
     season: s.seasonNumber, kind: 'mercato', title: `${p.name} quitte le club`,
-    text: `Le joueur rejoint ${club} pour ${fee.toLocaleString('fr-FR')} €.`,
+    text: `Le joueur rejoint ${withArticle(to)} pour ${amount.toLocaleString('fr-FR')} €.`,
   });
   return s;
 }
 export const releasePlayer = sellPlayer;
 
-export function signPlayer(s, id) {
-  if (s.players.length >= SQUAD_MAX) return null;
-  // joueur libre (marché de l'effectif) ou joueur sous contrat (bureau des transferts)
-  const pool = s.market.some((p) => p.id === id) ? s.market : s.transfers || [];
-  const idx = pool.findIndex((p) => p.id === id);
-  if (idx === -1) return null;
-  const p = pool[idx];
-  const fee = costOf(p, s);
-  if (s.money < fee) return null;
-  pool.splice(idx, 1);
+// Signature d'une recrue du marché au montant convenu.
+function completeSigning(s, p, fee) {
+  const pool = s.market.includes(p) ? s.market : s.transfers;
+  pool.splice(pool.indexOf(p), 1);
   const from = p.club;
-  delete p.club; delete p.contract; delete p.listedAt;
+  for (const k of ['club', 'contract', 'listedAt', 'priceMod', 'trend', 'interest', 'listedRounds', 'talks']) delete p[k];
   s.money -= fee;
   book(s, 'signings', fee);
   addSigning(s.records ||= rebuildRecords(s), p, fee, s); // record : plus gros achat
@@ -163,6 +163,8 @@ export function signPlayer(s, id) {
   assignNumber(s.players, p);
   s.players.push(p);
   s.signings = (s.signings || 0) + 1;
+  logMove(s, 'in', p, fee, from);
+  s.shortlist = (s.shortlist || []).filter((x) => x.id !== p.id);
   pushJournal(s, {
     season: s.seasonNumber, kind: 'mercato', title: `${p.name} rejoint ${s.clubName}`,
     text: from
@@ -170,6 +172,90 @@ export function signPlayer(s, id) {
       : `À ${p.age} ans, il s’engage avec le club pour ${fee.toLocaleString('fr-FR')} €.`,
   });
   return s;
+}
+
+// Achat au prix demandé, sans négociation.
+export function signPlayer(s, id) {
+  const p = findOnMarket(s, id);
+  if (!p || s.players.length >= SQUAD_MAX) return null;
+  const fee = costOf(p, s);
+  if (s.money < fee) return null;
+  return completeSigning(s, p, fee);
+}
+
+// Offre d'achat : réponse immédiate du vendeur. Accord (avec exactement la chance affichée), contre-proposition
+// si l'offre était sérieuse, refus sec sinon ; trois tentatives par joueur et par journée. Résultat dans s.lastDeal.
+export function makeOffer(s, id, amount) {
+  const p = findOnMarket(s, id);
+  if (!p || s.players.length >= SQUAD_MAX || !(amount > 0) || amount > s.money || p.talks?.closed) return null;
+  const ask = costOf(p, s);
+  if (Math.random() < acceptChance(s, p, amount, ask)) {
+    completeSigning(s, p, amount);
+    s.lastDeal = { id: p.id, name: p.name, result: 'accepted', amount, ask, at: Date.now() };
+    return s;
+  }
+  const serious = isSerious(s, p, amount, ask);
+  p.talks = { ...(p.talks || {}), tries: (p.talks?.tries || 0) + 1 };
+  if (serious) p.talks.counter = counterFor(s, p, ask); // le vendeur durcit sa position après chaque refus
+  p.talks.closed = p.talks.tries >= TRIES;
+  s.lastDeal = { id: p.id, name: p.name, result: serious ? 'countered' : 'refused', amount, ask, counter: p.talks.counter || null, at: Date.now() };
+  return s;
+}
+
+// Contre-proposition acceptée : la signature est certaine.
+export function acceptCounter(s, id) {
+  const p = findOnMarket(s, id);
+  const fee = p?.talks?.counter;
+  if (!fee || s.players.length >= SQUAD_MAX || fee > s.money) return null;
+  const ask = costOf(p, s);
+  completeSigning(s, p, fee);
+  s.lastDeal = { id: p.id, name: p.name, result: 'accepted', amount: fee, ask, at: Date.now() };
+  return s;
+}
+
+// Joueur suivi (liste de souhaits) : son prix au moment où on l'ajoute sert de repère.
+export function toggleShortlist(s, id) {
+  s.shortlist ||= [];
+  const i = s.shortlist.findIndex((x) => x.id === id);
+  if (i >= 0) { s.shortlist.splice(i, 1); return s; }
+  const p = findOnMarket(s, id);
+  if (!p) return null;
+  s.shortlist.push({ id, name: p.name, pos: p.pos, price: costOf(p, s), at: roundKey(s) });
+  return s;
+}
+
+// Joueur de l'effectif mis sur le marché (ou retiré) : les clubs adverses font leurs offres après chaque journée.
+export function setForSale(s, id, on) {
+  if (!s.players.some((p) => p.id === id)) return null;
+  s.saleList = (s.saleList || []).filter((x) => x.id !== id);
+  if (on) s.saleList.push({ id, at: roundKey(s) });
+  else s.offers = (s.offers || []).filter((o) => o.playerId !== id || o.unsolicited);
+  return s;
+}
+
+// Réponse à une offre reçue : accepter (vente), refuser, ou tenter d'obtenir 10 % de plus (une chance sur deux ; sinon
+// le club se retire). Résultat dans s.lastSale.
+export function answerOffer(s, offerId, action) {
+  const o = (s.offers || []).find((x) => x.id === offerId);
+  const p = o && s.players.find((q) => q.id === o.playerId);
+  if (!p) return null;
+  const done = (result) => { s.lastSale = { ...o, name: p.name, result, at: Date.now() }; return s; };
+  if (action === 'accept') {
+    if (!sellPlayer(s, o.playerId, o.amount, o.club)) return null;
+    return done('sold');
+  }
+  if (action === 'haggle') {
+    if (o.haggled) return null;
+    if (Math.random() < HAGGLE_CHANCE) {
+      o.amount = roundTo(o.amount * 1.1);
+      o.haggled = true;
+      return done('raised');
+    }
+    s.offers = s.offers.filter((x) => x !== o);
+    return done('withdrawn');
+  }
+  s.offers = s.offers.filter((x) => x !== o);
+  return done('refused');
 }
 
 export function applyOffline(s, now = Date.now()) {

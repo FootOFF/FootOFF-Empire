@@ -1,5 +1,6 @@
 import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from './constants';
 import { refreshTransfers } from './transfers';
+import { logMove } from './mercato';
 import { expectedGate, matchGate, prizeFor, sponsorIncome, ticketPrice, upkeepOf } from './economy';
 import { clamp, ordinal, pick, rnd } from './utils';
 import { clubAfter, randomClubName } from './names';
@@ -44,13 +45,7 @@ export function startSeason(s) {
   s.schedule = roundRobin(8);
   s.round = 0;
   s.table = Array.from({ length: 8 }, () => ({ pts: 0, gd: 0, played: 0 }));
-  s.market = [];
-  for (let i = 0; i < 3; i++) {
-    const p = makePlayer({ level: s.divisionIndex + 1 + rnd(-0.3, 0.4) });
-    p.id = s.nextId++;
-    s.market.push(p);
-  }
-  refreshTransfers(s, 'full');
+  refreshTransfers(s, 'full'); // mercato neuf : joueurs libres et joueurs sous contrat (transfers.js)
   resetSeasonStats(s);
   // Coupe d'Europe : qualifié par le classement de l'Elite la saison passée ; la participation est payée d'avance
   s.c1 = !!s.c1Next;
@@ -366,10 +361,12 @@ export function endSeason(s) {
   while (s.money < 0 && s.players.length > SQUAD_MIN + 2) {
     const p = [...s.players].sort((a, b) => wageOf(b, s.divisionIndex) - wageOf(a, s.divisionIndex))[0];
     const fee = saleValue(p, s.divisionIndex);
-    archivePlayer(s, p, { reason: 'conseil', fee, club: randomClubName() });
+    const club = randomClubName();
+    archivePlayer(s, p, { reason: 'conseil', fee, club });
     s.players.splice(s.players.indexOf(p), 1);
     s.money += fee;
     book(s, 'sales', fee);
+    logMove(s, 'out', p, fee, club, true); // bilan du mercato
     events.push(`Plan de redressement : comptes dans le rouge, le conseil vend ${p.name} (${n(fee)} €).`);
   }
   const repBefore = s.reputation;

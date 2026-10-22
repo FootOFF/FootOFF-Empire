@@ -1,6 +1,7 @@
 import { DIVISIONS, POS_LABELS, START_MONEY, upgradeCost } from './constants';
 import { capacity } from './economy';
-import { makePlayer, ratingAt, signingFee } from './players';
+import { costOf, makePlayer, ratingAt, signingFee } from './players';
+import { acceptChance } from './mercato';
 import { slotsOf } from './tactics';
 import { bestSigning } from './advice';
 import { rnd } from './utils';
@@ -59,15 +60,18 @@ export function prepareFirstSeason(s) {
     .sort((a, b) => lines[a].reduce((x, y) => x + y, 0) / lines[a].length - lines[b].reduce((x, y) => x + y, 0) / lines[b].length)[0];
   const worst = Math.min(...lines[pos]);
   const budget = START_MONEY - upgradeCost('training', 1) - 200;
+  // son agent accepte à coup sûr une offre au prix demandé (première négociation sans mauvaise surprise)
   let pick = null;
   for (let i = 0; i < 80 && !pick; i++) {
     const p = makePlayer({ level: 1.4 - i * 0.012, pos });
-    if (ratingAt(p, pos) >= worst + 0.8 && signingFee(p, 0) <= budget) pick = p;
+    Object.assign(p, { id: s.nextId, priceMod: 1, interest: 0, listedRounds: 0 });
+    if (ratingAt(p, pos) >= worst + 0.8 && signingFee(p, 0) <= budget && acceptChance(s, p, costOf(p, s)) >= 1) pick = p;
   }
   if (pick) {
-    pick.id = s.nextId++;
+    s.nextId++;
     s.market[0] = pick;
   }
+  for (const p of s.market) p.interest = 0; // premier jour : aucun club rival sur les joueurs libres
   return s;
 }
 
@@ -98,9 +102,9 @@ export function stepContent(step, s) {
         ...base,
         title: 'Renforce ton équipe',
         text: rec
-          ? `${rec.name} (${POS_LABELS[rec.pos].toLowerCase()}) est libre sur le marché et renforcerait ton onze. La recrue recommandée est marquée en or.`
-          : 'Le marché des joueurs libres se renouvelle chaque saison. Recrute quand un joueur renforce ton onze : il sera marqué en or.',
-        cta: 'Ouvrir l’effectif',
+          ? `${rec.name} (${POS_LABELS[rec.pos].toLowerCase()}) ${rec.club ? `est à vendre (${rec.club})` : 'est libre'} et renforcerait ton onze. Dans le mercato, la recrue recommandée est marquée en or : fais-lui une offre, la jauge te donne tes chances.`
+          : 'Le mercato bouge à chaque journée. Recrute quand un joueur renforce ton onze : il sera marqué en or.',
+        cta: 'Ouvrir le mercato',
         action: { kind: 'panel', panel: 'squad', tab: 'market' },
       };
     }

@@ -155,7 +155,9 @@ export function investmentPreview(s, key) {
 }
 
 // Bureau des transferts : joueurs sous contrat suivis par les recruteurs (aucun sans le bureau).
-export const officeSize = (lvl) => (lvl > 0 ? 8 + lvl * 4 : 0);
+// Joueurs sous contrat sur le marché : quelques-uns listés publiquement par leurs clubs, beaucoup plus avec le réseau
+// de recruteurs du Bureau des transferts.
+export const officeSize = (lvl) => (lvl > 0 ? 8 + lvl * 4 : 4);
 
 // Effet d'un bâtiment à un niveau donné (inspecteur).
 export function buildingEffect(key, lvl, divIndex) {
@@ -173,8 +175,8 @@ export function buildingEffect(key, lvl, divIndex) {
       return `Public attiré : +${lvl * 7} % · Buvette +${lvl * 10} %, boutique +${lvl * 12} % · Réputation par match : +${lvl * 10} %.`;
     case 'transfers':
       return lvl > 0
-        ? `${officeSize(lvl)} joueurs sous contrat suivis par tes recruteurs · indemnités −${lvl * 3} % · potentiel mieux cerné.`
-        : 'Aucun accès aux joueurs sous contrat tant que le bureau n’est pas construit.';
+        ? `Réseau de recruteurs : ${officeSize(lvl)} joueurs sous contrat sur ton mercato · indemnités −${lvl * 3} % · vendeurs plus conciliants · potentiel mieux cerné.`
+        : `Sans bureau, ton mercato ne montre que ${officeSize(0)} joueurs sous contrat listés publiquement, en plus des joueurs libres.`;
     case 'sponsor':
       return `Sponsors : ${fmt(sponsorIncome(lvl, divIndex))} € par saison · ${fmt(offlinePerHour(lvl, divIndex))} € par heure, même hors ligne.`;
     default:

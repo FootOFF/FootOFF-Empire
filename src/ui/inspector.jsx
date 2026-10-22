@@ -160,7 +160,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
           <div className="ins-max">Niveau maximum atteint</div>
         )}
         {key === 'transfers' && onTransfers && (
-          <button className="btn ghost wide" onClick={onTransfers}><IconTransfer /> Ouvrir le marché des transferts · {(state.transfers || []).length} joueurs</button>
+          <button className="btn ghost wide" onClick={onTransfers}><IconTransfer /> Ouvrir le mercato · {(state.market || []).length + (state.transfers || []).length} joueurs</button>
         )}
         {key === 'terrain' && onTicketPolicy && <TicketPricing state={state} onChange={onTicketPolicy} />}
         {key === 'terrain' && onMatchDay && (

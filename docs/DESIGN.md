@@ -166,6 +166,32 @@ Chaque départ (vente, plan de redressement, retraite) archive le joueur dans `a
 La fiche carrière (`src/ui/career.jsx`, calculs dans `src/game/career.js`) s'ouvre depuis les classements et les
 légendes de l'onglet Stats, le Stats Pass d'un match, la fiche joueur et l'onglet Anciens de l'effectif.
 
+## Mercato
+
+Un seul onglet « Mercato » dans l'Effectif (`src/ui/mercato.jsx`) : joueurs libres et joueurs sous contrat dans la
+même liste, quatre vues.
+- Recruter : mode d'emploi en trois temps à la première visite, actualité de la journée (arrivées, départs, joueurs
+  suivis courtisés ou partis), filtres (poste, statut, dans mes moyens, renforce mon onze, pépites), tri en menu
+  compact. Cartes : note en médaille (code couleur de l'Effectif), club et écusson, trois meilleures qualités,
+  potentiel et salaire, étoile pour suivre, comparateur ; étiquettes Recommandé, Onze +x, Courtisé, Nouveau, Pépite,
+  Bonne affaire, Prix en hausse ou en baisse, Fin de contrat ; prix (rouge s'il dépasse la trésorerie), tendance,
+  « Faire une offre ». Le réseau de recruteurs (bureau des transferts) ferme la liste.
+- Suivis : écart de prix depuis le suivi (vert s'il a baissé), joueurs partis ailleurs.
+- Offres : contre-offres à conclure, offres reçues (Accepter, Demander +10 %, Refuser) avec retour immédiat, joueurs
+  en vente (sélection par interrupteurs).
+- Bilan : achats, ventes et solde de la saison, records, historique des arrivées et départs.
+
+Négociation dans une feuille (`Negotiation`) : montant au curseur, boutons − et +, raccourcis (−20 %, −10 %, prix
+demandé), jauge des chances d'accord (exactes : 0 % seulement si le refus est certain, 100 % seulement si l'accord
+l'est) avec les raisons du vendeur, coût réel (salaire, part des salaires, fin de saison prévue), tentatives
+restantes, contre-offre en carte dorée, écran d'accord (économie réalisée, gain pour le onze, « Composer
+l'équipe »). Ventes : « Mettre en vente » dans la fiche d'un joueur (étiquette « En vente » dans l'Effectif) ; la
+vente immédiate à sa valeur reste possible. Après chaque match, une notification résume les offres reçues et les
+joueurs suivis partis ; la pastille du menu compte les offres et contre-offres à traiter. Les noms de clubs prennent
+leur article et accordent le verbe (« l'AS … accepte », « les Bleus … acceptent »).
+
+Aperçus : `?ecran=marche`, `transferts`, `negociation`, `contre-offre`, `suivis`, `offres`, `bilan-mercato`.
+
 ## Dispositifs
 
 Six formations (`FORMATIONS` dans `src/game/tactics.js`) : 4-3-3, 4-4-2, 4-2-3-1, 3-5-2, 3-4-3, 5-3-2. Le

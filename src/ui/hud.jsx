@@ -83,7 +83,7 @@ function DockBadge({ value }) {
   if (!value) return null;
   if (value === 'dot') return <i className="dock-badge dot" aria-label="Action disponible" />;
   if (value === 'warn') return <i className="dock-badge warn" aria-label="Alerte">!</i>;
-  return <i className="dock-badge">{value}</i>;
+  return <i className="dock-badge" aria-label={`${value} à traiter`}>{value}</i>;
 }
 
 // Menu du bas : la sélection est une pastille en verre liquide (façon iOS) qui glisse d'un bouton à l'autre en

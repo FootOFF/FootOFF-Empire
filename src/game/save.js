@@ -8,6 +8,7 @@ import { assignNumber, upgradePlayer } from './players';
 import { ensureLedger } from './ledger';
 import { renameRetired } from './names';
 import { buildCalendar } from './cups';
+import { refreshTransfers } from './transfers';
 import { rebuildRecords } from './records';
 
 export function saveGame(state) {
@@ -74,6 +75,13 @@ export function loadGame() {
         if (nextCup) y.cups.cup.stage = nextCup.stage; else y.cups.cup.alive = false;
       }
       y.transfers ||= [];
+      y.market ||= [];
+      const beforeMercato = !y.shortlist; // partie commencée avant le mercato unique
+      y.shortlist ||= []; // mercato : joueurs suivis, joueurs à vendre, offres reçues, historique (ajoutés après coup)
+      y.saleList ||= [];
+      y.offers ||= [];
+      y.mercatoLog ||= [];
+      if (beforeMercato) refreshTransfers(y, 'grow'); // le mercato se remplit tout de suite (joueurs libres et sous contrat)
       const renamed = new Map(); // ancien nom → nouveau
       for (const p of [...y.players, ...(y.market || []), ...y.transfers]) {
         const before = p.name;
