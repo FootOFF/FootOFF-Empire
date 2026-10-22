@@ -111,6 +111,11 @@ function loadTemplate(url) {
   return templates.get(url);
 }
 
+// Charge un modèle à l'avance (aperçus de la vitrine de construction) : l'instancier ensuite est immédiat.
+export function preloadModel(entry) {
+  if (loader && entry?.url) loadTemplate(entry.url).catch(() => {});
+}
+
 // Instancie un modèle du manifeste, normalisé pour une emprise { w, d }.
 export async function instantiateModel(entry, footprint) {
   if (!loader) throw new Error('initAssets() non appelé');

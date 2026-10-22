@@ -2,12 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { BUILDINGS, upgradeCost } from '../game/constants';
-import { PLOTS, PLOT_LABELS, SECTORS, plotBuilding } from '../game/map';
+import { PLOTS, PLOT_LABELS, SECTORS, allowedBuildingsFor, plotBuilding } from '../game/map';
 import { fmtMoney } from './format';
 import { IconArrowUp } from './icons';
 import { PLOT_POS, PLAZA_CENTER, footprintOf, layoutOverlaps } from '../three/layout';
 import { createRenderer, createEnvironment, outputRatioFor, pixelRatioFor } from '../three/environment';
-import { assetsProgress, initAssets, instantiateModel, setAssetsBoost, setAssetsNight } from '../three/assets';
+import { assetsProgress, initAssets, instantiateModel, preloadModel, setAssetsBoost, setAssetsNight } from '../three/assets';
 import { resolveModel, resolveProp } from '../three/manifest';
 import { plotLights } from '../three/lights';
 import { BuildAnimation, Fireworks, hoverFrame } from '../three/fx';
@@ -25,6 +25,7 @@ import { autoWeather, createWeather } from '../three/weather';
 import {
   buildingMesh, padMesh, setProceduralNight, stadiumMesh,
 } from '../three/procedural';
+import { holdCharge } from './charge';
 
 function webglAvailable() {
   try {
@@ -96,6 +97,14 @@ function freeRegion(mount) {
     for (const sel of ['.hud-dock', '.hud-match']) { const b = rect(sel); if (b && b.left < right && b.right > left) bottom = Math.min(bottom, b.top - r.top); }
     const tools = rect('.hud-tools');
     if (tools) right = Math.min(right, tools.left - r.left);
+    // fenêtre d'aperçu d'un bâtiment (offsetLeft / offsetTop : position finale, sans l'animation d'entrée) : à droite
+    // sur un écran large, la zone libre est à sa gauche ; posée en bas à droite (tablette en hauteur), au-dessus. Sur
+    // téléphone, ouverte en grand, elle couvre la scène : le cadrage reste celui de la fiche.
+    const win = document.querySelector('.bw');
+    if (win?.offsetWidth) {
+      if (win.offsetLeft - left > 160) right = Math.min(right, win.offsetLeft);
+      else bottom = Math.min(bottom, win.offsetTop);
+    }
   }
   const pad = narrow ? 12 : 24;
   return { left: left + pad, right: right - pad, top: top + pad, bottom: Math.max(top + pad + 80, bottom - pad), W, H };
@@ -129,6 +138,9 @@ function frameView(camera, box, region) {
   for (let i = 0; i < 22; i++) { const m = (lo + hi) / 2; if (fits(m)) hi = m; else lo = m; }
   return { pos: center.clone().addScaledVector(FRAME_DIR, hi), target: center, dist: hi, shift };
 }
+
+const UP = new THREE.Vector3(0, 1, 0);
+const holoRise = (t) => 1 + 2.4 * (t - 1) ** 3 + 1.4 * (t - 1) ** 2; // sortie de terre avec un léger rebond
 
 const MATCH_VIEW = { pos: new THREE.Vector3(11, 8.5, 14), target: new THREE.Vector3(0, 0.4, -0.5) };
 // match en direct : caméra « télé » en tribune latérale, et plan rapproché sur la surface pour les ralentis
@@ -176,7 +188,7 @@ function parvisInfo(s) {
 export default function Empire3D({
   state, onSelectPlot, onEmptyTap, onWebGLFail, timeMode = 'auto', weatherMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
   live = false, matchFx = null, badges = [], quality = 'auto', onLoadProgress, onLoaded, matchInfo = null, onOpenTrophies,
-  attract = false, paused = false,
+  attract = false, paused = false, holo = null,
 }) {
   const mountRef = useRef(null);
   const labelRef = useRef(null);
@@ -382,6 +394,117 @@ export default function Empire3D({
         if (!ctxRef.current || (ctx.userCam && ctx.userCam - 5000 > since) || ctx.sheetOpen || modeRef.current.matchDay) return;
         ctx.tweenCamera(ctx.home, 1.6);
       }, 3400));
+    };
+
+    // Aperçu d'un bâtiment sur sa parcelle (vitrine de construction, fenêtre d'aperçu) : le modèle du niveau choisi
+    // en hologramme doré (corps translucide, arêtes lumineuses) qui sort de terre et respire doucement ; sur une
+    // parcelle déjà bâtie (aperçu d'un niveau supérieur), le bâtiment en place s'efface le temps de l'aperçu.
+    // Matériaux et arêtes propres à l'aperçu (libérés à sa fin) ; géométries partagées avec le modèle.
+    ctx.holo = null;
+    ctx.holoToken = 0;
+    ctx.clearHolo = () => {
+      const h = ctx.holo;
+      ctx.holoSway = null;
+      if (!h) return;
+      ctx.holo = null;
+      h.node.parent?.remove(h.node);
+      h.disposables.forEach((d) => d.dispose());
+      if (h.hidden) h.hidden.visible = true;
+    };
+    ctx.setHolo = (spec) => {
+      const cur = ctx.holo;
+      if (cur && cur.plotId === spec.plotId && cur.key === spec.key && cur.lvl === spec.lvl) return;
+      const token = ++ctx.holoToken;
+      const entry = ctx.plots.get(spec.plotId);
+      if (!entry) return;
+      // la caméra part tout de suite vers la parcelle (hauteur estimée) sans attendre le modèle, et les modèles des
+      // autres bâtiments proposés se chargent pendant ce temps : passer de l'un à l'autre devient immédiat
+      if (ctx.holoFramed?.plotId !== spec.plotId) ctx.frameHolo(false, { plotId: spec.plotId, lvl: spec.lvl, height: 2.5 });
+      if (!ctx.holoPreloaded) {
+        ctx.holoPreloaded = true;
+        allowedBuildingsFor(stateRef.current).forEach((k) => preloadModel(resolveModel(k, 1)));
+      }
+      // fenêtre d'aperçu ouverte (PC) : les autres niveaux du bâtiment montré (légers, sauf ceux du stade)
+      if (spec.windowOpen && spec.key !== 'terrain') {
+        for (let l = 1; l <= BUILDINGS[spec.key].max; l++) preloadModel(resolveModel(spec.key, l));
+      }
+      const fp = footprintOf(spec.plotId, spec.lvl);
+      const proc = () => proceduralFor({ kind: 'building', key: spec.key, lvl: spec.lvl });
+      const model = resolveModel(spec.key, spec.lvl);
+      const show = (node) => {
+        if (token !== ctx.holoToken || !ctx.alive) return;
+        ctx.clearHolo();
+        const height = new THREE.Box3().setFromObject(node).max.y;
+        const body = new THREE.MeshBasicMaterial({ color: 0xd9b56a, transparent: true, opacity: 0.2, depthWrite: false });
+        const edge = new THREE.LineBasicMaterial({ color: 0xf6dfa4, transparent: true, opacity: 0.8 });
+        const disposables = [body, edge];
+        const meshes = [];
+        node.traverse((o) => {
+          if (o.isLight) o.visible = false;
+          if (o.isMesh) meshes.push(o);
+        });
+        for (const o of meshes) {
+          o.material = body;
+          o.castShadow = false;
+          o.receiveShadow = false;
+          o.renderOrder = 2;
+          const n = o.geometry.attributes.position?.count || 0;
+          if (n && n < 40000) { // arêtes dessinées (les très gros maillages du stade gardent leur seul corps)
+            const eg = new THREE.EdgesGeometry(o.geometry, 32);
+            disposables.push(eg);
+            const lines = new THREE.LineSegments(eg, edge);
+            lines.renderOrder = 3;
+            o.add(lines);
+          }
+        }
+        const hidden = entry.sig !== 'pad' && entry.content ? entry.content : null;
+        if (hidden) hidden.visible = false;
+        node.scale.y = 0.02;
+        entry.wrapper.add(node);
+        ctx.holo = { ...spec, node, body, edge, disposables, hidden, height, t: 0 };
+        ctx.frameHolo();
+      };
+      if (model) instantiateModel(model, fp).then(show).catch(() => show(proc()));
+      else show(proc());
+    };
+    // Cadrage de l'aperçu dans la zone libre (entre la fiche et la fenêtre d'aperçu sur PC, au-dessus sur
+    // téléphone), puis la caméra oscille lentement autour, comme en vitrine. Même parcelle et hauteur proche :
+    // pas de nouveau mouvement de caméra, seul l'hologramme change.
+    // Cadrage d'une parcelle et de son bâtiment (hauteur réelle du modèle chargé ou procédural, au moins minH) dans la
+    // zone libre de l'écran.
+    ctx.framePlot = (plotId, minH = 0.8) => {
+      const [x, z] = PLOT_POS[plotId];
+      const fp = footprintOf(plotId, stateRef.current.buildings?.terrain);
+      const entry = ctx.plots.get(plotId);
+      const h = entry ? Math.min(9, Math.max(minH, new THREE.Box3().setFromObject(entry.wrapper).max.y)) : 2;
+      const box = new THREE.Box3(new THREE.Vector3(x - fp.w / 2, 0, z - fp.d / 2), new THREE.Vector3(x + fp.w / 2, h, z + fp.d / 2));
+      const view = frameView(ctx.camera, box, freeRegion(mountRef.current));
+      ctx.frameShift = view.shift;
+      ctx.controls.minDistance = Math.min(6, view.dist * 0.8);
+      ctx.tweenCamera(view, 1.25);
+    };
+    ctx.frameHolo = (force = false, est = null) => {
+      const h = est || ctx.holo;
+      if (!h || !mountRef.current) return;
+      const height = Math.min(9, Math.max(0.8, h.height));
+      const last = ctx.holoFramed;
+      if (!force && last && last.plotId === h.plotId && Math.abs(last.height - height) < 1.5) {
+        if (!ctx.camTween && !ctx.holoSway && ctx.holo) ctx.holoSway = { t: 0, prev: 0 }; // cadrage déjà bon : la vitrine tourne
+        return;
+      }
+      ctx.holoFramed = { plotId: h.plotId, height };
+      const [x, z] = PLOT_POS[h.plotId];
+      const fp = footprintOf(h.plotId, h.lvl);
+      const box = new THREE.Box3(new THREE.Vector3(x - fp.w / 2, 0, z - fp.d / 2), new THREE.Vector3(x + fp.w / 2, height, z + fp.d / 2));
+      clearTimeout(ctx.holoFrameTimer);
+      ctx.holoFrameTimer = setTimeout(() => { // la fenêtre vient de s'afficher : on mesure une fois sa mise en page faite
+        if (!ctx.holoSpec || !mountRef.current) return;
+        const view = frameView(ctx.camera, box, freeRegion(mountRef.current));
+        ctx.frameShift = view.shift;
+        ctx.controls.minDistance = Math.min(6, view.dist * 0.8);
+        ctx.holoSway = null;
+        ctx.tweenCamera(view, 1.0, () => { if (ctx.holo) ctx.holoSway = { t: 0, prev: 0 }; });
+      }, 60);
     };
 
     // Jour / nuit / jour de match : ciel, éclairage, foule, projecteurs, feux d'artifice.
@@ -809,6 +932,27 @@ export default function Empire3D({
       // direct : réalisation télé (sauf si le joueur déplace lui-même la caméra)
       if (mi && modeRef.current.live && mi.live && !ctx.camTween && !(ctx.userCam > performance.now())) broadcastStep(mi, dt);
       ctx.anims.forEach((a) => { a.update(dt); if (a.done) ctx.anims.delete(a); });
+      if (ctx.holo) { // aperçu : l'hologramme sort de terre puis respire
+        const h = ctx.holo;
+        h.t += dt;
+        h.node.scale.y = Math.max(0.02, holoRise(Math.min(1, h.t / 0.55)));
+        // appui long sur « Construire » (téléphone) : l'hologramme se charge de lumière et respire plus vite
+        const c = holdCharge.value;
+        h.phase = (h.phase || 0) + dt * (2.6 + 9 * c);
+        const pulse = 0.5 + 0.5 * Math.sin(h.phase);
+        h.body.opacity = 0.15 + 0.09 * pulse + 0.42 * c;
+        h.edge.opacity = Math.min(1, 0.6 + 0.32 * pulse + 0.4 * c);
+        // caméra en vitrine : lente oscillation autour de la parcelle (±24°), suspendue quand le joueur la manie
+        const sw = ctx.holoSway;
+        if (sw && !ctx.camTween && !(ctx.userCam > performance.now())) {
+          sw.t += dt;
+          const ang = Math.sin(sw.t * ((2 * Math.PI) / 14)) * 0.42;
+          tmp.subVectors(camera.position, controls.target).applyAxisAngle(UP, ang - sw.prev);
+          sw.prev = ang;
+          camera.position.copy(controls.target).add(tmp);
+          camera.lookAt(controls.target);
+        }
+      }
       fireworks.update(sdt);
       life.update(dt, time);
       ctx.trophies.update(dt);
@@ -859,6 +1003,8 @@ export default function Empire3D({
     });
 
     return () => {
+      ctx.clearHolo();
+      clearTimeout(ctx.holoFrameTimer);
       ctx.alive = false;
       renderer.setAnimationLoop(null);
       io.disconnect();
@@ -960,23 +1106,40 @@ export default function Empire3D({
       const [x, z] = PLOT_POS[selectedPlot];
       const fp = footprintOf(selectedPlot, stateRef.current.buildings?.terrain);
       ctx.selFrame.show(x, z, fp.w + 0.2, fp.d + 0.2);
-      // hauteur réelle du bâtiment affiché (modèle chargé ou procédural), emprise de la parcelle
-      const entry = ctx.plots.get(selectedPlot);
-      const h = entry ? Math.min(9, Math.max(0.8, new THREE.Box3().setFromObject(entry.wrapper).max.y)) : 2;
-      const box = new THREE.Box3(new THREE.Vector3(x - fp.w / 2, 0, z - fp.d / 2), new THREE.Vector3(x + fp.w / 2, h, z + fp.d / 2));
       // la fiche vient d'être affichée : on mesure la zone libre à l'image suivante, une fois sa mise en page faite
+      // (un aperçu de bâtiment sur cette parcelle fait son propre cadrage, fenêtre d'aperçu comprise)
       setTimeout(() => {
-        if (!ctxRef.current || !mountRef.current || !ctx.sheetOpen) return;
-        const view = frameView(ctx.camera, box, freeRegion(mountRef.current));
-        ctx.frameShift = view.shift;
-        ctx.controls.minDistance = Math.min(6, view.dist * 0.8);
-        ctx.tweenCamera(view, 1.25);
+        if (!ctxRef.current || !mountRef.current || !ctx.sheetOpen || ctx.holoSpec?.plotId === selectedPlot) return;
+        ctx.framePlot(selectedPlot);
       }, 40);
     } else {
       ctx.selFrame.hide();
       if (had && !modeRef.current.matchDay && !modeRef.current.live) ctx.tweenCamera(ctx.home, 1.1);
     }
   }, [selectedPlot, ready]);
+
+  // Aperçu d'un bâtiment (vitrine de construction) : hologramme sur la parcelle, caméra en vitrine.
+  useEffect(() => {
+    const ctx = ctxRef.current;
+    if (!ctx || !ready) return;
+    if (holo?.key) {
+      ctx.holoSpec = holo;
+      ctx.setHolo(holo);
+    } else {
+      const shownOn = ctx.holoFramed?.plotId;
+      ctx.holoSpec = null;
+      ctx.holoToken += 1; // un modèle encore en chargement ne s'affichera pas
+      ctx.clearHolo();
+      ctx.holoFramed = null;
+      // fin d'un aperçu, fiche toujours ouverte sur la même parcelle (chantier lancé, fenêtre d'aperçu refermée) : la
+      // zone libre a changé, la caméra recadre le bâtiment (au moins la hauteur d'un chantier)
+      if (selectedPlot && shownOn === selectedPlot) {
+        setTimeout(() => { if (ctxRef.current && mountRef.current && ctx.sheetOpen && !ctx.holoSpec) ctx.framePlot(selectedPlot, 2); }, 80);
+      }
+    }
+  }, [holo?.plotId, holo?.key, holo?.lvl, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  // la fenêtre d'aperçu s'ouvre ou se ferme (PC) : la zone libre change, le cadrage suit
+  useEffect(() => { if (ready && holo?.key && window.innerWidth > 760) ctxRef.current?.frameHolo(true); }, [holo?.windowOpen, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const info = hover === 'parvis' ? parvisInfo(state) : hover && hover !== selectedPlot ? plotInfo(state, hover) : null;
 

@@ -303,7 +303,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* tutoriel : la cible de l'étape en cours pulse */
 @keyframes tuto-ring { 0% { box-shadow: 0 0 0 0 rgba(222, 193, 127, .8); } 70% { box-shadow: 0 0 0 14px rgba(222, 193, 127, 0); } 100% { box-shadow: 0 0 0 0 rgba(222, 193, 127, 0); } }
-.game[data-tuto="build"] .ins-option[data-key="training"] .btn,
+.game[data-tuto="build"] .hold[data-key="training"],
 .game[data-tuto="sign"] .hud-dock button[data-id="squad"],
 .game[data-tuto="sign"] .pcard.market.recommended .btn,
 .game[data-tuto="sign"] .sq-tabs button[data-key="market"]:not(.on),
@@ -906,7 +906,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .ins-effect { display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-3); border-radius: var(--r-md); background: rgba(255, 255, 255, .03); border: 1px solid var(--line); }
 .ins-effect.next { border-color: var(--gold-line); background: var(--gold-soft); }
 .ins-effect p { font-size: var(--t-sm); }
-.ins-hint { font-family: var(--font-mono); font-size: var(--t-xs); color: var(--muted); text-align: center; }
+.ins-hint { font-family: var(--font-mono); font-size: var(--t-xs); color: var(--muted); text-align: center; text-wrap: balance; }
 .ins-max { text-align: center; font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .18em; text-transform: uppercase; color: var(--gold); padding: 8px; }
 .ins-req { display: flex; flex-direction: column; gap: 8px; }
 .ins-req-head { display: flex; justify-content: space-between; font-size: var(--t-sm); color: var(--muted); }
@@ -1334,7 +1334,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .hud-club-name.long { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: var(--t-sm); line-height: 1.15; } /* hud.jsx */
   .hud-club-meta { letter-spacing: .12em; font-size: var(--t-xs); }
   .hud-rounds { display: none; }
-  .hud-chip { height: 36px; padding: 0 12px; }
+  .hud-chip { height: 36px; padding: 0 10px; gap: 6px; } /* place rendue au nom du club */
   .hud-rep-bar, .hud-rep-next { display: none; }
   .hud-icon { width: 36px; height: 36px; }
   .hud-res { gap: 8px; }
@@ -1456,7 +1456,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 @media (max-width: 760px) {
   /* mobile : barre du haut, objectif replié, outils derrière un bouton, puis en bas : conseil, match, dock */
-  .hud-club { width: auto; height: 44px; flex: 1; min-width: 0; max-width: none; padding: 0 var(--s-3) 0 var(--s-2); gap: var(--s-2); }
+  .hud-club { width: auto; height: 44px; flex: 1; min-width: 0; max-width: none; padding: 0 10px 0 var(--s-2); gap: 6px; }
   .hud-club .crest.hud-mark { width: 22px; height: 26px; } /* l'écusson reste : c'est l'identité du club */
   .hud-club-meta, .hm-lvl { display: none; }
   .hud-left { display: contents; }
@@ -2902,5 +2902,275 @@ button.hud-rep { cursor: pointer; }
 /* =========================================================== noms sur plusieurs lignes
    Un nom de club trop long passe à la ligne de façon équilibrée : « Rapid / Saint-Clair » plutôt que
    « Rapid Saint- / Clair », « Olympique des / Trois Rivières » plutôt qu'un mot seul en bout de ligne. */
-.sb-name, .hud-match-title, .lm-team, .cal-opp, .mc-club-name, .hud-club-name, .cm-card-head strong, .pz-head h2,
-.post-team strong, .sp-team { text-wrap: balance; }
+.sb-name, .hud-match-title, .lm-team, .cal-opp, .mc-club-name, .cm-card-head strong, .pz-head h2,
+.post-team strong, .sp-team, .hud-club-name.long { text-wrap: balance; }
+/* « text-wrap » remet aussi le retour à la ligne en marche : le nom du club dans la barre du haut reste sur une ligne
+   tant qu'il tient (hud.jsx ne passe à deux lignes plus petites, classe « long », que s'il déborde) */
+
+/* =========================================================== vitrine de construction (src/ui/build.jsx, inspector.jsx)
+   Parcelle libre : les bâtiments en cartes illustrées, tous visibles d'un coup ; le bâtiment choisi se dessine en
+   hologramme doré sur la parcelle. PC : fenêtre d'aperçu à droite (niveaux, chiffres avant / après, action) ; la
+   carte de match et les outils s'effacent le temps de l'aperçu. Tablette en hauteur : la fenêtre se pose en bas à
+   droite, la parcelle reste visible au-dessus. Téléphone : une rangée de vignettes, le détail dessous, l'action sous
+   le pouce (appui long), l'aperçu en grand à la demande. */
+.ins-head { grid-template-columns: 44px minmax(0, 1fr); grid-auto-flow: column; grid-auto-columns: auto; }
+.inspector.shop .ins-head { grid-template-columns: minmax(0, 1fr); } /* la vitrine se passe d'icône : place au titre et au sélecteur */
+.inspector.shop .ins-icon { display: none; }
+.ins-nav { display: flex; gap: var(--s-1); }
+.ins-nav .hud-icon { width: 36px; height: 36px; }
+.ins-nav .hud-icon svg { width: 16px; height: 16px; }
+
+.bfilter { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); flex-shrink: 0; }
+.bfilter button { padding: 6px 4px; white-space: nowrap; }
+
+.bgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
+.bcard {
+  position: relative; display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 6px 6px var(--s-3);
+  border-radius: var(--r-md); border: 1px solid var(--line); background: rgba(255, 255, 255, .03); color: var(--text); text-align: left;
+  transition: border-color var(--dur-fast), background var(--dur-fast), transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast);
+}
+@media (hover: hover) { .bcard:hover:not(.on) { border-color: var(--line-strong); background: rgba(255, 255, 255, .05); transform: translateY(-1px); } }
+.bcard:active { transform: scale(.97); }
+.bcard.on { border-color: var(--gold); background: var(--gold-soft); box-shadow: 0 0 0 1px rgba(199, 161, 90, .3), 0 10px 26px rgba(199, 161, 90, .14); }
+.bcard-img {
+  position: relative; display: block; aspect-ratio: 16 / 10; margin-bottom: 6px; border-radius: 10px; overflow: hidden;
+  background: radial-gradient(ellipse 70% 62% at 50% 64%, rgba(199, 161, 90, .18), transparent 72%), rgba(255, 255, 255, .025);
+}
+.bcard-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transition: transform var(--dur) var(--ease), filter var(--dur); }
+.bcard.on .bcard-img { background: radial-gradient(ellipse 70% 62% at 50% 64%, rgba(222, 193, 127, .3), transparent 72%), rgba(255, 255, 255, .03); }
+.bcard.short .bcard-img img { filter: saturate(.5) brightness(.8); }
+.bcard-kind, .bcard-rec {
+  position: absolute; top: 5px; font-style: normal; font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .04em;
+  text-transform: uppercase; line-height: 1; padding: 4px 6px; border-radius: 999px;
+}
+.bcard-kind { right: 5px; background: rgba(9, 9, 9, .66); color: var(--text-2); }
+.bcard-rec { left: 5px; display: inline-flex; align-items: center; gap: 3px; background: var(--gold-grad); color: #0d0b07; font-weight: 600; }
+.bcard-rec svg { width: 10px; height: 10px; fill: currentColor; }
+.bcard-kind:has(+ .bcard-rec) { display: none; } /* place comptée : « Conseillé » passe avant la famille */
+.bcard-name {
+  font-family: var(--font-title); font-weight: 500; font-size: var(--t-sm); line-height: 1.25; min-height: 2.5em; text-wrap: balance;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+}
+.bcard-hero { font-size: var(--t-xs); color: var(--gold-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bcard-price { font-family: var(--font-mono); font-size: var(--t-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bcard-price b { font-weight: 500; color: var(--text); }
+.bcard-price em { display: none; font-style: normal; color: var(--muted); }
+.bcard.short .bcard-price b { display: none; }
+.bcard.short .bcard-price em { display: inline; }
+
+/* fenêtre d'aperçu */
+.bw {
+  position: absolute; z-index: 9; right: var(--gap); top: calc(var(--gap) + 56px + var(--s-3)); bottom: var(--hud-bottom); width: 360px;
+  display: flex; flex-direction: column; overflow: hidden; border-radius: var(--r-lg);
+  background: rgb(12, 12, 13); border: 1px solid var(--line); box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
+  animation: fo-slide var(--dur) var(--ease);
+}
+.game:has(.bw) :is(.hud-tools, .hud-match) { opacity: 0; pointer-events: none; transform: translateX(12px); }
+.bw-head { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-4) var(--s-4) var(--s-3) var(--s-5); border-bottom: 1px solid var(--line); }
+.bw-head .panel-title { flex: 1; }
+.bw-head h3 { font-family: var(--font-title); font-size: var(--t-lg); font-weight: 500; line-height: 1.2; }
+.bw-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4) var(--s-5); }
+.bw-hero {
+  position: relative; margin: 0; flex-shrink: 0; aspect-ratio: 16 / 9; max-height: 34vh; border-radius: var(--r-md); overflow: hidden;
+  background: radial-gradient(ellipse 70% 62% at 50% 66%, rgba(199, 161, 90, .2), transparent 72%), rgba(255, 255, 255, .025);
+  border: 1px solid var(--line); animation: fo-fade .35s var(--ease);
+}
+.bw-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.bw-hero figcaption {
+  position: absolute; left: 8px; bottom: 8px; padding: 4px 10px; border-radius: 999px; background: rgba(9, 9, 9, .7);
+  font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--gold-light);
+}
+.bw-hero figcaption span { color: var(--muted); }
+.bw-blurb { font-size: var(--t-sm); color: var(--text-2); }
+.bw-foot { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3) var(--s-5) var(--s-5); border-top: 1px solid var(--line); }
+.bw-note { display: flex; align-items: center; justify-content: center; gap: var(--s-2); font-family: var(--font-mono); font-size: var(--t-xs); color: var(--muted); text-align: center; }
+.bw-note svg { width: 14px; height: 14px; flex-shrink: 0; }
+.bw-note.built { color: var(--green); padding: var(--s-3) 0; }
+
+/* rangée des niveaux */
+.lvstrip { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: 6px; flex-shrink: 0; }
+.lv {
+  position: relative; padding: 0; aspect-ratio: 4 / 3; border-radius: var(--r-sm); border: 1px solid var(--line); overflow: hidden;
+  background: rgba(255, 255, 255, .03); transition: border-color var(--dur-fast), transform var(--dur-fast) var(--ease), opacity var(--dur-fast);
+}
+.lv-img { position: absolute; inset: 0; background: center 56% / 118% auto no-repeat; } /* vignette resserrée sur le bâtiment, sans déborder */
+.lv.later .lv-img { filter: grayscale(.85) brightness(.7); }
+.lv b {
+  position: absolute; left: 3px; bottom: 3px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px; display: grid; place-items: center;
+  font-family: var(--font-mono); font-size: var(--t-xs); font-weight: 500; line-height: 1; background: rgba(9, 9, 9, .72); color: var(--text-2);
+}
+.lv b svg { width: 11px; height: 11px; }
+.lv.built b { background: var(--gold-grad); color: #0d0b07; }
+.lv.next { border-color: var(--gold-line); }
+.lv.on { border-color: var(--gold-light); box-shadow: 0 0 0 1px var(--gold-light), 0 6px 18px rgba(199, 161, 90, .25); }
+@media (hover: hover) { .lv:hover:not(.on) { border-color: var(--line-strong); transform: translateY(-1px); } }
+.lv:active { transform: scale(.95); }
+.lv:focus-visible { outline-offset: 1px; }
+
+/* effets chiffrés, avant / après */
+.bstats { margin: 0; display: flex; flex-direction: column; }
+.bstats > div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); padding: 6px 0; border-top: 1px solid var(--line); }
+.bstats > div:first-child { border-top: none; }
+.bstats dt { font-size: var(--t-sm); color: var(--text-2); display: flex; flex-direction: column; min-width: 0; }
+.bstats dt small { font-size: var(--t-xs); color: var(--muted); }
+.bstats dd { margin: 0; display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; font-family: var(--font-mono); font-size: var(--t-sm); }
+.bstats dd b { font-weight: 500; color: var(--text); }
+.bstats dd s { color: var(--muted); text-decoration-color: rgba(139, 139, 139, .7); }
+.bstats dd svg { width: 12px; height: 12px; color: var(--gold); align-self: center; }
+.bstats dd em { font-style: normal; font-size: var(--t-xs); color: var(--green); text-transform: uppercase; letter-spacing: .08em; }
+.bstats .hero dd b { color: var(--gold-light); font-size: var(--t-md); }
+.ins-effect .bstats > div { padding: 5px 0; }
+
+/* vignette du bâtiment construit (fiche d'une parcelle bâtie) */
+.ins-shot {
+  position: relative; display: block; width: 100%; padding: 0; aspect-ratio: 16 / 9; flex-shrink: 0; border-radius: var(--r-md); overflow: hidden;
+  border: 1px solid var(--line); background: radial-gradient(ellipse 70% 62% at 50% 66%, rgba(199, 161, 90, .18), transparent 72%), rgba(255, 255, 255, .025);
+  transition: border-color var(--dur-fast);
+}
+.ins-shot:disabled { cursor: default; }
+@media (hover: hover) { .ins-shot:hover:not(:disabled) { border-color: var(--gold-line); } }
+.ins-shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.ins-shot-lvl {
+  position: absolute; left: 8px; bottom: 8px; padding: 4px 10px; border-radius: 999px; background: rgba(9, 9, 9, .7);
+  font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--gold-light);
+}
+.ins-shot-lvl { display: inline-flex; align-items: center; gap: 4px; }
+.ins-shot-lvl i { font-style: normal; color: var(--muted); }
+.ins-shot-lvl .pips { width: 54px; flex: none; gap: 3px; margin-left: 6px; }
+.ins-shot-lvl .pips span { height: 4px; }
+/* chantier tout juste lancé : un reflet doré traverse la vignette, un ruban l'annonce */
+.ins-shot.fresh { border-color: var(--gold); }
+.ins-shot.fresh::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 236, 190, .32) 48%, transparent 66%); transform: translateX(-100%);
+  animation: shot-sheen 1.3s .15s var(--ease) 2 forwards;
+}
+@keyframes shot-sheen { to { transform: translateX(100%); } }
+.ins-shot-ribbon {
+  position: absolute; top: 8px; right: 8px; padding: 5px 10px; border-radius: 999px; background: var(--gold-grad); color: #0d0b07;
+  font-family: var(--font-mono); font-size: var(--t-xs); font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  animation: fo-up .35s var(--ease);
+}
+
+/* bouton à maintenir : au doigt, il se remplit de lumière de gauche à droite, un anneau suit l'appui */
+.btn.hold { position: relative; overflow: hidden; isolation: isolate; touch-action: none; }
+.hold-fill {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none; transform-origin: left center; transform: scaleX(var(--hold, 0));
+  background: linear-gradient(90deg, rgba(255, 246, 220, .25), rgba(255, 246, 220, .7));
+}
+.hold-label { display: inline-flex; align-items: center; gap: 8px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hold-ring { width: 18px; height: 18px; flex-shrink: 0; transform: rotate(-90deg); fill: none; stroke-width: 2.2; }
+.hold-ring circle { stroke: rgba(13, 11, 7, .22); }
+.hold-ring .p { stroke: #0d0b07; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: calc(1 - var(--hold, 0)); }
+.btn.hold.holding { animation: none; transform: scale(.985); box-shadow: 0 0 0 1px rgba(255, 236, 190, .6) inset, 0 0 calc(10px + 30px * var(--hold, 0)) rgba(222, 193, 127, .55); }
+.btn.hold.nudge { animation: hold-nudge .42s var(--ease); }
+@keyframes hold-nudge { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
+
+/* bouton Construire du HUD (en tête de la colonne d'outils) */
+.hud-tools .tools-build { position: relative; color: var(--gold); }
+.hud-tools .tools-build::before { content: ""; position: absolute; left: 8px; right: 8px; bottom: -3px; height: 1px; background: var(--line); } /* ::after agrandit la zone tactile */
+.tools-dot {
+  position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--gold-light);
+  animation: badge-ping 1.8s ease-out infinite;
+}
+
+/* tablette en hauteur : la fenêtre se pose en bas à droite, sous la parcelle */
+@media (min-width: 761px) and (max-width: 1100px) and (orientation: portrait) {
+  .bw {
+    left: calc(var(--gap) + var(--rail-w) + var(--s-3)); width: auto; top: auto; max-height: 48%;
+    bottom: calc(var(--hud-bottom) + var(--bar-h) + var(--s-3)); animation-name: fo-up;
+  }
+  .bw-hero { max-height: 150px; }
+}
+/* PC étroit : la fenêtre reste au-dessus de la ligne du menu du bas */
+@media (min-width: 761px) and (max-width: 1240px) and (orientation: landscape) {
+  .bw { bottom: calc(var(--hud-bottom) + var(--bar-h) + var(--s-3)); width: 320px; }
+}
+
+/* téléphone : rangée de vignettes, détail dessous, action sous le pouce ; l'aperçu en grand monte par-dessus */
+.bdetail { display: flex; flex-direction: column; gap: 2px; }
+.bdetail-head { display: flex; align-items: center; gap: var(--s-3); }
+.bdetail-head .panel-title { flex: 1; }
+.bdetail-head strong { font-family: var(--font-title); font-weight: 500; font-size: var(--t-lg); line-height: 1.2; }
+.bdetail-head .btn { flex-shrink: 0; padding: 7px 12px; }
+.bdetail-head .btn svg { width: 14px; height: 14px; }
+.bdetail-hero { font-size: var(--t-sm); color: var(--text-2); margin-top: 2px; }
+.bdetail-hero b { font-family: var(--font-mono); font-weight: 500; color: var(--gold-light); }
+.bdetail .ins-money { margin-top: 0; }
+@media (max-width: 760px) {
+  .ins-icon { width: 36px; height: 36px; border-radius: var(--r-sm); }
+  .ins-icon svg { width: 19px; height: 19px; }
+  .ins-head { grid-template-columns: 36px minmax(0, 1fr); }
+  .inspector.shop .ins-head { grid-template-columns: minmax(0, 1fr); }
+  .inspector.shop .bgrid { display: flex; justify-content: center; gap: 6px; }
+  /* une vignette ne dépasse pas le quart de la rangée : avec deux ou trois bâtiments restants, la feuille reste basse */
+  .inspector.shop .bcard { flex: 1 1 0; max-width: calc((100% - 18px) / 4); padding: 4px 4px 6px; border-radius: var(--r-sm); align-items: center; text-align: center; }
+  .inspector.shop .bcard-img { width: 100%; aspect-ratio: 4 / 3; margin-bottom: 4px; border-radius: 8px; }
+  .inspector.shop :is(.bcard-name, .bcard-hero, .bcard-kind) { display: none; }
+  .inspector.shop .bcard-rec { top: 3px; left: 3px; padding: 3px; }
+  .inspector.shop .bcard-rec span { display: none; }
+  .inspector.shop .bcard.short .bcard-price b { display: inline; color: var(--muted); }
+  .hud-tools button.tools-build { display: grid; } /* Construire reste à portée, outils de vue repliés */
+  .ins-shot { aspect-ratio: 21 / 9; } /* fiche plus basse : le bâtiment reste visible au-dessus */
+  .hud-tools .tools-build::before { display: none; }
+  .inspector.shop .bcard.short .bcard-price em { display: none; }
+  .bw {
+    left: 0; right: 0; top: auto; bottom: var(--hb); width: auto; max-height: calc(100% - 56px - var(--hb)); z-index: 13;
+    border-radius: var(--r-lg) var(--r-lg) 0 0; border-width: 1px 0 0; background: #0b0b0c; animation: fo-sheet-in var(--dur) var(--ease);
+  }
+  @keyframes fo-sheet-in { from { transform: translateY(100%); } }
+  .bw-head { padding: var(--s-2) var(--s-3) var(--s-3) var(--s-4); }
+  .bw-body { padding: var(--s-3) var(--s-4); }
+  .bw-hero { max-height: 28vh; }
+  .bw-foot { padding: var(--s-3) var(--s-4) var(--s-4); }
+}
+.leaving > .bw, .leaving > .presence > .bw { animation: fo-slide-out var(--dur-exit) var(--ease-in) forwards !important; }
+@media (max-width: 760px) {
+  .leaving > .bw, .leaving > .presence > .bw { animation-name: fo-sheet-out !important; }
+}
+@media (prefers-reduced-motion: reduce) { .ins-shot.fresh::after, .btn.hold.nudge { animation: none; } }
+
+/* =========================================================== défilement aux couleurs du jeu (src/ui/scrollcue.js)
+   Écran tactile : plus aucune barre grise du système ; un curseur doré fin apparaît le temps du défilement, puis
+   s'efface. Partout : une zone qui défile s'estompe sur le bord où il reste du contenu à voir, et arrivée au bout
+   elle n'entraîne plus la page entière (ni rebond de la page, ni « tirer pour actualiser »). */
+html, body { overscroll-behavior: none; }
+.panel-body, .ins-body, .bw-body, .post-body, .cmp-list, .cine-events, .feed-list, .sq-sheet, .sq-compare,
+.matchscreen.prematch, .halftime, .fulltime, .cine, .empire2d { overscroll-behavior-y: contain; }
+@media (hover: none), (pointer: coarse) {
+  * { scrollbar-width: none; }
+  ::-webkit-scrollbar { display: none; width: 0; height: 0; }
+}
+.scrollcue {
+  position: fixed; left: 0; top: 0; z-index: 95; pointer-events: none; border-radius: 999px; opacity: 0;
+  background: linear-gradient(180deg, #dec17f, #b9924c); box-shadow: 0 0 10px rgba(222, 193, 127, .45);
+  transition: opacity .4s var(--ease);
+}
+.scrollcue.h { background: linear-gradient(90deg, #dec17f, #b9924c); }
+.scrollcue.on { opacity: .9; transition-duration: .1s; }
+[data-fade] { --fade: 26px; }
+[data-fade="b"] {
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - var(--fade)), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - var(--fade)), transparent);
+}
+[data-fade="t"] {
+  -webkit-mask-image: linear-gradient(0deg, #000 calc(100% - var(--fade)), transparent);
+  mask-image: linear-gradient(0deg, #000 calc(100% - var(--fade)), transparent);
+}
+[data-fade="tb"] {
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+}
+[data-fade="r"] {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - var(--fade)), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - var(--fade)), transparent);
+}
+[data-fade="l"] {
+  -webkit-mask-image: linear-gradient(270deg, #000 calc(100% - var(--fade)), transparent);
+  mask-image: linear-gradient(270deg, #000 calc(100% - var(--fade)), transparent);
+}
+[data-fade="lr"] {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+}
+@media (prefers-reduced-motion: reduce) { .scrollcue { transition: none; } }

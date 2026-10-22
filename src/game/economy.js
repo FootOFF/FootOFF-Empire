@@ -151,12 +151,14 @@ export function endOfSeasonForecast(s, position, wages) {
 // Ce que rapporte un niveau de plus (inspecteur) : recettes gagnées par saison (7 matchs et sponsors), entretien
 // supplémentaire (4 % du coût), et nombre de saisons pour rentrer dans ses frais. Les bâtiments sportifs
 // (entraînement, académie) ne rapportent pas directement : leur intérêt est sur le terrain.
-export function investmentPreview(s, key) {
-  const lvl = s.buildings[key] || 0;
-  const cost = upgradeCost(key, lvl + 1);
-  const next = { ...s, buildings: { ...s.buildings, [key]: lvl + 1 } };
+// target : le niveau visé (le suivant par défaut ; un niveau plus lointain dans la fenêtre d'aperçu, comparé au
+// niveau d'avant, comme si les précédents étaient construits).
+export function investmentPreview(s, key, target = (s.buildings[key] || 0) + 1) {
+  const cost = upgradeCost(key, target);
+  const from = { ...s, buildings: { ...s.buildings, [key]: target - 1 } };
+  const next = { ...s, buildings: { ...s.buildings, [key]: target } };
   const seasonIncome = (x) => expectedGate(x, null).revenue * 7 + sponsorIncome(x.buildings.sponsor, x.divisionIndex, x.reputation);
-  const gain = seasonIncome(next) - seasonIncome(s);
+  const gain = seasonIncome(next) - seasonIncome(from);
   const upkeep = Math.round(cost * 0.04);
   const net = gain - upkeep;
   return { cost, gain, upkeep, net, payback: net > 0 ? cost / net : null, sporting: gain <= 0 };
@@ -167,6 +169,62 @@ export function investmentPreview(s, key) {
 // de recruteurs du Bureau des transferts.
 export const officeSize = (lvl) => (lvl > 0 ? 8 + lvl * 4 : 4);
 
+// Jeune révélé par l'académie de niveau a (makePlayer, players.js) : niveau 3 + a + [0 ; 2] (+ 0,8 une fois ses
+// qualités réparties), potentiel = départ + [5 ; 9] + a, plafonné à 20. Fourchettes arrondies, pour l'affichage.
+export function academyTalent(a) {
+  return { level: [Math.round(3.8 + a), Math.round(5.8 + a)], pot: [Math.min(20, 8 + 2 * a), Math.min(20, 14 + 2 * a)] };
+}
+
+// Famille d'un bâtiment (vitrine de construction) : ce qu'il apporte d'abord.
+export const BUILDING_KIND = { terrain: 'Revenus', training: 'Sport', academy: 'Sport', fans: 'Revenus', sponsor: 'Revenus', transfers: 'Mercato' };
+
+// Effets d'un bâtiment à un niveau, en chiffres (vitrine et fenêtre d'aperçu) : le premier est l'effet phare, celui
+// que montre la carte ; les suivants détaillent. Mêmes formules que buildingEffect.
+export function buildingStats(key, lvl, s) {
+  const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n);
+  switch (key) {
+    case 'terrain': {
+      const loges = LOGES_SHARE[lvl] ? Math.round(capacity(lvl) * LOGES_SHARE[lvl]) : 0;
+      return [
+        { label: 'Places', value: fmt(capacity(lvl)), short: `${fmt(capacity(lvl))} places` },
+        ...(loges ? [{ label: 'Places en loges', value: fmt(loges) }] : []),
+      ];
+    }
+    case 'training':
+      return [{ label: 'Progression des joueurs', value: `+${lvl * 25} %`, short: `Progression +${lvl * 25} %`, sub: 'chaque intersaison' }];
+    case 'academy': {
+      const t = academyTalent(lvl);
+      return [
+        { label: 'Potentiel du talent', value: `${t.pot[0]} à ${t.pot[1]}`, short: `Potentiel ${t.pot[0]} à ${t.pot[1]}` },
+        { label: 'Niveau à son arrivée', value: `${t.level[0]} à ${t.level[1]}` },
+        { label: 'Talent révélé', value: '1 par saison' },
+      ];
+    }
+    case 'fans':
+      return [
+        { label: 'Public', value: `+${lvl * 7} %`, short: `Public +${lvl * 7} %` },
+        { label: 'Buvette', value: `+${lvl * 10} %` },
+        { label: 'Boutique', value: `+${lvl * 12} %` },
+        { label: 'Réputation par match', value: `+${lvl * 10} %` },
+      ];
+    case 'sponsor': {
+      const year = sponsorIncome(lvl, s.divisionIndex, s.reputation);
+      return [
+        { label: 'Sponsors', value: `${fmt(year)} €`, short: `${fmt(year)} € / saison`, sub: 'par saison' },
+        { label: 'Revenus hors ligne', value: `${fmt(offlinePerHour(lvl, s.divisionIndex))} €`, sub: 'par heure d’absence' },
+      ];
+    }
+    case 'transfers':
+      return [
+        { label: 'Joueurs sous contrat', value: fmt(officeSize(lvl)), short: `${officeSize(lvl)} joueurs suivis`, sub: 'sur ton mercato' },
+        { label: 'Indemnités', value: `−${lvl * 3} %` },
+        { label: 'Vendeurs', value: 'plus conciliants' },
+      ];
+    default:
+      return [];
+  }
+}
+
 // Effet d'un bâtiment à un niveau donné (inspecteur).
 export function buildingEffect(key, lvl, divIndex, rep = REP_START) {
   const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n);
@@ -175,10 +233,11 @@ export function buildingEffect(key, lvl, divIndex, rep = REP_START) {
       return `Capacité d’accueil : ${fmt(capacity(lvl))} places${LOGES_SHARE[lvl] ? ` · ${fmt(Math.round(capacity(lvl) * LOGES_SHARE[lvl]))} places en loges` : ''}.`;
     case 'training':
       return `Progression estivale des joueurs : +${lvl * 25} %.`;
-    case 'academy':
-      return lvl > 0
-        ? 'Révèle un jeune talent à fort potentiel à chaque fin de saison.'
-        : 'Aucune révélation de talent tant que l’académie n’est pas construite.';
+    case 'academy': {
+      if (lvl <= 0) return 'Aucune révélation de talent tant que l’académie n’est pas construite.';
+      const t = academyTalent(lvl);
+      return `Révèle un jeune talent à chaque fin de saison : niveau ${t.level[0]} à ${t.level[1]}, potentiel ${t.pot[0]} à ${t.pot[1]}.`;
+    }
     case 'fans':
       return `Public attiré : +${lvl * 7} % · Buvette +${lvl * 10} %, boutique +${lvl * 12} % · Réputation par match : +${lvl * 10} %.`;
     case 'transfers':

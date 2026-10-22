@@ -1,7 +1,20 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { haptic } from './haptics';
 
 export const PHONE = '(max-width: 760px)'; // fenêtres en feuilles qui montent du bas
+
+// Condition d'écran suivie en direct (la mise en page change quand la fenêtre passe du format PC au téléphone).
+export function useMedia(query) {
+  return useSyncExternalStore(
+    (f) => {
+      const m = window.matchMedia(query);
+      m.addEventListener('change', f);
+      return () => m.removeEventListener('change', f);
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
+}
 
 // Gestes au doigt : glisser vers le bas pour fermer, vers la gauche ou la droite pour passer au suivant ou au
 // précédent. L'élément suit le doigt ; au lâcher, le geste aboutit s'il est assez long ou assez vif, sinon

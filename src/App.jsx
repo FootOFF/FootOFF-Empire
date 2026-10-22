@@ -16,7 +16,7 @@ import { FinancesPanel } from './ui/finances';
 import { StatsPanel } from './ui/stats';
 import { TrophyRoom } from './ui/trophyroom';
 import { SquadView } from './ui/squad';
-import PlotInspector from './ui/inspector';
+import PlotInspector, { freePlotsOf } from './ui/inspector';
 import { OfflineReturn, SeasonReview } from './ui/overlays';
 import PostMatch from './ui/postmatch';
 import { LiveMatch, PreMatch } from './ui/match';
@@ -33,6 +33,7 @@ import { previewState, previewUi, silentSound } from './ui/preview';
 import { QUALITIES, loadQuality, saveQuality } from './ui/settings';
 import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics';
 import { actionablePlots, dockSignals, seasonEndForecast, staffTip } from './game/advice';
+import { allowedBuildingsFor } from './game/map';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { roundKey } from './game/mercato';
 import { createStadiumSound } from './ui/sound';
@@ -64,6 +65,9 @@ export default function App({ preview = null }) {
   const demo = useRef(null); // complexe de départ montré derrière l'écran titre avant la création du club
   const [panel, setPanel] = useState(boot.ui.panel || null);
   const [sel, setSel] = useState(boot.ui.sel || null);
+  // vitrine de construction : bâtiment et niveau montrés en hologramme sur la parcelle, fenêtre d'aperçu ouverte
+  const [buildView, setBuildView] = useState(null);
+  useEffect(() => { if (!sel) setBuildView(null); }, [sel]);
   // préférences de vue (confort, par navigateur) : heure réelle / jour / nuit, météo auto / forcée
   const [timeMode, setTimeMode] = useState(() => { try { return localStorage.getItem('fo-time') || 'auto'; } catch { return 'auto'; } });
   const [weatherMode, setWeatherMode] = useState(() => { try { return localStorage.getItem('fo-weather') || 'auto'; } catch { return 'auto'; } });
@@ -232,11 +236,16 @@ export default function App({ preview = null }) {
     });
   };
   const onBuild = (plotId, key) => guardSpend(upgradeCost(key, 1), `Construire : ${BUILDINGS[key].name} ?`, () => {
-    if (run((s) => build(s, plotId, key), 'Fonds insuffisants.')) { haptic('build'); notify({ kind: 'build', eyebrow: 'Chantier lancé', title: BUILDINGS[key].name }); }
+    if (run((s) => build(s, plotId, key), 'Fonds insuffisants.')) {
+      haptic('build');
+      uiSound('build');
+      notify({ kind: 'build', eyebrow: 'Chantier lancé', title: BUILDINGS[key].name });
+    }
   });
   const onUpgrade = (key) => guardSpend(upgradeCost(key, state.buildings[key] + 1), `${BUILDINGS[key].name} : passer au niveau ${state.buildings[key] + 1} ?`, () => {
     if (run((s) => upgrade(s, key), 'Fonds insuffisants ou niveau maximum.')) {
       haptic('build');
+      uiSound('build');
       notify({ kind: 'build', eyebrow: 'Amélioration', title: `${BUILDINGS[key].name} · niveau ${state.buildings[key] + 1}` });
     }
   });
@@ -296,6 +305,16 @@ export default function App({ preview = null }) {
   const signals = state ? dockSignals(state) : {};
   const hudKeys = inGame && !menu && !cinematic && !confirm && !preview; // raccourcis clavier du HUD (PC)
   const plotBadges = inGame && !cinematic ? actionablePlots(state) : [];
+  // bouton Construire du HUD : ouvre la vitrine sur la première parcelle libre (pastille dorée si un bâtiment est
+  // payable tout de suite), ou la referme
+  const freePlots = state ? freePlotsOf(state) : [];
+  const shopOpen = !!sel && freePlots.includes(sel.plotId);
+  const buildTool = !state || !freePlots.length || !allowedBuildingsFor(state).length ? null
+    : shopOpen ? 'open' : plotBadges.some((id) => freePlots.includes(id)) ? 'dot' : 'idle';
+  const toggleShop = () => { if (shopOpen) setSel(null); else if (freePlots.length) selectPlot(freePlots[0], 'main'); };
+  // aperçu montré dans la 3D : seulement pour la parcelle dont la fiche est ouverte
+  const holo = inGame && sel && buildView?.holo && buildView.plotId === sel.plotId
+    ? { plotId: buildView.plotId, key: buildView.key, lvl: buildView.lvl, windowOpen: !!buildView.window } : null;
   // avant la création du club, la scène montre le complexe de départ
   const sceneState = state || (demo.current ||= createInitialState('FootOFF FC'));
 
@@ -316,6 +335,7 @@ export default function App({ preview = null }) {
               matchInfo={matchInfo}
               recenter={recenter}
               selectedPlot={inGame ? sel?.plotId || null : null}
+              holo={holo}
               badges={plotBadges}
               quality={quality}
               attract={!inGame}
@@ -366,6 +386,9 @@ export default function App({ preview = null }) {
               onWeather={() => setWeatherMode((m) => cycle(m, ['auto', 'clear', 'rain', 'snow'], 'fo-weather'))}
               onMatchDay={() => setMatchDay((m) => !m)}
               onRecenter={() => { setMatchDay(false); setRecenter((r) => r + 1); }}
+              build={buildTool}
+              onBuild={toggleShop}
+              keys={hudKeys && !panel}
             />
           )}
           <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} keys={hudKeys && !panel && !sel} />
@@ -408,6 +431,8 @@ export default function App({ preview = null }) {
             onMatchDay={() => { setSel(null); setMatchDay(true); }}
             onTransfers={() => { setSel(null); setSquadTab('market'); setPanel('squad'); }}
             onTicketPolicy={(id) => run((s) => setTicketPolicy(s, id))}
+            onPreview={setBuildView}
+            onSwitchPlot={(id) => selectPlot(id, 'main')}
           />
         )}
       </Presence>

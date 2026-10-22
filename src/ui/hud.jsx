@@ -10,7 +10,7 @@ import { AnimatedMoney } from './moneyfx';
 import { fmtRating } from './format';
 import {
   IconCal, IconCheck, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
-  IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow, IconEye, IconStats,
+  IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow, IconEye, IconStats, IconCrane,
 } from './icons';
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran.
@@ -211,13 +211,22 @@ const WEATHER_UI = {
   snow: { Icon: IconSnow, title: 'Neige' },
 };
 
-export function SceneTools({ timeMode, weatherMode, matchDay, onTime, onWeather, onMatchDay, onRecenter }) {
+// Outils de la vue, et en tête le bouton Construire (vitrine des bâtiments, touche B) : build vaut null (rien à
+// construire), 'idle', 'dot' (un bâtiment est payable tout de suite : pastille dorée) ou 'open' (vitrine ouverte).
+export function SceneTools({ timeMode, weatherMode, matchDay, onTime, onWeather, onMatchDay, onRecenter, build = null, onBuild, keys = false }) {
   const T = TIME_UI[timeMode] || TIME_UI.auto;
   const W = WEATHER_UI[weatherMode] || WEATHER_UI.auto;
   const [open, setOpen] = useState(false); // mobile : outils repliés derrière un seul bouton
+  useHudKey(['KeyB'], () => onBuild?.(), keys && !!build);
   return (
-    <div className={`hud-tools glass ${open ? 'open' : ''}`} role="toolbar" aria-label="Vue">
+    <div className={`hud-tools glass ${open ? 'open' : ''}`} role="toolbar" aria-label="Construction et vue">
       <button className={`tools-toggle ${open ? 'on' : ''}`} onClick={() => setOpen((o) => !o)} aria-expanded={open} title="Réglages de la vue"><IconEye /></button>
+      {build && (
+        <button className={`tools-build ${build === 'open' ? 'on' : ''}`} onClick={onBuild} aria-pressed={build === 'open'} aria-keyshortcuts="B" title="Construire · touche B">
+          <IconCrane />
+          {build === 'dot' && <i className="tools-dot" aria-hidden="true" />}
+        </button>
+      )}
       <button className={timeMode !== 'auto' ? 'on' : ''} onClick={onTime} disabled={matchDay} title={`${T.title} — cliquer pour changer`}>
         <T.Icon />
       </button>

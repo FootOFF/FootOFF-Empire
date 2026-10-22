@@ -13,7 +13,9 @@ export const SCREENS = [
   ['empire', 'Empire (HUD)'],
   ['tutoriel', 'Tutoriel des premiers pas'],
   ['inspecteur', 'Inspecteur du stade'],
-  ['parcelle', 'Inspecteur · parcelle libre'],
+  ['parcelle', 'Vitrine de construction · parcelle libre'],
+  ['vitrine-fonds', 'Vitrine de construction · fonds insuffisants'],
+  ['apercu', 'Fenêtre d’aperçu · niveaux d’un bâtiment construit'],
   ['effectif', 'Effectif · joueurs'],
   ['fiche', 'Fiche joueur'],
   ['composition', 'Effectif · composition'],
@@ -80,6 +82,7 @@ export function previewState(screen) {
     for (let k = 0; k < 3; k++) playRound(s); // statistiques, forme, dernier match
     s.money = 42000;
   }
+  if (screen === 'vitrine-fonds') s.money = 4200; // un seul bâtiment payable : les autres disent ce qui manque
   if (screen === 'transferts' || screen === 'bureau') { // bureau construit au niveau 2 chez les supporters
     s.reputation = 8;
     s.money = 1e6;
@@ -146,7 +149,8 @@ export function previewUi(screen, s) {
     case 'reglages': return { screen: 'title', titleView: 'settings' };
     case 'creation': return { screen: 'title', titleView: 'create' };
     case 'inspecteur': return { sel: { plotId: 't0', sector: 'main' } };
-    case 'parcelle': return { sel: { plotId: 't2', sector: 'main' } };
+    case 'parcelle': case 'vitrine-fonds': return { sel: { plotId: 't2', sector: 'main' } };
+    case 'apercu': return { sel: { plotId: 't1', sector: 'main', window: true } };
     case 'effectif': return { panel: 'squad' };
     case 'fiche': return { panel: 'squad', squad: { sheet: s.players.find((p) => p.season?.apps)?.id ?? s.players[0].id } };
     case 'composition': return { panel: 'squad', squadTab: 'lineup' };

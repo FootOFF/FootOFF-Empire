@@ -45,3 +45,6 @@ export const IconCheck = I(<path d="m5 12.5 4.2 4.2L19 7" />);
 export const IconAlert = I(<><path d="M12 4 21.5 20h-19Z" /><path d="M12 10v4.5M12 17.3v.2" /></>);
 export const IconDice = I(<><rect x="4" y="4" width="16" height="16" rx="3.5" /><circle cx="9" cy="9" r="1.1" /><circle cx="15" cy="15" r="1.1" /><circle cx="15" cy="9" r="1.1" /><circle cx="9" cy="15" r="1.1" /><circle cx="12" cy="12" r="1.1" /></>);
 export const IconGear = I(<><circle cx="12" cy="12" r="3" /><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M6 18l1.6-1.6M16.4 7.6 18 6" /></>);
+// grue de chantier (Construire) et flèches qui s'écartent (voir en grand)
+export const IconCrane = I(<><path d="M7.5 21V3.5M3.5 7.5h17M3.5 7.5l4-4 13 4" /><path d="M16.5 7.5v4.5" /><path d="M16.5 12a1.6 1.6 0 1 1-1.6 1.6" /><path d="M4.5 21h6" /></>);
+export const IconExpand = I(<path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5" />);

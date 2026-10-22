@@ -161,6 +161,10 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
   la confirmation devient une feuille qui monte du bas.
 - Vibrations (`src/ui/haptics.js`) : but marqué, vente, dépense, construction ; désactivables dans les réglages
   (indisponibles sur iPhone, Safari ne les permet pas).
+- Défilement (`src/ui/scrollcue.js`) : sur écran tactile, aucune barre du système ; un curseur doré fin longe la
+  zone pendant qu'on la fait défiler, puis s'efface. Sur PC, barres fines dorées. Partout, une zone qui défile
+  s'estompe sur le bord où il reste du contenu (`data-fade`, liste des zones dans `scrollcue.js` : jamais une zone à
+  pied collé, qui s'estomperait avec) ; arrivée au bout, elle n'entraîne plus la page (pas de rebond de la page).
 - Typographie : le code écrit des espaces ordinaires ; `src/ui/typography.js` pose à l'affichage les insécables
   (avant `: ; ! ?`, dans les guillemets, entre un nombre et son unité), l'apostrophe ’ et les points de
   suspension. Ordinaux avec `ordinal()` : 1er, 1re, 2e.
@@ -218,8 +222,36 @@ puis glisser : vers le haut pour dézoomer, vers le bas pour zoomer (double tap 
 ## Cadrage d'un bâtiment
 
 La caméra mesure la zone libre (sous la barre du haut, au-dessus de la fiche sur téléphone, à droite de la
-carte de l'inspecteur sur PC) et choisit la distance qui fait tenir le bâtiment entier dans cette zone, en
-trois-quarts face. Sur téléphone, la fiche est limitée à 54 % de la hauteur et l'objectif s'efface pendant ce temps.
+carte de l'inspecteur sur PC, à gauche de la fenêtre d'aperçu ou au-dessus quand elle se pose en bas) et choisit
+la distance qui fait tenir le bâtiment entier dans cette zone, en trois-quarts face. Sur téléphone, la fiche est
+limitée à 54 % de la hauteur et l'objectif s'efface pendant ce temps.
+
+## Vitrine de construction
+
+Fiche d'une parcelle libre (`src/ui/inspector.jsx`, briques dans `src/ui/build.jsx`) : tous les bâtiments en cartes
+illustrées d'un coup d'œil, sans rien faire défiler (vignette rendue avec les modèles 3D du jeu,
+`public/ui/buildings/<bâtiment>_L<niveau>.webp`, famille, effet phare chiffré, prix ou « il manque … »). La
+recommandation du staff (`recommendedBuilding`) est choisie d'emblée et marquée « Conseillé ». Le bâtiment choisi
+se dessine en hologramme doré sur la parcelle (`holo` d'Empire3D : corps translucide, arêtes, sortie de terre),
+la caméra le cadre dans la zone libre puis oscille lentement autour, comme en vitrine.
+
+- PC : la fenêtre d'aperçu (`.bw`) se pose à droite, la carte de match et les outils s'effacent ; grande vignette,
+  rangée des niveaux (un clic montre le niveau, en hologramme aussi), effets chiffrés avant / après, rentabilité,
+  action. Filtres Tout / Sport / Revenus / Mercato. Clavier et manette : flèches dans la vitrine puis vers le
+  bouton d'achat, Entrée sur la carte choisie pour construire, Échap. Tablette en hauteur : la fenêtre se pose en
+  bas à droite, la parcelle reste visible au-dessus.
+- Téléphone : une rangée de vignettes (jamais plus large qu'un quart de la rangée), le détail dessous, l'action
+  sous le pouce ; « Aperçu » ouvre la fenêtre en grand, par-dessus la fiche.
+- Acheter au doigt : appui long de 0,7 s (`HoldButton`) ; le bouton se remplit de lumière, un anneau suit l'appui,
+  une note monte, l'hologramme se charge de lumière (`src/ui/charge.js`) ; un simple toucher explique le geste.
+  Souris, clavier, manette : un clic. Puis le chantier : son, vibration, ruban « Chantier lancé » sur la vignette.
+- Parcelle bâtie : vignette du niveau atteint, niveau suivant chiffré avant / après, « Aperçu des niveaux » (la
+  fenêtre ; sur PC, le niveau montré remplace le bâtiment en hologramme le temps de l'aperçu).
+- Sélecteur ‹ › : d'une parcelle libre à l'autre, sans perdre le bâtiment choisi. Bouton Construire (grue) en tête
+  des outils du HUD, touche B : ouvre la vitrine sur la première parcelle libre, pastille dorée si un bâtiment est
+  payable tout de suite.
+- Coût mesuré : l'hologramme ajoute environ 1,4 ms par image en plein écran (2880 × 1620, gros plan), seulement
+  pendant l'aperçu ; les modèles des bâtiments proposés se chargent à l'ouverture de la vitrine.
 
 ## Carrières et anciens joueurs
 

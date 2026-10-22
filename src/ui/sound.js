@@ -166,6 +166,34 @@ export function createStadiumSound() {
         [[1047, 0], [1319, 0.09], [1568, 0.18], [2093, 0.27]].forEach(([f, at], k) => tone(f, f * 1.004, at, k === 3 ? 0.5 : 0.22, k === 3 ? 0.026 : 0.022, 'triangle'));
         tone(3136, 3150, 0.3, 0.35, 0.006);
       } else if (kind === 'error') { tone(260, 240, 0, 0.09, 0.03, 'triangle'); tone(220, 200, 0.11, 0.12, 0.03, 'triangle'); }
+      // chantier lancé : un coup sourd (la première pierre), puis deux notes claires qui montent
+      else if (kind === 'build') {
+        tone(150, 62, 0, 0.22, 0.06, 'triangle');
+        tone(880, 884, 0.1, 0.2, 0.022, 'triangle');
+        tone(1320, 1326, 0.19, 0.34, 0.02, 'triangle');
+      } else if (kind === 'hold') {
+        // appui long (bouton « maintenir pour construire ») : une note qui monte tant qu'on appuie. Renvoie de quoi
+        // l'arrêter en douceur si le doigt se lève avant la fin.
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(300, t);
+        osc.frequency.exponentialRampToValueAtTime(820, t + 0.75);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.016, t + 0.08);
+        g.gain.setValueAtTime(0.016, t + 0.62);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+        osc.connect(g).connect(master);
+        osc.start(t);
+        osc.stop(t + 0.82);
+        return () => {
+          const now = ctx.currentTime;
+          g.gain.cancelScheduledValues(now);
+          g.gain.setTargetAtTime(0, now, 0.025);
+          try { osc.stop(now + 0.12); } catch { /* déjà arrêté */ }
+        };
+      }
+      return null;
     },
     stop() {
       if (!ctx) return;

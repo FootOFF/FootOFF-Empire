@@ -4,7 +4,7 @@ import { PLOTS, allowedBuildingsFor, plotBuilding } from './map';
 import { autoLineup, lineupRating, slotsOf } from './tactics';
 import { costOf, ratingAt, wageOf } from './players';
 import { fitGain, pendingCounters, poolOf } from './mercato';
-import { capacity, endOfSeasonForecast, expectedGate, seasonForecast } from './economy';
+import { capacity, endOfSeasonForecast, expectedGate, investmentPreview, seasonForecast } from './economy';
 import { nextOpponent, standingsOf } from './season';
 
 // Signaux et conseils : ce que le joueur peut faire d'utile maintenant (pastilles dorées du dock et de
@@ -72,6 +72,26 @@ export function actionablePlots(s) {
     }
   }
   return out;
+}
+
+// Bâtiment conseillé par le staff dans la vitrine de construction : le centre d'entraînement d'abord (toute
+// l'équipe progresse), puis celui qui rembourse le plus vite son prix et son entretien, sinon le premier proposé.
+export function recommendedBuilding(s) {
+  const options = allowedBuildingsFor(s);
+  if (!options.length) return null;
+  if (options.includes('training')) return 'training';
+  const paying = options
+    .map((k) => [k, investmentPreview(s, k).payback])
+    .filter(([, p]) => p !== null)
+    .sort((a, b) => a[1] - b[1]);
+  return paying.length ? paying[0][0] : options[0];
+}
+
+// Argent qui manque pour une dépense : combien de matchs à domicile (recettes du jour, sans aléa) pour l'avoir.
+export function matchesToAfford(s, missing) {
+  if (missing <= 0) return 0;
+  const per = expectedGate(s, null).revenue;
+  return per > 0 ? Math.ceil(missing / per) : null;
 }
 
 // Pastilles du dock : recrue intéressante ou salaires dangereux (Effectif), stade à agrandir (Stade),
