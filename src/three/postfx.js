@@ -108,8 +108,8 @@ function createChain(renderer, scene, camera, q) {
         if (o.userData.noAO && o.visible) { o.visible = false; gtao._visibilityCache.push(o); }
       });
     };
-    // calcul à une fraction de la résolution de l'écran (pixels CSS) : moitié, quart en vue lointaine (setAODetail) ;
-    // effet doux, débruité puis étiré
+    // calcul à la moitié de la résolution de l'écran (pixels CSS), de près comme de loin (pas de changement d'aspect
+    // au zoom) ; effet doux, débruité puis étiré
     const setSize = gtao.setSize.bind(gtao);
     gtao.setSize = (w, h) => {
       const k = chain.aoScale / chain.ratio;
@@ -153,7 +153,6 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
   let chain = null;
   let look = null;
   let halo = 1;
-  let aoNear = true;
   let ratio = 1;
   const css = new THREE.Vector2();
   const out = new THREE.Vector2();
@@ -194,7 +193,6 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
     teardown();
     if (q === 'economie') return;
     chain = createChain(renderer, scene, camera, q);
-    chain.aoScale = aoNear ? 0.5 : 0.25;
     size();
     applyLook();
   }
@@ -223,14 +221,6 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
       size();
     },
     get ratio() { return ratio; },
-    // occlusion : demi-résolution de près, quart en vue lointaine (Empire3D, selon le recul de la caméra)
-    setAODetail(near) {
-      if (near === aoNear) return;
-      aoNear = near;
-      if (!chain?.gtao) return;
-      chain.aoScale = near ? 0.5 : 0.25;
-      if (chain.composer._width > 1) chain.gtao.setSize(chain.composer._width, chain.composer._height);
-    },
     setQuality(q) { build(q); },
     setLook,
     get enabled() { return !!chain; },

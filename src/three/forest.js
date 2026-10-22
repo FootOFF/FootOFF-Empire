@@ -378,15 +378,14 @@ export function createForest(group, list, { quality = 'auto', site }) {
   let q = quality;
   const siteDist = (x, z) => Math.hypot(Math.max(site.x0 - x, 0, x - site.x1), Math.max(site.z0 - z, 0, z - site.z1));
   const loader = new THREE.TextureLoader();
-  const atlas = { color: { value: null }, normal: { value: null }, half: null };
-  const loadAtlas = () => {
-    const half = q === 'economie'; // atlas complet dès la qualité auto : imposteurs nets en pleine résolution
-    if (atlas.half === half) return;
-    atlas.half = half;
+  const atlas = { color: { value: null }, normal: { value: null }, loaded: false };
+  const loadAtlas = () => { // atlas complet quelle que soit la qualité : imposteurs nets en pleine résolution
+    if (atlas.loaded) return;
+    atlas.loaded = true;
     for (const [key, file, srgb] of [['color', 'impostors_color', true], ['normal', 'impostors_normal', false]]) {
       atlas[key].value?.dispose();
-      const job = trackLoad(half ? 250e3 : 700e3); // écran de chargement : taille supposée de l'atlas
-      const t = loader.load(`${BASE}vegetation/${file}${half ? '-half' : ''}.webp`, job.done, undefined, job.done);
+      const job = trackLoad(700e3); // écran de chargement : taille supposée de l'atlas
+      const t = loader.load(`${BASE}vegetation/${file}.webp`, job.done, undefined, job.done);
       t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
       t.anisotropy = 4;
       atlas[key].value = t;

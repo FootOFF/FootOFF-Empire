@@ -87,9 +87,9 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
     d'Europe des clubs (2 premiers de l'Elite, bleu) ; descente (2 derniers, rouge). Hors Elite, la légende
     rappelle que l'Europe se gagne en Elite.
 - Réglages (écran titre et menu pause, voir plus bas) : Son et Vibrations en interrupteurs, Qualité graphique en
-  choix à trois positions. La qualité est enregistrée par appareil (`fo-quality`) : Économie = sans ombres et
-  résolution 1, Auto = selon l'appareil, Haute = ombres et netteté maximales ; elle s'applique sans recharger. Auto et
-  Haute calculent l'image à la pleine résolution de l'écran (jusqu'à 3 pixels par pixel CSS), téléphone compris, au
+  choix à trois positions. La qualité est enregistrée par appareil (`fo-quality`) : Économie = sans ombres ni effets de
+  lumière, Auto = selon l'appareil, Haute = ombres et détails maximaux ; elle s'applique sans recharger. Dans les trois,
+  l'image est calculée à la pleine résolution de l'écran (un pixel calculé par pixel physique), téléphone compris, au
   repos comme en mouvement. Sur un écran peu haut, la liste des réglages défile sous son titre, l'entrée choisie
   toujours visible.
 
@@ -333,21 +333,20 @@ Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone
 - projecteurs (mâts, parcelles, stade, trophée) tous dans le calcul de la lumière ou aucun : le jour, aucun ne coûte ;
   les deux combinaisons sont compilées d'avance, derrière l'écran de chargement (pas d'à-coup à la tombée du jour) ;
 - chaîne de rendu (`src/three/postfx.js`) : scène dessinée sans multi-échantillons (il coûtait ~7,5 ms en
-  2880 × 1620 sur une puce graphique intégrée) ; occlusion (demi-résolution de l'écran, quart en vue lointaine, sans
+  2880 × 1620 sur une puce graphique intégrée) ; occlusion (demi-résolution de l'écran de près comme de loin, sans
   le ciel, l'eau, le voile d'horizon, les imposteurs ni les cartes de feuillage) et halo calculés à basse résolution,
   posés dans la passe de sortie avec le tone mapping et l'étalonnage ; halo au quart de la résolution de la scène,
   zones claires lues sur 4 × 4 pixels et noyaux de flou divisés par deux (4,5 → 1,7 ms, même image) ; garde-fou des
   pixels invalides à l'entrée du halo ; anticrénelage FXAA seulement sur écran peu dense (sur un écran très dense, une
   marche d'escalier fait un demi-pixel CSS) ; ciel peint en dernier, là où il se voit ; reflet du lac une image sur
   deux ;
-- net en permanence : la toile garde la densité de l'écran (au plus 3) et la scène est toujours calculée à cette
-  densité, sur ordinateur comme sur téléphone, au repos comme pendant les déplacements et le zoom, sans résolution
-  adaptative ni agrandisseur (sur une puce intégrée, agrandir une image calculée plus petite coûtait presque autant
-  que la pleine résolution : FXAA, EASU, RCAS, 5 à 7 ms en 2880 × 1620) ; ombres en 2048 partout. Mesuré en
-  2880 × 1620 (puce intégrée AMD, écran 60 Hz) : 30 images par seconde régulières en mouvement, chaque image à la
-  taille exacte de l'écran (avant : image agrandie ×1,7 en mouvement, floue et crénelée). Seule la qualité Économie,
-  choisie dans les réglages, dessine à un pixel par pixel CSS. Densité de l'écran relue au zoom du navigateur et au
-  changement d'écran ;
+- net en permanence : la toile a exactement la densité de l'écran et la scène est toujours calculée à cette densité,
+  dans toutes les qualités, sur ordinateur comme sur téléphone, au repos comme pendant les déplacements et le zoom,
+  sans résolution adaptative ni agrandisseur (sur une puce intégrée, agrandir une image calculée plus petite coûtait
+  presque autant que la pleine résolution : FXAA, EASU, RCAS, 5 à 7 ms en 2880 × 1620) ; ombres en 2048, ciel photo
+  et images des arbres lointains en pleine définition partout. Mesuré en 2880 × 1620 (puce intégrée AMD, écran
+  60 Hz) : 30 images par seconde en mouvement, chaque image à la taille exacte de l'écran (avant : image agrandie
+  ×1,7 en mouvement, floue et crénelée). Densité de l'écran relue au zoom du navigateur et au changement d'écran ;
 - feuillage des arbres : profondeur écrite d'abord par une passe qui ne lit que l'image des feuilles (même vent, même
   découpe), puis feuillage éclairé sans écrire la profondeur : chaque pixel n'est éclairé que pour la feuille visible
   (vue rapprochée, 2880 × 1620 : scène 22,1 → 18,4 ms) ;

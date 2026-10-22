@@ -4,7 +4,7 @@
 const KEY_QUALITY = 'fo-quality';
 
 export const QUALITIES = [
-  { id: 'economie', label: 'Économie', hint: 'Sans ombres, résolution standard : idéal sur batterie ou appareil ancien.' },
+  { id: 'economie', label: 'Économie', hint: 'Sans ombres ni effets de lumière : idéal sur batterie ou appareil ancien.' },
   { id: 'auto', label: 'Auto', hint: 'Réglée selon ton appareil.' },
   { id: 'haute', label: 'Haute', hint: 'Ombres et netteté maximales.' },
 ];

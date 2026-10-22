@@ -6,16 +6,13 @@ import { GRADE, MOMENTS, createPhotoSky, lookFor } from './sky';
 // Rendu physique : sRGB + ACES, ciel photographié (dôme, environnement, brume) selon le moment de la journée,
 // soleil calé sur celui de la photo, ombres douces.
 
-// Qualité graphique (menu) : économie = résolution 1 et pas d'ombres ; auto = selon l'appareil ; haute = tout.
-// densité de la toile : celle de l'écran (au plus 3), image finale nette ; 1 en économie (rendu direct)
-export function outputRatioFor(quality) {
-  if (quality === 'economie') return 1;
-  return Math.min(window.devicePixelRatio, 3);
-}
+// Qualité graphique (menu) : économie = sans ombres ni effets ; auto = selon l'appareil ; haute = tout.
+// Densité de la toile : exactement celle de l'écran, quelle que soit la qualité (un pixel calculé par pixel physique,
+// rien d'agrandi par le navigateur).
+export const outputRatioFor = () => window.devicePixelRatio || 1;
 
-// densité de rendu maximale de la scène (pixels calculés par pixel CSS) : celle de la toile, sur ordinateur comme sur
-// téléphone, au repos comme en mouvement ; la résolution adaptative (Empire3D) ne la baisse d'un palier que si
-// l'appareil ne suit plus, et l'agrandisseur net (postfx.js) complète alors jusqu'à la densité de l'écran
+// densité de calcul de la scène (pixels calculés par pixel CSS) : celle de la toile, sur ordinateur comme sur
+// téléphone, au repos comme pendant les déplacements et le zoom
 export const pixelRatioFor = (quality) => outputRatioFor(quality);
 
 export function createRenderer(mount, quality = 'auto') {
@@ -37,7 +34,7 @@ export function createRenderer(mount, quality = 'auto') {
 
 const FADE = 4; // secondes : les lumières suivent le fondu du ciel
 
-export function createEnvironment(scene, renderer, { quality = 'auto' } = {}) {
+export function createEnvironment(scene, renderer) {
   // environnement provisoire (studio neutre) le temps que le premier ciel arrive
   const pmrem = new THREE.PMREMGenerator(renderer);
   const roomTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -52,7 +49,7 @@ export function createEnvironment(scene, renderer, { quality = 'auto' } = {}) {
   scene.add(hemi);
 
   // ciel photographié : dôme, environnement (reflets et lumière ambiante), couleur d'horizon pour la brume
-  const photo = createPhotoSky(renderer, { quality });
+  const photo = createPhotoSky(renderer);
   scene.add(photo.dome);
   const skyEnvListeners = new Set();
   let dark = false;
@@ -200,7 +197,7 @@ export function createEnvironment(scene, renderer, { quality = 'auto' } = {}) {
 
   return {
     setAmbience, update, dispose, sun, setPlazaVisible, setGroundVisible, onSkyEnv,
-    setQuality: (q) => photo.setQuality(q),
+    setQuality: () => {}, // le ciel est le même dans toutes les qualités (pleine définition)
     veilMaterial: (lo, hi) => photo.veilMaterial(lo, hi),
     tune: { MOMENTS, GRADE, retune },
     get grade() { return grade; },

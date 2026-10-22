@@ -11,7 +11,6 @@ const DEG = Math.PI / 180;
 const BASE = import.meta.env.BASE_URL;
 const BINS = 32;
 const FADE = 4; // secondes de fondu entre deux ciels
-const narrow = () => Math.min(window.innerWidth, window.innerHeight) < 600;
 
 // Heures du lever et du coucher (centre de la France, ~46,6° N 2,4° E), en heure locale de l'appareil.
 export function sunTimes(date = new Date()) {
@@ -190,9 +189,7 @@ const veilFragment = /* glsl */ `${fragmentShader}
 
 // Dôme du ciel + environnement (PMREM) pour une ambiance. set() charge le ciel voulu puis fond l'ancien dans le
 // nouveau ; l'environnement est régénéré pendant le fondu.
-export function createPhotoSky(renderer, { quality = 'auto' } = {}) {
-  let q = quality;
-  const big = () => q === 'haute' || (q === 'auto' && !narrow());
+export function createPhotoSky(renderer) {
   const loader = new THREE.TextureLoader();
   const cache = new Map(); // fichier -> { promise, tex, used }
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -226,13 +223,13 @@ export function createPhotoSky(renderer, { quality = 'auto' } = {}) {
   let envStep = 0;
   const listeners = new Set();
 
-  const fileOf = (key) => `${BASE}sky/${key}${big() ? '' : '-2k'}.webp`;
+  const fileOf = (key) => `${BASE}sky/${key}.webp`; // pleine définition sur tout appareil, net aussi sur téléphone
   function load(key) {
     const url = fileOf(key);
     let e = cache.get(url);
     if (!e) {
       e = { tex: null, used: 0 };
-      const job = trackLoad(big() ? 360e3 : 160e3); // écran de chargement : taille supposée du ciel
+      const job = trackLoad(360e3); // écran de chargement : taille supposée du ciel
       e.promise = new Promise((resolve, reject) => {
         loader.load(url, (t) => {
           job.done();
@@ -364,12 +361,6 @@ export function createPhotoSky(renderer, { quality = 'auto' } = {}) {
         vertexShader: veilVertex, fragmentShader: veilFragment,
         transparent: true, depthWrite: false, side: THREE.BackSide, fog: false,
       });
-    },
-
-    setQuality(nq) {
-      if (nq === q) return;
-      q = nq;
-      if (wanted) { const w = wanted; a = null; b = null; this.set(w); }
     },
 
     dispose() {

@@ -220,7 +220,7 @@ export default function Empire3D({
     hookShadowMap(renderer); // ombres des arbres affichés en imposteurs
 
     const scene = new THREE.Scene();
-    const env = createEnvironment(scene, renderer, { quality });
+    const env = createEnvironment(scene, renderer);
     const aspect0 = mount.clientWidth / Math.max(1, mount.clientHeight);
     const home0 = homeView(aspect0);
     const camera = new THREE.PerspectiveCamera(fovFor(aspect0), aspect0, 0.5, 600);
@@ -751,9 +751,6 @@ export default function Empire3D({
       }
       controls.update();
       const camDist = camera.position.distanceTo(controls.target);
-      // occlusion à quart de résolution en vue lointaine (seuils écartés : pas de va-et-vient)
-      if (camDist > 28) post.setAODetail(false);
-      else if (camDist < 24) post.setAODetail(true);
       const fogBase = scene.fog && scene.userData.fogBase;
       if (fogBase) {
         // Le brouillard suit le recul de la caméra : le complexe reste net (jusqu'à ~25 unités au-delà de la cible),
