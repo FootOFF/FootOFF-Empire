@@ -133,13 +133,27 @@ export function Clock() {
   return <time className="cm-clock">{now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</time>;
 }
 
-// Réglages partagés par l'écran titre et le menu pause : son, vibrations, qualité graphique, retour.
+// Taille réelle de l'image 3D : la toile couvre la fenêtre, un pixel calculé par pixel physique de l'écran (Empire3D).
+function useScreenPixels() {
+  const read = () => { const k = window.devicePixelRatio || 1; return [Math.floor(window.innerWidth * k), Math.floor(window.innerHeight * k)]; };
+  const [px, setPx] = useState(read);
+  useEffect(() => {
+    const on = () => setPx(read());
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return px;
+}
+
+// Réglages partagés par l'écran titre et le menu pause : son, vibrations, qualité graphique (avec la résolution réelle
+// de l'image), retour.
 export function SettingsView({ settings, onBack, active = true }) {
   const { muted, onToggleSound, vibration, canVibrate, onToggleVibration, quality, qualities, onQuality } = settings;
   const rows = [{ id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'quality' }, { id: 'back' }];
   const menu = useMenu(rows, { onBack, active });
   const { cur, setCur, refs, hover } = menu;
   const qi = Math.max(0, qualities.findIndex((q) => q.id === quality));
+  const [pw, ph] = useScreenPixels();
   const setQ = (i) => {
     const n = Math.min(qualities.length - 1, Math.max(0, i));
     if (n !== qi) { onQuality(qualities[n].id); uiSound('move'); }
@@ -168,7 +182,11 @@ export function SettingsView({ settings, onBack, active = true }) {
       </button>
       <div role="menuitem" tabIndex={0} aria-label={`Qualité graphique : ${qualities[qi].label}`} className={`cm-row column ${cur === 2 ? 'on' : ''}`} {...row(2)}>
         <span className="cm-bar" aria-hidden="true" />
-        <span className="cm-row-text"><strong>Qualité graphique</strong><span>{qualities[qi].hint}</span></span>
+        <span className="cm-row-text">
+          <strong>Qualité graphique</strong>
+          <span>{qualities[qi].hint}</span>
+          <span className="cm-res">Image calculée en {pw} × {ph} pixels : la pleine résolution de ton écran.</span>
+        </span>
         <span className="cm-seg">
           {qualities.map((q, i) => (
             <button key={q.id} type="button" tabIndex={-1} className={i === qi ? 'on' : ''} aria-pressed={i === qi} onClick={() => setQ(i)}>{q.label}</button>

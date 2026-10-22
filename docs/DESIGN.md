@@ -90,8 +90,9 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
   choix à trois positions. La qualité est enregistrée par appareil (`fo-quality`) : Économie = sans ombres ni effets de
   lumière, Auto = selon l'appareil, Haute = ombres et détails maximaux ; elle s'applique sans recharger. Dans les trois,
   l'image est calculée à la pleine résolution de l'écran (un pixel calculé par pixel physique), téléphone compris, au
-  repos comme en mouvement. Sur un écran peu haut, la liste des réglages défile sous son titre, l'entrée choisie
-  toujours visible.
+  repos comme en mouvement ; la ligne Qualité graphique affiche cette résolution réelle (« Image calculée en
+  2880 × 1620 pixels »). Sur un écran peu haut, la liste des réglages défile sous son titre, l'entrée choisie toujours
+  visible.
 
 ## Finitions
 
