@@ -46,6 +46,8 @@ export function SeasonPanel({ state, onClose }) {
   const standings = standingsOf(state);
   const div = DIVISIONS[state.divisionIndex];
   const lm = state.lastMatch;
+  const lmPens = !!lm?.pens; // coupe : égalité tranchée aux tirs au but
+  const lmWon = lm && (lm.gf > lm.ga || (lmPens && lm.pens[0] > lm.pens[1]));
   const rel = state.divisionIndex > 0;
   const promo = state.divisionIndex < 3;
   const pos = standings.findIndex((t) => t.i === 0) + 1;
@@ -91,11 +93,11 @@ export function SeasonPanel({ state, onClose }) {
 
       {lm && (
         <>
-          <SectionHead label={`Dernier match · ${lm.comp && lm.comp !== 'league' ? `${lm.comp === 'c1' ? 'Europe' : 'Coupe'} · ${STAGES_SHORT[lm.stage].toLowerCase()}` : `journée ${lm.round}`}`} aside={lm.gf > lm.ga ? 'Victoire' : lm.gf < lm.ga ? 'Défaite' : 'Match nul'} />
+          <SectionHead label={`Dernier match · ${lm.comp && lm.comp !== 'league' ? `${lm.comp === 'c1' ? 'Europe' : 'Coupe'} · ${STAGES_SHORT[lm.stage].toLowerCase()}` : `journée ${lm.round}`}`} aside={lmPens ? `${lmWon ? 'Qualifié' : 'Éliminé'} aux t.a.b. ${lm.pens[0]}–${lm.pens[1]}` : lm.gf > lm.ga ? 'Victoire' : lm.gf < lm.ga ? 'Défaite' : 'Match nul'} />
           <div className="last-match">
             <div className="lm-score">
               <span className="lm-team">{state.clubName}</span>
-              <b className={lm.gf > lm.ga ? 'win' : lm.gf < lm.ga ? 'loss' : ''}>{lm.gf} – {lm.ga}</b>
+              <b className={lmWon ? 'win' : lm.gf < lm.ga || lmPens ? 'loss' : ''}>{lm.gf} – {lm.ga}</b>
               <span className="lm-team away">{lm.oppName}</span>
             </div>
             {lm.scorers?.length > 0 && (

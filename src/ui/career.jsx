@@ -137,11 +137,11 @@ export function PlayerCareer({ state, id, onClose, onSheet }) {
             <span className="sh-cap">Ses plus grands matchs</span>
             <ul className="cr-games">
               {c.best.map(({ m, row }) => (
-                <li key={`${m.season}-${m.round}`}>
+                <li key={`${m.season}-${m.round}-${m.comp || 'league'}-${m.stage ?? ''}`}>
                   <RatingBadge value={row.rating} />
                   <span className="cr-game-main">
-                    <b>{m.gf}–{m.ga} contre {m.opp}</b>
-                    <em>Saison {m.season} · journée {m.round}{row.goals ? ` · ${plural(row.goals, 'but', 'buts')}` : ''}{row.assists ? ` · ${plural(row.assists, 'passe', 'passes')}` : ''}{m.motm === id ? ' · homme du match' : ''}</em>
+                    <b>{m.gf}–{m.ga}{m.pens ? ` (t.a.b. ${m.pens[0]}–${m.pens[1]})` : ''} contre {m.opp}</b>
+                    <em>Saison {m.season} · {m.comp && m.comp !== 'league' && m.label ? m.label : `journée ${m.round}`}{row.goals ? ` · ${plural(row.goals, 'but', 'buts')}` : ''}{row.assists ? ` · ${plural(row.assists, 'passe', 'passes')}` : ''}{m.motm === id ? ' · homme du match' : ''}</em>
                   </span>
                 </li>
               ))}

@@ -23,6 +23,7 @@ const mkey = (m) => `${m.season}-${m.round}-${m.comp || 'league'}-${m.stage ?? '
 const whenOf = (m) => (m.comp === 'cup' ? `Coupe ${STAGES_SHORT[m.stage]}` : m.comp === 'c1' ? `Europe ${STAGES_SHORT[m.stage]}` : `J${m.round}`);
 const LETTER = { win: 'V', draw: 'N', loss: 'D' };
 const WORD = { win: 'Victoire', draw: 'Match nul', loss: 'Défaite' };
+const pensOf = (m) => (m.pens ? ` (t.a.b. ${m.pens[0]}–${m.pens[1]})` : ''); // coupe : égalité tranchée aux tirs au but
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 const shortName = (n) => { const [f, ...r] = n.split(' '); return r.length ? `${f[0]}. ${r.join(' ')}` : n; };
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
@@ -52,7 +53,7 @@ function FormPills({ list, onOpen }) {
   return (
     <div className="st-form">
       {list.map((m) => (
-        <button key={mkey(m)} className={`st-pill ${outcome(m)}`} onClick={() => onOpen?.(m)} title={`J${m.round} · ${m.gf}–${m.ga} contre ${m.opp}`}>
+        <button key={mkey(m)} className={`st-pill ${outcome(m)}`} onClick={() => onOpen?.(m)} title={`${whenOf(m)} · ${m.gf}–${m.ga}${pensOf(m)} contre ${m.opp}`}>
           {LETTER[outcome(m)]}
         </button>
       ))}
@@ -213,7 +214,7 @@ function MatchesTab({ matches, onOpen }) {
             <button className="st-match" onClick={() => onOpen(m)}>
               <span className={`st-when ${m.comp && m.comp !== 'league' ? `st-comp ${m.comp}` : ''}`}>S{m.season} · {whenOf(m)}</span>
               <span className="st-opp">{m.opp}</span>
-              <span className={`st-score ${outcome(m)}`}>{m.gf}–{m.ga}</span>
+              <span className={`st-score ${outcome(m)}`}>{m.gf}–{m.ga}{m.pens && <small>t.a.b. {m.pens[0]}–{m.pens[1]}</small>}</span>
               <span className="st-mini">{m.stats ? `${m.stats.possession} % · ${m.stats.shots[0]}–${m.stats.shots[1]} tirs` : ''}</span>
               <IconChevron />
             </button>
@@ -500,7 +501,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
             <div className={`sp-score ${o}`}>{m.gf}<i>–</i>{m.ga}</div>
             <div className="sp-team ext">{m.opp}<span className="sp-dot ext" /></div>
           </div>
-          <span className={`sp-state ${o}`}>{WORD[o]}</span>
+          <span className={`sp-state ${o}`}>{m.pens ? `${o === 'win' ? 'Qualifié' : 'Éliminé'} aux tirs au but ${m.pens[0]}–${m.pens[1]}` : WORD[o]}</span>
           <div className="sp-strip">
             <span><b>{fmtNum(m.attendance || 0)}</b> spectateurs{m.capacity ? ` · ${pct(m.attendance, m.capacity)} % de remplissage` : ''}</span>
             <span>Recette <b>{fmtMoney(m.revenue || 0)}</b></span>
@@ -541,6 +542,15 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
               })}
             </ul>
           )}
+          {m.pens && (
+            <ul className="sp-events">
+              <li className={o === 'win' ? 'dom' : 'ext'}>
+                <span className="sp-min">t.a.b.</span>
+                <span className="sp-ico"><IconBall /></span>
+                <span className="sp-who">Tirs au but {m.pens[0]}–{m.pens[1]}<em> · {o === 'win' ? state.clubName : m.opp} se qualifie</em></span>
+              </li>
+            </ul>
+          )}
         </section>
 
         {motm && (
@@ -566,7 +576,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
         <section className="sh-sec">
           <span className="sh-cap">Les dernières confrontations</span>
           {h2h.length === 0 ? <p className="st-muted">Première rencontre entre les deux clubs.</p> : (
-            <ul className="sp-h2h">{h2h.map((x) => <li key={mkey(x)}><span>Saison {x.season} · J{x.round}</span><b className={outcome(x)}>{x.gf}–{x.ga}</b></li>)}</ul>
+            <ul className="sp-h2h">{h2h.map((x) => <li key={mkey(x)}><span>Saison {x.season} · {whenOf(x)}</span><b className={outcome(x)}>{x.gf}–{x.ga}{pensOf(x)}</b></li>)}</ul>
           )}
         </section>
 
