@@ -33,6 +33,22 @@ ${src.slice(from + head.length, to)}
 ${src.slice(to)}`;
 }
 
+// Même principe pour les lumières directionnelles : une lumière qui n'apporte rien n'est pas calculée. Le jour, la
+// lumière d'appoint (environment.js) vaut zéro, et three la calculait en entier sur chaque pixel ; un pixel dans
+// l'ombre complète du soleil n'en reçoit rien non plus. Le test porte sur une valeur commune à toute l'image (ou
+// sur l'ombre, cohérente par zones) : il ne coûte presque rien. Image identique. Mesuré en plein jour (vue
+// d'ensemble, 2880 × 1620, image par image, trois séries) : 18,4 -> 18,0 ms par image.
+{
+  const src = THREE.ShaderChunk.lights_fragment_begin;
+  const call = 'RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );';
+  const head = '#if ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )';
+  const from = src.indexOf(head);
+  const to = src.indexOf('#endif', src.indexOf('#pragma unroll_loop_end', from));
+  const dir = src.slice(from, to);
+  if (from < 0 || to < 0 || dir.split(call).length !== 2) throw new Error('lights.js : lights_fragment_begin a changé (three)');
+  THREE.ShaderChunk.lights_fragment_begin = src.slice(0, from) + dir.replace(call, `if ( directLight.color != vec3( 0.0 ) ) ${call}`) + src.slice(to);
+}
+
 // Projecteurs réels aux positions « light_* » d'un modèle (mâts, pylônes, bord de toiture).
 // Ils visent le centre de la zone éclairée (barycentre des projecteurs, au sol), sans ombres pour rester
 // légers. Ici, seule l'intensité varie ; Empire3D (syncSpots) les sort tous ensemble du calcul de la lumière
