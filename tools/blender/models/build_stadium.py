@@ -521,8 +521,8 @@ def level_4(B, coll):
     B.box("emissive_led", (-55, ys - 0.01, zs + 0.2), (55, ys + 0.3, zs + 1.4), SOUTH)
     B.box("facade", (-55, ys + 0.3, 0), (55, ys + 0.7, zs + 1.4), SOUTH, tile=(4, 4))
     side_walls(B, SOUTH, 110, 41.7, ys + 0.7, 1.6, zs + 1.4, mat="facade")
-    for x in (-40, 40):  # monogrammes sur la facade sud, cote camera
-        fo_logo(B, "emissive_led", Matrix.Translation((x, -(ys + 0.7) - 0.2, 0.6)), 5.6)
+    # un seul monogramme, au centre de la facade sud (cote camera) : la marque une fois, comme sur un vrai stade
+    fo_logo(B, "emissive_led", Matrix.Translation((0, -(ys + 0.7) - 0.2, 0.6)), 5.6)
     # toit annulaire + facade exterieure vitree
     r_out = depth + 0.4
     upper = (50.0, y2 + 0.4)
@@ -575,7 +575,7 @@ def level_4(B, coll):
 # Etage bas continu tout autour ; etage haut (avec loges vitrees entre les deux) au nord et sur la moitie nord
 # des virages, qui s'abaisse en gradins vers le sud. Toit continu en selle : haut au nord, bas et recule au sud
 # pour que la camera du jeu (au sud, ~30 deg) voie toute la pelouse. Facade vitree a ailettes LED, bandeau
-# lumineux FootOFF Media et monogrammes cote camera. Limites de la carte : |x| <= 94 m, nord <= 77 m.
+# sombre souligne de lumiere et un seul monogramme cote camera. Limites de la carte : |x| <= 94 m, nord <= 77 m.
 
 AX, AY = 62.0, 42.0  # rectangle interieur : pied des tribunes (pelouse 120 x 80 m + bord)
 
@@ -764,6 +764,8 @@ def arena(B, coll, lvl):
         S = st[k]
         if k % 4 and abs(S[2]) < 0.99 and abs(S[3]) < 0.99:
             continue  # dans les angles, une ailette sur quatre stations
+        if abs(S[0]) < 0.5 and S[3] < -0.99:
+            continue  # milieu de la facade sud : place du monogramme
         _, i0, o0, zi0, zo0 = roof[k]
         tx, ty = -S[3], S[2]
         base = at(S, face_d[k] + 0.4)
@@ -777,16 +779,14 @@ def arena(B, coll, lvl):
             if k % 8 == 0:
                 fx, fy = at(S, i0 + 1.6)
                 B.box("emissive_light", (fx - 1.2, fy - 1.2, zi0 - 2.6), (fx + 1.2, fy + 1.2, zi0 - 2.2))
-    # bandeau lumineux FootOFF Media sur la facade sud (cote camera) et monogrammes
+    # facade sud (cote camera) : bandeau sombre sous le bord du toit, souligne d'un filet lumineux, et un seul
+    # monogramme au centre (le bandeau reprenait les panneaux publicitaires, logos tous les 6 m, avec deux grands
+    # monogrammes et, au niveau 6, deux totems a logo : trop de marques sur une seule facade)
     y_face = -(AY + face_d[0] + 0.4)
     band_z = roof_z(0.0) + roof_rise(0.0) - 1.0 - 0.5 - 2.4  # sous le bord du toit
-    B.box("emissive_boards", (-AX, y_face - 0.25, band_z), (AX, y_face, band_z + 2.4), tile=(62.4, 2.4), origin=(-AX, 0, band_z))
-    for x in (-38, 38):
-        fo_logo(B, "emissive_led", Matrix.Translation((x, y_face - 0.3, 1.4)), 6.4 if big else 5.6)
-    if big:  # totems du parvis
-        for x in (-20, 20):
-            B.box("facade", (x - 1.6, y_face - 9.0, 0), (x + 1.6, y_face - 7.8, 9.0))
-            fo_logo(B, "emissive_led", Matrix.Translation((x, y_face - 9.2, 2.2)), 4.6)
+    B.box("concrete_dark", (-AX, y_face - 0.25, band_z + 0.3), (AX, y_face, band_z + 2.4), tile=(4, 4))
+    B.box("emissive_led", (-AX, y_face - 0.3, band_z), (AX, y_face, band_z + 0.3))
+    fo_logo(B, "emissive_led", Matrix.Translation((0, y_face - 0.3, 1.4)), 6.4 if big else 5.6)
     # monogramme or sur la toiture nord, lisible depuis la camera du jeu
     zn = roof_z(1.0)
     north_out = AY + face_d[nseg // 2] + 0.6
@@ -818,7 +818,7 @@ def level_5(B, coll):
 
 
 def level_6(B, coll):
-    """Grande arene : plus large et plus haute, couronne LED sur le toit, totems FootOFF sur le parvis."""
+    """Grande arene : plus large et plus haute, couronne LED sur le toit."""
     arena(B, coll, 6)
 
 
