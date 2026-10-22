@@ -117,9 +117,12 @@ Façon jeu de console : un seul chargement au démarrage, puis l'écran titre de
 
 - Chargement (`index.html` puis `src/ui/loading.jsx`, mêmes styles dans `index.html`) : logo au centre, astuce en
   bas à gauche, étape et pourcentage en bas à droite, barre dorée sur toute la largeur. La progression est réelle
-  et ne recule jamais : code du jeu jusqu'à 18 %, octets reçus des modèles, textures et ciels jusqu'à 84 %
-  (`trackLoad` dans `src/three/assets.js`), décodage et compilation pour la carte graphique jusqu'à 100 %. Un
-  reflet parcourt la barre, animé par la carte graphique : elle vit même quand le processeur est occupé.
+  et ne recule jamais : démarrage (le lancement du moteur 3D occupe le processeur une à deux secondes : le début
+  de la barre est animé par la carte graphique, sans pourcentage), puis octets reçus des modèles, textures et
+  ciels de 15 à 84 % (`trackLoad` dans `src/three/assets.js`), puis décodage et compilation jusqu'à 100 %. Un
+  reflet parcourt la barre, animé par la carte graphique : elle vit même quand le processeur est occupé. La scène
+  est dessinée derrière l'écran de chargement : chaque modèle compile ses matériaux dès son arrivée (tout
+  compiler à la fin prenait 8 s au lieu de 3,5). Onglet en arrière-plan : une minuterie termine le chargement.
 - Écran titre (`src/ui/title.jsx`) : la caméra tourne lentement autour du complexe (`attract` d'Empire3D, le
   complexe décalé hors du menu). Titre FootOFF Empire, menu Continuer, Nouvelle partie, Réglages, FootOFF Media ;
   à droite (PC) la carte de l'entrée active (classement, points, journée, forme, prochain match, trésorerie).
