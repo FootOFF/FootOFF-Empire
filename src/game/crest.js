@@ -14,7 +14,7 @@ export const CREST_SHAPES = {
   moderne: [['taille', 'Taillé'], ['hexa', 'Hexagone'], ['losange', 'Losange'], ['capsule', 'Capsule']],
 };
 export const CREST_PATTERNS = [
-  ['uni', 'Uni'],
+  ['uni', 'Aucun'],
   ['bandes', 'Bandes'],
   ['rayures', 'Rayures'],
   ['parti', 'Parti'],
@@ -30,17 +30,19 @@ export const CREST_PATTERNS = [
   ['rayons', 'Rayons'],
   ['bordure', 'Bordure'],
 ];
-export const CREST_ANIMALS = [
-  ['lion', 'Lion'], ['aigle', 'Aigle'], ['loup', 'Loup'], ['coq', 'Coq'],
-  ['sanglier', 'Sanglier'], ['cheval', 'Cheval'], ['ours', 'Ours'], ['cerf', 'Cerf'],
-];
+// Figures héraldiques en silhouette (les têtes d'animaux de face, jugées trop enfantines, ont été retirées) : rares
+// chez les clubs adverses.
+export const CREST_ANIMALS = [['aigle', 'Aigle'], ['coq', 'Coq'], ['cheval', 'Cheval'], ['cerf', 'Cerf']];
 export const CREST_SYMBOLS = [
-  ['etoile', 'Étoile'], ['couronne', 'Couronne'], ['chateau', 'Château'], ['tour', 'Tour'], ['ballon', 'Ballon'],
-  ['lys', 'Lys'], ['chene', 'Chêne'], ['sapin', 'Sapin'], ['epi', 'Épi'], ['ancre', 'Ancre'], ['navire', 'Navire'],
-  ['vague', 'Vagues'], ['montagne', 'Montagne'], ['soleil', 'Soleil'], ['eclair', 'Éclair'], ['pont', 'Pont'],
-  ['epees', 'Épées'], ['cles', 'Clés'], ['roue', 'Roue'],
+  ['etoile', 'Étoile'], ['etoiles', 'Trois étoiles'], ['couronne', 'Couronne'], ['croix', 'Croix de Malte'],
+  ['lys', 'Lys'], ['hermine', 'Hermine'], ['rose', 'Rose'], ['laurier', 'Laurier'], ['flambeau', 'Flambeau'],
+  ['chateau', 'Château'], ['tour', 'Tour'], ['phare', 'Phare'], ['pont', 'Pont'], ['ballon', 'Ballon'],
+  ['chene', 'Chêne'], ['sapin', 'Sapin'], ['epi', 'Épi'], ['ancre', 'Ancre'], ['navire', 'Navire'],
+  ['vague', 'Vagues'], ['montagne', 'Montagne'], ['soleil', 'Soleil'], ['eclair', 'Éclair'], ['epees', 'Épées'],
+  ['cles', 'Clés'], ['roue', 'Roue'],
 ];
-export const CREST_EMBLEMS = [['monogramme', 'Monogramme'], ...CREST_ANIMALS, ...CREST_SYMBOLS];
+// « Aucun » : écusson sans symbole (notre club seulement : le nom, l'année ou le motif le portent)
+export const CREST_EMBLEMS = [['aucun', 'Aucun'], ['monogramme', 'Monogramme'], ...CREST_SYMBOLS, ...CREST_ANIMALS];
 export const CREST_TEXTS = [['les-deux', 'Nom et année'], ['nom', 'Nom'], ['annee', 'Année'], ['aucune', 'Aucune']];
 // fond noir (motifs or) ou fond or (motifs noirs) : les deux seules couleurs de notre club
 export const CREST_GROUNDS = [['noir', 'Noir'], ['or', 'Or']];
@@ -52,7 +54,7 @@ const ids = (list) => list.map(([id]) => id);
 const thisYear = () => new Date().getFullYear();
 
 export function defaultCrest() {
-  return { v: 2, style: 'blason', shape: 'ancien', pattern: 'uni', emblem: 'lion', text: 'annee', ground: 'noir', year: thisYear() };
+  return { v: 2, style: 'blason', shape: 'ancien', pattern: 'uni', emblem: 'etoile', text: 'annee', ground: 'noir', year: thisYear() };
 }
 
 export function randomCrest(rng = Math.random) {
@@ -138,7 +140,7 @@ const PATTERNS_FOR = {
 };
 
 // Écusson d'un autre club, tiré de son nom : la famille (quatre blasons pour trois médaillons et trois badges), sa
-// forme, son motif, son symbole (animal, symbole ou monogramme), son métal, son année de fondation et son
+// forme, son motif, son symbole (surtout des symboles ; monogramme pour un badge sur deux ; une figure animale rare), son métal, son année de fondation et son
 // inscription ; aux deux couleurs du club, le fond à la couleur du maillot et le motif à la seconde couleur.
 export function rivalCrest(name = '') {
   const h = (k) => hash(name, k);
@@ -155,9 +157,9 @@ export function rivalCrest(name = '') {
   const e = h(4) % 100;
   const animal = animals[h(6) % animals.length];
   const symbol = symbols[h(7) % symbols.length];
-  const emblem = style === 'moderne' ? (e < 50 ? 'monogramme' : e < 78 ? animal : symbol)
-    : style === 'medaillon' ? (e < 18 ? 'monogramme' : e < 60 ? animal : symbol)
-      : (e < 52 ? animal : symbol);
+  const emblem = style === 'moderne' ? (e < 48 ? 'monogramme' : e < 54 ? animal : symbol)
+    : style === 'medaillon' ? (e < 20 ? 'monogramme' : e < 28 ? animal : symbol)
+      : (e < 12 ? animal : symbol);
   const metal = kit.shirt === 0xf2f2f2 || kit.shirt === 0x1d2c5e ? 'or' : kit.shirt === 0xe8dc3a || kit.shirt === 0xe67e22 ? 'argent' : h(8) % 100 < 55 ? 'or' : 'argent';
   const light = lumOf(kit.shirt) > 150;
   const t = h(9) % 100;

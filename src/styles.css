@@ -2608,15 +2608,17 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .sc-state.draw { background: rgba(255, 255, 255, .07); color: var(--text); }
 .sc-state.tbd, .sc-state.out { border-style: dashed; color: var(--muted); }
 
-.sc-versus { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--s-3); padding: var(--s-2) 0; }
-.sc-versus::before { content: ''; position: absolute; left: 50%; top: 50%; width: 176px; height: 176px; margin: -88px 0 0 -88px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .08); z-index: -1; pointer-events: none; } /* rond central */
+/* les deux écussons et le score sur la même ligne, quelle que soit la longueur des noms dessous */
+.sc-versus { --slot: 107px; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: var(--s-3); padding: var(--s-2) 0; }
+.sc-slot { height: var(--slot); display: grid; place-items: center; }
+.sc-mid-main { position: relative; }
+.sc-mid-main::before { content: ''; position: absolute; left: 50%; top: 50%; width: 176px; height: 176px; margin: -88px 0 0 -88px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .08); z-index: -1; pointer-events: none; } /* rond central */
 .sc-team { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); min-width: 0; text-align: center; }
 .crest.sc-crest { width: 92px; height: 107px; filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .55)); }
 .sc-crest-q { display: grid; place-items: center; width: 80px; height: 92px; border-radius: 18px 18px 40px 40px; border: 2px dashed rgba(255, 255, 255, .22); font-family: var(--font-title); font-size: 34px; color: var(--muted); }
 .sc-team strong { font-family: var(--font-title); font-weight: 600; font-size: var(--t-lg); line-height: 1.2; letter-spacing: -.01em; text-wrap: balance; }
 .sc-team > span { font-size: var(--t-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
 .sc-mid { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); min-width: 112px; text-align: center; }
-.sc-mid .sc-state { margin-top: var(--s-1); }
 .sc-score { display: flex; align-items: center; gap: 12px; font-family: var(--font-title); font-weight: 700; font-size: 72px; line-height: .9; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
 .sc-score i { font-style: normal; font-weight: 300; font-size: .5em; color: var(--muted); }
 .sc-poster.o-loss .sc-score b:first-child, .sc-poster.o-win .sc-score b:last-child { color: var(--text-2); }
@@ -2721,13 +2723,14 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .sc-date { height: 92px; }
   .sc-comp { letter-spacing: .1em; }
   .sc-poster { gap: var(--s-4); padding: var(--s-4) var(--s-4) var(--s-5); border-radius: 20px; }
-  .crest.sc-crest { width: 62px; height: 72px; }
+  .sc-versus { --slot: 84px; }
+  .crest.sc-crest { width: 72px; height: 84px; }
   .sc-crest-q { width: 54px; height: 62px; font-size: 24px; }
   .sc-team strong { font-size: var(--t-md); }
   .sc-mid { min-width: 72px; }
   .sc-score { gap: 8px; font-size: 48px; }
   .sc-vs { font-size: 22px; }
-  .sc-versus::before { width: 118px; height: 118px; margin: -59px 0 0 -59px; }
+  .sc-mid-main::before { width: 118px; height: 118px; margin: -59px 0 0 -59px; }
   .sc-odds-legend { font-size: var(--t-xs); }
   .sc-odds-legend b { font-size: var(--t-md); }
   .sc-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }

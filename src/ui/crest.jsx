@@ -78,7 +78,7 @@ const PATTERNS = {
 };
 
 // --- Symboles et animaux --------------------------------------------------------------------------------------------
-// Repère centré en (50, 60), tenant dans 48 × 48. Pièces : d (chemin), w (trait : épaisseur), cut (détail gravé,
+// Repère centré en (50, 60), tenant dans 48 × 48 (« aucun » : pas de symbole). Pièces : d (chemin), w (trait : épaisseur), cut (détail gravé,
 // sombre), m (pièce doublée en miroir autour de x = 50), t (transformation).
 
 const star = (cx, cy, R, r) => `M${Array.from({ length: 10 }, (_, i) => P(cx, cy, -Math.PI / 2 + (i * Math.PI) / 5, i % 2 ? r : R)).join(' ')}Z`;
@@ -87,21 +87,25 @@ const rays = (cx, cy, r0, r1, n) => Array.from({ length: n }, (_, i) => {
   return `M${P(cx, cy, a - Math.PI / n, r0)} ${P(cx, cy, a, r1)} ${P(cx, cy, a + Math.PI / n, r0)}Z`;
 }).join('');
 const spikes = (cx, cy, r0, r1, n, rot = 0) => `M${Array.from({ length: n * 2 }, (_, i) => P(cx, cy, rot - Math.PI / 2 + (i * Math.PI) / n, i % 2 ? r0 : r1)).join(' ')}Z`;
-// crinière : mèches courbes de longueurs alternées, pointes décalées (elle tourbillonne)
-const mane = (cx, cy, r0, r1, n) => {
-  let d = '';
-  const step = (2 * Math.PI) / n;
-  for (let i = 0; i < n; i++) {
-    const a = -Math.PI / 2 + i * step;
-    const r = i % 2 ? r1 : r1 - 3.2;
-    d += `${i ? '' : `M${P(cx, cy, a, r0)} `}Q${P(cx, cy, a + step * 0.12, r * 0.98)} ${P(cx, cy, a + step * 0.66, r)} Q${P(cx, cy, a + step * 0.9, r0 + 4)} ${P(cx, cy, a + step, r0)} `;
-  }
-  return `${d}Z`;
+// couronne de laurier : deux branches de feuilles en arc, nouées en bas
+const leaf = (x, y, a, L = 7.4, W = 2.6) => {
+  const tip = [x + Math.cos(a) * L, y + Math.sin(a) * L];
+  const mid = [x + (Math.cos(a) * L) / 2, y + (Math.sin(a) * L) / 2];
+  const n = [-Math.sin(a) * W, Math.cos(a) * W];
+  const f = (v) => v.toFixed(2);
+  return `M${f(x)} ${f(y)}Q${f(mid[0] + n[0])} ${f(mid[1] + n[1])} ${f(tip[0])} ${f(tip[1])}Q${f(mid[0] - n[0])} ${f(mid[1] - n[1])} ${f(x)} ${f(y)}Z`;
 };
-const maneLines = (cx, cy, r0, r1, n) => Array.from({ length: n }, (_, i) => {
-  const a = -Math.PI / 2 + ((i + 0.45) * 2 * Math.PI) / n;
-  return `M${P(cx, cy, a, r0)}L${P(cx, cy, a + 0.08, r1 - (i % 2 ? 5 : 8))}`;
-}).join('');
+const LAUREL = (() => {
+  let d = '';
+  for (let i = 0; i < 7; i++) { // branche gauche, du bas vers le haut ; la droite est son miroir
+    const ang = ((104 + i * 21) * Math.PI) / 180;
+    const x = 50 + Math.cos(ang) * 21;
+    const y = 59 + Math.sin(ang) * 21;
+    const t = ang + Math.PI / 2;
+    d += leaf(x, y, t - 0.62, 9.4, 3.3) + leaf(x, y, t + 0.5, 8, 2.9);
+  }
+  return d;
+})();
 const gear = (cx, cy, r0, r1, n) => {
   let d = '';
   for (let i = 0; i < n; i++) {
@@ -196,18 +200,43 @@ const EMBLEMS = {
   ],
   roue: [{ d: gear(50, 60, 16, 22, 10) }, { d: circle(50, 60, 8.5), cut: true }, { d: circle(50, 60, 3.2) }],
   // --- animaux ---
-  lion: [ // tête de face, crinière en mèches tourbillonnantes
-    { d: mane(50, 58, 17, 26.5, 16) },
-    { d: maneLines(50, 58, 19.5, 26.5, 16), cut: true, w: 0.9 },
-    { d: 'M40 47C37 44 37 40 40.5 39.5 43 39 44.5 42 44 44.5Z', m: true },
-    { d: 'M50 40C57 40 62.5 44.5 64 51 65.5 57 63 63 59.5 67 57 70 55 75 50 76.5 45 75 43 70 40.5 67 37 63 34.5 57 36 51 37.5 44.5 43 40 50 40Z' },
-    { d: 'M40.6 54.2Q43.8 51.4 47.2 53.6 44 56 40.6 54.2Z', cut: true, m: true },
-    { d: 'M39.4 50.2 46.6 52.4', cut: true, w: 1.3, m: true },
-    { d: 'M47.4 55.6 46.6 60.4', cut: true, w: 0.9, m: true },
-    { d: 'M44.8 60.4H55.2L52.2 64.6H47.8Z', cut: true },
-    { d: 'M50 64.6V67.4M50 67.4C48 69.8 45.4 69.6 44.2 67.8M50 67.4C52 69.8 54.6 69.6 55.8 67.8', cut: true, w: 1.3 },
-    { d: circle(43.2, 65.4, 0.65) + circle(41.6, 63.8, 0.65) + circle(56.8, 65.4, 0.65) + circle(58.4, 63.8, 0.65), cut: true },
-    { d: 'M50 44.5V49.5', cut: true, w: 1.1 },
+  etoiles: [{ d: star(50, 45.5, 11.5, 4.8) + star(37, 68.5, 11.5, 4.8) + star(63, 68.5, 11.5, 4.8) }],
+  croix: [ // croix de Malte : quatre branches échancrées
+    ...[0, 90, 180, 270].map((a) => ({ d: 'M50 57.4 41.2 35.4 50 41.6 58.8 35.4Z', t: `rotate(${a} 50 60)` })),
+    { d: circle(50, 60, 3.4) },
+  ],
+  hermine: [ // moucheture d'hermine (Bretagne)
+    { d: circle(45.4, 39.6, 2.7) + circle(50, 36.4, 2.7) + circle(54.6, 39.6, 2.7) },
+    { d: 'M50 43C51.6 50 53.6 57 57.4 64.5 59.6 69 60.6 75 58.6 80.5L55.4 76 53.6 83 50 77.5 46.4 83 44.6 76 41.4 80.5C39.4 75 40.4 69 42.6 64.5 46.4 57 48.4 50 50 43Z' },
+  ],
+  rose: [ // rose héraldique : cinq pétales, sépales entre eux, cœur
+    { d: [0, 1, 2, 3, 4].map((k) => { const a = -Math.PI / 2 + k * 1.2566 + 0.6283; return `M${P(50, 60, a - 0.13, 13)}L${P(50, 60, a, 24)}L${P(50, 60, a + 0.13, 13)}Z`; }).join('') },
+    { d: [0, 1, 2, 3, 4].map((k) => { const a = -Math.PI / 2 + k * 1.2566; const [x, y] = P(50, 60, a, 10.5).split(' ').map(Number); return circle(x, y, 9); }).join('') },
+    { d: circle(50, 60, 7.2) },
+    { d: circle(50, 60, 3.2), cut: true },
+  ],
+  laurier: [
+    { d: 'M47 80C36 76 29 66 30 52 30.6 45 33.4 40 37 36.6', w: 2.2, m: true },
+    { d: LAUREL, m: true },
+    { d: 'M44.6 81.4 50 77.6 55.4 81.4 52.6 84.6 50 82.2 47.4 84.6Z' },
+    { d: star(50, 57.5, 11, 4.6) },
+  ],
+  flambeau: [
+    { d: 'M50 33C55.5 39 58.5 44.5 55.5 50.5 57.5 49.5 58.6 47.4 58.4 45.4 61.6 50.6 59.6 56.6 54.6 58.6H45.4C40.4 56.6 38.4 50.6 41.6 45.4 41.4 47.4 42.5 49.5 44.5 50.5 41.5 44.5 44.5 39 50 33Z' },
+    { d: 'M50 44C52.5 47.5 53.5 50.5 52 54 51.2 55.6 48.8 55.6 48 54 46.5 50.5 47.5 47.5 50 44Z', cut: true },
+    { d: 'M42.5 59.6H57.5L55 65H45Z' },
+    { d: 'M46.2 65H53.8L52 86H48Z' },
+    { d: 'M46.8 71H53.2M47.4 78H52.6', cut: true, w: 1.2 },
+  ],
+  phare: [
+    { d: 'M44.4 84 46.2 49.5H53.8L55.6 84Z' },
+    { d: 'M42.6 46.5H57.4V50H42.6Z' },
+    { d: 'M46 46.5V39.5H54V46.5Z' },
+    { d: 'M44.6 39.5 50 34.2 55.4 39.5Z' },
+    { d: 'M45.4 60.5H54.6M44.9 71.5H55.1', cut: true, w: 3 },
+    { d: 'M48 41.2H52V44.8H48Z', cut: true },
+    { d: 'M41 41.5 32 39.5M41 44.8 32 46.8', w: 1.8, m: true },
+    { d: 'M34 86H66', w: 2.6 },
   ],
   aigle: [ // aigle déployé, tête tournée à gauche
     { d: 'M46.5 50C41 46 34 42 24.5 39L28 44.5 21 45 27.5 50 20 52.2 27.5 55.6 21.5 59.6 30 60.6 27 65.6 36 63.6C40 62 44 60 46.5 58Z', m: true },
@@ -218,13 +247,6 @@ const EMBLEMS = {
     { d: 'M50 35.5C53 35.5 55.2 37.8 55.2 40.8 55.2 43.4 53.6 45.4 51 46H47.2C45.6 45 45 43 45.5 40.8Z' },
     { d: 'M45.6 39.6 40.2 42.4 45.4 43.8Z' },
     { d: circle(49.3, 40, 1), cut: true },
-  ],
-  loup: [ // tête de face, oreilles dressées, collerette
-    { d: 'M50 83 43 76 38 70 31.5 62 36 60 32.5 54 35.5 50 37 33 45 44H55L63 33 64.5 50 67.5 54 64 60 68.5 62 62 70 57 76Z' },
-    { d: 'M39 38 42.6 44 38.6 46Z', cut: true, m: true },
-    { d: 'M41 55 47 56.6 41.6 58.2Z', cut: true, m: true },
-    { d: 'M46.4 70.5H53.6L50 75Z', cut: true },
-    { d: 'M47 63.5 50 70 53 63.5M50 46.5 47.2 50.2H52.8Z', cut: true, w: 1.1 },
   ],
   coq: [ // coq gaulois de profil, regard à gauche
     { d: 'M60 60C66 52 69 45 66 37M62 63C70 58 74 51 74 43M62 67C71 66 77 61 79 54', w: 3.4 },
@@ -237,32 +259,12 @@ const EMBLEMS = {
     { d: 'M47 62C51 58 57 58 60 62', cut: true, w: 1.2 },
     { d: circle(43.2, 44.6, 0.95), cut: true },
   ],
-  sanglier: [ // hure de face : crête de soies, oreilles couchées, grand groin, défenses relevées
-    { d: 'M40.5 41 42.5 32.5 45.5 38 47.5 30 50 36.5 52.5 30 54.5 38 57.5 32.5 59.5 41Z' },
-    { d: 'M37.5 46 28.5 37.5 32.5 49.5Z', m: true },
-    { d: 'M50 38C58 38 64 42 65.5 49 67 56 63.5 62 60 66L58.5 71H41.5L40 66C36.5 62 33 56 34.5 49 36 42 42 38 50 38Z' },
-    { d: 'M40.5 53.2 46.5 55.6', cut: true, w: 1.4, m: true },
-    { d: circle(44.2, 57.6, 1.1), cut: true, m: true },
-    { d: 'M38.6 77C32.5 76.4 30.2 71.2 31.8 65', w: 2.8, m: true },
-    { d: 'M41 70H59C61.5 70 62.5 72 62.5 75V78C62.5 82.5 37.5 82.5 37.5 78V75C37.5 72 38.5 70 41 70Z' },
-    { d: 'M45.8 74.3a1.5 2.2 0 1 1-.01 0ZM54.2 74.3a1.5 2.2 0 1 1-.01 0Z', cut: true },
-  ],
   cheval: [ // tête de profil, regard à gauche
     { d: 'M60 84H38.5C38.5 77 41 72 45.5 68.5 41.5 67 36 66 33 62.5 30.5 59.5 31 55.5 34.5 53L42.5 47C43 42 45 38 48.5 35.5L50.5 30.5 53.5 35.2C60.5 37 67 44 68 53.5 69 63 66 72 60 84Z' },
     { d: 'M54.5 36.5 58.5 41 56.5 43.5 61.5 46.5 59 50 64.5 53.5 61.5 57.5 66.5 61', cut: true, w: 1.2 },
     { d: 'M45.5 47.5 49.5 46.5 48.5 49Z', cut: true },
     { d: circle(35.6, 58.5, 1.1), cut: true },
     { d: 'M33.5 62 38 61.5', cut: true, w: 1 },
-  ],
-  ours: [ // tête de face, sourcils froncés
-    { d: circle(37.5, 42.5, 5.4), m: true },
-    { d: circle(37.5, 42.5, 2.5), cut: true, m: true },
-    { d: 'M50 39C61 39 68 46 68 56 68 64 64 70 58.5 74 55.5 76.2 53 77.4 50 77.4 47 77.4 44.5 76.2 41.5 74 36 70 32 64 32 56 32 46 39 39 50 39Z' },
-    { d: 'M50 58.5C55.5 58.5 59 62 59 66.5 59 71 55 74 50 74 45 74 41 71 41 66.5 41 62 44.5 58.5 50 58.5Z' },
-    { d: 'M40.2 50 46.8 53.2', cut: true, w: 1.7, m: true },
-    { d: circle(44, 55.2, 1.25), cut: true, m: true },
-    { d: 'M45.4 62.2H54.6C54.6 65.6 52.4 67.4 50 67.4 47.6 67.4 45.4 65.6 45.4 62.2Z', cut: true },
-    { d: 'M50 67.4V70.2M45.6 70.6C47.6 72.2 52.4 72.2 54.4 70.6', cut: true, w: 1.1 },
   ],
   cerf: [ // tête de face, bois ramifiés
     { d: 'M45.5 47C42 42 39 37 38.5 29M40.5 40 33 37.5M39 34.5 33 30.5M41.5 44 36 44.5', w: 2.6, m: true },
@@ -280,6 +282,7 @@ const expand = (parts) => parts.flatMap((p) => (p.m ? [p, { ...p, m: false, t: p
 // Symbole (ou monogramme) au centre (cx, cy), à l'échelle s : contour à la couleur du fond, ombre portée (relief),
 // pièce en métal poli ou en émail, détails gravés.
 function Emblem({ id, initials, cx, cy, s, ink, halo, cut, edge }) {
+  if (id === 'aucun') return null;
   const tr = `translate(${cx} ${cy}) scale(${s}) translate(-50 -60)`;
   if (id === 'monogramme') {
     const size = initials.length > 2 ? 28 : initials.length > 1 ? 36 : 46;

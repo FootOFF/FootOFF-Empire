@@ -304,18 +304,18 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
 
       <div className="sc-versus">
         <div className="sc-team us">
-          <ClubCrest crest={state.crest} name={state.clubName} className="sc-crest" full stars={clubStars(state)} />
+          <span className="sc-slot"><ClubCrest crest={state.crest} name={state.clubName} className="sc-crest" full stars={clubStars(state)} /></span>
           <strong>{state.clubName}</strong>
           {ours != null && <span>Niveau {fmtRating(ours)}</span>}
         </div>
         <div className="sc-mid">
-          {r ? <div className="sc-score" aria-label={`${r.gf} à ${r.ga}`}><b>{r.gf}</b><i>–</i><b>{r.ga}</b></div> : <span className="sc-vs">VS</span>}
+          <div className="sc-slot sc-mid-main">{r ? <div className="sc-score" aria-label={`${r.gf} à ${r.ga}`}><b>{r.gf}</b><i>–</i><b>{r.ga}</b></div> : <span className="sc-vs">VS</span>}</div>
           <span className={`sc-state ${v ? v.o : f.status}`}>{state0}</span>
           {r?.pens && <span className="sc-pens">t.a.b. {r.pens[0]}–{r.pens[1]}</span>}
           {r && f.comp !== 'league' && v.o === 'win' && f.stage < 3 && <span className="sc-pens">en route pour {NEXT_STAGE[f.stage]}</span>}
         </div>
         <div className="sc-team them">
-          {opp ? <Crest name={opp.name} className="sc-crest" full /> : <span className="sc-crest-q" aria-hidden="true">{f.status === 'out' ? '—' : '?'}</span>}
+          <span className="sc-slot">{opp ? <Crest name={opp.name} className="sc-crest" full /> : <span className="sc-crest-q" aria-hidden="true">{f.status === 'out' ? '—' : '?'}</span>}</span>
           <strong>{opp?.name || (f.status === 'out' ? 'Aucun adversaire' : 'Adversaire à tirer')}</strong>
           {oppMeta && <span>{oppMeta}</span>}
         </div>

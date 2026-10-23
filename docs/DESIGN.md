@@ -107,7 +107,7 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
        garde la date choisie au centre. Clavier et manette : flèches, début, fin (le focus suit).
     2. L'affiche de la date choisie, dessinée comme le terrain vu du dessus : bandes de tonte, ligne médiane, rond
        central ; notre moitié dorée, celle de l'adversaire à la couleur de son maillot (`kitOf`). Écussons en grand,
-       noms (jamais coupés), niveaux, rang et points de l'adversaire en championnat (sa division en coupe) ; au
+       noms (jamais coupés), niveaux, rang et points de l'adversaire ; écussons et score toujours sur la même ligne en championnat (sa division en coupe) ; au
        centre le score ou « VS », et l'état (Prochain match, Victoire, Qualifié, Éliminé, Tirage au sort, Non
        disputé). Prochain match : pronostic exact du moteur avec le onze actuel (le même que l'avant-match),
        qualification en coupe, rapport de force, affluence et recette attendues, billets, prime de coupe, « Jouer le
@@ -303,11 +303,13 @@ en est le club (« Tu grimpes à la 2e place », « Tu restes en tête »). L'or
     (« Fondé en … » quand seule l'année est écrite), disque central.
   - Moderne : taillé, hexagone, losange ou capsule, monogramme ou symbole, bandeau du nom court.
   Rendu « métal émaillé » : liserés et symboles en or ou argent poli (dégradés à reflets), émail bombé (ombre et lumière
-  douces), reflet en haut, léger relief sous le symbole. Quinze motifs (dont rayons et bordure), dix-neuf symboles
-  (château, navire, clés en plus) et huit animaux dessinés pour l'écusson (lion, aigle, loup, coq, sanglier, cheval,
-  ours, cerf), ou le monogramme. Les clubs adverses tirent tout de leur nom (`rivalCrest`) : famille (quatre blasons
-  pour trois médaillons et trois badges), forme, motif, symbole, métal, année de fondation (1885 à 1984), inscription.
-  Notre écusson se compose à la fondation (style, forme, symbole, motif, inscription, fond) et reste noir et or ;
+  douces), reflet en haut, léger relief sous le symbole. Quinze motifs (dont rayons et bordure, « Aucun » pour un
+  champ uni), vingt-six symboles (dont trois étoiles, croix de Malte, hermine, rose, laurier, flambeau, phare,
+  château, navire, clés), quatre figures héraldiques en silhouette (aigle, coq, cheval, cerf ; les têtes d'animaux de
+  face, jugées enfantines, ont été retirées) ou le monogramme. Les clubs adverses tirent tout de leur nom
+  (`rivalCrest`) : famille (quatre blasons pour trois médaillons et trois badges), forme, motif, symbole (une figure
+  animale rare), métal, année de fondation (1885 à 1984), inscription. Notre écusson se compose à la fondation
+  (style, forme, symbole ou « Aucun », motif ou « Aucun », inscription, fond) et reste noir et or ;
   il porte l'année réelle de la fondation et une étoile par titre de champion (`clubStars`, cinq au plus). Le nom,
   l'année et le ruban ne s'écrivent que sur les grands écussons (`full` : affiche du calendrier, création du club,
   notoriété) ; en petit, l'écusson garde sa silhouette, ses couleurs et son symbole. Les anciennes parties gardent
