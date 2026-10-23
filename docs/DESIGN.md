@@ -105,13 +105,11 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
   - Classement : zones colorées avec leur légende sous le tableau. Montée (2 premiers, or) hors Elite ; Coupe
     d'Europe des clubs (2 premiers de l'Elite, bleu) ; descente (2 derniers, rouge). Hors Elite, la légende
     rappelle que l'Europe se gagne en Elite.
-- Réglages (écran titre et menu pause, voir plus bas) : Son et Vibrations en interrupteurs, Qualité graphique en
-  choix à trois positions. La qualité est enregistrée par appareil (`fo-quality`) : Économie = sans ombres ni effets de
-  lumière, Auto = selon l'appareil, Haute = ombres et détails maximaux ; elle s'applique sans recharger. Dans les trois,
-  l'image est calculée à la pleine résolution de l'écran (un pixel calculé par pixel physique), téléphone compris, au
-  repos comme en mouvement ; la ligne Qualité graphique affiche cette résolution réelle (« Image calculée en
-  2880 × 1620 pixels »). Sur un écran peu haut, la liste des réglages défile sous son titre, l'entrée choisie toujours
-  visible.
+- Réglages (écran titre et menu pause, voir plus bas) : Son et Vibrations en interrupteurs. Plus de qualité graphique
+  depuis le 2026-10-23 : un seul rendu pour tous, celui de l'ancienne qualité Économie, jugée la plus belle et la plus
+  nette (voir Fluidité) ; l'image est calculée à la pleine résolution de l'écran (un pixel calculé par pixel physique),
+  téléphone compris, au repos comme en mouvement. Sur un écran peu haut, la liste des réglages défile sous son titre,
+  l'entrée choisie toujours visible.
 
 ## Notifications, infobulles, portraits, raccourcis
 
@@ -449,7 +447,7 @@ Eau (lac et miroir d'eau du parvis, `src/three/landscape.js`) : naturelle et san
 ou bâtiments reflétés) : bleu profond au large et dans les bassins, un peu plus clair vers les rives, bord vaseux au
 ras de la rive ; un voile de ciel très flou (eau ridée, rugosité 0,3) et des rides animées lui donnent sa profondeur,
 de jour comme sous la lune. Une première eau bleu vif, mate, faisait artificielle (refusée le 2026-10-23).
-Fondu de quatre secondes entre deux ambiances (ciel, soleil, exposition, étalonnage). La nuit, la lueur de ville de la
+Fondu de quatre secondes entre deux ambiances (ciel, soleil, exposition). La nuit, la lueur de ville de la
 photo au ras de l'horizon (une douzaine de fois plus claire que le reste) est atténuée à la conversion (« tame » dans
 `skies.json`) : regardée en face, elle faisait une tache blanche (halo) et une brume claire sur tout le complexe.
 
@@ -463,10 +461,11 @@ composées à partir de vraies feuilles, aiguilles et écorces photographiées (
 comme un vrai volume de feuillage, éclairé et ombré. Au loin (forêts des collines) et sur le site quand la caméra
 s'éloigne, chaque arbre devient un imposteur : l'espèce rendue sous huit angles (couleur, relief, part de ciel
 visible ; `render_impostors.py` puis `tools/vegetation/impostors.py`), éclairée en direct comme le reste de la scène.
-Les arbres du site gardent toujours l'ombre de leur modèle 3D. Jardins : haies taillées, buis en boule et massifs
+Pas d'ombres portées (rendu unique, voir Fluidité). Jardins : haies taillées, buis en boule et massifs
 d'arbustes (quelques-uns pourpres) dans les jardinières du parvis, les jardins et aux coins des pelouses des
 parcelles. Emplacements : `site_trees.json` pour le site (`build_site.py`), repères `tree_spot_*` dans les modèles des
-bâtiments et des parcelles. Sur téléphone et en mode économie : atlas réduit, pas d'ombres d'arbres.
+bâtiments et des parcelles. Forêts des collines : un arbre sur deux, pris au hasard ; arbres du site en 3D à moins de
+16 unités de la caméra.
 
 ## Sols, routes et mobilier
 
@@ -502,14 +501,17 @@ tour du stade ; croisées au niveau 4), les touffes et les marquages réglementa
 et sans scintillement à toute distance (à la chaux et usés au terrain municipal). La caméra reste à 60 m et plus :
 une photo de gazon s'y fondait en aplat, elle n'a pas été gardée.
 La nuit : les quatre mâts de l'esplanade éclairent l'esplanade devant eux (ils visaient le stade, déjà éclairé par ses
-projecteurs, un peu adoucis) ; de près, au-dessus du stade, le halo garde 40 % de sa force : les LED de l'arène et
-les gradins sous les projecteurs le changeaient en voile blanc sur tout l'écran.
+projecteurs, un peu adoucis).
 
 ## Fluidité
 
-Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone, sans rien retirer à l'image :
-- ombres calculées une seule fois par image (et non à chaque rendu de la scène) ; les arbres du site affichés en
-  imposteurs gardent l'ombre de leur modèle 3D, dessiné seulement dans la carte d'ombres ;
+Un seul rendu depuis le 2026-10-23 (`src/three/render.js`), celui de l'ancienne qualité Économie, que le joueur
+jugeait le plus beau et le plus net : scène dessinée directement dans une toile multi-échantillonnée (bords lisses,
+feuillages au bord adouci par alpha-to-coverage), sans ombres portées ni post-traitement (plus d'occlusion, de halo,
+d'étalonnage ni de FXAA), toile toujours opaque (les feuillages écrivent un alpha partiel : sans cela, le fond de la
+page se voyait en pointillés sombres autour des arbres), bord des feuilles détourées sur fond noir éclairci dans le
+shader. Le public du stade garde son nombre complet les jours de match. Mesuré en 2880 × 1620 (puce intégrée AMD,
+mêmes conditions) : 12 à 17,5 ms par image, contre 17 à 24 ms pour l'ancienne qualité Auto. Ensuite :
 - projecteurs (mâts, parcelles, stade, trophée) tous dans le calcul de la lumière ou aucun : le jour, aucun ne coûte ;
   les deux combinaisons sont compilées d'avance, derrière l'écran de chargement (pas d'à-coup à la tombée du jour) ;
   chaque pixel ne calcule que les projecteurs qui l'atteignent (`src/three/lights.js`) : test de portée d'abord,
@@ -518,24 +520,12 @@ Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone
   37,9 → 25,8 ms, rotation de caméra la nuit et les soirs de match 16 à 17 → 22 à 25 images par seconde ; de même,
   une lumière directionnelle qui n'apporte rien (la lumière d'appoint, à zéro en plein jour ; le soleil dans une
   ombre complète) n'est pas calculée (en plein jour, 18,4 → 18,0 ms par image) ;
-- chaîne de rendu (`src/three/postfx.js`) : scène dessinée sans multi-échantillons (il coûtait ~7,5 ms en
-  2880 × 1620 sur une puce graphique intégrée) ; occlusion (demi-résolution de l'écran de près comme de loin, sans
-  le ciel, l'eau, le voile d'horizon, les imposteurs ni les cartes de feuillage) et halo calculés à basse résolution,
-  posés dans la passe de sortie avec le tone mapping et l'étalonnage ; halo au quart de la résolution de la scène,
-  zones claires lues sur 4 × 4 pixels et noyaux de flou divisés par deux (4,5 → 1,7 ms, même image) ; garde-fou des
-  pixels invalides à l'entrée du halo ; anticrénelage FXAA seulement sur écran peu dense (sur un écran très dense, une
-  marche d'escalier fait un demi-pixel CSS) ; ciel peint en dernier, là où il se voit ; toile toujours opaque (les
-  feuillages au bord adouci écrivaient un alpha partiel : sans multi-échantillons, le fond de la page se voyait en
-  pointillés sombres autour des arbres, et la qualité économie, à la toile multi-échantillonnée, paraissait plus
-  nette) ; bord des feuilles détourées sur fond noir éclairci dans le shader (plus de cerne sombre) ;
+- ciel peint en dernier, là où il se voit ;
 - net en permanence : la toile a exactement la densité de l'écran et la scène est toujours calculée à cette densité,
-  dans toutes les qualités, sur ordinateur comme sur téléphone, au repos comme pendant les déplacements et le zoom,
-  sans résolution adaptative ni agrandisseur (sur une puce intégrée, agrandir une image calculée plus petite coûtait
-  presque autant que la pleine résolution : FXAA, EASU, RCAS, 5 à 7 ms en 2880 × 1620) ; ombres en 2048, ciel photo
-  et images des arbres lointains en pleine définition partout. Mesuré en 2880 × 1620 (puce intégrée AMD, écran
-  60 Hz) : environ 30 images par seconde en mouvement le jour, chaque image à la taille exacte de l'écran (avant :
-  image agrandie ×1,7 en mouvement, floue et crénelée). Densité de l'écran relue au zoom du navigateur et au
-  changement d'écran ;
+  sur ordinateur comme sur téléphone, au repos comme pendant les déplacements et le zoom, sans résolution adaptative
+  ni agrandisseur (sur une puce intégrée, agrandir une image calculée plus petite coûtait presque autant que la pleine
+  résolution : FXAA, EASU, RCAS, 5 à 7 ms en 2880 × 1620) ; ciel photo et images des arbres lointains en pleine
+  définition partout. Densité de l'écran relue au zoom du navigateur et au changement d'écran ;
 - feuillage des arbres : profondeur écrite d'abord par une passe qui ne lit que l'image des feuilles (même vent, même
   découpe), puis feuillage éclairé sans écrire la profondeur : chaque pixel n'est éclairé que pour la feuille visible
   (vue rapprochée, 2880 × 1620 : scène 22,1 → 18,4 ms) ;
@@ -544,8 +534,8 @@ Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone
   reste au menu du bas ;
 - caméra sans inertie : elle s'arrête dès qu'on lâche ;
 - sols dessinés après tout le reste (les pixels de sol cachés par les arbres et les bâtiments ne sont pas calculés),
-  couches posées dessus avant les surfaces qu'elles recouvrent, pelouse du site en dernier ; un sol plat ne projette
-  pas d'ombre (mesuré en vue rapprochée, 4 Mpx : les sols photo coûtent ainsi autant que les anciens sols unis) ;
+  couches posées dessus avant les surfaces qu'elles recouvrent, pelouse du site en dernier (mesuré en vue
+  rapprochée, 4 Mpx : les sols photo coûtent ainsi autant que les anciens sols unis) ;
 - stade : toits et sièges dessinés d'abord, béton des gradins et façades en dernier (face à une tribune, 4 Mpx :
   -3 ms) ; béton des gradins, des dalles et gravier en couleur photo seule (relief et rugosité ne changeaient pas
   l'image à la distance du jeu) ; axes de la pelouse calculés une fois par image, marquages seulement près d'un trait

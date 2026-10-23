@@ -143,6 +143,8 @@ clair. Cycle jour / nuit réel dans `environment.js`.
 ## Phase 5 — Performance & post-traitement
 Bloom (projecteurs, LED), SSAO/GTAO léger, LOD, instancing, ombres en cache, résolution adaptative,
 qualité auto (bas / moyen / haut). Cible : 60 fps mobile milieu de gamme en qualité « moyen ».
+Abandonné le 2026-10-23 : un seul rendu, sans ombres portées ni post-traitement (l'ancienne qualité Économie, jugée
+la plus belle et la plus nette), voir `docs/DESIGN.md`, section Fluidité.
 
 ## Ajouter un modèle (procédure)
 1. Dans Blender, une collection `fans_L2` → lancer `tools/blender/footoff_export.py`.

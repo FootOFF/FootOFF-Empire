@@ -30,7 +30,6 @@ import { setUiSound } from './ui/console';
 import './ui/input'; // manette : traduite en touches du clavier pour tous les menus
 import { moneyBurst } from './ui/moneyfx';
 import { previewState, previewUi, silentSound } from './ui/preview';
-import { QUALITIES, loadQuality, saveQuality } from './ui/settings';
 import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics';
 import { actionablePlots, dockSignals, seasonEndForecast, staffTip } from './game/advice';
 import { allowedBuildingsFor } from './game/map';
@@ -75,7 +74,6 @@ export default function App({ preview = null }) {
   const [showResult, setShowResult] = useState(!!boot.ui.showResult);
   const [goalCollapsed, setGoalCollapsed] = useState(() => window.innerWidth < 760); // replié sur mobile
   const [menu, setMenu] = useState(!!boot.ui.menu);
-  const [quality, setQuality] = useState(loadQuality); // qualité graphique (par appareil)
   const [vibration, setVibrationState] = useState(vibrationEnabled);
   const [sceneLoaded, setSceneLoaded] = useState(false); // écran de chargement jusqu'à ce que la scène 3D soit prête
   const [loadProgress, setLoadProgress] = useState(null);
@@ -263,9 +261,6 @@ export default function App({ preview = null }) {
   const settings = {
     muted: sound.current.muted,
     onToggleSound: () => { sound.current.setMuted(!sound.current.muted); bumpSound((n) => n + 1); },
-    quality,
-    qualities: QUALITIES,
-    onQuality: (q) => { setQuality(q); if (!preview) saveQuality(q); },
     vibration,
     canVibrate: canVibrate(),
     onToggleVibration: () => { setVibration(!vibration); setVibrationState(!vibration); },
@@ -345,7 +340,6 @@ export default function App({ preview = null }) {
               selectedPlot={inGame ? sel?.plotId || null : null}
               holo={holo}
               badges={plotBadges}
-              quality={quality}
               attract={!inGame}
               paused={menu}
               onLoadProgress={setLoadProgress}

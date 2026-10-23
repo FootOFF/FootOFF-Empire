@@ -13,7 +13,7 @@ export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMat
   const total = state.schedule?.length || 7;
   const items = [
     { id: 'resume', label: 'Reprendre', sub: 'Retour au complexe', onSelect: onResume },
-    { id: 'settings', label: 'Réglages', sub: 'Son, vibrations, qualité graphique', onSelect: () => setView('settings') },
+    { id: 'settings', label: 'Réglages', sub: 'Son et vibrations', onSelect: () => setView('settings') },
     { id: 'title', label: 'Écran titre', sub: inMatch ? 'Indisponible pendant un match' : 'Ta partie reste sauvegardée', disabled: inMatch, onSelect: onTitle },
     { id: 'new', label: 'Nouvelle partie', sub: 'Efface la partie en cours', tone: 'danger', onSelect: onNewGame },
     { id: 'media', label: 'FootOFF Media', sub: 'footoff.media', href: 'https://footoff.media' },
@@ -46,7 +46,7 @@ export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMat
         </aside>
       )}
       <footer className="pz-bottom">
-        <Hints items={view === 'menu' ? [['nav', 'Choisir'], ['select', 'Valider'], ['back', 'Reprendre']] : [['nav', 'Choisir'], ['lr', 'Modifier'], ['select', 'Valider'], ['back', 'Retour']]} />
+        <Hints items={view === 'menu' ? [['nav', 'Choisir'], ['select', 'Valider'], ['back', 'Reprendre']] : [['nav', 'Choisir'], ['select', 'Valider'], ['back', 'Retour']]} />
         <span className="pz-save"><IconCheck /> Sauvegarde automatique</span>
       </footer>
     </div>

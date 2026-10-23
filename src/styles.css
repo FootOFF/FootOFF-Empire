@@ -2269,15 +2269,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .cm-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .cm-row-text strong { font-family: var(--font-title); font-weight: 600; font-size: var(--t-lg); color: inherit; }
 .cm-row-text span { font-size: var(--t-sm); color: var(--muted); }
-.cm-row-text .cm-res { color: var(--gold-light); font-variant-numeric: tabular-nums; }
 .cm-row.back { min-height: 52px; gap: var(--s-2); }
-.cm-row.column { flex-direction: column; align-items: stretch; gap: var(--s-3); }
-.cm-row.column .cm-seg button { flex: 1; }
 .cm-back-icon { width: 18px; height: 18px; color: var(--gold-light); flex-shrink: 0; }
-.cm-seg { display: flex; gap: var(--s-1); padding: var(--s-1); border-radius: 999px; background: rgba(255, 255, 255, .05); border: 1px solid var(--line); flex-shrink: 0; }
-.cm-seg button { border: 0; background: none; padding: 8px 16px; border-radius: 999px; font-size: var(--t-sm); font-weight: 600; color: var(--text-2); transition: background .2s, color .2s; }
-.cm-seg button.on { background: var(--gold-grad); color: #0d0b07; }
-@media (hover: hover) { .cm-seg button:hover:not(.on) { color: var(--text); background: rgba(255, 255, 255, .06); } }
 
 /* carte de la partie (écran titre, pause) et cartes de détail de l'écran titre */
 .cm-card {
@@ -2455,7 +2448,6 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 }
 @media (max-height: 760px) and (min-width: 761px) { /* écran d'ordinateur portable : tout un peu plus serré */
   .ts-col, .pz-col { padding: 80px 0 88px; gap: 28px; }
-  .cm-row.column { gap: var(--s-2); padding-top: 10px; padding-bottom: 10px; }
   .ts-mark .lockup-mark { height: 80px; }
   .ts-mark .lockup-name { font-size: clamp(44px, 4vw, 58px); }
   .cm-item { min-height: 58px; }

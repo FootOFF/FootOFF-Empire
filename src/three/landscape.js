@@ -412,7 +412,7 @@ function lakeGeometry() {
   return geo.scale(LAKE.rx * 1.35, LAKE.rz * 1.35, 1).rotateZ(-LAKE.rot);
 }
 
-export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null } = {}) {
+export function createLandscape(scene, { siteTreesUrl = null } = {}) {
   const maps = {
     grass: (() => {
       const nz = periodicNoise(11, [4, 8, 16, 32, 64, 128]);
@@ -446,25 +446,21 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
   );
   veil.renderOrder = 10;
   veil.name = 'landscape_veil';
-  veil.userData.noAO = true;
   group.add(veil);
 
-  // lac : même eau quelle que soit la qualité graphique
   const waterNormals = waterNormalsTexture();
   waterNormals.repeat.set(9, 5);
   const lake = new THREE.Mesh(lakeGeometry(), waterMaterial(waterNormals, 0.4, 0xffffff, true));
   lake.rotation.x = -Math.PI / 2;
   lake.position.set(LAKE.x, LAKE.level, LAKE.z);
   lake.name = 'landscape_lake';
-  lake.userData.noAO = true; // pas d'occlusion sur l'eau
   group.add(lake);
 
   scene.add(group);
   let forest = null;
-  let currentQuality = quality;
   const plant = (siteTrees) => {
     forest?.dispose();
-    forest = createForest(group, scatterTrees(siteTrees), { quality: currentQuality, site: SITE });
+    forest = createForest(group, scatterTrees(siteTrees));
   };
   plant([]);
   if (siteTreesUrl) {
@@ -510,7 +506,6 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
       waterNormals.offset.set(time * 0.004, time * 0.0025);
       (this.pools || []).forEach((m) => m.material.normalMap.offset.set(time * 0.01, -time * 0.006));
     },
-    setQuality(q) { if (q === currentQuality) return; currentQuality = q; forest?.setQuality(q); },
     // voile peint avec le ciel photographié (sky.js) à la place de la couleur de brume
     setVeilMaterial(mat) { veil.material.dispose(); veil.material = mat; },
     dispose() {

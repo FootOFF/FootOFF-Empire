@@ -125,7 +125,7 @@ export function createCrowd(parent) {
   let seats = [];
   let source = null;
   let fill = 0;
-  let max = 2000;
+  const MAX = 1900; // supporters d'un stade plein (un tiers de plus dans l'arène, boost)
   let boost = 1;
   let ground = 0.006;
   const cheer = [0, 0];
@@ -171,13 +171,12 @@ export function createCrowd(parent) {
 
   return {
     // nouveau modèle de stade (niveau) : les places sont recalculées au prochain affichage
-    // big : arène des niveaux 5 et 6, un tiers de supporters en plus pour ne pas paraître vide (sauf en mode économie)
+    // big : arène des niveaux 5 et 6, un tiers de supporters en plus pour ne pas paraître vide
     setStadium(node, groundY = 0.006, big = false) { source = node; ground = groundY; boost = big ? 1.3 : 1; seats = []; if (fill > 0) this.refresh(); },
-    setQuality(q) { const next = q === 'economie' ? 800 : q === 'haute' ? 3200 : 1900; if (next !== max) { max = next; seats = []; if (fill > 0) this.refresh(); } },
     refresh() {
       if (!source) return;
       if (!seats.length) {
-        seats = sampleSeats(source, parent, max > 800 ? Math.round(max * boost) : max, ground);
+        seats = sampleSeats(source, parent, Math.round(MAX * boost), ground);
         build();
       }
     },

@@ -6,15 +6,15 @@ import { PLOTS, PLOT_LABELS, SECTORS, allowedBuildingsFor, plotBuilding } from '
 import { fmtMoney } from './format';
 import { IconArrowUp } from './icons';
 import { PLOT_POS, PLAZA_CENTER, footprintOf, layoutOverlaps } from '../three/layout';
-import { createRenderer, createEnvironment, outputRatioFor, pixelRatioFor } from '../three/environment';
+import { createRenderer, createEnvironment, outputRatioFor } from '../three/environment';
 import { assetsProgress, initAssets, instantiateModel, preloadModel, setAssetsBoost, setAssetsNight } from '../three/assets';
 import { resolveModel, resolveProp } from '../three/manifest';
 import { plotLights } from '../three/lights';
 import { BuildAnimation, Fireworks, hoverFrame } from '../three/fx';
 import { createLife } from '../three/life';
 import { createLandscape, heightAt } from '../three/landscape';
-import { hookShadowMap, plantSpots } from '../three/forest';
-import { createPostFX } from '../three/postfx';
+import { plantSpots } from '../three/forest';
+import { createFrameRenderer } from '../three/render';
 import { momentAt } from '../three/sky';
 import { PARVIS, createTrophies } from '../three/trophies';
 import { honoursOf, plural } from '../game/honours';
@@ -186,7 +186,7 @@ function parvisInfo(s) {
 // parcelle sélectionnée). Garde ses propres interactions : survol (étiquette) et clic (sélection).
 export default function Empire3D({
   state, onSelectPlot, onEmptyTap, onWebGLFail, timeMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
-  live = false, matchFx = null, badges = [], quality = 'auto', onLoadProgress, onLoaded, matchInfo = null, onOpenTrophies,
+  live = false, matchFx = null, badges = [], onLoadProgress, onLoaded, matchInfo = null, onOpenTrophies,
   attract = false, paused = false, holo = null,
 }) {
   const mountRef = useRef(null);
@@ -216,14 +216,13 @@ export default function Empire3D({
     }
     let renderer;
     try {
-      renderer = createRenderer(mount, quality);
+      renderer = createRenderer(mount);
     } catch {
       if (onWebGLFail) onWebGLFail();
       return undefined;
     }
     mount.appendChild(renderer.domElement);
     initAssets(renderer);
-    hookShadowMap(renderer); // ombres des arbres affichés en imposteurs
 
     const scene = new THREE.Scene();
     const env = createEnvironment(scene, renderer);
@@ -262,7 +261,7 @@ export default function Empire3D({
     const fireworks = new Fireworks(scene, new THREE.Vector3(0, 0, 0), 6);
     const life = createLife(scene);
     // écrin naturel : plateau, collines boisées, lac, route bordée de platanes ; il plante aussi les arbres du site
-    const landscape = createLandscape(scene, { quality, siteTreesUrl: `${import.meta.env.BASE_URL}models/props/site_trees.json` });
+    const landscape = createLandscape(scene, { siteTreesUrl: `${import.meta.env.BASE_URL}models/props/site_trees.json` });
     env.setGroundVisible(false);
     landscape.setVeilMaterial(env.veilMaterial(10, 52)); // le voile d'horizon montre le ciel qui est derrière lui
 
@@ -273,8 +272,8 @@ export default function Empire3D({
     ctx.life = life;
     ctx.landscape = landscape;
     ctx.trophies = createTrophies(scene, renderer); // allée d'honneur du parvis (trophées gagnés)
-    const post = createPostFX(renderer, scene, camera, quality); // ombres de contact, halo, étalonnage
-    ctx.post = post;
+    const draw = createFrameRenderer(renderer, scene, camera); // une image : la scène dans la toile, sans post-traitement
+    ctx.draw = draw;
     ctx.renderer = renderer; // mesures (développement)
     ctxRef.current = ctx;
     if (import.meta.env.DEV) window.__empire3d = ctx; // inspection en développement
@@ -294,7 +293,6 @@ export default function Empire3D({
     squad.setFormation(stateRef.current.formation);
     stadium.squad = squad;
     const crowd = createCrowd(stadium.wrapper);
-    crowd.setQuality(quality);
     ctx.crowd = crowd;
     if (import.meta.env.DEV) window.__empire = ctx; // inspection en développement
     squad.on.goal = (team) => {
@@ -308,16 +306,6 @@ export default function Empire3D({
     squad.on.miss = ooh;
     controls.addEventListener('start', () => { ctx.userCam = performance.now() + 5000; }); // le joueur reprend la main
 
-    // Halo des lumières : de près, au-dessus du stade, les grandes surfaces lumineuses (LED de l'arène, gradins et
-    // lignes sous les projecteurs) le changeaient en voile sur tout l'écran ; il y garde 40 % de sa force (comme
-    // un œil qui s'habitue à la lumière), intact ailleurs et dès qu'on recule.
-    ctx.haloScale = () => {
-      const st = ctx.plots.get('t0')?.wrapper.position;
-      if (!st) return 1;
-      const near = 1 - THREE.MathUtils.smoothstep(camera.position.distanceTo(controls.target), 6, 18);
-      const over = 1 - THREE.MathUtils.smoothstep(Math.hypot(controls.target.x - st.x, controls.target.z - st.z), 8, 14);
-      return 1 - 0.6 * near * over;
-    };
     ctx.setContent = (entry, node) => {
       if (entry.content) entry.wrapper.remove(entry.content); // ressources partagées : pas de dispose ici
       entry.content = node;
@@ -537,12 +525,6 @@ export default function Empire3D({
       ctx.syncSpots?.(); // projecteurs : tous dans le calcul de la lumière, ou aucun
     };
 
-    // Résolution : la toile garde la densité de l'écran (au plus 3) et la scène est toujours calculée à cette densité,
-    // sur ordinateur comme sur téléphone, au repos comme pendant les déplacements et le zoom : jamais d'image calculée
-    // plus petite puis agrandie (postfx.js). Économie : rendu direct, un pixel par pixel CSS (réglage choisi).
-    const applyRatio = () => post.setRatio(pixelRatioFor(ctx.quality));
-    applyRatio();
-
     // Projecteurs (mâts, parcelles, stade, trophée) : tous dans le calcul de la lumière ou aucun. Le jour, aucun
     // n'éclaire : ils en sortent (sinon chaque pixel de l'image les paierait, même à zéro). Jamais une partie
     // seulement : deux combinaisons de lumières en tout, compilées d'avance pour chaque nombre de projecteurs (au
@@ -552,7 +534,7 @@ export default function Empire3D({
     const precompile = (spots) => {
       const shown = spots.map((l) => l.visible);
       const target = renderer.getRenderTarget();
-      renderer.setRenderTarget(post.sceneTarget); // même cible que le rendu : mêmes programmes (sans tone mapping)
+      renderer.setRenderTarget(null); // même cible que le rendu (la toile) : mêmes programmes
       spots.forEach((l) => { l.visible = true; });
       const lit = renderer.compileAsync(scene, camera); // lumières relevées tout de suite, compilation en fond
       spots.forEach((l) => { l.visible = false; });
@@ -560,12 +542,11 @@ export default function Empire3D({
       spots.forEach((l, i) => { l.visible = shown[i]; });
       renderer.setRenderTarget(target);
       return Promise.all([lit, unlit]).then(() => {
-        // le jour, une image avec les projecteurs dans le calcul mais à zéro (rien ne change à l'écran) : les
-        // programmes hors de la scène (ombres, occlusion) sont prêts aussi pour le soir
+        // le jour, une image avec les projecteurs dans le calcul mais à zéro (rien ne change à l'écran) : tout est
+        // prêt aussi pour le soir
         if (!ctx.alive || spots.some((l) => l.visible)) return;
         spots.forEach((l) => { l.visible = true; });
-        renderer.shadowMap.needsUpdate = true;
-        post.render(0);
+        draw();
         spots.forEach((l) => { l.visible = false; });
       }).catch(() => {});
     };
@@ -578,23 +559,6 @@ export default function Empire3D({
       return Promise.resolve();
     };
 
-    // qualité graphique appliquée à chaud : résolution, puis ombres (les matériaux se recompilent)
-    ctx.quality = quality;
-    ctx.setQuality = (q) => {
-      ctx.quality = q;
-      renderer.setPixelRatio(outputRatioFor(q));
-      renderer.setSize(mount.clientWidth, mount.clientHeight);
-      post.setQuality(q);
-      applyRatio();
-      landscape.setQuality(q);
-      env.setQuality(q);
-      const shadows = q !== 'economie';
-      if (renderer.shadowMap.enabled !== shadows) {
-        renderer.shadowMap.enabled = shadows;
-        scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); });
-      }
-      ctx.frameOnce = true; // en pause : une image à la nouvelle qualité
-    };
     ctx.cutCamera = (view) => { // plan de coupe (ralenti) : pas de transition
       ctx.camTween = null;
       controls.minDistance = 1.5; // plan serré autorisé le temps du ralenti (rétabli à la fin du retour caméra)
@@ -833,12 +797,11 @@ export default function Empire3D({
       camera.updateProjectionMatrix();
       ctx.home = homeView(w / h);
       controls.maxDistance = Math.max(80, ctx.home.dist * 1.25);
-      // densité de l'écran relue à chaque redimensionnement : zoom du navigateur, fenêtre passée sur un autre écran
-      const out = outputRatioFor(ctx.quality);
+      // densité de l'écran relue à chaque redimensionnement : zoom du navigateur, fenêtre passée sur un autre écran ;
+      // la scène est toujours calculée à cette densité (un pixel calculé par pixel de l'écran, rien d'agrandi)
+      const out = outputRatioFor();
       if (Math.abs(renderer.getPixelRatio() - out) > 0.01) renderer.setPixelRatio(out);
       renderer.setSize(w, h);
-      applyRatio();
-      post.setSize(w, h);
       ctx.frameOnce = true; // la toile redimensionnée est vide : en pause, une image pour la remplir
     };
     const ro = new ResizeObserver(refit);
@@ -985,12 +948,10 @@ export default function Empire3D({
       else if (camera.view?.enabled) camera.clearViewOffset();
       camera.updateMatrixWorld();
       env.update(dt, camera); // fondu du ciel et des lumières, brume couleur d'horizon
-      post.setLook(env.grade, ctx.haloScale());
       camera.position.x += shakeX; camera.position.y += shakeY;
-      renderer.shadowMap.needsUpdate = true; // ombres : une fois par image, au premier rendu de la scène
       // dessinée aussi derrière l'écran de chargement : chaque modèle compile ses matériaux dès son arrivée, pendant
       // que les suivants se téléchargent (sans cela, tout se compilait d'un bloc à la fin : 8 s au lieu de 3,5 s)
-      post.render(dt);
+      draw();
       camera.position.x -= shakeX; camera.position.y -= shakeY;
     });
 
@@ -1018,7 +979,6 @@ export default function Empire3D({
       ctx.siteLights?.dispose();
       landscape.dispose();
       ctx.trophies.dispose();
-      post.dispose();
       squad.dispose();
       crowd.dispose();
       clearInterval(clockTimer);
@@ -1068,8 +1028,6 @@ export default function Empire3D({
     const arena = (stateRef.current.buildings?.terrain || 0) >= 5;
     ctx.tweenCamera(live ? (arena ? TV_VIEW_ARENA : TV_VIEW) : matchDay ? (arena ? MATCH_VIEW_ARENA : MATCH_VIEW) : ctx.home);
   }, [matchDay, live, recenter]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => { ctxRef.current?.setQuality?.(quality); ctxRef.current?.crowd?.setQuality(quality); }, [quality, ready]);
 
   // Jour de match : couleurs de l'adversaire, remplissage des tribunes selon l'affluence attendue (ou réelle).
   useEffect(() => {

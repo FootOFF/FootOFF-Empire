@@ -1,34 +1,23 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { PLAZA_CENTER, PLAZA_SIZE } from './layout';
-import { GRADE, MOMENTS, createPhotoSky, lookFor } from './sky';
+import { MOMENTS, createPhotoSky, lookFor } from './sky';
 
 // Rendu physique : sRGB + ACES, ciel photographié (dôme, environnement, brume) selon le moment de la journée,
-// soleil calé sur celui de la photo, ombres douces.
+// soleil calé sur celui de la photo, sans ombres portées (render.js).
 
-// Qualité graphique (menu) : économie = sans ombres ni effets ; auto = selon l'appareil ; haute = tout.
-// Densité de la toile : exactement celle de l'écran, quelle que soit la qualité (un pixel calculé par pixel physique,
-// rien d'agrandi par le navigateur).
+// Densité de la toile : exactement celle de l'écran (un pixel calculé par pixel physique, rien d'agrandi par le
+// navigateur), sur ordinateur comme sur téléphone, au repos comme pendant les déplacements et le zoom.
 export const outputRatioFor = () => window.devicePixelRatio || 1;
 
-// densité de calcul de la scène (pixels calculés par pixel CSS) : celle de la toile, sur ordinateur comme sur
-// téléphone, au repos comme pendant les déplacements et le zoom
-export const pixelRatioFor = (quality) => outputRatioFor(quality);
-
-export function createRenderer(mount, quality = 'auto') {
-  // anticrénelage de la toile seulement sans post-traitement (économie) : sinon FXAA dans la chaîne de rendu
-  // (postfx.js), la dernière passe plein écran le paierait une seconde fois pour rien
-  const renderer = new THREE.WebGLRenderer({ antialias: quality === 'economie', powerPreference: 'high-performance' });
-  renderer.setPixelRatio(outputRatioFor(quality));
+export function createRenderer(mount) {
+  // toile multi-échantillonnée : bords lisses, feuillages au bord adouci (alpha-to-coverage)
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(outputRatioFor());
   renderer.setSize(mount.clientWidth, mount.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.85;
-  renderer.shadowMap.enabled = quality !== 'economie';
-  renderer.shadowMap.type = THREE.PCFShadowMap; // PCFSoft supprimé en r18x : PCF + shadow.radius
-  // une seule mise à jour des ombres par image (boucle de rendu) : sinon chaque rendu de la scène (image, occlusion,
-  // reflet du lac) les recalcule
-  renderer.shadowMap.autoUpdate = false;
   return renderer;
 }
 
@@ -59,13 +48,6 @@ export function createEnvironment(scene, renderer) {
   });
 
   const sun = new THREE.DirectionalLight(0xfff1dc, 3);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048); // téléphone compris : ombres aussi fines qu'à l'écran d'ordinateur
-  const sc = sun.shadow.camera;
-  sc.left = -32; sc.right = 32; sc.top = 32; sc.bottom = -32; // tout le complexe (profondeur : 0,5 - 500 par défaut)
-  sun.shadow.bias = -0.0004;
-  sun.shadow.normalBias = 0.03;
-  sun.shadow.radius = 3;
   sun.target.position.set(PLAZA_CENTER[0], 0, PLAZA_CENTER[1]);
   scene.add(sun, sun.target);
 
@@ -101,14 +83,12 @@ export function createEnvironment(scene, renderer) {
   const snap = (look) => ({
     sunDir: look.sunDir.clone(), sunI: look.sunI, sunColor: look.sunColor.clone(), ambient: look.ambient, exposure: look.exposure, haze: look.haze,
     fill: look.fill, fillDir: look.fillDir.clone(), fillColor: look.fillColor.clone(),
-    grade: { ...look.grade, bloom: [...look.grade.bloom] },
   });
   let cur = null;
   let from = null;
   let target = null;
   let k = 1;
   let ambienceKey = '';
-  const grade = { sat: 1, contrast: 1, warm: 0, vignette: 0, bloom: [0, 0, 1] };
 
   // Ambiance : moment de la journée (sky.js), toujours par temps clair. Renvoie { dark, lights } : lights (0 à 1)
   // règle l'éclairage du complexe (fenêtres, LED, lampadaires, projecteurs), dark la nuit.
@@ -126,7 +106,7 @@ export function createEnvironment(scene, renderer) {
     return { dark, lights: target.lights };
   }
 
-  // réglage à chaud (développement) : réapplique l'ambiance courante après modification de MOMENTS ou GRADE
+  // réglage à chaud (développement) : réapplique l'ambiance courante après modification de MOMENTS
   function retune() {
     target = lookFor(ambienceKey);
     cur = snap(target);
@@ -153,8 +133,6 @@ export function createEnvironment(scene, renderer) {
       cur.fillDir.copy(from.fillDir).lerp(target.fillDir, t).normalize();
       cur.fillColor.copy(from.fillColor).lerp(target.fillColor, t);
       cur.sunColor.copy(from.sunColor).lerp(target.sunColor, t);
-      for (const g of ['sat', 'contrast', 'warm', 'vignette']) cur.grade[g] = lerpN(from.grade[g], target.grade[g], t);
-      cur.grade.bloom = from.grade.bloom.map((v, i) => lerpN(v, target.grade.bloom[i], t));
       if (k >= 1) from = null;
     }
     sun.position.copy(cur.sunDir).multiplyScalar(60).add(sun.target.position);
@@ -165,7 +143,6 @@ export function createEnvironment(scene, renderer) {
     fill.color.copy(cur.fillColor);
     if (photo.envTexture) scene.environmentIntensity = cur.ambient;
     renderer.toneMappingExposure = cur.exposure;
-    Object.assign(grade, cur.grade);
     // brume : couleur de l'horizon du ciel dans la direction du regard (le relief lointain s'y fond)
     camera.getWorldDirection(view);
     const phi = Math.atan2(view.x, -view.z);
@@ -191,10 +168,8 @@ export function createEnvironment(scene, renderer) {
 
   return {
     setAmbience, update, dispose, sun, setPlazaVisible, setGroundVisible,
-    setQuality: () => {}, // le ciel est le même dans toutes les qualités (pleine définition)
     veilMaterial: (lo, hi) => photo.veilMaterial(lo, hi),
-    tune: { MOMENTS, GRADE, retune },
-    get grade() { return grade; },
+    tune: { MOMENTS, retune },
     get skySettled() { return photo.settled; },
     get sunDir() { return cur ? cur.sunDir : sun.position; },
   };

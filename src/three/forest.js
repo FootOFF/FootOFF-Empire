@@ -4,8 +4,8 @@ import { resolveProp } from './manifest';
 import { TREES } from './trees.generated';
 
 // Arbres du décor : chêne, hêtre, peuplier, pin sylvestre et sapin, modélisés dans Blender (build_trees.py) avec
-// écorces photographiées et houppiers en touffes de vraies feuilles. De près (plateforme, abords, parcelles) : les
-// modèles 3D, ombres portées, vent léger, soleil à travers les feuilles. Au loin (forêts des collines) : imposteurs
+// écorces photographiées et houppiers en touffes de vraies feuilles. De près (arbres du site, jardins) : les modèles
+// 3D, vent léger, soleil à travers les feuilles. Au loin (forêts des collines, un arbre sur deux) : imposteurs
 // — chaque espèce rendue sous 8 angles (couleur, relief, occlusion), une image par arbre face à l'écran, qui prend
 // l'angle de vue le plus proche (fondu entre deux angles) et reste éclairée en direct comme le reste de la scène
 // (soleil, ciel, brume). Végétation basse des jardins (buis, arbustes, haies taillées), toujours en 3D. Liste :
@@ -14,7 +14,7 @@ import { TREES } from './trees.generated';
 
 const BASE = import.meta.env.BASE_URL;
 const SCALE = 1.15; // hauteur réelle des arbres : la liste donne la hauteur du houppier d'origine
-const FAR_SHARE = { haute: 1, auto: 1, economie: 0.5 }; // part des arbres lointains affichés
+const FAR_SHARE = 0.5; // part des arbres lointains affichés : un sur deux, pris au hasard (pas une zone entière)
 const TINT = { // teinte du feuillage par espèce (comme le rendu des imposteurs, render_impostors.py)
   chene: [0.82, 0.92, 0.72], hetre: [0.98, 1.06, 0.8], peuplier: [0.8, 0.94, 0.78], pin: [0.92, 0.98, 0.9], sapin: [0.8, 0.95, 0.85],
   buis: [0.78, 0.98, 0.62], arbuste: [0.86, 0.98, 0.68], haie: [0.8, 1.0, 0.64],
@@ -22,37 +22,10 @@ const TINT = { // teinte du feuillage par espèce (comme le rendu des imposteurs
 const SHRUBS = TREES.shrubs || {};
 const UP = new THREE.Vector3(0, 1, 0);
 const time = { value: 0 }; // horloge du vent, partagée par tous les feuillages
-let shadows = true; // ombres portées des arbres proches : pas sur téléphone ni en économie (deuxième rendu complet)
-const narrow = () => Math.min(window.innerWidth, window.innerHeight) < 600;
-// au-delà de cette distance du bord du site (unités du jeu), les arbres sont toujours des imposteurs
-const nearRadius = (q) => (q === 'haute' ? 9 : q === 'economie' ? 0 : narrow() ? 3 : 6);
-// arbres du site et des abords : modèles 3D à moins de cette distance de la caméra (unités du jeu), imposteurs
-// au-delà (écart entre les deux seuils : pas de va-et-vient quand la caméra s'arrête à la limite)
-const lodDistance = (q) => (q === 'haute' ? [32, 36] : q === 'economie' || narrow() ? [16, 19] : [24, 28]);
-// ombres des arbres affichés en imposteurs : leur modèle 3D (« fantôme »), visible seulement le temps du calcul de
-// la carte d'ombres (hookShadowMap) ; matériau de profondeur pour l'ombre, et par sécurité un matériau qui ne
-// dessine rien s'il était rendu ailleurs
-const ghosts = new Set();
-const GHOST = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
-GHOST.onBeforeCompile = (shader) => {
-  shader.vertexShader = shader.vertexShader.replace('#include <project_vertex>', 'vec4 mvPosition = vec4(0.0);\ngl_Position = vec4(2.0, 2.0, 2.0, 1.0);');
-};
-const BARK_DEPTH = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+// arbres du site : modèles 3D à moins de cette distance de la caméra (unités du jeu), imposteurs au-delà (écart entre
+// les deux seuils : pas de va-et-vient quand la caméra s'arrête à la limite) ; hors du site, toujours des imposteurs
+const LOD = [16, 19];
 const noRaycast = () => {}; // la végétation n'est pas une cible du survol ni du clic (parcelles, parvis)
-
-// Carte d'ombres : les fantômes des arbres n'y apparaissent que pendant son calcul. Avec une seule mise à jour par
-// image (renderer.shadowMap.autoUpdate = false, needsUpdate dans la boucle), ni l'image ni l'occlusion ne les
-// dessinent.
-export function hookShadowMap(renderer) {
-  const sm = renderer.shadowMap;
-  const render = sm.render.bind(sm);
-  sm.render = (lights, scene, camera) => {
-    const run = sm.enabled && (sm.autoUpdate || sm.needsUpdate) && lights.length > 0;
-    if (run) ghosts.forEach((g) => { g.visible = true; });
-    render(lights, scene, camera);
-    if (run) ghosts.forEach((g) => { g.visible = false; });
-  };
-}
 const hash = (x, z, k = 0) => { const s = Math.sin(x * 12.9898 + z * 78.233 + k * 37.719) * 43758.5453; return s - Math.floor(s); };
 const species = (kind) => (TREES.species[kind] || SHRUBS[kind] ? kind : 'chene');
 
@@ -144,8 +117,7 @@ function impostorMaterial(atlas) {
 // léger (le haut du houppier ondule, le pied reste immobile). L'image des feuilles est détourée sur fond noir : au bord
 // d'une feuille, le filtrage mêle sa couleur à ce noir (cerne sombre autour de chaque touffe) ; la couleur y est
 // rétablie en la divisant par la couverture lue (au plus ×2). Faces avant seulement : les cartes vues de dos sont
-// surtout au fond du houppier, cachées par celles de devant, et coûtaient la moitié du rendu du feuillage ; les
-// ombres, elles, prennent les deux faces.
+// surtout au fond du houppier, cachées par celles de devant, et coûtaient la moitié du rendu du feuillage.
 // Profondeur d'abord (leafPrepass) : les cartes d'un houppier se recouvrent, et chaque couche était éclairée en entier
 // avant d'être cachée par la suivante. Une passe ne fait qu'écrire la profondeur des feuilles (même découpe, même
 // vent, lecture de la seule image) ; le feuillage éclairé, dessiné ensuite sans écrire la profondeur, n'est calculé
@@ -154,7 +126,6 @@ function leafMaterial(base, tint) {
   const m = base.clone();
   m.color.setRGB(...tint, THREE.SRGBColorSpace);
   m.side = THREE.FrontSide;
-  m.shadowSide = THREE.DoubleSide;
   m.alphaTest = 0.42;
   m.transparent = false;
   m.alphaToCoverage = true;
@@ -201,16 +172,13 @@ function leafPrepass(leaf) {
 }
 
 // Maillage de la passe de profondeur d'un feuillage instancié : enfant du maillage (même repère, même visibilité),
-// mêmes instances (tampon partagé), dessiné avant tout le reste ; ni ombre, ni occlusion, ni clic.
+// mêmes instances (tampon partagé), dessiné avant tout le reste ; pas une cible du clic.
 function withPrepass(mesh, material) {
   const pre = new THREE.InstancedMesh(mesh.geometry, material, mesh.instanceMatrix.count);
   pre.instanceMatrix = mesh.instanceMatrix;
   pre.count = mesh.count;
   pre.frustumCulled = mesh.frustumCulled;
   pre.renderOrder = -1;
-  pre.castShadow = false;
-  pre.receiveShadow = false;
-  pre.userData.noAO = true;
   pre.raycast = noRaycast;
   pre.name = `${mesh.name}_profondeur`;
   pre.onBeforeRender = () => { pre.count = mesh.count; }; // niveau de détail : nombre d'instances suivi
@@ -219,7 +187,7 @@ function withPrepass(mesh, material) {
 }
 
 // Modèle des arbres, chargé une fois (comme tous les GLB, assets.js) : espèce -> parties
-// [{ geometry, material, depth, leaves, local }], local = repère de la partie dans le modèle, en mètres.
+// [{ geometry, material, prepass, leaves, part, local }], local = repère de la partie dans le modèle, en mètres.
 let treesPromise = null;
 function loadTrees() {
   const entry = resolveProp('trees');
@@ -239,7 +207,6 @@ function loadTrees() {
           geometry: o.geometry,
           material,
           prepass: leaves ? leafPrepass(material) : null,
-          depth: leaves ? new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: o.material.map, alphaTest: 0.42 }) : null,
           leaves,
           part: m[2],
           local: toModel.clone().multiply(o.matrixWorld),
@@ -286,7 +253,7 @@ function tintOf(key, x, z, col) {
   return key === 'arbuste' && hash(x, z, 7) < 0.25 ? col.multiply(PURPLE) : col;
 }
 
-// Plante les instances : un maillage par espèce et par partie (écorce, feuillage, cœur des haies), ombres portées.
+// Plante les instances : un maillage par espèce et par partie (écorce, feuillage, cœur des haies).
 function plantMeshes(lib, items, parent) {
   const meshes = [];
   const m4 = new THREE.Matrix4(), col = new THREE.Color();
@@ -299,10 +266,6 @@ function plantMeshes(lib, items, parent) {
         mesh.setMatrixAt(i, m4.copy(t.matrix).multiply(part.local));
         mesh.setColorAt(i, tintOf(key, t.x, t.z, col));
       });
-      mesh.castShadow = shadows;
-      mesh.receiveShadow = true;
-      if (part.leaves) mesh.customDepthMaterial = part.depth;
-      mesh.userData.noAO = part.leaves; // cartes de feuillage : pleines pour l'occlusion (carrés sombres)
       mesh.raycast = noRaycast;
       mesh.name = `forest_${key}_${part.part}`;
       if (part.prepass) withPrepass(mesh, part.prepass);
@@ -352,7 +315,6 @@ function impostorMesh(material, capacity, name) {
   geo.instanceCount = 0;
   const mesh = new THREE.Mesh(geo, material);
   mesh.frustumCulled = false; // positions calculées dans le shader
-  mesh.userData.noAO = true; // l'occlusion les dessinerait tous à l'origine (matériau de normales sans billboard)
   mesh.raycast = noRaycast;
   mesh.name = name;
   return {
@@ -377,12 +339,10 @@ function impostorMesh(material, capacity, name) {
   };
 }
 
-export function createForest(group, list, { quality = 'auto', site }) {
-  let q = quality;
-  const siteDist = (x, z) => Math.hypot(Math.max(site.x0 - x, 0, x - site.x1), Math.max(site.z0 - z, 0, z - site.z1));
+export function createForest(group, list) {
   const loader = new THREE.TextureLoader();
   const atlas = { color: { value: null }, normal: { value: null }, loaded: false };
-  const loadAtlas = () => { // atlas complet quelle que soit la qualité : imposteurs nets en pleine résolution
+  const loadAtlas = () => { // atlas complet : imposteurs nets en pleine résolution
     if (atlas.loaded) return;
     atlas.loaded = true;
     for (const [key, file, srgb] of [['color', 'impostors_color', true], ['normal', 'impostors_normal', false]]) {
@@ -405,7 +365,7 @@ export function createForest(group, list, { quality = 'auto', site }) {
   let alive = true; // le modèle peut arriver après dispose() (liste replantée entre-temps)
 
   function clearNear() {
-    nearMeshes.forEach((m) => { group.remove(m); m.children.forEach((c) => c.dispose?.()); m.dispose(); ghosts.delete(m); });
+    nearMeshes.forEach((m) => { group.remove(m); m.children.forEach((c) => c.dispose?.()); m.dispose(); });
     nearMeshes = [];
     lodGroups = [];
     if (nearImp) { group.remove(nearImp.mesh); nearImp.dispose(); nearImp = null; }
@@ -421,7 +381,7 @@ export function createForest(group, list, { quality = 'auto', site }) {
       const hedge = t[5] === 'haie';
       return instancesOf(t[5], footOf(t), t[3] * 10, hedge ? t[4] * 10 : t[4] / t[3], (t[8] || 0) * 10, 0.1, t[0], t[2]);
     }), group);
-    // arbres : 3D près de la caméra, imposteurs plus loin (update) ; ombres toujours des modèles 3D (fantômes)
+    // arbres : 3D près de la caméra, imposteurs plus loin (update)
     const trees = near.filter((t) => TREES.species[t[5]]);
     const m4 = new THREE.Matrix4(), col = new THREE.Color();
     for (const key of Object.keys(TREES.species)) {
@@ -443,26 +403,11 @@ export function createForest(group, list, { quality = 'auto', site }) {
         mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
         mesh.count = 0;
         mesh.frustumCulled = false; // nombre d'instances variable
-        mesh.receiveShadow = true;
-        mesh.userData.noAO = part.leaves;
         mesh.raycast = noRaycast;
         mesh.name = `forest_${key}_${part.part}`;
         if (part.prepass) withPrepass(mesh, part.prepass);
         group.add(mesh);
         nearMeshes.push(mesh);
-        if (shadows) {
-          const ghost = new THREE.InstancedMesh(part.geometry, GHOST, n);
-          ghost.instanceMatrix.array.set(mats);
-          ghost.computeBoundingSphere();
-          ghost.castShadow = true;
-          ghost.customDepthMaterial = part.leaves ? part.depth : BARK_DEPTH;
-          ghost.visible = false;
-          ghost.raycast = noRaycast;
-          ghosts.add(ghost);
-          ghost.name = `forest_${key}_${part.part}_ombre`;
-          group.add(ghost);
-          nearMeshes.push(ghost);
-        }
         g.parts.push({ mesh, mats, cols });
       }
       lodGroups.push(g);
@@ -473,14 +418,11 @@ export function createForest(group, list, { quality = 'auto', site }) {
   }
 
   function build() {
-    shadows = !(q === 'economie' || (q === 'auto' && narrow()));
     loadAtlas();
-    const r = nearRadius(q);
-    const isNear = (t) => t[7] || !TREES.species[t[5]] || siteDist(t[0], t[2]) < r; // végétation basse : toujours 3D
+    const isNear = (t) => t[7] || !TREES.species[t[5]]; // arbres du site ; végétation basse : toujours 3D
     near = list.filter(isNear);
-    // économie : un arbre lointain sur deux, pris au hasard (pas une zone entière) ; du plus proche au plus lointain
-    const share = FAR_SHARE[q] ?? 1;
-    const kept = list.filter((t) => !isNear(t) && hash(t[0], t[2], 9) < share);
+    // forêts lointaines : un arbre sur deux, du plus proche au plus lointain
+    const kept = list.filter((t) => !isNear(t) && hash(t[0], t[2], 9) < FAR_SHARE);
     kept.sort((a, b) => Math.hypot(a[0], a[2]) - Math.hypot(b[0], b[2]));
     if (far) { group.remove(far.mesh); far.dispose(); }
     far = impostorMesh(impostor, kept.length, 'forest_impostors');
@@ -504,7 +446,7 @@ export function createForest(group, list, { quality = 'auto', site }) {
       if (lastCam && lastCam.distanceToSquared(c) < 0.04) return;
       const first = !lastCam;
       lastCam = (lastCam || new THREE.Vector3()).copy(c);
-      const [dIn, dOut] = lodDistance(q);
+      const [dIn, dOut] = LOD;
       let changed = first;
       for (const g of lodGroups) {
         g.trees.forEach((t, i) => {
@@ -532,11 +474,6 @@ export function createForest(group, list, { quality = 'auto', site }) {
         }
       }
       nearImp.fill(distant);
-    },
-    setQuality(nq) {
-      if (nq === q) return;
-      q = nq;
-      build();
     },
     dispose() {
       alive = false;

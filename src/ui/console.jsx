@@ -95,7 +95,7 @@ export function MenuList({ items, menu, className = '', label }) {
 }
 
 // Aides de commandes au bas de l'écran : touches au clavier, boutons à la manette, rien au doigt.
-// items : [[type, libellé]] avec type parmi nav (haut / bas), lr (gauche / droite), select, back.
+// items : [[type, libellé]] avec type parmi nav (haut / bas), select, back.
 export function Hints({ items, className = '' }) {
   const mode = useInputMode();
   if (mode === 'touch') return null;
@@ -109,50 +109,25 @@ export function Hints({ items, className = '' }) {
 }
 
 const ARROWS_V = <svg viewBox="0 0 24 24"><path d="M12 4.5v15M8 8.5l4-4 4 4M8 15.5l4 4 4-4" /></svg>;
-const ARROWS_H = <svg viewBox="0 0 24 24"><path d="M4.5 12h15M8.5 8l-4 4 4 4M15.5 8l4 4-4 4" /></svg>;
 const DPAD = <svg viewBox="0 0 24 24"><path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6Z" /></svg>;
 
 function KeyGlyph({ k }) {
   if (k === 'nav') return <kbd className="cm-key icon">{ARROWS_V}</kbd>;
-  if (k === 'lr') return <kbd className="cm-key icon">{ARROWS_H}</kbd>;
   return <kbd className="cm-key">{k === 'select' ? 'Entrée' : 'Échap'}</kbd>;
 }
 
 function PadGlyph({ k }) {
-  if (k === 'nav' || k === 'lr') return <i className="cm-pad dpad">{DPAD}</i>;
+  if (k === 'nav') return <i className="cm-pad dpad">{DPAD}</i>;
   return <i className={`cm-pad ${k}`}>{k === 'select' ? 'A' : 'B'}</i>;
 }
 
-// Taille réelle de l'image 3D : la toile couvre la fenêtre, un pixel calculé par pixel physique de l'écran (Empire3D).
-function useScreenPixels() {
-  const read = () => { const k = window.devicePixelRatio || 1; return [Math.floor(window.innerWidth * k), Math.floor(window.innerHeight * k)]; };
-  const [px, setPx] = useState(read);
-  useEffect(() => {
-    const on = () => setPx(read());
-    window.addEventListener('resize', on);
-    return () => window.removeEventListener('resize', on);
-  }, []);
-  return px;
-}
-
-// Réglages partagés par l'écran titre et le menu pause : son, vibrations, qualité graphique (avec la résolution réelle
-// de l'image), retour.
+// Réglages partagés par l'écran titre et le menu pause : son, vibrations, retour. Pas de qualité graphique : un seul
+// rendu, le plus net (render.js).
 export function SettingsView({ settings, onBack, active = true }) {
-  const { muted, onToggleSound, vibration, canVibrate, onToggleVibration, quality, qualities, onQuality } = settings;
-  const rows = [{ id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'quality' }, { id: 'back' }];
+  const { muted, onToggleSound, vibration, canVibrate, onToggleVibration } = settings;
+  const rows = [{ id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'back' }];
   const menu = useMenu(rows, { onBack, active });
   const { cur, setCur, refs, hover } = menu;
-  const qi = Math.max(0, qualities.findIndex((q) => q.id === quality));
-  const [pw, ph] = useScreenPixels();
-  const setQ = (i) => {
-    const n = Math.min(qualities.length - 1, Math.max(0, i));
-    if (n !== qi) { onQuality(qualities[n].id); uiSound('move'); }
-  };
-  useKeydown((e) => {
-    if (!active || e.defaultPrevented || rows[cur].id !== 'quality') return;
-    if (e.key === 'ArrowLeft') { e.preventDefault(); setQ(qi - 1); }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); setQ(qi + 1); }
-  });
   const row = (i) => ({ ref: (el) => { refs.current[i] = el; }, onPointerEnter: hover(i), onFocus: () => setCur(i), style: { '--i': i } });
   const vibOn = vibration && canVibrate;
   return (
@@ -170,20 +145,7 @@ export function SettingsView({ settings, onBack, active = true }) {
         </span>
         <span className={`switch ${vibOn ? 'on' : ''}`} aria-hidden="true"><i /></span>
       </button>
-      <div role="menuitem" tabIndex={0} aria-label={`Qualité graphique : ${qualities[qi].label}`} className={`cm-row column ${cur === 2 ? 'on' : ''}`} {...row(2)}>
-        <span className="cm-bar" aria-hidden="true" />
-        <span className="cm-row-text">
-          <strong>Qualité graphique</strong>
-          <span>{qualities[qi].hint}</span>
-          <span className="cm-res">Image calculée en {pw} × {ph} pixels : la pleine résolution de ton écran.</span>
-        </span>
-        <span className="cm-seg">
-          {qualities.map((q, i) => (
-            <button key={q.id} type="button" tabIndex={-1} className={i === qi ? 'on' : ''} aria-pressed={i === qi} onClick={() => setQ(i)}>{q.label}</button>
-          ))}
-        </span>
-      </div>
-      <button type="button" className={`cm-row back ${cur === 3 ? 'on' : ''}`} {...row(3)} onClick={() => { uiSound('back'); onBack(); }}>
+      <button type="button" className={`cm-row back ${cur === 2 ? 'on' : ''}`} {...row(2)} onClick={() => { uiSound('back'); onBack(); }}>
         <span className="cm-bar" aria-hidden="true" />
         <IconChevronLeft className="cm-back-icon" />
         <span className="cm-row-text"><strong>Retour</strong></span>

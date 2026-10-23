@@ -41,17 +41,6 @@ export function momentAt(date = new Date(), { timeMode = 'auto', matchDay = fals
   return 'dusk';
 }
 
-// Étalonnage (post-traitement) par ambiance : saturation, contraste, chaleur, vignettage, halo [force, rayon, seuil].
-export const GRADE = {
-  // seuils de halo au-dessus de la radiance du ciel : seuls le soleil, les lumières et les reflets vifs rayonnent
-  morning: { sat: 1.12, contrast: 1.05, warm: 0.035, vignette: 0.26, bloom: [0.2, 0.55, 1.5] },
-  day: { sat: 1.1, contrast: 1.06, warm: 0.01, vignette: 0.22, bloom: [0.16, 0.5, 1.4] },
-  golden: { sat: 1.16, contrast: 1.08, warm: 0.06, vignette: 0.28, bloom: [0.24, 0.55, 1.6] },
-  sunset: { sat: 1.14, contrast: 1.1, warm: 0.04, vignette: 0.32, bloom: [0.3, 0.6, 2.4] },
-  blue: { sat: 1.06, contrast: 1.1, warm: -0.01, vignette: 0.38, bloom: [0.42, 0.6, 1.3] },
-  night: { sat: 1.02, contrast: 1.1, warm: -0.02, vignette: 0.45, bloom: [0.55, 0.6, 0.72] },
-};
-
 // Réglages par moment. sky : ciel ; az : direction (°, 0 = nord, 90 = est) où l'on place le soleil (ou la lueur)
 // de la photo ; light : [direction, hauteur] du soleil du jeu (sinon ceux de la photo) ; sunI : intensité du soleil
 // (null = éclairement mesuré sur la photo, × sunMul) ; gain : luminosité du ciel, que la lumière ambiante et les
@@ -61,13 +50,13 @@ export const GRADE = {
 // d'appoint venue du côté de la caméra (le complexe reste lisible quand le soleil est bas ou absent) ; dark : nuit
 // (eau sombre, trophées sous projecteurs).
 export const MOMENTS = {
-  dawn: { sky: 'dusk', az: 68, light: [68, 4], sunI: 0.3, sunColor: 0xffb48c, gain: 0.06, ambient: 2.2, exposure: 1.15, haze: 0.45, fogDist: 1.4, lights: 0.9, fill: 0.55, dark: true, grade: 'blue' },
-  morning: { sky: 'morning', az: 112, light: [112, 24], sunI: 7.2, sunColor: 0xffd7aa, gain: 0.34, ambient: 1.05, exposure: 1.3, haze: 0.9, fill: 0.15, grade: 'morning' },
-  day: { sky: 'day', az: 205, light: [205, 40], sunI: null, sunMul: 1.3, gain: 0.4, ambient: 0.8, grade: 'day' },
-  golden: { sky: 'golden', az: 248, light: [248, 22], sunI: 6.8, sunColor: 0xffb468, gain: 0.34, ambient: 1.0, exposure: 1.3, haze: 0.8, fogDist: 1.15, lights: 0.2, fill: 0.45, grade: 'golden' },
-  sunset: { sky: 'sunset', az: 298, light: [298, 5], sunI: 4.0, sunColor: 0xff9a55, gain: 0.11, ambient: 1.6, exposure: 1.15, haze: 0.5, fogDist: 1.5, lights: 0.75, fill: 0.8, grade: 'sunset' },
-  dusk: { sky: 'dusk', az: 298, light: [298, 4], sunI: 0.3, sunColor: 0xa9b4ff, gain: 0.06, ambient: 2.2, exposure: 1.15, haze: 0.45, fogDist: 1.4, lights: 1, fill: 0.6, dark: true, grade: 'blue' },
-  night: { sky: 'night', az: 180, light: [140, 38], sunI: 1.1, sunColor: 0x9db0e0, gain: 0.06, ambient: 1.6, exposure: 1.1, haze: 0.7, fogDist: 1.2, lights: 1, fill: 0.15, dark: true, grade: 'night' },
+  dawn: { sky: 'dusk', az: 68, light: [68, 4], sunI: 0.3, sunColor: 0xffb48c, gain: 0.06, ambient: 2.2, exposure: 1.15, haze: 0.45, fogDist: 1.4, lights: 0.9, fill: 0.55, dark: true },
+  morning: { sky: 'morning', az: 112, light: [112, 24], sunI: 7.2, sunColor: 0xffd7aa, gain: 0.34, ambient: 1.05, exposure: 1.3, haze: 0.9, fill: 0.15 },
+  day: { sky: 'day', az: 205, light: [205, 40], sunI: null, sunMul: 1.3, gain: 0.4, ambient: 0.8 },
+  golden: { sky: 'golden', az: 248, light: [248, 22], sunI: 6.8, sunColor: 0xffb468, gain: 0.34, ambient: 1.0, exposure: 1.3, haze: 0.8, fogDist: 1.15, lights: 0.2, fill: 0.45 },
+  sunset: { sky: 'sunset', az: 298, light: [298, 5], sunI: 4.0, sunColor: 0xff9a55, gain: 0.11, ambient: 1.6, exposure: 1.15, haze: 0.5, fogDist: 1.5, lights: 0.75, fill: 0.8 },
+  dusk: { sky: 'dusk', az: 298, light: [298, 4], sunI: 0.3, sunColor: 0xa9b4ff, gain: 0.06, ambient: 2.2, exposure: 1.15, haze: 0.45, fogDist: 1.4, lights: 1, fill: 0.6, dark: true },
+  night: { sky: 'night', az: 180, light: [140, 38], sunI: 1.1, sunColor: 0x9db0e0, gain: 0.06, ambient: 1.6, exposure: 1.1, haze: 0.7, fogDist: 1.2, lights: 1, fill: 0.15, dark: true },
 };
 
 const dirFrom = (azDeg, elDeg, out = new THREE.Vector3()) => {
@@ -75,8 +64,7 @@ const dirFrom = (azDeg, elDeg, out = new THREE.Vector3()) => {
   return out.set(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
 };
 
-// Réglages complets d'une ambiance (moment de la journée, toujours par temps clair) : ciel, soleil, lumière, brume,
-// étalonnage.
+// Réglages complets d'une ambiance (moment de la journée, toujours par temps clair) : ciel, soleil, lumière, brume.
 export function lookFor(moment = 'day') {
   const m = MOMENTS[moment] || MOMENTS.day;
   const key = m.sky;
@@ -104,7 +92,6 @@ export function lookFor(moment = 'day') {
     fill: m.fill ?? 0,
     fillDir: dirFrom(lAz + 180, 32), // à l'opposé du soleil : éclaire les façades tournées vers la caméra
     fillColor: new THREE.Color(m.dark ? 0xb8c4ff : 0xffe4c8),
-    grade: GRADE[m.grade],
   };
 }
 
@@ -197,7 +184,6 @@ export function createPhotoSky(renderer) {
   const geo = new THREE.SphereGeometry(1, 64, 32);
   const dome = new THREE.Mesh(geo, material(false));
   dome.name = 'photo_sky';
-  dome.userData.noAO = true;
   dome.frustumCulled = false;
   dome.renderOrder = 1000; // après le décor opaque, à la profondeur maximale : peint seulement là où le ciel se voit
   dome.visible = false;

@@ -47,14 +47,12 @@ function SideCard({ id, state, settings }) {
     );
   }
   if (id === 'settings') {
-    const q = settings.qualities.find((x) => x.id === settings.quality);
     return (
       <section className="cm-card">
         <span className="eyebrow">Réglages</span>
         <dl className="cm-card-rows">
           <div><dt>Son</dt><dd>{settings.muted ? 'Coupé' : 'Activé'}</dd></div>
           <div><dt>Vibrations</dt><dd>{!settings.canVibrate ? 'Indisponibles' : settings.vibration ? 'Activées' : 'Coupées'}</dd></div>
-          <div><dt>Qualité graphique</dt><dd>{q?.label}</dd></div>
         </dl>
         <p className="cm-card-note">Enregistrés sur cet appareil.</p>
       </section>
@@ -78,7 +76,7 @@ function menuItems(state, { onContinue, onNew, onSettings }) {
   return [
     ...(state ? [{ id: 'continue', label: 'Continuer', sub: `${state.clubName} · ${div.name} · Saison ${state.seasonNumber}`, onSelect: onContinue }] : []),
     { id: 'new', label: 'Nouvelle partie', sub: state ? 'Fonder un autre club' : 'Fonde ton club et bâtis ton empire', onSelect: onNew },
-    { id: 'settings', label: 'Réglages', sub: 'Son, vibrations, qualité graphique', onSelect: onSettings },
+    { id: 'settings', label: 'Réglages', sub: 'Son et vibrations', onSelect: onSettings },
     { id: 'media', label: 'FootOFF Media', sub: 'footoff.media', href: 'https://footoff.media' },
   ];
 }
@@ -189,7 +187,7 @@ export function TitleScreen({ state, view, onView, onContinue, onNewGame, onCrea
   const [entered, setEntered] = useState(false); // la première apparition joue l'animation d'entrée complète
   useEffect(() => { const t = setTimeout(() => setEntered(true), 1400); return () => clearTimeout(t); }, []);
   const hints = view === 'settings'
-    ? [['nav', 'Choisir'], ['lr', 'Modifier'], ['select', 'Valider'], ['back', 'Retour']]
+    ? [['nav', 'Choisir'], ['select', 'Valider'], ['back', 'Retour']]
     : view === 'create'
       ? [['nav', 'Choisir'], ['select', 'Valider'], ['back', 'Retour']]
       : [['nav', 'Choisir'], ['select', 'Valider']];
