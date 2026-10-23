@@ -1,8 +1,11 @@
 import { BUILDINGS, DIVISIONS, SQUAD_MAX, SQUAD_MIN, START_MONEY, upgradeCost } from './constants';
 import { OFFLINE_CAP, offlinePerHour } from './economy';
-import { assignNumber, costOf, makePlayer, saleValue } from './players';
-import { HAGGLE_CHANCE, TRIES, acceptChance, counterFor, findOnMarket, isSerious, logMove, roundKey, roundTo } from './mercato';
-import { refreshTransfers } from './transfers';
+import { assignNumber, costOf, makePlayer, saleValue, wageOf } from './players';
+import {
+  SALE_TRIES, TRIES, acceptChance, auctionDone, counterFor, demandChance, findOnMarket, isSerious, lastWordOf, logMove,
+  offersFor, outbidAmount, outbidChance, roundKey, roundTo, valueOf,
+} from './mercato';
+import { listingOffers, refreshTransfers } from './transfers';
 import { clubAfter, randomClubName, registerNames, withArticle } from './names';
 import { archivePlayer, endSeason, playRound, pushJournal, startSeason } from './season';
 import { initGoals } from './goals';
@@ -131,7 +134,8 @@ export function upgrade(s, key) {
 
 // --- Mercato (voir mercato.js et transfers.js) ------------------------------------------------------------
 
-// Vente d'un joueur à un autre club : au prix d'une offre reçue, ou à sa valeur (vente immédiate).
+// Vente d'un joueur à un autre club, au prix d'une offre reçue (il n'y a plus de vente immédiate : toute vente passe
+// par la mise en vente et les offres des clubs). Sans montant (aperçus de la galerie) : à sa valeur.
 export function sellPlayer(s, id, fee = null, club = null) {
   if (s.players.length <= SQUAD_MIN) return null;
   const idx = s.players.findIndex((p) => p.id === id);
@@ -228,38 +232,96 @@ export function toggleShortlist(s, id) {
   return s;
 }
 
-// Joueur de l'effectif mis sur le marché (ou retiré) : les clubs adverses font leurs offres après chaque journée.
-export function setForSale(s, id, on) {
-  if (!s.players.some((p) => p.id === id)) return null;
+// Joueur de l'effectif mis sur le marché à un prix (ou retiré). Mis en vente, les clubs intéressés font aussitôt leur
+// offre (transfers.js), d'autres suivent après chaque journée. Retiré, ses offres encore ouvertes sont mises de côté
+// jusqu'à la fin de la journée : remis en vente, il les retrouve, sans nouveaux clubs avant la journée suivante.
+export function setForSale(s, id, on, price = null) {
+  const p = s.players.find((q) => q.id === id);
+  if (!p) return null;
+  const was = (s.saleList || []).find((x) => x.id === id);
   s.saleList = (s.saleList || []).filter((x) => x.id !== id);
-  if (on) s.saleList.push({ id, at: roundKey(s) });
-  else s.offers = (s.offers || []).filter((o) => o.playerId !== id || o.unsolicited);
+  s.offers ||= [];
+  if (on) {
+    const ask = price > 0 ? Math.round(price) : was?.price || roundTo(valueOf(s, p));
+    s.saleList.push({ id, at: roundKey(s), price: ask });
+    if (!s.offers.some((o) => o.playerId === id && !o.unsolicited)) s.offers.push(...listingOffers(s, p, ask));
+  } else {
+    const open = s.offers.filter((o) => o.playerId === id && !o.unsolicited);
+    s.parkedOffers = [...(s.parkedOffers || []).filter((o) => o.playerId !== id), ...open];
+    s.offers = s.offers.filter((o) => o.playerId !== id || o.unsolicited);
+  }
   return s;
 }
 
-// Réponse à une offre reçue : accepter (vente), refuser, ou tenter d'obtenir 10 % de plus (une chance sur deux ; sinon
-// le club se retire). Résultat dans s.lastSale.
+// Trace de la dernière réponse à une offre reçue (vue Offres, négociation et écran de vente conclue).
+const saleNote = (s, o, p, result, extra = {}) => ({
+  offerId: o.id, playerId: p.id, name: p.name, club: o.club, tier: o.tier, div: o.div, amount: o.amount, value: o.v,
+  wage: wageOf(p, s.divisionIndex), result, at: Date.now(), ...extra,
+});
+
+// Réponse à une offre reçue : accepter (vente au montant de l'offre) ou refuser (le club se retire). Résultat dans
+// s.lastSale.
 export function answerOffer(s, offerId, action) {
   const o = (s.offers || []).find((x) => x.id === offerId);
   const p = o && s.players.find((q) => q.id === o.playerId);
   if (!p) return null;
-  const done = (result) => { s.lastSale = { ...o, name: p.name, result, at: Date.now() }; return s; };
   if (action === 'accept') {
-    if (!sellPlayer(s, o.playerId, o.amount, o.club)) return null;
-    return done('sold');
-  }
-  if (action === 'haggle') {
-    if (o.haggled) return null;
-    if (Math.random() < HAGGLE_CHANCE) {
-      o.amount = roundTo(o.amount * 1.1);
-      o.haggled = true;
-      return done('raised');
-    }
-    s.offers = s.offers.filter((x) => x !== o);
-    return done('withdrawn');
+    const note = saleNote(s, o, p, 'sold');
+    if (!sellPlayer(s, p.id, o.amount, o.club)) return null;
+    s.lastSale = note;
+    return s;
   }
   s.offers = s.offers.filter((x) => x !== o);
-  return done('refused');
+  s.lastSale = saleNote(s, o, p, 'refused');
+  return s;
+}
+
+// Négociation d'une vente : on demande plus que l'offre d'un club. Il accepte avec exactement la chance affichée (vente
+// à ce prix) ; sinon, si la demande avait une chance, il se braque et donne son dernier mot (son offre monte à ce qu'il
+// paie à coup sûr) ; sans aucune chance, il part. SALE_TRIES demandes par offre. Résultat dans s.lastSale.
+export function demandOffer(s, offerId, demand) {
+  const o = (s.offers || []).find((x) => x.id === offerId);
+  const p = o && s.players.find((q) => q.id === o.playerId);
+  if (!p || !(demand > o.amount) || o.talks?.closed || s.players.length <= SQUAD_MIN) return null;
+  const chance = demandChance(o, demand);
+  if (Math.random() < chance) {
+    const note = saleNote(s, o, p, 'sold', { amount: demand, demand, offered: o.amount });
+    sellPlayer(s, p.id, demand, o.club);
+    s.lastSale = note;
+    return s;
+  }
+  if (chance <= 0) {
+    s.offers = s.offers.filter((x) => x !== o);
+    s.lastSale = saleNote(s, o, p, 'walked', { demand });
+    return s;
+  }
+  const before = o.amount;
+  o.talks = { ...(o.talks || {}), tries: (o.talks?.tries || 0) + 1 };
+  o.amount = lastWordOf(o);
+  o.talks.closed = o.talks.tries >= SALE_TRIES;
+  s.lastSale = saleNote(s, o, p, o.amount > before ? 'countered' : 'held', { demand, offered: before });
+  return s;
+}
+
+// Enchères entre les clubs en lice pour un joueur (deux offres au moins, une fois par journée) : la meilleure offre
+// tient ; chaque autre club la bat (avec exactement la chance affichée) ou se retire. Résultat dans s.lastAuction.
+export function startAuction(s, playerId) {
+  const p = s.players.find((q) => q.id === playerId);
+  const [top, ...rest] = offersFor(s, playerId);
+  if (!p || !rest.length || auctionDone(s, playerId)) return null;
+  const best = top.amount;
+  const moves = rest.map((o) => {
+    const from = o.amount;
+    if (Math.random() < outbidChance(o, best)) {
+      o.amount = outbidAmount(o, best);
+      return { offerId: o.id, club: o.club, from, to: o.amount };
+    }
+    s.offers = s.offers.filter((x) => x !== o);
+    return { offerId: o.id, club: o.club, from, to: null };
+  });
+  s.auctions = { ...(s.auctions || {}), [playerId]: roundKey(s) };
+  s.lastAuction = { playerId, name: p.name, club: top.club, best, moves, at: Date.now() };
+  return s;
 }
 
 export function applyOffline(s, now = Date.now()) {

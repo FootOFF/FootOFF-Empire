@@ -1,7 +1,8 @@
-import { build, createInitialState, endSeason, playRound, sellPlayer, setForSale, signPlayer, toggleShortlist, upgrade } from '../game/engine';
+import { answerOffer, build, createInitialState, endSeason, playRound, sellPlayer, signPlayer, toggleShortlist, upgrade } from '../game/engine';
 import { matchContext, startSeason } from '../game/season';
 import { costOf, playerRating } from '../game/players';
-import { counterFor, poolOf, roundKey, roundTo, valueOf } from '../game/mercato';
+import { BUYERS, counterFor, lastWordOf, outbidChance, poolOf, roundKey, roundTo, valueOf } from '../game/mercato';
+import { distinctClubName } from '../game/names';
 
 // Mode aperçu (galerie d'écrans) : une partie fictive, jamais sauvegardée, et l'écran demandé déjà ouvert.
 
@@ -26,6 +27,10 @@ export const SCREENS = [
   ['contre-offre', 'Mercato · contre-offre du vendeur'],
   ['suivis', 'Mercato · joueurs suivis'],
   ['offres', 'Mercato · offres reçues'],
+  ['encheres', 'Mercato · enchères entre clubs'],
+  ['vente', 'Mercato · mise en vente à ton prix'],
+  ['vente-negociation', 'Mercato · négociation d’une vente (dernier mot)'],
+  ['vente-conclue', 'Mercato · vente conclue'],
   ['bilan-mercato', 'Mercato · bilan des transferts'],
   ['bureau', 'Inspecteur · bureau des transferts'],
   ['comparateur', 'Comparateur radar'],
@@ -110,8 +115,11 @@ export function previewState(screen) {
 }
 
 // Mercato en aperçu : une négociation (avec ou sans contre-offre), des joueurs suivis dont un parti ailleurs, des
-// offres reçues (dont une spontanée), un bilan avec une arrivée et un départ.
-const MERCATO = ['negociation', 'contre-offre', 'suivis', 'offres', 'bilan-mercato'];
+// offres reçues (trois clubs pour un joueur, un pour un autre, une offre spontanée), des enchères, une négociation de
+// vente au dernier mot, une vente conclue, un bilan avec une arrivée et un départ.
+const MERCATO = ['negociation', 'contre-offre', 'suivis', 'offres', 'encheres', 'vente-negociation', 'vente-conclue', 'bilan-mercato'];
+const SALES = ['offres', 'encheres', 'vente-negociation', 'vente-conclue'];
+const later = () => Date.now() + 60000; // réponse affichée à l'ouverture de la vue
 function mercatoPreview(s, screen) {
   const mine = [...s.players].sort((a, b) => playerRating(a) - playerRating(b));
   const target = s.transfers[0];
@@ -129,14 +137,53 @@ function mercatoPreview(s, screen) {
     s.transfers = s.transfers.filter((p) => p.id !== gone.id);
     Object.assign(gone, { gone: s.rivals[2].name, goneAt: roundKey(s) });
   }
-  if (screen === 'offres') {
-    setForSale(s, mine[0].id, true);
-    setForSale(s, mine[1].id, true);
+  if (SALES.includes(screen)) { // deux joueurs en vente : trois clubs pour l'un, un pour l'autre, plus une offre spontanée
+    const [a, b] = mine;
+    const key = roundKey(s);
+    s.saleList = [{ id: a.id, at: key, price: roundTo(valueOf(s, a) * 1.25) }, { id: b.id, at: key, price: roundTo(valueOf(s, b)) }];
+    s.saleOffered = { [a.id]: key, [b.id]: key };
     s.offerSeq = 0;
-    const offer = (p, k, club, unsolicited = false) => ({ id: ++s.offerSeq, playerId: p.id, club, amount: roundTo(valueOf(s, p) * k), unsolicited, at: roundKey(s), haggled: false });
-    const best = mine[mine.length - 1];
-    s.offers = [offer(mine[0], 1.18, s.rivals[0].name), offer(mine[1], 0.97, s.rivals[3].name), offer(best, 1.42, s.rivals[5].name, true)];
-    target.talks = { tries: 1, counter: counterFor(s, target), closed: false }; // une contre-offre à conclure
+    const offer = (p, tier, k, cap, club, unsolicited = false) => ({
+      id: ++s.offerSeq, playerId: p.id, club, tier, div: Math.min(3, Math.max(0, s.divisionIndex + BUYERS[tier].step)), b: cap,
+      v: valueOf(s, p), amount: roundTo(valueOf(s, p) * k), atAsk: false, unsolicited, at: key, talks: { tries: 0, closed: false },
+    });
+    const far = distinctClubName([s.clubName, ...s.rivals.map((r) => r.name)]);
+    s.offers = [
+      offer(a, 'big', 1.12, 1.32, far),
+      offer(a, 'mid', 1.02, 1.14, s.rivals[0].name),
+      offer(a, 'small', 0.9, 0.99, s.rivals[3].name),
+      { ...offer(b, 'mid', 1, 1.12, s.rivals[5].name), amount: s.saleList[1].price, atAsk: true },
+      offer(mine[mine.length - 1], 'big', 1.38, 1.5, distinctClubName([s.clubName, far]), true),
+    ];
+    const [top, second, third] = s.offers;
+    // plafonds choisis pour que les enchères se jouent vraiment (les petites sommes, arrondies, sont tranchées)
+    for (const [o, want] of [[second, 0.6], [third, 0.15]]) {
+      for (let k = 0.9; k < 1.8 && outbidChance(o, top.amount) < want; k += 0.005) o.b = k;
+    }
+    if (screen === 'offres') target.talks = { tries: 1, counter: counterFor(s, target), closed: false }; // une contre-offre à conclure
+    if (screen === 'encheres') { // le club ambitieux bat l'offre du grand club, le petit club se retire
+      const from = second.amount;
+      second.amount = roundTo(top.amount * 1.07);
+      s.offers = s.offers.filter((o) => o !== third);
+      s.auctions = { [a.id]: key };
+      s.lastAuction = {
+        playerId: a.id, name: a.name, club: top.club, best: top.amount, at: later(),
+        moves: [{ offerId: second.id, club: second.club, from, to: second.amount }, { offerId: third.id, club: third.club, from: third.amount, to: null }],
+      };
+    }
+    if (screen === 'vente-negociation') { // demande refusée : le grand club monte à son dernier mot
+      const before = top.amount;
+      top.talks = { tries: 1, closed: false };
+      top.amount = lastWordOf(top);
+      s.lastSale = {
+        offerId: top.id, playerId: a.id, name: a.name, club: top.club, tier: top.tier, div: top.div, amount: top.amount, value: top.v,
+        result: 'countered', demand: roundTo(before * 1.3), offered: before, at: later(),
+      };
+    }
+    if (screen === 'vente-conclue') {
+      answerOffer(s, top.id, 'accept');
+      s.lastSale.at = later();
+    }
   }
   if (screen === 'bilan-mercato') {
     signPlayer(s, s.market[1].id);
@@ -161,7 +208,9 @@ export function previewUi(screen, s) {
     case 'marche': case 'transferts': return { panel: 'squad', squadTab: 'market' };
     case 'negociation': case 'contre-offre': return { panel: 'squad', squadTab: 'market', squad: { deal: s.transfers[0].id } };
     case 'suivis': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'watch' } };
-    case 'offres': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'offers' } };
+    case 'offres': case 'encheres': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'offers' } };
+    case 'vente': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'offers', listing: [...s.players].sort((a, b) => playerRating(a) - playerRating(b))[2].id } };
+    case 'vente-negociation': case 'vente-conclue': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'offers', sale: 1 } };
     case 'bilan-mercato': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'log' } };
     case 'bureau': return { sel: { plotId: 't3', sector: 'main' } };
     case 'comparateur': return { panel: 'squad', squadTab: 'market', squad: { compare: true } };

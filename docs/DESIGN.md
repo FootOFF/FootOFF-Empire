@@ -303,20 +303,38 @@ même liste, quatre vues.
   Bonne affaire, Prix en hausse ou en baisse, Fin de contrat ; prix (rouge s'il dépasse la trésorerie), tendance,
   « Faire une offre ». Le réseau de recruteurs (bureau des transferts) ferme la liste.
 - Suivis : écart de prix depuis le suivi (vert s'il a baissé), joueurs partis ailleurs.
-- Offres : contre-offres à conclure, offres reçues (Accepter, Demander +10 %, Refuser) avec retour immédiat, joueurs
-  en vente (sélection par interrupteurs).
+- Offres : contre-offres à conclure, offres reçues groupées par joueur (Accepter, Négocier, Refuser, Faire monter les
+  enchères) avec retour immédiat, joueurs en vente et leur prix (un interrupteur ouvre la fenêtre de mise en vente).
 - Bilan : achats, ventes et solde de la saison, records, historique des arrivées et départs.
 
 Négociation dans une feuille (`Negotiation`) : montant au curseur, boutons − et +, raccourcis (−20 %, −10 %, prix
 demandé), jauge des chances d'accord (exactes : 0 % seulement si le refus est certain, 100 % seulement si l'accord
 l'est) avec les raisons du vendeur, coût réel (salaire, part des salaires, fin de saison prévue), tentatives
 restantes, contre-offre en carte dorée, écran d'accord (économie réalisée, gain pour le onze, « Composer
-l'équipe »). Ventes : « Mettre en vente » dans la fiche d'un joueur (étiquette « En vente » dans l'Effectif) ; la
-vente immédiate à sa valeur reste possible. Après chaque match, une notification résume les offres reçues et les
+l'équipe »).
+
+Ventes (une seule voie, la négociation ; plus de vente immédiate à sa valeur), en trois temps :
+1. Mise en vente à son prix : « Mettre en vente » (fiche d'un joueur de l'effectif, ou interrupteur de la vue Offres)
+   ouvre une fenêtre avec le prix au curseur (60 à 200 % de sa valeur), la chance exacte qu'un club paie ce prix
+   aussitôt et celle d'avoir au moins deux clubs en lice, avec ce qui joue (forme, âge, potentiel, niveau pour la
+   division).
+2. Clubs intéressés : quatre clubs étudient le dossier, ceux qui s'y intéressent font aussitôt leur offre (au moins un
+   se présente toujours ; une seule vague par joueur et par journée, retirer puis remettre en vente ne la renouvelle
+   pas), d'autres après chaque journée. Petit club (division inférieure), club ambitieux (la nôtre) ou grand club
+   (division supérieure), avec écusson. Chaque club a un plafond secret : il paie le prix demandé s'il le paie à coup
+   sûr, sinon il offre un peu moins. Les grands clubs paient plus mais négocient dur ; les petits acceptent vite.
+3. Sur chaque offre : Accepter (confirmation, puis écran de vente conclue), Négocier (face à face : ta demande au
+   curseur, chance exacte d'accord ; refusée, le club donne son dernier mot, qu'il paie à coup sûr ; à 0 %, il part ;
+   trois demandes par offre), Refuser (le club se retire). Dès deux clubs pour un joueur, « Faire monter les
+   enchères » (une fois par journée) : la meilleure offre tient, chaque autre club la bat avec la chance affichée ou se
+   retire. Pas de clause de revente.
+Les offres valent jusqu'à la journée suivante ; un joueur en grande forme reçoit parfois une offre spontanée. Pastille
+« N clubs intéressés » dans l'Effectif. Après chaque match, une notification résume les offres reçues et les
 joueurs suivis partis ; la pastille du menu compte les offres et contre-offres à traiter. Les noms de clubs prennent
 leur article et accordent le verbe (« l'AS … accepte », « les Bleus … acceptent »).
 
-Aperçus : `?ecran=marche`, `transferts`, `negociation`, `contre-offre`, `suivis`, `offres`, `bilan-mercato`.
+Aperçus : `?ecran=marche`, `transferts`, `negociation`, `contre-offre`, `suivis`, `offres`, `encheres`, `vente`,
+`vente-negociation`, `vente-conclue`, `bilan-mercato`. Contrôle des chances de la vente : `tmp/ph3/salecheck.js`.
 
 ## Dispositifs
 

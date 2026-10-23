@@ -467,6 +467,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sq-sale { display: inline-block; white-space: nowrap; margin-left: 8px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--gold-line); background: var(--gold-soft); color: var(--gold-light); font-style: normal; font-size: var(--t-xs); font-weight: 500; vertical-align: 1px; }
 .sq-row-name em.sq-sale { margin: 0 0 0 8px; font-family: inherit; color: var(--gold-light); }
 .sq-table .sq-sale { display: block; width: fit-content; margin: 3px 0 0 22px; } /* sous le nom, aligné sur lui */
+.sq-sale.hot, .sq-row-name em.sq-sale.hot { border-color: transparent; background: var(--gold-grad); color: #1a1408; font-weight: 600; } /* clubs intéressés */
 .sq-traits { display: block; margin-left: 24px; font-size: var(--t-xs); color: var(--muted); }
 .pos-pill { display: inline-grid; place-items: center; width: 26px; height: 22px; border-radius: 6px; border: 1px solid var(--line-strong); font-family: var(--font-mono); font-size: var(--t-xs); font-weight: 500; flex-shrink: 0; }
 .pos-pill.G { color: var(--gold); border-color: var(--gold-line); }
@@ -569,6 +570,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sh-foot > span { font-size: var(--t-sm); color: var(--muted); }
 .sh-foot > span b { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
 .sh-actions { display: flex; gap: var(--s-2); }
+/* offres reçues pour un joueur de l'effectif : elles arrivent dès la mise en vente, la meilleure en or */
+.sh-foot > span.sh-bid { color: var(--text-2); animation: fo-up .35s var(--ease); }
+.sh-foot > span.sh-bid b.gold { color: var(--gold-light); font-weight: 600; }
 .sh-actions .btn { flex: 1; padding: 14px 20px; font-size: var(--t-md); }
 .sh-compare { width: 48px; height: 48px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--line-strong); background: none; color: var(--text); display: grid; place-items: center; transition: color var(--dur-fast), border-color var(--dur-fast), transform var(--dur-fast) var(--ease); }
 .sh-compare svg { width: 20px; height: 20px; }
@@ -2786,8 +2790,9 @@ button.cal-card { transition: border-color .2s, background .2s; }
 /* suivis, offres, bilan */
 .mc-flash { padding: var(--s-2) var(--s-3); border-radius: var(--r-sm); border: 1px solid var(--line-strong); background: rgba(255, 255, 255, .03); font-size: var(--t-sm); color: var(--text-2); animation: fo-up .3s var(--ease); }
 .mc-flash b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
-.mc-flash.sold, .mc-flash.raised { border-color: rgba(124, 196, 151, .4); background: rgba(124, 196, 151, .08); }
-.mc-flash.withdrawn { border-color: rgba(224, 122, 111, .4); background: rgba(224, 122, 111, .08); }
+.mc-flash.sold { border-color: rgba(124, 196, 151, .4); background: rgba(124, 196, 151, .08); }
+.mc-flash.walked { border-color: rgba(224, 122, 111, .4); background: rgba(224, 122, 111, .08); }
+.mc-flash.countered, .mc-flash.held { border-color: var(--gold-line); background: var(--gold-soft); }
 .mc-gone { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-md); border: 1px dashed var(--line-strong); font-size: var(--t-sm); color: var(--muted); }
 .mc-gone > span:nth-child(2) { flex: 1; min-width: 0; }
 .mc-gone b { color: var(--text-2); font-weight: 600; }
@@ -2892,6 +2897,31 @@ button.cal-card { transition: border-color .2s, background .2s; }
 .ng-win p.ng-fit { color: var(--gold-light); font-size: var(--t-sm); }
 .ng-actions { width: 100%; max-width: 320px; margin-top: var(--s-3); display: flex; flex-direction: column; gap: var(--s-2); }
 @keyframes ng-pop { 0% { opacity: 0; transform: scale(.4); } 60% { opacity: 1; transform: scale(1.12); } 100% { transform: scale(1); } }
+
+/* vente : offres groupées par joueur, enchères, mise en vente (ls-), négociation face à un club (sl-) */
+.ng-reasons li.good::before { background: var(--green); } /* vente : en ta faveur */
+.ng-reasons li.bad::before { background: var(--red); } /* vente : contre toi */
+.mc-group { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); border-radius: var(--r-md); border: 1px solid var(--line); background: rgba(255, 255, 255, .02); }
+.mc-group-head { min-width: 0; display: flex; align-items: center; gap: var(--s-3); }
+.mc-group-count { flex-shrink: 0; padding: 2px 8px; border-radius: 999px; background: var(--gold-soft); color: var(--gold-light); font-size: var(--t-xs); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mc-row.offer.best { border-color: var(--gold-line); }
+/* noms de clubs et de joueurs jamais coupés : ils passent à la ligne */
+.mc-group .mc-row-main b, .ls-club b { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+.mc-auction { width: 100%; }
+.ls-clubs { list-style: none; width: 100%; max-width: 380px; margin: var(--s-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
+.ls-clubs li { min-width: 0; display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) var(--s-3); border-radius: var(--r-sm); border: 1px solid var(--line); background: rgba(255, 255, 255, .03); text-align: left; animation: fo-up .45s var(--ease) both; }
+.ls-club { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ls-club b { font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ls-club em, .ls-amount em { font-style: normal; font-size: var(--t-xs); color: var(--muted); }
+.ls-amount { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; }
+.ls-amount b { font-family: var(--font-title); font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ls-amount em.up { color: var(--green); }
+.ls-duo { font-size: var(--t-xs); color: var(--text-2); }
+.ls-duo b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.ls-again { font-size: var(--t-sm); color: var(--text-2); }
+.sl-club > .mc-crest { flex-shrink: 0; }
+.sl-club .sl-name { font-weight: 600; font-size: var(--t-md); color: var(--text); overflow-wrap: anywhere; }
+.sl-club em.up { color: var(--green); }
 
 @media (min-width: 761px) {
   .mc-row-actions { flex-basis: auto; }

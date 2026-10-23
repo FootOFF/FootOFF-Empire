@@ -8,6 +8,7 @@ import { assignNumber, upgradePlayer } from './players';
 import { ensureLedger } from './ledger';
 import { fixLeagueNames, playerName, registerNames, renameRetired } from './names';
 import { buildCalendar } from './cups';
+import { BUYERS, roundTo, valueOf } from './mercato';
 import { refreshTransfers } from './transfers';
 import { rebuildRecords } from './records';
 import { normalizeCrest } from './crest';
@@ -83,6 +84,21 @@ export function loadGame() {
       y.saleList ||= [];
       y.offers ||= [];
       y.mercatoLog ||= [];
+      // ventes négociées (prix demandé, clubs acheteurs au plafond secret) : les offres d'avant gardent leur montant et
+      // laissent un peu de marge à la négociation
+      for (const x of y.saleList) {
+        const p = y.players.find((q) => q.id === x.id);
+        if (p && !x.price) x.price = roundTo(valueOf(y, p));
+      }
+      y.offers = y.offers.filter((o) => y.players.some((q) => q.id === o.playerId)).map((o) => {
+        if (o.b !== undefined) return o;
+        const v = valueOf(y, y.players.find((q) => q.id === o.playerId));
+        const k = o.amount / v;
+        const tier = k >= 1.2 ? 'big' : k >= 1 ? 'mid' : 'small';
+        const div = Math.min(3, Math.max(0, y.divisionIndex + BUYERS[tier].step));
+        const { haggled, ...rest } = o; // eslint-disable-line no-unused-vars
+        return { ...rest, tier, div, v, b: k + 0.14, atAsk: false, talks: { tries: 0, closed: false } };
+      });
       if (beforeMercato) refreshTransfers(y, 'grow'); // le mercato se remplit tout de suite (joueurs libres et sous contrat)
       const renamed = new Map(); // ancien nom → nouveau
       for (const p of [...y.players, ...(y.market || []), ...y.transfers]) {

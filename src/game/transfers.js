@@ -1,6 +1,10 @@
+import { DIVISIONS } from './constants';
 import { officeSize } from './economy';
-import { makePlayer, playerRating, saleValue } from './players';
-import { randomClubName } from './names';
+import { makePlayer, playerRating } from './players';
+import { distinctClubName, randomClubName } from './names';
+import {
+  BUYERS, CANDIDATES, buyerView, drawBuyer, formOf, openingOffer, roundTo, spontaneousBuyer, valueOf, withinReach,
+} from './mercato';
 import { clamp, pick, ri, rnd } from './utils';
 
 // Mercato vivant : un seul marché, deux sortes de joueurs.
@@ -9,7 +13,8 @@ import { clamp, pick, ri, rnd } from './utils';
 //   publiquement ; le Bureau des transferts (réseau de recruteurs) en suit beaucoup plus, avec de meilleurs profils.
 // À chaque journée le marché bouge : des joueurs signent ailleurs (surtout ceux que des clubs rivaux courtisent),
 // d'autres arrivent, les prix varient ; les négociations du jour se referment ; les clubs adverses font des offres
-// pour les joueurs que tu as mis sur le marché (et parfois pour d'autres, s'ils brillent).
+// pour les joueurs que tu as mis sur le marché (dès la mise en vente, puis après chaque journée), et parfois pour des
+// joueurs qui ne sont pas à vendre, s'ils brillent.
 
 export const FREE_POOL = 5; // joueurs libres disponibles en même temps
 const roundKey = (s) => `${s.seasonNumber}:${s.round}`;
@@ -54,30 +59,78 @@ function drift(p, s) {
 // Probabilité qu'un joueur du marché signe ailleurs avant la prochaine journée.
 const leaveChance = (p) => (p.interest ? 0.26 + 0.12 * p.interest : 0.1);
 
-// Offres des clubs adverses : pour chaque joueur mis sur le marché (et, plus rarement, pour un joueur en forme qui
-// n'est pas à vendre). Une offre vaut jusqu'à la journée suivante.
+// Nom d'un club acheteur : un rival de la division une fois sur deux s'il joue à notre niveau, sinon un club
+// d'ailleurs ; jamais le nôtre ni un club déjà en lice pour ce joueur (taken, complété au passage).
+function buyerName(s, div, taken) {
+  let club = null;
+  if (div === s.divisionIndex && Math.random() < 0.5) {
+    const free = (s.rivals || []).filter((r) => !taken.includes(r.name));
+    if (free.length) club = pick(free).name;
+  }
+  club ||= distinctClubName([s.clubName, ...taken]);
+  taken.push(club);
+  return club;
+}
+
+// Offre d'un club acheteur (mercato.js) : sa sorte, sa division, son plafond secret (dont découlent les chances
+// affichées) et la valeur du joueur à ce moment. Une offre vaut jusqu'à la journée suivante.
+function newOffer(s, p, buyer, v, opening, unsolicited, key, taken) {
+  const div = clamp(s.divisionIndex + BUYERS[buyer.tier].step, 0, DIVISIONS.length - 1);
+  s.offerSeq = (s.offerSeq || 0) + 1;
+  return {
+    id: s.offerSeq, playerId: p.id, club: buyerName(s, div, taken), tier: buyer.tier, div, b: buyer.b, v,
+    amount: opening.amount, atAsk: opening.atAsk, unsolicited, at: key, talks: { tries: 0, closed: false },
+  };
+}
+
+// Clubs intéressés par un joueur mis en vente, à son prix : chacun des CANDIDATES clubs étudie le dossier (attrait)
+// et s'y intéresse si le prix est à sa portée. À la mise en vente, un club au moins se présente (le plus haut
+// plafond des candidats). La chance affichée à la mise en vente (mercato.js, listingOutlook) suit exactement ce tirage.
+function interestFor(s, p, price, key, listing, taken = []) {
+  const view = buyerView(s, p);
+  const v = valueOf(s, p);
+  const cands = Array.from({ length: CANDIDATES }, () => drawBuyer(view));
+  let keen = cands.filter((c) => Math.random() < view.attract && withinReach(c, price, v));
+  if (!keen.length && listing) keen = [cands.reduce((a, c) => (c.b > a.b ? c : a))];
+  return keen.map((c) => newOffer(s, p, c, v, openingOffer(c, v, price), false, key, taken));
+}
+
+// Offres de la journée : les clubs intéressés par chaque joueur mis en vente (sans club assuré), et plus rarement une
+// offre spontanée pour un joueur en grande forme qui n'est pas à vendre.
 function incomingOffers(s, key) {
   const offers = [];
-  const listed = new Set((s.saleList || []).map((x) => x.id));
-  const clubs = () => (s.rivals?.length && Math.random() < 0.5 ? pick(s.rivals).name : randomClubName());
+  const listed = new Map((s.saleList || []).map((x) => [x.id, x]));
   for (const p of s.players) {
-    const form = p.form?.length >= 2 ? p.form.reduce((a, b) => a + b, 0) / p.form.length : 6;
-    const value = saleValue(p, s.divisionIndex);
-    let amount = 0;
-    let unsolicited = false;
-    if (listed.has(p.id)) {
-      if (Math.random() < 0.6 + (form >= 7 ? 0.15 : 0)) amount = value * rnd(0.95, 1.3) * (form >= 7 ? 1.08 : 1) * (p.age <= 23 ? 1.08 : 1);
-    } else if (form >= 7.3 && playerRating(p) >= 6 && Math.random() < 0.05) {
-      amount = value * rnd(1.25, 1.6);
-      unsolicited = true;
-    }
-    if (amount > 0) {
-      const step = amount < 5000 ? 50 : amount < 50000 ? 250 : amount < 500000 ? 2500 : 25000;
-      s.offerSeq = (s.offerSeq || 0) + 1;
-      offers.push({ id: s.offerSeq, playerId: p.id, club: clubs(), amount: Math.round(amount / step) * step, unsolicited, at: key, haggled: false });
+    const sale = listed.get(p.id);
+    if (sale) {
+      offers.push(...interestFor(s, p, sale.price || roundTo(valueOf(s, p)), key, false));
+      s.saleOffered[p.id] = key; // les clubs de la journée sont venus : le remettre en vente n'en appelle pas d'autres
+    } else if (formOf(p) >= 7.3 && playerRating(p) >= 6 && Math.random() < 0.05) {
+      const buyer = spontaneousBuyer(s, p);
+      const v = valueOf(s, p);
+      offers.push(newOffer(s, p, buyer, v, openingOffer(buyer, v), true, key, []));
     }
   }
   return offers;
+}
+
+// Joueur déjà proposé aux clubs pendant cette journée (mise en vente ou journée qui vient de se jouer).
+export const listedToday = (s, id) => s.saleOffered?.[id] === roundKey(s);
+
+// Mise en vente : les clubs intéressés font aussitôt leur offre, sans attendre la journée suivante. Une seule vague
+// par joueur et par journée : retirer le joueur de la vente puis l'y remettre ne la renouvelle pas (ses offres encore
+// ouvertes, mises de côté au retrait, reviennent ; une offre refusée ne revient pas avant la prochaine journée).
+export function listingOffers(s, p, price) {
+  const key = roundKey(s);
+  const parked = (s.parkedOffers || []).filter((o) => o.playerId === p.id && o.at === key);
+  if (parked.length) {
+    s.parkedOffers = s.parkedOffers.filter((o) => !parked.includes(o));
+    for (const o of parked) if (o.amount > price) Object.assign(o, { amount: price, atAsk: true }); // il demande moins : le club s'aligne
+    return parked;
+  }
+  if (listedToday(s, p.id)) return [];
+  s.saleOffered = { ...(s.saleOffered || {}), [p.id]: key };
+  return interestFor(s, p, price, key, true, (s.offers || []).filter((o) => o.playerId === p.id).map((o) => o.club));
 }
 
 // mode 'full' : marché neuf (début de saison) ; 'round' : après une journée ; 'grow' : bureau construit ou amélioré,
@@ -126,6 +179,7 @@ export function refreshTransfers(s, mode = 'round') {
   const size = Math.max(officeSize(s.buildings.transfers || 0), mode === 'grow' ? contracted.length : 0);
   s.transfers = add(contracted, scoutPlayer, size).slice(0, size);
   for (const p of [...s.market, ...s.transfers]) if (followed.has(p.id) && p.interest) news.followedCourted.push(p.name);
+  if (round || full) { s.parkedOffers = []; s.saleOffered = {}; s.auctions = {}; } // ventes : propres à la journée
   if (round) {
     s.offers = incomingOffers(s, key); // les offres non traitées expirent avec la journée
     news.offers = s.offers.length;
