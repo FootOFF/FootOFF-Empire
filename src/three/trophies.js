@@ -170,11 +170,29 @@ export function createTrophies(scene, renderer) {
     return p;
   }
 
+  // Retire tous les trophées posés (leurs plaques sont propres à chacun ; les maillages viennent du modèle partagé).
+  function clear() {
+    placed.forEach((p) => {
+      group.remove(p.root);
+      p.mat.map.dispose();
+      p.mat.dispose();
+    });
+    placed.clear();
+    spots.length = 0; // projecteurs de la Coupe d'Europe : partis avec elle
+  }
+
   // Synchronise l'allée avec le palmarès. Renvoie les trophées qui viennent d'apparaître (première victoire).
+  // Une autre partie (nouvelle partie, club recréé) : un trophée posé qui n'est plus au palmarès vide l'allée, qui
+  // se reconstruit aussitôt, sans animation, avec les seuls trophées de cette partie.
   function sync(state) {
     wanted = state;
     if (!lib) return [];
     const list = honoursOf(state);
+    const ids = new Set(list.map((h) => h.id));
+    if ([...placed.keys()].some((id) => !ids.has(id))) {
+      clear();
+      first = true;
+    }
     const fresh = [];
     let slot = 0;
     for (const h of list) {
