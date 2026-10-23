@@ -1,5 +1,5 @@
 import { clamp, pick, ri, rnd } from './utils';
-import { FIRST, LAST } from './names';
+import { playerName } from './names';
 import { saleFor, signingFor, wageFor } from './economy';
 
 // Joueurs : 9 caractéristiques (1 à 20) pour tous, 6 de plus pour les gardiens, un profil (pied fort,
@@ -125,7 +125,7 @@ export function makePlayer({ level = 0, youth = false, academy = 0, pos = null }
   const center = youth ? 3 + academy + rnd(0, 2) : 4 + level * 2 + rnd(-1, 2);
   const pot = clamp(Math.round(center + (youth ? ri(5, 9) + academy : ri(2, 6))), 8, 20);
   const player = {
-    name: `${pick(FIRST)} ${pick(LAST)}`,
+    name: playerName(), // jamais deux fois le même nom dans la partie (names.js)
     pos: p,
     age,
     pot,

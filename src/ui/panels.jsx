@@ -63,6 +63,58 @@ export function zoneOf(divisionIndex, i) {
 }
 const ZONE_TAG = { promo: 'Montée', europe: 'Europe', releg: 'Descente' };
 
+// Classement de la division (panneau Saison, et après chaque journée de championnat). before : ordre des clubs
+// avant la dernière journée (indices) ; chaque club montre alors ce qu'il a gagné ou perdu de places.
+export function StandingsTable({ state, before = null }) {
+  const standings = standingsOf(state);
+  return (
+    <table className={`table standings ${before ? 'moves' : ''}`}>
+      <thead><tr><th>#</th>{before && <th className="t-move-h" aria-label="Évolution" />}<th>Club</th><th>J</th><th>Diff</th><th>Pts</th></tr></thead>
+      <tbody>
+        {standings.map((t, i) => {
+          const zone = zoneOf(state.divisionIndex, i);
+          const was = before ? before.indexOf(t.i) : -1;
+          const move = was < 0 ? 0 : was - i; // positif : le club remonte
+          return (
+            <tr key={t.i} className={[t.i === 0 && 'me', zone].filter(Boolean).join(' ')}>
+              <td className="t-pos">{i + 1}</td>
+              {before && (
+                <td className={`t-move ${move > 0 ? 'up' : move < 0 ? 'down' : ''}`} aria-label={move ? `${move > 0 ? 'gagne' : 'perd'} ${Math.abs(move)} place${Math.abs(move) > 1 ? 's' : ''}` : 'même place'}>
+                  {move ? <><i aria-hidden="true" />{Math.abs(move)}</> : '–'}
+                </td>
+              )}
+              <td className="t-club">
+                {t.i === 0 ? <ClubCrest crest={state.crest} name={t.name} className="t-crest" /> : <Crest name={t.name} className="t-crest" />}
+                <span className="t-name">{t.name}</span>{zone && <span className={`t-zone ${zone}`}>{ZONE_TAG[zone]}</span>}
+              </td>
+              <td>{t.played}</td>
+              <td>{t.gd > 0 ? '+' : ''}{t.gd}</td>
+              <td className="t-pts">{t.pts}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+// Légende des places (montée, Europe, descente) sous le classement.
+export function ZoneLegend({ state }) {
+  const rel = state.divisionIndex > 0;
+  const promo = state.divisionIndex < 3;
+  return (
+    <ul className="zone-legend">
+      {promo ? (
+        <li className="promo"><b>1 – 2</b>Montée en {DIVISIONS[state.divisionIndex + 1].name}</li>
+      ) : (
+        <li className="europe"><b>1 – 2</b>Qualifiés pour la Coupe d’Europe des clubs la saison prochaine</li>
+      )}
+      {rel && <li className="releg"><b>7 – 8</b>Descente en {DIVISIONS[state.divisionIndex - 1].name}</li>}
+      {promo && <li className="europe"><b>Europe</b>La Coupe d’Europe des clubs se joue depuis l’Elite : ses deux premiers s’y qualifient.</li>}
+    </ul>
+  );
+}
+
 export function SeasonPanel({ state, onClose, initialTab = 'calendar', onOpenMatch, onPlay }) {
   const [tab, setTab] = useState(initialTab);
   const standings = standingsOf(state);
@@ -107,35 +159,8 @@ export function SeasonPanel({ state, onClose, initialTab = 'calendar', onOpenMat
       {tab === 'calendar' && <SeasonCalendar state={state} onOpenMatch={onOpenMatch} onPlay={onPlay} />}
       {tab === 'table' && <>
       <SectionHead label="Classement" aside={`${div.name} · ${standings.length} clubs`} />
-      <table className="table standings">
-        <thead><tr><th>#</th><th>Club</th><th>J</th><th>Diff</th><th>Pts</th></tr></thead>
-        <tbody>
-          {standings.map((t, i) => {
-            const zone = zoneOf(state.divisionIndex, i);
-            return (
-              <tr key={t.i} className={[t.i === 0 && 'me', zone].filter(Boolean).join(' ')}>
-                <td className="t-pos">{i + 1}</td>
-                <td className="t-club">
-                  {t.i === 0 ? <ClubCrest crest={state.crest} name={t.name} className="t-crest" /> : <Crest name={t.name} className="t-crest" />}
-                  <span className="t-name">{t.name}</span>{zone && <span className={`t-zone ${zone}`}>{ZONE_TAG[zone]}</span>}
-                </td>
-                <td>{t.played}</td>
-                <td>{t.gd > 0 ? '+' : ''}{t.gd}</td>
-                <td className="t-pts">{t.pts}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <ul className="zone-legend">
-        {promo ? (
-          <li className="promo"><b>1 – 2</b>Montée en {DIVISIONS[state.divisionIndex + 1].name}</li>
-        ) : (
-          <li className="europe"><b>1 – 2</b>Qualifiés pour la Coupe d’Europe des clubs la saison prochaine</li>
-        )}
-        {rel && <li className="releg"><b>7 – 8</b>Descente en {DIVISIONS[state.divisionIndex - 1].name}</li>}
-        {promo && <li className="europe"><b>Europe</b>La Coupe d’Europe des clubs se joue depuis l’Elite : ses deux premiers s’y qualifient.</li>}
-      </ul>
+      <StandingsTable state={state} />
+      <ZoneLegend state={state} />
 
       <CupRuns state={state} />
 

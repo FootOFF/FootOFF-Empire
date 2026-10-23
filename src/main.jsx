@@ -18,6 +18,20 @@ const noPageZoom = (e) => e.preventDefault();
 document.addEventListener('gesturestart', noPageZoom, { passive: false });
 document.addEventListener('gesturechange', noPageZoom, { passive: false });
 document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+
+// Rien ne se sélectionne dans le jeu, quel que soit le geste (appui long, double toucher, « Tout sélectionner » du
+// système) : la bulle « Copier / Traduire » n'apparaît jamais. Seule la saisie du nom du club garde sa sélection.
+const editable = (n) => {
+  const el = n && (n.nodeType === 1 ? n : n.parentElement);
+  return !!el?.closest?.('input, textarea, [contenteditable="true"]');
+};
+document.addEventListener('selectstart', (e) => { if (!editable(e.target)) e.preventDefault(); });
+document.addEventListener('selectionchange', () => {
+  const sel = document.getSelection();
+  if (!sel || sel.isCollapsed || editable(document.activeElement) || editable(sel.anchorNode)) return;
+  sel.removeAllRanges();
+});
+document.addEventListener('contextmenu', (e) => { if (!editable(e.target)) e.preventDefault(); });
 const root = createRoot(document.getElementById('root'));
 if (params.has('galerie')) root.render(<Suspense fallback={null}><Gallery /></Suspense>);
 else if (params.has('ecran')) root.render(<App preview={params.get('ecran')} />);

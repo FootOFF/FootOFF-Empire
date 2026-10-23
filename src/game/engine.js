@@ -3,7 +3,7 @@ import { OFFLINE_CAP, offlinePerHour } from './economy';
 import { assignNumber, costOf, makePlayer, saleValue } from './players';
 import { HAGGLE_CHANCE, TRIES, acceptChance, counterFor, findOnMarket, isSerious, logMove, roundKey, roundTo } from './mercato';
 import { refreshTransfers } from './transfers';
-import { clubAfter, randomClubName, withArticle } from './names';
+import { clubAfter, randomClubName, registerNames, withArticle } from './names';
 import { archivePlayer, endSeason, playRound, pushJournal, startSeason } from './season';
 import { initGoals } from './goals';
 import { PLOTS, ensureFixedPlots, plotIndexOf } from './map';
@@ -19,6 +19,7 @@ export { applyMatchResult, matchContext } from './season';
 export { upkeepOf, capacity } from './economy';
 
 export function createInitialState(clubName, crest = null) {
+  registerNames([]); // nouvelle partie : aucun nom de joueur encore porté
   const s = {
     version: 4,
     clubName,

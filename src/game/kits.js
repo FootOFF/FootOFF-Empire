@@ -1,5 +1,5 @@
 // Couleurs des maillots adverses : propres à chaque club, toujours les mêmes pour un même nom, et contrastées avec
-// notre tenue noir et or. Les « Bleus » jouent en bleu, les « Jaunes » en jaune citron.
+// notre tenue noir et or. Les « Bleus » jouent en bleu, les « Jaunes » en jaune citron, les « Verts » en vert.
 
 const PALETTE = [
   { shirt: 0xc0392b, keeper: 0x2ecc71 }, // rouge
@@ -16,6 +16,7 @@ const PALETTE = [
 export function kitOf(name = '') {
   if (/^Bleus\b/.test(name)) return PALETTE[1];
   if (/^Jaunes\b/.test(name)) return { shirt: 0xe8dc3a, keeper: 0x2c3e50 };
+  if (/^Verts\b/.test(name)) return PALETTE[3];
   let h = 0;
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   return PALETTE[h % PALETTE.length];

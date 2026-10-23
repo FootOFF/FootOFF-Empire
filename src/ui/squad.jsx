@@ -34,7 +34,7 @@ const formAvg = (p) => (p.form?.length ? p.form.reduce((a, b) => a + b, 0) / p.f
 const divRef = (s) => { const d = DIVISIONS[s.divisionIndex]; return (d.oppMin + d.oppMax) / 2; };
 const onSale = (s, p) => (s.saleList || []).some((x) => x.id === p.id); // mis en vente au mercato
 
-export function SquadView({ state, run, ask, onClose, onFinances, initialTab = 'players', preview = null, initialSheet = null }) {
+export function SquadView({ state, run, ask, onClose, onFinances, initialTab = 'players', preview = null, initialSheet = null, initialMercato = null }) {
   const [tab, setTab] = useState(initialTab);
   const [filter, setFilter] = useState('all');
   const [sheet, setSheet] = useState(preview?.sheet ? { id: preview.sheet } : initialSheet ? { id: initialSheet } : null); // { id, market, order }
@@ -212,7 +212,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
             ask={ask}
             refLvl={ref}
             recommended={recommended}
-            initialView={preview?.mercato || 'buy'}
+            initialView={preview?.mercato || initialMercato || 'buy'}
             onOpen={(p, order) => setSheet({ id: p.id, market: true, order: (order || [p]).map((q) => q.id) })}
             onCompare={openCompare}
             onOffer={offer}

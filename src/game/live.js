@@ -1,5 +1,5 @@
 import { clamp, pick, ri } from './utils';
-import { FIRST, LAST, capitalize, clubAfter, deName, isPluralClub } from './names';
+import { capitalize, clubAfter, deName, isPluralClub, playerName } from './names';
 import { shootout } from './cups';
 import { SLOTS, TACTICS, expectedGoals, formationOf, lineupRating, slotsOf } from './tactics';
 import { ratingAt } from './players';
@@ -172,8 +172,7 @@ export function pairSubs(before, next) {
 export function createLiveMatch(s, ctx) {
   const taken = new Set(s.lineup.map((id) => s.players.find((p) => p.id === id)?.name));
   const awayRoster = Array.from({ length: 11 }, (_, k) => { // noms uniques : la scène 3D retrouve le bon joueur
-    let name;
-    do name = `${pick(FIRST)} ${pick(LAST)}`; while (taken.has(name));
+    const name = playerName(taken);
     taken.add(name);
     return { name, pos: SLOTS[k] };
   });

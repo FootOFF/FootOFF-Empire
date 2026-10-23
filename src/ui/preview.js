@@ -34,6 +34,7 @@ export const SCREENS = [
   ['mi-temps', 'Mi-temps (composition repliée)'],
   ['mi-temps-compo', 'Mi-temps · composition déployée'],
   ['apres-match', 'Après-match'],
+  ['apres-match-classement', 'Après-match · classement de la journée'],
   ['bilan', 'Bilan de saison'],
   ['bilan-champion', 'Bilan · titre de champion'],
   ['saison', 'Saison · calendrier'],
@@ -83,6 +84,8 @@ export function previewState(screen) {
     s.money = 42000;
   }
   if (screen === 'vitrine-fonds') s.money = 4200; // un seul bâtiment payable : les autres disent ce qui manque
+  // classement de l'après-match : il suit une journée de championnat (pas un match de coupe)
+  if (screen === 'apres-match-classement') for (let k = 0; k < 4 && s.lastMatch?.comp !== 'league'; k++) playRound(s);
   if (screen === 'transferts' || screen === 'bureau') { // bureau construit au niveau 2 chez les supporters
     s.reputation = 8;
     s.money = 1e6;
@@ -176,11 +179,12 @@ export function previewUi(screen, s) {
     case 'mi-temps': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime' } };
     case 'mi-temps-compo': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime', board: true } };
     case 'apres-match': return { showResult: true, matchDay: true };
+    case 'apres-match-classement': return { showResult: true, matchDay: true, postStep: 'table' };
     case 'menu': return { menu: true };
     case 'notification': return {
       notes: [
-        { kind: 'achievement', eyebrow: 'Succès débloqué', title: 'Première victoire', text: 'Gagner un premier match officiel.', action: { panel: 'trophies', tab: 'achievements' } },
-        { kind: 'mercato', eyebrow: 'Mercato · pendant la journée', title: '2 offres reçues pour tes joueurs', action: { panel: 'squad', tab: 'market' } },
+        { kind: 'achievement', eyebrow: 'Succès débloqué', title: 'Première victoire', text: 'Gagner un premier match officiel.', action: { panel: 'trophies', tab: 'achievements', ids: ['first_win'] } },
+        { kind: 'mercato', eyebrow: 'Mercato · pendant la journée', title: '2 offres reçues pour tes joueurs', action: { panel: 'squad', tab: 'market', view: 'offers' } },
       ],
     };
     case 'chargement': return { loading: 0.42 };

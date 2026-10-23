@@ -10,6 +10,11 @@ export const CREST_SHAPES = [
   ['moderne', 'Moderne'],
   ['rond', 'Rond'],
   ['hexa', 'Hexagone'],
+  ['pointe', 'Pointe'],
+  ['cercle', 'Médaillon'],
+  ['badge', 'Badge'],
+  ['ecusson', 'Écusson'],
+  ['octo', 'Octogone'],
 ];
 export const CREST_PATTERNS = [
   ['uni', 'Uni'],
@@ -18,6 +23,14 @@ export const CREST_PATTERNS = [
   ['chevron', 'Chevron'],
   ['echarpe', 'Écharpe'],
   ['quartiers', 'Quartiers'],
+  ['pal', 'Pal'],
+  ['parti', 'Parti'],
+  ['coupe', 'Coupé'],
+  ['sautoir', 'Sautoir'],
+  ['croix', 'Croix'],
+  ['damier', 'Damier'],
+  ['rayures', 'Rayures'],
+  ['bordure', 'Bordure'],
 ];
 export const CREST_EMBLEMS = [
   ['etoile', 'Étoile'],
@@ -28,6 +41,15 @@ export const CREST_EMBLEMS = [
   ['eclair', 'Éclair'],
   ['ancre', 'Ancre'],
   ['soleil', 'Soleil'],
+  ['lys', 'Lys'],
+  ['montagne', 'Montagne'],
+  ['vague', 'Vagues'],
+  ['epi', 'Épi'],
+  ['pont', 'Pont'],
+  ['epees', 'Épées'],
+  ['roue', 'Roue'],
+  ['sapin', 'Sapin'],
+  ['aigle', 'Aigle'],
   ['initiales', 'Initiales'],
 ];
 // fond noir (motifs or) ou fond or (motifs noirs) : les deux seules couleurs de notre club
@@ -66,20 +88,43 @@ const hash = (s, k = 0) => {
   return h;
 };
 
-// Écusson d'un autre club : forme, motif et emblème tirés de son nom (un club sur trois porte ses initiales),
-// fond à la couleur de son maillot, motifs blancs (noirs sur un maillot clair).
+// Seconde couleur d'un club, selon celle de son maillot : toujours bien contrastée (le rouge va avec le blanc, le
+// noir, le marine ou le jaune ; le bleu avec le blanc, le jaune, le rouge ou le ciel…).
+const WHITE = '#ffffff';
+const INK = '#151515';
+const SECONDS = {
+  0xc0392b: [WHITE, INK, '#1d2c5e', '#f2c94c'], // rouge
+  0x2463c9: [WHITE, '#f2c94c', '#c0392b', '#9fd0f5'], // bleu
+  0xf2f2f2: ['#c0392b', '#2463c9', INK, '#1f8a4c', '#7b1e3a'], // blanc
+  0x1f8a4c: [WHITE, INK, '#f2c94c'], // vert
+  0x6cb4e8: [WHITE, '#1d2c5e', INK], // ciel
+  0x7b1e3a: ['#9fd0f5', WHITE, '#f2c94c'], // grenat
+  0xe67e22: [INK, WHITE, '#1d2c5e'], // orange
+  0x6c3fa0: [WHITE, '#f2c94c', INK], // violet
+  0x1d2c5e: [WHITE, '#9fd0f5', '#c0392b', '#f2c94c'], // marine
+  0xe8dc3a: [INK, '#1f8a4c', '#2463c9'], // jaune
+};
+const lumOf = (rgb) => ((rgb >> 16) & 255) * 0.299 + ((rgb >> 8) & 255) * 0.587 + (rgb & 255) * 0.114;
+
+// Écusson d'un autre club : forme, motif et emblème tirés de son nom (un club sur quatre porte ses initiales), aux
+// deux couleurs du club : le fond à la couleur du maillot, le motif à sa seconde couleur ; emblème blanc (noir sur un
+// maillot clair) ; liseré blanc, noir ou à la seconde couleur.
 export function rivalCrest(name = '') {
   const h = (k) => hash(name, k);
   const kit = kitOf(name);
   const shirt = `#${kit.shirt.toString(16).padStart(6, '0')}`;
-  const lum = ((kit.shirt >> 16) & 255) * 0.299 + ((kit.shirt >> 8) & 255) * 0.587 + (kit.shirt & 255) * 0.114;
-  const emblems = ids(CREST_EMBLEMS);
+  const ink = lumOf(kit.shirt) > 150 ? INK : WHITE;
+  const seconds = SECONDS[kit.shirt] || [WHITE, INK];
+  const second = seconds[h(5) % seconds.length];
+  const emblems = ids(CREST_EMBLEMS).filter((e) => e !== 'initiales');
   return {
     shape: ids(CREST_SHAPES)[h(1) % CREST_SHAPES.length],
     pattern: ids(CREST_PATTERNS)[h(2) % CREST_PATTERNS.length],
-    emblem: h(3) % 3 === 0 ? 'initiales' : emblems[h(4) % (emblems.length - 1)],
+    emblem: h(3) % 4 === 0 ? 'initiales' : emblems[h(4) % emblems.length],
     base: shirt,
-    accent: lum > 150 ? '#151515' : '#ffffff',
+    accent: ink,
+    second,
+    rim: h(6) % 2 ? second : ink,
   };
 }
 

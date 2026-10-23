@@ -3,7 +3,7 @@ import { refreshTransfers } from './transfers';
 import { logMove } from './mercato';
 import { expectedGate, matchGate, prizeFor, sponsorIncome, ticketPrice, upkeepOf } from './economy';
 import { clamp, ordinal, pick, rnd } from './utils';
-import { clubAfter, randomClubName } from './names';
+import { clubAfter, leagueClubNames, randomClubName } from './names';
 import { assignNumber, freshSeason, makePlayer, playerRating, progressPlayer, saleValue, wageOf, wantsRetirement } from './players';
 import { quickMatch } from './live';
 import { ensureLineup } from './tactics';
@@ -33,9 +33,10 @@ export function pushJournal(s, entry) {
 export function startSeason(s) {
   const div = DIVISIONS[s.divisionIndex];
   s.rivals = [];
+  const names = leagueClubNames(7, s.clubName); // sept clubs tous différents, jamais deux du même lieu
   for (let i = 0; i < 7; i++) {
     const str = div.oppMin + (div.oppMax - div.oppMin) * (i / 6) + rnd(-0.3, 0.3);
-    s.rivals.push({ name: randomClubName(), strength: Math.round(clamp(str, 3, 18) * 10) / 10 });
+    s.rivals.push({ name: names[i], strength: Math.round(clamp(str, 3, 18) * 10) / 10 });
   }
   // ordre aléatoire : le calendrier ne commence plus toujours par le favori de la division
   for (let i = s.rivals.length - 1; i > 0; i--) {
@@ -238,6 +239,7 @@ export function applyMatchResult(s, live) {
   const ctx = matchContext(s);
   if (!ctx) return s;
   const league = ctx.comp === 'league';
+  const before = league ? standingsOf(s).map((t) => t.i) : null; // ordre du classement avant la journée (après-match)
   if (league) {
     for (const [i, j] of s.schedule[s.round]) {
       if (i === 0 || j === 0) continue;
@@ -285,7 +287,7 @@ export function applyMatchResult(s, live) {
   const status = reputationStatusEvent(s, repWas); // nouveau statut de notoriété atteint sur ce match
   if (league) s.round++;
   if (ctx.fixture >= 0) s.calIndex = ctx.fixture + 1;
-  s.lastMatch = { ...res, round: s.round, comp: ctx.comp, stage: ctx.stage, label: league ? fixtureLabel(null, s.round) : ctx.label, cup: cupNote, status: status?.name || null };
+  s.lastMatch = { ...res, round: s.round, comp: ctx.comp, stage: ctx.stage, label: league ? fixtureLabel(null, s.round) : ctx.label, cup: cupNote, status: status?.name || null, before };
   recordMatch(s, s.lastMatch);
   refreshTransfers(s); // le marché des transferts bouge à chaque journée
   const score = `${res.gf}–${res.ga}${res.pens ? ` (t.a.b. ${res.pens[0]}–${res.pens[1]})` : ''}`;

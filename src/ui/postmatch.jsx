@@ -1,5 +1,8 @@
-import React from 'react';
-import { POS_LABELS } from '../game/constants';
+import React, { useState } from 'react';
+import { DIVISIONS, POS_LABELS } from '../game/constants';
+import { standingsOf } from '../game/season';
+import { ordinal } from '../game/utils';
+import { StandingsTable, ZoneLegend } from './panels';
 import { fmtMoney, fmtNum, fmtRating } from './format';
 import { AnimatedMoney } from './moneyfx';
 import { Card, Eyebrow, IconAssist, IconBall, IconStar, RatingBadge, SectionHead, VersusBar } from './kit';
@@ -9,9 +12,9 @@ import { ClubCrest, Crest } from './crest';
 import { STAGES } from '../game/cups';
 import { Portrait } from './portrait';
 
-// Après-match : un seul écran, au lieu de « coup de sifflet final » puis « résumé ».
-// Score au centre exact (grille 1fr auto 1fr), buteurs sous chaque équipe, notes du match sur 10 et homme du
-// match, le match en chiffres, recettes et réputation, un seul bouton pour continuer.
+// Après-match : le résultat (score au centre exact, buteurs sous chaque équipe, notes du match sur 10 et homme du
+// match, le match en chiffres, recettes et réputation), puis, après une journée de championnat, le classement mis à
+// jour : chaque club y montre les places gagnées ou perdues.
 
 const OUTCOME = { win: 'Victoire', draw: 'Match nul', loss: 'Défaite' };
 
@@ -38,10 +41,51 @@ function Goals({ list, align }) {
   );
 }
 
-export default function PostMatch({ state, onClose, onStats }) {
+// Classement après la journée : où en est le club (place gagnée, perdue ou gardée), puis le tableau.
+function TableStep({ state, lm, onClose }) {
+  const standings = standingsOf(state);
+  const pos = standings.findIndex((t) => t.i === 0) + 1;
+  const was = lm.before ? lm.before.indexOf(0) + 1 : 0;
+  const tone = !was || was === pos ? 'draw' : pos < was ? 'win' : 'loss';
+  let line;
+  if (!was) line = pos === 1 ? 'Tu es en tête' : `Tu es ${ordinal(pos)}`;
+  else if (was === pos) line = pos === 1 ? 'Tu restes en tête' : `Tu restes ${ordinal(pos)}`;
+  else if (pos < was) line = pos === 1 ? 'Tu prends la tête' : `Tu grimpes à la ${ordinal(pos, true)} place`;
+  else line = `Tu recules à la ${ordinal(pos, true)} place`;
+  return (
+    <div className="post" role="dialog" aria-label="Classement après la journée">
+      <article className="post-card post-standings" key="table">
+        <header className="post-head">
+          <div className="post-meta">
+            <Eyebrow>Classement · journée {Math.min(lm.round, 7)} / 7</Eyebrow>
+            <span className={`post-outcome ${tone}`}>{line}</span>
+          </div>
+          <h2 className="post-standings-title">{DIVISIONS[state.divisionIndex].name}</h2>
+        </header>
+        <div className="post-body">
+          <StandingsTable state={state} before={lm.before} />
+          <ZoneLegend state={state} />
+        </div>
+        <footer className="post-foot">
+          <button className="btn btn-xl" onClick={onClose} autoFocus>Continuer</button>
+        </footer>
+      </article>
+    </div>
+  );
+}
+
+export default function PostMatch({ state, onClose, onStats, initialStep = 'result' }) {
   const lm = state.lastMatch;
-  useKeydown((e) => { if (e.key === 'Enter' || e.key === 'Escape') onClose(); });
+  const [step, setStep] = useState(initialStep);
+  // après une journée de championnat, le classement suit le résultat (une coupe ne le change pas)
+  const withTable = !!lm && (lm.comp || 'league') === 'league' && !!state.table;
+  const next = () => (step === 'result' && withTable ? setStep('table') : onClose());
+  useKeydown((e) => {
+    if (e.key === 'Enter') next();
+    else if (e.key === 'Escape') onClose();
+  });
   if (!lm) return null;
+  if (step === 'table') return <TableStep state={state} lm={lm} onClose={onClose} />;
 
   const outcome = lm.pens ? (lm.pens[0] > lm.pens[1] ? 'win' : 'loss') : lm.gf > lm.ga ? 'win' : lm.gf < lm.ga ? 'loss' : 'draw';
   const cup = lm.cup;
@@ -151,7 +195,7 @@ export default function PostMatch({ state, onClose, onStats }) {
         <footer className="post-foot">
           <span className={`post-rep ${lm.repDelta >= 0 ? 'up' : 'down'}`}>Réputation {lm.repDelta >= 0 ? '+' : '−'}{fmtRating(Math.abs(lm.repDelta))}{lm.status && <b className="post-status"> · Nouveau statut : {lm.status}</b>}</span>
           {onStats && <button className="btn ghost btn-xl" onClick={onStats}>Stats du match</button>}
-          <button className="btn btn-xl" onClick={onClose} autoFocus>Continuer</button>
+          <button className="btn btn-xl" onClick={next} autoFocus>{withTable ? 'Voir le classement' : 'Continuer'}</button>
         </footer>
       </article>
     </div>

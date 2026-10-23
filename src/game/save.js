@@ -6,7 +6,7 @@ import { addReserves } from './engine';
 import { ensureTutorial } from './tutorial';
 import { assignNumber, upgradePlayer } from './players';
 import { ensureLedger } from './ledger';
-import { renameRetired } from './names';
+import { fixLeagueNames, playerName, registerNames, renameRetired } from './names';
 import { buildCalendar } from './cups';
 import { refreshTransfers } from './transfers';
 import { rebuildRecords } from './records';
@@ -100,6 +100,15 @@ export function loadGame() {
           (m.shots || []).forEach((t) => { if (t.s === 0) t.p = nm(t.p); });
         }
       }
+      // noms en double (parties d'avant l'unicité des noms) : dans l'effectif, le second porteur reçoit un autre nom
+      registerNames([]);
+      const seenNames = new Set();
+      for (const p of y.players) {
+        if (seenNames.has(p.name)) p.name = playerName(seenNames);
+        seenNames.add(p.name);
+      }
+      registerNames([...y.players, ...y.market, ...y.transfers, ...y.alumni].map((p) => p.name));
+      fixLeagueNames(y); // un club adverse en double (même nom ou même lieu) dans la division est renommé
       return y;
     };
     if (s.version === 4) return fix(s);

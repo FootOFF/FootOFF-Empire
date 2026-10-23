@@ -96,6 +96,9 @@ export default function App({ preview = null }) {
   const [squadSheet, setSquadSheet] = useState(null); // fiche joueur ouverte d'emblée (depuis une fiche carrière)
   const [statsMatch, setStatsMatch] = useState(boot.ui.statsMatch || null); // 'last' : Stats Pass du dernier match ouvert d'emblée
   const [trophyTab, setTrophyTab] = useState('honours'); // onglet d'ouverture de la salle des trophées
+  const [trophyFocus, setTrophyFocus] = useState([]); // succès à montrer d'emblée (notification d'un succès débloqué)
+  const [squadMercato, setSquadMercato] = useState(null); // vue du mercato à l'ouverture (offres reçues, suivis…)
+  const [navKey, setNavKey] = useState(0); // une notification rouvre son panneau à neuf, sur ce qu'elle annonce
   const sound = useRef(null);
   if (!sound.current) sound.current = preview ? silentSound : createStadiumSound();
   const [, bumpSound] = useState(0); // le son se coupe aussi pendant le direct : on relit sound.current.muted
@@ -139,7 +142,7 @@ export default function App({ preview = null }) {
       eyebrow: list.length > 1 ? `${list.length} succès débloqués` : 'Succès débloqué',
       title: list[0].title,
       text: list.length > 1 ? `Et aussi : ${list.slice(1).map((a) => a.title).join(' · ')}` : list[0].desc,
-      action: { panel: 'trophies', tab: 'achievements' },
+      action: { panel: 'trophies', tab: 'achievements', ids: fresh.map(([id]) => id) },
     });
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -169,10 +172,12 @@ export default function App({ preview = null }) {
     if (id) setSel(null);
   };
   const selectPlot = (plotId, sector) => { setSel({ plotId, sector }); setPanel(null); };
-  // une notification ouvre ce qu'elle annonce (succès, offres du mercato)
+  // une notification ouvre ce qu'elle annonce : le succès lui-même (salle des trophées, mis en évidence), les offres
+  // reçues ou les joueurs suivis du mercato
   const onNoteAction = (a) => {
-    if (a.panel === 'trophies') setTrophyTab(a.tab || 'honours');
-    if (a.panel === 'squad') setSquadTab(a.tab || 'players');
+    if (a.panel === 'trophies') { setTrophyTab(a.tab || 'honours'); setTrophyFocus(a.ids || []); }
+    if (a.panel === 'squad') { setSquadTab(a.tab || 'players'); setSquadMercato(a.view || null); setSquadSheet(null); }
+    setNavKey((k) => k + 1);
     openPanel(a.panel);
   };
   const play = () => { // ouvre l'avant-match, le stade passe en configuration jour de match
@@ -203,7 +208,12 @@ export default function App({ preview = null }) {
     const bits = [];
     if (n.offers) bits.push(`${n.offers} offre${n.offers > 1 ? 's' : ''} reçue${n.offers > 1 ? 's' : ''} pour tes joueurs`);
     if (gone.length) bits.push(`${gone.join(', ')} ${gone.length > 1 ? 'ont' : 'a'} signé ailleurs`);
-    if (bits.length) notify({ kind: 'mercato', eyebrow: 'Mercato · pendant la journée', title: bits[0][0].toUpperCase() + bits[0].slice(1), text: bits[1], action: { panel: 'squad', tab: 'market' } });
+    if (bits.length) {
+      notify({
+        kind: 'mercato', eyebrow: 'Mercato · pendant la journée', title: bits[0][0].toUpperCase() + bits[0].slice(1), text: bits[1],
+        action: { panel: 'squad', tab: 'market', view: n.offers ? 'offers' : 'watch' },
+      });
+    }
   };
   // jour de match : adversaire et affluence pour la scène 3D (match à venir, en cours, ou qui vient de finir)
   const matchInfo = (() => {
@@ -399,13 +409,15 @@ export default function App({ preview = null }) {
       <Presence>
         {inGame && panel === 'squad' && (
           <SquadView
+            key={navKey}
             state={state}
             run={run}
             ask={setConfirm}
             preview={boot.ui.squad}
             initialTab={tutoStep === 'sign' ? 'market' : squadTab}
+            initialMercato={squadMercato}
             initialSheet={squadSheet}
-            onClose={() => { setPanel(null); setSquadTab('players'); setSquadSheet(null); }}
+            onClose={() => { setPanel(null); setSquadTab('players'); setSquadSheet(null); setSquadMercato(null); }}
             onFinances={() => openPanel('finances')}
           />
         )}
@@ -413,7 +425,7 @@ export default function App({ preview = null }) {
       <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} initialTab={boot.ui.seasonTab} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); setPanel('stats'); }} />}</Presence>
       <Presence>{inGame && panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'reputation' && <ReputationPanel state={state} onClose={() => setPanel(null)} />}</Presence>
-      <Presence>{inGame && panel === 'trophies' && <TrophyRoom state={state} initialTab={trophyTab} onClose={() => { setPanel(null); setTrophyTab('honours'); }} />}</Presence>
+      <Presence>{inGame && panel === 'trophies' && <TrophyRoom key={navKey} state={state} initialTab={trophyTab} focus={trophyFocus} onClose={() => { setPanel(null); setTrophyTab('honours'); setTrophyFocus([]); }} />}</Presence>
       <Presence>{inGame && panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} onClose={() => { setPanel(null); setStatsMatch(null); }} onPlayerSheet={(id) => { setSquadSheet(id); setSquadTab('players'); setPanel('squad'); }} />}</Presence>
       <Presence>
         {inGame && panel === 'finances' && (
@@ -452,7 +464,7 @@ export default function App({ preview = null }) {
           onFinish={finishMatch}
         />
       )}
-      <Presence>{inGame && showResult && <PostMatch state={state} onClose={closeResult} onStats={() => { closeResult(); setStatsMatch('last'); setPanel('stats'); }} />}</Presence>
+      <Presence>{inGame && showResult && <PostMatch state={state} initialStep={boot.ui.postStep} onClose={closeResult} onStats={() => { closeResult(); setStatsMatch('last'); setPanel('stats'); }} />}</Presence>
       <Presence>{inGame && !matchPhase && !showResult && state.seasonReview && <SeasonReview state={state} onClose={() => run(dismissReview)} />}</Presence>
       <Presence>{inGame && !matchPhase && !showResult && !state.seasonReview && state.offline && <OfflineReturn data={state.offline} onClose={() => run(dismissOffline)} />}</Presence>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { STAGES } from '../game/cups';
 import { HONOURS, honoursOf, plural } from '../game/honours';
 import { ACHIEVEMENTS, ACH_CATS } from '../game/achievements';
@@ -53,13 +53,25 @@ function Honours({ state }) {
   );
 }
 
-function Achievements({ state }) {
+// focus : succès tout juste débloqués (notification touchée) : la liste s'ouvre sur eux, mis en évidence.
+function Achievements({ state, focus = [] }) {
   const have = state.achievements || {};
   const n = ACHIEVEMENTS.filter((a) => have[a.id]).length;
+  const root = useRef(null);
+  useLayoutEffect(() => {
+    // le panneau arrive déjà positionné : le premier succès mis en évidence au milieu de la liste (on ne fait défiler
+    // que la liste, jamais l'écran du jeu)
+    if (!focus.length) return;
+    const body = root.current?.closest('.panel-body');
+    const el = body?.querySelector('.ach-list li.focus');
+    if (!body || !el) return;
+    const dy = el.getBoundingClientRect().top - body.getBoundingClientRect().top;
+    body.scrollTop += dy - (body.clientHeight - el.offsetHeight) / 2;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
       <SectionHead label="Succès" aside={`${n} / ${ACHIEVEMENTS.length}`} />
-      <div className="ach-progress" role="progressbar" aria-valuemin={0} aria-valuemax={ACHIEVEMENTS.length} aria-valuenow={n}>
+      <div ref={root} className="ach-progress" role="progressbar" aria-valuemin={0} aria-valuemax={ACHIEVEMENTS.length} aria-valuenow={n}>
         <i style={{ width: `${(n / ACHIEVEMENTS.length) * 100}%` }} />
       </div>
       {ACH_CATS.map(([cat, label]) => {
@@ -70,10 +82,11 @@ function Achievements({ state }) {
             <ul className="ach-list">
               {list.map((a) => {
                 const d = have[a.id];
+                const lit = focus.includes(a.id);
                 return (
-                  <li key={a.id} className={d ? 'on' : ''}>
+                  <li key={a.id} className={`${d ? 'on' : ''} ${lit ? 'focus' : ''}`}>
                     <span className="ach-medal" aria-hidden="true" />
-                    <div><b>{a.title}</b><span>{a.desc}</span></div>
+                    <div><b>{a.title}{lit && <i className="ach-new">Nouveau</i>}</b><span>{a.desc}</span></div>
                     <em>{d ? when(d) : 'À débloquer'}</em>
                   </li>
                 );
@@ -132,7 +145,7 @@ function Records({ state }) {
   );
 }
 
-export function TrophyRoom({ state, initialTab = 'honours', onClose }) {
+export function TrophyRoom({ state, initialTab = 'honours', focus = [], onClose }) {
   const [tab, setTab] = useState(initialTab);
   const won = honoursOf(state).length;
   const pick = (id) => {
@@ -148,7 +161,7 @@ export function TrophyRoom({ state, initialTab = 'honours', onClose }) {
       toolbar={<Tabs items={[['honours', 'Palmarès'], ['achievements', 'Succès'], ['records', 'Records']]} value={tab} onChange={pick} />}
     >
       {tab === 'honours' && <Honours state={state} />}
-      {tab === 'achievements' && <Achievements state={state} />}
+      {tab === 'achievements' && <Achievements state={state} focus={focus} />}
       {tab === 'records' && <Records state={state} />}
     </Panel>
   );

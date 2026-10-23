@@ -123,7 +123,9 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
   un seul bandeau (« 3 succès débloqués »). Types : succès (médaille dorée qui surgit, reflet, trois notes qui
   montent), complexe, mercato, réussite, information, avertissement. Un filet doré montre le temps restant ;
   survol ou doigt posé : il reste ; geste vers le haut : il part ; flèche à droite : un clic ouvre ce qu'il
-  annonce (succès → salle des trophées, onglet Succès ; offres → Mercato). Aperçu : `?ecran=notification`.
+  annonce, à l'endroit exact : un succès → salle des trophées, onglet Succès, la liste déjà centrée sur lui, liseré
+  doré qui palpite et pastille « Nouveau » ; des offres reçues → Mercato, vue Offres ; des joueurs suivis partis
+  ailleurs → Mercato, vue Suivis. Aperçu : `?ecran=notification`.
 - Infobulles (`src/ui/tips.jsx`) : à la souris seulement, tout `title` devient une bulle du jeu après 280 ms, au-dessus
   de l'élément (dessous près du haut de l'écran), toujours dans l'écran ; jamais l'infobulle du navigateur. Les
   en-têtes du tableau de l'effectif donnent le nom complet de la caractéristique (« Finition · trier ») ; le tri
@@ -161,10 +163,13 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
   la confirmation devient une feuille qui monte du bas.
 - Vibrations (`src/ui/haptics.js`) : but marqué, vente, dépense, construction ; désactivables dans les réglages
   (indisponibles sur iPhone, Safari ne les permet pas).
-- Défilement (`src/ui/scrollcue.js`) : sur écran tactile, aucune barre du système ; un curseur doré fin longe la
-  zone pendant qu'on la fait défiler, puis s'efface. Sur PC, barres fines dorées. Partout, une zone qui défile
-  s'estompe sur le bord où il reste du contenu (`data-fade`, liste des zones dans `scrollcue.js` : jamais une zone à
-  pied collé, qui s'estomperait avec) ; arrivée au bout, elle n'entraîne plus la page (pas de rebond de la page).
+- Défilement (`src/ui/scrollcue.js`) : aucune barre de défilement, nulle part (PC, téléphone, tablette ; choix de
+  l'utilisateur, « plus esthétique sans »). Une zone qui défile s'estompe sur le bord où il reste du contenu
+  (`data-fade`, liste des zones dans `scrollcue.js` : jamais une zone à pied collé, qui s'estomperait avec) ;
+  arrivée au bout, elle n'entraîne plus la page (pas de rebond de la page).
+- Sélection : rien ne se sélectionne dans le jeu, quel que soit le geste (appui long, double toucher, « Tout
+  sélectionner » d'iOS) : CSS `user-select: none` jusqu'à `html`, et `main.jsx` annule toute sélection hors des
+  champs de saisie (la bulle « Copier / Traduire » n'apparaît jamais) ; pas de menu contextuel.
 - Typographie : le code écrit des espaces ordinaires ; `src/ui/typography.js` pose à l'affichage les insécables
   (avant `: ; ! ?`, dans les guillemets, entre un nombre et son unité), l'apostrophe ’ et les points de
   suspension. Ordinaux avec `ordinal()` : 1er, 1re, 2e.
@@ -252,6 +257,31 @@ la caméra le cadre dans la zone libre puis oscille lentement autour, comme en v
   payable tout de suite.
 - Coût mesuré : l'hologramme ajoute environ 1,4 ms par image en plein écran (2880 × 1620, gros plan), seulement
   pendant l'aperçu ; les modèles des bâtiments proposés se chargent à l'ouverture de la vitrine.
+
+## Après-match et classement
+
+Après une journée de championnat, l'après-match a deux temps : le résultat (bouton « Voir le classement »), puis le
+classement de la division mis à jour (`StandingsTable` de `src/ui/panels.jsx`, partagé avec le panneau Saison) : la
+colonne d'évolution montre les places gagnées (▲ vert) ou perdues (▼ rouge) sur la journée, et une pastille dit où
+en est le club (« Tu grimpes à la 2e place », « Tu restes en tête »). L'ordre d'avant la journée est gardé dans
+`lastMatch.before`. Après un match de coupe, le résultat suffit. Aperçu : `?ecran=apres-match-classement`.
+
+## Noms et écussons
+
+- Joueurs (`src/game/names.js`) : prénoms et noms francophones, courts et faciles à prononcer, de toutes les
+  origines du football français ; le plus souvent un prénom et un nom de la même origine. Jamais deux joueurs du
+  même nom dans une partie (`registerNames`, `playerName`), et autant que possible pas le même nom de famille.
+  Aucun nom de footballeur connu : noms de famille trop associés à de vrais joueurs écartés, combinaisons qui
+  retomberaient sur une personne réelle interdites (`BLOCK`).
+- Clubs : un type (AS, FC, Stade, Entente, Jeunesse…) et un lieu imaginaire. Dans une division : sept clubs tous
+  différents, jamais deux du même lieu, au plus deux du même type, rien qui rappelle notre club
+  (`leagueClubNames`) ; les adversaires de coupe non plus (`distinctClubName`). Les parties existantes sont
+  réparées au chargement (`fixLeagueNames`).
+- Écussons des autres clubs (`rivalCrest`, dessin dans `src/ui/crest.jsx`) : aux deux couleurs du club (le fond au
+  maillot, le motif à une seconde couleur bien contrastée), 10 formes, 14 motifs, 17 emblèmes (dont lys, montagne,
+  vagues, épi, pont, épées, roue, sapin, aigle) et les initiales pour un club sur quatre ; liseré blanc, noir ou à
+  la seconde couleur. Les mêmes formes, motifs et emblèmes servent à composer notre écusson (toujours noir et or).
+  Planche de contrôle : `tmp/ph3/crests.html`.
 
 ## Carrières et anciens joueurs
 

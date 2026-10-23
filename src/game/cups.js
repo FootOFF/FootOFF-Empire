@@ -1,5 +1,5 @@
 import { DIVISIONS } from './constants';
-import { randomClubName } from './names';
+import { distinctClubName } from './names';
 import { clamp, pick, rnd } from './utils';
 
 // Coupes : la Coupe nationale (tous les clubs du pays, à élimination directe) et la Coupe d'Europe des clubs
@@ -43,8 +43,7 @@ export function drawOpponent(s, comp, stage) {
   const di = clamp(s.divisionIndex + pick([-1, 0, 0, 0, 1]) + (stage >= 2 && Math.random() < 0.4 ? 1 : 0), 0, 3);
   const d = DIVISIONS[di];
   const t = clamp(0.45 + stage * 0.12 + rnd(-0.3, 0.3), 0, 1);
-  let name;
-  do name = randomClubName(); while (name === s.clubName || s.rivals?.some((r) => r.name === name) && Math.random() < 0.5);
+  const name = distinctClubName([s.clubName, ...(s.rivals || []).map((r) => r.name)]); // ni un club de la division, ni son lieu
   return { name, strength: Math.round((d.oppMin + (d.oppMax - d.oppMin) * t) * 10) / 10, division: d.name };
 }
 
