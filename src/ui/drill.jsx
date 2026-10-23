@@ -27,6 +27,10 @@ const CONTROLS = {
   sprint: { keyboard: ['Espace', 'au signal, puis pour sauter chaque haie'], touch: [null, 'Touche l’écran au signal, puis pour sauter chaque haie.'], gamepad: ['A', 'au signal, puis pour sauter chaque haie'] },
   lecture: { keyboard: ['1 · 2 · 3', 'ou les flèches puis Espace : la passe choisie'], touch: [null, 'Touche le partenaire à qui faire la passe.'], gamepad: ['Croix puis A', 'pour choisir la passe'] },
   arrets: { keyboard: ['← ↓ →', 'plonger à gauche, rester au centre, plonger à droite'], touch: [null, 'Touche la gauche, le centre ou la droite de l’écran pour plonger.'], gamepad: ['Croix', 'gauche, bas ou droite pour plonger'] },
+  coupsFrancs: { keyboard: ['Espace', 'deux fois : la direction, puis la hauteur'], touch: [null, 'Touche l’écran deux fois : la direction, puis la hauteur.'], gamepad: ['A', 'deux fois : la direction, puis la hauteur'] },
+  penalties: { keyboard: ['← ↓ →', 'plonger à gauche, rester au centre, plonger à droite'], touch: [null, 'Touche la gauche, le centre ou la droite de l’écran pour plonger.'], gamepad: ['Croix', 'gauche, bas ou droite pour plonger'] },
+  centres: { keyboard: ['Espace', 'pour lancer la course, puis pour sauter'], touch: [null, 'Touche l’écran pour lancer la course, puis pour sauter.'], gamepad: ['A', 'pour lancer la course, puis pour sauter'] },
+  contre: { keyboard: ['← → ↑', 'passe à gauche, passe à droite, tir (ou 1, 2, 3)'], touch: [null, 'Touche le partenaire à servir, ou « Tir ».'], gamepad: ['Croix', 'gauche, droite pour passer, haut pour tirer'] },
 };
 
 // Garde-fou : une erreur dans l'épreuve ne doit jamais emporter le jeu ; on referme simplement l'écran.
@@ -308,7 +312,7 @@ function Intro({ state, item, p, index, total, ctl, onGo, onSim, onQuit }) {
         <div><span>Simulée</span><b>{gainTxt(pv.sim)}</b></div>
         <div><span>Ratée</span><b>{gainTxt(pv.min)}</b></div>
       </div>
-      <p className="drill-attrs">{catsFor(item.pos)[item.cat].attrs.map((k) => `${attrName(p, k)} ${dec(pool[k])} → ${dec(after[k])}`).join(' · ')} <em>(simulée)</em></p>
+      <p className="drill-attrs">{catsFor(item.pos)[item.cat].attrs.map((k) => `${attrName(p, k)} ${pool[k].toFixed(2).replace('.', ',')} → ${after[k].toFixed(2).replace('.', ',')}`).join(' · ')} <em>(simulée)</em></p>
       {prog && <p className="drill-prog-line">Programme {programLabel(prog.id)} : {prog.steps} / {programNeed(state, prog)} séances</p>}
       <div className="drill-actions">
         <button type="button" className="btn ghost" onClick={onSim}>Simuler</button>

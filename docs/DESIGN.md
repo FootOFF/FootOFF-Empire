@@ -433,11 +433,23 @@ Calage : `tmp/calib-training.mjs` (carrières), contrôles : `tmp/check-training
 - Sprint et haies : travelling latéral, départ au signal, dix haies, zone d'appel dorée, chrono.
 - Lecture du jeu : tablette de l'analyste vue d'en haut, cadrage automatique, trois partenaires numérotés, une seule
   bonne passe.
+- Épreuves débloquées (bonus ×1,2 sur le gain) :
+  - Coups francs (niveau 2) : la visée de Précision, un mur de mannequins jaunes sur ressort (ils vacillent quand le
+    ballon les touche), un gardien ; viser au-dessus de 1,5 m passe le mur.
+  - Penalties (niveau 3) : vue subjective. Pendant l'armé de la frappe, le corps du tireur s'ouvre vers son côté :
+    plonger à ce moment rapporte 100. Plonger plus de 0,45 s avant la frappe, c'est se trahir : il tire de l'autre
+    côté. Feintes (temps d'arrêt) et panenka au centre.
+  - Centres (niveau 4) : un appui pour lancer la course vers le point de chute (anneau doré au départ du centre), un
+    pour sauter. Plan large au PC ; plan resserré derrière l'attaquant sur un écran en hauteur.
+  - Contre-attaque (niveau 5) : trois contre deux suivi d'en haut, deux décisions au ralenti par contre (passe à
+    gauche, à droite, tir). Le défenseur qui sort libère son partenaire ; ensuite, s'il ferme le porteur, la passe
+    axiale, s'il coupe la passe, le tir.
 - Intro (gain parfait / simulé / raté, commandes selon le moyen utilisé), compte à rebours, tableau de bord (points
   ou chrono, tentatives, consigne), points à l'impact, résultat (score, mention, gain, programme), bilan.
 - Échap (B ou Start) met en pause ; une épreuve interrompue n'est pas comptée.
 - Sons synthétisés (`sfx` de `src/ui/sound.js`). Toute erreur referme l'écran sans toucher au jeu.
-- GPU mesuré en 2880 × 1620 sur la puce intégrée : de 9 ms (Lecture) à 16 ms (Précision) par image.
+- GPU mesuré en 2880 × 1620 sur la puce intégrée : de 9 ms (Lecture, Contre-attaque) à 16 ms (Précision) par image.
+- Essais : `tmp/ph3/drilltest.js` (ouvrir une épreuve, état, mesure GPU).
 
 Aperçus : `?ecran=entrainement`, `entrainement-joueur`, `entrainement-programmes`, `entrainement-programme`,
 `entrainement-progres`, `entrainement-batiment` (les épreuves 3D se testent dans le jeu ; `window.__drill.debug` et

@@ -2,20 +2,32 @@ import * as THREE from 'three';
 import { BALL_R, GOAL, KITS, PITCH } from './stage';
 import { agent, bezier, clamp01, cones, easeOut, rnd, walkTo } from './kit';
 
-// Arrêts réflexes (gardiens), en vue subjective : la caméra est le gardien, ses gants au bas de l'écran. Huit tirs
-// s'enchaînent, de plus en plus forts ; on plonge à gauche, à droite, ou on reste au centre (flèches, toucher du côté
-// voulu, croix de la manette). Plus la réaction suit vite la frappe, plus l'arrêt rapporte ; plonger avant la frappe
-// est un pari (moins de points s'il est gagné). Un tir au centre sans bouger est arrêté (bien placé).
+// Épreuves de gardien, en vue subjective : la caméra est le gardien, ses gants au bas de l'écran. On plonge à gauche, à
+// droite, ou on reste au centre (flèches, toucher du côté voulu, croix de la manette) ; un seul plongeon par tir.
+// - Arrêts réflexes : huit tirs de 10 à 15 m, de plus en plus forts. Plus la réaction suit vite la frappe, plus
+//   l'arrêt rapporte ; plonger avant la frappe est un pari (moins de points s'il est gagné). Un tir au centre sans
+//   bouger est arrêté (bien placé).
+// - Penalties (niveau 3) : six tirs au but, trop rapides pour réagir après la frappe. Juste avant de frapper, le
+//   tireur se tourne vers son côté : plonger à ce moment-là rapporte le plus ; trop tôt, il te voit partir et tire de
+//   l'autre côté. Certains feintent (temps d'arrêt dans la course) ou tentent la panenka au centre.
 
 const LINE = PITCH.len; // ligne de but défendue (z = 10,5), cage ouverte vers -z
 const EYE = 0.172; // hauteur des yeux (1,72 m)
 const MEET = LINE - 0.065; // le ballon rencontre les gants à 65 cm devant le gardien
 const EYE_FRAME = { v: 48, h: 40 }; // vue subjective : le tireur et la surface ; sur un écran en hauteur, pas de grand angle
-const SHOTS = 8;
-export const SAVES_MAX = 100 * SHOTS;
 const REACH = { left: 0.24, right: 0.24, center: 0.12 }; // temps qu'il faut pour couvrir la zone (s)
+const MODES = {
+  reflexes: { shots: 8, prompt: 'Plonge du bon côté' },
+  penalties: { shots: 6, prompt: 'Lis la course du tireur' },
+};
+export const SAVES_MAX = 100 * MODES.reflexes.shots;
+export const PENALTIES_MAX = 100 * MODES.penalties.shots;
+const TELL = 0.32; // penalty : le tireur se tourne vers son côté 0,32 s avant la frappe
+const EARLY = 0.45; // plonger plus tôt que 0,45 s avant la frappe : le tireur te voit partir
 
-export function createSaves(stage, ctx) {
+function createKeeper(stage, ctx, mode) {
+  const M = MODES[mode];
+  const pens = mode === 'penalties';
   const group = new THREE.Group();
   stage.scene.add(group);
   const keep = stage.keep;
@@ -56,65 +68,98 @@ export function createSaves(stage, ctx) {
   const shShadow = stage.addShadow(0.07, 0.5, group);
   const ball = stage.addBall(group);
   [[-0.5, LINE - 1.5], [-0.53, LINE - 1.47], [0.48, LINE - 1.62]].forEach(([x, z]) => stage.addBall(group).set(x, 0, z));
-  cones(stage, [[-0.2, LINE - 1.7], [0.2, LINE - 1.7], [-0.4, LINE - 1.35], [0.4, LINE - 1.35]], undefined, group);
+  cones(stage, pens ? [[-0.25, LINE - 1.65], [0.25, LINE - 1.65]] : [[-0.2, LINE - 1.7], [0.2, LINE - 1.7], [-0.4, LINE - 1.35], [0.4, LINE - 1.35]], undefined, group);
 
   const s = {
     k: -1, phase: 'intro', t: 0, points: 0, saves: 0,
     spot: new THREE.Vector3(), from: new THREE.Vector3(), ctrl: new THREE.Vector3(), to: new THREE.Vector3(),
-    flight: 0, dur: 0.6, zone: 'center', dive: null, used: false, contact: 0, kickT: null, out: null, wait: 0,
+    flight: 0, dur: 0.6, zone: 'center', dive: null, used: false, kickT: null, out: null, wait: 0,
+    clock: 0, kickAt: null, run: null, chip: false,
   };
   const tmp = new THREE.Vector3();
   const off = new THREE.Vector3();
   const spin = new THREE.Vector3(1, 0, 0);
   const restCam = { pos: new THREE.Vector3(0, EYE, LINE - 0.03), look: new THREE.Vector3(0, 0.07, LINE - 1.4) };
+  const PEN_ZONES = ['left', 'right', 'right', 'center', 'left', 'right'].sort(() => Math.random() - 0.5);
 
   function hud() {
     const live = ['wait', 'runup', 'kick', 'flight'].includes(s.phase);
-    ctx.hud({ round: Math.max(1, s.k + 1), rounds: SHOTS, points: s.points, max: SAVES_MAX, prompt: live ? 'Plonge du bon côté' : '', action: live });
+    ctx.hud({ round: Math.max(1, s.k + 1), rounds: M.shots, points: s.points, max: 100 * M.shots, prompt: live ? M.prompt : '', action: live });
   }
+
+  const target = (zone, chip = false) => {
+    const x = zone === 'center' ? rnd(-0.05, 0.05) : (zone === 'right' ? 1 : -1) * rnd(0.19, 0.31);
+    return new THREE.Vector3(x, chip ? rnd(0.12, 0.17) : rnd(0.03, 0.19), MEET);
+  };
 
   function setup(k) {
     s.k = k;
-    const dist = rnd(1.05, 1.5) - k * 0.02;
-    const sx = rnd(-0.35, 0.35);
-    s.spot.set(sx, 0, LINE - dist);
+    if (pens) {
+      s.spot.set(0, 0, LINE - 1.1);
+      s.zone = PEN_ZONES[k];
+      s.chip = s.zone === 'center';
+      const from = Math.random() < 0.5 ? -1 : 1; // course d'élan, de la gauche ou de la droite
+      s.run = { from, stutter: !s.chip && Math.random() < 0.35, paused: 0 };
+      shooter.x = s.spot.x + from * 0.11; shooter.z = s.spot.z - 0.24;
+      s.dur = s.chip ? 0.95 : rnd(0.42, 0.48);
+    } else {
+      const dist = rnd(1.05, 1.5) - k * 0.02;
+      s.spot.set(rnd(-0.35, 0.35), 0, LINE - dist);
+      s.zone = ['left', 'right', 'center', 'left', 'right', 'right', 'left', 'center'][k];
+      s.chip = false;
+      shooter.x = s.spot.x - 0.02; shooter.z = s.spot.z - 0.13;
+      s.dur = THREE.MathUtils.clamp(0.82 - k * 0.045, 0.48, 0.82) * (dist / 1.3) ** 0.5;
+    }
+    s.to.copy(target(s.zone, s.chip));
     ball.set(s.spot.x, 0, s.spot.z);
-    shooter.x = sx - 0.02; shooter.z = s.spot.z - 0.13; shooter.h = Math.PI / 2; shooter.kick = 0; shooter.gait = 0;
-    // cible : gauche, centre ou droite, basse ou haute ; de plus en plus vite
-    const zone = ['left', 'right', 'center', 'left', 'right', 'right', 'left', 'center'][k];
-    const x = zone === 'center' ? rnd(-0.07, 0.07) : (zone === 'right' ? 1 : -1) * rnd(0.17, 0.32);
-    const y = rnd(0.02, 0.2);
-    s.zone = zone;
-    s.to.set(x, y, MEET);
-    s.dur = THREE.MathUtils.clamp(0.82 - k * 0.045, 0.48, 0.82) * (dist / 1.3) ** 0.5;
+    shooter.h = Math.PI / 2; shooter.kick = 0; shooter.gait = 0; shooter.cheer = 0;
     s.dive = null;
     s.used = false;
     s.out = null;
+    s.kickAt = null;
     s.phase = 'wait';
-    s.wait = rnd(0.5, 1.1);
+    s.wait = pens ? rnd(0.7, 1.2) : rnd(0.5, 1.1);
     s.t = 0;
-    stage.camTo(restCam.pos, tmp.copy(restCam.look).setX(sx * 0.4), 0.5, EYE_FRAME);
+    stage.camTo(restCam.pos, tmp.copy(restCam.look).setX(s.spot.x * 0.4), 0.5, EYE_FRAME);
     hud();
   }
 
   // plongeon : décalage et bascule de la caméra, gants tendus vers le ballon
   function diveTo(zone) {
     if (s.used || s.phase === 'after' || s.phase === 'done' || s.phase === 'intro') return;
-    const sinceContact = s.phase === 'flight' ? s.flight * s.dur : -1;
-    s.dive = { zone, t: 0, r: sinceContact };
+    s.dive = { zone, t: 0, at: s.clock };
     s.used = true; // un seul plongeon par tir
     ctx.sfx('jump');
   }
 
+  // penalty : plonger trop tôt, c'est se trahir ; le tireur change de côté
+  function adapt() {
+    const d = s.dive;
+    if (!pens || !d || s.kickAt === null) return;
+    if (s.kickAt - d.at > EARLY) {
+      const other = d.zone === 'left' ? 'right' : d.zone === 'right' ? 'left' : (Math.random() < 0.5 ? 'left' : 'right');
+      s.zone = other;
+      s.chip = false;
+      s.to.copy(target(other));
+      s.dur = rnd(0.44, 0.5);
+      s.early = true;
+    }
+  }
+
   function resolve() {
     const d = s.dive;
+    const r = d ? d.at - s.kickAt : null; // plongeon par rapport à la frappe (négatif : avant)
     const right = d && d.zone === s.zone;
-    const late = d && d.r > s.dur - REACH[s.zone];
+    const late = d && r > s.dur - REACH[s.zone];
     let pts = 0;
     let text = 'But';
     let tone = 'bad';
-    if (!d && s.zone === 'center') { pts = 60; text = 'Bien placé'; tone = 'good'; } else if (right && d.r < 0) { pts = 50; text = 'Bien deviné'; tone = 'good'; } else if (right && !late) {
-      pts = Math.round(60 + 40 * clamp01(1 - d.r / Math.max(0.05, s.dur - REACH[s.zone])));
+    if (pens) {
+      if (s.early) text = 'Trop tôt : il t’a vu partir';
+      else if (s.zone === 'center' && (!d || d.zone === 'center')) { pts = 100; text = 'Panenka arrêtée'; tone = 'gold'; } else if (s.zone === 'center') text = 'Panenka';
+      else if (right && !late) { pts = r >= -TELL - 0.02 ? 100 : 75; text = pts === 100 ? 'Lu à la perfection' : 'Bien senti'; tone = pts === 100 ? 'gold' : 'good'; } else if (right && late) text = 'Trop tard';
+    } else if (!d && s.zone === 'center') { pts = 60; text = 'Bien placé'; tone = 'good'; } else if (right && r < 0) { pts = 50; text = 'Bien deviné'; tone = 'good'; } else if (right && !late) {
+      pts = Math.round(60 + 40 * clamp01(1 - r / Math.max(0.05, s.dur - REACH[s.zone])));
       text = pts >= 90 ? 'Réflexe parfait' : 'Arrêt';
       tone = pts >= 90 ? 'gold' : 'good';
     } else if (right && late) text = 'Trop tard';
@@ -157,25 +202,38 @@ export function createSaves(stage, ctx) {
     dir(d) { diveTo(d === 'left' ? 'left' : d === 'right' ? 'right' : 'center'); },
     update(dt) {
       s.t += dt;
+      s.clock += dt;
       // tireur : attente, élan, frappe
       if (s.phase === 'wait' && s.t > s.wait) { s.phase = 'runup'; s.t = 0; hud(); }
       if (s.phase === 'runup') {
-        const there = walkTo(shooter, s.spot.x - 0.03, s.spot.z - 0.045, 0.42, dt, Math.atan2(s.to.z - s.spot.z, s.to.x - s.spot.x));
-        if (there || s.t > 0.7) { s.phase = 'kick'; s.t = 0; s.kickT = 0; }
+        if (pens) {
+          // course d'élan vers le ballon ; temps d'arrêt éventuel à mi-course (feinte)
+          const tx = s.spot.x + 0.012, tz = s.spot.z - 0.045;
+          const left = Math.hypot(tx - shooter.x, tz - shooter.z);
+          if (s.run.stutter && !s.run.done && left < 0.13) { s.run.paused += dt; shooter.gait *= 0.8; if (s.run.paused > 0.3) s.run.done = true; } else walkTo(shooter, tx, tz, 0.3, dt, Math.atan2(tz - shooter.z, tx - shooter.x));
+          if (left < 0.01) { s.phase = 'kick'; s.t = 0; s.kickT = 0; s.turn = s.chip ? 0 : (s.to.x < 0 ? 1 : -1); }
+        } else {
+          const there = walkTo(shooter, s.spot.x - 0.03, s.spot.z - 0.045, 0.42, dt, Math.atan2(s.to.z - s.spot.z, s.to.x - s.spot.x));
+          if (there || s.t > 0.7) { s.phase = 'kick'; s.t = 0; s.kickT = 0; }
+        }
       }
       if (s.kickT !== null) {
         s.kickT += dt;
         shooter.kick = clamp01(s.kickT / 0.6);
         shooter.gait *= 1 - Math.min(1, dt * 8);
+        // penalty : l'appui révélateur, le corps s'ouvre vers le côté visé pendant l'armé de la frappe (0,32 s)
+        if (pens && s.turn) shooter.h = Math.PI / 2 + s.turn * 0.5 * clamp01(s.kickT / 0.2);
         if (s.kickT >= 0.6) { shooter.kick = 0; s.kickT = null; }
       }
       if (s.phase === 'kick' && s.t >= 0.33) {
+        s.kickAt = s.clock;
+        adapt();
         s.phase = 'flight';
         s.flight = 0;
         s.from.set(s.spot.x, BALL_R, s.spot.z);
         s.ctrl.copy(s.from).lerp(s.to, 0.5);
-        s.ctrl.y += 0.015 + s.to.y * 0.25;
-        s.ctrl.x += rnd(-0.03, 0.03);
+        s.ctrl.y += s.chip ? 0.2 : 0.015 + s.to.y * 0.25;
+        s.ctrl.x += s.chip ? 0 : rnd(-0.03, 0.03);
         ctx.sfx('kick');
         hud();
       }
@@ -183,7 +241,7 @@ export function createSaves(stage, ctx) {
         s.flight = Math.min(1, s.flight + dt / s.dur);
         bezier(tmp, s.from, s.ctrl, s.to, s.flight);
         ball.set(tmp.x, tmp.y - BALL_R, tmp.z);
-        ball.spin(spin, dt * 30);
+        ball.spin(spin, dt * (s.chip ? 8 : 30));
         if (s.flight >= 1) resolve();
       } else if (s.phase === 'after') {
         const a = s.after;
@@ -192,8 +250,9 @@ export function createSaves(stage, ctx) {
         if (!a.caught) tmp.y = THREE.MathUtils.lerp(a.from.y, a.to.y, k) - 0.05 * k * k;
         if (s.out.save || k < 0.6) ball.set(tmp.x, Math.max(0, tmp.y - BALL_R), tmp.z); else ball.hide();
         if (s.t > 1.05) {
-          if (s.k + 1 < SHOTS) setup(s.k + 1);
-          else { s.phase = 'done'; ctx.end(s.points / SAVES_MAX, { saves: s.saves, shots: SHOTS }); }
+          s.early = false;
+          if (s.k + 1 < M.shots) setup(s.k + 1);
+          else { s.phase = 'done'; ctx.end(s.points / (100 * M.shots), { saves: s.saves, shots: M.shots }); }
         }
       }
       // plongeon (caméra) et gants
@@ -234,3 +293,6 @@ export function createSaves(stage, ctx) {
     },
   };
 }
+
+export const createSaves = (stage, ctx) => createKeeper(stage, ctx, 'reflexes');
+export const createPenalties = (stage, ctx) => createKeeper(stage, ctx, 'penalties');

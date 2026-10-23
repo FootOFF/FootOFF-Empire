@@ -1,34 +1,71 @@
 import * as THREE from 'three';
 import { BALL_R, GOAL, KITS } from './stage';
-import { agent, bezier, clamp01, cones, pingPong, rnd, walkTo } from './kit';
+import { agent, bezier, clamp01, cones, pingPong, rnd } from './kit';
 
-// Précision (technique) : six frappes depuis l'entrée de la surface vers des cibles accrochées dans le but. Deux
-// temps par frappe : une ligne verticale balaie le but (premier appui : la direction), puis une ligne horizontale
-// (second appui : la hauteur). Plus le ballon arrive près du cœur d'une cible allumée, plus la frappe rapporte ;
-// les lignes vont de plus en plus vite.
+// Tirs au but en deux temps : une ligne verticale balaie le but (premier appui : la direction), puis une ligne
+// horizontale (second appui : la hauteur). Plus le ballon arrive près du cœur d'une cible allumée, plus la frappe
+// rapporte ; les lignes vont de plus en plus vite. Caméra derrière le ballon, dans l'axe du but ; le tireur n'apparaît
+// que dans le plan d'ensemble de l'intro (vu de près et de dos, il masquerait le but).
+// - Précision (technique) : six frappes depuis l'entrée de la surface, quatre cibles, cage vide.
+// - Coups francs (technique, niveau 2) : cinq coups francs à 21-25 m, un mur de quatre joueurs qui saute à la frappe
+//   et un gardien ; il faut viser haut pour passer au-dessus du mur, ou le contourner, et loin du gardien.
 
-const TARGETS = [[-0.272, 0.183], [0.272, 0.183], [-0.272, 0.064], [0.272, 0.064]]; // haut gauche, haut droite, bas gauche, bas droite
 const R = 0.046; // rayon d'une cible (46 cm)
-const SHOTS = [
-  { spot: [0, 1.95], on: [1], px: 1.9, py: 1.7 },
-  { spot: [-0.42, 2.0], on: [2], px: 1.75, py: 1.55 },
-  { spot: [0.42, 2.0], on: [0, 3], px: 1.6, py: 1.45 },
-  { spot: [-0.2, 2.25], on: [1], px: 1.45, py: 1.3 },
-  { spot: [0.25, 2.2], on: [2, 0], px: 1.3, py: 1.2 },
-  { spot: [0, 1.85], on: [3], px: 1.15, py: 1.05 },
-];
-export const PRECISION_MAX = 100 * SHOTS.length;
+const CORNERS = [[-0.272, 0.183], [0.272, 0.183], [-0.272, 0.064], [0.272, 0.064]]; // haut gauche, haut droite, bas gauche, bas droite
 const X_RANGE = [-0.43, 0.43];
 const Y_RANGE = [0.008, 0.29];
 const AUTO = 3.4; // secondes : sans appui, la ligne s'arrête d'elle-même
 const FRAME = { v: 21, h: 27 }; // cadrage d'une frappe : le but, en grand (le ballon entre dans le champ quand il part)
 
-export function createPrecision(stage, ctx) {
+const PRECISION = {
+  targets: CORNERS,
+  shots: [
+    { spot: [0, 1.95], on: [1], px: 1.9, py: 1.7 },
+    { spot: [-0.42, 2.0], on: [2], px: 1.75, py: 1.55 },
+    { spot: [0.42, 2.0], on: [0, 3], px: 1.6, py: 1.45 },
+    { spot: [-0.2, 2.25], on: [1], px: 1.45, py: 1.3 },
+    { spot: [0.25, 2.2], on: [2, 0], px: 1.3, py: 1.2 },
+    { spot: [0, 1.85], on: [3], px: 1.15, py: 1.05 },
+  ],
+};
+const FREE_KICKS = {
+  targets: [[-0.27, 0.19], [0.27, 0.19], [-0.27, 0.07], [0.27, 0.07]],
+  wall: true,
+  keeper: true,
+  shots: [
+    { spot: [-0.3, 2.2], on: [1, 0], px: 1.8, py: 1.6 },
+    { spot: [0.36, 2.15], on: [0, 1], px: 1.65, py: 1.5 },
+    { spot: [0.04, 2.4], on: [0, 1], px: 1.5, py: 1.4 },
+    { spot: [-0.48, 2.1], on: [1, 3], px: 1.4, py: 1.3 },
+    { spot: [0.5, 2.25], on: [0, 2], px: 1.3, py: 1.2 },
+  ],
+};
+export const PRECISION_MAX = 100 * PRECISION.shots.length;
+export const FREE_KICKS_MAX = 100 * FREE_KICKS.shots.length;
+
+const WALL = { gap: 0.058, dist: 0.915, top: 0.185, over: 0.15 }; // mur à 9,15 m ; viser au-dessus de 1,5 m le passe
+
+// Mannequin de coup franc : silhouette jaune vif découpée (tête, épaules, corps, jambes serrées), sur un ressort noir.
+function mannequinGeometry() {
+  const m = 0.1; // mètres -> unités
+  const s = new THREE.Shape();
+  const pts = [[-0.15, 0], [-0.16, 0.9], [-0.21, 1.02], [-0.24, 1.42], [-0.18, 1.52], [-0.07, 1.56]];
+  s.moveTo(pts[0][0] * m, pts[0][1] * m);
+  pts.slice(1).forEach(([x, y]) => s.lineTo(x * m, y * m));
+  s.absarc(0, 1.7 * m, 0.11 * m, -2.2, -0.94, true); // tête : du bas gauche au bas droit, par le haut
+  [[0.07, 1.56], [0.18, 1.52], [0.24, 1.42], [0.21, 1.02], [0.16, 0.9], [0.15, 0]].forEach(([x, y]) => s.lineTo(x * m, y * m));
+  s.closePath();
+  return new THREE.ExtrudeGeometry(s, { depth: 0.003, bevelEnabled: true, bevelThickness: 0.0008, bevelSize: 0.0008, bevelSegments: 2, curveSegments: 18 }).translate(0, 0.004, -0.0015);
+}
+
+function createShooting(stage, ctx, cfg) {
   const group = new THREE.Group();
   stage.scene.add(group);
   const keep = stage.keep;
+  const SHOTS = cfg.shots;
+  const MAX = 100 * SHOTS.length;
   const tgtGeo = keep(new THREE.PlaneGeometry(R * 2, R * 2));
-  const targets = TARGETS.map(([x, y]) => {
+  const targets = cfg.targets.map(([x, y]) => {
     const mat = keep(stage.ringMaterial(0xdec17f));
     const mesh = new THREE.Mesh(tgtGeo, mat);
     mesh.position.set(x, y, 0.004);
@@ -42,23 +79,40 @@ export function createPrecision(stage, ctx) {
   reticle.material.uniforms.uFill.value = 0;
   for (const b of [beamV, beamH, reticle]) { b.visible = false; b.renderOrder = 5; group.add(b); }
 
-  // tireur (nos couleurs), ballon, plots et ballons de réserve
+  // joueurs : 0 le tireur (nos couleurs), 1 le gardien ; le mur, ce sont des mannequins de coup franc
+  const P = stage.players;
   const shooter = agent(0, 2.1);
-  stage.players.setKit(0, KITS.ours);
-  const shShadow = stage.addShadow(0.07, 0.5, group);
+  P.setKit(0, KITS.ours);
+  const keeper = cfg.keeper ? agent(0, 0.035, Math.PI / 2) : null;
+  if (keeper) P.setKit(1, KITS.keeper);
+  const dummyGeo = cfg.wall ? keep(mannequinGeometry()) : null;
+  const dummyMat = keep(new THREE.MeshStandardMaterial({ color: 0xf3d21c, roughness: 0.45, metalness: 0 }));
+  const springMat = keep(new THREE.MeshStandardMaterial({ color: 0x17181b, roughness: 0.6, metalness: 0.4 }));
+  const springGeo = keep(new THREE.CylinderGeometry(0.0035, 0.0045, 0.006, 14).translate(0, 0.003, 0));
+  const wall = cfg.wall ? [0, 1, 2, 3].map(() => {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(dummyGeo, dummyMat);
+    g.add(body);
+    g.add(new THREE.Mesh(springGeo, springMat));
+    group.add(g);
+    return { g, x: 0, z: 0, wobble: 0, v: 0 };
+  }) : [];
+  const people = [shooter, ...(keeper ? [keeper] : [])];
+  const shadows = people.map(() => stage.addShadow(0.07, 0.5, group));
+  const wallShadows = wall.map(() => { const sh = stage.addShadow(0.05, 0.35, group); sh.scale.set(0.05, 1, 0.02); return sh; });
   const ball = stage.addBall(group);
   const spare = [stage.addBall(group), stage.addBall(group), stage.addBall(group)];
   spare.forEach((b, i) => b.set(0.62 + i * 0.03, 0, 2.35 + (i % 2) * 0.025));
-  cones(stage, [[-0.55, 1.65], [0.55, 1.65], [-0.55, 2.4], [0.55, 2.4]], undefined, group);
+  cones(stage, [[-0.55, 1.65], [0.55, 1.65], [-0.55, 2.45], [0.55, 2.45]], undefined, group);
 
   const s = {
-    k: -1, phase: 'intro', t: 0, aimX: 0, aimY: 0, points: 0, hits: 0, flight: null, kickT: null,
+    k: -1, phase: 'intro', t: 0, aimX: 0, aimY: 0, points: 0, hits: 0, flight: null, jump: null, dive: null,
     spot: new THREE.Vector3(), from: new THREE.Vector3(), ctrl: new THREE.Vector3(), to: new THREE.Vector3(), out: null,
+    wallAt: new THREE.Vector3(), wallSide: new THREE.Vector3(), keeperX: 0,
   };
   const tmp = new THREE.Vector3();
   const spin = new THREE.Vector3(1, 0, 0);
 
-  // caméra derrière le ballon, dans l'axe du but ; le tireur attend sur la gauche, hors du champ, et y entre pour frapper
   const axes = (shot) => {
     const [sx, sz] = shot.spot;
     const dir = new THREE.Vector3(sx, 0, sz).normalize(); // du but vers le ballon
@@ -70,53 +124,88 @@ export function createPrecision(stage, ctx) {
     const look = new THREE.Vector3(sx * 0.12, 0.112, 0);
     return { pos, look };
   }
-  const waitSpot = (shot) => { const { sx, sz, dir, left } = axes(shot); return [sx + dir.x * 0.06 + left.x * 0.15, sz + dir.z * 0.06 + left.z * 0.15]; };
-  const kickSpot = (shot) => { const { sx, sz, dir, left } = axes(shot); return [sx + dir.x * 0.045 + left.x * 0.03, sz + dir.z * 0.045 + left.z * 0.03]; };
 
   function setup(k) {
     s.k = k;
     const shot = SHOTS[k];
-    const [sx, sz] = shot.spot;
+    const { sx, sz, dir, left } = axes(shot);
     s.spot.set(sx, 0, sz);
     ball.set(sx, 0, sz);
     ball.mesh.rotation.set(rnd(0, 6), rnd(0, 6), 0);
-    const { dir } = axes(shot);
-    [shooter.x, shooter.z] = waitSpot(shot);
+    shooter.x = sx + dir.x * 0.06 + left.x * 0.15; // attend sur la gauche du ballon
+    shooter.z = sz + dir.z * 0.06 + left.z * 0.15;
     shooter.h = Math.atan2(-dir.z, -dir.x);
     shooter.kick = 0; shooter.gait = 0; shooter.cheer = 0;
     targets.forEach((t, i) => { t.on = shot.on.includes(i); });
+    if (cfg.wall) {
+      // le mur couvre le poteau le plus proche du ballon ; le gardien se place de l'autre côté
+      const side = Math.abs(sx) < 0.1 ? (k % 2 ? 1 : -1) : Math.sign(sx);
+      const aim = tmp.set(side * 0.2, 0, 0);
+      const toAim = aim.clone().sub(s.spot).normalize();
+      s.wallAt.copy(s.spot).addScaledVector(toAim, WALL.dist);
+      s.wallSide.set(-toAim.z, 0, toAim.x);
+      wall.forEach((w, i) => {
+        const o = (i - 1.5) * WALL.gap;
+        w.x = s.wallAt.x + s.wallSide.x * o; w.z = s.wallAt.z + s.wallSide.z * o;
+        w.g.position.set(w.x, 0, w.z);
+        w.g.rotation.set(0, Math.atan2(s.spot.x - w.x, s.spot.z - w.z), 0); // face au ballon
+        w.wobble = 0; w.v = 0;
+        wallShadows[i].position.set(w.x + 0.004, 0.0014, w.z + 0.004);
+        wallShadows[i].rotation.y = w.g.rotation.y;
+      });
+      s.keeperX = -side * 0.07;
+    }
+    if (keeper) { keeper.x = s.keeperX; keeper.z = 0.035; keeper.roll = 0; keeper.lift = 0; keeper.cheer = 0; keeper.gait = 0.1; }
+    s.jump = null;
+    s.dive = null;
     const c = camFor(shot);
-    if (k === 0) stage.camTo(c.pos, c.look, 0.9, FRAME); else stage.camTo(c.pos, c.look, 0.75, FRAME);
+    stage.camTo(c.pos, c.look, k === 0 ? 0.9 : 0.75, FRAME);
     s.phase = 'ready';
     s.t = 0;
     hud();
   }
 
   function hud(extra = {}) {
-    const prompt = s.phase === 'aimX' ? 'Direction : arrête la ligne' : s.phase === 'aimY' ? 'Hauteur : arrête la ligne' : '';
-    ctx.hud({ round: Math.max(1, s.k + 1), rounds: SHOTS.length, points: s.points, max: PRECISION_MAX, prompt, action: s.phase === 'aimX' || s.phase === 'aimY', ...extra });
+    const prompt = s.phase === 'aimX' ? 'Direction : arrête la ligne' : s.phase === 'aimY' ? (cfg.wall ? 'Hauteur : au-dessus du mur' : 'Hauteur : arrête la ligne') : '';
+    ctx.hud({ round: Math.max(1, s.k + 1), rounds: SHOTS.length, points: s.points, max: MAX, prompt, action: s.phase === 'aimX' || s.phase === 'aimY', ...extra });
   }
 
-  // où arrive le ballon : cible touchée (points selon la distance au cœur), cadré, poteau ou à côté
+  // où le ballon passe-t-il le mur ? (en plan, ligne droite du ballon au point visé)
+  function wallCheck(x, y) {
+    if (!cfg.wall) return null;
+    const d = Math.hypot(x - s.spot.x, -s.spot.z);
+    const k = WALL.dist / d;
+    const px = s.spot.x + (x - s.spot.x) * k;
+    const pz = s.spot.z + (0 - s.spot.z) * k;
+    const lateral = (px - s.wallAt.x) * s.wallSide.x + (pz - s.wallAt.z) * s.wallSide.z;
+    const covered = Math.abs(lateral) <= 1.5 * WALL.gap + 0.022;
+    return { covered, blocked: covered && y < WALL.over, at: new THREE.Vector3(px, 0.12, pz), k };
+  }
+
+  // où arrive le ballon : mur, gardien, cible touchée (points selon la distance au cœur), cadré, montant ou à côté
   function judge(x, y) {
     const shot = SHOTS[s.k];
+    const w = wallCheck(x, y);
+    if (w?.blocked) return { pts: 0, wall: true, text: 'Dans le mur', tone: 'bad' };
+    const inGoal = Math.abs(x) < GOAL.w / 2 - BALL_R * 0.3 && y < GOAL.h - BALL_R * 0.3;
+    if (keeper && inGoal && Math.abs(x - s.keeperX) <= 0.13 && y <= 0.205) return { pts: 10, saved: true, text: 'Arrêté par le gardien', tone: 'meh' };
     let best = null;
     for (const i of shot.on) {
       const t = targets[i];
       const d = Math.hypot(x - t.x, y - t.y);
       if (d <= R + BALL_R * 0.5 && (!best || d < best.d)) best = { t, d };
     }
-    const inGoal = Math.abs(x) < GOAL.w / 2 - BALL_R * 0.3 && y < GOAL.h - BALL_R * 0.3;
     const onFrame = !inGoal && Math.abs(x) < GOAL.w / 2 + GOAL.post * 2 + BALL_R && y < GOAL.h + GOAL.post * 2 + BALL_R
       && (Math.abs(Math.abs(x) - (GOAL.w / 2 + GOAL.post)) < GOAL.post + BALL_R || Math.abs(y - (GOAL.h + GOAL.post / 2)) < GOAL.post + BALL_R);
     if (best && inGoal) {
       const q = best.d / R;
       const pts = q <= 0.34 ? 100 : q <= 0.67 ? 75 : 50;
-      return { pts, target: best.t, inGoal, text: pts === 100 ? 'En plein cœur' : pts === 75 ? 'Très bien' : 'Cible touchée', tone: pts === 100 ? 'gold' : 'good' };
+      const lucarne = cfg.wall && best.t.y > 0.15;
+      return { pts, target: best.t, inGoal, text: pts === 100 ? (lucarne ? 'Pleine lucarne' : 'En plein cœur') : pts === 75 ? 'Très bien' : 'Cible touchée', tone: pts === 100 ? 'gold' : 'good' };
     }
     if (onFrame) return { pts: 0, frame: true, text: 'Sur le montant', tone: 'bad' };
-    if (inGoal) return { pts: 15, inGoal, text: 'Cadré, hors cible', tone: 'meh' };
-    return { pts: 0, text: 'À côté', tone: 'bad' };
+    if (inGoal) return cfg.keeper ? { pts: 30, inGoal, text: 'But, hors cible', tone: 'good' } : { pts: 15, inGoal, text: 'Cadré, hors cible', tone: 'meh' };
+    return { pts: 0, text: y > GOAL.h ? 'Au-dessus' : 'À côté', tone: 'bad' };
   }
 
   function shoot() { // le ballon part une fraction de seconde après l'appui (le temps de la frappe)
@@ -127,16 +216,25 @@ export function createPrecision(stage, ctx) {
 
   function launch() {
     const x = s.aimX, y = s.aimY;
+    s.out = judge(x, y);
     s.from.set(s.spot.x, BALL_R, s.spot.z);
     s.to.set(x, y + (y < 0.02 ? 0.006 : 0), 0);
     const dist = s.from.distanceTo(s.to);
-    // effet : le ballon s'enroule un peu vers l'intérieur ; légère cloche selon la hauteur visée
     s.ctrl.copy(s.from).lerp(s.to, 0.5);
-    s.ctrl.x += (s.spot.x > 0 ? -1 : 1) * 0.04 * (0.5 + Math.random() * 0.5);
-    s.ctrl.y += 0.02 + y * 0.35;
-    s.flight = { t: 0, dur: 0.38 + dist * 0.06 };
-    s.out = judge(x, y);
+    if (cfg.wall) {
+      // coup franc : effet marqué, et une cloche qui passe le mur (ou s'y écrase)
+      const w = wallCheck(x, y);
+      s.ctrl.x += (s.to.x - s.from.x > 0 ? -1 : 1) * 0.07;
+      s.ctrl.y = s.out.wall ? 0.16 : Math.max(0.3, y + 0.14);
+      if (s.out.wall) { s.to.copy(w.at); s.to.y = 0.13; }
+    } else {
+      // effet : le ballon s'enroule un peu vers l'intérieur ; légère cloche selon la hauteur visée
+      s.ctrl.x += (s.spot.x > 0 ? -1 : 1) * 0.04 * (0.5 + Math.random() * 0.5);
+      s.ctrl.y += 0.02 + y * 0.35;
+    }
+    s.flight = { t: 0, dur: (cfg.wall ? 0.5 : 0.38) + dist * 0.06 * (s.out.wall ? 0.4 : 1) };
     s.phase = 'flight';
+    if (keeper && (s.out.saved || s.out.inGoal || s.out.target)) s.dive = { t: 0, side: Math.sign(x - s.keeperX) || 1, reach: s.out.saved };
     ctx.sfx('kick');
   }
 
@@ -152,13 +250,21 @@ export function createPrecision(stage, ctx) {
     } else if (r.frame) {
       stage.shake(0.5);
       ctx.sfx('post');
-    } else ctx.sfx(r.inGoal ? 'net' : 'miss');
+    } else if (r.wall) {
+      stage.shake(0.3);
+      ctx.sfx('clip');
+      // le mannequin touché vacille sur son ressort, ses voisins un peu
+      wall.forEach((w) => { const d = Math.hypot(w.x - s.to.x, w.z - s.to.z); w.v -= Math.max(0, 1 - d / 0.12) * 5; });
+    } else if (r.saved) ctx.sfx('save');
+    else ctx.sfx(r.inGoal ? 'net' : 'miss');
     if (r.inGoal) { stage.netHit(tmp.set(s.to.x, s.to.y, -GOAL.depth), 1); if (r.target) ctx.sfx('net'); }
-    ctx.pop({ text: r.text, points: r.pts ? `+${r.pts}` : '0', tone: r.tone, at: stage.toScreen(tmp.set(s.to.x, s.to.y + 0.05, 0)) });
-    // suite du ballon : au fond du filet, renvoyé par le montant, ou au loin
+    ctx.pop({ text: r.text, points: r.pts ? `+${r.pts}` : '0', tone: r.tone, at: stage.toScreen(tmp.set(s.to.x, s.to.y + 0.05, s.to.z)) });
+    // suite du ballon : au fond du filet, capté, renvoyé par le mur ou le montant, ou au loin
     const after = r.inGoal ? new THREE.Vector3(s.to.x * 1.04, Math.max(0.02, s.to.y * 0.8), -GOAL.depth * 0.9)
-      : r.frame ? new THREE.Vector3(s.to.x * 0.7, s.to.y * 0.6, 0.45) : new THREE.Vector3(s.to.x * 1.3, s.to.y + 0.06, -0.5);
-    s.flight = { t: 0, dur: r.inGoal ? 0.22 : 0.5, from: s.to.clone(), to: after, settle: r.inGoal };
+      : r.saved ? new THREE.Vector3(s.keeperX + Math.sign(s.to.x - s.keeperX) * 0.05, 0.12, 0.05)
+        : r.wall ? new THREE.Vector3(s.to.x + rnd(-0.15, 0.15), 0.02, s.to.z + 0.35)
+          : r.frame ? new THREE.Vector3(s.to.x * 0.7, s.to.y * 0.6, 0.45) : new THREE.Vector3(s.to.x * 1.3, s.to.y + 0.06, -0.5);
+    s.flight = { t: 0, dur: r.inGoal ? 0.22 : r.saved ? 0.18 : 0.5, from: s.to.clone(), to: after, settle: r.inGoal || r.wall, hold: r.saved };
     s.phase = 'after';
     s.t = 0;
     hud();
@@ -168,7 +274,7 @@ export function createPrecision(stage, ctx) {
     intro() {
       setup(0);
       // plan d'ensemble : le tireur à côté du ballon, le but au loin ; puis la caméra se place derrière le ballon
-      stage.camSet(new THREE.Vector3(-0.62, 0.2, 2.42), new THREE.Vector3(-0.05, 0.08, 1.2), { v: 34, h: 44 });
+      stage.camSet(new THREE.Vector3(-0.62, 0.2, 2.5), new THREE.Vector3(-0.05, 0.08, 1.2), { v: 34, h: 44 });
       const c = camFor(SHOTS[0]);
       stage.camTo(c.pos, c.look, 3.4, FRAME);
       s.phase = 'intro';
@@ -204,19 +310,6 @@ export function createPrecision(stage, ctx) {
         reticle.position.set(s.aimX, s.aimY, 0.014);
         if (s.t > AUTO) shoot();
       }
-      // élan (quelques foulées), frappe (le pied touche le ballon à 55 % du geste), vol du ballon, suite
-      if (s.phase === 'runup') {
-        const { dir } = axes(shot);
-        const [tx, tz] = kickSpot(shot);
-        const there = walkTo(shooter, tx, tz, 0.5, dt, Math.atan2(-dir.z, -dir.x));
-        if (there || s.t > 0.45) { s.phase = 'kick'; s.t = 0; s.kickT = 0; }
-      }
-      if (s.kickT !== null) {
-        s.kickT += dt;
-        shooter.kick = clamp01(s.kickT / 0.6);
-        shooter.gait *= 1 - Math.min(1, dt * 8);
-        if (s.kickT >= 0.6) { shooter.kick = 0; s.kickT = null; }
-      }
       if (s.phase === 'kick' && s.t >= 0.33) launch();
       if (s.phase === 'flight') {
         const f = s.flight;
@@ -229,25 +322,46 @@ export function createPrecision(stage, ctx) {
         const f = s.flight;
         f.t = Math.min(1, f.t + dt / f.dur);
         tmp.copy(f.from).lerp(f.to, f.t);
-        tmp.y = f.settle ? THREE.MathUtils.lerp(f.from.y, 0, f.t * f.t) : tmp.y - 0.15 * f.t * f.t;
+        if (f.settle) tmp.y = THREE.MathUtils.lerp(f.from.y, 0, f.t * f.t);
+        else if (!f.hold) tmp.y -= 0.15 * f.t * f.t;
         ball.set(tmp.x, Math.max(0, tmp.y - BALL_R), tmp.z);
-        if (s.out?.pts >= 75 && s.t < 0.9) shooter.cheer = Math.min(1, s.t * 3);
         if (s.t > 1.15) {
-          shooter.cheer = 0;
           if (s.k + 1 < SHOTS.length) setup(s.k + 1);
-          else { s.phase = 'done'; ball.hide(); ctx.end(s.points / PRECISION_MAX, { hits: s.hits, shots: SHOTS.length, points: s.points }); }
+          else { s.phase = 'done'; ball.hide(); ctx.end(s.points / MAX, { hits: s.hits, shots: SHOTS.length, points: s.points }); }
         }
       }
-      // le tireur n'apparaît que dans le plan d'ensemble de l'intro (vu de près, de dos, il masquerait le but)
+      // mannequins sur ressort (oscillation amortie) ; le gardien plonge vers le ballon (et le capte s'il est à sa portée)
+      wall.forEach((w) => {
+        w.v += (-w.wobble * 90 - w.v * 6) * dt;
+        w.wobble += w.v * dt;
+        w.g.children[0].rotation.x = w.wobble;
+      });
+      if (keeper && s.dive) {
+        s.dive.t += dt;
+        const k = clamp01(s.dive.t / 0.32) * (1 - clamp01((s.dive.t - 1.0) / 0.4));
+        const amp = s.dive.reach ? 0.6 : 1.15;
+        keeper.roll = s.dive.side * amp * k;
+        keeper.x = s.keeperX + s.dive.side * (s.dive.reach ? 0.05 : 0.12) * k;
+        keeper.lift = 0.02 * Math.sin(Math.PI * clamp01(s.dive.t / 0.5));
+        keeper.cheer = k;
+      }
+      // le tireur n'apparaît que dans le plan d'ensemble de l'intro ; caché pendant les frappes, il est posé sous le
+      // terrain (le gardien garde son numéro)
       const seen = s.phase === 'intro';
-      stage.players.setAgent(0, shooter, 0);
-      stage.players.commit(seen ? 1 : 0);
-      shShadow.visible = seen;
-      shShadow.position.set(shooter.x + 0.006, 0.0015, shooter.z + 0.006);
+      P.setAgent(0, seen ? shooter : { ...shooter, lift: -1 }, 0);
+      if (keeper) P.setAgent(1, keeper, 0);
+      P.commit(keeper ? 2 : 1);
+      shadows.forEach((sh, i) => {
+        const a = people[i];
+        sh.visible = i > 0 || seen;
+        sh.position.set(a.x + 0.006, 0.0015, a.z + 0.006);
+        sh.material.opacity = 0.5 * (1 - Math.min(0.6, (a.lift || 0) * 12));
+      });
     },
     get debug() { return s; },
-    dispose() {
-      stage.scene.remove(group);
-    },
+    dispose() { stage.scene.remove(group); },
   };
 }
+
+export const createPrecision = (stage, ctx) => createShooting(stage, ctx, PRECISION);
+export const createFreeKicks = (stage, ctx) => createShooting(stage, ctx, FREE_KICKS);

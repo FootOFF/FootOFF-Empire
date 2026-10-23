@@ -26,6 +26,8 @@ import { heat } from './mercato';
 
 const gainTxt = (g) => `+${(Math.max(0, Math.round(g * 100)) / 100).toFixed(2).replace('.', ',')}`;
 const dec = (v) => (Math.round(v * 100) / 100).toLocaleString('fr-FR');
+const dec2 = (v) => v.toFixed(2).replace('.', ','); // qualités : toujours deux décimales (8,00 et non 8)
+const newDrill = (l) => Object.values(DRILLS).find((d) => d.level === l && l > 1)?.label || null;
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 const attrInfo = (p, key) => (p.pos === 'G' ? GK_ATTRS : ATTRS).find((a) => a.key === key);
 const poolOf = (p) => (p.pos === 'G' ? p.g : p.a);
@@ -49,6 +51,10 @@ export const DRILL_TEXT = {
   sprint: 'Course de haies chronométrée : saute au bon moment pour garder ta vitesse.',
   lecture: 'Sur la tablette de l’analyste, l’action se fige : trouve vite la bonne passe.',
   arrets: 'Les tirs s’enchaînent : plonge du bon côté, le plus vite possible.',
+  coupsFrancs: 'Un mur et un gardien : vise haut pour passer le mur, loin du gardien, dans la lucarne.',
+  penalties: 'Juste avant de frapper, le tireur se tourne vers son côté : plonge à cet instant. Trop tôt, il te voit partir.',
+  centres: 'L’ailier déborde et centre : lance ta course vers le point de chute, puis saute pour reprendre de la tête.',
+  contre: 'Trois contre deux à pleine vitesse : au ralenti, choisis la passe ou le tir. Le défenseur qui sort libère quelqu’un.',
 };
 
 export function TrainingView({ state, run, ask, notify = () => {}, onClose, onBuilding, onPlay, initialTab = 'session', preview = null }) {
@@ -304,7 +310,7 @@ function LineCard({ state, pos, pick, done, onPick, onChoose, onPlay, onSimulate
           return (
             <span key={k} className="tr-attr" title={a.name}>
               <span>{a.name}</span>
-              <b>{dec(was)}<IconArrowUp />{dec(after[k])}</b>
+              <b>{dec2(was)}<IconArrowUp />{dec2(after[k])}</b>
             </span>
           );
         })}
@@ -553,12 +559,13 @@ function LevelCard({ state, onBuilding }) {
         </div>
       </div>
       <table className="tr-level-table">
-        <thead><tr><th>Niveau</th><th>Progrès par séance</th><th>Séance collective</th><th>Programmes</th></tr></thead>
+        <thead><tr><th>Niveau</th><th>Progrès par séance</th><th>Nouvelle épreuve</th><th>Séance collective</th><th>Programmes</th></tr></thead>
         <tbody>
           {rows.map((l) => (
             <tr key={l} className={l === lvl ? 'on' : l < lvl ? 'past' : ''}>
               <td>{l}</td>
               <td>×{dec(TRAINING_MULT[l])}</td>
+              <td>{newDrill(l) || '4 de base'}</td>
               <td>{dec(TRAINING_COLLECTIVE[l] * 100)} % de la marge</td>
               <td>{PROGRAM_STEPS[l] ? `${PROGRAM_STEPS[l]} séances` : '–'}</td>
             </tr>
@@ -567,7 +574,7 @@ function LevelCard({ state, onBuilding }) {
       </table>
       {lvl < max ? (
         <div className="ac-level-next">
-          <span><b>Niveau {lvl + 1}</b> : progrès ×{dec(TRAINING_MULT[lvl + 1])} par séance{PROGRAM_STEPS[lvl + 1] && !PROGRAM_STEPS[lvl] ? ', programmes de signes distinctifs' : ''}.</span>
+          <span><b>Niveau {lvl + 1}</b> : progrès ×{dec(TRAINING_MULT[lvl + 1])} par séance{newDrill(lvl + 1) ? `, nouvelle épreuve : ${newDrill(lvl + 1).toLowerCase()}` : ''}{PROGRAM_STEPS[lvl + 1] && !PROGRAM_STEPS[lvl] ? ', programmes de signes distinctifs' : ''}.</span>
           <button type="button" className="btn ghost btn-sm" onClick={onBuilding}><IconArrowUp /> Améliorer · {fmtMoney(upgradeCost('training', lvl + 1))}</button>
         </div>
       ) : <span className="ac-level-max">Niveau maximum atteint</span>}

@@ -1,15 +1,17 @@
 import { createStage } from './stage';
-import { createPrecision } from './precision';
-import { createSaves } from './arrets';
+import { createFreeKicks, createPrecision } from './precision';
+import { createPenalties, createSaves } from './arrets';
 import { createSprint } from './sprint';
 import { createReading } from './lecture';
+import { createCrosses } from './centres';
+import { createCounter } from './contre';
 
 // Moteur des épreuves du centre d'entraînement (chargé à part, à la première épreuve) : la scène du terrain
 // d'entraînement et l'épreuve en cours. L'interface (src/ui/drill.jsx) affiche l'intro, le compte à rebours, le
 // tableau de bord et les résultats ; le moteur lui envoie le tableau de bord (hud), les gains de points à l'écran
 // (pop), les sons (sfx) et le score final (end, de 0 à 1).
 
-const DRILLS = { precision: createPrecision, arrets: createSaves, sprint: createSprint, lecture: createReading };
+const DRILLS = { precision: createPrecision, arrets: createSaves, sprint: createSprint, lecture: createReading, coupsFrancs: createFreeKicks, penalties: createPenalties, centres: createCrosses, contre: createCounter };
 export const drillReady = (id) => !!DRILLS[id];
 
 export function createDrillEngine(canvas, { onHud, onPop, onEnd, sfx }) {

@@ -24,13 +24,17 @@ export const SCOUTED = [0, 2, 3, 4, 5, 6];
 export const TRAINING_MULT = [0, 1, 1.25, 1.5, 1.75, 2];
 export const TRAINING_COLLECTIVE = [0, 0.01, 0.0125, 0.015, 0.0175, 0.02];
 export const PROGRAM_STEPS = [0, 0, 0, 6, 5, 4];
-// Épreuves : quatre de base, une par famille (gk : gardiens) ; les épreuves débloquées aux niveaux 2 à 5 (plus
-// exigeantes, bonus sur le gain) s'ajouteront ici.
+// Épreuves : quatre de base, une par famille (gk : gardiens), puis une nouvelle à chaque niveau du centre (2 à 5),
+// plus exigeante et plus payante (bonus sur le gain).
 export const DRILLS = {
   precision: { family: 'tech', level: 1, bonus: 1, label: 'Précision' },
   sprint: { family: 'phys', level: 1, bonus: 1, label: 'Sprint et haies' },
   lecture: { family: 'tac', level: 1, bonus: 1, label: 'Lecture du jeu' },
   arrets: { family: 'gk', level: 1, bonus: 1, label: 'Arrêts réflexes' },
+  coupsFrancs: { family: 'tech', level: 2, bonus: 1.2, label: 'Coups francs' },
+  penalties: { family: 'gk', level: 3, bonus: 1.2, label: 'Penalties' },
+  centres: { family: 'phys', level: 4, bonus: 1.2, label: 'Centres' },
+  contre: { family: 'tac', level: 5, bonus: 1.2, label: 'Contre-attaque' },
 };
 
 // Coût du niveau N = baseCost × mult^(N − first) ; le stade est livré au niveau 1. `costs` fixe le prix de
