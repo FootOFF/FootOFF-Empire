@@ -13,6 +13,12 @@ export const POS_LABELS = { G: 'Gardien', D: 'Défenseur', M: 'Milieu', A: 'Atta
 export const SQUAD_MAX = 25; // effectif professionnel : de quoi tourner sur le championnat et les coupes
 export const SQUAD_MIN = 11;
 
+// Académie (academy.js) : six places dans l'équipe de jeunes, départ à 19 ans sans montée en équipe première,
+// jeunes repérés après chaque journée de championnat selon le niveau de l'académie (0 à 5).
+export const YOUTH_PLACES = 6;
+export const YOUTH_LEAVE_AGE = 19;
+export const SCOUTED = [0, 2, 3, 4, 5, 6];
+
 // Coût du niveau N = baseCost × mult^(N − first) ; le stade est livré au niveau 1. `costs` fixe le prix de
 // certains niveaux à la main (l'arène fermée des niveaux 5 et 6, au-delà de l'arène moderne).
 export const BUILDINGS = {

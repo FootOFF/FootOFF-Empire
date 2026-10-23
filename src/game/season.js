@@ -1,5 +1,6 @@
-import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from './constants';
+import { DIVISIONS, SQUAD_MIN } from './constants';
 import { refreshTransfers } from './transfers';
+import { refreshScouting, trainYouth, youthSeasonEnd } from './academy';
 import { logMove } from './mercato';
 import { expectedGate, matchGate, prizeFor, sponsorIncome, ticketPrice, upkeepOf } from './economy';
 import { clamp, ordinal, pick, rnd } from './utils';
@@ -47,6 +48,7 @@ export function startSeason(s) {
   s.round = 0;
   s.table = Array.from({ length: 8 }, () => ({ pts: 0, gd: 0, played: 0 }));
   refreshTransfers(s, 'full'); // mercato neuf : joueurs libres et joueurs sous contrat (transfers.js)
+  refreshScouting(s); // académie : premiers jeunes repérés de la saison
   resetSeasonStats(s);
   // Coupe d'Europe : qualifié par le classement de l'Elite la saison passée ; la participation est payée d'avance
   s.c1 = !!s.c1Next;
@@ -290,6 +292,8 @@ export function applyMatchResult(s, live) {
   s.lastMatch = { ...res, round: s.round, comp: ctx.comp, stage: ctx.stage, label: league ? fixtureLabel(null, s.round) : ctx.label, cup: cupNote, status: status?.name || null, before };
   recordMatch(s, s.lastMatch);
   refreshTransfers(s); // le marché des transferts bouge à chaque journée
+  if (league) trainYouth(s); // académie : les jeunes progressent à chaque journée de championnat
+  refreshScouting(s); // et de nouveaux jeunes sont repérés
   const score = `${res.gf}–${res.ga}${res.pens ? ` (t.a.b. ${res.pens[0]}–${res.pens[1]})` : ''}`;
   if (!league) {
     pushJournal(s, {
@@ -392,15 +396,8 @@ export function endSeason(s) {
   }
   s.players = staying;
 
-  if (s.buildings.academy > 0 && s.players.length < SQUAD_MAX) {
-    const y = makePlayer({ youth: true, academy: s.buildings.academy });
-    y.id = s.nextId++;
-    y.academy = true; // formé au club (succès « Fait maison »)
-    y.joined = s.seasonNumber + 1;
-    assignNumber(s.players, y);
-    s.players.push(y);
-    events.push(`L’académie révèle ${y.name} (${y.age} ans, ${POS_LABELS[y.pos]}).`);
-  }
+  // académie : le bond de l'été, puis les jeunes de 19 ans qui ne sont pas montés quittent le club
+  for (const y of youthSeasonEnd(s)) events.push(`${y.name} (19 ans) quitte l’académie : il n’est pas monté en équipe première.`);
   while (s.players.length < SQUAD_MIN) {
     const p = makePlayer({ level: Math.max(0, s.divisionIndex - 0.5) });
     p.id = s.nextId++;
@@ -437,7 +434,7 @@ export function endSeason(s) {
   if (relegated) s.divisionIndex -= 1;
   s.seasonNumber += 1;
   s.lastMatch = null;
-  ensureLineup(s); // retraites, révélations de l'académie : l'onze est complété
+  ensureLineup(s); // retraites, amateurs de secours : l'onze est complété
   startSeason(s);
   return s;
 }

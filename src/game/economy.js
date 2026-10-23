@@ -1,4 +1,4 @@
-import { BUILDINGS, DIVISIONS, upgradeCost } from './constants';
+import { BUILDINGS, DIVISIONS, SCOUTED, YOUTH_PLACES, upgradeCost } from './constants';
 import { clamp, rnd } from './utils';
 import { REP_START, mercatoRep, sponsorRep } from './reputation';
 
@@ -169,11 +169,17 @@ export function investmentPreview(s, key, target = (s.buildings[key] || 0) + 1) 
 // de recruteurs du Bureau des transferts.
 export const officeSize = (lvl) => (lvl > 0 ? 8 + lvl * 4 : 4);
 
-// Jeune révélé par l'académie de niveau a (makePlayer, players.js) : niveau 3 + a + [0 ; 2] (+ 0,8 une fois ses
-// qualités réparties), potentiel = départ + [5 ; 9] + a, plafonné à 20. Fourchettes arrondies, pour l'affichage.
+// Jeune repéré par l'académie de niveau a (refreshScouting, academy.js ; makePlayer, players.js) : niveau 3 + a +
+// [0 ; 2] (+ 0,8 une fois ses qualités réparties), potentiel = départ + [5 ; 9] + a, plafonné à 20. Fourchettes
+// arrondies, pour l'affichage.
 export function academyTalent(a) {
   return { level: [Math.round(3.8 + a), Math.round(5.8 + a)], pot: [Math.min(20, 8 + 2 * a), Math.min(20, 14 + 2 * a)] };
 }
+
+// Incertitude sur le potentiel d'un joueur qu'on découvre (demi-largeur de la fourchette affichée, en points de
+// note ; potentialRange, players.js) : les éducateurs d'une académie développée savent mieux juger.
+export const scoutingError = (academyLvl = 0) => clamp(2.5 - 0.35 * academyLvl, 0.75, 3);
+const dec = (v) => (Math.round(v * 10) / 10).toLocaleString('fr-FR');
 
 // Famille d'un bâtiment (vitrine de construction) : ce qu'il apporte d'abord.
 export const BUILDING_KIND = { terrain: 'Revenus', training: 'Sport', academy: 'Sport', fans: 'Revenus', sponsor: 'Revenus', transfers: 'Mercato' };
@@ -195,9 +201,11 @@ export function buildingStats(key, lvl, s) {
     case 'academy': {
       const t = academyTalent(lvl);
       return [
-        { label: 'Potentiel du talent', value: `${t.pot[0]} à ${t.pot[1]}`, short: `Potentiel ${t.pot[0]} à ${t.pot[1]}` },
-        { label: 'Niveau à son arrivée', value: `${t.level[0]} à ${t.level[1]}` },
-        { label: 'Talent révélé', value: '1 par saison' },
+        { label: 'Potentiel des jeunes', value: `${t.pot[0]} à ${t.pot[1]}`, short: `Potentiel ${t.pot[0]} à ${t.pot[1]}` },
+        { label: 'Jeunes repérés', value: fmt(SCOUTED[lvl]), sub: 'après chaque journée' },
+        { label: 'Niveau à leur arrivée', value: `${t.level[0]} à ${t.level[1]}` },
+        { label: 'Fourchette du potentiel', value: `${dec(2 * scoutingError(lvl))} points`, sub: 'plus étroite, mieux cernée' },
+        { label: 'Équipe de jeunes', value: `${YOUTH_PLACES} places`, sub: 'recrutement gratuit, sans salaire' },
       ];
     }
     case 'fans':
@@ -234,9 +242,9 @@ export function buildingEffect(key, lvl, divIndex, rep = REP_START) {
     case 'training':
       return `Progression estivale des joueurs : +${lvl * 25} %.`;
     case 'academy': {
-      if (lvl <= 0) return 'Aucune révélation de talent tant que l’académie n’est pas construite.';
+      if (lvl <= 0) return 'Pas d’équipe de jeunes tant que l’académie n’est pas construite.';
       const t = academyTalent(lvl);
-      return `Révèle un jeune talent à chaque fin de saison : niveau ${t.level[0]} à ${t.level[1]}, potentiel ${t.pot[0]} à ${t.pot[1]}.`;
+      return `Équipe de jeunes de ${YOUTH_PLACES} places · ${SCOUTED[lvl]} jeunes repérés après chaque journée : niveau ${t.level[0]} à ${t.level[1]}, potentiel ${t.pot[0]} à ${t.pot[1]}, cerné à ${dec(2 * scoutingError(lvl))} points près.`;
     }
     case 'fans':
       return `Public attiré : +${lvl * 7} % · Buvette +${lvl * 10} %, boutique +${lvl * 12} % · Réputation par match : +${lvl * 10} %.`;

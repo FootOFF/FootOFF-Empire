@@ -1,6 +1,6 @@
 import { clamp, pick, ri, rnd } from './utils';
 import { playerName } from './names';
-import { saleFor, signingFor, wageFor } from './economy';
+import { saleFor, scoutingError, signingFor, wageFor } from './economy';
 
 // Joueurs : 9 caractéristiques (1 à 20) pour tous, 6 de plus pour les gardiens, un profil (pied fort,
 // poste de dépannage, signes distinctifs, numéro) et une vie (forme, statistiques de saison, historique).
@@ -176,14 +176,15 @@ export const costOf = (p, s) => {
 };
 
 // Potentiel estimé : une fourchette, d'autant plus précise que l'académie est développée et que le joueur
-// est au club depuis longtemps. Null quand le joueur a atteint son plafond.
+// est suivi au club depuis longtemps (équipe de jeunes comprise). Null quand le joueur a atteint son plafond.
 export function potentialRange(p, s) {
   const now = playerRating(p);
   if (p.pot <= now + 0.3) return null;
-  const seasons = p.joined ? Math.max(0, s.seasonNumber - p.joined) : 0;
-  const known = s.players.includes(p);
+  const since = p.youthSince ?? p.joined;
+  const seasons = since ? Math.max(0, s.seasonNumber - since) : 0;
+  const known = s.players.includes(p) || (s.youth || []).includes(p);
   const scouts = p.club ? 0.25 * (s.buildings.transfers || 0) : 0; // rapports des recruteurs sur les joueurs sous contrat
-  const u = clamp(2.5 - 0.35 * (s.buildings.academy || 0) - scouts - (known ? 0.5 * seasons : 0), known ? 0.5 : 0.75, 3);
+  const u = clamp(scoutingError(s.buildings.academy || 0) - scouts - (known ? 0.5 * seasons : 0), known ? 0.5 : 0.75, 3);
   const shift = ((((p.id || 1) * 7919) % 100) / 100 - 0.5) * u; // la fourchette n'est pas centrée sur la vérité
   const half = (v) => Math.round(v * 2) / 2;
   const lo = half(clamp(p.pot + shift - u, now, 20));
@@ -195,9 +196,9 @@ export function potentialRange(p, s) {
 // gardent leurs décimales, chaque gain compte, d'où un facteur plus bas que l'ancien modèle arrondi.
 const PROGRESSION = 0.5;
 
-// Intersaison : progression vers le potentiel (meilleure avec le centre d'entraînement), puis déclin
-// physique après 32 ans. Les qualités clés du poste progressent le plus.
-export function progressPlayer(p, trainingLvl) {
+// Bond de l'intersaison vers le potentiel, en points de note : d'autant plus grand que le joueur est jeune et que le
+// centre d'entraînement est développé ; au sommet, chaque progrès coûte plus cher. Partagé avec l'académie.
+export function seasonGain(p, trainingLvl) {
   const before = playerRating(p);
   const room = Math.max(0, p.pot - before);
   const t = (1 + trainingLvl * 0.25) * PROGRESSION;
@@ -205,7 +206,14 @@ export function progressPlayer(p, trainingLvl) {
   if (p.age <= 19) gain = room * rnd(0.3, 0.55) * t;
   else if (p.age <= 23) gain = room * rnd(0.15, 0.35) * t;
   else if (p.age <= 28) gain = room * rnd(0.04, 0.15) * t;
-  gain *= clamp(1.4 - before / 20, 0.45, 1); // au sommet, chaque progrès coûte plus cher
+  return gain * clamp(1.4 - before / 20, 0.45, 1);
+}
+
+// Intersaison : progression vers le potentiel (meilleure avec le centre d'entraînement), puis déclin
+// physique après 32 ans. Les qualités clés du poste progressent le plus.
+export function progressPlayer(p, trainingLvl) {
+  const before = playerRating(p);
+  const gain = seasonGain(p, trainingLvl);
   if (gain > 0) {
     const w = WEIGHTS[p.pos];
     const pool = p.pos === 'G' ? p.g : p.a;

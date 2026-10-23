@@ -3230,3 +3230,88 @@ html, body { overscroll-behavior: none; }
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
   mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
 }
+
+/* =========================================================== académie (src/ui/academy.jsx)
+   Même famille que l'Effectif : tableau détaillé sur PC, liste compacte sur téléphone, fiche à droite (plein écran
+   au téléphone). Six cases de places dans la barre d'outils ; orange : un jeune dans sa dernière saison. */
+.ac-slots { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; height: 6px; }
+.ac-slots i { border-radius: 3px; background: rgba(255, 255, 255, .08); transition: background .4s var(--ease); }
+.ac-slots i.on { background: var(--gold-grad); }
+.ac-slots i.warn { background: rgba(224, 122, 111, .8); }
+.ac-up { font-style: normal; color: var(--gold-light); }
+.ac-tab-n { display: inline-block; margin-left: 6px; vertical-align: 1px; }
+
+/* bandeaux : jeune dans sa dernière saison, équipe complète */
+.ac-alert { display: flex; align-items: flex-start; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: var(--r-md); border: 1px solid rgba(224, 122, 111, .35); background: rgba(224, 122, 111, .07); }
+.ac-alert svg { flex-shrink: 0; width: 18px; height: 18px; margin-top: 1px; color: #f0b3ab; }
+.ac-alert p { font-size: var(--t-sm); color: var(--text-2); line-height: 1.5; }
+.ac-alert b { color: var(--text); font-weight: 600; }
+
+/* équipe vide, détection épuisée */
+.ac-empty { display: flex; flex-direction: column; align-items: center; gap: var(--s-3); padding: var(--s-6) var(--s-5); border-radius: var(--r-md); border: 1px dashed var(--line-strong); text-align: center; }
+.ac-empty-ico { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--gold-soft); border: 1px solid var(--gold-line); color: var(--gold-light); }
+.ac-empty-ico svg { width: 24px; height: 24px; }
+.ac-empty h3 { font-family: var(--font-title); font-weight: 500; font-size: var(--t-lg); }
+.ac-empty p { max-width: 460px; font-size: var(--t-sm); color: var(--muted); line-height: 1.5; }
+.ac-none { padding: var(--s-5); border-radius: var(--r-md); border: 1px dashed var(--line-strong); text-align: center; font-size: var(--t-sm); color: var(--muted); line-height: 1.5; }
+.ac-rules { margin: var(--s-2) 0 0; max-width: 780px; line-height: 1.5; }
+.ac-intro { margin: 0; }
+
+/* tableaux */
+.sq-table.ac-table { min-width: 820px; }
+.ac-table .c-pot { width: 104px; }
+.ac-table .c-prog { width: 84px; }
+.ac-table .c-best { width: 168px; }
+.ac-table .c-plan { width: 116px; }
+.ac-table .c-act { width: 104px; }
+.ac-table th.c-best, .ac-table th.c-plan, .ac-table th.c-act { cursor: default; }
+.ac-table td.c-pot { font-family: var(--font-mono); font-size: var(--t-xs); white-space: nowrap; }
+.sq-table.ac-table td.c-pot.hi, .sq-table.ac-table td.c-pot.good { background: rgba(255, 255, 255, .025); color: var(--gold-light); font-weight: 600; } /* potentiel : texte doré, sans aplat */
+@media (hover: hover) { .sq-table.ac-table tbody tr:hover td.c-pot { background: rgba(255, 255, 255, .055); } }
+.sq-table.ac-table tbody tr:focus-visible td.c-pot { background: var(--gold-soft); }
+.ac-table td.c-prog { font-family: var(--font-mono); color: var(--muted); }
+.ac-table td.c-prog.up { color: var(--green); }
+.ac-table td.c-age.warn { color: #f0b3ab; font-weight: 600; }
+.ac-table td.c-act { padding-top: 4px; padding-bottom: 4px; }
+.ac-table td.c-act .btn { width: 100%; padding: 8px 12px; }
+.ac-best { display: inline-flex; gap: 8px; font-family: var(--font-mono); font-size: var(--t-xs); color: var(--text-2); white-space: nowrap; }
+.ac-plan { display: inline-block; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line-strong); font-size: var(--t-xs); color: var(--text-2); white-space: nowrap; }
+.ac-flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px; }
+.ac-tag { font-style: normal; font-size: var(--t-xs); font-weight: 500; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line-strong); white-space: nowrap; }
+.ac-tag.good { border-color: var(--gold-line); background: var(--gold-soft); color: var(--gold-light); }
+.ac-tag.warn { border-color: rgba(224, 122, 111, .45); color: #f0b3ab; }
+
+/* liste (téléphone) : les noms passent à la ligne plutôt que d'être coupés */
+.ac-list .sq-row-name { white-space: normal; overflow: visible; }
+.sq-row-side .ac-warn { color: #f0b3ab; }
+.sq-row-side .ac-gain { color: var(--green); }
+
+/* jeune annoncé par une notification : sa ligne s'éclaire deux fois */
+@keyframes ac-flash { 0%, 100% { background: rgba(255, 255, 255, .025); } 35% { background: rgba(199, 161, 90, .24); } }
+.sq-table tr.ac-focus td, .sq-row.ac-focus { animation: ac-flash 1.4s var(--ease) 2; }
+
+/* niveau de l'académie : ce qu'il apporte, et le niveau suivant */
+.ac-level { display: flex; flex-direction: column; gap: var(--s-3); margin-top: var(--s-2); padding: var(--s-4); border-radius: var(--r-md); border: 1px solid var(--line); background: rgba(255, 255, 255, .025); }
+.ac-level-head { display: flex; align-items: center; gap: var(--s-3); }
+.ac-level-ico { flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--gold-soft); border: 1px solid var(--gold-line); color: var(--gold-light); }
+.ac-level-ico svg { width: 20px; height: 20px; }
+.ac-level-head strong { font-weight: 500; font-size: var(--t-sm); color: var(--text); line-height: 1.45; }
+.ac-level-next { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--line); font-size: var(--t-sm); color: var(--muted); line-height: 1.45; }
+.ac-level-next > span { flex: 1; min-width: 240px; }
+.ac-level-next b { font-weight: 500; color: var(--gold-light); }
+.ac-level-max { font-size: var(--t-sm); color: var(--gold-light); }
+
+/* fiche : progrès sur trois colonnes, plan d'entraînement */
+.sh-stats.ac-prog { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ac-plans button { display: inline-flex; align-items: center; justify-content: center; }
+.ac-advised { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-left: 6px; background: var(--gold); box-shadow: 0 0 6px rgba(199, 161, 90, .6); }
+.ac-plan-text { font-size: var(--t-sm); color: var(--text-2); line-height: 1.55; }
+.ac-plan-text b { font-weight: 600; color: var(--text); }
+.ac-plan-text b.ac-slow { color: #f0b3ab; }
+.nt-academy .nt-icon { color: var(--gold-light); border-color: var(--gold-line); }
+
+@media (max-width: 760px) {
+  .ac-empty { padding: var(--s-5) var(--s-4); }
+  .ac-level-next > span { min-width: 0; flex-basis: 100%; }
+  .ac-level-next .btn { width: 100%; padding: 12px 16px; }
+}

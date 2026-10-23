@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { BUILDINGS, upgradeCost } from '../game/constants';
+import { BUILDINGS, YOUTH_PLACES, upgradeCost } from '../game/constants';
 import { PLOTS, PLOT_LABELS, SECTORS, allowedBuildingsFor, plotBuilding } from '../game/map';
 import { fmtMoney, fmtNum } from './format';
 import { BUILDING_KIND, TICKET_ORDER, TICKET_POLICIES, buildingStats, expectedGate } from '../game/economy';
@@ -236,7 +236,7 @@ function FreePlot({ state, sel, onClose, onBuild, onPreview, onSwitchPlot }) {
 // Parcelle bâtie : le bâtiment tel qu'il est (vignette du niveau atteint), le niveau suivant chiffré avant / après,
 // l'amélioration sous le pouce. « Aperçu des niveaux » ouvre la fenêtre d'aperçu : sur PC, le niveau montré s'y
 // dessine en hologramme à la place du bâtiment.
-function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTransfers, onTicketPolicy, onPreview }) {
+function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTransfers, onAcademy, onTicketPolicy, onPreview }) {
   const phone = useMedia(PHONE);
   const sec = SECTORS.find((s) => s.id === sel.sector) || SECTORS[0];
   const b = BUILDINGS[k];
@@ -309,6 +309,9 @@ function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTra
         {k === 'transfers' && onTransfers && (
           <button type="button" className="btn ghost wide" onClick={onTransfers}><IconTransfer /> Ouvrir le mercato · {(state.market || []).length + (state.transfers || []).length} joueurs</button>
         )}
+        {k === 'academy' && onAcademy && (
+          <button type="button" className="btn ghost wide" onClick={onAcademy}><IconAcademy /> Ouvrir l’académie · {(state.youth || []).length} / {YOUTH_PLACES} jeunes</button>
+        )}
         {k === 'terrain' && onTicketPolicy && <TicketPricing state={state} onChange={onTicketPolicy} />}
         {k === 'terrain' && onMatchDay && (
           <button type="button" className="btn ghost wide" onClick={onMatchDay}><IconStadium /> Voir le stade en jour de match</button>
@@ -333,7 +336,7 @@ function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTra
 
 // Fiche d'une parcelle, ouverte au clic dans la vue 3D (ou par le bouton Construire du HUD).
 // onPreview : ce que la scène doit montrer (hologramme du bâtiment et du niveau choisis, fenêtre d'aperçu ouverte).
-export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade, onMatchDay, onTransfers, onTicketPolicy, onPreview = () => {}, onSwitchPlot = () => {} }) {
+export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade, onMatchDay, onTransfers, onAcademy, onTicketPolicy, onPreview = () => {}, onSwitchPlot = () => {} }) {
   usePanelSound();
   const k = plotBuilding(state, sel.plotId);
   const lvl = k ? state.buildings[k] : 0;
@@ -359,6 +362,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
       onUpgrade={onUpgrade}
       onMatchDay={onMatchDay}
       onTransfers={onTransfers}
+      onAcademy={onAcademy}
       onTicketPolicy={onTicketPolicy}
       onPreview={onPreview}
     />

@@ -16,6 +16,7 @@ import { FinancesPanel } from './ui/finances';
 import { StatsPanel } from './ui/stats';
 import { TrophyRoom } from './ui/trophyroom';
 import { SquadView } from './ui/squad';
+import { AcademyView } from './ui/academy';
 import PlotInspector, { freePlotsOf } from './ui/inspector';
 import { OfflineReturn, SeasonReview } from './ui/overlays';
 import PostMatch from './ui/postmatch';
@@ -32,7 +33,8 @@ import { moneyBurst } from './ui/moneyfx';
 import { previewState, previewUi, silentSound } from './ui/preview';
 import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics';
 import { actionablePlots, dockSignals, seasonEndForecast, staffTip } from './game/advice';
-import { allowedBuildingsFor } from './game/map';
+import { allowedBuildingsFor, plotBuilding, plotOf } from './game/map';
+import { leavingYouth } from './game/academy';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { roundKey } from './game/mercato';
 import { createStadiumSound } from './ui/sound';
@@ -95,6 +97,7 @@ export default function App({ preview = null }) {
   const [trophyTab, setTrophyTab] = useState('honours'); // onglet d'ouverture de la salle des trophées
   const [trophyFocus, setTrophyFocus] = useState([]); // succès à montrer d'emblée (notification d'un succès débloqué)
   const [squadMercato, setSquadMercato] = useState(null); // vue du mercato à l'ouverture (offres reçues, suivis…)
+  const [academyNav, setAcademyNav] = useState({ tab: boot.ui.academyTab || 'youth', ids: [] }); // onglet et jeunes à montrer
   const [navKey, setNavKey] = useState(0); // une notification rouvre son panneau à neuf, sur ce qu'elle annonce
   const sound = useRef(null);
   if (!sound.current) sound.current = preview ? silentSound : createStadiumSound();
@@ -169,11 +172,23 @@ export default function App({ preview = null }) {
     if (id) setSel(null);
   };
   const selectPlot = (plotId, sector) => { setSel({ plotId, sector }); setPanel(null); };
+  // académie : son écran (l'équipe de jeunes) s'ouvre d'un clic sur le bâtiment ; sa fiche (amélioration) depuis
+  // cet écran, la pastille dorée de la 3D ou un conseil du staff
+  const openAcademy = (tab = 'youth', ids = []) => {
+    setAcademyNav({ tab, ids });
+    setNavKey((k) => k + 1);
+    openPanel('academy');
+  };
+  const pickPlot = (plotId, sector, how) => {
+    if (!how?.pin && state && plotBuilding(state, plotId) === 'academy') openAcademy();
+    else selectPlot(plotId, sector);
+  };
   // une notification ouvre ce qu'elle annonce : le succès lui-même (salle des trophées, mis en évidence), les offres
   // reçues ou les joueurs suivis du mercato
   const onNoteAction = (a) => {
     if (a.panel === 'trophies') { setTrophyTab(a.tab || 'honours'); setTrophyFocus(a.ids || []); }
-    if (a.panel === 'squad') { setSquadTab(a.tab || 'players'); setSquadMercato(a.view || null); setSquadSheet(null); }
+    if (a.panel === 'squad') { setSquadTab(a.tab || 'players'); setSquadMercato(a.view || null); setSquadSheet(a.sheet ?? null); }
+    if (a.panel === 'academy') setAcademyNav({ tab: a.tab || 'youth', ids: a.ids || [] });
     setNavKey((k) => k + 1);
     openPanel(a.panel);
   };
@@ -198,6 +213,17 @@ export default function App({ preview = null }) {
   const closeResult = () => {
     setShowResult(false);
     setMatchDay(false);
+    // académie : saison finie, les jeunes de 18 ans qui ne sont pas montés partiront à l'intersaison (rappel avant)
+    const leaving = leavingYouth(state);
+    if (leaving.length && !matchContext(state)) {
+      const many = leaving.length > 1;
+      notify({
+        kind: 'academy', eyebrow: 'Académie · fin de saison',
+        title: many ? `${leaving.length} jeunes vont quitter le club` : `${leaving[0].name} va quitter le club`,
+        text: `Fais-${many ? 'les' : 'le'} monter en équipe première avant de terminer la saison, sinon ${many ? 'ils partiront' : 'il partira'}.`,
+        action: { panel: 'academy', tab: 'youth', ids: leaving.map((p) => p.id) },
+      });
+    }
     // ce qui a bougé au mercato pendant la journée : offres reçues, joueurs suivis partis ailleurs
     const n = state.mercatoNews;
     if (!n || n.key !== roundKey(state) || n.season) return;
@@ -295,6 +321,7 @@ export default function App({ preview = null }) {
   const doAction = (a) => {
     if (!a) return;
     if (a.kind === 'plot') selectPlot(a.plot, a.sector);
+    else if (a.kind === 'panel' && a.panel === 'academy') openAcademy(a.tab, a.ids);
     else if (a.kind === 'panel') { setSquadTab(a.tab || 'players'); openPanel(a.panel); }
     else if (a.kind === 'match') play();
   };
@@ -323,7 +350,7 @@ export default function App({ preview = null }) {
   const sceneState = state || (demo.current ||= createInitialState('FootOFF FC'));
 
   return (
-    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
+    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'academy', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
       <div className="stage">
         {preview ? (
           <div className="stage-preview" aria-hidden="true" />
@@ -344,14 +371,14 @@ export default function App({ preview = null }) {
               paused={menu}
               onLoadProgress={setLoadProgress}
               onLoaded={() => setSceneLoaded(true)}
-              onSelectPlot={selectPlot}
+              onSelectPlot={pickPlot}
               onEmptyTap={() => setSel(null)}
               onOpenTrophies={() => openPanel('trophies')}
               onWebGLFail={() => { setWebglOk(false); setBooted(true); }}
             />
           </Suspense>
         ) : (
-          <Empire2D state={sceneState} onSelect={selectPlot} />
+          <Empire2D state={sceneState} onSelect={pickPlot} />
         )}
       </div>
 
@@ -412,6 +439,22 @@ export default function App({ preview = null }) {
           />
         )}
       </Presence>
+      <Presence>
+        {inGame && panel === 'academy' && (
+          <AcademyView
+            key={navKey}
+            state={state}
+            run={run}
+            ask={setConfirm}
+            notify={notify}
+            initialTab={academyNav.tab}
+            focus={academyNav.ids}
+            preview={boot.ui.academy}
+            onClose={() => { setPanel(null); setAcademyNav({ tab: 'youth', ids: [] }); }}
+            onBuilding={() => { const plot = plotOf(state, 'academy'); if (plot) selectPlot(plot.id, plot.sector); }}
+          />
+        )}
+      </Presence>
       <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} initialTab={boot.ui.seasonTab} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); setPanel('stats'); }} />}</Presence>
       <Presence>{inGame && panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'reputation' && <ReputationPanel state={state} onClose={() => setPanel(null)} />}</Presence>
@@ -432,6 +475,7 @@ export default function App({ preview = null }) {
             onUpgrade={onUpgrade}
             onMatchDay={() => { setSel(null); setMatchDay(true); }}
             onTransfers={() => { setSel(null); setSquadTab('market'); setPanel('squad'); }}
+            onAcademy={() => openAcademy()}
             onTicketPolicy={(id) => run((s) => setTicketPolicy(s, id))}
             onPreview={setBuildView}
             onSwitchPlot={(id) => selectPlot(id, 'main')}

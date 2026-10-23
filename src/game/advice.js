@@ -1,5 +1,6 @@
 import { nextFixture } from './cups';
-import { BUILDINGS, POS_LABELS, SQUAD_MAX, upgradeCost } from './constants';
+import { BUILDINGS, POS_LABELS, SQUAD_MAX, YOUTH_LEAVE_AGE, YOUTH_PLACES, upgradeCost } from './constants';
+import { leavingYouth } from './academy';
 import { PLOTS, allowedBuildingsFor, plotBuilding } from './map';
 import { autoLineup, lineupRating, slotsOf } from './tactics';
 import { costOf, ratingAt, wageOf } from './players';
@@ -130,6 +131,18 @@ export function staffTip(s) {
       action: { kind: 'panel', panel: 'finances', label: 'Voir les finances' },
     };
   }
+  // académie : en seconde moitié de saison, rappel des jeunes qui auront 19 ans à l'intersaison (ils partiront s'ils
+  // ne sont pas montés en équipe première)
+  const leaving = s.round >= 4 ? leavingYouth(s) : [];
+  if (leaving.length) {
+    const many = leaving.length > 1;
+    return {
+      id: `academy-leaving-${s.seasonNumber}`,
+      title: many ? `${leaving.length} jeunes dans leur dernière saison` : `${leaving[0].name} : dernière saison à l’académie`,
+      text: `${many ? `${leaving.map((p) => p.name).join(', ')} auront` : 'Il aura'} ${YOUTH_LEAVE_AGE} ans à l’intersaison. Fais-${many ? 'les' : 'le'} monter en équipe première avant la fin de la saison, sinon ${many ? 'ils quitteront' : 'il quittera'} le club.`,
+      action: { kind: 'panel', panel: 'academy', tab: 'youth', ids: leaving.map((p) => p.id), label: 'Voir l’académie' },
+    };
+  }
   const best = autoLineup(s.players, s.formation);
   if (lineupRating(s.players, best, s.formation) > lineupRating(s.players, s.lineup, s.formation) + 0.15) {
     return {
@@ -156,6 +169,16 @@ export function staffTip(s) {
         ? `${n(out)} supporters restent dehors à chaque match. Le niveau ${lvl + 1} offre ${n(capacity(lvl + 1))} places.`
         : `${n(out)} supporters restent dehors à chaque match. Objectif : ${money(cost)} pour passer à ${n(capacity(lvl + 1))} places.`,
       action: { kind: 'plot', plot: 't0', sector: 'main', label: 'Voir le stade' },
+    };
+  }
+  // académie : des places libres et des jeunes repérés à recruter (une fois par saison)
+  const scouted = s.scouting?.list || [];
+  const free = YOUTH_PLACES - (s.youth || []).length;
+  if (s.buildings.academy > 0 && scouted.length && free > 0) {
+    return {
+      id: `academy-scout-${s.seasonNumber}`, title: 'Ton académie a repéré des jeunes',
+      text: `${scouted.length > 1 ? `${scouted.length} jeunes à recruter` : 'Un jeune à recruter'} gratuitement · ${free > 1 ? `${free} places libres` : 'une place libre'} dans ton équipe de jeunes.`,
+      action: { kind: 'panel', panel: 'academy', tab: 'scout', label: 'Voir la détection' },
     };
   }
   const sign = bestSigning(s);

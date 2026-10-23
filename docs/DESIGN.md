@@ -334,6 +334,33 @@ leur article et accordent le verbe (« l'AS … accepte », « les Bleus … acc
 Aperçus : `?ecran=marche`, `transferts`, `negociation`, `contre-offre`, `suivis`, `offres`, `encheres`, `vente`,
 `vente-negociation`, `vente-conclue`, `bilan-mercato`. Contrôle des chances de la vente : `tmp/ph3/salecheck.js`.
 
+## Académie
+
+L'équipe de jeunes du club (`src/game/academy.js`, écran `src/ui/academy.jsx`) s'ouvre d'un clic sur le bâtiment
+dans la vue 3D ; sa fiche (amélioration) s'ouvre par la pastille dorée de la 3D, un conseil du staff ou le lien
+« bâtiment » de l'écran, et la fiche ramène à l'écran (« Ouvrir l'académie »). Même famille que l'Effectif : tableau
+détaillé sur PC (tri par colonne), liste compacte sur téléphone, fiche à droite (plein écran au téléphone).
+- Mes jeunes : six places (cases dorées ; rouges pour un jeune dans sa dernière saison), niveau, potentiel estimé
+  (texte doré s'il est fort pour la division), progrès de la saison (journée et dernier été en infobulle), trois
+  points forts, plan ; étiquettes « Niveau titulaire » (il renforcerait l'onze) et « Dernière saison ». Bandeau de
+  rappel pour les jeunes qui auront 19 ans à l'intersaison, règles en bas de liste.
+- Détection : les jeunes repérés de la journée, le plus prometteur d'abord, « Signer » (gratuit) ; carte du niveau
+  de l'académie et du suivant (jeunes repérés, potentiel, fourchette) avec « Améliorer ».
+- Fiche : niveau et potentiel, progrès (dernière journée, saison, dernier été), plan d'entraînement en sélecteur (le
+  conseillé marqué d'un point doré ; un autre plan dit de combien le niveau progresse moins vite), qualités
+  travaillées marquées dans les attributs ; « Faire monter » (confirmation : salaire, effectif) et « Libérer »
+  (confirmation rouge, focus sur « Le garder »). Un joueur monté garde l'étiquette « Formé au club ».
+Règles : recrutement gratuit dans la limite des places, sans salaire ; nouveaux jeunes après chaque journée de
+championnat (2 à 6 selon le niveau de l'académie, plus doués et mieux cernés quand elle grandit) ; progrès après
+chaque journée puis bond de l'été (centre d'entraînement compris) ; à 19 ans, un jeune qui n'est pas monté quitte le
+club (conseil du staff à partir de la 4e journée, notification après le dernier match, ligne du bilan). Les points
+d'entraînement sont les mêmes quel que soit le plan : le conseillé fait monter le niveau le plus vite (×1,14 à ×1,28
+selon le poste), un autre développe d'autres qualités (×0,7 à ×0,96) ; une qualité à 20 cède ses points aux autres.
+
+Aperçus : `?ecran=academie`, `academie-detection`, `academie-jeune`, `academie-repere`, `academie-vide`,
+`academie-batiment`. Simulation : `tmp/ph3/simcheck.js` (gestes et contrôles de l'académie) ; calage des progrès :
+`tmp/calib-academy.mjs`.
+
 ## Dispositifs
 
 Six formations (`FORMATIONS` dans `src/game/tactics.js`) : 4-3-3, 4-4-2, 4-2-3-1, 3-5-2, 3-4-3, 5-3-2. Le

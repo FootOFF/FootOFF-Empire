@@ -267,7 +267,7 @@ export function TrophyCase({ trophies }) {
 
 // --- Journal façon FootOFF Media : à la une, rubriques, titres ----------------------------------------------
 
-const KINDS = { match: 'Match', mercato: 'Mercato', infra: 'Bâtiments', saison: 'Saison', objectif: 'Objectif', club: 'Club' };
+const KINDS = { match: 'Match', mercato: 'Mercato', infra: 'Bâtiments', saison: 'Saison', objectif: 'Objectif', club: 'Club', academie: 'Académie' };
 const FILTERS = [['all', 'Tout'], ['match', 'Matchs'], ['mercato', 'Mercato'], ['infra', 'Bâtiments'], ['club', 'Club']];
 
 // Les anciennes entrées n'ont qu'un texte : on en tire un titre et une rubrique.
@@ -293,7 +293,7 @@ export function JournalPanel({ state, onClose }) {
   const [filter, setFilter] = useState('all');
   const all = state.journal.map(article);
   const list = filter === 'all' ? all
-    : filter === 'club' ? all.filter((a) => ['club', 'saison', 'objectif'].includes(a.kind))
+    : filter === 'club' ? all.filter((a) => ['club', 'saison', 'objectif', 'academie'].includes(a.kind))
       : all.filter((a) => a.kind === filter);
   const [lead, ...rest] = list;
   return (

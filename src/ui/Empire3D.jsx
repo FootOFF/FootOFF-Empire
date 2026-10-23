@@ -1101,7 +1101,7 @@ export default function Empire3D({
           className="plotpin"
           data-plot={id}
           ref={(el) => { if (el) pinRefs.current.set(id, el); else pinRefs.current.delete(id); }}
-          onClick={() => selectRef.current(id, PLOTS.find((p) => p.id === id).sector)}
+          onClick={() => selectRef.current(id, PLOTS.find((p) => p.id === id).sector, { pin: true })}
           aria-label="Construction ou amélioration disponible"
         >
           <i><IconArrowUp /></i>

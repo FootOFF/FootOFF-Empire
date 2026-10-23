@@ -9,6 +9,7 @@ import { ensureLedger } from './ledger';
 import { fixLeagueNames, playerName, registerNames, renameRetired } from './names';
 import { buildCalendar } from './cups';
 import { BUYERS, roundTo, valueOf } from './mercato';
+import { refreshScouting } from './academy';
 import { refreshTransfers } from './transfers';
 import { rebuildRecords } from './records';
 import { normalizeCrest } from './crest';
@@ -100,6 +101,7 @@ export function loadGame() {
         return { ...rest, tier, div, v, b: k + 0.14, atAsk: false, talks: { tries: 0, closed: false } };
       });
       if (beforeMercato) refreshTransfers(y, 'grow'); // le mercato se remplit tout de suite (joueurs libres et sous contrat)
+      y.youth ||= []; // équipe de jeunes de l'académie (ajoutée après coup)
       const renamed = new Map(); // ancien nom → nouveau
       for (const p of [...y.players, ...(y.market || []), ...y.transfers]) {
         const before = p.name;
@@ -123,7 +125,8 @@ export function loadGame() {
         if (seenNames.has(p.name)) p.name = playerName(seenNames);
         seenNames.add(p.name);
       }
-      registerNames([...y.players, ...y.market, ...y.transfers, ...y.alumni].map((p) => p.name));
+      registerNames([...y.players, ...y.youth, ...(y.scouting?.list || []), ...y.market, ...y.transfers, ...y.alumni].map((p) => p.name));
+      if (!y.scouting) refreshScouting(y); // jeunes repérés de la journée, tout de suite (noms déjà tous connus)
       fixLeagueNames(y); // un club adverse en double (même nom ou même lieu) dans la division est renommé
       return y;
     };

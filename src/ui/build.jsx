@@ -21,14 +21,14 @@ export const imgOf = (key, lvl) => `${import.meta.env.BASE_URL}ui/buildings/${ke
 export const BLURB = {
   terrain: 'Plus de places, plus de recettes les jours de match.',
   training: 'Tes joueurs progressent davantage à chaque intersaison.',
-  academy: 'Un jeune talent rejoint ton effectif à chaque fin de saison.',
+  academy: 'Ton équipe de jeunes : six places gratuites, de nouveaux talents repérés après chaque journée.',
   fans: 'Plus de public, des recettes annexes et de la réputation à chaque match.',
   sponsor: 'Des partenaires qui paient chaque saison, et des revenus pendant ton absence.',
   transfers: 'Des recruteurs qui t’ouvrent le marché des joueurs sous contrat.',
 };
 
 // Ce que rapporte un niveau, avant de cliquer : recettes en plus par saison, entretien, rentabilité.
-const SPORTING = { training: 'il fait progresser l’équipe', academy: 'il révèle de jeunes talents', transfers: 'il ouvre le marché des joueurs sous contrat' };
+const SPORTING = { training: 'il fait progresser l’équipe', academy: 'il forme de jeunes talents', transfers: 'il ouvre le marché des joueurs sous contrat' };
 export function Payoff({ state, k, target, compact = false }) {
   const inv = investmentPreview(state, k, target);
   if (SPORTING[k]) {

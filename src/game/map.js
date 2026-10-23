@@ -46,6 +46,9 @@ export const plotBuilding = (s, plotId) => {
   return i === -1 ? null : PLOTS[i].building || s.slots[i];
 };
 
+// Parcelle où est construit un bâtiment (null s'il ne l'est pas).
+export const plotOf = (s, key) => PLOTS.find((p) => plotBuilding(s, p.id) === key) || null;
+
 // Garantit que les parcelles à bâtiment fixe sont occupées par celui-ci. Répare les sauvegardes où un
 // bâtiment construit avait pris la place du stade : il est déplacé sur la première parcelle libre de son
 // secteur (son niveau est conservé, il vit dans s.buildings).

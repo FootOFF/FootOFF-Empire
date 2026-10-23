@@ -1,4 +1,5 @@
-import { answerOffer, build, createInitialState, endSeason, playRound, sellPlayer, signPlayer, toggleShortlist, upgrade } from '../game/engine';
+import { answerOffer, build, createInitialState, endSeason, playRound, sellPlayer, setYouthPlan, signPlayer, signYouth, toggleShortlist, upgrade } from '../game/engine';
+import { advisedPlan } from '../game/academy';
 import { matchContext, startSeason } from '../game/season';
 import { costOf, playerRating } from '../game/players';
 import { BUYERS, counterFor, lastWordOf, outbidChance, poolOf, roundKey, roundTo, valueOf } from '../game/mercato';
@@ -33,6 +34,12 @@ export const SCREENS = [
   ['vente-conclue', 'Mercato · vente conclue'],
   ['bilan-mercato', 'Mercato · bilan des transferts'],
   ['bureau', 'Inspecteur · bureau des transferts'],
+  ['academie', 'Académie · mes jeunes'],
+  ['academie-detection', 'Académie · détection'],
+  ['academie-jeune', 'Académie · fiche d’un jeune (plan d’entraînement)'],
+  ['academie-repere', 'Académie · fiche d’un jeune repéré'],
+  ['academie-vide', 'Académie · équipe de jeunes vide'],
+  ['academie-batiment', 'Inspecteur · académie'],
   ['comparateur', 'Comparateur radar'],
   ['avant-match', 'Avant-match'],
   ['direct', 'Match en direct'],
@@ -99,6 +106,7 @@ export function previewState(screen) {
     s.money = 60000;
   }
   if (MERCATO.includes(screen)) mercatoPreview(s, screen);
+  if (screen.startsWith('academie')) academyPreview(s, screen);
   if (screen === 'bilan' || screen === 'bilan-champion') {
     while (s.round < 7) playRound(s);
     endSeason(s);
@@ -112,6 +120,22 @@ export function previewState(screen) {
   }
   s.offline = null;
   return s;
+}
+
+// Académie en aperçu (niveau 2, parcelle 2) : trois jeunes recrutés puis deux journées d'entraînement, dont un dans
+// sa dernière saison (18 ans) et un au plan changé ; équipe vide pour « academie-vide ».
+function academyPreview(s, screen) {
+  s.money = 1e6;
+  build(s, 't2', 'academy');
+  upgrade(s, 'academy');
+  s.money = 42000;
+  if (screen === 'academie-vide') return;
+  for (const p of s.scouting.list.slice(0, 3)) signYouth(s, p.id);
+  s.youth[0].age = 18;
+  const other = Object.keys({ tech: 1, phys: 1, mental: 1 }).find((k) => k !== advisedPlan(s.youth[1]));
+  setYouthPlan(s, s.youth[1].id, other);
+  const from = s.round; // deux journées de championnat (les matchs de coupe ne comptent pas)
+  for (let k = 0; k < 8 && s.round < from + 2; k++) playRound(s);
 }
 
 // Mercato en aperçu : une négociation (avec ou sans contre-offre), des joueurs suivis dont un parti ailleurs, des
@@ -213,6 +237,11 @@ export function previewUi(screen, s) {
     case 'vente-negociation': case 'vente-conclue': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'offers', sale: 1 } };
     case 'bilan-mercato': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'log' } };
     case 'bureau': return { sel: { plotId: 't3', sector: 'main' } };
+    case 'academie': case 'academie-vide': return { panel: 'academy' };
+    case 'academie-detection': return { panel: 'academy', academyTab: 'scout' };
+    case 'academie-jeune': return { panel: 'academy', academy: { sheet: s.youth[1].id } };
+    case 'academie-repere': return { panel: 'academy', academyTab: 'scout', academy: { sheet: s.scouting.list[0].id, list: 'scout' } };
+    case 'academie-batiment': return { sel: { plotId: 't2', sector: 'main' } };
     case 'comparateur': return { panel: 'squad', squadTab: 'market', squad: { compare: true } };
     case 'saison': return { panel: 'season' };
     case 'classement': return { panel: 'season', seasonTab: 'table' };

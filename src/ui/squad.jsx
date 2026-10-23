@@ -463,6 +463,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
             <h3>{p.name}</h3>
             <div className="sh-tags">
               <span className={`sh-tag ${role === 'Titulaire' ? 'on' : ''}`}>{role}</span>
+              {!market && p.academy && <span className="sh-tag on">Formé au club</span>}
               {listed && <span className="sh-tag sale">En vente</span>}
               {market && p.interest > 0 && <span className="sh-tag warn">Courtisé{p.interest > 1 ? ` par ${p.interest} clubs` : ''}</span>}
               {p.alt && <span className="sh-tag">Dépanne : {POS_LABELS[p.alt].toLowerCase()} {fmtRating(ratingAt(p, p.alt))}</span>}

@@ -1,4 +1,4 @@
-import { BUILDINGS, DIVISIONS, SQUAD_MAX, SQUAD_MIN, START_MONEY, upgradeCost } from './constants';
+import { BUILDINGS, DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN, START_MONEY, upgradeCost } from './constants';
 import { OFFLINE_CAP, offlinePerHour } from './economy';
 import { assignNumber, costOf, makePlayer, saleValue, wageOf } from './players';
 import {
@@ -6,6 +6,7 @@ import {
   offersFor, outbidAmount, outbidChance, roundKey, roundTo, valueOf,
 } from './mercato';
 import { listingOffers, refreshTransfers } from './transfers';
+import { PLANS, YOUTH_PLACES, advisedPlan, refreshScouting } from './academy';
 import { clubAfter, randomClubName, registerNames, withArticle } from './names';
 import { archivePlayer, endSeason, playRound, pushJournal, startSeason } from './season';
 import { initGoals } from './goals';
@@ -37,6 +38,8 @@ export function createInitialState(clubName, crest = null) {
     buildings: { terrain: 1, training: 0, academy: 0, fans: 0, sponsor: 0, transfers: 0 },
     slots: Array(8).fill(null),
     players: [],
+    youth: [], // équipe de jeunes de l'académie (academy.js)
+    scouting: null, // jeunes repérés de la journée
     rivals: [],
     schedule: [],
     table: [],
@@ -103,6 +106,7 @@ export function build(s, where, key) {
   s.money -= upgradeCost(key, 1);
   book(s, 'works', upgradeCost(key, 1));
   if (key === 'transfers') refreshTransfers(s, 'grow'); // les recruteurs livrent leur première liste
+  if (key === 'academy') refreshScouting(s); // premiers jeunes repérés, tout de suite
   pushJournal(s, {
     season: s.seasonNumber, kind: 'infra', title: `${BUILDINGS[key].name} : premier coup de pioche`,
     text: `Le club investit ${upgradeCost(key, 1).toLocaleString('fr-FR')} € dans un nouveau bâtiment.`,
@@ -125,10 +129,63 @@ export function upgrade(s, key) {
   s.money -= cost;
   book(s, 'works', cost);
   if (key === 'transfers') refreshTransfers(s, 'grow'); // liste allongée tout de suite
+  if (key === 'academy') refreshScouting(s); // des jeunes repérés en plus, tout de suite
   pushJournal(s, {
     season: s.seasonNumber, kind: 'infra', title: `${BUILDINGS[key].name} : cap sur le niveau ${lvl + 1}`,
     text: `Travaux d’amélioration engagés pour ${cost.toLocaleString('fr-FR')} €.`,
   });
+  return s;
+}
+
+// --- Académie (voir academy.js) ---------------------------------------------------------------------------
+
+// Recrute un jeune repéré dans l'équipe de jeunes : gratuit, dans la limite des places ; plan conseillé pour son poste.
+export function signYouth(s, id) {
+  const list = s.scouting?.list || [];
+  const p = list.find((q) => q.id === id);
+  if (!p || !(s.buildings.academy > 0) || (s.youth || []).length >= YOUTH_PLACES) return null;
+  s.scouting.list = list.filter((q) => q !== p);
+  Object.assign(p, { academy: true, plan: advisedPlan(p), youthSince: s.seasonNumber, gain: { round: 0, season: 0, summer: null } });
+  s.youth = [...(s.youth || []), p];
+  pushJournal(s, {
+    season: s.seasonNumber, round: s.round, kind: 'academie', title: `${p.name} rejoint l’académie`,
+    text: `${POS_LABELS[p.pos]} de ${p.age} ans, repéré par les éducateurs du club.`,
+  });
+  return s;
+}
+
+// Fait monter un jeune en équipe première (s'il y a de la place) : il garde la marque « formé au club » et sa saison
+// d'arrivée à l'académie (youthSince : son potentiel reste aussi bien cerné).
+export function promoteYouth(s, id) {
+  const p = (s.youth || []).find((q) => q.id === id);
+  if (!p || s.players.length >= SQUAD_MAX) return null;
+  s.youth = s.youth.filter((q) => q !== p);
+  delete p.plan;
+  delete p.gain;
+  p.joined = s.seasonNumber;
+  assignNumber(s.players, p);
+  s.players.push(p);
+  pushJournal(s, {
+    season: s.seasonNumber, round: s.round, kind: 'academie', title: `${p.name} monte en équipe première`,
+    text: `Formé à l’académie, il rejoint l’effectif professionnel à ${p.age} ans, avec le numéro ${p.num}.`,
+  });
+  return s;
+}
+
+// Libère un jeune : il quitte l'académie (et le club).
+export function releaseYouth(s, id) {
+  const p = (s.youth || []).find((q) => q.id === id);
+  if (!p) return null;
+  s.youth = s.youth.filter((q) => q !== p);
+  pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'academie', title: `${p.name} quitte l’académie`, text: `Libéré à ${p.age} ans.` });
+  return s;
+}
+
+// Plan d'entraînement d'un jeune : les qualités qu'il travaille en priorité.
+export function setYouthPlan(s, id, plan) {
+  const p = (s.youth || []).find((q) => q.id === id);
+  if (!p || !PLANS[plan]) return null;
+  p.plan = plan;
   return s;
 }
 
