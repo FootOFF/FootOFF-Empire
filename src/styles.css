@@ -2459,6 +2459,31 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .cm-row { min-height: 60px; }
   .ts-sub h2, .ts-form h2 { font-size: 34px; }
 }
+/* Fondation du club dans une fenêtre peu haute : le formulaire se resserre (accroche retirée, écusson et sélecteurs
+   plus compacts) ; s'il ne tient toujours pas (téléphone à l'horizontale), la colonne défile, sans jamais passer sous
+   la barre du haut ni sous l'aide des commandes. L'aide et la mention du bas ne captent jamais un clic : un bouton
+   reste toujours cliquable en entier. */
+.ts-bottom, .pz-bottom { pointer-events: none; }
+.ts.ts-create .ts-col { overflow-y: auto; overscroll-behavior: contain; }
+@media (min-width: 761px) {
+  /* colonne un peu plus large que le formulaire : le halo du bouton choisi n'est pas rogné par le défilement */
+  .ts.ts-create .ts-col { justify-content: flex-start; left: 32px; width: calc(min(520px, 44vw) + 48px); padding-left: 24px; padding-right: 24px; }
+  .ts.ts-create .ts-form { margin-block: auto; } /* centré s'il tient, sinon calé en haut et la colonne défile */
+}
+@media (max-height: 760px) and (min-width: 761px) {
+  .ts-form { gap: var(--s-3); }
+  .ts-form-lead { display: none; } /* le titre dit déjà tout */
+  .crest.ts-crest-art { width: 84px; height: 98px; }
+  .ts-pick-arrow { width: 30px; height: 30px; }
+  .ts-actions { margin-top: var(--s-2); }
+}
+@media (max-height: 680px) and (min-width: 761px) { /* fenêtre d'ordinateur réduite : tout le formulaire tient encore */
+  .ts-form > .eyebrow { display: none; }
+  .ts-input input { font-size: 24px; padding: 6px 0; }
+  .ts-crest-rows { gap: 4px; }
+  .ts-pick-arrow { width: 28px; height: 28px; }
+  .ts-actions .btn-xl { padding-top: 12px; padding-bottom: 12px; }
+}
 @media (max-height: 560px) and (min-width: 761px) { /* PC peu haut, téléphone à l'horizontale */
   .ts-col, .pz-col { padding: 64px 0 72px; gap: 20px; }
   .ts-mark { gap: 16px; }

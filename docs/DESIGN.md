@@ -207,7 +207,10 @@ Façon jeu de console : un seul chargement au démarrage, puis l'écran titre de
   sur l'écran de chargement), sans horloge ; menu Continuer, Nouvelle partie, Réglages, FootOFF Media ;
   à droite (PC) la carte de l'entrée active (classement, points, journée, forme, prochain match, trésorerie).
   Avant la création du club, la scène montre le complexe de départ. Sous-écrans avec leur propre en-tête :
-  réglages, création du club (nom proposé au hasard, dé pour en tirer un autre). Continuer : la caméra plonge
+  réglages, création du club (nom proposé au hasard, dé pour en tirer un autre). Fenêtre peu haute (ordinateur
+  sous 760 px, puis sous 680 px de haut) : le formulaire de création se resserre et tient en entier dès 600 px ;
+  plus bas (téléphone à l'horizontale), sa colonne défile ; l'aide des commandes ne capte jamais un clic (elle
+  recouvrait le milieu de « Fonder le club » en 793 × 639). Continuer : la caméra plonge
   vers la vue d'ensemble et le HUD apparaît.
 - Menu pause (`src/ui/pause.jsx`) : Échap, le bouton menu du HUD, ou Start à la manette. La scène se fige (Empire3D
   ne dessine plus, `paused`) et se floute ; le nom du club avec son écusson ; Reprendre, Réglages, Écran titre, Nouvelle partie (confirmation),
