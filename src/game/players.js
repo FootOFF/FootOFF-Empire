@@ -40,8 +40,8 @@ export const WEIGHTS = {
 export const TRAITS = {
   finisseur: { name: 'Finisseur', desc: 'Transforme plus souvent ses occasions.' },
   passeur: { name: 'Passeur', desc: 'Délivre plus souvent la passe décisive.' },
-  infatigable: { name: 'Infatigable', desc: 'Garde son niveau jusqu’au coup de sifflet final.' },
-  fleche: { name: 'Flèche', desc: 'Fait la différence en contre grâce à sa vitesse.' },
+  infatigable: { name: 'Infatigable', desc: 'Garde son niveau jusqu’au bout : après la 75e minute, son équipe se crée plus d’occasions.' },
+  fleche: { name: 'Flèche', desc: 'Fait la différence grâce à sa vitesse : plus d’occasions, surtout en bloc bas.' },
   roc: { name: 'Roc', desc: 'Gagne ses duels : l’adversaire se crée moins d’occasions.' },
   leader: { name: 'Leader', desc: 'Son onze gagne en sérénité (+0,1 au niveau d’équipe).' },
   sangChaud: { name: 'Sang chaud', desc: 'Prend plus souvent des cartons.' },
@@ -51,6 +51,7 @@ export const TRAITS = {
 };
 
 const r1 = (v) => Math.round(v * 10) / 10;
+const r2 = (v) => Math.round(v * 100) / 100; // progrès : deux décimales, pour ne rien perdre des petits gains
 const LINE = { D: 0, M: 1, A: 2 };
 const ALT = { D: ['M'], M: ['D', 'A'], A: ['M'], G: [] };
 
@@ -196,8 +197,8 @@ export function potentialRange(p, s) {
 // gardent leurs décimales, chaque gain compte, d'où un facteur plus bas que l'ancien modèle arrondi.
 const PROGRESSION = 0.5;
 
-// Bond de l'intersaison vers le potentiel, en points de note : d'autant plus grand que le joueur est jeune et que le
-// centre d'entraînement est développé ; au sommet, chaque progrès coûte plus cher. Partagé avec l'académie.
+// Bond de l'intersaison vers le potentiel, en points de note : d'autant plus grand que le joueur est jeune (et, pour
+// l'académie, que le centre d'entraînement est développé) ; au sommet, chaque progrès coûte plus cher.
 export function seasonGain(p, trainingLvl) {
   const before = playerRating(p);
   const room = Math.max(0, p.pot - before);
@@ -209,24 +210,28 @@ export function seasonGain(p, trainingLvl) {
   return gain * clamp(1.4 - before / 20, 0.45, 1);
 }
 
-// Intersaison : progression vers le potentiel (meilleure avec le centre d'entraînement), puis déclin
-// physique après 32 ans. Les qualités clés du poste progressent le plus.
-export function progressPlayer(p, trainingLvl) {
+// Le bond de l'été est réduit depuis que les joueurs progressent au fil de la saison, au centre d'entraînement
+// (séances entre les matchs et séance collective : training.js) : six dixièmes du bond sans centre, à tous les niveaux.
+const SUMMER = 0.6;
+
+// Intersaison : progression vers le potentiel, puis déclin physique après 32 ans. Les qualités clés du poste
+// progressent le plus.
+export function progressPlayer(p) {
   const before = playerRating(p);
-  const gain = seasonGain(p, trainingLvl);
+  const gain = seasonGain(p, 0) * SUMMER;
   if (gain > 0) {
     const w = WEIGHTS[p.pos];
     const pool = p.pos === 'G' ? p.g : p.a;
     const f = {};
     let norm = 0;
     for (const k in pool) { f[k] = (0.5 + 4.5 * (w[k] || 0)) * rnd(0.6, 1.4); norm += (w[k] || 0) * f[k]; }
-    for (const k in pool) pool[k] = clamp(r1(pool[k] + (gain * f[k]) / norm), 1, 20);
+    for (const k in pool) pool[k] = clamp(r2(pool[k] + (gain * f[k]) / norm), 1, 20);
   }
   if (p.age >= 32) {
     // déclin : le physique d'abord, le reste plus lentement (environ −0,4 de note par saison)
     const loss = rnd(0.4, 1.4);
-    for (const k in p.a) p.a[k] = clamp(r1(p.a[k] - loss * (['vit', 'end', 'pui'].includes(k) ? 1 : 0.4) * rnd(0.7, 1.3)), 1, 20);
-    if (p.g) for (const k in p.g) p.g[k] = clamp(r1(p.g[k] - loss * (k === 'ref' || k === 'uns' ? 0.9 : 0.35) * rnd(0.7, 1.3)), 1, 20);
+    for (const k in p.a) p.a[k] = clamp(r2(p.a[k] - loss * (['vit', 'end', 'pui'].includes(k) ? 1 : 0.4) * rnd(0.7, 1.3)), 1, 20);
+    if (p.g) for (const k in p.g) p.g[k] = clamp(r2(p.g[k] - loss * (k === 'ref' || k === 'uns' ? 0.9 : 0.35) * rnd(0.7, 1.3)), 1, 20);
   }
   p.lastDelta = r1(playerRating(p) - before);
 }

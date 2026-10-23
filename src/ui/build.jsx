@@ -20,7 +20,7 @@ export const imgOf = (key, lvl) => `${import.meta.env.BASE_URL}ui/buildings/${ke
 // Rôle de chaque bâtiment, en une phrase.
 export const BLURB = {
   terrain: 'Plus de places, plus de recettes les jours de match.',
-  training: 'Tes joueurs progressent davantage à chaque intersaison.',
+  training: 'Entre deux matchs, quatre de tes joueurs passent une épreuve en 3D : à jouer toi-même ou à simuler.',
   academy: 'Ton équipe de jeunes : six places gratuites, de nouveaux talents repérés après chaque journée.',
   fans: 'Plus de public, des recettes annexes et de la réputation à chaque match.',
   sponsor: 'Des partenaires qui paient chaque saison, et des revenus pendant ton absence.',

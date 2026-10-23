@@ -1,4 +1,6 @@
-import { BUILDINGS, DIVISIONS, SCOUTED, YOUTH_PLACES, upgradeCost } from './constants';
+import {
+  BUILDINGS, DIVISIONS, DRILLS, PROGRAM_STEPS, SCOUTED, TRAINING_COLLECTIVE, TRAINING_MULT, YOUTH_PLACES, upgradeCost,
+} from './constants';
 import { clamp, rnd } from './utils';
 import { REP_START, mercatoRep, sponsorRep } from './reputation';
 
@@ -180,6 +182,11 @@ export function academyTalent(a) {
 // note ; potentialRange, players.js) : les éducateurs d'une académie développée savent mieux juger.
 export const scoutingError = (academyLvl = 0) => clamp(2.5 - 0.35 * academyLvl, 0.75, 3);
 const dec = (v) => (Math.round(v * 10) / 10).toLocaleString('fr-FR');
+const dec2 = (v) => (Math.round(v * 100) / 100).toLocaleString('fr-FR');
+
+// Centre d'entraînement à un niveau (training.js) : épreuves ouvertes, la dernière débloquée.
+const drillsAt = (lvl) => Object.values(DRILLS).filter((d) => d.level <= lvl);
+const newDrill = (lvl) => Object.values(DRILLS).find((d) => d.level === lvl && lvl > 1);
 
 // Famille d'un bâtiment (vitrine de construction) : ce qu'il apporte d'abord.
 export const BUILDING_KIND = { terrain: 'Revenus', training: 'Sport', academy: 'Sport', fans: 'Revenus', sponsor: 'Revenus', transfers: 'Mercato' };
@@ -196,8 +203,15 @@ export function buildingStats(key, lvl, s) {
         ...(loges ? [{ label: 'Places en loges', value: fmt(loges) }] : []),
       ];
     }
-    case 'training':
-      return [{ label: 'Progression des joueurs', value: `+${lvl * 25} %`, short: `Progression +${lvl * 25} %`, sub: 'chaque intersaison' }];
+    case 'training': {
+      const fresh = newDrill(lvl);
+      return [
+        { label: 'Progrès par séance', value: `×${dec2(TRAINING_MULT[lvl])}`, short: 'Séances entre les matchs', sub: 'quatre joueurs entre deux matchs' },
+        { label: 'Épreuves en 3D', value: fmt(drillsAt(lvl).length), sub: fresh ? `nouvelle : ${fresh.label.toLowerCase()}` : 'une par catégorie' },
+        { label: 'Séance collective', value: `${dec(TRAINING_COLLECTIVE[lvl] * 100)} %`, sub: 'de la marge de progrès, après chaque match' },
+        { label: 'Programmes de signes', value: PROGRAM_STEPS[lvl] ? `${PROGRAM_STEPS[lvl]} séances` : 'au niveau 3', sub: 'un signe distinctif appris' },
+      ];
+    }
     case 'academy': {
       const t = academyTalent(lvl);
       return [
@@ -240,7 +254,9 @@ export function buildingEffect(key, lvl, divIndex, rep = REP_START) {
     case 'terrain':
       return `Capacité d’accueil : ${fmt(capacity(lvl))} places${LOGES_SHARE[lvl] ? ` · ${fmt(Math.round(capacity(lvl) * LOGES_SHARE[lvl]))} places en loges` : ''}.`;
     case 'training':
-      return `Progression estivale des joueurs : +${lvl * 25} %.`;
+      return lvl > 0
+        ? `Séances entre les matchs : progrès ×${dec2(TRAINING_MULT[lvl])} · ${drillsAt(lvl).length} épreuves en 3D · séance collective après chaque match${PROGRAM_STEPS[lvl] ? ` · signes distinctifs appris en ${PROGRAM_STEPS[lvl]} séances` : ''}.`
+        : 'Pas de séances d’entraînement tant que le centre n’est pas construit.';
     case 'academy': {
       if (lvl <= 0) return 'Pas d’équipe de jeunes tant que l’académie n’est pas construite.';
       const t = academyTalent(lvl);

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { IconAcademy, IconAlert, IconCheck, IconChevron, IconEmpire, IconStar, IconTransfer, IconTrophy } from './icons';
+import { IconAcademy, IconAlert, IconCheck, IconChevron, IconEmpire, IconStar, IconTraining, IconTransfer, IconTrophy } from './icons';
 
 // Notifications du jeu, façon console : un seul bandeau à la fois, qui descend du haut de l'écran puis repart (au
 // centre, sur la ligne de la barre du haut sur grand écran, juste dessous sinon ; par-dessus la barre sur
@@ -14,6 +14,7 @@ const KINDS = {
   build: { Icon: IconEmpire, ms: 3400, sound: 'notify' },
   mercato: { Icon: IconTransfer, ms: 4600, sound: 'notify' },
   academy: { Icon: IconAcademy, ms: 4200, sound: 'notify' },
+  training: { Icon: IconTraining, ms: 4200, sound: 'notify' },
   success: { Icon: IconCheck, ms: 3200, sound: 'notify' },
   info: { Icon: IconStar, ms: 3400, sound: 'notify' },
   warn: { Icon: IconAlert, ms: 3200, sound: 'error' },

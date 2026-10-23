@@ -195,6 +195,63 @@ export function createStadiumSound() {
       }
       return null;
     },
+    // Épreuves du centre d'entraînement : frappe, filet, cible touchée, montant, appui du viseur, compte à rebours,
+    // arrêt du gardien, saut d'une haie, haie renversée, bonne ou mauvaise lecture. Tout est synthétisé.
+    sfx(kind) {
+      if (muted || !ensure()) return;
+      ctx.resume?.();
+      const t = ctx.currentTime;
+      const tone = (f0, f1, at, len, vol, type = 'sine') => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(f0, t + at);
+        osc.frequency.exponentialRampToValueAtTime(f1, t + at + len);
+        g.gain.setValueAtTime(0, t + at);
+        g.gain.linearRampToValueAtTime(vol, t + at + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + at + len);
+        osc.connect(g).connect(master);
+        osc.start(t + at);
+        osc.stop(t + at + len + 0.02);
+      };
+      const hiss = (at, len, vol, freq, q = 0.8, type = 'bandpass') => {
+        const src = ctx.createBufferSource();
+        src.buffer = noiseBuffer(ctx, Math.max(0.2, len + 0.05));
+        const f = ctx.createBiquadFilter();
+        f.type = type;
+        f.frequency.value = freq;
+        f.Q.value = q;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, t + at);
+        g.gain.linearRampToValueAtTime(vol, t + at + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + at + len);
+        src.connect(f).connect(g).connect(master);
+        src.start(t + at);
+        src.stop(t + at + len + 0.05);
+      };
+      if (kind === 'kick') { tone(150, 48, 0, 0.16, 0.22); hiss(0, 0.05, 0.35, 2400, 0.7); } // frappe : coup sourd + claquement du cuir
+      else if (kind === 'net') hiss(0, 0.32, 0.5, 3200, 0.6); // filet qui se gonfle
+      else if (kind === 'hit') { tone(1320, 1330, 0, 0.22, 0.05, 'triangle'); tone(1980, 1990, 0.05, 0.3, 0.03, 'triangle'); }
+      else if (kind === 'perfect') {
+        [[1047, 0], [1568, 0.06], [2093, 0.12]].forEach(([fq, at]) => tone(fq, fq * 1.003, at, 0.4, 0.04, 'triangle'));
+        hiss(0.02, 0.5, 0.06, 6000, 1.2);
+        swell(0.32, 0.25, 1.2, 900);
+      } else if (kind === 'post') { tone(940, 930, 0, 0.6, 0.07, 'triangle'); tone(1480, 1470, 0, 0.45, 0.04); tone(2210, 2200, 0, 0.3, 0.02); }
+      else if (kind === 'miss') swell(0.22, 0.3, 1, 600); // « ooh » déçu
+      else if (kind === 'lock') tone(1700, 1650, 0, 0.05, 0.03, 'square');
+      else if (kind === 'beep') tone(880, 880, 0, 0.12, 0.05, 'triangle');
+      else if (kind === 'go') { tone(1320, 1320, 0, 0.32, 0.07, 'triangle'); tone(1760, 1760, 0, 0.32, 0.03); }
+      else if (kind === 'save') { tone(110, 60, 0, 0.14, 0.2); hiss(0, 0.08, 0.3, 1200, 0.8); swell(0.4, 0.25, 1.4, 820); } // gants qui claquent, public
+      else if (kind === 'goal') { hiss(0, 0.35, 0.45, 3000, 0.6); swell(0.14, 0.3, 1.2, 420); }
+      else if (kind === 'jump') hiss(0, 0.18, 0.12, 900, 0.9, 'lowpass');
+      else if (kind === 'step') tone(90, 60, 0, 0.05, 0.06);
+      else if (kind === 'clip') { tone(420, 300, 0, 0.08, 0.08, 'square'); hiss(0, 0.06, 0.12, 1800); } // haie touchée
+      else if (kind === 'crash') { tone(300, 120, 0, 0.18, 0.1, 'square'); hiss(0, 0.25, 0.25, 900); swell(0.25, 0.2, 1, 500); }
+      else if (kind === 'good') { tone(990, 1000, 0, 0.16, 0.04, 'triangle'); tone(1485, 1490, 0.07, 0.22, 0.03, 'triangle'); }
+      else if (kind === 'bad') { tone(300, 260, 0, 0.14, 0.05, 'triangle'); tone(240, 200, 0.12, 0.18, 0.05, 'triangle'); }
+      else if (kind === 'whistle') whistle(1);
+      else if (kind === 'finish') whistle(3);
+    },
     stop() {
       if (!ctx) return;
       const old = ctx;

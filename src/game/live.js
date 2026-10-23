@@ -83,6 +83,12 @@ function pickWeighted(list, weight) {
 // est réellement impossible.
 const HALF1 = [46, 47, 48]; // 45 minutes + 1 à 3 de temps additionnel
 const HALF2 = [47, 48, 49, 50]; // 45 minutes + 2 à 5
+// Signes distinctifs qui pèsent sur les occasions de l'équipe (un seul joueur suffit, pas de cumul) :
+// « Infatigable » : à partir de la 76e minute, quand les autres fatiguent, nous nous créons plus d'occasions et
+// l'adversaire un peu moins ; « Flèche » : plus d'occasions, surtout en bloc bas (le jeu de contre).
+const LATE = 75;
+const TIRELESS = { for: 1.1, against: 0.95 };
+const arrowBoost = (tactic) => (tactic === 'low' ? 1.06 : 1.03);
 
 const shooterWeight = (p, bigGame) => {
   const base = p.pos === 'A' ? p.a.fin * 3 : p.pos === 'M' ? ((p.a.fin + p.a.pas) / 2) * 1.5 : p.a.fin * 0.5;
@@ -99,6 +105,8 @@ function minuteGoalChances(s, lineup, tactic, oppStrength, sent = { home: 0, awa
   const rocs = on.some((p) => p.pos === 'D' && has(p, 'roc'));
   const keeper = on.find((p) => p.pos === 'G');
   const field = on.filter((p) => p.pos !== 'G');
+  const tireless = field.some((p) => has(p, 'infatigable'));
+  const arrow = field.some((p) => has(p, 'fleche')) ? arrowBoost(tactic) : 1;
   const shooters = field.length ? field : on;
   let wSum = 0, convSum = 0;
   for (const p of shooters) {
@@ -108,22 +116,26 @@ function minuteGoalChances(s, lineup, tactic, oppStrength, sent = { home: 0, awa
   }
   const convH = wSum ? convSum / wSum : CONVERSION;
   const convA = CONVERSION * (keeper && has(keeper, 'chat') ? 0.92 : 1);
-  const lamH = xg.for * 0.78 ** sent.home * 1.22 ** sent.away;
+  const lamH = xg.for * 0.78 ** sent.home * 1.22 ** sent.away * arrow;
   const lamA = xg.against * 1.22 ** sent.home * 0.78 ** sent.away * (rocs ? 0.97 : 1);
-  return { pH: Math.min(1, lamH / (90 * CONVERSION)) * convH, pA: Math.min(1, lamA / (90 * CONVERSION)) * convA };
+  const at = (h, a) => ({ pH: Math.min(1, h / (90 * CONVERSION)) * convH, pA: Math.min(1, a / (90 * CONVERSION)) * convA });
+  const early = at(lamH, lamA);
+  return { ...early, late: tireless ? at(lamH * TIRELESS.for, lamA * TIRELESS.against) : early }; // late : après la 75e
 }
 
-// répartition victoire / nul / défaite après n minutes, n tiré parmi `durations` (toutes également probables)
-function outcomeOdds({ pH, pA }, lead, durations) {
+// répartition victoire / nul / défaite après n minutes, n tiré parmi `durations` (toutes également probables) ;
+// minuteOf(k) : minute de jeu de la k-ième minute jouée (les chances changent après la 75e)
+function outcomeOdds(chances, lead, durations, minuteOf = (k) => k) {
   const max = Math.max(...durations);
   const off = max + 1;
   let dist = new Float64Array(2 * off + 1);
   dist[off] = 1; // écart de buts supplémentaire, en partant de 0
-  const up = pH * (1 - pA);
-  const down = pA * (1 - pH);
-  const stay = 1 - up - down;
   let win = 0, draw = 0, loss = 0;
   for (let n = 1; n <= max; n++) {
+    const { pH, pA } = minuteOf(n) > LATE ? chances.late : chances;
+    const up = pH * (1 - pA);
+    const down = pA * (1 - pH);
+    const stay = 1 - up - down;
     const next = new Float64Array(dist.length);
     for (let d = 1; d < dist.length - 1; d++) {
       const v = dist[d];
@@ -145,18 +157,23 @@ function outcomeOdds({ pH, pA }, lead, durations) {
   return { win, draw, loss };
 }
 
-// avant le coup d'envoi : 90 minutes plus le temps additionnel des deux mi-temps
+// avant le coup d'envoi : 90 minutes plus le temps additionnel des deux mi-temps (chaque durée de la première
+// mi-temps à part : la seconde commence à la 46e minute de jeu, quel que soit le temps additionnel)
 export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength }) {
-  const durations = HALF1.flatMap((a) => HALF2.map((b) => a + b));
-  return outcomeOdds(minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation), 0, durations);
+  const chances = minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation);
+  const parts = HALF1.map((h1) => outcomeOdds(chances, 0, HALF2.map((h2) => h1 + h2), (k) => (k <= h1 ? k : 45 + k - h1)));
+  const mean = (key) => parts.reduce((a, o) => a + o[key], 0) / parts.length;
+  return { win: mean('win'), draw: mean('draw'), loss: mean('loss') };
 }
 
 // Buts attendus du match selon le même moteur que le pronostic (traits des tireurs et du gardien, temps
 // additionnel compris) : l'avant-match ne peut plus afficher des buts attendus qui contredisent ses pourcentages.
 const MEAN_MINUTES = [HALF1, HALF2].reduce((t, h) => t + h.reduce((a, b) => a + b, 0) / h.length, 0);
+const LATE_MINUTES = HALF2.reduce((a, h) => a + Math.max(0, 45 + h - LATE), 0) / HALF2.length; // après la 75e
 export function prematchXg(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength }) {
-  const { pH, pA } = minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation);
-  return { for: pH * MEAN_MINUTES, against: pA * MEAN_MINUTES };
+  const c = minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation);
+  const early = MEAN_MINUTES - LATE_MINUTES;
+  return { for: c.pH * early + c.late.pH * LATE_MINUTES, against: c.pA * early + c.late.pA * LATE_MINUTES };
 }
 
 // Changements entre deux onzes : chaque entrant face au sortant qu'il remplace (celui de son poste s'il sort,
@@ -252,6 +269,8 @@ export function createLiveMatch(s, ctx) {
     const bigGame = m.oppStrength > rating;
     const starters = playersOn();
     const rocs = starters.some((p) => p.pos === 'D' && has(p, 'roc'));
+    const tireless = starters.some((p) => p.pos !== 'G' && has(p, 'infatigable'));
+    const arrow = starters.some((p) => p.pos !== 'G' && has(p, 'fleche')) ? arrowBoost(m.tactic) : 1;
     const keeper = starters.find((p) => p.pos === 'G');
     const chat = keeper && has(keeper, 'chat');
     const diff = rating - m.oppStrength;
@@ -266,8 +285,9 @@ export function createLiveMatch(s, ctx) {
       const at = minute - Math.random() * 0.9;
       // un joueur expulsé affaiblit l'équipe pour le reste du match
       const redH = m.sent.home.size, redA = m.sent.away.size;
-      const lamH = xg.for * Math.pow(0.78, redH) * Math.pow(1.22, redA);
-      const lamA = xg.against * Math.pow(1.22, redH) * Math.pow(0.78, redA) * (rocs ? 0.97 : 1);
+      const late = tireless && minute > LATE;
+      const lamH = xg.for * Math.pow(0.78, redH) * Math.pow(1.22, redA) * arrow * (late ? TIRELESS.for : 1);
+      const lamA = xg.against * Math.pow(1.22, redH) * Math.pow(0.78, redA) * (rocs ? 0.97 : 1) * (late ? TIRELESS.against : 1);
       for (const [side, lam] of [['home', lamH], ['away', lamA]]) {
         if (Math.random() >= lam / (90 * CONVERSION)) continue;
         const idx = side === 'home' ? 0 : 1;
@@ -411,7 +431,7 @@ export function createLiveMatch(s, ctx) {
     secondHalfOdds({ lineup = m.lineup, tactic = m.tactic } = {}) {
       const sent = { home: m.sent.home.size, away: m.sent.away.size };
       const chances = minuteGoalChances(s, lineup, tactic, m.oppStrength, sent, m.sent.home, m.formation);
-      return outcomeOdds(chances, m.score.home - m.score.away, [m.halfLength[1]]);
+      return outcomeOdds(chances, m.score.home - m.score.away, [m.halfLength[1]], (k) => 45 + k);
     },
     // onze de la seconde période composé sur le terrain : jusqu'à SUBS_MAX entrants, titulaires replacés à
     // d'autres postes, expulsés laissés à leur place. Chaque entrant remplace le sortant de son poste.

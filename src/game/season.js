@@ -12,6 +12,7 @@ import { closeSeasonGoals, reputationStatusEvent, resetSeasonStats } from './goa
 import { book, closeLedger, markTreasury } from './ledger';
 import { C1_ENTRY, COMPS, STAGES, buildCalendar, cupPrize, drawOpponent, fixtureLabel, fixtureShort, nextFixture, ofDiv } from './cups';
 import { addMatch, rebuildRecords } from './records';
+import { collectiveSession, tidyTraining, windowKey } from './training';
 
 export function roundRobin(n) {
   const rounds = [];
@@ -242,6 +243,7 @@ export function applyMatchResult(s, live) {
   if (!ctx) return s;
   const league = ctx.comp === 'league';
   const before = league ? standingsOf(s).map((t) => t.i) : null; // ordre du classement avant la journée (après-match)
+  const trainingWindow = windowKey(s); // séance d'entraînement de l'avant-match (training.js)
   if (league) {
     for (const [i, j] of s.schedule[s.round]) {
       if (i === 0 || j === 0) continue;
@@ -294,6 +296,7 @@ export function applyMatchResult(s, live) {
   refreshTransfers(s); // le marché des transferts bouge à chaque journée
   if (league) trainYouth(s); // académie : les jeunes progressent à chaque journée de championnat
   refreshScouting(s); // et de nouveaux jeunes sont repérés
+  collectiveSession(s, trainingWindow); // centre d'entraînement : séance collective pour ceux qui n'étaient pas à la séance
   const score = `${res.gf}–${res.ga}${res.pens ? ` (t.a.b. ${res.pens[0]}–${res.pens[1]})` : ''}`;
   if (!league) {
     pushJournal(s, {
@@ -384,7 +387,7 @@ export function endSeason(s) {
     // bilan individuel de la saison, puis progression de l'été
     p.hist = [...(p.hist || []), seasonLine(s, p)].slice(-20); // carrière : 20 saisons gardées
     p.season = freshSeason();
-    progressPlayer(p, s.buildings.training);
+    progressPlayer(p);
     p.age += 1;
   }
   const staying = [];
@@ -395,6 +398,7 @@ export function endSeason(s) {
     } else staying.push(p);
   }
   s.players = staying;
+  tidyTraining(s); // programmes d'entraînement des retraités effacés
 
   // académie : le bond de l'été, puis les jeunes de 19 ans qui ne sont pas montés quittent le club
   for (const y of youthSeasonEnd(s)) events.push(`${y.name} (19 ans) quitte l’académie : il n’est pas monté en équipe première.`);

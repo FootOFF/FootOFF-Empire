@@ -92,7 +92,7 @@ export function stepContent(step, s) {
       return {
         ...base,
         title: 'Construis ton centre d’entraînement',
-        text: `Tes joueurs progresseront à chaque intersaison. La parcelle 1 du complexe t’attend : ${upgradeCost('training', 1).toLocaleString('fr-FR')} €.`,
+        text: `Entre deux matchs, tes joueurs y progresseront en passant des épreuves. La parcelle 1 du complexe t’attend : ${upgradeCost('training', 1).toLocaleString('fr-FR')} €.`,
         cta: 'Voir la parcelle',
         action: { kind: 'plot', plot: 't1', sector: 'main' },
       };

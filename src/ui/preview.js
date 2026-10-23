@@ -1,4 +1,7 @@
-import { answerOffer, build, createInitialState, endSeason, playRound, sellPlayer, setYouthPlan, signPlayer, signYouth, toggleShortlist, upgrade } from '../game/engine';
+import {
+  answerOffer, build, createInitialState, endSeason, playRound, sellPlayer, setYouthPlan, signPlayer, signYouth, startProgram, toggleShortlist, trainPlayer, upgrade,
+} from '../game/engine';
+import { LINES, pickOf, programsFor } from '../game/training';
 import { advisedPlan } from '../game/academy';
 import { seasonFixtures } from '../game/fixtures';
 import { matchContext, startSeason } from '../game/season';
@@ -41,6 +44,12 @@ export const SCREENS = [
   ['academie-repere', 'Académie · fiche d’un jeune repéré'],
   ['academie-vide', 'Académie · équipe de jeunes vide'],
   ['academie-batiment', 'Inspecteur · académie'],
+  ['entrainement', 'Centre d’entraînement · séance (deux épreuves faites)'],
+  ['entrainement-joueur', 'Centre d’entraînement · choix du joueur d’une ligne'],
+  ['entrainement-programmes', 'Centre d’entraînement · programmes de signes (niveau 3)'],
+  ['entrainement-programme', 'Centre d’entraînement · programme d’un joueur'],
+  ['entrainement-progres', 'Centre d’entraînement · progrès et niveaux'],
+  ['entrainement-batiment', 'Inspecteur · centre d’entraînement'],
   ['comparateur', 'Comparateur radar'],
   ['avant-match', 'Avant-match'],
   ['direct', 'Match en direct'],
@@ -113,6 +122,7 @@ export function previewState(screen) {
   }
   if (MERCATO.includes(screen)) mercatoPreview(s, screen);
   if (screen.startsWith('academie')) academyPreview(s, screen);
+  if (screen.startsWith('entrainement')) trainingPreview(s);
   if (screen === 'bilan' || screen === 'bilan-champion') {
     while (s.round < 7) playRound(s);
     endSeason(s);
@@ -142,6 +152,27 @@ function academyPreview(s, screen) {
   setYouthPlan(s, s.youth[1].id, other);
   const from = s.round; // deux journées de championnat (les matchs de coupe ne comptent pas)
   for (let k = 0; k < 8 && s.round < from + 2; k++) playRound(s);
+}
+
+// Centre d'entraînement en aperçu (niveau 3) : deux séances complètes et leurs matchs, puis, avant le match suivant,
+// une épreuve jouée (attaquant) et une simulée (gardien) ; un programme de signe en cours.
+function trainingPreview(s) {
+  s.money = 1e6;
+  upgrade(s, 'training');
+  upgrade(s, 'training');
+  s.money = 42000;
+  const scores = [0.82, null, 0.64, 0.38];
+  for (let w = 0; w < 2; w++) {
+    LINES.forEach((pos, i) => { const pk = pickOf(s, pos); if (pk) trainPlayer(s, pos, { ...pk, score: scores[(i + w) % 4] }); });
+    playRound(s);
+  }
+  const m = s.players.find((p) => p.pos === 'M' && programsFor(s, p).length);
+  if (m) {
+    startProgram(s, m.id, programsFor(s, m)[0]);
+    s.training.programs[m.id].steps = 2;
+  }
+  trainPlayer(s, 'A', { ...pickOf(s, 'A'), score: 0.86 });
+  trainPlayer(s, 'G', { ...pickOf(s, 'G'), score: null });
 }
 
 // Mercato en aperçu : une négociation (avec ou sans contre-offre), des joueurs suivis dont un parti ailleurs, des
@@ -248,6 +279,12 @@ export function previewUi(screen, s) {
     case 'academie-jeune': return { panel: 'academy', academy: { sheet: s.youth[1].id } };
     case 'academie-repere': return { panel: 'academy', academyTab: 'scout', academy: { sheet: s.scouting.list[0].id, list: 'scout' } };
     case 'academie-batiment': return { sel: { plotId: 't2', sector: 'main' } };
+    case 'entrainement': return { panel: 'training' };
+    case 'entrainement-joueur': return { panel: 'training', training: { chooser: 'D' } };
+    case 'entrainement-programmes': return { panel: 'training', trainingTab: 'programs' };
+    case 'entrainement-programme': return { panel: 'training', trainingTab: 'programs', training: { program: s.players.find((p) => !s.training?.programs?.[p.id] && programsFor(s, p).length)?.id } };
+    case 'entrainement-progres': return { panel: 'training', trainingTab: 'progress' };
+    case 'entrainement-batiment': return { sel: { plotId: 't1', sector: 'main' } };
     case 'comparateur': return { panel: 'squad', squadTab: 'market', squad: { compare: true } };
     case 'saison': case 'saison-fin': case 'calendrier-europe': return { panel: 'season' };
     case 'saison-joue': return { panel: 'season', seasonSel: seasonFixtures(s).find((f) => f.match)?.index };
@@ -292,5 +329,5 @@ export function previewUi(screen, s) {
 
 // Son coupé en aperçu (pas d'AudioContext dans les vignettes).
 export const silentSound = {
-  muted: true, start() {}, setMuted() {}, whistle() {}, chance() {}, goal() {}, conceded() {}, card() {}, coins() {}, spend() {}, ui() {}, stop() {},
+  muted: true, start() {}, setMuted() {}, whistle() {}, chance() {}, goal() {}, conceded() {}, card() {}, coins() {}, spend() {}, ui() {}, sfx() {}, stop() {},
 };

@@ -1,6 +1,7 @@
 import { nextFixture } from './cups';
 import { BUILDINGS, POS_LABELS, SQUAD_MAX, YOUTH_LEAVE_AGE, YOUTH_PLACES, upgradeCost } from './constants';
 import { leavingYouth } from './academy';
+import { LINES, sessionOf, windowKey } from './training';
 import { PLOTS, allowedBuildingsFor, plotBuilding } from './map';
 import { autoLineup, lineupRating, slotsOf } from './tactics';
 import { costOf, ratingAt, wageOf } from './players';
@@ -149,6 +150,15 @@ export function staffTip(s) {
       id: `lineup-${s.seasonNumber}-${s.round}`, title: 'Ton onze peut faire mieux',
       text: 'Des remplaçants sont plus forts que certains titulaires. Choisis « Meilleur onze » dans l’avant-match.',
       action: { kind: 'match', label: 'Préparer le match' },
+    };
+  }
+  // centre d'entraînement : la séance d'avant-match n'est pas finie
+  const todo = s.buildings.training > 0 ? LINES.filter((pos) => !sessionOf(s).done[pos] && s.players.some((p) => p.pos === pos)) : [];
+  if (todo.length) {
+    return {
+      id: `training-${windowKey(s)}`, title: todo.length === LINES.length ? 'Séance d’entraînement avant le match' : 'Séance d’entraînement à finir',
+      text: `${todo.length > 1 ? `${todo.length} joueurs peuvent` : 'Un joueur peut'} encore progresser avant le prochain match : une épreuve chacun, à jouer en 3D ou à simuler.`,
+      action: { kind: 'panel', panel: 'training', label: 'Aller à l’entraînement' },
     };
   }
   const gate = expectedGate(s, null);

@@ -17,6 +17,8 @@ import { StatsPanel } from './ui/stats';
 import { TrophyRoom } from './ui/trophyroom';
 import { SquadView } from './ui/squad';
 import { AcademyView } from './ui/academy';
+import { TrainingView } from './ui/training';
+import DrillRunner from './ui/drill';
 import PlotInspector, { freePlotsOf } from './ui/inspector';
 import { OfflineReturn, SeasonReview } from './ui/overlays';
 import PostMatch from './ui/postmatch';
@@ -98,6 +100,10 @@ export default function App({ preview = null }) {
   const [trophyFocus, setTrophyFocus] = useState([]); // succès à montrer d'emblée (notification d'un succès débloqué)
   const [squadMercato, setSquadMercato] = useState(null); // vue du mercato à l'ouverture (offres reçues, suivis…)
   const [academyNav, setAcademyNav] = useState({ tab: boot.ui.academyTab || 'youth', ids: [] }); // onglet et jeunes à montrer
+  const [trainingTab, setTrainingTab] = useState(boot.ui.trainingTab || 'session'); // onglet d'ouverture du centre d'entraînement
+  const [drills, setDrills] = useState(null); // épreuves en 3D en cours : [{ pos, id, cat, drill }]
+  const [drillsKey, setDrillsKey] = useState(0); // chaque séance repart d'un écran d'épreuves neuf
+  const playDrills = (queue) => { setDrillsKey((k) => k + 1); setDrills(queue); };
   const [navKey, setNavKey] = useState(0); // une notification rouvre son panneau à neuf, sur ce qu'elle annonce
   const sound = useRef(null);
   if (!sound.current) sound.current = preview ? silentSound : createStadiumSound();
@@ -117,7 +123,7 @@ export default function App({ preview = null }) {
   useEffect(() => { if (!preview) setState((prev) => (prev ? applyOffline(clone(prev)) : prev)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const inGame = screen === 'game' && !!state;
-  const cinematic = !!state && (!!matchPhase || showResult || !!state.seasonReview || !!state.offline);
+  const cinematic = !!state && (!!matchPhase || showResult || !!state.seasonReview || !!state.offline || !!drills);
   // Notifications (src/ui/notify.jsx) : en attente tant qu'un écran ne doit pas être couvert ; jamais dans les
   // aperçus de la galerie, sauf celui des notifications.
   const notes = useNotifications(preview ? preview !== 'notification' : !inGame || menu || cinematic || !!confirm);
@@ -179,8 +185,16 @@ export default function App({ preview = null }) {
     setNavKey((k) => k + 1);
     openPanel('academy');
   };
+  // centre d'entraînement : même principe (la séance d'abord, la fiche du bâtiment depuis l'écran)
+  const openTraining = (tab = 'session') => {
+    setTrainingTab(tab);
+    setNavKey((k) => k + 1);
+    openPanel('training');
+  };
   const pickPlot = (plotId, sector, how) => {
-    if (!how?.pin && state && plotBuilding(state, plotId) === 'academy') openAcademy();
+    const k = !how?.pin && state ? plotBuilding(state, plotId) : null;
+    if (k === 'academy') openAcademy();
+    else if (k === 'training') openTraining();
     else selectPlot(plotId, sector);
   };
   // une notification ouvre ce qu'elle annonce : le succès lui-même (salle des trophées, mis en évidence), les offres
@@ -189,6 +203,7 @@ export default function App({ preview = null }) {
     if (a.panel === 'trophies') { setTrophyTab(a.tab || 'honours'); setTrophyFocus(a.ids || []); }
     if (a.panel === 'squad') { setSquadTab(a.tab || 'players'); setSquadMercato(a.view || null); setSquadSheet(a.sheet ?? null); }
     if (a.panel === 'academy') setAcademyNav({ tab: a.tab || 'youth', ids: a.ids || [] });
+    if (a.panel === 'training') setTrainingTab(a.tab || 'session');
     setNavKey((k) => k + 1);
     openPanel(a.panel);
   };
@@ -322,6 +337,7 @@ export default function App({ preview = null }) {
     if (!a) return;
     if (a.kind === 'plot') selectPlot(a.plot, a.sector);
     else if (a.kind === 'panel' && a.panel === 'academy') openAcademy(a.tab, a.ids);
+    else if (a.kind === 'panel' && a.panel === 'training') openTraining(a.tab);
     else if (a.kind === 'panel') { setSquadTab(a.tab || 'players'); openPanel(a.panel); }
     else if (a.kind === 'match') play();
   };
@@ -350,7 +366,7 @@ export default function App({ preview = null }) {
   const sceneState = state || (demo.current ||= createInitialState('FootOFF FC'));
 
   return (
-    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'academy', 'season', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
+    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'academy', 'training', 'season', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
       <div className="stage">
         {preview ? (
           <div className="stage-preview" aria-hidden="true" />
@@ -368,7 +384,7 @@ export default function App({ preview = null }) {
               holo={holo}
               badges={plotBadges}
               attract={!inGame}
-              paused={menu}
+              paused={menu || !!drills}
               onLoadProgress={setLoadProgress}
               onLoaded={() => setSceneLoaded(true)}
               onSelectPlot={pickPlot}
@@ -455,6 +471,23 @@ export default function App({ preview = null }) {
           />
         )}
       </Presence>
+      <Presence>
+        {inGame && panel === 'training' && !drills && ( // pendant les épreuves, rien n'est atteignable derrière (clavier, manette)
+          <TrainingView
+            key={navKey}
+            state={state}
+            run={run}
+            ask={setConfirm}
+            notify={notify}
+            initialTab={trainingTab}
+            preview={boot.ui.training}
+            onPlay={playDrills}
+            onClose={() => { setPanel(null); setTrainingTab('session'); }}
+            onBuilding={() => { const plot = plotOf(state, 'training'); if (plot) selectPlot(plot.id, plot.sector); }}
+          />
+        )}
+      </Presence>
+      {inGame && drills && <DrillRunner key={drillsKey} state={state} queue={drills} run={run} sound={sound.current} notify={notify} onClose={() => setDrills(null)} />}
       <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} initialTab={boot.ui.seasonTab} initialSel={boot.ui.seasonSel} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); setPanel('stats'); }} />}</Presence>
       <Presence>{inGame && panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'reputation' && <ReputationPanel state={state} onClose={() => setPanel(null)} />}</Presence>
@@ -476,6 +509,7 @@ export default function App({ preview = null }) {
             onMatchDay={() => { setSel(null); setMatchDay(true); }}
             onTransfers={() => { setSel(null); setSquadTab('market'); setPanel('squad'); }}
             onAcademy={() => openAcademy()}
+            onTraining={() => openTraining()}
             onTicketPolicy={(id) => run((s) => setTicketPolicy(s, id))}
             onPreview={setBuildView}
             onSwitchPlot={(id) => selectPlot(id, 'main')}

@@ -393,6 +393,56 @@ Aperçus : `?ecran=academie`, `academie-detection`, `academie-jeune`, `academie-
 `academie-batiment`. Simulation : `tmp/ph3/simcheck.js` (gestes et contrôles de l'académie) ; calage des progrès :
 `tmp/calib-academy.mjs`.
 
+## Centre d'entraînement
+
+Les séances (`src/game/training.js`, écran `src/ui/training.jsx`) s'ouvrent d'un clic sur le bâtiment dans la vue 3D,
+par « Séance d'entraînement » sur sa fiche, ou par le conseil du staff tant que la séance d'avant-match n'est pas
+finie. Trois onglets :
+- Séance : une carte par ligne (gardien, défenseur, milieu, attaquant). Joueur conseillé d'emblée (celui qui
+  progresserait le plus), « Changer » ouvre la liste de la ligne avec le gain de chacun. Catégorie en sélecteur, gain
+  simulé sous chaque catégorie, la conseillée marquée d'un point doré. Qualités travaillées avant → après. Épreuve et
+  règle en une ligne, programme en cours (barre ; avertissement si la catégorie choisie ne le fait pas avancer). Gain
+  attendu exact : simulée, et la fourchette d'une épreuve jouée (score nul à parfait). « Simuler » ou « Jouer » par
+  ligne, « Tout simuler » et « Lancer la séance » en tête ; une ligne faite montre son résultat.
+- Programmes (dès le niveau 3) : en cours (barre, catégorie, arrêt confirmé en rouge), puis les joueurs qui peuvent en
+  commencer un ; la fiche d'un joueur liste les signes possibles avec leur effet.
+- Progrès : épreuves de la saison, niveau gagné, score moyen joué, dernière séance collective, journal groupé par
+  séance (« Avant : journée 3 / 7 »), tableau des niveaux du centre.
+Règles :
+- Une séance par fenêtre entre deux matchs (ou avant la fin de saison), une épreuve par ligne.
+- Gain = marge vers le potentiel × 3 % × rythme (âge, et plus lent au sommet) × niveau (×1 à ×2) × épreuve × score
+  (×0,75 à ×1,5 ; un tiers des points vaut la simulation), réparti sur les qualités de la catégorie ; jamais au-delà
+  du potentiel.
+- Après chaque match, les joueurs absents de la séance gagnent 1 à 2 % de leur marge (séance collective).
+- Le bond de l'été vaut six dixièmes de l'ancien bond sans centre.
+- Programmes : 6, 5 ou 4 séances dans la bonne catégorie selon le niveau ; une épreuve très réussie (deux tiers des
+  points) compte double. Trois signes positifs au plus ; « Maîtrise de soi » retire « Sang chaud ». Un signe appris
+  entre au journal.
+- « Infatigable » et « Flèche » pèsent en match (`live.js`), pronostic compris.
+Calage : `tmp/calib-training.mjs` (carrières), contrôles : `tmp/check-training.mjs`, simulation : `tmp/ph3/simcheck.js`.
+
+Épreuves en 3D (`src/three/drills/`, écran `src/ui/drill.jsx`), plein écran, chargées à la première épreuve :
+- Scène en unités du jeu, avec son propre rendu à la pleine résolution de l'écran. Elle reprend le ciel photographié
+  du plein jour, le gazon photo du site (bandes de tonte, marquages calculés au pixel), la forêt d'imposteurs, les
+  buts avec filets animés, les filets pare-ballons, les mâts et un ballon à panneaux et coutures.
+- Toutes les caméras regardent vers le nord, soleil dans le dos. Les joueurs sont low-poly : jamais filmés de près ni
+  de dos (plan large, vue subjective ou vue d'en haut). Le 3D du complexe est figé pendant l'épreuve.
+- Précision : caméra derrière le ballon, deux appuis (ligne verticale, puis horizontale), six frappes vers des cibles
+  dorées.
+- Arrêts réflexes : vue subjective du gardien, gants noir et or, plongeon réel de la caméra, huit tirs.
+- Sprint et haies : travelling latéral, départ au signal, dix haies, zone d'appel dorée, chrono.
+- Lecture du jeu : tablette de l'analyste vue d'en haut, cadrage automatique, trois partenaires numérotés, une seule
+  bonne passe.
+- Intro (gain parfait / simulé / raté, commandes selon le moyen utilisé), compte à rebours, tableau de bord (points
+  ou chrono, tentatives, consigne), points à l'impact, résultat (score, mention, gain, programme), bilan.
+- Échap (B ou Start) met en pause ; une épreuve interrompue n'est pas comptée.
+- Sons synthétisés (`sfx` de `src/ui/sound.js`). Toute erreur referme l'écran sans toucher au jeu.
+- GPU mesuré en 2880 × 1620 sur la puce intégrée : de 9 ms (Lecture) à 16 ms (Précision) par image.
+
+Aperçus : `?ecran=entrainement`, `entrainement-joueur`, `entrainement-programmes`, `entrainement-programme`,
+`entrainement-progres`, `entrainement-batiment` (les épreuves 3D se testent dans le jeu ; `window.__drill.debug` et
+`window.__drillStage` en développement).
+
 ## Dispositifs
 
 Six formations (`FORMATIONS` dans `src/game/tactics.js`) : 4-3-3, 4-4-2, 4-2-3-1, 3-5-2, 3-4-3, 5-3-2. Le

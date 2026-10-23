@@ -17,6 +17,7 @@ import { rnd } from './utils';
 import { book, ensureLedger } from './ledger';
 import { addSigning, emptyRecords, rebuildRecords } from './records';
 import { normalizeCrest } from './crest';
+import { PROGRAMS, programDesc, programLabel, setPick, startProgram, stopProgram, tidyTraining, trainLine } from './training';
 
 export { playRound, endSeason };
 export { applyMatchResult, matchContext } from './season';
@@ -189,6 +190,26 @@ export function setYouthPlan(s, id, plan) {
   return s;
 }
 
+// --- Centre d'entraînement (voir training.js) -------------------------------------------------------------
+
+// Épreuve d'un joueur de la séance (jouée : score de 0 à 1 ; simulée : score null). Un signe distinctif appris au
+// bout d'un programme entre au journal.
+export function trainPlayer(s, pos, pick) {
+  if (!trainLine(s, pos, pick)) return null;
+  const r = s.training.done[pos];
+  if (r.learned) {
+    const removed = !!PROGRAMS[r.learned].remove;
+    pushJournal(s, {
+      season: s.seasonNumber, round: s.round, kind: 'entrainement',
+      title: removed ? `${r.name} apprend à se maîtriser` : `${r.name} gagne un signe distinctif : ${programLabel(r.learned)}`,
+      text: `Au bout de son programme au centre d’entraînement. ${programDesc(r.learned)}`,
+    });
+  }
+  return s;
+}
+export const setTrainingPick = setPick;
+export { startProgram, stopProgram };
+
 // --- Mercato (voir mercato.js et transfers.js) ------------------------------------------------------------
 
 // Vente d'un joueur à un autre club, au prix d'une offre reçue (il n'y a plus de vente immédiate : toute vente passe
@@ -206,6 +227,7 @@ export function sellPlayer(s, id, fee = null, club = null) {
   logMove(s, 'out', p, amount, to);
   s.saleList = (s.saleList || []).filter((x) => x.id !== id);
   s.offers = (s.offers || []).filter((o) => o.playerId !== id);
+  tidyTraining(s); // son programme au centre d'entraînement s'arrête
   ensureLineup(s);
   pushJournal(s, {
     season: s.seasonNumber, kind: 'mercato', title: `${p.name} quitte le club`,

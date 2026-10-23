@@ -153,12 +153,16 @@ export function createPlayers(parent, max = 64) {
     setKit(i, hex) { mKit.setColorAt(i, col.setHex(hex)); mKit.instanceColor.needsUpdate = true; },
     // un joueur d'après son état de locomotion (Agent) ; y = sol, échelle 0,1 = taille réelle en unités du jeu
     setAgent(i, ag, y, scale = 0.1) {
-      P.set(ag.x, y, ag.z);
+      P.set(ag.x, y + (ag.lift || 0), ag.z);
       Q.setFromAxisAngle(UP, -ag.h);
       if (ag.lean) { // plongeon : le corps bascule vers le côté du ballon (vers +z ou -z du terrain) et s'y décale
         Q2.setFromAxisAngle(FWD, ag.lean * 1.25 * Math.cos(ag.h));
         Q.multiply(Q2);
         P.z += ag.lean * 0.035;
+      }
+      if (ag.roll) { // bascule autour de l'axe du regard, quel que soit le cap (plongeon des épreuves d'entraînement)
+        Q2.setFromAxisAngle(FWD, ag.roll);
+        Q.multiply(Q2);
       }
       S.setScalar(scale);
       M.compose(P, Q, S);
