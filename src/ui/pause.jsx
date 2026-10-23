@@ -3,6 +3,7 @@ import { ClubCard, Hints, MenuList, SettingsView, useMenu } from './console';
 import { IconCheck } from './icons';
 import { ClubCrest } from './crest';
 import { DIVISIONS } from '../game/constants';
+import { clubStars } from '../game/crest';
 
 // Menu pause, façon jeu de console : le jeu se fige (la vue 3D s'arrête et se floute derrière), le menu à gauche,
 // la saison en cours à droite. Échap, B ou Start (manette) reprennent la partie.
@@ -26,7 +27,7 @@ export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMat
         <header className="pz-head">
           <span className="eyebrow">Pause</span>
           <div className="pz-club">
-            <ClubCrest crest={state.crest} name={state.clubName} className="pz-crest" />
+            <ClubCrest crest={state.crest} name={state.clubName} className="pz-crest" stars={clubStars(state)} />
             <h2 className={state.clubName.length > 16 ? 'long' : ''}>{state.clubName}</h2>
           </div>
           <p>{div.name} · Saison {state.seasonNumber} · {state.round ? `journée ${Math.min(state.round, total)}/${total}` : 'avant la 1re journée'}</p>

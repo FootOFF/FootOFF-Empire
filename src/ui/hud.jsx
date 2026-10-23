@@ -12,6 +12,7 @@ import {
   IconCal, IconCheck, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
   IconTarget, IconTrophy, IconUsers, IconClock, IconEye, IconStats, IconCrane,
 } from './icons';
+import { clubStars } from '../game/crest';
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran.
 
@@ -37,7 +38,7 @@ export function TopHud({ state, onMenu, onFinances, onReputation }) {
   return (
     <header className="hud-top">
       <div className="hud-club glass">
-        <ClubCrest crest={state.crest} name={state.clubName} className="hud-mark" />
+        <ClubCrest crest={state.crest} name={state.clubName} className="hud-mark" stars={clubStars(state)} />
         <div className="hud-club-text">
           <span className="hud-club-name" ref={nameRef}>{state.clubName}</span>
           <span className="hud-club-meta">{div.name}<span className="meta-season"> · Saison {state.seasonNumber}</span></span>

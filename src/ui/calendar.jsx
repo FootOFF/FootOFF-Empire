@@ -14,6 +14,7 @@ import { IconCheck, IconChevron, IconClose, IconPlay, IconStar, IconTrophy } fro
 import { fmtMoney, fmtNum, fmtPrice, fmtRating, roundPercents } from './format';
 import { useSwipe } from './gestures';
 import { uiSound } from './uisound';
+import { clubStars } from '../game/crest';
 
 // Calendrier de la saison (panneau Saison). Trois parties :
 // - la frise : toutes les dates dans l'ordre où elles se jouent (couleur de la compétition en tête : championnat or,
@@ -303,7 +304,7 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
 
       <div className="sc-versus">
         <div className="sc-team us">
-          <ClubCrest crest={state.crest} name={state.clubName} className="sc-crest" />
+          <ClubCrest crest={state.crest} name={state.clubName} className="sc-crest" full stars={clubStars(state)} />
           <strong>{state.clubName}</strong>
           {ours != null && <span>Niveau {fmtRating(ours)}</span>}
         </div>
@@ -314,7 +315,7 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
           {r && f.comp !== 'league' && v.o === 'win' && f.stage < 3 && <span className="sc-pens">en route pour {NEXT_STAGE[f.stage]}</span>}
         </div>
         <div className="sc-team them">
-          {opp ? <Crest name={opp.name} className="sc-crest" /> : <span className="sc-crest-q" aria-hidden="true">{f.status === 'out' ? '—' : '?'}</span>}
+          {opp ? <Crest name={opp.name} className="sc-crest" full /> : <span className="sc-crest-q" aria-hidden="true">{f.status === 'out' ? '—' : '?'}</span>}
           <strong>{opp?.name || (f.status === 'out' ? 'Aucun adversaire' : 'Adversaire à tirer')}</strong>
           {oppMeta && <span>{oppMeta}</span>}
         </div>

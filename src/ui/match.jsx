@@ -8,6 +8,7 @@ import { IconBall, IconSwap, IconWhistle } from './kit';
 import { useKeydown } from './presence';
 import { SEC_PER_MIN, matchFeed } from '../game/matchFeed';
 import { ClubCrest, Crest } from './crest';
+import { clubStars } from '../game/crest';
 
 // Avant-match (onze + tactique + pronostic) et match en direct (score, chrono, fil de commentaires,
 // vitesse, mi-temps avec changements sur le terrain). La 3D derrière est en mode « jour de match ».
@@ -81,7 +82,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
         <div>
           <span className={`eyebrow hm-comp-${ctx.comp || 'league'}`}>{ctx.label || `Journée ${state.round + 1} / 7`} · à domicile</span>
           <h2 className="ms-versus">
-            <span className="ms-side"><ClubCrest crest={state.crest} name={state.clubName} className="ms-crest" />{state.clubName}</span>
+            <span className="ms-side"><ClubCrest crest={state.crest} name={state.clubName} className="ms-crest" stars={clubStars(state)} />{state.clubName}</span>
             {/* « vs » reste avec l'adversaire : sur une ligne étroite, il passe à la ligne avec lui */}
             <span className="ms-side"><em>vs</em><Crest name={ctx.opp.name} className="ms-crest" />{ctx.opp.name}</span>
           </h2>
@@ -342,7 +343,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
   return (
     <div className={`matchscreen live ${phase !== 'playing' ? 'paused' : ''}`}>
       <div className="scoreboard glass">
-        <span className="sb-team"><ClubCrest crest={state.crest} name={m.home} className="sb-crest" /><span className="sb-name">{m.home}</span></span>
+        <span className="sb-team"><ClubCrest crest={state.crest} name={m.home} className="sb-crest" stars={clubStars(state)} /><span className="sb-name">{m.home}</span></span>
         <span className="sb-score"><b key={`h${goalsH}`}>{goalsH}</b><i>–</i><b key={`a${goalsA}`}>{goalsA}</b></span>
         <span className="sb-team right"><span className="sb-name">{m.away}</span><Crest name={m.away} className="sb-crest" /></span>
         <span className="sb-clock">{phase === 'halftime' ? 'Mi-temps' : phase === 'fulltime' ? `Terminé${m.pens ? ` · t.a.b. ${m.pens[0]}–${m.pens[1]}` : ''}` : <><i className="live-dot" />{minuteLabel}′</>}</span>

@@ -11,6 +11,7 @@ import { Trophy } from './trophy';
 import { ClubCrest, Crest } from './crest';
 import { STAGES } from '../game/cups';
 import { Portrait } from './portrait';
+import { clubStars } from '../game/crest';
 
 // Après-match : le résultat (score au centre exact, buteurs sous chaque équipe, notes du match sur 10 et homme du
 // match, le match en chiffres, recettes et réputation), puis, après une journée de championnat, le classement mis à
@@ -107,7 +108,7 @@ export default function PostMatch({ state, onClose, onStats, initialStep = 'resu
           </div>
           <div className="post-score">
             <div className="post-team home">
-              <ClubCrest crest={state.crest} name={state.clubName} className="post-crest" />
+              <ClubCrest crest={state.crest} name={state.clubName} className="post-crest" stars={clubStars(state)} />
               <strong>{state.clubName}</strong>
               <Goals list={homeGoals} align="right" />
             </div>

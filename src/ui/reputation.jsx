@@ -6,6 +6,7 @@ import { IconStar } from './icons';
 import { fmtRating } from './format';
 import { REP_LEVELS, repLevel } from '../game/reputation';
 import { repEffects } from '../game/economy';
+import { clubStars } from '../game/crest';
 
 // Panneau Notoriété (bouton étoile du HUD) : statut du club, ce que la réputation apporte aujourd'hui (comparé à la
 // fondation), les statuts, et comment la faire grandir. Rien n'y est verrouillé : la réputation attire, elle ne
@@ -31,7 +32,7 @@ export function ReputationPanel({ state, onClose }) {
   return (
     <Panel title="Notoriété du club" eyebrow={`Réputation ${fmtRating(rep)}`} onClose={onClose}>
       <section className="rp-head">
-        <ClubCrest crest={state.crest} name={state.clubName} className="rp-crest" />
+        <ClubCrest crest={state.crest} name={state.clubName} className="rp-crest" full stars={clubStars(state)} />
         <div className="rp-score">
           <span className="rp-value"><IconStar /> {fmtRating(rep)}</span>
           <strong>{rl.level.name}</strong>

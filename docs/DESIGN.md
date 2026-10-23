@@ -295,11 +295,24 @@ en est le club (« Tu grimpes à la 2e place », « Tu restes en tête »). L'or
   différents, jamais deux du même lieu, au plus deux du même type, rien qui rappelle notre club
   (`leagueClubNames`) ; les adversaires de coupe non plus (`distinctClubName`). Les parties existantes sont
   réparées au chargement (`fixLeagueNames`).
-- Écussons des autres clubs (`rivalCrest`, dessin dans `src/ui/crest.jsx`) : aux deux couleurs du club (le fond au
-  maillot, le motif à une seconde couleur bien contrastée), 10 formes, 14 motifs, 17 emblèmes (dont lys, montagne,
-  vagues, épi, pont, épées, roue, sapin, aigle) et les initiales pour un club sur quatre ; liseré blanc, noir ou à
-  la seconde couleur. Les mêmes formes, motifs et emblèmes servent à composer notre écusson (toujours noir et or).
-  Planche de contrôle : `tmp/ph3/crests.html`.
+- Écussons (données `src/game/crest.js`, dessin `src/ui/crest.jsx`, refonte du 2026-10-23) : trois familles, mêlées
+  comme dans un vrai championnat.
+  - Blason : quatre silhouettes (ancien, arrondi, pointu, cranté), couronne pour certains clubs (toujours pour les
+    Real et Royal), ruban de métal en bas avec l'année de fondation ou le nom court.
+  - Médaillon : anneau de métal (lisse, crénelé ou double), bandeau où le nom court en cercle et l'année en bas
+    (« Fondé en … » quand seule l'année est écrite), disque central.
+  - Moderne : taillé, hexagone, losange ou capsule, monogramme ou symbole, bandeau du nom court.
+  Rendu « métal émaillé » : liserés et symboles en or ou argent poli (dégradés à reflets), émail bombé (ombre et lumière
+  douces), reflet en haut, léger relief sous le symbole. Quinze motifs (dont rayons et bordure), dix-neuf symboles
+  (château, navire, clés en plus) et huit animaux dessinés pour l'écusson (lion, aigle, loup, coq, sanglier, cheval,
+  ours, cerf), ou le monogramme. Les clubs adverses tirent tout de leur nom (`rivalCrest`) : famille (quatre blasons
+  pour trois médaillons et trois badges), forme, motif, symbole, métal, année de fondation (1885 à 1984), inscription.
+  Notre écusson se compose à la fondation (style, forme, symbole, motif, inscription, fond) et reste noir et or ;
+  il porte l'année réelle de la fondation et une étoile par titre de champion (`clubStars`, cinq au plus). Le nom,
+  l'année et le ruban ne s'écrivent que sur les grands écussons (`full` : affiche du calendrier, création du club,
+  notoriété) ; en petit, l'écusson garde sa silhouette, ses couleurs et son symbole. Les anciennes parties gardent
+  leur écusson, rangé dans la famille la plus proche. Planche de contrôle : `tmp/ph3/crests.html`
+  (`?sec=clubs|familles|symboles|motifs`).
 
 ## Carrières et anciens joueurs
 
@@ -465,7 +478,8 @@ les totems de l'arène.
 
 ## Allée d'honneur et salle des trophées
 
-Le parvis n'affiche que les compétitions gagnées (`src/three/trophies.js`, palmarès commun `src/game/honours.js`) :
+Le parvis n'affiche que les compétitions gagnées par la partie en cours (`src/three/trophies.js`, palmarès commun
+`src/game/honours.js` ; une nouvelle partie vide l'allée, que la scène 3D ne recrée pas) :
 une réplique monumentale par compétition, posée sur son socle de granit à la première victoire, avec une plaque de
 bronze (compétition, nombre de victoires, saisons) écrite par le jeu. Les trophées s'alignent de part et d'autre de
 l'axe dans l'ordre des premières victoires ; la Coupe d'Europe trône au centre de la place. Six dessins originaux

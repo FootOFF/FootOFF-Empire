@@ -14,6 +14,7 @@ import { ordinal } from '../game/utils';
 
 // Sons du menu (déplacement, validation, retour) : branchés par App sur l'ambiance sonore du stade (uisound.js).
 import { uiSound } from './uisound';
+import { clubStars } from '../game/crest';
 
 export { setUiSound, uiSound } from './uisound';
 
@@ -172,7 +173,7 @@ export function ClubCard({ state, eyebrow, objective = false, head = true }) {
       <span className="eyebrow">{eyebrow}</span>
       {head && (
         <header className="cm-card-head">
-          <ClubCrest crest={state.crest} name={state.clubName} className="cm-card-mark" />
+          <ClubCrest crest={state.crest} name={state.clubName} className="cm-card-mark" stars={clubStars(state)} />
           <div>
             <strong>{state.clubName}</strong>
             <span>{div.name} · Saison {state.seasonNumber}</span>

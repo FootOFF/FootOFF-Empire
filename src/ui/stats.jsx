@@ -16,6 +16,7 @@ import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { ClubCrest, Crest } from './crest';
 import { Portrait } from './portrait';
+import { clubStars } from '../game/crest';
 
 // Stats : le club (saison et records), tous les matchs, les joueurs (classements saison ou carrière), et pour chaque
 // match une fiche « Stats Pass » au format de footoff.media (en-tête, rapport de forces, fil du match, Note FootOFF,
@@ -555,7 +556,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
         <section className="sp-card">
           <span className="sp-meta">{m.label || `Journée ${m.round}`} · {m.comp === 'c1' ? 'Europe' : m.division} · Saison {m.season}</span>
           <div className="sp-grid">
-            <div className="sp-team"><ClubCrest crest={state.crest} name={state.clubName} className="sp-crest" />{state.clubName}</div>
+            <div className="sp-team"><ClubCrest crest={state.crest} name={state.clubName} className="sp-crest" stars={clubStars(state)} />{state.clubName}</div>
             <div className={`sp-score ${o}`}>{m.gf}<i>–</i>{m.ga}</div>
             <div className="sp-team ext">{m.opp}<Crest name={m.opp} className="sp-crest" /></div>
           </div>

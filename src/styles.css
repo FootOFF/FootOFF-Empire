@@ -2435,8 +2435,9 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .ts-form { gap: var(--s-3); }
   .ts-form-lead { display: none; } /* place pour l'écusson : le titre dit déjà tout */
   .ts-crest { gap: var(--s-3); align-items: flex-start; }
-  .crest.ts-crest-art { width: 74px; height: 86px; }
-  .ts-pick { grid-template-columns: 62px 32px minmax(0, 1fr) 32px; padding-left: 10px; }
+  .crest.ts-crest-art { width: 88px; height: 102px; }
+  .ts-pick { grid-template-columns: 84px 30px minmax(0, 1fr) 30px; padding-left: 10px; }
+  .ts-pick-label { letter-spacing: .08em; }
   .ts-pick-value { font-size: var(--t-sm); }
   .ts-pick-arrow { width: 32px; height: 32px; }
   .ts-actions { flex-direction: column; }
