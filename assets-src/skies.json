@@ -61,26 +61,6 @@
       "source": "Poly Haven (polyhaven.com)",
       "license": "CC0",
       "tame": { "below": 20, "max": 1.6 }
-    },
-    {
-      "moment": "rain",
-      "id": "overcast_soil_puresky",
-      "file": "overcast_soil_puresky_4k.hdr",
-      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/overcast_soil_puresky_4k.hdr",
-      "md5": "8c05e24908d99a6c4c5c1a63d753df3f",
-      "bytes": 16949123,
-      "source": "Poly Haven (polyhaven.com)",
-      "license": "CC0"
-    },
-    {
-      "moment": "snow",
-      "id": "snow_field_puresky",
-      "file": "snow_field_puresky_4k.hdr",
-      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/snow_field_puresky_4k.hdr",
-      "md5": "5f111edeafa4cc723d78a74901a5c402",
-      "bytes": 16283255,
-      "source": "Poly Haven (polyhaven.com)",
-      "license": "CC0"
     }
   ]
 }

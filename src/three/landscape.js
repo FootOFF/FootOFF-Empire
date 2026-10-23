@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { Water } from 'three/examples/jsm/objects/Water.js';
 import { createForest, setForestTime } from './forest';
 
 // Écrin naturel autour du complexe : la plateforme du site posée sur un plateau, des collines douces boisées qui
@@ -373,12 +372,44 @@ function buildRoad() {
 
 // --- eau ---------------------------------------------------------------------------------------------
 
+// Eau naturelle, sans reflet net (ni miroir, ni nuages ou bâtiments reflétés) : bleu profond, un peu plus clair vers
+// les rives, bord vaseux au ras de la rive ; un voile de ciel très flou (eau ridée : rugosité 0,3) et des rides
+// animées lui donnent sa profondeur, de jour comme sous la lune.
+const DEEP = 0x0e3350; // large du lac, bassins du parvis
+const SHALLOW = 0x174458; // vers les rives
+const SHORE = 0x34493d; // bord vaseux
+
 function waterNormalsTexture() {
   const size = 256;
   const h = periodicNoise(3, [4, 8, 16, 32]);
   const t = new THREE.CanvasTexture(normalFromHeight(size, h, 6));
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   return t;
+}
+
+function waterMaterial(normals, scale, color, vertexColors = false) {
+  return new THREE.MeshPhysicalMaterial({
+    color, vertexColors, roughness: 0.3, metalness: 0, specularIntensity: 0.6, ior: 1.33,
+    normalMap: normals, normalScale: new THREE.Vector2(scale, scale),
+  });
+}
+
+// Lac : disque découpé en anneaux, couleur par sommet du bleu du large (centre) vers celui des rives, puis le bord
+// vaseux (la rive visible passe vers 0,74 du rayon, le reste du disque est sous le relief) ; dans XY, couché par la
+// rotation du maillage.
+function lakeGeometry() {
+  const geo = new THREE.RingGeometry(0, 1, 96, 16);
+  const pos = geo.attributes.position;
+  const col = new Float32Array(pos.count * 3);
+  const deep = new THREE.Color(DEEP), shallow = new THREE.Color(SHALLOW), shore = new THREE.Color(SHORE), c = new THREE.Color();
+  const { smoothstep } = THREE.MathUtils;
+  for (let i = 0; i < pos.count; i++) {
+    const r = Math.hypot(pos.getX(i), pos.getY(i));
+    c.copy(deep).lerp(shallow, smoothstep(r, 0.3, 0.74)).lerp(shore, smoothstep(r, 0.7, 0.76));
+    col.set([c.r, c.g, c.b], i * 3);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return geo.scale(LAKE.rx * 1.35, LAKE.rz * 1.35, 1).rotateZ(-LAKE.rot);
 }
 
 export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null } = {}) {
@@ -398,19 +429,6 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
   const road = buildRoad();
   group.add(terrain, road);
 
-  // eau sans miroir : sombre en profondeur, reflète le ciel (environnement du ciel) d'autant plus que le regard
-  // est rasant (Fresnel des matériaux physiques)
-  let skyEnv = null;
-  const waterMats = new Set();
-  const waterMaterial = (normals, scale) => {
-    const m = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color().setRGB(0.03, 0.10, 0.12, THREE.SRGBColorSpace), roughness: 0.035, metalness: 0,
-      normalMap: normals, normalScale: new THREE.Vector2(scale, scale), envMap: skyEnv, envMapIntensity: 1,
-      specularIntensity: 1, ior: 1.33,
-    });
-    waterMats.add(m);
-    return m;
-  };
 
   // voile d'horizon : un anneau couleur de brouillard, opaque en bas et fondu vers le ciel, cache le bord du relief
   const veil = new THREE.Mesh(
@@ -431,35 +449,15 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
   veil.userData.noAO = true;
   group.add(veil);
 
-  // lac : miroir réel (reflets du stade la nuit) en qualité haute, sinon reflets du ciel
+  // lac : même eau quelle que soit la qualité graphique
   const waterNormals = waterNormalsTexture();
-  // plan dans XY (normale +Z, ce qu'attend le miroir de Water), couché par la rotation du maillage
-  const lakeGeo = new THREE.CircleGeometry(1, 72).scale(LAKE.rx * 1.35, LAKE.rz * 1.35, 1).rotateZ(-LAKE.rot);
-  let lake = null;
-  const makeLake = (q) => {
-    if (lake) { group.remove(lake); waterMats.delete(lake.material); lake.material.dispose(); lake = null; }
-    if (q === 'haute') {
-      lake = new Water(lakeGeo, {
-        textureWidth: 512, textureHeight: 512, waterNormals, sunDirection: new THREE.Vector3(0.5, 0.8, 0.3).normalize(),
-        sunColor: 0xfff1dc, waterColor: 0x0c2f3a, distortionScale: 1.6, fog: true,
-      });
-      lake.material.uniforms.size.value = 6.0;
-      // reflet recalculé une image sur deux (toute la scène vue depuis sous l'eau) : sur ce lac lointain et ridé, un
-      // reflet d'une image plus ancien ne se voit pas
-      const mirror = lake.onBeforeRender;
-      let odd = false;
-      lake.onBeforeRender = (...args) => { odd = !odd; if (odd) mirror(...args); };
-    } else {
-      lake = new THREE.Mesh(lakeGeo, waterMaterial(waterNormals, 0.09));
-      waterNormals.repeat.set(9, 5);
-    }
-    lake.rotation.x = -Math.PI / 2;
-    lake.position.set(LAKE.x, LAKE.level, LAKE.z);
-    lake.name = 'landscape_lake';
-    lake.userData.noAO = true; // ni occlusion, ni second rendu de son reflet
-    group.add(lake);
-  };
-  makeLake(quality);
+  waterNormals.repeat.set(9, 5);
+  const lake = new THREE.Mesh(lakeGeometry(), waterMaterial(waterNormals, 0.4, 0xffffff, true));
+  lake.rotation.x = -Math.PI / 2;
+  lake.position.set(LAKE.x, LAKE.level, LAKE.z);
+  lake.name = 'landscape_lake';
+  lake.userData.noAO = true; // pas d'occlusion sur l'eau
+  group.add(lake);
 
   scene.add(group);
   let forest = null;
@@ -497,11 +495,11 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
         m.userData.detail.gain.value.set(...asphalt.userData.mean.map((v) => 1 / v));
       }
     },
-    // miroir d'eau du parvis (site) : même eau animée, reflets du ciel
+    // bassins du parvis (miroir d'eau du site) : même eau animée, le bleu du large
     adoptWater(mesh) {
       const normals = waterNormals.clone();
       normals.wrapS = normals.wrapT = THREE.RepeatWrapping;
-      mesh.material = waterMaterial(normals, 0.06);
+      mesh.material = waterMaterial(normals, 0.4, DEEP);
       mesh.userData.ripple = true;
       this.pools = [...(this.pools || []), mesh];
     },
@@ -509,22 +507,10 @@ export function createLandscape(scene, { quality = 'auto', siteTreesUrl = null }
       setForestTime(time);
       if (camera) forest?.update(camera);
       if (scene.fog && veil.material.uniforms.uColor) veil.material.uniforms.uColor.value.copy(scene.fog.color);
-      if (lake?.material.uniforms?.time) lake.material.uniforms.time.value = time * 0.35;
-      else waterNormals.offset.set(time * 0.004, time * 0.0025);
+      waterNormals.offset.set(time * 0.004, time * 0.0025);
       (this.pools || []).forEach((m) => m.material.normalMap.offset.set(time * 0.01, -time * 0.006));
     },
-    setDark(dark) {
-      if (lake?.material.uniforms?.sunColor) lake.material.uniforms.sunColor.value.set(dark ? 0x334466 : 0xfff1dc);
-      waterMats.forEach((m) => { m.envMapIntensity = dark ? 0.35 : 1; }); // la nuit, l'eau reste sombre
-    },
-    // reflet du ciel photographié (environnement de sky.js, déjà à la luminosité de l'ambiance) pour l'eau
-    setSkyEnv(tex) {
-      const first = !skyEnv;
-      skyEnv = tex;
-      waterMats.forEach((m) => { m.envMap = tex; if (first) m.needsUpdate = true; });
-    },
-    setSun(dir) { if (lake?.material.uniforms?.sunDirection) lake.material.uniforms.sunDirection.value.copy(dir).normalize(); },
-    setQuality(q) { if (q === currentQuality) return; currentQuality = q; makeLake(q); forest?.setQuality(q); },
+    setQuality(q) { if (q === currentQuality) return; currentQuality = q; forest?.setQuality(q); },
     // voile peint avec le ciel photographié (sky.js) à la place de la couleur de brume
     setVeilMaterial(mat) { veil.material.dispose(); veil.material = mat; },
     dispose() {

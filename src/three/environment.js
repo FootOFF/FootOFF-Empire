@@ -51,13 +51,11 @@ export function createEnvironment(scene, renderer) {
   // ciel photographié : dôme, environnement (reflets et lumière ambiante), couleur d'horizon pour la brume
   const photo = createPhotoSky(renderer);
   scene.add(photo.dome);
-  const skyEnvListeners = new Set();
   let dark = false;
   photo.onEnv((tex) => {
     scene.environment = tex;
     scene.environmentIntensity = cur ? cur.ambient : 1; // radiance du ciel : ambiance et soleil restent cohérents
     hemi.intensity = 0;
-    skyEnvListeners.forEach((fn) => fn(tex, dark));
   });
 
   const sun = new THREE.DirectionalLight(0xfff1dc, 3);
@@ -112,13 +110,12 @@ export function createEnvironment(scene, renderer) {
   let ambienceKey = '';
   const grade = { sat: 1, contrast: 1, warm: 0, vignette: 0, bloom: [0, 0, 1] };
 
-  // Ambiance : moment de la journée (sky.js) et météo ('clear' | 'rain' | 'snow'). Renvoie { dark, lights } :
-  // lights (0 à 1) règle l'éclairage du complexe (fenêtres, LED, lampadaires, projecteurs), dark la nuit.
-  function setAmbience({ moment = 'day', weather = 'clear', hasStadiumLights = true } = {}) {
-    const key = `${moment}|${weather}`;
-    if (key !== ambienceKey) {
-      ambienceKey = key;
-      target = lookFor(moment, weather);
+  // Ambiance : moment de la journée (sky.js), toujours par temps clair. Renvoie { dark, lights } : lights (0 à 1)
+  // règle l'éclairage du complexe (fenêtres, LED, lampadaires, projecteurs), dark la nuit.
+  function setAmbience({ moment = 'day', hasStadiumLights = true } = {}) {
+    if (moment !== ambienceKey) {
+      ambienceKey = moment;
+      target = lookFor(moment);
       if (!cur) cur = snap(target);
       else { from = snap(cur); k = 0; }
       photo.set(target);
@@ -131,8 +128,7 @@ export function createEnvironment(scene, renderer) {
 
   // réglage à chaud (développement) : réapplique l'ambiance courante après modification de MOMENTS ou GRADE
   function retune() {
-    const [moment, weather] = ambienceKey.split('|');
-    target = lookFor(moment, weather);
+    target = lookFor(ambienceKey);
     cur = snap(target);
     from = null;
     k = 1;
@@ -193,10 +189,8 @@ export function createEnvironment(scene, renderer) {
   // L'écrin naturel (landscape.js) remplace le sol uni d'origine.
   const setGroundVisible = (v) => { ground.visible = v; };
 
-  const onSkyEnv = (fn) => { skyEnvListeners.add(fn); if (photo.envTexture) fn(photo.envTexture, dark); };
-
   return {
-    setAmbience, update, dispose, sun, setPlazaVisible, setGroundVisible, onSkyEnv,
+    setAmbience, update, dispose, sun, setPlazaVisible, setGroundVisible,
     setQuality: () => {}, // le ciel est le même dans toutes les qualités (pleine définition)
     veilMaterial: (lo, hi) => photo.veilMaterial(lo, hi),
     tune: { MOMENTS, GRADE, retune },

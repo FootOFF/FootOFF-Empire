@@ -41,8 +41,8 @@ const BARK_DEPTH = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPa
 const noRaycast = () => {}; // la végétation n'est pas une cible du survol ni du clic (parcelles, parvis)
 
 // Carte d'ombres : les fantômes des arbres n'y apparaissent que pendant son calcul. Avec une seule mise à jour par
-// image (renderer.shadowMap.autoUpdate = false, needsUpdate dans la boucle), ni l'image, ni l'occlusion, ni le
-// reflet du lac ne les dessinent.
+// image (renderer.shadowMap.autoUpdate = false, needsUpdate dans la boucle), ni l'image ni l'occlusion ne les
+// dessinent.
 export function hookShadowMap(renderer) {
   const sm = renderer.shadowMap;
   const render = sm.render.bind(sm);
@@ -141,7 +141,9 @@ function impostorMaterial(atlas) {
 }
 
 // Feuillage des arbres proches : alpha détouré, normales arrondies du houppier, soleil à travers les feuilles, vent
-// léger (le haut du houppier ondule, le pied reste immobile). Faces avant seulement : les cartes vues de dos sont
+// léger (le haut du houppier ondule, le pied reste immobile). L'image des feuilles est détourée sur fond noir : au bord
+// d'une feuille, le filtrage mêle sa couleur à ce noir (cerne sombre autour de chaque touffe) ; la couleur y est
+// rétablie en la divisant par la couverture lue (au plus ×2). Faces avant seulement : les cartes vues de dos sont
 // surtout au fond du houppier, cachées par celles de devant, et coûtaient la moitié du rendu du feuillage ; les
 // ombres, elles, prennent les deux faces.
 // Profondeur d'abord (leafPrepass) : les cartes d'un houppier se recouvrent, et chaque couche était éclairée en entier
@@ -174,6 +176,7 @@ function leafMaterial(base, tint) {
         mvPosition = modelViewMatrix * mvPosition;
         gl_Position = projectionMatrix * mvPosition;`);
     shader.fragmentShader = shader.fragmentShader
+      .replace('#include <map_fragment>', '#include <map_fragment>\n diffuseColor.rgb /= max(sampledDiffuseColor.a, 0.5);')
       .replace('#include <alphatest_fragment>', keepCoverage('map', 'vMapUv'))
       .replace('#include <normal_fragment_begin>', THREE.ShaderChunk.normal_fragment_begin.replace('normal *= faceDirection;', ''))
       .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>

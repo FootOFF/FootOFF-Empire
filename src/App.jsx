@@ -68,9 +68,8 @@ export default function App({ preview = null }) {
   // vitrine de construction : bâtiment et niveau montrés en hologramme sur la parcelle, fenêtre d'aperçu ouverte
   const [buildView, setBuildView] = useState(null);
   useEffect(() => { if (!sel) setBuildView(null); }, [sel]);
-  // préférences de vue (confort, par navigateur) : heure réelle / jour / nuit, météo auto / forcée
+  // préférence de vue (confort, par navigateur) : heure réelle / jour / nuit ; toujours par temps clair
   const [timeMode, setTimeMode] = useState(() => { try { return localStorage.getItem('fo-time') || 'auto'; } catch { return 'auto'; } });
-  const [weatherMode, setWeatherMode] = useState(() => { try { return localStorage.getItem('fo-weather') || 'auto'; } catch { return 'auto'; } });
   const [matchDay, setMatchDay] = useState(!!boot.ui.matchDay);
   const [recenter, setRecenter] = useState(0);
   const [showResult, setShowResult] = useState(!!boot.ui.showResult);
@@ -338,7 +337,6 @@ export default function App({ preview = null }) {
             <Empire3D
               state={sceneState}
               timeMode={timeMode}
-              weatherMode={weatherMode}
               matchDay={matchDay}
               live={matchPhase === 'live'}
               matchFx={matchFx}
@@ -390,10 +388,8 @@ export default function App({ preview = null }) {
           {webglOk && (
             <SceneTools
               timeMode={timeMode}
-              weatherMode={weatherMode}
               matchDay={matchDay}
               onTime={() => setTimeMode((m) => cycle(m, ['auto', 'day', 'night'], 'fo-time'))}
-              onWeather={() => setWeatherMode((m) => cycle(m, ['auto', 'clear', 'rain', 'snow'], 'fo-weather'))}
               onMatchDay={() => setMatchDay((m) => !m)}
               onRecenter={() => { setMatchDay(false); setRecenter((r) => r + 1); }}
               build={buildTool}

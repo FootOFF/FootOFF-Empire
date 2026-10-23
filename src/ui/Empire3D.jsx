@@ -21,7 +21,6 @@ import { honoursOf, plural } from '../game/honours';
 import { createMatchScene } from '../three/matchplay';
 import { createCrowd } from '../three/crowd';
 import { HOME_KIT, kitOf } from '../game/kits';
-import { autoWeather, createWeather } from '../three/weather';
 import {
   buildingMesh, padMesh, setProceduralNight, stadiumMesh,
 } from '../three/procedural';
@@ -186,7 +185,7 @@ function parvisInfo(s) {
 // Vue 3D plein écran : décor permanent du jeu, pilotée par le HUD (nuit, jour de match, recentrage,
 // parcelle sélectionnée). Garde ses propres interactions : survol (étiquette) et clic (sélection).
 export default function Empire3D({
-  state, onSelectPlot, onEmptyTap, onWebGLFail, timeMode = 'auto', weatherMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
+  state, onSelectPlot, onEmptyTap, onWebGLFail, timeMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
   live = false, matchFx = null, badges = [], quality = 'auto', onLoadProgress, onLoaded, matchInfo = null, onOpenTrophies,
   attract = false, paused = false, holo = null,
 }) {
@@ -207,7 +206,7 @@ export default function Empire3D({
   const loadRef = useRef({ onLoadProgress, onLoaded });
   loadRef.current = { onLoadProgress, onLoaded };
   // attract : écran titre (caméra en vitrine, sans interaction) ; paused : menu pause (la dernière image reste figée)
-  const modeRef = useRef({ timeMode: 'auto', weatherMode: 'auto', matchDay: false, live: false, attract, paused });
+  const modeRef = useRef({ timeMode: 'auto', matchDay: false, live: false, attract, paused });
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -262,12 +261,10 @@ export default function Empire3D({
     scene.add(selFrame.group);
     const fireworks = new Fireworks(scene, new THREE.Vector3(0, 0, 0), 6);
     const life = createLife(scene);
-    const weather = createWeather(scene);
     // écrin naturel : plateau, collines boisées, lac, route bordée de platanes ; il plante aussi les arbres du site
     const landscape = createLandscape(scene, { quality, siteTreesUrl: `${import.meta.env.BASE_URL}models/props/site_trees.json` });
     env.setGroundVisible(false);
     landscape.setVeilMaterial(env.veilMaterial(10, 52)); // le voile d'horizon montre le ciel qui est derrière lui
-    env.onSkyEnv((tex, dark) => landscape.setSkyEnv(tex, dark));
 
     const ctx = {
       home: home0, scene, env, camera, controls, plots: new Map(), anims: new Set(), fireworks, camTween: null, alive: true, selFrame,
@@ -511,20 +508,17 @@ export default function Empire3D({
     // Moment de la journée : heure réelle (mode auto, lever et coucher de la saison), forcé jour / nuit, ou soirée
     // les jours de match.
     ctx.applyMode = () => {
-      const { timeMode: tm, weatherMode: wm, matchDay: md, live: lv } = modeRef.current;
+      const { timeMode: tm, matchDay: md, live: lv } = modeRef.current;
       const s = stateRef.current;
       const now = new Date();
       const moment = ctx.forceMoment || momentAt(now, { timeMode: tm, matchDay: md }); // forceMoment : réglages (dév.)
-      const sky = ctx.forceWeather || (wm === 'auto' ? autoWeather(now) : wm);
       const stadiumLights = stadium.lights;
-      const { dark, lights } = env.setAmbience({ moment, weather: sky, hasStadiumLights: !stadiumLights });
-      ctx.ambience = { moment, weather: sky, dark, lights };
+      const { dark, lights } = env.setAmbience({ moment, hasStadiumLights: !stadiumLights });
+      ctx.ambience = { moment, dark, lights };
       const lit = dark || lights > 0.5; // phares des voitures, bâtiments de repli allumés
-      weather.set(sky);
       life.setMode({ dark: lit, matchDay: md });
       setProceduralNight(lit);
       setAssetsNight(lights); // fenêtres, LED, têtes de projecteurs : progressif
-      landscape.setDark(dark);
       ctx.trophies.setDark(dark);
       ctx.trophies.setLights(lights);
       ctx.siteLights?.setLevel(lights); // mâts d'éclairage de l'esplanade
@@ -567,7 +561,7 @@ export default function Empire3D({
       renderer.setRenderTarget(target);
       return Promise.all([lit, unlit]).then(() => {
         // le jour, une image avec les projecteurs dans le calcul mais à zéro (rien ne change à l'écran) : les
-        // programmes hors de la scène (ombres, occlusion, reflet du lac) sont prêts aussi pour le soir
+        // programmes hors de la scène (ombres, occlusion) sont prêts aussi pour le soir
         if (!ctx.alive || spots.some((l) => l.visible)) return;
         spots.forEach((l) => { l.visible = true; });
         renderer.shadowMap.needsUpdate = true;
@@ -956,7 +950,6 @@ export default function Empire3D({
       fireworks.update(sdt);
       life.update(dt, time);
       ctx.trophies.update(dt);
-      weather.update(dt, time, controls.target);
       landscape.update(dt, time, camera);
       // pastilles dorées : projetées au-dessus de leur parcelle, masquées sous l'étiquette de survol
       for (const [id, el] of pinRefs.current) {
@@ -993,7 +986,6 @@ export default function Empire3D({
       camera.updateMatrixWorld();
       env.update(dt, camera); // fondu du ciel et des lumières, brume couleur d'horizon
       post.setLook(env.grade, ctx.haloScale());
-      landscape.setSun(env.sunDir);
       camera.position.x += shakeX; camera.position.y += shakeY;
       renderer.shadowMap.needsUpdate = true; // ombres : une fois par image, au premier rendu de la scène
       // dessinée aussi derrière l'écran de chargement : chaque modèle compile ses matériaux dès son arrivée, pendant
@@ -1032,7 +1024,6 @@ export default function Empire3D({
       clearInterval(clockTimer);
       clearInterval(loadTimer);
       life.dispose();
-      weather.dispose();
       fireworks.dispose();
       frame.dispose();
       selFrame.dispose();
@@ -1051,9 +1042,9 @@ export default function Empire3D({
   }, [state]);
 
   useEffect(() => {
-    Object.assign(modeRef.current, { timeMode, weatherMode, matchDay, live });
+    Object.assign(modeRef.current, { timeMode, matchDay, live });
     ctxRef.current?.applyMode();
-  }, [timeMode, weatherMode, matchDay, live, ready]);
+  }, [timeMode, matchDay, live, ready]);
 
   useEffect(() => {
     modeRef.current.paused = paused;

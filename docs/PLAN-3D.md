@@ -120,8 +120,8 @@ roule avec décélération réaliste ou passe lobée, réception sur la trajecto
 Squelette du joueur animé dans le shader (hanches, genoux, épaules, coudes, frappe), ombres comprises.
 Testé en simulation : passes toutes contrôlées, ballon jamais hors du terrain, aucun glissement de pied.
 Choix de direction : aucune silhouette humaine autre que nos joueurs (pas de foule, pas de passants, pas
-d'entraîneur), aucune voiture statique. `src/three/weather.js` : pluie, neige saisonnières. Cycle jour / nuit
-réel dans `environment.js`.
+d'entraîneur), aucune voiture statique. Météo (pluie, neige saisonnières) retirée le 2026-10-23 : toujours par temps
+clair. Cycle jour / nuit réel dans `environment.js`.
 
 **Match en direct ✅** — le cœur émotionnel du jeu (30 à 60 s à vitesse normale, ~17 s en x4).
 - Avant-match (`src/ui/match.jsx`, `PreMatch`) : onze en 4-3-3 sur un schéma tactique (clic sur un poste pour

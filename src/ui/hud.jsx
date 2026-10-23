@@ -10,7 +10,7 @@ import { AnimatedMoney } from './moneyfx';
 import { fmtRating } from './format';
 import {
   IconCal, IconCheck, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
-  IconTarget, IconTrophy, IconUsers, IconClock, IconCloud, IconRain, IconSnow, IconEye, IconStats, IconCrane,
+  IconTarget, IconTrophy, IconUsers, IconClock, IconEye, IconStats, IconCrane,
 } from './icons';
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran.
@@ -204,18 +204,11 @@ const TIME_UI = {
   day: { Icon: IconSun, title: 'Toujours en journée' },
   night: { Icon: IconMoon, title: 'Toujours la nuit' },
 };
-const WEATHER_UI = {
-  auto: { Icon: IconCloud, title: 'Météo automatique (selon la saison)' },
-  clear: { Icon: IconSun, title: 'Temps clair' },
-  rain: { Icon: IconRain, title: 'Pluie' },
-  snow: { Icon: IconSnow, title: 'Neige' },
-};
 
 // Outils de la vue, et en tête le bouton Construire (vitrine des bâtiments, touche B) : build vaut null (rien à
 // construire), 'idle', 'dot' (un bâtiment est payable tout de suite : pastille dorée) ou 'open' (vitrine ouverte).
-export function SceneTools({ timeMode, weatherMode, matchDay, onTime, onWeather, onMatchDay, onRecenter, build = null, onBuild, keys = false }) {
+export function SceneTools({ timeMode, matchDay, onTime, onMatchDay, onRecenter, build = null, onBuild, keys = false }) {
   const T = TIME_UI[timeMode] || TIME_UI.auto;
-  const W = WEATHER_UI[weatherMode] || WEATHER_UI.auto;
   const [open, setOpen] = useState(false); // mobile : outils repliés derrière un seul bouton
   useHudKey(['KeyB'], () => onBuild?.(), keys && !!build);
   return (
@@ -229,9 +222,6 @@ export function SceneTools({ timeMode, weatherMode, matchDay, onTime, onWeather,
       )}
       <button className={timeMode !== 'auto' ? 'on' : ''} onClick={onTime} disabled={matchDay} title={`${T.title} — cliquer pour changer`}>
         <T.Icon />
-      </button>
-      <button className={weatherMode !== 'auto' ? 'on' : ''} onClick={onWeather} title={`${W.title} — cliquer pour changer`}>
-        <W.Icon />
       </button>
       <button className={matchDay ? 'on' : ''} onClick={onMatchDay} title="Jour de match : stade plein, projecteurs">
         <IconStadium />

@@ -50,7 +50,6 @@ export const GRADE = {
   sunset: { sat: 1.14, contrast: 1.1, warm: 0.04, vignette: 0.32, bloom: [0.3, 0.6, 2.4] },
   blue: { sat: 1.06, contrast: 1.1, warm: -0.01, vignette: 0.38, bloom: [0.42, 0.6, 1.3] },
   night: { sat: 1.02, contrast: 1.1, warm: -0.02, vignette: 0.45, bloom: [0.55, 0.6, 0.72] },
-  overcast: { sat: 1.02, contrast: 1.04, warm: 0, vignette: 0.3, bloom: [0.12, 0.5, 1.5] },
 };
 
 // Réglages par moment. sky : ciel ; az : direction (°, 0 = nord, 90 = est) où l'on place le soleil (ou la lueur)
@@ -71,48 +70,41 @@ export const MOMENTS = {
   night: { sky: 'night', az: 180, light: [140, 38], sunI: 1.1, sunColor: 0x9db0e0, gain: 0.06, ambient: 1.6, exposure: 1.1, haze: 0.7, fogDist: 1.2, lights: 1, fill: 0.15, dark: true, grade: 'night' },
 };
 
-// Pluie et neige : ciel couvert, soleil voilé, brume plus proche.
-const OVERCAST = {
-  rain: { sky: 'rain', gain: 0.5, sun: 0.14, tint: [0.92, 0.95, 1], fog: [40, 200] },
-  snow: { sky: 'snow', gain: 0.75, sun: 0.22, tint: [1, 1, 1.03], fog: [36, 180] },
-};
-
 const dirFrom = (azDeg, elDeg, out = new THREE.Vector3()) => {
   const az = azDeg * DEG, el = elDeg * DEG;
   return out.set(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
 };
 
-// Réglages complets d'une ambiance (moment + météo) : ciel, soleil, lumière, brume, étalonnage.
-export function lookFor(moment = 'day', weather = 'clear') {
+// Réglages complets d'une ambiance (moment de la journée, toujours par temps clair) : ciel, soleil, lumière, brume,
+// étalonnage.
+export function lookFor(moment = 'day') {
   const m = MOMENTS[moment] || MOMENTS.day;
-  const w = OVERCAST[weather];
-  const key = w ? w.sky : m.sky;
+  const key = m.sky;
   const meta = SKIES[key];
   const ref = meta.sun.E > 1 ? meta.sun : meta.glow; // soleil net, sinon zone la plus lumineuse
-  const gain = m.gain * (w ? w.gain : 1);
-  const [lAz, lEl] = m.light || [m.az, SKIES[m.sky].sun.el];
-  const sunI = (m.sunI ?? SKIES[m.sky].sun.E * m.gain * (m.sunMul ?? 1)) * (w ? w.sun : 1);
+  const gain = m.gain;
+  const [lAz, lEl] = m.light || [m.az, meta.sun.el];
+  const sunI = m.sunI ?? meta.sun.E * m.gain * (m.sunMul ?? 1);
   const sunColor = new THREE.Color(m.sunColor ?? 0xffffff);
-  if (m.sunColor == null) sunColor.setRGB(...SKIES[m.sky].sun.color);
-  if (w) sunColor.lerp(new THREE.Color(0xdfe6ef), 0.7);
+  if (m.sunColor == null) sunColor.setRGB(...meta.sun.color);
   return {
-    moment, weather, key, gain,
+    moment, key, gain,
     off: ref.u - m.az / 360, // colonne de l'image placée à la direction m.az
-    tint: new THREE.Color(...(w ? w.tint : [1, 1, 1])),
+    tint: new THREE.Color(1, 1, 1),
     sunDir: dirFrom(lAz, Math.max(lEl, 3)),
     sunI, sunColor,
-    ambient: (m.ambient ?? 1) * (w ? 1.15 : 1), // lumière du ciel (environnement) : < 1 = ombres plus franches
+    ambient: m.ambient ?? 1, // lumière du ciel (environnement) : < 1 = ombres plus franches
     exposure: m.exposure ?? 0.85, // exposition de la « caméra », comme un photographe qui compense la lumière
     // éclairement horizontal total (soleil + ciel), pour la couleur du sol vue par l'environnement
     groundE: (sunI * Math.max(0, Math.sin(Math.max(lEl, 0) * DEG)) + meta.skyE * gain),
-    fog: (w ? w.fog : [100, 420]).map((v) => v * (w ? 1 : m.fogDist ?? 1)), // air limpide : ~2 km de brume légère
+    fog: [100, 420].map((v) => v * (m.fogDist ?? 1)), // air limpide : ~2 km de brume légère
     haze: m.haze ?? 1,
-    dark: !!m.dark || (!!w && moment === 'sunset'),
-    lights: Math.min(1, (m.lights ?? 0) + (w ? 0.35 : 0)), // temps couvert : le complexe s'allume plus tôt
-    fill: (m.fill ?? 0) * (w ? 0.6 : 1),
+    dark: !!m.dark,
+    lights: m.lights ?? 0,
+    fill: m.fill ?? 0,
     fillDir: dirFrom(lAz + 180, 32), // à l'opposé du soleil : éclaire les façades tournées vers la caméra
     fillColor: new THREE.Color(m.dark ? 0xb8c4ff : 0xffe4c8),
-    grade: GRADE[w && !m.dark ? 'overcast' : m.grade],
+    grade: GRADE[m.grade],
   };
 }
 

@@ -12,6 +12,11 @@ import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
 // mouvement : aucune image agrandie.
 // Qualité économie : rendu direct, sans post-traitement. Téléphone en qualité auto : halo et étalonnage seulement.
 //
+// Toile toujours opaque : les feuillages au bord adouci (alpha-to-coverage, sans effet sans multi-échantillons)
+// écrivent un alpha partiel ; dans la toile, il laissait voir le fond sombre de la page en pointillés autour de chaque
+// arbre (image moins nette qu'en économie, où la toile multi-échantillonnée l'atténuait). L'alpha est donc ramené à 1 :
+// par la passe de sortie, ou après le rendu direct en économie (effacement de l'alpha seul, quasi gratuit).
+//
 // Mesuré sur une puce graphique intégrée (écran 2880 × 1620) : l'anticrénelage multi-échantillons coûtait ~7,5 ms en
 // pleine résolution (tampons HDR) et chaque passe plein écran 1 à 2 ms. D'où :
 //  - scène dessinée directement dans le tampon du composer, sans multi-échantillons ;
@@ -21,7 +26,7 @@ import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
 //  - anticrénelage FXAA seulement sur écran peu dense : sur un écran très dense, une marche d'escalier fait un
 //    demi-pixel CSS (4 à 6 ms économisées en 2880 × 1620 pour une différence invisible).
 
-// Étalonnage (espace d'affichage, après le tone mapping) : saturation, contraste, chaleur, vignettage.
+// Étalonnage (espace d'affichage, après le tone mapping) : saturation, contraste, chaleur, vignettage ; sortie opaque.
 const GRADE = /* glsl */`
   {
     vec3 col = gl_FragColor.rgb;
@@ -31,7 +36,7 @@ const GRADE = /* glsl */`
     col *= vec3(1.0 + uWarm, 1.0 + uWarm * 0.3, 1.0 - uWarm);
     vec2 d = vUv - 0.5;
     col *= 1.0 - dot(d, d) * uVignette * 1.6;
-    gl_FragColor = vec4(clamp(col, 0.0, 1.0), gl_FragColor.a);
+    gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
   }
 `;
 
@@ -99,7 +104,7 @@ function createChain(renderer, scene, camera, q) {
     gtao.updateGtaoMaterial({ radius: 0.3, distanceExponent: 1.6, thickness: 0.5, scale: 1.0, samples: narrow() ? 8 : 16 });
     gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: narrow() ? 8 : 16 });
     gtao.blendIntensity = 0.9;
-    // passe de normales de l'occlusion : sans ce qui n'y a pas de sens (ciel, voile d'horizon, eau et son reflet,
+    // passe de normales de l'occlusion : sans ce qui n'y a pas de sens (ciel, voile d'horizon, eau,
     // imposteurs, cartes de feuillage, marqués userData.noAO), en plus des points et des lignes déjà écartés
     const hide = gtao._overrideVisibility.bind(gtao);
     gtao._overrideVisibility = () => {
@@ -150,6 +155,7 @@ function createChain(renderer, scene, camera, q) {
 }
 
 export function createPostFX(renderer, scene, camera, quality = 'auto') {
+  const gl = renderer.getContext();
   let chain = null;
   let look = null;
   let halo = 1;
@@ -207,10 +213,22 @@ export function createPostFX(renderer, scene, camera, quality = 'auto') {
 
   build(quality);
 
+  // économie : scène dessinée directement dans la toile, puis son alpha ramené à 1 (masque sur l'alpha seul) ; three
+  // retrouve ensuite son propre état (masque de couleur, couleur d'effacement)
+  function renderDirect() {
+    renderer.setRenderTarget(null);
+    renderer.render(scene, camera);
+    gl.colorMask(false, false, false, true);
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.colorMask(true, true, true, true);
+    renderer.state.buffers.color.reset();
+  }
+
   return {
     render(dt) {
       if (chain) chain.composer.render(dt);
-      else renderer.render(scene, camera);
+      else renderDirect();
     },
     // taille de l'écran changée (pixels CSS ou densité de la toile)
     setSize: size,

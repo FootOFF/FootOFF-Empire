@@ -65,7 +65,7 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 | Haut gauche | identité du club | largeur `--rail-w` (320 px), hauteur 56 px |
 | Haut droite | trésorerie, réputation, menu | pastilles de 40 px |
 | Colonne de gauche | objectif ou tutoriel, puis conseil du staff | même largeur que la carte du club, 12 px entre les cartes |
-| Droite | outils de vue (heure, météo, jour de match, recentrer) | centrés verticalement ; derrière un seul bouton sur mobile |
+| Droite | outils de vue (heure, jour de match, recentrer) | centrés verticalement ; derrière un seul bouton sur mobile |
 | Bas | dock centré + carte de match à droite | même hauteur (`--bar-h`, 68 px) et même ligne de base ; sous 1240 px le dock se cale à gauche |
 
 - La 3D occupe tout l'écran. `--hb` réserve la place du badge imposé par l'hébergeur de test (0 sur footoff.media) :
@@ -442,7 +442,13 @@ et le convertit en WebP léger (moitié haute, radiance compressée x / (1 + x))
 d'horizon, environnement (reflets et lumière ambiante, sans le disque solaire) et brume couleur d'horizon dans la
 direction du regard. L'heure réelle choisit un moment (aube, matin, journée, fin d'après-midi dorée, coucher,
 crépuscule, nuit) d'après le lever et le coucher de la saison ; chaque moment tourne sa photo pour placer le soleil
-là où il flatte la vue d'ensemble, et le soleil du jeu suit celui de la photo. Pluie et neige : ciels couverts.
+là où il flatte la vue d'ensemble, et le soleil du jeu suit celui de la photo. Toujours par temps clair : ni pluie ni
+neige (retirées le 2026-10-23, avec leurs ciels couverts).
+
+Eau (lac et miroir d'eau du parvis, `src/three/landscape.js`) : naturelle et sans reflet net (ni miroir, ni nuages
+ou bâtiments reflétés) : bleu profond au large et dans les bassins, un peu plus clair vers les rives, bord vaseux au
+ras de la rive ; un voile de ciel très flou (eau ridée, rugosité 0,3) et des rides animées lui donnent sa profondeur,
+de jour comme sous la lune. Une première eau bleu vif, mate, faisait artificielle (refusée le 2026-10-23).
 Fondu de quatre secondes entre deux ambiances (ciel, soleil, exposition, étalonnage). La nuit, la lueur de ville de la
 photo au ras de l'horizon (une douzaine de fois plus claire que le reste) est atténuée à la conversion (« tame » dans
 `skies.json`) : regardée en face, elle faisait une tache blanche (halo) et une brume claire sur tout le complexe.
@@ -518,8 +524,10 @@ Rendu taillé pour rester fluide en qualité haute, sur PC comme sur téléphone
   posés dans la passe de sortie avec le tone mapping et l'étalonnage ; halo au quart de la résolution de la scène,
   zones claires lues sur 4 × 4 pixels et noyaux de flou divisés par deux (4,5 → 1,7 ms, même image) ; garde-fou des
   pixels invalides à l'entrée du halo ; anticrénelage FXAA seulement sur écran peu dense (sur un écran très dense, une
-  marche d'escalier fait un demi-pixel CSS) ; ciel peint en dernier, là où il se voit ; reflet du lac une image sur
-  deux ;
+  marche d'escalier fait un demi-pixel CSS) ; ciel peint en dernier, là où il se voit ; toile toujours opaque (les
+  feuillages au bord adouci écrivaient un alpha partiel : sans multi-échantillons, le fond de la page se voyait en
+  pointillés sombres autour des arbres, et la qualité économie, à la toile multi-échantillonnée, paraissait plus
+  nette) ; bord des feuilles détourées sur fond noir éclairci dans le shader (plus de cerne sombre) ;
 - net en permanence : la toile a exactement la densité de l'écran et la scène est toujours calculée à cette densité,
   dans toutes les qualités, sur ordinateur comme sur téléphone, au repos comme pendant les déplacements et le zoom,
   sans résolution adaptative ni agrandisseur (sur une puce intégrée, agrandir une image calculée plus petite coûtait
