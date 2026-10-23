@@ -1,5 +1,6 @@
 import { answerOffer, build, createInitialState, endSeason, playRound, sellPlayer, setYouthPlan, signPlayer, signYouth, toggleShortlist, upgrade } from '../game/engine';
 import { advisedPlan } from '../game/academy';
+import { seasonFixtures } from '../game/fixtures';
 import { matchContext, startSeason } from '../game/season';
 import { costOf, playerRating } from '../game/players';
 import { BUYERS, counterFor, lastWordOf, outbidChance, poolOf, roundKey, roundTo, valueOf } from '../game/mercato';
@@ -49,7 +50,11 @@ export const SCREENS = [
   ['apres-match-classement', 'Après-match · classement de la journée'],
   ['bilan', 'Bilan de saison'],
   ['bilan-champion', 'Bilan · titre de champion'],
-  ['saison', 'Saison · calendrier'],
+  ['saison', 'Saison · calendrier (prochain match)'],
+  ['saison-joue', 'Saison · calendrier, match joué'],
+  ['saison-coupe', 'Saison · calendrier, tour de coupe à tirer'],
+  ['saison-fin', 'Saison · calendrier, saison terminée'],
+  ['calendrier-europe', 'Saison · calendrier en Elite avec la Coupe d’Europe'],
   ['classement', 'Saison · classement'],
   ['europe', 'Saison en Elite · Coupe d’Europe, places européennes'],
   ['finances', 'Finances'],
@@ -84,7 +89,7 @@ export function previewState(screen) {
     s.offline = null;
     return s;
   }
-  if (screen === 'europe') { // Elite et Coupe d'Europe : places européennes au classement, dates européennes au calendrier
+  if (screen === 'europe' || screen === 'calendrier-europe') { // Elite et Coupe d'Europe : places européennes au classement, dates européennes au calendrier
     s.divisionIndex = 3;
     s.reputation = 60;
     s.c1Next = true;
@@ -96,6 +101,7 @@ export function previewState(screen) {
     s.money = 42000;
   }
   if (screen === 'vitrine-fonds') s.money = 4200; // un seul bâtiment payable : les autres disent ce qui manque
+  if (screen === 'saison-fin') while (matchContext(s)) playRound(s); // toutes les dates jouées, avant le bilan
   // classement de l'après-match : il suit une journée de championnat (pas un match de coupe)
   if (screen === 'apres-match-classement') for (let k = 0; k < 4 && s.lastMatch?.comp !== 'league'; k++) playRound(s);
   if (screen === 'transferts' || screen === 'bureau') { // bureau construit au niveau 2 chez les supporters
@@ -243,7 +249,9 @@ export function previewUi(screen, s) {
     case 'academie-repere': return { panel: 'academy', academyTab: 'scout', academy: { sheet: s.scouting.list[0].id, list: 'scout' } };
     case 'academie-batiment': return { sel: { plotId: 't2', sector: 'main' } };
     case 'comparateur': return { panel: 'squad', squadTab: 'market', squad: { compare: true } };
-    case 'saison': return { panel: 'season' };
+    case 'saison': case 'saison-fin': case 'calendrier-europe': return { panel: 'season' };
+    case 'saison-joue': return { panel: 'season', seasonSel: seasonFixtures(s).find((f) => f.match)?.index };
+    case 'saison-coupe': return { panel: 'season', seasonSel: seasonFixtures(s).find((f) => f.status === 'tbd' || f.status === 'out')?.index };
     case 'classement': return { panel: 'season', seasonTab: 'table' };
     case 'europe': return { panel: 'season', seasonTab: 'table' };
     case 'journal': return { panel: 'journal' };

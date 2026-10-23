@@ -11,13 +11,14 @@ export function seasonFixtures(s) {
   const next = nextFixture(s);
   let round = 0;
   return cal.map((f, index) => {
-    const e = { index, comp: f.comp, stage: f.stage ?? null, round: null, opp: null, match: null, result: null };
+    const e = { index, comp: f.comp, stage: f.stage ?? null, round: null, opp: null, oppIdx: null, match: null, result: null };
     if (f.comp === 'league') {
       round += 1;
       e.round = round;
       const pair = s.schedule?.[round - 1]?.find((p) => p.includes(0));
       const oi = pair ? (pair[0] === 0 ? pair[1] : pair[0]) : 0;
       e.opp = s.rivals?.[oi - 1] || null;
+      e.oppIdx = oi || null; // place de l'adversaire dans le tableau du championnat (standingsOf)
       e.match = played.find((m) => (m.comp || 'league') === 'league' && m.round === round) || null;
       const isNext = next && (next.index === index || (next.index === -1 && s.round + 1 === round));
       e.status = e.match || round <= s.round ? 'played' : isNext ? 'next' : 'upcoming';

@@ -115,7 +115,7 @@ export function ZoneLegend({ state }) {
   );
 }
 
-export function SeasonPanel({ state, onClose, initialTab = 'calendar', onOpenMatch, onPlay }) {
+export function SeasonPanel({ state, onClose, initialTab = 'calendar', initialSel = null, onOpenMatch, onPlay }) {
   const [tab, setTab] = useState(initialTab);
   const standings = standingsOf(state);
   const div = DIVISIONS[state.divisionIndex];
@@ -140,6 +140,7 @@ export function SeasonPanel({ state, onClose, initialTab = 'calendar', onOpenMat
 
   return (
     <Panel
+      size="lg"
       title={div.name}
       eyebrow={`Saison ${state.seasonNumber} · ${state.round ? `journée ${Math.min(state.round, 7)} / 7` : 'avant la 1re journée'}`}
       onClose={onClose}
@@ -156,12 +157,15 @@ export function SeasonPanel({ state, onClose, initialTab = 'calendar', onOpenMat
         </>
       )}
     >
-      {tab === 'calendar' && <SeasonCalendar state={state} onOpenMatch={onOpenMatch} onPlay={onPlay} />}
-      {tab === 'table' && <>
+      {tab === 'calendar' && <SeasonCalendar state={state} initialSel={initialSel} onOpenMatch={onOpenMatch} onPlay={onPlay} />}
+      {tab === 'table' && <div className="season-cols">
+      <div className="season-col">
       <SectionHead label="Classement" aside={`${div.name} · ${standings.length} clubs`} />
       <StandingsTable state={state} />
       <ZoneLegend state={state} />
+      </div>
 
+      <div className="season-col">
       <CupRuns state={state} />
 
       {lm && (
@@ -196,7 +200,8 @@ export function SeasonPanel({ state, onClose, initialTab = 'calendar', onOpenMat
           </ul>
         </>
       )}
-      </>}
+      </div>
+      </div>}
     </Panel>
   );
 }

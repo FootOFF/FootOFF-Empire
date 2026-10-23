@@ -94,17 +94,34 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 - Puces de filtre : toujours sur une ligne ; sur téléphone elles se resserrent et défilent en secours.
 - Inspecteur de parcelle : même famille (en-tête séparé, corps), largeur de la colonne de gauche sur PC,
   feuille basse opaque avec poignée sur téléphone.
-- Saison : onglets Calendrier (ouvert d'emblée) et Classement dans la barre fixe, sous la situation du club.
-  - Calendrier (`src/ui/calendar.jsx`, dates calculées par `seasonFixtures` dans `src/game/fixtures.js`) : toutes
-    les dates dans l'ordre où elles se jouent, championnat en or, Coupe nationale en argent, Coupe d'Europe en
-    bleu. En tête, le bilan (dates jouées, V / N / D, prochain match) et une frise d'une pastille par date (couleur
-    du résultat, anneau de la compétition, tirets pour un tour à tirer au sort ou non disputé). Puis une carte par
-    date le long d'un fil : écusson aux couleurs du maillot adverse (`kitOf`), compétition, adversaire, et pour un
-    match joué le score, la formation, la formule des billets et son prix, l'affluence et la recette ; la carte
-    ouvre le Stats Pass du match. Le prochain match se lance depuis sa carte.
-  - Classement : zones colorées avec leur légende sous le tableau. Montée (2 premiers, or) hors Elite ; Coupe
-    d'Europe des clubs (2 premiers de l'Elite, bleu) ; descente (2 derniers, rouge). Hors Elite, la légende
-    rappelle que l'Europe se gagne en Elite.
+- Saison (grand écran sur PC depuis le 2026-10-23, le HUD s'efface) : onglets Calendrier (ouvert d'emblée) et
+  Classement dans la barre fixe, à droite des quatre repères (position, points, différence, ambition) ; sur
+  téléphone, ces repères tiennent sur une ligne, sans leur précision.
+  - Calendrier (`src/ui/calendar.jsx`, dates calculées par `seasonFixtures` dans `src/game/fixtures.js`), en trois
+    parties. Championnat en or, Coupe nationale en argent, Coupe d'Europe en bleu, partout.
+    1. La frise : toutes les dates dans l'ordre où elles se jouent, une case par date (liseré de la compétition en
+       tête, trophée ou étoile pour les coupes, écusson de l'adversaire, « J3 » ou le tour, score coloré V / N / D ou
+       point doré du prochain match ; « ? » pour un tour à tirer, « — » pour un tour non disputé), barre de
+       progression de la saison au-dessus. La date choisie se lève, soulignée ; le prochain match respire en or. Sur
+       PC les cases remplissent la largeur (quinze dates avec la Coupe d'Europe) ; sur téléphone la frise défile et
+       garde la date choisie au centre. Clavier et manette : flèches, début, fin (le focus suit).
+    2. L'affiche de la date choisie, dessinée comme le terrain vu du dessus : bandes de tonte, ligne médiane, rond
+       central ; notre moitié dorée, celle de l'adversaire à la couleur de son maillot (`kitOf`). Écussons en grand,
+       noms (jamais coupés), niveaux, rang et points de l'adversaire en championnat (sa division en coupe) ; au
+       centre le score ou « VS », et l'état (Prochain match, Victoire, Qualifié, Éliminé, Tirage au sort, Non
+       disputé). Prochain match : pronostic exact du moteur avec le onze actuel (le même que l'avant-match),
+       qualification en coupe, rapport de force, affluence et recette attendues, billets, prime de coupe, « Jouer le
+       match ». Match joué : buteurs, homme du match, affluence, recette, dispositif, billets, « Voir le Stats Pass ».
+       Un geste vers la gauche ou la droite sur l'affiche change de date (téléphone).
+    3. Le bilan (colonne de droite sur PC, dessous au téléphone) : victoires, nuls, défaites et leur barre, buts ;
+       forme des cinq derniers matchs ; les sept journées du championnat avec la place et l'enjeu ; le parcours de
+       chaque coupe tour par tour. Chaque élément choisit sa date dans la frise.
+  - Classement : sur deux colonnes en grand écran (le tableau et sa légende ; les coupes, le dernier match, les
+    trophées et les classements passés). Zones colorées avec leur légende sous le tableau. Montée (2 premiers, or)
+    hors Elite ; Coupe d'Europe des clubs (2 premiers de l'Elite, bleu) ; descente (2 derniers, rouge). Hors Elite, la
+    légende rappelle que l'Europe se gagne en Elite.
+  - Aperçus : `?ecran=saison`, `saison-joue`, `saison-coupe`, `saison-fin`, `calendrier-europe`, `classement`,
+    `europe`.
 - Réglages (écran titre et menu pause, voir plus bas) : Son et Vibrations en interrupteurs. Plus de qualité graphique
   depuis le 2026-10-23 : un seul rendu pour tous, celui de l'ancienne qualité Économie, jugée la plus belle et la plus
   nette (voir Fluidité) ; l'image est calculée à la pleine résolution de l'écran (un pixel calculé par pixel physique),
