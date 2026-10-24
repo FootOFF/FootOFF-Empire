@@ -20,6 +20,7 @@ function noiseBuffer(ctx, seconds = 3) {
 export function createStadiumSound() {
   let ctx = null;
   let master, crowdGain, crowdFilter;
+  let base = 0; // niveau de la rumeur entre deux clameurs : celui du match (start), sinon le silence
   let muted = false;
   try { muted = localStorage.getItem(KEY) === 'off'; } catch { /* préférence indisponible */ }
 
@@ -53,7 +54,7 @@ export function createStadiumSound() {
     g.cancelScheduledValues(t);
     g.setValueAtTime(g.value, t);
     g.linearRampToValueAtTime(peak, t + attack);
-    g.linearRampToValueAtTime(0.18, t + attack + release);
+    g.linearRampToValueAtTime(base, t + attack + release);
     crowdFilter.frequency.cancelScheduledValues(t);
     crowdFilter.frequency.setValueAtTime(crowdFilter.frequency.value, t);
     crowdFilter.frequency.linearRampToValueAtTime(freq, t + attack);
@@ -86,7 +87,7 @@ export function createStadiumSound() {
 
   return {
     get muted() { return muted; },
-    start() { if (ensure()) { ctx.resume?.(); swell(0.18, 1.5, 0.1); } },
+    start() { if (ensure()) { ctx.resume?.(); base = 0.18; swell(0.18, 1.5, 0.1); } },
     setMuted(m) {
       muted = m;
       try { localStorage.setItem(KEY, m ? 'off' : 'on'); } catch { /* idem */ }
@@ -196,7 +197,8 @@ export function createStadiumSound() {
       return null;
     },
     // Épreuves du centre d'entraînement : frappe, filet, cible touchée, montant, appui du viseur, compte à rebours,
-    // arrêt du gardien, saut d'une haie, haie renversée, bonne ou mauvaise lecture. Tout est synthétisé.
+    // arrêt du gardien, saut d'une haie, haie renversée, bonne ou mauvaise lecture. Tout est synthétisé. Pas de
+    // public à l'entraînement : aucun de ces sons ne touche à la rumeur de la foule.
     sfx(kind) {
       if (muted || !ensure()) return;
       ctx.resume?.();
@@ -235,18 +237,17 @@ export function createStadiumSound() {
       else if (kind === 'perfect') {
         [[1047, 0], [1568, 0.06], [2093, 0.12]].forEach(([fq, at]) => tone(fq, fq * 1.003, at, 0.4, 0.04, 'triangle'));
         hiss(0.02, 0.5, 0.06, 6000, 1.2);
-        swell(0.32, 0.25, 1.2, 900);
       } else if (kind === 'post') { tone(940, 930, 0, 0.6, 0.07, 'triangle'); tone(1480, 1470, 0, 0.45, 0.04); tone(2210, 2200, 0, 0.3, 0.02); }
-      else if (kind === 'miss') swell(0.22, 0.3, 1, 600); // « ooh » déçu
+      else if (kind === 'miss') tone(330, 250, 0, 0.24, 0.035, 'triangle'); // raté : une note qui retombe
       else if (kind === 'lock') tone(1700, 1650, 0, 0.05, 0.03, 'square');
       else if (kind === 'beep') tone(880, 880, 0, 0.12, 0.05, 'triangle');
       else if (kind === 'go') { tone(1320, 1320, 0, 0.32, 0.07, 'triangle'); tone(1760, 1760, 0, 0.32, 0.03); }
-      else if (kind === 'save') { tone(110, 60, 0, 0.14, 0.2); hiss(0, 0.08, 0.3, 1200, 0.8); swell(0.4, 0.25, 1.4, 820); } // gants qui claquent, public
-      else if (kind === 'goal') { hiss(0, 0.35, 0.45, 3000, 0.6); swell(0.14, 0.3, 1.2, 420); }
+      else if (kind === 'save') { tone(110, 60, 0, 0.14, 0.2); hiss(0, 0.08, 0.3, 1200, 0.8); } // gants qui claquent
+      else if (kind === 'goal') hiss(0, 0.35, 0.45, 3000, 0.6); // le ballon gonfle le filet
       else if (kind === 'jump') hiss(0, 0.18, 0.12, 900, 0.9, 'lowpass');
       else if (kind === 'step') tone(90, 60, 0, 0.05, 0.06);
       else if (kind === 'clip') { tone(420, 300, 0, 0.08, 0.08, 'square'); hiss(0, 0.06, 0.12, 1800); } // haie touchée
-      else if (kind === 'crash') { tone(300, 120, 0, 0.18, 0.1, 'square'); hiss(0, 0.25, 0.25, 900); swell(0.25, 0.2, 1, 500); }
+      else if (kind === 'crash') { tone(300, 120, 0, 0.18, 0.1, 'square'); hiss(0, 0.25, 0.25, 900); }
       else if (kind === 'good') { tone(990, 1000, 0, 0.16, 0.04, 'triangle'); tone(1485, 1490, 0.07, 0.22, 0.03, 'triangle'); }
       else if (kind === 'bad') { tone(300, 260, 0, 0.14, 0.05, 'triangle'); tone(240, 200, 0.12, 0.18, 0.05, 'triangle'); }
       else if (kind === 'whistle') whistle(1);
@@ -258,6 +259,7 @@ export function createStadiumSound() {
       const t = old.currentTime;
       crowdGain.gain.cancelScheduledValues(t);
       crowdGain.gain.setTargetAtTime(0, t, 0.4);
+      base = 0;
       ctx = null; // un prochain start() repart sur un contexte neuf pendant que l'ancien s'éteint
       setTimeout(() => old.close(), 1500);
     },
