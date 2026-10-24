@@ -41,7 +41,7 @@ export const GOALS = [
   {
     id: 'academy',
     tier: 2,
-    repNeeded: 10,
+    repNeeded: 12,
     name: 'Maison des talents',
     blurb: 'Ne plus dépendre du marché : forger tes propres histoires.',
     reward: { label: 'Académie +1 niveau offert', apply: (s) => { if (s.buildings.academy < 5) s.buildings.academy += 1; } },
@@ -55,7 +55,7 @@ export const GOALS = [
   {
     id: 'empire',
     tier: 3,
-    repNeeded: 15,
+    repNeeded: 25,
     name: 'L’Empire',
     blurb: 'Ton complexe sportif tient sa promesse : un club que tout le pays connaît.',
     reward: { label: '3 M€ + 2 de réputation', apply: (s) => { s.money += 3000000; s.reputation = Math.round((s.reputation + 2) * 10) / 10; } },

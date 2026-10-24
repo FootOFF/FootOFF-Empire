@@ -51,18 +51,22 @@ Buvette +10 % et boutique +12 % par niveau d'espace supporters ; la boutique sui
 prime de classement (champion : 6 k€ → 1,6 M€, dernier : 10 % de la prime), revenus hors ligne
 (1 % des sponsors par heure et par niveau du siège, 12 h au plus).
 
-**Salaires** (payés en fin de saison) : 800 € × 1,7^(note − 6) jusqu'à une note de 13, puis ×1,35 par
-point, multiplié par 1 / 2,7 / 6,2 / 10 selon la division. Un onze adapté à sa division coûte 45 à 65 %
-des revenus ; en Elite, la masse salariale grimpe avec la qualité de l'effectif (80 à 90 %), ce qui
-stabilise la fin de partie.
+**Salaires** (payés par septième à chaque journée de championnat, comme l'entretien ; `PAY_SPLIT`) : 800 € × 1,7^(note − 6)
+jusqu'à une note de 13, puis ×1,55 par point (2,9 M€ à 18, 7 M€ à 20 en Elite : les stars coûtent vraiment cher),
+multiplié par 1 / 2,7 / 6,2 / 10 selon la division. Un onze adapté à sa division coûte 50 à 60 % des revenus ; en
+Elite, un effectif de stars monte à 80 % et plus (les coupes font la différence), ce qui freine la fin de partie.
 
-**Transferts** : un seul mercato (`src/game/transfers.js`, `src/game/mercato.js`). Un joueur libre demande une
-prime de signature de 1,5 saison de salaire. Vendre un joueur tout de suite rapporte sa valeur (1,2 saison) ; mis
-en vente, il reçoit des offres après chaque journée : 60 % de chances par journée (75 % en grande forme), de 0,95 à
-1,3 fois sa valeur (+8 % en forme, +8 % jusqu'à 23 ans). Un joueur en grande forme (moyenne ≥ 7,3, niveau ≥ 6)
-peut aussi recevoir une offre spontanée (5 % par journée, 1,25 à 1,6 fois sa valeur). « Demander +10 % » : une
-chance sur deux, sinon le club retire son offre. Une offre vaut jusqu'à la journée suivante. Acheter puis revendre
-fait perdre de l'argent, former un jeune et le revendre en fait gagner.
+**Valeur de marché et transferts** (`marketValue`, `src/game/players.js`) : la valeur d'un joueur vaut deux saisons de
+salaire × âge (×1,35 jusqu'à 21 ans, ×1,15 jusqu'à 24, ×0,85 à 29-30, ×0,7 dès 31) × marge de progression (+7 % par
+point de potentiel, ×1,5 au plus). C'est la référence de tous les prix, la même sur la fiche et au mercato :
+- un joueur libre demande une prime de signature d'une saison de salaire ;
+- un club vendeur demande sa valeur × contrat (0,9 à 1,2 selon 1 à 4 ans restants) × cours du marché (0,8 à 1,3) ×
+  réseau du bureau des transferts (−3 % par niveau), puis se négocie (seuils ci-dessous) ;
+- un club acheteur a un plafond secret en part de la valeur : petit club 0,84, club ambitieux 0,97, grand club 1,12
+  (±6 % de caractère, +6 % pour un joueur en forme ou jeune, +5 % à fort potentiel, −8 % dès 31 ans), et la
+  négociation ou les enchères le font monter ; une vente immédiate (conseil, plan de redressement) rapporte 85 %.
+Acheter puis revendre aussitôt coûte donc 15 à 30 % ; faire progresser un joueur, ou un jeune de l'académie, rapporte.
+Un joueur en grande forme (moyenne ≥ 7,3, niveau ≥ 6) peut recevoir une offre spontanée (5 % par journée, plafond +20 %).
 
 **Cours du marché** : le prix demandé suit un cours (×0,8 à ×1,3) qui bouge à chaque journée (±5 %), monte quand
 des clubs rivaux courtisent le joueur (+2,5 % par club) et baisse après trois journées sans preneur. Un joueur
@@ -80,15 +84,15 @@ joueur et par journée.
 **Bureau des transferts** (4,5 k€ au niveau 1, ×6,2 par niveau, sur n'importe quelle parcelle) : sans lui, seuls 4 joueurs sous contrat sont listés publiquement ; son réseau de recruteurs en suit
 12 au niveau 1 puis 4 de plus par niveau (28 au niveau 5), avec des profils de plus en plus forts (jusqu'à environ 2,5 niveaux de
 division au-dessus du club). Un joueur sur quatre est un espoir (18 à 21 ans, potentiel relevé).
-L'indemnité de transfert vaut 2,5 saisons de salaire × âge (×1,35 jusqu'à 21 ans, ×1,15 jusqu'à 24,
-×0,85 à 29-30, ×0,7 dès 31) × marge de progression (+7 % par point de potentiel, ×1,5 au plus) ×
-contrat (0,9 à 1,2 selon 1 à 4 ans restants) × réseau du bureau (−3 % par niveau). Ordres de grandeur
-(médiane) : 3 à 11 k€ en Départementale, 45 k€ en Régionale, 230 à 380 k€ en Nationale, 1,2 à 1,5 M€ en
-Elite. Le mercato (5 joueurs libres et les joueurs sous contrat) est renouvelé chaque saison ; après chaque
+Les recruteurs vont plus haut avec le bureau (+0,3 niveau de division par niveau) et la notoriété attire les grands
+noms (+0,6 au plus, à 60 de réputation) : jusqu'à 19 pour un grand club d'Elite au réseau complet, le marché reste un
+cran au-dessus de ton onze. Ordres de grandeur d'une indemnité (médiane) : 2 à 8 k€ en Départementale, 40 k€ en
+Régionale, 250 k€ en Nationale, 1,5 à 3 M€ en Elite, 8 à 12 M€ pour une star à 18. Le mercato (5 joueurs libres et les joueurs sous contrat) est renouvelé chaque saison ; après chaque
 journée, des joueurs signent ailleurs et de nouveaux arrivent (marqués « Nouveau »). Les rapports des recruteurs
 resserrent aussi la fourchette de potentiel affichée et rendent les vendeurs plus conciliants.
 
-**Charges** : entretien des installations, 4 % de ce qui a été investi chaque saison.
+**Charges** : entretien des installations, 4 % de ce qui a été investi chaque saison, payé par septième à chaque journée.
+L'écran Finances prévoit la fin de saison avec les journées restantes à payer.
 
 **Plan de redressement** : une saison bouclée dans le rouge déclenche la vente des plus gros salaires
 par le conseil (jusqu'à revenir au-dessus de zéro, sans descendre sous 13 joueurs).
@@ -104,31 +108,41 @@ attire (`src/game/reputation.js`), à rendement décroissant, comparée à la fo
 - sponsors : ×0,9 (club sans nom) à ×1,25 environ (légende), ×1 à la fondation (`sponsorRep`) ;
 - mercato : seuil d'acceptation des vendeurs abaissé jusqu'à 6 points (−2 points pour un club sans nom), avec sa
   raison affichée dans la négociation (`mercatoRep`, `stanceOf`) ;
-- statuts nommés (Club de quartier 0, Club qui monte 6, Club régional 10, Club national 15, Grand club 25, Club
-  de légende 40) : une ligne au journal et une mention à l'après-match quand le club en change ; les paliers des
-  objectifs de saison suivent la même échelle. Panneau Notoriété : bouton étoile du HUD.
+- statuts nommés (Club de quartier 0, Club qui monte 6, Club régional 12, Club national 25, Grand club 45, Club
+  de légende 80) : une ligne au journal et une mention à l'après-match quand le club en change ; les paliers des
+  grandes étapes (`goals.js`) suivent la même échelle. Panneau Notoriété : bouton étoile du HUD.
+- gains : une victoire rapporte +1 (nul +0,2, défaite −0,6) × espace supporters (+10 % par niveau) × affiche (coupe
+  ×1,2, Europe ×1,6) × division (Départementale ×0,35, Régionale ×0,55, Nationale ×0,8, Elite ×1) ; titre +3, Coupe +3,
+  Coupe d'Europe +6, montée +4, descente −3. Chaque intersaison efface 12 % de la notoriété : un club de
+  Départementale plafonne autour de 25, la légende se bâtit par des titres en Elite (`REP_DIVISION`, `REP_DECAY`).
 
-## Simulation (200 carrières × 50 saisons, `sim_eco.mjs`)
+## Divisions et difficulté
 
-Un joueur automatique gère le club : meilleur onze, recrutement quand un joueur libre améliore l'équipe,
-bâtiments par priorité (stade dès que le public dépasse la capacité), réserve de trésorerie. Trois profils
-ont été testés : raisonnable, passif (ne recrute jamais) et dépensier (aucune réserve).
+Niveau des adversaires (`DIVISIONS`, répartis de `oppMin` à `oppMax`) : Départementale 5,0 à 7,4, Régionale 7,6 à 10,0,
+Nationale 10,2 à 12,8, Elite 13,4 à 17,0 ; Coupe d'Europe 13,7 à 18,6. L'effectif de départ vaut environ 6,2 (milieu de
+Départementale) : la première montée se gagne en deux ou trois saisons, pas d'emblée. Au sommet, le haut de l'Elite
+(17) reste un défi pour un onze arrivé à 17,5-18 : le titre se dispute, saison après saison, sans jamais être acquis.
 
-| | Avant | Après (raisonnable) | Passif | Dépensier |
-|---|---|---|---|---|
-| Première montée en Régionale | saison 2 | 3 | 2 | 3 |
-| Nationale | saison 5 | 7 | 8 | 7 |
-| Elite | saison 9 | 12 | 14 | 11 |
-| Premier titre en Elite | saison 14 | 20 | 20 | 20 |
-| Saisons en Elite gagnées | ~100 % | 40 % | 45 % | 43 % |
-| Tous les bâtiments au maximum | saison 11 | 17 | 18 | 16 |
-| Salaires / revenus (D1 → Elite) | 14 % → 2 % | 59 % → 79 % | 52 % → 90 % | 64 % → 80 % |
-| Carrières passées dans le rouge | 0 % | 3 % | 17 % | 1 % |
-| Trésorerie médiane, saison 50 | 8 M€ (sans usage) | 112 M€ (stabilisée) | 51 M€ | 100 M€ |
+## Simulation (`tools/sim/career.mjs`, dans le dépôt)
 
-Avant : stade plafonné à 1 600 places, salaires négligeables, argent accumulé sans usage dès la
-saison 11. Après : chaque division change d'échelle (budget ×10 environ), le stade devient une vraie
-décision, les salaires pèsent, et la trésorerie se stabilise en fin de partie au lieu d'exploser.
+`node tools/sim/career.mjs 30 8` fait jouer huit carrières de trente saisons par un président automatique raisonnable
+(meilleur onze condition comprise, recrue utile avec une réserve d'une demi-saison de salaires, stade dès que le public
+dépasse la capacité, bâtiment conseillé puis améliorations, jeunes repérés recrutés, vente d'un remplaçant quand les
+salaires pèsent trop). Rééquilibrage du 2026-10-25 :
+
+| | Avant | Après |
+|---|---|---|
+| Première montée en Régionale | saison 1 | saison 3 |
+| Elite | saison 8 | saison 9 |
+| Premier titre en Elite | saison 15 | saison 19 |
+| Saisons en Elite gagnées | 51 % | 36 % |
+| Réputation en saison 6-10 / 26-30 | 75 / 400 (légende dès la saison 6) | 26 / 123 (légende vers la saison 25) |
+| Meilleur joueur du marché en fin de partie | 16,8 (sous le onze) | 18,6 (au-dessus du onze) |
+| Salaires / revenus, saisons 16-25 | 64 % | 81 % |
+| Trésorerie médiane, saisons 16-25 / 26-30 | 358 M€ / 800 M€ | 60 M€ / 300 M€ |
+
+Avant : montée offerte, légende en Régionale, plus aucun renfort à acheter au sommet, titre chaque année, argent sans
+usage. Après : chaque étape se mérite, le marché garde un cran d'avance, les stars coûtent, le titre se dispute.
 
 Prochaines sources de dépense prévues (feuille de route) : marché des transferts, personnel du club,
 bâtiments des parcelles vides, compétitions continentales.

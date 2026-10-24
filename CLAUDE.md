@@ -39,4 +39,8 @@ AMD intégrée, écran à 200 %) et sur iPhone, souvent à distance, depuis son 
 - Les outils de contrôle (`tmp/ph3/textcheck.html`, `hudcheck.html`, `scrollcheck.html`, `simcheck.js`…) ne sont pas
   dans le dépôt (`tmp/` est ignoré) : ils n'existent que sur le PC de l'utilisateur. Dans une session cloud, vérifier au
   minimum avec `npx vite build`, et dire ce qui n'a pas pu être vérifié (3D, rendu sur téléphone).
+- Dans le dépôt : `node tools/sim/career.mjs 30 8` (carrières jouées par un président automatique : rythme des montées,
+  titres, trésorerie, salaires, réputation, marché ; `--detail` pour la première carrière saison par saison). À lancer
+  après tout changement d'équilibre (économie, joueurs, adversaires). La galerie se capture sans tête avec Playwright
+  (`npx vite preview`, puis `chromium` sur `/?ecran=<nom>`).
 - Les modèles 3D des bâtiments viennent de scripts Blender (`tools/blender/models/`), que seul le PC peut lancer.

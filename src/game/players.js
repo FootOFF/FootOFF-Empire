@@ -1,6 +1,6 @@
 import { clamp, pick, ri, rnd } from './utils';
 import { playerName } from './names';
-import { saleFor, scoutingError, signingFor, wageFor } from './economy';
+import { scoutingError, signingFor, wageFor } from './economy';
 
 // Joueurs : 9 caractéristiques (1 à 20) pour tous, 6 de plus pour les gardiens, un profil (pied fort,
 // poste de dépannage, signes distinctifs, numéro) et une vie (forme, statistiques de saison, historique).
@@ -159,16 +159,22 @@ export function assignNumber(players, p) {
 const baseWage = (p, divisionIndex) => wageFor(playerRating(p), divisionIndex);
 export const wageOf = (p, divisionIndex = 0) => Math.round(baseWage(p, divisionIndex) * (1 - (p.wageCut || 0)));
 export const signingFee = (p, divisionIndex = 0) => signingFor(baseWage(p, divisionIndex));
-export const saleValue = (p, divisionIndex = 0) => saleFor(baseWage(p, divisionIndex));
 
-// Indemnité de transfert demandée par le club vendeur : bien plus qu'un joueur libre, environ deux saisons et
-// demie de salaire ; plus pour un jeune à potentiel ou un long contrat, moins pour un trentenaire en fin de
-// contrat. Le réseau du bureau des transferts fait baisser la facture (−3 % par niveau).
+// Valeur de marché d'un joueur : deux saisons de salaire, plus pour un jeune (à potentiel), moins pour un trentenaire.
+// C'est la référence de tous les prix : un club vendeur en demande l'indemnité (selon le contrat, le cours du marché et
+// ton réseau de recruteurs), un club acheteur en paie 85 % de base (un grand club davantage, et la négociation fait le
+// reste). Acheter puis revendre aussitôt coûte donc 15 à 30 % ; faire progresser un joueur (ou un jeune) rapporte.
+const ageFactor = (age) => (age <= 21 ? 1.35 : age <= 24 ? 1.15 : age >= 31 ? 0.7 : age >= 29 ? 0.85 : 1);
+const roomFactor = (p) => clamp(1 + 0.07 * Math.max(0, p.pot - playerRating(p)), 1, 1.5);
+const roundValue = (v) => Math.max(50, Math.round(v / 50) * 50);
+export const marketValue = (p, divisionIndex = 0) => roundValue(baseWage(p, divisionIndex) * 2.0 * ageFactor(p.age) * roomFactor(p));
+export const saleValue = (p, divisionIndex = 0) => roundValue(marketValue(p, divisionIndex) * 0.85);
+
+// Indemnité de transfert demandée par le club vendeur : sa valeur de marché, plus pour un long contrat, moins en fin
+// de contrat. Le réseau du bureau des transferts fait baisser la facture (−3 % par niveau).
 export function transferFee(p, divisionIndex = 0, officeLvl = 0) {
-  const age = p.age <= 21 ? 1.35 : p.age <= 24 ? 1.15 : p.age >= 31 ? 0.7 : p.age >= 29 ? 0.85 : 1;
-  const room = clamp(1 + 0.07 * Math.max(0, p.pot - playerRating(p)), 1, 1.5);
   const contract = 0.8 + 0.1 * (p.contract || 2);
-  return Math.round((wageOf(p, divisionIndex) * 2.5 * age * room * contract * (1 - 0.03 * officeLvl)) / 50) * 50;
+  return roundValue(marketValue(p, divisionIndex) * contract * (1 - 0.03 * officeLvl));
 }
 // Prix demandé pour une recrue : indemnité de transfert (joueur sous contrat) ou prime de signature (joueur libre),
 // selon le cours du joueur sur le marché (priceMod : le prix monte s'il est courtisé, baisse s'il ne trouve pas

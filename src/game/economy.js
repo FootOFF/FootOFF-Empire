@@ -1,5 +1,5 @@
 import {
-  BUILDINGS, DIVISIONS, DRILLS, PROGRAM_STEPS, SCOUTED, TRAINING_COLLECTIVE, TRAINING_MULT, YOUTH_PLACES, upgradeCost,
+  BUILDINGS, DIVISIONS, DRILLS, PAY_SPLIT, PROGRAM_STEPS, SCOUTED, TRAINING_COLLECTIVE, TRAINING_MULT, YOUTH_PLACES, upgradeCost,
 } from './constants';
 import { clamp, rnd } from './utils';
 import { REP_START, mercatoRep, sponsorRep } from './reputation';
@@ -105,22 +105,18 @@ export const prizeFor = (position, divIndex) => Math.round(DIVISIONS[divIndex].p
 export const OFFLINE_CAP = 12; // heures comptées au maximum
 export const offlinePerHour = (lvl, divIndex) => Math.round(DIVISIONS[divIndex].sponsor * 0.01 * lvl);
 
-// Salaire annuel : il suit la note du joueur (×1,7 par point jusqu'à 13, puis ×1,35 : au sommet, les
-// écarts de talent coûtent moins cher) et la division du club (contrats de plus en plus professionnels).
+// Salaire annuel : il suit la note du joueur (×1,7 par point jusqu'à 13, puis ×1,55 : les stars de l'Elite coûtent
+// vraiment cher, 2,9 M€ à 18, 7 M€ à 20) et la division du club (contrats de plus en plus professionnels).
 export const WAGE_BASE = 800;
 export const WAGE_DIVISION = [1, 2.7, 6.2, 10];
 export function wageFor(rating, divIndex) {
   const r = Math.max(1, rating);
-  const curve = 1.7 ** (Math.min(r, 13) - 6) * 1.35 ** Math.max(0, r - 13);
+  const curve = 1.7 ** (Math.min(r, 13) - 6) * 1.55 ** Math.max(0, r - 13);
   return Math.round(WAGE_BASE * curve * WAGE_DIVISION[divIndex]);
 }
 
-// Prime à la signature d'un joueur libre : une saison et demie de salaire.
-export const signingFor = (wage) => Math.round(wage * 1.5);
-
-// Valeur de revente : un peu plus d'une saison de salaire. Acheter puis revendre aussitôt fait perdre
-// de l'argent ; former un jeune et le revendre une fois progressé en rapporte.
-export const saleFor = (wage) => Math.round(wage * 1.2);
+// Prime à la signature d'un joueur libre : une saison de salaire (pas d'indemnité : c'est l'affaire du mercato).
+export const signingFor = (wage) => Math.round(wage * 1.0);
 
 // Entretien des installations : 4 % de ce qui a été investi dans les bâtiments, chaque saison.
 export function investedIn(key, lvl) {
@@ -130,25 +126,31 @@ export function investedIn(key, lvl) {
 }
 export const upkeepOf = (s) => Math.round(Object.keys(BUILDINGS).reduce((a, k) => a + investedIn(k, s.buildings[k] || 0), 0) * 0.04);
 
-// Prévision d'une saison complète (7 matchs à domicile, milieu de classement) : sert aux alertes
-// de l'effectif quand la masse salariale devient trop lourde.
+// Prévision d'une saison complète (7 journées à domicile, deux tours de Coupe nationale, deux soirs de Coupe d'Europe
+// quand on la joue, sponsors, prime de milieu de classement) : sert aux alertes de l'effectif quand la masse salariale
+// devient trop lourde, et à la part des salaires affichée dans les Finances.
 export function seasonForecast(s, wages) {
   const gate = expectedGate(s, null);
-  const income = gate.revenue * 7 + sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation) + prizeFor(4, s.divisionIndex);
+  const cups = expectedGate(s, null, 'cup').revenue * 2 + (s.c1 ? (expectedGate(s, null, 'c1').revenue) * 2 : 0);
+  const income = gate.revenue * 7 + cups + sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation) + prizeFor(4, s.divisionIndex);
   const upkeep = upkeepOf(s);
   return { income, wages, upkeep, net: income - wages - upkeep, wageShare: wages / Math.max(1, income) };
 }
 
 // Prévision de fin de saison (écran Finances) : trésorerie actuelle, plus les matchs restants, les sponsors et
 // la prime au classement actuel, moins les salaires et l'entretien qui tombent au coup de sifflet final.
+// Les salaires et l'entretien se paient par septième à chaque journée (constants.js, PAY_SPLIT) : il ne reste à payer
+// que la part des journées restantes.
 export function endOfSeasonForecast(s, position, wages) {
   const left = Math.max(0, 7 - s.round);
   const perMatch = expectedGate(s, null).revenue;
   const matches = perMatch * left;
   const sponsors = sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation);
   const prize = prizeFor(position, s.divisionIndex);
-  const upkeep = upkeepOf(s);
-  return { left, perMatch, matches, sponsors, prize, wages, upkeep, end: s.money + matches + sponsors + prize - wages - upkeep };
+  const upkeepAll = upkeepOf(s);
+  const wagesLeft = Math.round((wages * left) / PAY_SPLIT);
+  const upkeep = Math.round((upkeepAll * left) / PAY_SPLIT);
+  return { left, perMatch, matches, sponsors, prize, wages: wagesLeft, wagesSeason: wages, upkeep, upkeepSeason: upkeepAll, end: s.money + matches + sponsors + prize - wagesLeft - upkeep };
 }
 
 // Ce que rapporte un niveau de plus (inspecteur) : recettes gagnées par saison (7 matchs et sponsors), entretien

@@ -1,4 +1,5 @@
-import { DIVISIONS, SQUAD_MIN } from './constants';
+import { DIVISIONS, PAY_SPLIT, SQUAD_MIN } from './constants';
+import { REP_DECAY, REP_DIVISION } from './reputation';
 import { refreshTransfers } from './transfers';
 import { refreshScouting, trainYouth, youthSeasonEnd } from './academy';
 import { logMove } from './mercato';
@@ -261,7 +262,7 @@ export function applyMatchResult(s, live) {
     demand: gate.demand,
     breakdown: gate.breakdown,
     revenue: gate.revenue,
-    repDelta: Math.round((live.gf > live.ga ? 1 : live.gf === live.ga ? 0.2 : -0.6) * ctx.repMult * 10) / 10,
+    repDelta: Math.round((live.gf > live.ga ? 1 : live.gf === live.ga ? 0.2 : -0.6) * ctx.repMult * REP_DIVISION[s.divisionIndex] * 10) / 10,
   };
   if (league) applyResult(s, 0, ctx.oppIdx, res.gf, res.ga);
   const cupNote = league ? null : cupResult(s, ctx, res);
@@ -305,6 +306,13 @@ export function applyMatchResult(s, live) {
   for (const p of s.players) p.fit = Math.min(100, Math.round((fitOf(p) + recoveryOf(p, s.buildings.training || 0)) * 10) / 10);
   s.money += res.revenue;
   for (const [k, v] of Object.entries(res.breakdown)) book(s, k, v);
+  if (league) { // paie de la journée : un septième des salaires et de l'entretien
+    const wagePart = Math.round(s.players.reduce((sum, p) => sum + wageOf(p, s.divisionIndex), 0) / PAY_SPLIT);
+    const upkeepPart = Math.round(upkeepOf(s) / PAY_SPLIT);
+    s.money -= wagePart + upkeepPart;
+    book(s, 'wages', wagePart);
+    book(s, 'upkeep', upkeepPart);
+  }
   markTreasury(s);
   s.seasonStats.gate = (s.seasonStats.gate || 0) + res.revenue; // recettes cumulées, pour le bilan
   if (gate.attendance >= gate.capacity * 0.6) s.seasonStats.crowd = true;
@@ -373,16 +381,15 @@ export function endSeason(s) {
   const div = DIVISIONS[s.divisionIndex];
   const prize = prizeFor(position, s.divisionIndex);
   const sponsors = sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation);
-  const wages = s.players.reduce((sum, p) => sum + wageOf(p, s.divisionIndex), 0);
-  const upkeep = upkeepOf(s);
+  // salaires et entretien déjà payés journée après journée : le bilan en montre le total de la saison
+  const wages = s.ledger?.lines?.wages || 0;
+  const upkeep = s.ledger?.lines?.upkeep || 0;
   const promoted = position <= 2 && s.divisionIndex < 3;
   const relegated = position >= 7 && s.divisionIndex > 0;
 
-  s.money += prize + sponsors - wages - upkeep;
+  s.money += prize + sponsors;
   book(s, 'prize', prize);
   book(s, 'sponsors', sponsors);
-  book(s, 'wages', wages);
-  book(s, 'upkeep', upkeep);
   const events = [];
   // Champion : trophée, prime de titre (moitié de la prime du champion), bonus des sponsors et réputation
   let titleBonus = 0;
@@ -411,7 +418,8 @@ export function endSeason(s) {
     events.push(`Plan de redressement : comptes dans le rouge, le conseil vend ${p.name} (${n(fee)} €).`);
   }
   const repBefore = s.reputation;
-  s.reputation = Math.max(0, Math.round((s.reputation + (promoted ? 4 : relegated ? -3 : 0) + (position === 1 ? 3 : 0)) * 10) / 10);
+  // l'intersaison efface une part de la notoriété (on oublie vite) ; montée, titre et descente comptent ensuite
+  s.reputation = Math.max(0, Math.round((s.reputation * (1 - REP_DECAY) + (promoted ? 4 : relegated ? -3 : 0) + (position === 1 ? 3 : 0)) * 10) / 10);
 
   for (const p of s.players) {
     // bilan individuel de la saison, puis progression de l'été

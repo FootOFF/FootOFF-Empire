@@ -57,8 +57,10 @@ Code : `src/game/players.js` (condition, blessures, disponibilité), `src/game/l
 ## Progression
 
 - Intersaison : vers le potentiel caché, selon l'âge, plus lente au sommet ;
-  déclin dès 32 ans (le physique d'abord). Rythme calé par la simulation de 50 saisons (`docs/ECONOMIE.md`) :
-  Elite vers la saison 11, premier titre vers la 19e, masse salariale à 79 % des revenus en Elite.
+  déclin dès 32 ans (le physique d'abord). Rythme calé par la simulation de carrières (`tools/sim/career.mjs`,
+  `docs/ECONOMIE.md`) : Elite vers la saison 9, premier titre vers la 19e, masse salariale à 80 % des revenus en Elite.
+- Valeur de marché (`marketValue`) : deux saisons de salaire, plus pour un jeune à potentiel, moins pour un trentenaire ;
+  c'est la référence des indemnités et des offres (`docs/ECONOMIE.md`).
 - Au fil de la saison : séances du centre d'entraînement pour l'équipe première (`docs/DESIGN.md`) ; à l'académie,
   un petit progrès après chaque journée, sans effet du centre.
 - Potentiel affiché en fourchette : elle se resserre avec l'académie et les saisons passées au club.

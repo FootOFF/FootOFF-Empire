@@ -1,5 +1,5 @@
 import { DIVISIONS, SQUAD_MAX } from './constants';
-import { costOf, playerRating, potentialRange, ratingAt, saleValue } from './players';
+import { costOf, marketValue, playerRating, potentialRange, ratingAt } from './players';
 import { slotsOf } from './tactics';
 import { clamp, rnd } from './utils';
 import { mercatoRep } from './reputation';
@@ -120,8 +120,8 @@ export function offerBlock(s, p, amount) {
 // Négociations en cours : contre-propositions à accepter avant la prochaine journée.
 export const pendingCounters = (s) => poolOf(s).filter((p) => p.talks?.counter);
 
-// Valeur d'un joueur de l'effectif (base des offres reçues) et écart d'une offre à cette valeur.
-export const valueOf = (s, p) => saleValue(p, s.divisionIndex);
+// Valeur de marché d'un joueur de l'effectif (players.js) : la référence des offres reçues, la même que la fiche.
+export const valueOf = (s, p) => marketValue(p, s.divisionIndex);
 
 // --- Ventes ------------------------------------------------------------------------------------------------
 //
@@ -140,10 +140,11 @@ const REACH = 0.35; // un club ignore un joueur dont le prix dépasse son plafon
 const CHARACTER = 0.06; // caractère de chaque club : plafond à ± 6 % de la valeur
 const SPONTANEOUS = 0.2; // pour un joueur qui n'est pas à vendre, un club met 20 % de sa valeur en plus
 // step : division du club acheteur par rapport à la nôtre
+// Plafonds en part de la valeur de marché : un petit club paie moins que la valeur, un grand club davantage.
 export const BUYERS = {
-  small: { label: 'Petit club', base: 0.97, gap: [0.02, 0.06], hard: 0.01, step: -1 },
-  mid: { label: 'Club ambitieux', base: 1.1, gap: [0.04, 0.1], hard: 0.02, step: 0 },
-  big: { label: 'Grand club', base: 1.26, gap: [0.08, 0.16], hard: 0.03, step: 1 },
+  small: { label: 'Petit club', base: 0.84, gap: [0.02, 0.06], hard: 0.01, step: -1 },
+  mid: { label: 'Club ambitieux', base: 0.97, gap: [0.04, 0.1], hard: 0.02, step: 0 },
+  big: { label: 'Grand club', base: 1.12, gap: [0.08, 0.16], hard: 0.03, step: 1 },
 };
 
 export const formOf = (p) => (p.form?.length >= 2 ? p.form.reduce((a, b) => a + b, 0) / p.form.length : 6);

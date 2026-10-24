@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from '../game/constants';
 import {
-  ATTRS, FAMILIES, GK_ATTRS, TRAITS, WEIGHTS, costOf, playerRating, potentialRange, ratingAt, saleValue, wageOf, absenceOf, fitOf, matchCost, recoveryOf } from '../game/players';
+  ATTRS, FAMILIES, GK_ATTRS, TRAITS, WEIGHTS, costOf, playerRating, potentialRange, ratingAt, marketValue, wageOf, absenceOf, fitOf, matchCost, recoveryOf } from '../game/players';
 import { seasonForecast } from '../game/economy';
 import { teamLevel } from '../game/match';
 import { clubAfter, deName } from '../game/names';
@@ -293,7 +293,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
 function SquadOverview({ state, squad }) {
   if (!squad.length) return null;
   const forms = squad.map(formAvg).filter((f) => f !== null);
-  const value = squad.reduce((a, p) => a + saleValue(p, state.divisionIndex), 0);
+  const value = squad.reduce((a, p) => a + marketValue(p, state.divisionIndex), 0);
   const tiles = [
     ['Niveau du onze', fmtRating(teamLevel(state)), 'gold'],
     ['Âge moyen', `${fmtRating(squad.reduce((a, p) => a + p.age, 0) / squad.length)} ans`],
@@ -492,7 +492,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
   const all = attrsOf(p);
   const keys = new Set(Object.entries(WEIGHTS[p.pos]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => k));
   const fee = costOf(p, state);
-  const value = saleValue(p, state.divisionIndex);
+  const value = marketValue(p, state.divisionIndex); // valeur de marché ; une vente rapporte autour de 85 % (plus avec un grand club ou en négociant)
   const prev = p.hist?.length ? p.hist[p.hist.length - 1] : null;
   const role = market ? (p.club ? `${p.club} · contrat ${p.contract} an${p.contract > 1 ? 's' : ''}` : 'Joueur libre') : state.lineup?.includes(p.id) ? 'Titulaire' : 'Remplaçant';
   const sale = market ? null : (state.saleList || []).find((x) => x.id === p.id) || null;

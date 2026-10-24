@@ -19,9 +19,12 @@ import { clamp, pick, ri, rnd } from './utils';
 export const FREE_POOL = 5; // joueurs libres disponibles en même temps
 const roundKey = (s) => `${s.seasonNumber}:${s.round}`;
 
+// Les recruteurs vont plus haut avec le bureau des transferts, et la notoriété attire les grands noms (jusqu'à 19 pour
+// un grand club d'Elite au réseau complet) : le marché reste un cran au-dessus de ton onze, même au sommet.
 function scoutPlayer(s) {
   const lvl = s.buildings.transfers || 0;
-  const p = makePlayer({ level: s.divisionIndex + 0.8 + rnd(-0.6, 0.4 + lvl * 0.25) });
+  const fame = clamp((s.reputation || 0) / 100, 0, 0.6);
+  const p = makePlayer({ level: s.divisionIndex + 0.8 + rnd(-0.6, 0.4 + lvl * 0.3) + fame });
   if (Math.random() < 0.25) { // un espoir sur quatre : jeune, avec de la marge
     p.age = ri(18, 21);
     p.pot = clamp(p.pot + ri(1, 3), 8, 20);

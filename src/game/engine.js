@@ -58,8 +58,9 @@ export function createInitialState(clubName, crest = null) {
     goals: null,
     nextId: 1,
   };
+  // onze de départ au niveau du milieu de la Départementale (environ 6,2) : la montée se gagne, elle n'est pas offerte
   for (const pos of ['G', 'D', 'D', 'D', 'D', 'M', 'M', 'M', 'A', 'A', 'A']) {
-    const p = makePlayer({ level: rnd(0.5, 1), pos });
+    const p = makePlayer({ level: rnd(0.3, 0.8), pos });
     p.id = s.nextId++;
     p.joined = 1;
     assignNumber(s.players, p);
@@ -88,7 +89,7 @@ export function addReserves(s) {
   s.reserves = true;
   for (const pos of ['G', 'D', 'M', 'A']) {
     if (s.players.length >= SQUAD_MAX) break;
-    const p = makePlayer({ level: rnd(0.2, 0.6), pos });
+    const p = makePlayer({ level: rnd(0.1, 0.45), pos });
     p.id = s.nextId++;
     p.joined = s.seasonNumber || 1;
     assignNumber(s.players, p);

@@ -74,8 +74,8 @@ export function FinancesPanel({ state, onClose, onOpenSquad }) {
         {fc.left > 0 && <li className="in"><span>Matchs restants <em>{fc.left} × environ {fmtEuros(fc.perMatch)}</em></span><b>{signed(fc.matches)}</b></li>}
         <li className="in"><span>Sponsors</span><b>{signed(fc.sponsors)}</b></li>
         <li className="in"><span>Prime de classement <em>à la {ordinal(pos, true)} place</em></span><b>{signed(fc.prize)}</b></li>
-        <li className="out"><span>Salaires <em>{state.players.length} joueurs</em></span><b>{signed(-fc.wages)}</b></li>
-        {fc.upkeep > 0 && <li className="out"><span>Entretien des installations</span><b>{signed(-fc.upkeep)}</b></li>}
+        <li className="out"><span>Salaires restants <em>{state.players.length} joueurs · {fc.left} journée{fc.left > 1 ? 's' : ''} sur 7</em></span><b>{signed(-fc.wages)}</b></li>
+        {fc.upkeep > 0 && <li className="out"><span>Entretien restant</span><b>{signed(-fc.upkeep)}</b></li>}
         <li className={`fin-total ${fc.end < 0 ? 'neg' : ''}`}><span>Trésorerie en fin de saison</span><b>{fmtEuros(fc.end)}</b></li>
       </ul>
       {fc.end < 0 ? (
@@ -104,7 +104,7 @@ export function FinancesPanel({ state, onClose, onOpenSquad }) {
               {spent.map((x) => <Line key={x.k} label={x.label} value={x.v} max={max} kind="out" />)}
             </ul>
           )}
-          {!l.lines.wages && <p className="fin-note">Salaires et entretien sont réglés en fin de saison (voir la prévision).</p>}
+          <p className="fin-note">Salaires et entretien se paient par septième à chaque journée de championnat.</p>
         </>
       )}
 
