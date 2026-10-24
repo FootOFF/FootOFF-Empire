@@ -50,7 +50,7 @@ export const DRILL_TEXT = {
   precision: 'Tirs au but sur cibles : arrête le viseur au bon moment, le plus près du centre.',
   sprint: 'Course de haies chronométrée : saute au bon moment pour garder ta vitesse.',
   lecture: 'Sur la tablette de l’analyste, l’action se fige : trouve vite la bonne passe.',
-  arrets: 'Les tirs s’enchaînent : plonge du bon côté, le plus vite possible.',
+  arrets: 'Huit tirs, à ras de terre, en lucarne ou enroulés : plonge vers le ballon, le plus tôt possible.',
   coupsFrancs: 'Un mur et un gardien : vise haut pour passer le mur, loin du gardien, dans la lucarne.',
   penalties: 'Juste avant de frapper, le tireur se tourne vers son côté : plonge à cet instant. Trop tôt, il te voit partir.',
   centres: 'L’ailier déborde et centre : lance ta course vers le point de chute, puis saute pour reprendre de la tête.',

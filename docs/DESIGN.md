@@ -458,7 +458,15 @@ Calage : `tmp/calib-training.mjs` (carrières), contrôles : `tmp/check-training
   l'effet (le ballon s'enroule du côté du bombé, et contourne le mur en coup franc) ; un geste lent (plus de 0,45 s)
   rend la frappe molle et moins précise ; la dispersion grandit un peu à chaque frappe. Au clavier et à la manette :
   deux appuis (ligne verticale, puis horizontale).
-- Arrêts réflexes : vue subjective du gardien, gants noir et or, plongeon réel de la caméra, huit tirs.
+- Arrêts réflexes (refaite le 2026-10-24, « bien plus travaillée ») : vue subjective du gardien, gants noir et or,
+  plongeon réel de la caméra vers le point visé (côté et hauteur), huit tirs variés (à ras de terre, mi-hauteur,
+  lucarne, dans l'axe, enroulés) du côté gauche ou droit au hasard, de plus en plus forts. Au doigt, on touche
+  l'endroit où part le ballon (l'écran est le but vu du gardien, le bas de l'écran le sol) ; au clavier et à la
+  manette, gauche ou droite (avec haut pour un tir haut : le gardien suit alors la trajectoire), haut seul pour
+  sauter, bas pour rester au sol. Couvrir un coin prend près d'une demi-seconde : à l'arrivée du ballon, sa distance
+  aux mains (et au corps tendu du bassin aux mains) donne « Capté » (100), « Claqué » (80) ou « Du bout des gants »
+  (60, le ballon part en corner), avec le temps de réaction ; ralenti sur les arrêts serrés ; plonger avant la frappe
+  : « Bien deviné » (six dixièmes des points) ; « Mauvais côté », « Trop tard ».
 - Sprint et haies : travelling latéral, départ au signal, dix haies, zone d'appel dorée, chrono.
 - Lecture du jeu : tablette de l'analyste vue d'en haut, cadrage automatique, trois partenaires numérotés, une seule
   bonne passe.
