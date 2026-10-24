@@ -1406,7 +1406,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .scrim { position: absolute; inset: 0; z-index: 25; background: rgba(0, 0, 0, .62); display: grid; place-items: center; animation: fo-fade .25s; }
 .confirm-scrim { z-index: 40; padding: 16px; }
 .confirm-card {
-  width: min(400px, 100%); border-radius: var(--r-lg); padding: 24px 24px 20px; display: flex; flex-direction: column; gap: 12px;
+  width: min(480px, 100%); border-radius: var(--r-lg); padding: 24px 24px 20px; display: flex; flex-direction: column; gap: 12px;
   background: var(--glass-strong); border-color: var(--gold-line); animation: fo-up .3s var(--ease);
 }
 .confirm-card.danger { border-color: rgba(224, 122, 111, .45); }
@@ -1419,8 +1419,8 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .confirm-rows dd { margin: 0; font-family: var(--font-disp); font-weight: 600; font-size: var(--d-md); }
 .confirm-rows dd.up { color: var(--gold-light); }
 .confirm-rows dd.down { color: var(--red); }
-.confirm-actions { display: flex; gap: 8px; margin-top: 8px; }
-.confirm-actions .btn { flex: 1; padding: 12px 16px; }
+.confirm-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.confirm-actions .btn { flex: 1 1 auto; padding: 12px 26px; } /* un libellé long (« Effacer et recommencer ») passe à la ligne entier, jamais rogné */
 .btn.danger { background: linear-gradient(135deg, #b5544a, #e07a6f); color: #160807; box-shadow: 0 8px 24px rgba(224, 122, 111, .25); }
 /* interrupteurs (réglages) et choix segmentés (panneaux) */
 .switch { position: relative; width: 48px; height: 28px; border-radius: 2px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, .06); flex-shrink: 0; transition: background var(--dur-fast), border-color var(--dur-fast); }
@@ -2942,22 +2942,13 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ts-head { padding-left: 16px; }
 @media (min-width: 761px) { .ts-menu .ts-profile { display: none; } } /* la carte de la partie montre déjà le club */
 .ts-head { display: flex; flex-direction: column; gap: var(--s-4); }
-/* logo FootOFF Empire (brand.jsx EmpireWordmark, maquette A10) : monogramme, FOOT blanc et OFF or en grandes
-   capitales condensées, EMPIRE en bande dorée penchée */
-.wordmark { display: inline-flex; align-items: center; gap: 26px; }
-.wordmark-mark { width: auto; height: 118px; flex-shrink: 0; }
-.wordmark-text { display: flex; flex-direction: column; gap: 10px; }
-.wordmark-name { font-family: var(--font-disp); font-weight: 700; font-size: 104px; line-height: .8; letter-spacing: .005em; text-transform: uppercase; color: var(--text); }
-.wordmark-name span { color: var(--gold-light); }
-.wordmark-band {
-  align-self: flex-start; height: 34px; display: flex; align-items: center; padding: 0 22px 0 18px;
-  background: var(--gold-grad); color: var(--gold-ink); clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
-  font-family: var(--font-disp); font-weight: 700; font-size: 22px; letter-spacing: .5em; text-transform: uppercase;
-}
-.ts-mark { animation: ts-rise 1s var(--ease) both; }
+/* logo FootOFF Empire (FootOFFLockup : le même que sur l'écran de chargement), à la taille de l'écran titre. Le logo
+   ne se modifie jamais (consigne de l'utilisateur) : seule sa taille s'adapte à l'écran. */
+.ts-mark { gap: 24px; animation: ts-rise 1s var(--ease) both; }
 @keyframes ts-rise { from { opacity: 0; transform: translateY(22px); } }
-.ts-mark .wordmark-mark { filter: drop-shadow(0 8px 24px rgba(0, 0, 0, .5)); }
-.ts-mark .wordmark-name { text-shadow: 0 4px 24px rgba(0, 0, 0, .45); }
+.ts-mark .lockup-mark { height: clamp(84px, 7vw, 104px); filter: drop-shadow(0 8px 24px rgba(0, 0, 0, .5)); }
+.ts-mark .lockup-name { font-size: clamp(50px, 4.4vw, 66px); text-shadow: 0 4px 24px rgba(0, 0, 0, .45); }
+.ts-mark .lockup-sub { font-size: clamp(15px, 1.3vw, 19px); margin-top: 12px; }
 .ts-tag { font-size: 17px; color: var(--text-2); animation: fo-fade .8s .5s ease both; }
 .ts-tag em { font-style: normal; color: var(--gold-light); }
 .ts-main { display: flex; flex-direction: column; gap: var(--s-3); }
@@ -3040,12 +3031,11 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .ts-profile { max-width: 210px; }
   .ts-shade { background: linear-gradient(180deg, rgba(5, 5, 6, .72) 0%, rgba(5, 5, 6, .12) 28%, rgba(5, 5, 6, .18) 42%, rgba(5, 5, 6, .9) 64%, rgba(5, 5, 6, .97) 100%); }
   .ts-col { left: 0; right: 0; width: auto; padding: 76px 16px calc(44px + var(--hb)); justify-content: space-between; gap: var(--s-4); }
-  .ts-head { align-items: center; text-align: center; gap: var(--s-3); padding-left: 0; }
+  .ts-head { align-items: center; text-align: center; gap: var(--s-2); padding-left: 0; }
   .ts-mark { gap: 14px; }
-  .ts-mark .wordmark-mark { height: 66px; }
-  .ts-mark .wordmark-text { gap: 7px; }
-  .ts-mark .wordmark-name { font-size: 58px; }
-  .ts-mark .wordmark-band { height: 24px; padding: 0 14px 0 12px; font-size: 15px; }
+  .ts-mark .lockup-mark { height: 62px; }
+  .ts-mark .lockup-name { font-size: 38px; }
+  .ts-mark .lockup-sub { font-size: 13px; margin-top: 8px; }
   .ts-tag { font-size: var(--t-sm); }
   .ts-side { display: none; }
   .ts-bottom { left: 16px; right: 16px; bottom: calc(14px + var(--hb)); justify-content: center; }
@@ -3077,9 +3067,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 }
 @media (max-height: 760px) and (min-width: 761px) { /* écran d'ordinateur portable : tout un peu plus serré */
   .ts-col, .pz-col { padding: 80px 0 88px; gap: 28px; }
-  .ts-mark .wordmark-mark { height: 92px; }
-  .ts-mark .wordmark-name { font-size: 80px; }
-  .ts-mark .wordmark-band { height: 28px; font-size: 18px; }
+  .ts-mark .lockup-mark { height: 80px; }
+  .ts-mark .lockup-name { font-size: clamp(44px, 4vw, 58px); }
   .cm-item { min-height: 56px; }
   .cm-item.on { min-height: 68px; }
   .cm-label { font-size: 24px; }
@@ -3115,9 +3104,9 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 @media (max-height: 560px) and (min-width: 761px) { /* PC peu haut, téléphone à l'horizontale */
   .ts-col, .pz-col { padding: 64px 0 72px; gap: 20px; }
   .ts-mark { gap: 16px; }
-  .ts-mark .wordmark-mark { height: 64px; }
-  .ts-mark .wordmark-name { font-size: 56px; }
-  .ts-mark .wordmark-band { height: 22px; font-size: 14px; }
+  .ts-mark .lockup-mark { height: 60px; }
+  .ts-mark .lockup-name { font-size: 40px; }
+  .ts-mark .lockup-sub { font-size: 13px; margin-top: 8px; }
   .ts-tag { display: none; }
   .cm-item { min-height: 46px; }
   .cm-item.on { min-height: 56px; }

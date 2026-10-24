@@ -40,17 +40,3 @@ export function FootOFFLockup({ sub = 'Empire', size = 'md', className = '' }) {
     </span>
   );
 }
-
-// Logo du jeu (écran titre, chargement ; maquette A10) : monogramme or, « FOOT » blanc et « OFF » or en grandes
-// capitales condensées, « EMPIRE » en bande dorée penchée dessous, comme un générique d'émission.
-export function EmpireWordmark({ className = '' }) {
-  return (
-    <span className={`wordmark ${className}`} role="img" aria-label="FootOFF Empire">
-      <FOMonogram className="wordmark-mark" title="" />
-      <span className="wordmark-text" aria-hidden="true">
-        <b className="wordmark-name">Foot<span>OFF</span></b>
-        <span className="wordmark-band">Empire</span>
-      </span>
-    </span>
-  );
-}

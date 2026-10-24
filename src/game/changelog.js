@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.1', date: '2026-10-24', title: 'Retour du logo',
+    items: [
+      'Le logo FootOFF Empire d’origine revient sur l’écran de chargement et l’écran titre.',
+      '« Nouvelle partie » reste proposée sur une partie en cours, après confirmation : la partie actuelle est alors effacée.',
+    ],
+  },
+  {
     version: '0.3.0', date: '2026-10-24', title: 'Nouvelle interface',
     items: [
       'Toute l’interface refaite façon habillage télé : plaques sombres, or FootOFF, grands chiffres en capitales condensées.',
@@ -11,7 +18,7 @@ export const CHANGELOG = [
       'Match en direct : bandeau du score avec les clubs en trois lettres, bandeau du but, temps forts et pronostic exact pendant tout le match.',
       'Nouvelles cartes de joueurs et nouvelle fiche joueur ; le mercato s’affiche en tableau sur ordinateur.',
       'Saison : frise des dates avec les résultats, classement avec victoires, nuls et défaites, course à la montée et meilleurs joueurs du club.',
-      'Nouvel écran titre ; une partie en cours n’est plus jamais effacée par une nouvelle partie.',
+      'Nouvel écran titre et nouveau menu pause.',
     ],
   },
   {

@@ -11,8 +11,10 @@ Inter, petites mentions techniques (touches, version) en Geist Mono. Tous les je
 - Plaques : pleines et sombres (`--plate` sur la 3D, `--plate-solid` pour un panneau, `--plate-2` et `--plate-3`
   pour les blocs posés dessus), coin haut-droit coupé (`--cut-shape`, `--cut-shape-sm`), un filet de lumière en
   haut (`--plate-hi`). Pas de bordure fine autour d'un bloc : une plaque plus claire le détache.
-- Formes penchées : boutons, onglets, pastilles de résultat (V 1–0, N 0–0, D 0–1), forme, codes des équipes, bande
-  « Empire » du logo, en parallélogramme (`--skew`, pente `--slant`).
+- Formes penchées : boutons, onglets, pastilles de résultat (V 1–0, N 0–0, D 0–1), forme, codes des équipes, en
+  parallélogramme (`--skew`, pente `--slant`).
+- Logo : le logo FootOFF Empire d'origine (`FootOFFLockup`, `src/ui/brand.jsx` : monogramme, « FootOFF », « Empire »
+  en sous-titre espacé) ne se modifie jamais, refonte comprise (consigne de l'utilisateur, 2026-10-24).
 - Titre de section : marqueur doré penché devant des capitales condensées (`SectionHead`, `.mark-head`).
 - États : l'élément choisi ou réussi se signale par un liseré intérieur (3 px à gauche : or choisi, vert réussi,
   rouge en danger ; ou 3 px en bas pour une date ou une carte choisie) ou par un fond plein, jamais par une bordure.
@@ -307,8 +309,8 @@ le glissement et la loupe du doigt décale la pastille.
 
 Façon jeu de console : un seul chargement au démarrage, puis l'écran titre devant le complexe en 3D, puis le jeu.
 
-- Chargement (`index.html` puis `src/ui/loading.jsx`, mêmes styles dans `index.html`) : logo du jeu au centre (comme
-  l'écran titre), astuce en
+- Chargement (`index.html` puis `src/ui/loading.jsx`, mêmes styles dans `index.html`) : logo FootOFF Empire d'origine
+  au centre, astuce en
   bas à gauche, étape et pourcentage en bas à droite, barre dorée sur toute la largeur. Sur téléphone, barre, étape
   et pourcentage sous le rond central, l'astuce en bas (collée au bord du bas, la barre passait sous la barre
   d'outils du navigateur ou le trait d'accueil du téléphone). La progression est réelle
@@ -320,14 +322,15 @@ Façon jeu de console : un seul chargement au démarrage, puis l'écran titre de
   compiler à la fin prenait 8 s au lieu de 3,5). Onglet en arrière-plan : une minuterie termine le chargement.
 - Écran titre (`src/ui/title.jsx`) : la caméra tourne lentement autour du complexe (`attract` d'Empire3D, le
   complexe décalé hors du menu), sur téléphone comme sur PC. La page elle-même ne se zoome pas au doigt
-  (`index.html`, `main.jsx`) ; seule la caméra 3D du jeu garde son zoom. Maquette A10 : logo du jeu
-  (`EmpireWordmark`, `src/ui/brand.jsx` : monogramme or, « FOOT » blanc et « OFF » or en grandes capitales
-  condensées, « EMPIRE » en bande dorée penchée ; le même sur l'écran de chargement), sans horloge ; menu Continuer
-  (ou Nouvelle partie s'il n'y a pas de partie), Règles du jeu, Nouveautés, Réglages, FootOFF Media. L'entrée active
-  devient une barre dorée penchée, plus haute, texte sombre et flèche. Jamais de « Nouvelle partie » par-dessus une
-  sauvegarde (règle du projet : une partie n'est jamais effacée ; ni au titre ni dans la pause). À droite (PC) la
-  plaque de l'entrée active : pour la partie, le club en grand, classement, points, journées, forme en pastilles
-  penchées, prochain adversaire avec son écusson, trésorerie.
+  (`index.html`, `main.jsx`) ; seule la caméra 3D du jeu garde son zoom. Logo FootOFF Empire d'origine (monogramme,
+  FootOFF, « Empire » en sous-titre espacé, le même que sur l'écran de chargement ; il ne se modifie jamais), sans
+  horloge ; menu Continuer, Nouvelle partie (« Fonder un autre club » s'il y a une partie), Règles du jeu, Nouveautés,
+  Réglages, FootOFF Media. L'entrée active devient une barre dorée penchée (maquette A10), plus haute, texte sombre
+  et flèche. Nouvelle partie sur une partie en cours : la fenêtre de confirmation du jeu prévient que la sauvegarde
+  sera effacée (« Effacer et recommencer » ou « Garder ma partie ») ; le joueur garde ce choix (consigne de
+  l'utilisateur, 2026-10-24). À droite (PC) la plaque de l'entrée active : pour la partie, le club en grand,
+  classement, points, journées, forme en pastilles penchées, prochain adversaire avec son écusson, trésorerie ; pour
+  Nouvelle partie, l'avertissement que la partie en cours sera effacée.
   Avant la création du club, la scène montre le complexe de départ. Sous-écrans avec leur propre en-tête :
   réglages, création du club (nom proposé au hasard, dé pour en tirer un autre). Fenêtre peu haute (ordinateur
   sous 760 px, puis sous 680 px de haut) : le formulaire de création se resserre et tient en entier dès 600 px ;
@@ -336,8 +339,8 @@ Façon jeu de console : un seul chargement au démarrage, puis l'écran titre de
   vers la vue d'ensemble et le HUD apparaît.
 - Menu pause (`src/ui/pause.jsx`) : Échap, le bouton menu du HUD, ou Start à la manette. La scène se fige (Empire3D
   ne dessine plus, `paused`) et se floute ; le nom du club avec son écusson ; Reprendre, Réglages, Règles du jeu,
-  Nouveautés, Écran titre, FootOFF Media (même barre dorée que l'écran titre) ; à droite la saison en cours et les
-  objectifs. Ses classes portent le préfixe `pz-` : le préfixe
+  Nouveautés, Écran titre, Nouvelle partie (en rouge, avec la même confirmation), FootOFF Media (même barre dorée que
+  l'écran titre) ; à droite la saison en cours et les objectifs. Ses classes portent le préfixe `pz-` : le préfixe
   `pm-` appartient à l'avant-match (un `.pm-side` commun masquait le coup d'envoi sur téléphone).
 - Commandes (`src/ui/console.jsx`, `src/ui/input.js`) : flèches, Entrée, Échap ; souris (l'entrée suit le
   survol) ; doigt ; manette (croix ou stick, A, B, Start), traduite en touches du clavier. Les aides en bas
