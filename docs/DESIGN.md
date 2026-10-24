@@ -201,7 +201,9 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
 
 ## Notifications, infobulles, portraits, raccourcis
 
-- Notifications (`src/ui/notify.jsx`, classes `nt-`) : un seul bandeau à la fois, qui descend du haut puis repart
+- Notifications (`src/ui/notify.jsx`, classes `nt-`) : le bandeau garde son dessin d'origine, plus élégant que
+  l'habillage Tribune (choix de l'utilisateur, 2026-10-24) : coins arrondis de 16 px, sur-titre en Geist Mono espacé,
+  titre en Geist ; c'est la seule exception aux plaques au coin coupé. Un seul bandeau à la fois, qui descend du haut puis repart
   (au centre sur la ligne de la barre du haut à partir de 1100 px, juste dessous en dessous de 1100 px, par-dessus
   la barre sur téléphone, comme une notification du système). File d'attente : rien pendant l'avant-match, le
   direct, l'après-match, un bilan, le menu pause ou une confirmation (le bandeau en cours s'efface et reviendra

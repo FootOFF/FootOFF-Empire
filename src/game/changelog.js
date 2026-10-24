@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.3', date: '2026-10-24', title: 'Notification d’origine',
+    items: [
+      'Les notifications retrouvent leur dessin d’origine, plus élégant : coins arrondis, lettres fines et espacées.',
+    ],
+  },
+  {
     version: '0.3.2', date: '2026-10-24', title: 'Corrections',
     items: [
       'La « Subvention de la mairie » ne s’annonce plus à chaque action : une prime du tutoriel s’annonce une seule fois (elle n’a jamais été versée deux fois).',
