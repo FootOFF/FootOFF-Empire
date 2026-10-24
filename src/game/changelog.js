@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.6', date: '2026-10-24', title: 'Mises à jour plus discrètes',
+    items: [
+      'Le bandeau « Nouvelle version » ne revient plus à chaque lancement quand le jeu tourne déjà la dernière version : il ne s’affiche que si une version plus récente reste à charger.',
+    ],
+  },
+  {
     version: '0.3.5', date: '2026-10-24', title: 'Négociation plus claire',
     items: [
       'Achat, mise en vente et vente négociée : la chance d’accord s’affiche juste au-dessus du bouton et suit la somme en direct, sans faire défiler.',

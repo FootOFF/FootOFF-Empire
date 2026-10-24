@@ -23,7 +23,10 @@ self.addEventListener('activate', (e) => {
     await self.clients.claim();
   })());
 });
-self.addEventListener('message', (e) => { if (e.data === 'SKIP_WAITING') self.skipWaiting(); });
+self.addEventListener('message', (e) => {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting();
+  else if (e.data === 'SHELL' && e.ports[0]) e.ports[0].postMessage(SHELL); // fichiers de cette version (src/ui/updates.js)
+});
 
 // ignoreVary : un script demandé avec crossorigin (en-tête Origin) doit retrouver la réponse précachée sans lui
 const OPTS = { ignoreVary: true };

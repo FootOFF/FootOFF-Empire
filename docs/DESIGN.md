@@ -287,7 +287,11 @@ La galerie (`?galerie` dans l'adresse du jeu) affiche chaque écran avec des don
   végétation) servies depuis le cache et rafraîchies en arrière-plan, polices de même ; la page se demande d'abord au
   réseau puis au cache : le jeu s'ouvre hors ligne après une première visite. Une nouvelle version s'installe en attente ;
   le jeu vérifie à chaque retour au premier plan et toutes les trente minutes, puis une notification « Nouvelle version »
-  propose de recharger (la partie est sauvegardée). Plus besoin de fermer puis rouvrir l'app sur iPhone.
+  propose de recharger (la partie est sauvegardée). Plus besoin de fermer puis rouvrir l'app sur iPhone. Relancé, le jeu
+  tourne souvent déjà la nouvelle version (la page vient du réseau) alors que son service worker attend encore (sur
+  iPhone, fermer l'app ne libère pas l'ancien) : le jeu demande au service worker en attente la liste des fichiers de sa
+  version (message `SHELL`) et, si son propre script principal y figure, le laisse prendre la main sans rien afficher.
+  Le bandeau « Nouvelle version » ne s'affiche donc que si la page tourne vraiment une version plus ancienne.
 - Erreurs (`src/ui/crash.jsx`, `src/ui/errlog.js`) : barrière d'erreur globale autour du jeu. Une erreur de rendu affiche
   « Le jeu a rencontré un problème » (Reprendre, Copie de secours avec son club et sa saison, Copier le rapport : version,
   navigateur, erreur, vingt dernières erreurs du navigateur ; rien n'est envoyé). Aperçu : `?ecran=erreur`. La version et
