@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useKeydown } from './presence';
 import { useInputMode } from './input';
-import { ClubCrest } from './crest';
+import { ClubCrest, Crest } from './crest';
 import { fmtMoney } from './format';
 import { IconChevron, IconChevronLeft, IconExternal } from './icons';
 import { DIVISIONS } from '../game/constants';
@@ -260,29 +260,31 @@ export function ClubCard({ state, eyebrow, objective = false, head = true }) {
   const ctx = matchContext(state);
   const form = (state.matches || []).filter((m) => m.season === state.seasonNumber).slice(-5);
   const goals = objective ? seasonObjectives(state) : null; // objectifs du président (objectives.js)
+  const rank = ordinal(pos); // « 4e », « 1er » : le chiffre en grand, le suffixe en petit
+  const num = rank.match(/^\d+/)?.[0] || rank;
   return (
-    <section className="cm-card">
-      <span className="eyebrow">{eyebrow}</span>
-      {head && (
+    <section className={`cm-card cm-club ${head ? '' : 'flat'}`}>
+      {head ? (
         <header className="cm-card-head">
           <ClubCrest crest={state.crest} name={state.clubName} className="cm-card-mark" stars={clubStars(state)} />
           <div>
+            <span className="eyebrow">{eyebrow}</span>
             <strong>{state.clubName}</strong>
             <span>{div.name} · Saison {state.seasonNumber}</span>
           </div>
         </header>
-      )}
+      ) : <span className="eyebrow">{eyebrow}</span>}
       <div className="cm-card-stats">
-        <div><b>{me.played ? ordinal(pos) : '—'}</b><span>Classement</span></div>
-        <div><b>{me.pts}</b><span>Points</span></div>
-        <div><b>{Math.min(state.round, total)}/{total}</b><span>Journées</span></div>
+        <div><span>Classement</span><b>{me.played ? <>{num}<small>{rank.slice(num.length)}</small></> : '—'}</b></div>
+        <div><span>Points</span><b>{me.pts}</b></div>
+        <div><span>Journées</span><b>{Math.min(state.round, total)}<small>/ {total}</small></b></div>
       </div>
       <dl className="cm-card-rows">
         {form.length > 0 && (
           <div><dt>Forme</dt><dd className="cm-form">{form.map((m, i) => { const o = outcomeOf(m); return <i key={i} className={o}>{LETTER[o]}</i>; })}</dd></div>
         )}
         {ctx ? (
-          <div className="stack"><dt>Prochain match · {ctx.short || ctx.label}</dt><dd>{ctx.opp.name}</dd></div>
+          <div><dt>Prochain match · {ctx.short || ctx.label}</dt><dd className="cm-opp"><Crest name={ctx.opp.name} className="cm-opp-crest" />{ctx.opp.name}</dd></div>
         ) : (
           <div><dt>Prochain match</dt><dd>Saison terminée, place au bilan</dd></div>
         )}

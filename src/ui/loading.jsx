@@ -123,7 +123,6 @@ export function LoadingScreen({ info = null, done = false, fixed = null, onFinis
       <div className="ld-center">
         <div className="ld-logo">
           <FOMonogram className="ld-mono" />
-          <span className="ld-sep" aria-hidden="true" />
           <span className="ld-words"><span className="ld-name">Foot<b>OFF</b></span><span className="ld-sub">Empire</span></span>
         </div>
       </div>

@@ -250,10 +250,3 @@ export function loadGame() {
   return null;
 }
 
-export function clearGame() {
-  try {
-    localStorage.removeItem(SAVE_KEY);
-  } catch {
-    /* rien à nettoyer */
-  }
-}

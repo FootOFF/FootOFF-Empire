@@ -34,8 +34,9 @@ export function CrashScreen({ error, summary = null, preview = false }) {
         <div className="crash-actions">
           <button type="button" className="btn btn-xl" onClick={() => { if (!preview) window.location.reload(); }}>Reprendre</button>
           {canRestore && (
-            <button type="button" className="btn ghost btn-xl" onClick={() => { if (!preview && restoreBackup()) window.location.reload(); }}>
-              Copie de secours{backup ? ` · ${backup.clubName}, saison ${backup.season} (${DIVISIONS[backup.division]?.name || ''})` : ''}
+            <button type="button" className="btn ghost btn-xl crash-restore" onClick={() => { if (!preview && restoreBackup()) window.location.reload(); }}>
+              <span>Copie de secours</span>
+              {backup && <small>{backup.clubName}, saison {backup.season}{DIVISIONS[backup.division] ? ` (${DIVISIONS[backup.division].name})` : ''}</small>}
             </button>
           )}
           <span className="crash-links">

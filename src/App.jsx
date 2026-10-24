@@ -4,7 +4,7 @@ import {
 } from './game/engine';
 import { BUILDINGS, DIVISIONS, upgradeCost } from './game/constants';
 import { fmtMoney } from './ui/format';
-import { clearGame, decodeCode, exportCode, importSave, lastLoad, loadGame, saveGame } from './game/save';
+import { decodeCode, exportCode, importSave, lastLoad, loadGame, saveGame } from './game/save';
 import { applyUpdate } from './ui/updates';
 import { CrashScreen } from './ui/crash';
 import { clone } from './game/utils';
@@ -398,24 +398,6 @@ export default function App({ preview = null }) {
     setTitleView('menu');
     setScreen('title');
   };
-  const askNewGame = () => {
-    if (!state) { setTitleView('create'); return; }
-    setConfirm({
-      tone: 'danger',
-      title: 'Recommencer une nouvelle aventure ?',
-      text: `La sauvegarde de ${state.clubName} (saison ${state.seasonNumber}, ${DIVISIONS[state.divisionIndex].name}) sera effacée définitivement.`,
-      confirmLabel: 'Effacer et recommencer',
-      cancelLabel: 'Garder ma partie',
-      onConfirm: () => {
-        clearGame();
-        setState(null);
-        setMenu(false); setSel(null); setPanel(null); setMatchDay(false); setShowResult(false); setMatchPhase(null);
-        setTitleView('create');
-        setScreen('title');
-      },
-    });
-  };
-
   // Guidage : tutoriel des premières minutes, puis conseils du staff et pastilles dorées.
   const tutoStep = state?.tutorial?.step || 'done';
   const tuto = state && tutoStep !== 'done' ? stepContent(tutoStep, state) : null;
@@ -678,7 +660,6 @@ export default function App({ preview = null }) {
             settings={settings}
             blocked={!!confirm}
             onContinue={() => setScreen('game')}
-            onNewGame={askNewGame}
             onCreate={(name, crest) => { setState(createInitialState(name, crest)); setTitleView('menu'); setScreen('game'); }}
           />
         )}
@@ -691,7 +672,6 @@ export default function App({ preview = null }) {
           blocked={!!confirm}
           onResume={() => setMenu(false)}
           onTitle={toTitle}
-          onNewGame={askNewGame}
         />
       )}</Presence>
       <Presence>

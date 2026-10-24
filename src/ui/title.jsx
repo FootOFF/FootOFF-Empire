@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FootOFFLockup } from './brand';
+import { EmpireWordmark } from './brand';
 import { ClubCard, Hints, MenuList, SettingsView, uiSound, useMenu } from './console';
 import { RulesView } from './rules';
 import { NewsView, unseenNews } from './news';
@@ -16,10 +16,9 @@ import { CREST_EMBLEMS, CREST_GROUNDS, CREST_PATTERNS, CREST_SHAPES, CREST_STYLE
 // menu à gauche (en bas sur téléphone), la carte de l'entrée choisie à droite. Trois vues : menu, réglages,
 // création du club. Clavier, souris, doigt et manette (voir console.jsx et input.js).
 
-// Logo FootOFF Empire, le même que sur l'écran de chargement : monogramme, FootOFF, et « Empire » intégré au logo en
-// sous-titre espacé (comme « Media » sur le logo FootOFF Media).
+// Logo FootOFF Empire, le même que sur l'écran de chargement (brand.jsx EmpireWordmark).
 export function Wordmark() {
-  return <FootOFFLockup sub="Empire" size="lg" className="ts-mark" />;
+  return <EmpireWordmark className="ts-mark" />;
 }
 
 const PILLARS = [
@@ -44,7 +43,6 @@ function SideCard({ id, state, settings }) {
       <section className="cm-card">
         <span className="eyebrow">Nouvelle partie</span>
         <p className="cm-card-lead">Ton club. Ton complexe. <em>Ton empire.</em></p>
-        {state && <p className="cm-card-warn">Ta partie avec {state.clubName} (saison {state.seasonNumber}) sera effacée.</p>}
         <Pillars />
       </section>
     );
@@ -93,12 +91,14 @@ function SideCard({ id, state, settings }) {
   return null;
 }
 
-// Entrées du menu principal : Continuer (s'il y a une partie), Nouvelle partie, Réglages, FootOFF Media.
+// Entrées du menu principal : Continuer s'il y a une partie, sinon Nouvelle partie (une partie n'est jamais effacée :
+// pas de nouvelle partie par-dessus une sauvegarde), puis Règles, Nouveautés, Réglages, FootOFF Media.
 function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews }) {
   const div = state && DIVISIONS[state.divisionIndex];
   return [
-    ...(state ? [{ id: 'continue', label: 'Continuer', sub: `${state.clubName} · ${div.name} · Saison ${state.seasonNumber}`, onSelect: onContinue }] : []),
-    { id: 'new', label: 'Nouvelle partie', sub: state ? 'Fonder un autre club' : 'Fonde ton club et bâtis ton empire', onSelect: onNew },
+    state
+      ? { id: 'continue', label: 'Continuer', sub: `${state.clubName} · ${div.name} · Saison ${state.seasonNumber}`, onSelect: onContinue }
+      : { id: 'new', label: 'Nouvelle partie', sub: 'Fonde ton club et bâtis ton empire', onSelect: onNew },
     { id: 'rules', label: 'Règles du jeu', sub: 'Matchs, joueurs, mercato, argent, réputation', onSelect: onRules },
     { id: 'news', label: 'Nouveautés', sub: `Version ${CURRENT}${unseenNews() ? ' · à lire' : ''}`, badge: unseenNews(), onSelect: onNews },
     { id: 'settings', label: 'Réglages', sub: 'Son, vibrations, sauvegarde, signaler un problème', onSelect: onSettings },
@@ -207,9 +207,9 @@ function CreateClub({ onCreate, onBack, active }) {
   );
 }
 
-export function TitleScreen({ state, view, onView, onContinue, onNewGame, onCreate, settings, blocked = false }) {
+export function TitleScreen({ state, view, onView, onContinue, onCreate, settings, blocked = false }) {
   const active = !blocked;
-  const items = menuItems(state, { onContinue, onNew: () => (state ? onNewGame() : onView('create')), onSettings: () => onView('settings'), onRules: () => onView('rules'), onNews: () => onView('news') });
+  const items = menuItems(state, { onContinue, onNew: () => onView('create'), onSettings: () => onView('settings'), onRules: () => onView('rules'), onNews: () => onView('news') });
   const menu = useMenu(items, { active: active && view === 'menu' }); // l'entrée active est gardée au retour des réglages
   const current = items[Math.min(menu.cur, items.length - 1)].id;
   const [entered, setEntered] = useState(false); // la première apparition joue l'animation d'entrée complète
