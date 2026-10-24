@@ -37,13 +37,14 @@ import './ui/input'; // manette : traduite en touches du clavier pour tous les m
 import { moneyBurst } from './ui/moneyfx';
 import { previewState, previewUi, silentSound } from './ui/preview';
 import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics';
-import { actionablePlots, dockSignals, seasonEndForecast, staffTip } from './game/advice';
+import { actionablePlots, dockSignals, seasonEndForecast, sessionPin, staffTip } from './game/advice';
 import { allowedBuildingsFor, plotBuilding, plotOf } from './game/map';
 import { leavingYouth } from './game/academy';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { roundKey } from './game/mercato';
 import { createStadiumSound } from './ui/sound';
 import { achievementById, newAchievements } from './game/achievements';
+import { LOCKS, NavContext, sectionOf } from './ui/nav';
 
 // three.js et la scène vivent dans un chunk séparé, chargé dès le démarrage (derrière l'écran de chargement).
 const Empire3D = lazy(() => import('./ui/Empire3D'));
@@ -97,7 +98,9 @@ export default function App({ preview = null }) {
   const [matchFx, setMatchFx] = useState(null); // effets 3D du direct : but, but encaissé, mi-temps…
   const [dismissedTips, setDismissedTips] = useState(() => new Set()); // conseils masqués (session)
   const [confirm, setConfirm] = useState(boot.ui.confirm || null); // fenêtre de confirmation du jeu (vente, nouvelle partie…)
-  const [squadTab, setSquadTab] = useState(boot.ui.squadTab || 'players'); // onglet d'ouverture de l'effectif
+  const [squadTab, setSquadTab] = useState(boot.ui.squadTab && boot.ui.squadTab !== 'market' ? boot.ui.squadTab : 'players'); // onglet de l'Effectif (joueurs, composition, anciens)
+  const [seasonTab, setSeasonTab] = useState(boot.ui.seasonTab || 'calendar'); // onglet de la Saison (calendrier, classement)
+  const [navSwitch, setNavSwitch] = useState(false); // passage d'un onglet de section à l'autre : sans glissement
   const [squadSheet, setSquadSheet] = useState(null); // fiche joueur ouverte d'emblée (depuis une fiche carrière)
   const [statsMatch, setStatsMatch] = useState(boot.ui.statsMatch || null); // 'last' : Stats Pass du dernier match ouvert d'emblée
   const [trophyTab, setTrophyTab] = useState('honours'); // onglet d'ouverture de la salle des trophées
@@ -192,8 +195,33 @@ export default function App({ preview = null }) {
 
   const openPanel = (id) => {
     if (id === 'stadium') { setPanel(null); setSel({ plotId: 't0', sector: 'main' }); return; } // accès direct au stade
-    setPanel(id);
-    if (id) setSel(null);
+    const target = id === 'club' ? 'finances' : id; // section Club : les finances d'abord
+    // d'un onglet à l'autre de la même section, l'écran change sur place (sans glissement ni fondu)
+    const same = !!target && !!panel && sectionOf(target) === sectionOf(panel);
+    setNavSwitch(same);
+    if (same) setTimeout(() => setNavSwitch(false), 260);
+    setPanel(target);
+    if (target) setSel(null);
+  };
+  // onglets d'une section (nav.jsx) : « squad:lineup » ouvre l'Effectif sur la composition ; un bâtiment pas encore
+  // construit (centre d'entraînement, académie, direction) le dit au lieu d'ouvrir un écran vide
+  const goNav = (key) => {
+    const [id, tab] = key.split(':');
+    const need = LOCKS[id];
+    if (need && !state.buildings[need]) {
+      notify({ kind: 'info', eyebrow: 'Complexe', title: `${BUILDINGS[need].name} : à construire`, text: 'Bâtis-le sur une parcelle libre du complexe (bouton Bâtir) pour ouvrir cet écran.' });
+      return;
+    }
+    if (id === 'squad') setSquadTab(tab || 'players');
+    if (id === 'season') setSeasonTab(tab || 'calendar');
+    if (id === panel) return;
+    openPanel(id);
+  };
+  // mercato ouvert sur une de ses vues (recruter, suivis, offres reçues, bilan)
+  const openMercato = (view = null) => {
+    setSquadMercato(view);
+    setNavKey((k) => k + 1);
+    openPanel('mercato');
   };
   const selectPlot = (plotId, sector) => { setSel({ plotId, sector }); setPanel(null); };
   // académie : son écran (l'équipe de jeunes) s'ouvre d'un clic sur le bâtiment ; sa fiche (amélioration) depuis
@@ -221,7 +249,8 @@ export default function App({ preview = null }) {
   const onNoteAction = (a) => {
     if (a.kind === 'update') { applyUpdate(); return; }
     if (a.panel === 'trophies') { setTrophyTab(a.tab || 'honours'); setTrophyFocus(a.ids || []); }
-    if (a.panel === 'squad') { setSquadTab(a.tab || 'players'); setSquadMercato(a.view || null); setSquadSheet(a.sheet ?? null); }
+    if ((a.panel === 'squad' && a.tab === 'market') || a.panel === 'mercato') { openMercato(a.view || null); return; }
+    if (a.panel === 'squad') { setSquadTab(a.tab || 'players'); setSquadSheet(a.sheet ?? null); }
     if (a.panel === 'academy') setAcademyNav({ tab: a.tab || 'youth', ids: a.ids || [] });
     if (a.panel === 'training') setTrainingTab(a.tab || 'session');
     setNavKey((k) => k + 1);
@@ -280,7 +309,7 @@ export default function App({ preview = null }) {
     if (bits.length) {
       notify({
         kind: 'mercato', eyebrow: 'Mercato · pendant la journée', title: bits[0][0].toUpperCase() + bits[0].slice(1), text: bits[1],
-        action: { panel: 'squad', tab: 'market', view: n.offers ? 'offers' : 'watch' },
+        action: { panel: 'mercato', view: n.offers ? 'offers' : 'watch' },
       });
     }
   };
@@ -395,7 +424,8 @@ export default function App({ preview = null }) {
     if (a.kind === 'plot') selectPlot(a.plot, a.sector);
     else if (a.kind === 'panel' && a.panel === 'academy') openAcademy(a.tab, a.ids);
     else if (a.kind === 'panel' && a.panel === 'training') openTraining(a.tab);
-    else if (a.kind === 'panel') { setSquadTab(a.tab || 'players'); openPanel(a.panel); }
+    else if (a.kind === 'panel' && (a.panel === 'mercato' || (a.panel === 'squad' && a.tab === 'market'))) openMercato(a.view || null);
+    else if (a.kind === 'panel') { if (a.panel === 'squad') setSquadTab(a.tab || 'players'); openPanel(a.panel); }
     else if (a.kind === 'match') play();
   };
   const setTuto = (step) => run((s) => setTutorialStep(s, step));
@@ -409,8 +439,14 @@ export default function App({ preview = null }) {
   const tip = state && !tuto && !sel && !panel ? staffTip(state) : null;
   const shownTip = tip && !dismissedTips.has(tip.id) ? tip : null;
   const signals = state ? dockSignals(state) : {};
+  // navigation par sections (nav.jsx) : l'en-tête de chaque panneau y lit l'onglet actif et ses pastilles
+  const nav = {
+    panel, squadTab, seasonTab, go: goNav, badges: signals.items || {},
+    built: state ? { training: state.buildings.training > 0, academy: state.buildings.academy > 0, direction: state.buildings.direction > 0 } : {},
+  };
   const hudKeys = inGame && !menu && !cinematic && !confirm && !preview; // raccourcis clavier du HUD (PC)
   const plotBadges = inGame && !cinematic ? actionablePlots(state) : [];
+  const session = inGame && !cinematic ? sessionPin(state) : null; // épingle « Séance » sur le centre d'entraînement
   // bouton Construire du HUD : ouvre la vitrine sur la première parcelle libre (pastille dorée si un bâtiment est
   // payable tout de suite), ou la referme
   const freePlots = state ? freePlotsOf(state) : [];
@@ -425,7 +461,8 @@ export default function App({ preview = null }) {
   const sceneState = state || (demo.current ||= createInitialState('FootOFF FC'));
 
   return (
-    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'academy', 'training', 'direction', 'season', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
+    <NavContext.Provider value={nav}>
+    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'mercato', 'academy', 'training', 'direction', 'season', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''} ${navSwitch ? 'nav-switch' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
       <div className="stage">
         {preview ? (
           <div className="stage-preview" aria-hidden="true" />
@@ -442,6 +479,8 @@ export default function App({ preview = null }) {
               selectedPlot={inGame ? sel?.plotId || null : null}
               holo={holo}
               badges={plotBadges}
+              session={session}
+              onSession={() => openPanel('training')}
               attract={!inGame}
               paused={menu || !!drills}
               onLoadProgress={setLoadProgress}
@@ -459,7 +498,7 @@ export default function App({ preview = null }) {
 
       {inGame && (
         <div className="hud">
-          <TopHud state={state} onMenu={() => setMenu(true)} onFinances={() => openPanel('finances')} onReputation={() => openPanel('reputation')} />
+          <TopHud state={state} onMenu={() => setMenu(true)} onFinances={() => openPanel('finances')} onReputation={() => openPanel('reputation')} onTable={() => goNav('season:table')} />
           <div className="hud-left">
           {tuto ? (
             <CoachCard
@@ -505,14 +544,32 @@ export default function App({ preview = null }) {
         {inGame && panel === 'squad' && (
           <SquadView
             key={navKey}
+            mode="squad"
             state={state}
             run={run}
             ask={setConfirm}
             preview={boot.ui.squad}
-            initialTab={tutoStep === 'sign' ? 'market' : squadTab}
-            initialMercato={squadMercato}
+            tab={squadTab}
+            onTab={setSquadTab}
+            onMercato={openMercato}
             initialSheet={squadSheet}
-            onClose={() => { setPanel(null); setSquadTab('players'); setSquadSheet(null); setSquadMercato(null); }}
+            onClose={() => { setPanel(null); setSquadTab('players'); setSquadSheet(null); }}
+            onFinances={() => openPanel('finances')}
+          />
+        )}
+      </Presence>
+      <Presence>
+        {inGame && panel === 'mercato' && (
+          <SquadView
+            key={navKey}
+            mode="mercato"
+            state={state}
+            run={run}
+            ask={setConfirm}
+            preview={boot.ui.squad}
+            onTab={(t) => { setSquadTab(t); openPanel('squad'); }}
+            initialMercato={squadMercato}
+            onClose={() => { setPanel(null); setSquadMercato(null); }}
             onFinances={() => openPanel('finances')}
           />
         )}
@@ -562,14 +619,14 @@ export default function App({ preview = null }) {
         )}
       </Presence>
       {inGame && drills && <DrillRunner key={drillsKey} state={state} queue={drills} run={run} sound={sound.current} notify={notify} onClose={() => setDrills(null)} />}
-      <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} initialTab={boot.ui.seasonTab} initialSel={boot.ui.seasonSel} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); setPanel('stats'); }} />}</Presence>
+      <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} tab={seasonTab} initialSel={boot.ui.seasonSel} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); openPanel('stats'); }} />}</Presence>
       <Presence>{inGame && panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'reputation' && <ReputationPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'trophies' && <TrophyRoom key={navKey} state={state} initialTab={trophyTab} focus={trophyFocus} onClose={() => { setPanel(null); setTrophyTab('honours'); setTrophyFocus([]); }} />}</Presence>
       <Presence>{inGame && panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} onClose={() => { setPanel(null); setStatsMatch(null); }} onPlayerSheet={(id) => { setSquadSheet(id); setSquadTab('players'); setPanel('squad'); }} />}</Presence>
       <Presence>
         {inGame && panel === 'finances' && (
-          <FinancesPanel state={state} onClose={() => setPanel(null)} onOpenSquad={() => { setSquadTab('players'); openPanel('squad'); }} />
+          <FinancesPanel state={state} onClose={() => setPanel(null)} onOpenSquad={() => { setSquadTab('players'); setPanel('squad'); }} />
         )}
       </Presence>
       <Presence>
@@ -581,7 +638,7 @@ export default function App({ preview = null }) {
             onBuild={onBuild}
             onUpgrade={onUpgrade}
             onMatchDay={() => { setSel(null); setMatchDay(true); }}
-            onTransfers={() => { setSel(null); setSquadTab('market'); setPanel('squad'); }}
+            onTransfers={() => { setSel(null); openMercato(); }}
             onAcademy={() => openAcademy()}
             onTraining={() => openTraining()}
             onDirection={() => openPanel('direction')}
@@ -653,5 +710,6 @@ export default function App({ preview = null }) {
         )}
       </Presence>
     </div>
+    </NavContext.Provider>
   );
 }

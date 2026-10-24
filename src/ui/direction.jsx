@@ -130,6 +130,7 @@ export function DirectionView({ state, run, notify = () => {}, initialTab = 'tv'
   const lvl = state.buildings.direction || 0;
   return (
     <Panel
+      id="direction"
       size="lg"
       title="Direction du club"
       eyebrow={<>Niveau {lvl} / 5<span className="hide-sm"> · {DIVISIONS[state.divisionIndex].name}</span></>}

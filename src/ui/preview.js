@@ -276,13 +276,13 @@ export function previewUi(screen, s) {
     case 'fiche': return { panel: 'squad', squad: { sheet: s.players.find((p) => p.season?.apps)?.id ?? s.players[0].id } };
     case 'composition': return { panel: 'squad', squadTab: 'lineup' };
     case 'anciens': return { panel: 'squad', squadTab: 'alumni' };
-    case 'marche': case 'transferts': return { panel: 'squad', squadTab: 'market' };
-    case 'negociation': case 'contre-offre': return { panel: 'squad', squadTab: 'market', squad: { deal: s.transfers[0].id } };
-    case 'suivis': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'watch' } };
-    case 'offres': case 'encheres': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'offers' } };
-    case 'vente': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'offers', listing: [...s.players].sort((a, b) => playerRating(a) - playerRating(b))[2].id } };
-    case 'vente-negociation': case 'vente-conclue': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'offers', sale: 1 } };
-    case 'bilan-mercato': return { panel: 'squad', squadTab: 'market', squad: { mercato: 'log' } };
+    case 'marche': case 'transferts': return { panel: 'mercato' };
+    case 'negociation': case 'contre-offre': return { panel: 'mercato', squad: { deal: s.transfers[0].id } };
+    case 'suivis': return { panel: 'mercato', squad: { mercato: 'watch' } };
+    case 'offres': case 'encheres': return { panel: 'mercato', squad: { mercato: 'offers' } };
+    case 'vente': return { panel: 'mercato', squad: { mercato: 'offers', listing: [...s.players].sort((a, b) => playerRating(a) - playerRating(b))[2].id } };
+    case 'vente-negociation': case 'vente-conclue': return { panel: 'mercato', squad: { mercato: 'offers', sale: 1 } };
+    case 'bilan-mercato': return { panel: 'mercato', squad: { mercato: 'log' } };
     case 'bureau': return { sel: { plotId: 't3', sector: 'main' } };
     case 'academie': case 'academie-vide': return { panel: 'academy' };
     case 'academie-detection': return { panel: 'academy', academyTab: 'scout' };
@@ -297,7 +297,7 @@ export function previewUi(screen, s) {
     case 'entrainement-programme': return { panel: 'training', trainingTab: 'programs', training: { program: s.players.find((p) => !s.training?.programs?.[p.id] && programsFor(s, p).length)?.id } };
     case 'entrainement-progres': return { panel: 'training', trainingTab: 'progress' };
     case 'entrainement-batiment': return { sel: { plotId: 't1', sector: 'main' } };
-    case 'comparateur': return { panel: 'squad', squadTab: 'market', squad: { compare: true } };
+    case 'comparateur': return { panel: 'mercato', squad: { compare: true } };
     case 'saison': case 'saison-fin': case 'calendrier-europe': return { panel: 'season' };
     case 'saison-joue': return { panel: 'season', seasonSel: seasonFixtures(s).find((f) => f.match)?.index };
     case 'saison-coupe': return { panel: 'season', seasonSel: seasonFixtures(s).find((f) => f.status === 'tbd' || f.status === 'out')?.index };
@@ -320,7 +320,7 @@ export function previewUi(screen, s) {
     case 'notification': return {
       notes: [
         { kind: 'achievement', eyebrow: 'Succès débloqué', title: 'Première victoire', text: 'Gagner un premier match officiel.', action: { panel: 'trophies', tab: 'achievements', ids: ['first_win'] } },
-        { kind: 'mercato', eyebrow: 'Mercato · pendant la journée', title: '2 offres reçues pour tes joueurs', action: { panel: 'squad', tab: 'market', view: 'offers' } },
+        { kind: 'mercato', eyebrow: 'Mercato · pendant la journée', title: '2 offres reçues pour tes joueurs', action: { panel: 'mercato', view: 'offers' } },
       ],
     };
     case 'chargement': return { loading: 0.42 };

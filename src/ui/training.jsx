@@ -107,6 +107,7 @@ export function TrainingView({ state, run, ask, notify = () => {}, onClose, onBu
 
   return (
     <Panel
+      id="training"
       size="lg"
       title="Centre d’entraînement"
       eyebrow={<>Niveau {lvl} / {BUILDINGS.training.max}<span className="hide-sm"> · progrès ×{dec(TRAINING_MULT[lvl] || 0)} par séance</span></>}

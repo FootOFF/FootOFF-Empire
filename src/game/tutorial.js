@@ -139,7 +139,7 @@ export function stepContent(step, s) {
           : 'Le mercato bouge à chaque journée. Recrute quand un joueur renforce ton onze : il est marqué « Recommandé ».',
         why: 'Avant de confirmer, la jauge de l’offre affiche tes vraies chances d’accord : à toi de doser le prix.',
         cta: 'Ouvrir le mercato',
-        action: { kind: 'panel', panel: 'squad', tab: 'market' },
+        action: { kind: 'panel', panel: 'mercato' },
       };
     }
     case 'match':

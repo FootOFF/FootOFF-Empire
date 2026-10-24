@@ -154,6 +154,7 @@ export function TrophyRoom({ state, initialTab = 'honours', focus = [], onClose 
   };
   return (
     <Panel
+      id="trophies"
       size="lg"
       title="Salle des trophées"
       eyebrow={won ? `Allée d’honneur · ${plural(won, 'trophée')}` : 'Allée d’honneur'}

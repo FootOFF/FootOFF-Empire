@@ -17,7 +17,7 @@ export const GOALS = [
     repNeeded: 0,
     name: 'Tête haute',
     blurb: 'Prouve que ton projet mérite mieux qu’un terrain de quartier.',
-    reward: { label: '8 000 € de prime de palier', apply: (s) => { s.money += 8000; } },
+    reward: { label: '8 000 € de prime de palier', short: '+8 000 €', apply: (s) => { s.money += 8000; } },
     active: () => ({
       id: 'top-half',
       name: 'Terminer dans la première moitié du classement',
@@ -31,7 +31,7 @@ export const GOALS = [
     repNeeded: 6,
     name: 'Le public s’attache',
     blurb: 'Un stade qui vibre, un quartier qui t’accompagne.',
-    reward: { label: '30 000 € de prime de palier', apply: (s) => { s.money += 30000; } },
+    reward: { label: '30 000 € de prime de palier', short: '+30 000 €', apply: (s) => { s.money += 30000; } },
     active: () => ({
       id: 'crowd',
       name: 'Combler le stade',
@@ -45,7 +45,7 @@ export const GOALS = [
     repNeeded: 12,
     name: 'Maison des talents',
     blurb: 'Ne plus dépendre du marché : forger tes propres histoires.',
-    reward: { label: 'Académie +1 niveau offert', apply: (s) => { if (s.buildings.academy < 5) s.buildings.academy += 1; } },
+    reward: { label: 'Académie +1 niveau offert', short: 'Académie +1 niveau', apply: (s) => { if (s.buildings.academy < 5) s.buildings.academy += 1; } },
     active: () => ({
       id: 'revelation',
       name: 'Révéler un talent',
@@ -59,7 +59,7 @@ export const GOALS = [
     repNeeded: 25,
     name: 'L’Empire',
     blurb: 'Ton complexe sportif tient sa promesse : un club que tout le pays connaît.',
-    reward: { label: '3 M€ + 2 de réputation', apply: (s) => { s.money += 3000000; s.reputation = Math.round((s.reputation + 2) * 10) / 10; } },
+    reward: { label: '3 M€ + 2 de réputation', short: '+3 M€, +2 de réputation', apply: (s) => { s.money += 3000000; s.reputation = Math.round((s.reputation + 2) * 10) / 10; } },
     active: () => ({
       id: 'elite',
       name: 'Tenir ta place à l’Elite',

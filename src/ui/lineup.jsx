@@ -223,7 +223,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
           {left !== null && <span className={`lu-left ${left === 0 ? 'none' : ''}`}>{left === 0 ? 'Plus de changement' : `${left} changement${left > 1 ? 's' : ''} possible${left > 1 ? 's' : ''}`}</span>}
         </div>
         <div className="lu-bench-grid">
-          {bench.length === 0 && <span className="muted small">Aucun remplaçant : recrute dans l’Effectif.</span>}
+          {bench.length === 0 && <span className="muted small">Aucun remplaçant : recrute au mercato.</span>}
           {bench.map((p) => {
             const key = `bench:${p.id}`;
             const ok = canEnter(p);

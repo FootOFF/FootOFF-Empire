@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { BUILDINGS, upgradeCost } from '../game/constants';
 import { PLOTS, PLOT_LABELS, SECTORS, allowedBuildingsFor, plotBuilding } from '../game/map';
 import { fmtMoney } from './format';
-import { IconArrowUp } from './icons';
+import { IconArrowUp, IconTraining } from './icons';
 import { PLOT_POS, PLAZA_CENTER, footprintOf, layoutOverlaps } from '../three/layout';
 import { createRenderer, createEnvironment, outputRatioFor } from '../three/environment';
 import { assetsProgress, initAssets, instantiateModel, preloadModel, setAssetsBoost, setAssetsNight } from '../three/assets';
@@ -187,7 +187,7 @@ function parvisInfo(s) {
 export default function Empire3D({
   state, onSelectPlot, onEmptyTap, onWebGLFail, timeMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
   live = false, matchFx = null, badges = [], onLoadProgress, onLoaded, matchInfo = null, onOpenTrophies,
-  attract = false, paused = false, holo = null,
+  attract = false, paused = false, holo = null, session = null, onSession,
 }) {
   const mountRef = useRef(null);
   const labelRef = useRef(null);
@@ -1095,17 +1095,29 @@ export default function Empire3D({
   return (
     <div className="scene3d">
       <div className="scene3d-canvas" ref={mountRef} />
-      {ready && badges.filter((id) => id !== selectedPlot).map((id) => (
-        <button
+      {/* épingles posées sur les bâtiments : flèche dorée (construction ou amélioration payable), « Séance » sur le
+          centre d'entraînement (épreuves encore à jouer avant le match) ; les deux côte à côte sur la même parcelle */}
+      {ready && [...new Set([...badges, ...(session ? [session.plotId] : [])])].filter((id) => id !== selectedPlot).map((id) => (
+        <div
           key={id}
           className="plotpin"
           data-plot={id}
           ref={(el) => { if (el) pinRefs.current.set(id, el); else pinRefs.current.delete(id); }}
-          onClick={() => selectRef.current(id, PLOTS.find((p) => p.id === id).sector, { pin: true })}
-          aria-label="Construction ou amélioration disponible"
         >
-          <i><IconArrowUp /></i>
-        </button>
+          <span className="pin-tags">
+            {session?.plotId === id && (
+              <button className="pin-tag dark" onClick={() => onSession?.()} aria-label={`Séance d’entraînement : ${session.count} épreuve${session.count > 1 ? 's' : ''} à jouer avant le match`}>
+                <IconTraining />Séance<em>{session.count}</em>
+              </button>
+            )}
+            {badges.includes(id) && (
+              <button className="pin-tag" onClick={() => selectRef.current(id, PLOTS.find((p) => p.id === id).sector, { pin: true })} aria-label="Construction ou amélioration disponible">
+                <IconArrowUp />
+              </button>
+            )}
+          </span>
+          <i className="pin-stem" aria-hidden="true" /><i className="pin-foot" aria-hidden="true" />
+        </div>
       ))}
       {info && (
         <div className="plotlabel" ref={labelRef}>

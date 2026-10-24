@@ -33,7 +33,7 @@ export function StaffTip({ tip, onAction, onDismiss }) {
   if (!tip) return null;
   return (
     <aside className={`hud-tip glass ${tip.tone || ''}`} key={tip.id} aria-live="polite">
-      <span className="tip-eyebrow">Conseil du staff</span>
+      <span className="tip-eyebrow mark-head">Conseil du staff</span>
       <button className="tip-main" onClick={onAction}>
         <strong>{tip.title}</strong>
         <span className="tip-text">{tip.text}</span>

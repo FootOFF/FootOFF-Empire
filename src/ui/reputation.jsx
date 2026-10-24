@@ -30,7 +30,7 @@ export function ReputationPanel({ state, onClose }) {
       : fx.mercato > 0 ? 'Les vendeurs écoutent plus volontiers un club réputé : prix plus bas.' : 'Club encore peu connu : les vendeurs se montrent un peu plus durs.', true],
   ];
   return (
-    <Panel title="Notoriété du club" eyebrow={`Réputation ${fmtRating(rep)}`} onClose={onClose}>
+    <Panel id="reputation" title="Notoriété du club" eyebrow={`Réputation ${fmtRating(rep)}`} onClose={onClose}>
       <section className="rp-head">
         <ClubCrest crest={state.crest} name={state.clubName} className="rp-crest" full stars={clubStars(state)} />
         <div className="rp-score">

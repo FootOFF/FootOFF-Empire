@@ -121,6 +121,7 @@ export function AcademyView({ state, run, ask, notify = () => {}, onClose, onBui
   const open = (p, from) => setSheet({ id: p.id, list: from });
   return (
     <Panel
+      id="academy"
       size="lg"
       title="Académie"
       eyebrow={<>Niveau {lvl} / {BUILDINGS.academy.max} · {youth.length} / {YOUTH_PLACES} jeunes<span className="hide-sm"> · {DIVISIONS[state.divisionIndex].name}</span></>}

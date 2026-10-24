@@ -2,7 +2,7 @@ import { nextFixture } from './cups';
 import { BUILDINGS, POS_LABELS, SQUAD_MAX, YOUTH_LEAVE_AGE, YOUTH_PLACES, upgradeCost } from './constants';
 import { leavingYouth } from './academy';
 import { LINES, sessionOf, windowKey } from './training';
-import { PLOTS, allowedBuildingsFor, plotBuilding } from './map';
+import { PLOTS, allowedBuildingsFor, plotBuilding, plotOf } from './map';
 import { autoLineup, fitWeight, lineupRating, slotsOf } from './tactics';
 import { costOf, ratingAt, wageOf } from './players';
 import { fitGain, pendingCounters, poolOf } from './mercato';
@@ -96,17 +96,39 @@ export function matchesToAfford(s, missing) {
   return per > 0 ? Math.ceil(missing / per) : null;
 }
 
-// Pastilles du dock : recrue intéressante ou salaires dangereux (Effectif), stade à agrandir (Stade),
-// bâtiment prêt à être construit ou amélioré (Empire).
+// Lignes (gardien, défense, milieu, attaque) dont l'épreuve d'entraînement reste à faire avant le prochain match.
+export function trainingTodo(s) {
+  if (!s.buildings.training || !nextFixture(s)) return [];
+  return LINES.filter((pos) => !sessionOf(s).done[pos] && s.players.some((p) => p.pos === pos));
+}
+
+// Épingle « Séance » posée sur le centre d'entraînement de la vue 3D : le nombre d'épreuves encore à jouer avant le
+// prochain match (une par ligne), ou null.
+export function sessionPin(s) {
+  const todo = trainingTodo(s);
+  const plot = todo.length ? plotOf(s, 'training') : null;
+  return plot ? { plotId: plot.id, count: todo.length } : null;
+}
+
+// Pastilles du menu du bas, par section (nav.jsx) : bâtiment prêt à être construit ou amélioré (Complexe), séance
+// d'entraînement à faire (Équipe), offres reçues en nombre ou recrue intéressante (Mercato), saison qui finirait
+// dans le rouge (Club). items : les mêmes signaux sur les onglets des sections.
 export function dockSignals(s) {
   const forecast = seasonForecast(s, wageBill(s));
   const plots = actionablePlots(s);
   const gate = expectedGate(s, null);
+  const deals = (s.offers || []).length + pendingCounters(s).length;
+  const session = trainingTodo(s).length > 0;
+  const youth = s.buildings.academy > 0 && leavingYouth(s).length > 0;
+  const red = forecast.net < 0;
   return {
-    // mercato : offres reçues et contre-propositions à traiter avant la prochaine journée, en nombre
-    squad: forecast.net < 0 ? 'warn' : ((s.offers || []).length + pendingCounters(s).length) || (bestSigning(s) ? 'dot' : null),
-    stadium: plots.includes('t0') || (gate.demand > gate.capacity * 1.05 && s.buildings.terrain < BUILDINGS.terrain.max) ? 'dot' : null,
     empire: plots.some((id) => id !== 't0') ? 'dot' : null,
+    stadium: plots.includes('t0') || (gate.demand > gate.capacity * 1.05 && s.buildings.terrain < BUILDINGS.terrain.max) ? 'dot' : null,
+    squad: session || youth ? 'dot' : null,
+    // mercato : offres reçues et contre-propositions à traiter avant la prochaine journée, en nombre
+    mercato: deals || (bestSigning(s) ? 'dot' : null),
+    club: red ? 'warn' : null,
+    items: { training: session ? 'dot' : null, academy: youth ? 'dot' : null, finances: red ? 'dot' : null },
   };
 }
 
@@ -153,7 +175,7 @@ export function staffTip(s) {
     };
   }
   // centre d'entraînement : la séance d'avant-match n'est pas finie
-  const todo = s.buildings.training > 0 ? LINES.filter((pos) => !sessionOf(s).done[pos] && s.players.some((p) => p.pos === pos)) : [];
+  const todo = trainingTodo(s);
   if (todo.length) {
     return {
       id: `training-${windowKey(s)}`, title: todo.length === LINES.length ? 'Séance d’entraînement avant le match' : 'Séance d’entraînement à finir',
@@ -199,7 +221,7 @@ export function staffTip(s) {
       id: `sign-${sign.player.id}`,
       title: weak && weak.pos === pos ? `${LINE[pos]} est ta ligne la plus faible` : 'Une recrue renforcerait ton onze',
       text: `${sign.player.name} (${POS_LABELS[pos].toLowerCase()}, note ${ratingAt(sign.player, pos).toFixed(1).replace('.', ',')}) ${sign.player.club ? `est à vendre (${sign.player.club}) pour` : 'est libre pour'} ${money(sign.fee)}.`,
-      action: { kind: 'panel', panel: 'squad', tab: 'market', label: 'Voir le mercato' },
+      action: { kind: 'panel', panel: 'mercato', label: 'Voir le mercato' },
     };
   }
   const plot = actionablePlots(s).find((id) => id !== 't0');

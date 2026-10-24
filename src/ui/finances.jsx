@@ -57,6 +57,7 @@ export function FinancesPanel({ state, onClose, onOpenSquad }) {
 
   return (
     <Panel
+      id="finances"
       title="Finances"
       eyebrow={`Saison ${state.seasonNumber} · ${DIVISIONS[state.divisionIndex].name}`}
       onClose={onClose}

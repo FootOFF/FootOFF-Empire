@@ -685,6 +685,7 @@ export function StatsPanel({ state, onClose, initialMatch = null, onPlayerSheet 
   };
   return (
     <Panel
+      id="stats"
       size="lg"
       title="Statistiques"
       eyebrow={`${plural(matches.length, 'match enregistré', 'matchs enregistrés')}`}

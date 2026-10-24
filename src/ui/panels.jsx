@@ -12,8 +12,8 @@ import { STAGES_SHORT, STAGES, nextFixture, ofDiv } from '../game/cups';
 import { useDialogFocus, useKeydown, useLeaving } from './presence';
 import { uiSound } from './uisound';
 import { PHONE, useSwipe } from './gestures';
-import { Tabs } from './glass';
 import { SeasonCalendar } from './calendar';
+import { SECTIONS, SectionTabs, sectionOf } from './nav';
 
 // Un panneau ou une fiche qui s'ouvre fait un léger souffle qui monte, qui descend quand il se ferme.
 export function usePanelSound() {
@@ -21,22 +21,25 @@ export function usePanelSound() {
   useEffect(() => { uiSound(leaving ? 'close' : 'open'); }, [leaving]);
 }
 
-// Panneau du jeu : un seul modèle pour l'Effectif, la Saison et le Journal (en-tête, barre d'outils, corps
-// défilant, trésorerie à droite quand on y dépense). Glisse depuis la droite sur PC, plein écran sur mobile.
-export function Panel({ title, eyebrow, size = 'md', money = null, toolbar = null, overlay = null, onClose, onEscape, children }) {
+// Panneau du jeu : un seul modèle pour tous les écrans du menu (en-tête, barre d'outils, corps défilant,
+// trésorerie à droite quand on y dépense). id : le panneau, qui le range dans sa section du menu (nav.jsx) : l'en-tête
+// porte alors le nom de la section et ses onglets. Glisse depuis la droite sur PC, plein écran sur mobile.
+export function Panel({ id = null, title, eyebrow, size = 'md', money = null, toolbar = null, overlay = null, onClose, onEscape, children }) {
   const ref = useRef(null);
   useDialogFocus(ref);
   useKeydown((e) => { if (e.key === 'Escape') (onEscape || onClose)(); });
   useSwipe(ref, { onDown: onClose, downMedia: PHONE });
   usePanelSound();
+  const section = sectionOf(id);
   return (
-    <section ref={ref} tabIndex={-1} className={`panel ${size}`} role="dialog" aria-label={title}>
+    <section ref={ref} tabIndex={-1} className={`panel ${size} ${section ? `in-section s-${section}` : ''}`} role="dialog" aria-label={title}>
       <span className="grip" aria-hidden="true" />
       <header className="panel-head">
         <div className="panel-title">
           {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-          <h2>{title}</h2>
+          <h2>{section ? SECTIONS[section].title : title}</h2>
         </div>
+        {section && <SectionTabs section={section} />}
         <div className="panel-actions">
           {money !== null && (
             <span className={`panel-money ${money < 0 ? 'neg' : ''}`} data-money-target title="Trésorerie"><IconCoin /><AnimatedMoney value={money} /></span>
@@ -115,8 +118,8 @@ export function ZoneLegend({ state }) {
   );
 }
 
-export function SeasonPanel({ state, onClose, initialTab = 'calendar', initialSel = null, onOpenMatch, onPlay }) {
-  const [tab, setTab] = useState(initialTab);
+// tab, onTab : l'onglet (calendrier ou classement), piloté par les onglets de la section Saison (nav.jsx).
+export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = null, onOpenMatch, onPlay }) {
   const standings = standingsOf(state);
   const div = DIVISIONS[state.divisionIndex];
   const lm = state.lastMatch;
@@ -140,9 +143,10 @@ export function SeasonPanel({ state, onClose, initialTab = 'calendar', initialSe
 
   return (
     <Panel
+      id="season"
       size="lg"
-      title={div.name}
-      eyebrow={`Saison ${state.seasonNumber} · ${state.round ? `journée ${Math.min(state.round, 7)} / 7` : 'avant la 1re journée'}`}
+      title={`Saison ${state.seasonNumber} · ${div.name}`}
+      eyebrow={`${div.name} · Saison ${state.seasonNumber} · ${state.round ? `journée ${Math.min(state.round, 7)} / 7` : 'avant la 1re journée'}`}
       onClose={onClose}
       toolbar={(
         <>
@@ -153,7 +157,6 @@ export function SeasonPanel({ state, onClose, initialTab = 'calendar', initialSe
           {/* « Ambition » : la place visée au classement (l'« objectif de saison » du HUD est celui des primes de palier) */}
           <Stat label="Ambition" value={promo ? 'Top 2' : 'Europe'} sub={goal} />
           </div>
-          <Tabs className="sq-tabs season-tabs" items={[['calendar', 'Calendrier'], ['table', 'Classement']]} value={tab} onChange={setTab} label="Saison" />
         </>
       )}
     >
@@ -308,6 +311,7 @@ export function JournalPanel({ state, onClose }) {
   const [lead, ...rest] = list;
   return (
     <Panel
+      id="journal"
       title="Le journal du club"
       eyebrow={`FootOFF Media · ${season === 'all' ? `${seasons.length} saison${seasons.length > 1 ? 's' : ''} d’histoire` : `Saison ${season}`}`}
       onClose={onClose}

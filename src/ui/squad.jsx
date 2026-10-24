@@ -6,12 +6,11 @@ import { seasonForecast } from '../game/economy';
 import { teamLevel } from '../game/match';
 import { clubAfter, deName } from '../game/names';
 import { bestSigning } from '../game/advice';
-import { findOnMarket, offersFor, pendingCounters, poolOf } from '../game/mercato';
+import { findOnMarket, offersFor, poolOf } from '../game/mercato';
 import { slotsOf } from '../game/tactics';
 import { fmtMoney, fmtRating } from './format';
 import { IconChevron, IconChevronLeft, IconClose, IconRadar } from './icons';
 import { Panel } from './panels';
-import { Tabs } from './glass';
 import { PlayerCareer, departureText, reasonTag } from './career';
 import { LineupEditor } from './lineup';
 import { careerOf } from '../game/career';
@@ -56,8 +55,17 @@ function SaleTag({ state, p }) {
   );
 }
 
-export function SquadView({ state, run, ask, onClose, onFinances, initialTab = 'players', preview = null, initialSheet = null, initialMercato = null }) {
-  const [tab, setTab] = useState(initialTab);
+// mode : « squad » (section Équipe : joueurs, composition, anciens) ou « mercato » (section Mercato). L'onglet de
+// l'Effectif est piloté par les onglets de la section (tab, onTab) ; aller au mercato depuis l'Effectif (offres reçues
+// pour un joueur) passe par onMercato, et l'inverse (composer l'équipe après une signature) par onTab.
+export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad', tab: tabProp = null, onTab = null, onMercato = null, initialTab = 'players', preview = null, initialSheet = null, initialMercato = null }) {
+  const [tabState, setTabState] = useState(initialTab);
+  const tab = mode === 'mercato' ? 'market' : tabProp ?? tabState;
+  const setTab = (t) => {
+    if (mode !== 'mercato' && t === 'market') { onMercato?.('buy'); return; }
+    if (mode === 'mercato' && t === 'market') return;
+    if (onTab) onTab(t); else setTabState(t);
+  };
   const [filter, setFilter] = useState('all');
   const [view, setView] = useState(() => { try { return localStorage.getItem(VIEW_KEY) === 'table' ? 'table' : 'cards'; } catch { return 'cards'; } });
   const pickView = (v) => { setView(v); try { localStorage.setItem(VIEW_KEY, v); } catch { /* préférence non conservée */ } };
@@ -77,7 +85,6 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
   const wages = squad.reduce((s, p) => s + wageOf(p, state.divisionIndex), 0);
   const forecast = seasonForecast(state, wages);
   const recommended = bestSigning(state)?.player.id;
-  const todo = (state.offers || []).length + pendingCounters(state).length; // offres reçues et contre-propositions
 
   // Échap ferme d'abord la négociation (achat, vente) ou la mise en vente, puis la carrière, le comparateur, la fiche,
   // et enfin le panneau
@@ -98,8 +105,8 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
   const openOffers = () => {
     setListing(null);
     setSheet(null);
+    if (mode !== 'mercato') { onMercato?.('offers'); return; }
     setMercato((m) => ({ view: 'offers', key: m.key + 1 }));
-    setTab('market');
   };
   // recrutement : toujours par une offre négociée (fenêtre de négociation, chances d'accord affichées)
   const offer = (p) => setDeal(p.id);
@@ -136,6 +143,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
 
   return (
     <Panel
+      id={mode === 'mercato' ? 'mercato' : 'squad'}
       size="lg"
       title={tab === 'market' ? 'Mercato' : 'Effectif'}
       eyebrow={<>{squad.length}/{SQUAD_MAX} joueurs<span className="hide-sm"> · {DIVISIONS[state.divisionIndex].name}</span></>}
@@ -149,17 +157,6 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
           <span className="sq-gauge"><i className={forecast.net < 0 ? 'bad' : forecast.wageShare > 0.75 ? 'warn' : ''} style={{ width: `${Math.min(100, forecast.wageShare * 100)}%` }} /></span>
           <span className="sq-budget-sub">{fmtMoney(wages)} par saison · revenus attendus {fmtMoney(forecast.income)}{onFinances && <> · <button className="linkbtn fin-link" onClick={onFinances}>finances</button></>}</span>
         </div>
-        <Tabs
-          items={[
-            ['players', 'Joueurs'],
-            ['lineup', <><span className="hide-sm">Composition</span><span className="show-sm">Compo</span></>],
-            ['market', 'Mercato', todo ? <em className="sq-tab-count" aria-label={`${todo} à traiter`}>{todo}</em>
-              : recommended ? <i className="sq-tab-dot" aria-label="recrue recommandée" /> : null],
-            ['alumni', 'Anciens'],
-          ]}
-          value={tab}
-          onChange={setTab}
-        />
         </>
       )}
       overlay={(
