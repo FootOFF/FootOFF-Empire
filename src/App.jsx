@@ -105,7 +105,7 @@ export default function App({ preview = null }) {
   const [statsMatch, setStatsMatch] = useState(boot.ui.statsMatch || null); // 'last' : Stats Pass du dernier match ouvert d'emblée
   const [trophyTab, setTrophyTab] = useState('honours'); // onglet d'ouverture de la salle des trophées
   const [trophyFocus, setTrophyFocus] = useState([]); // succès à montrer d'emblée (notification d'un succès débloqué)
-  const [squadMercato, setSquadMercato] = useState(null); // vue du mercato à l'ouverture (offres reçues, suivis…)
+  const [mercatoView, setMercatoView] = useState(() => boot.ui?.squad?.mercato || 'buy'); // vue du mercato : recruter, suivis, offres, bilan
   const [academyNav, setAcademyNav] = useState({ tab: boot.ui.academyTab || 'youth', ids: [] }); // onglet et jeunes à montrer
   const [trainingTab, setTrainingTab] = useState(boot.ui.trainingTab || 'session'); // onglet d'ouverture du centre d'entraînement
   const [drills, setDrills] = useState(null); // épreuves en 3D en cours : [{ pos, id, cat, drill }]
@@ -214,13 +214,13 @@ export default function App({ preview = null }) {
     }
     if (id === 'squad') setSquadTab(tab || 'players');
     if (id === 'season') setSeasonTab(tab || 'calendar');
+    if (id === 'mercato') setMercatoView(tab || 'buy');
     if (id === panel) return;
     openPanel(id);
   };
   // mercato ouvert sur une de ses vues (recruter, suivis, offres reçues, bilan)
   const openMercato = (view = null) => {
-    setSquadMercato(view);
-    setNavKey((k) => k + 1);
+    setMercatoView(view || 'buy');
     openPanel('mercato');
   };
   const selectPlot = (plotId, sector) => { setSel({ plotId, sector }); setPanel(null); };
@@ -441,7 +441,7 @@ export default function App({ preview = null }) {
   const signals = state ? dockSignals(state) : {};
   // navigation par sections (nav.jsx) : l'en-tête de chaque panneau y lit l'onglet actif et ses pastilles
   const nav = {
-    panel, squadTab, seasonTab, go: goNav, badges: signals.items || {},
+    panel, squadTab, seasonTab, mercatoView, go: goNav, badges: signals.items || {},
     built: state ? { training: state.buildings.training > 0, academy: state.buildings.academy > 0, direction: state.buildings.direction > 0 } : {},
   };
   const hudKeys = inGame && !menu && !cinematic && !confirm && !preview; // raccourcis clavier du HUD (PC)
@@ -568,8 +568,9 @@ export default function App({ preview = null }) {
             ask={setConfirm}
             preview={boot.ui.squad}
             onTab={(t) => { setSquadTab(t); openPanel('squad'); }}
-            initialMercato={squadMercato}
-            onClose={() => { setPanel(null); setSquadMercato(null); }}
+            mercatoView={mercatoView}
+            onMercatoView={setMercatoView}
+            onClose={() => setPanel(null)}
             onFinances={() => openPanel('finances')}
           />
         )}

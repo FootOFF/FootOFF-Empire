@@ -146,6 +146,78 @@ export function MarketCard({ p, state, refLvl, followed, recommended, onOpen, on
   );
 }
 
+// --- Tableau du marché (PC) ----------------------------------------------------------------------------------
+// Une ligne par joueur, comme un écran de recruteur : portrait, nom, club et âge, poste, niveau, potentiel, ce qu'il
+// apporterait au onze, les repères (recommandé, pépite, nouveau…), le prix ; suivre et faire une offre au bout de la
+// ligne. Un clic sur la ligne ouvre sa fiche.
+function MarketTable({ list, state, refLvl, followed, recommended, onOpen, onFollow, onOffer }) {
+  const full = state.players.length >= SQUAD_MAX;
+  return (
+    <div className="mc-table-wrap">
+      <table className="mc-table">
+        <thead>
+          <tr>
+            <th className="c-who">Joueur</th><th>Poste</th><th>Niveau</th><th>Potentiel</th>
+            <th title="Gain sur le titulaire le plus faible à son poste">Onze</th><th className="c-tags">Repères</th><th className="r">Prix</th><th aria-label="Actions" />
+          </tr>
+        </thead>
+        <tbody>
+          {list.map((p) => {
+            const r = playerRating(p);
+            const price = costOf(p, state);
+            const pot = potentialRange(p, state);
+            const gain = fitGain(state, p);
+            const tags = tagsOf(state, p).filter((t) => t !== 'courted');
+            const talks = p.talks || {};
+            const rec = p.id === recommended;
+            const open = () => onOpen(p);
+            return (
+              <tr key={p.id} className={rec ? 'rec' : ''} tabIndex={0} onClick={open} onKeyDown={(e) => { if (e.key === 'Enter') open(); }} aria-label={`Fiche de ${p.name}`}>
+                <td className="c-who">
+                  <span className="mc-row-who">
+                    <Portrait p={p} size={40} club={p.club || null} free={!p.club} />
+                    <span className="mc-row-id">
+                      <b>{p.name}</b>
+                      <em>{p.club ? <><Crest name={p.club} className="mc-crest" />{p.club}</> : <><i className="mc-free-dot" />Joueur libre</>} · {p.age} ans</em>
+                    </span>
+                  </span>
+                </td>
+                <td><span className={`pos-pill ${p.pos}`}>{p.pos}</span></td>
+                <td className={`c-lvl ${heat(r, refLvl)}`}>{fmtRating(r)}</td>
+                <td className="c-pot">{pot ? `${fmtRating(pot[0])}–${fmtRating(pot[1])}` : 'atteint'}</td>
+                <td className={`c-gain ${gain >= 0.05 ? 'up' : ''}`}>{gain >= 0.05 ? `+${fmtRating(gain)}` : '–'}</td>
+                <td className="c-tags">
+                  <span className="mc-row-tags">
+                    {rec && <span className="mc-tag rec">Recommandé</span>}
+                    {p.interest > 0 && <span className="mc-tag warn">Courtisé{p.interest > 1 ? ` · ${p.interest}` : ''}</span>}
+                    {tags.map((t) => <span key={t} className={`mc-tag ${TAG[t][1]}`}>{TAG[t][0]}</span>)}
+                  </span>
+                </td>
+                <td className="c-price">
+                  <b className={price > state.money ? 'over' : ''}>{fmtMoney(price)}</b>
+                  {p.trend ? <IconTrend className={`mc-trend ${p.trend > 0 ? 'up' : 'down'}`} aria-label={p.trend > 0 ? 'prix en hausse' : 'prix en baisse'} /> : null}
+                </td>
+                <td className="c-act" onClick={(e) => e.stopPropagation()}>
+                  <span className="mc-row-act">
+                    <button type="button" className={`mc-icon ${followed.has(p.id) ? 'on' : ''}`} aria-pressed={followed.has(p.id)} onClick={() => onFollow(p)}
+                      title={followed.has(p.id) ? 'Ne plus suivre' : 'Suivre ce joueur'} aria-label={followed.has(p.id) ? `Ne plus suivre ${p.name}` : `Suivre ${p.name}`}><IconStar /></button>
+                    <button type="button" className={`btn btn-sm mc-offer ${talks.counter ? 'counter' : ''}`} onClick={() => onOffer(p)}
+                      disabled={(full || talks.closed) && !talks.counter} title={full ? 'Effectif complet' : talks.closed ? 'Le vendeur ne discutera plus avant la prochaine journée' : ''}>
+                      {talks.counter ? 'Contre-offre' : talks.closed ? 'Closes' : 'Offre'}
+                    </button>
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+const MARKET_VIEW_KEY = 'fo-market-view';
+
 // --- Recruter -------------------------------------------------------------------------------------------
 
 function News({ state }) {
@@ -241,6 +313,9 @@ function BuyView({ state, run, refLvl, recommended, followed, onOpen, onCompare,
   const [only, setOnly] = useState({ afford: false, fit: false, gem: false });
   const [sort, setSort] = useState('fit');
   const [query, setQuery] = useState('');
+  // PC : tableau (par défaut) ou cartes ; le téléphone garde les cartes
+  const [layout, setLayout] = useState(() => { try { return localStorage.getItem(MARKET_VIEW_KEY) === 'cards' ? 'cards' : 'table'; } catch { return 'table'; } });
+  const pickLayout = (v) => { setLayout(v); try { localStorage.setItem(MARKET_VIEW_KEY, v); } catch { /* préférence non conservée */ } };
   const toggle = (k) => setOnly((o) => ({ ...o, [k]: !o[k] }));
   const pool = poolOf(state);
   const list = useMemo(() => {
@@ -280,12 +355,21 @@ function BuyView({ state, run, refLvl, recommended, followed, onOpen, onCompare,
             {chip(only.gem, () => toggle('gem'), 'Pépites', only.gem)}
           </div>
           <SortMenu value={sort} onChange={setSort} />
+          <div className="sq-view mc-layout" role="group" aria-label="Affichage du marché">
+            <button type="button" className={layout === 'cards' ? 'on' : ''} aria-pressed={layout === 'cards'} onClick={() => pickLayout('cards')}>Cartes</button>
+            <button type="button" className={layout === 'table' ? 'on' : ''} aria-pressed={layout === 'table'} onClick={() => pickLayout('table')}>Tableau</button>
+          </div>
         </div>
       </div>
       <p className="mc-count">
         {list.length === pool.length ? plural(pool.length, 'joueur', 'joueurs') : `${list.length} sur ${pool.length} joueurs`} · {plural(state.market.length, 'libre', 'libres')}, {(state.transfers || []).length} sous contrat · le marché bouge à chaque journée
       </p>
-      <ul className="mc-grid">
+      {layout === 'table' && list.length > 0 && (
+        <MarketTable list={list} state={state} refLvl={refLvl} followed={followed} recommended={recommended}
+          onOpen={(q) => onOpen(q, list)} onFollow={onFollow} onOffer={onOffer} />
+      )}
+      {/* le tableau ne tient pas sur un téléphone : les cartes y restent */}
+      <ul className={`mc-grid ${layout === 'table' ? 'mc-grid-sm' : ''}`}>
         {list.length === 0 && <li className="empty">Aucun joueur ne correspond à ces filtres pour l’instant.</li>}
         {list.map((p) => (
           <MarketCard key={p.id} p={p} state={state} refLvl={refLvl} followed={followed.has(p.id)} recommended={p.id === recommended}
@@ -588,15 +672,19 @@ function LogView({ state }) {
 
 // --- Mercato ------------------------------------------------------------------------------------------
 
-export function Mercato({ state, run, ask, refLvl, recommended, initialView = 'buy', onOpen, onCompare, onOffer, onSale, onList }) {
-  const [view, setView] = useState(initialView);
+// view, onView : la vue choisie par les onglets de la section Mercato (nav.jsx), dans l'en-tête du panneau ; sans
+// eux, le mercato garde sa propre barre de vues.
+export function Mercato({ state, run, ask, refLvl, recommended, initialView = 'buy', view: viewProp = null, onView = null, onOpen, onCompare, onOffer, onSale, onList }) {
+  const [viewState, setViewState] = useState(initialView);
+  const view = viewProp ?? viewState;
+  const setView = onView || setViewState;
   const followed = new Set((state.shortlist || []).filter((x) => !x.gone).map((x) => x.id));
   const follow = (p) => run((s) => toggleShortlist(s, p.id));
   const todo = (state.offers || []).length + pendingCounters(state).length;
   const common = { state, refLvl, recommended, onOpen, onCompare, onFollow: follow, onOffer };
   return (
     <div className="mc">
-      <Tabs
+      {!onView && <Tabs
         className="segmented mc-views"
         items={[
           ['buy', 'Recruter'],
@@ -607,7 +695,7 @@ export function Mercato({ state, run, ask, refLvl, recommended, initialView = 'b
         value={view}
         onChange={setView}
         label="Mercato"
-      />
+      />}
       {view === 'buy' && <BuyView {...common} run={run} followed={followed} />}
       {view === 'watch' && <WatchView {...common} run={run} />}
       {view === 'offers' && <OffersView state={state} refLvl={refLvl} run={run} ask={ask} onOffer={onOffer} onSale={onSale} onList={onList} />}
@@ -730,7 +818,7 @@ export function Negotiation({ state, p, run, refLvl, onClose, onSheet, onLineup 
                 <output className="ng-value" aria-live="polite">{fmtMoney(offer)}<em>{vsAsk(offer, ask)}</em></output>
                 <button className="hud-icon" onClick={() => set(offer + step)} aria-label="Monter l’offre" disabled={offer >= hi}>+</button>
               </div>
-              <input className="ng-range" type="range" min={lo} max={hi} step={step} value={offer} onChange={(e) => set(Number(e.target.value))} aria-label="Montant de l’offre" />
+              <input className="ng-range" type="range" min={lo} max={hi} step={step} value={offer} style={{ '--fill': `${((offer - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => set(Number(e.target.value))} aria-label="Montant de l’offre" />
               <div className="chips ng-quick">
                 {QUICK.map(([k, label]) => <button key={label} className={roundTo(ask * k, step) === offer ? 'active' : ''} onClick={() => set(ask * k)}>{label}</button>)}
               </div>
@@ -862,7 +950,7 @@ export function ListingSheet({ state, p, run, refLvl, onClose, onOffers }) {
             <output className="ng-value" aria-live="polite">{fmtMoney(price)}<em>{vsValue(price, v, step)}</em></output>
             <button className="hud-icon" onClick={() => set(price + step)} aria-label="Monter le prix" disabled={price >= hi}>+</button>
           </div>
-          <input className="ng-range" type="range" min={lo} max={hi} step={step} value={price} onChange={(e) => set(Number(e.target.value))} aria-label="Prix demandé" />
+          <input className="ng-range" type="range" min={lo} max={hi} step={step} value={price} style={{ '--fill': `${((price - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => set(Number(e.target.value))} aria-label="Prix demandé" />
           <div className="chips ng-quick">
             {LIST_QUICK.map(([k, label]) => <button key={label} className={roundTo(v * k, step) === price ? 'active' : ''} onClick={() => set(v * k)}>{label}</button>)}
           </div>
@@ -1024,7 +1112,7 @@ export function SaleNegotiation({ state, offerId, since, run, refLvl, onClose, o
                 <output className="ng-value" aria-live="polite">{fmtMoney(demand)}<em>{d} % au-dessus de son offre</em></output>
                 <button className="hud-icon" onClick={() => set(demand + step)} aria-label="Monter la demande" disabled={demand >= hi}>+</button>
               </div>
-              <input className="ng-range" type="range" min={lo} max={hi} step={step} value={demand} onChange={(e) => set(Number(e.target.value))} aria-label="Montant demandé" />
+              <input className="ng-range" type="range" min={lo} max={hi} step={step} value={demand} style={{ '--fill': `${((demand - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => set(Number(e.target.value))} aria-label="Montant demandé" />
               <div className="chips ng-quick">
                 {quick.map(([x, label]) => <button key={label} className={x === demand ? 'active' : ''} onClick={() => set(x)}>{label}</button>)}
               </div>

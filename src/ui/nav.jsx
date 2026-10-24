@@ -18,7 +18,15 @@ export const SECTIONS = {
       ['squad:alumni', 'Anciens'],
     ],
   },
-  mercato: { title: 'Mercato', items: [] },
+  mercato: {
+    title: 'Mercato',
+    items: [
+      ['mercato:buy', 'Recruter'],
+      ['mercato:watch', 'Suivis'],
+      ['mercato:offers', 'Offres'],
+      ['mercato:log', 'Bilan'],
+    ],
+  },
   saison: {
     title: 'Saison',
     items: [
@@ -51,7 +59,8 @@ export const sectionOf = (panel) => SECTION_OF[panel] || null;
 export const LOCKS = { training: 'training', academy: 'academy', direction: 'direction' };
 
 // Contexte fourni par App : panneau ouvert, onglets internes, bâtiments construits, et l'aller vers un onglet.
-// { panel, squadTab, seasonTab, built: { training, academy, direction }, go(key), locked(key) }
+// { panel, squadTab, seasonTab, mercatoView, built: { training, academy, direction }, go(key), badges }
+// Pastille d'un onglet (badges[clé]) : 'dot', un nombre (à traiter), ou { n, tone, label } (un compte discret).
 export const NavContext = createContext(null);
 export const useNav = () => useContext(NavContext);
 
@@ -60,6 +69,7 @@ export function activeKey(nav) {
   if (!nav) return null;
   if (nav.panel === 'squad') return `squad:${nav.squadTab === 'market' ? 'players' : nav.squadTab || 'players'}`;
   if (nav.panel === 'season') return `season:${nav.seasonTab || 'calendar'}`;
+  if (nav.panel === 'mercato') return `mercato:${nav.mercatoView || 'buy'}`;
   return nav.panel;
 }
 
@@ -95,6 +105,7 @@ export function SectionTabs({ section }) {
             {label}
             {badge === 'dot' && <i className="sq-tab-dot" aria-label="à voir" />}
             {typeof badge === 'number' && <em className="sq-tab-count" aria-label={`${badge} à traiter`}>{badge}</em>}
+            {badge?.n > 0 && <em className={`sq-tab-count ${badge.tone || ''}`} aria-label={badge.label || String(badge.n)}>{badge.n}</em>}
           </button>
         );
       })}

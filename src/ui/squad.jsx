@@ -25,7 +25,14 @@ import { Portrait } from './portrait';
 
 const ORDER = { G: 0, D: 1, M: 2, A: 3 };
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
-const FILTERS = [['all', 'Tous'], ['G', 'Gardiens'], ['D', 'Défense'], ['M', 'Milieu'], ['A', 'Attaque']];
+const FILTERS = [['all', 'Tous'], ['G', 'Gardiens'], ['D', 'Défenseurs'], ['M', 'Milieux'], ['A', 'Attaquants']];
+// tri des cartes : par poste (rangées par ligne), ou d'un seul tenant par niveau, âge ou condition
+const SORTS = [['pos', 'poste'], ['level', 'niveau'], ['age', 'âge'], ['fit', 'condition']];
+const SORT_FN = {
+  level: (a, b) => playerRating(b) - playerRating(a),
+  age: (a, b) => a.age - b.age || playerRating(b) - playerRating(a),
+  fit: (a, b) => fitOf(b) - fitOf(a) || playerRating(b) - playerRating(a),
+};
 const attrsOf = (p) => (p.pos === 'G' ? GK_ATTRS.map((x) => ({ ...x, v: p.g[x.key] })) : ATTRS.map((x) => ({ ...x, v: p.a[x.key] })));
 const topAttrs = (p, n = 3) => [...attrsOf(p)].sort((a, b) => b.v - a.v).slice(0, n);
 const formAvg = (p) => (p.form?.length ? p.form.reduce((a, b) => a + b, 0) / p.form.length : null);
@@ -58,7 +65,7 @@ function SaleTag({ state, p }) {
 // mode : « squad » (section Équipe : joueurs, composition, anciens) ou « mercato » (section Mercato). L'onglet de
 // l'Effectif est piloté par les onglets de la section (tab, onTab) ; aller au mercato depuis l'Effectif (offres reçues
 // pour un joueur) passe par onMercato, et l'inverse (composer l'équipe après une signature) par onTab.
-export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad', tab: tabProp = null, onTab = null, onMercato = null, initialTab = 'players', preview = null, initialSheet = null, initialMercato = null }) {
+export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad', tab: tabProp = null, onTab = null, onMercato = null, initialTab = 'players', preview = null, initialSheet = null, mercatoView = null, onMercatoView = null }) {
   const [tabState, setTabState] = useState(initialTab);
   const tab = mode === 'mercato' ? 'market' : tabProp ?? tabState;
   const setTab = (t) => {
@@ -67,6 +74,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
     if (onTab) onTab(t); else setTabState(t);
   };
   const [filter, setFilter] = useState('all');
+  const [sort, setSort] = useState('pos');
   const [view, setView] = useState(() => { try { return localStorage.getItem(VIEW_KEY) === 'table' ? 'table' : 'cards'; } catch { return 'cards'; } });
   const pickView = (v) => { setView(v); try { localStorage.setItem(VIEW_KEY, v); } catch { /* préférence non conservée */ } };
   const [sheet, setSheet] = useState(preview?.sheet ? { id: preview.sheet } : initialSheet ? { id: initialSheet } : null); // { id, market, order }
@@ -75,8 +83,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
   const [deal, setDeal] = useState(null); // négociation en cours (identifiant du joueur visé)
   const [listing, setListing] = useState(null); // mise en vente en cours (identifiant du joueur)
   const [saleDeal, setSaleDeal] = useState(null); // négociation d'une vente : { id de l'offre, since }
-  // vue du mercato à l'ouverture de l'onglet (une fiche joueur mène aux offres reçues pour lui) ; la clé le rouvre
-  const [mercato, setMercato] = useState({ view: preview?.mercato || initialMercato || 'buy', key: 0 });
+  // vue du mercato (recruter, suivis, offres, bilan) : choisie par les onglets de la section, dans l'en-tête
   const ref = divRef(state);
   const squad = useMemo(
     () => [...state.players].sort((a, b) => ORDER[a.pos] - ORDER[b.pos] || playerRating(b) - playerRating(a)),
@@ -99,6 +106,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
   };
 
   const shown = filter === 'all' ? squad : squad.filter((p) => p.pos === filter);
+  const count = (id) => (id === 'all' ? squad.length : squad.filter((p) => p.pos === id).length);
   const find = (id) => state.players.find((p) => p.id === id) || findOnMarket(state, id);
 
   // vendre : une seule voie, la mise en vente puis la négociation des offres reçues (vue Offres du mercato)
@@ -106,7 +114,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
     setListing(null);
     setSheet(null);
     if (mode !== 'mercato') { onMercato?.('offers'); return; }
-    setMercato((m) => ({ view: 'offers', key: m.key + 1 }));
+    onMercatoView?.('offers');
   };
   // recrutement : toujours par une offre négociée (fenêtre de négociation, chances d'accord affichées)
   const offer = (p) => setDeal(p.id);
@@ -234,12 +242,12 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
             <div className="sq-controls">
               <div className="chips">
                 {FILTERS.map(([id, label]) => (
-                  <button key={id} className={filter === id ? 'active' : ''} onClick={() => setFilter(id)}>{label}</button>
+                  <button key={id} className={filter === id ? 'active' : ''} onClick={() => setFilter(id)}>{label}<b>{count(id)}</b></button>
                 ))}
               </div>
               {view === 'table'
                 ? <span className="sq-legend"><i className="hi" /> fort pour la division <i className="low" /> faible</span>
-                : <span className="sq-legend tiers"><i className="gold" /> or : fort pour ta division <i className="bronze" /> bronze : faible</span>}
+                : <SortMenu value={sort} onChange={setSort} />}
               <div className="sq-view" role="group" aria-label="Affichage de l’effectif">
                 <button type="button" className={view === 'cards' ? 'on' : ''} aria-pressed={view === 'cards'} onClick={() => pickView('cards')}>Cartes</button>
                 <button type="button" className={view === 'table' ? 'on' : ''} aria-pressed={view === 'table'} onClick={() => pickView('table')}>Tableau</button>
@@ -256,17 +264,17 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
               </div>
             )}
             {/* le tableau ne tient pas sur un téléphone : les cartes y restent */}
-            <SquadCards className={view === 'table' ? 'only-sm' : ''} players={shown} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
+            <SquadCards className={view === 'table' ? 'only-sm' : ''} players={shown} sort={sort} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
           </>
         ) : tab === 'market' ? (
           <Mercato
-            key={mercato.key}
             state={state}
             run={run}
             ask={ask}
             refLvl={ref}
             recommended={recommended}
-            initialView={mercato.view}
+            view={mercatoView || preview?.mercato || 'buy'}
+            onView={onMercatoView}
             onOpen={(p, order) => setSheet({ id: p.id, market: true, order: (order || [p]).map((q) => q.id) })}
             onCompare={openCompare}
             onOffer={offer}
@@ -291,9 +299,11 @@ function SquadOverview({ state, squad }) {
   if (!squad.length) return null;
   const forms = squad.map(formAvg).filter((f) => f !== null);
   const value = squad.reduce((a, p) => a + marketValue(p, state.divisionIndex), 0);
+  const fit = squad.reduce((a, p) => a + fitOf(p), 0) / squad.length;
   const tiles = [
     ['Niveau du onze', fmtRating(teamLevel(state)), 'gold'],
-    ['Âge moyen', `${fmtRating(squad.reduce((a, p) => a + p.age, 0) / squad.length)} ans`],
+    ['Condition moyenne', <>{Math.round(fit)} %</>, fitTone(fit)],
+    ['Âge moyen', <>{fmtRating(squad.reduce((a, p) => a + p.age, 0) / squad.length)}<small> ans</small></>],
     ['Forme', forms.length ? fmtRating(forms.reduce((a, b) => a + b, 0) / forms.length) : '–'],
     ['Valeur totale', fmtMoney(value)],
   ];
@@ -304,8 +314,46 @@ function SquadOverview({ state, squad }) {
   );
 }
 
-function SquadCards({ players, state, refLvl, onOpen, className = '' }) {
+// « Trier par … » : une petite liste qui s'ouvre sous le bouton (pas de liste du système)
+function SortMenu({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const away = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    const esc = (e) => { if (e.key === 'Escape') { e.preventDefault(); setOpen(false); } };
+    document.addEventListener('pointerdown', away);
+    window.addEventListener('keydown', esc, true);
+    return () => { document.removeEventListener('pointerdown', away); window.removeEventListener('keydown', esc, true); };
+  }, [open]);
+  const label = SORTS.find(([id]) => id === value)?.[1];
+  return (
+    <div className="sq-sorter" ref={ref}>
+      <button type="button" className="sq-sorter-btn" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        Trier par <b>{label}</b><IconChevron />
+      </button>
+      {open && (
+        <ul className="sq-sorter-menu" role="listbox" aria-label="Trier les joueurs">
+          {SORTS.map(([id, name]) => (
+            <li key={id}><button type="button" role="option" aria-selected={value === id} className={value === id ? 'on' : ''} onClick={() => { onChange(id); setOpen(false); }}>{name}</button></li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function SquadCards({ players, sort = 'pos', state, refLvl, onOpen, className = '' }) {
   let k = 0;
+  if (sort !== 'pos') { // d'un seul tenant, sans rangées par ligne
+    return (
+      <div className={`sq-cards ${className}`}>
+        <ul className="sqc-grid">
+          {[...players].sort(SORT_FN[sort]).map((p) => <PlayerCard key={p.id} p={p} state={state} refLvl={refLvl} index={k++} onOpen={() => onOpen(p)} />)}
+        </ul>
+      </div>
+    );
+  }
   return (
     <div className={`sq-cards ${className}`}>
       {LINES.map(([pos, label]) => {
@@ -315,8 +363,7 @@ function SquadCards({ players, state, refLvl, onOpen, className = '' }) {
         return (
           <section key={pos} className="sq-line">
             <header className="sq-line-head">
-              <span className={`pos-pill ${pos}`}>{pos}</span>
-              <h3>{label}</h3>
+              <h3 className="mark-head">{label}</h3>
               <span className="sq-line-meta">{group.length} · moyenne {fmtRating(avg)}</span>
             </header>
             <ul className="sqc-grid">
@@ -329,32 +376,48 @@ function SquadCards({ players, state, refLvl, onOpen, className = '' }) {
   );
 }
 
+// Forme en cinq barres : les cinq dernières notes de match (hauteur sur 10 ; vert à 7,5 et plus, rouge sous 5,5),
+// des tirets pour les matchs pas encore joués.
+function Form5({ form = [] }) {
+  const last = form.slice(-5);
+  const pad = Array.from({ length: 5 - last.length });
+  return (
+    <span className="form5" title={last.length ? `Forme : ${last.map(fmtRating).join(' · ')}` : 'Pas encore joué'}>
+      {pad.map((_, i) => <i key={`p${i}`} className="none" />)}
+      {last.map((v, i) => <i key={i} className={v >= 7.5 ? 'g' : v < 5.5 ? 'b' : ''} style={{ height: `${Math.max(3, Math.min(14, (v / 10) * 14))}px` }} />)}
+    </span>
+  );
+}
+
 function PlayerCard({ p, state, refLvl, index, onOpen }) {
   const r = playerRating(p);
-  const f = formAvg(p);
   const starter = state.lineup?.includes(p.id);
   const [first, ...rest] = p.name.split(' ');
+  const absent = absenceOf(p);
+  const fit = Math.round(fitOf(p));
+  const pot = potentialRange(p, state);
   return (
     <li style={{ '--k': Math.min(index, 18) }}>
-      <button type="button" className={`sqc ${tierOf(r, refLvl)}`} onClick={onOpen} aria-label={`Fiche de ${p.name}, niveau ${fmtRating(r)}`}>
+      <button type="button" className={`sqc ${tierOf(r, refLvl)} ${absent ? 'out' : ''}`} onClick={onOpen} aria-label={`Fiche de ${p.name}, niveau ${fmtRating(r)}${absent ? `, ${absent.short.toLowerCase()}` : ''}`}>
         <span className="sqc-top">
           <span className="sqc-rating"><b>{fmtRating(r)}</b><span className={`pos-pill ${p.pos}`}>{p.pos}</span></span>
           <span className="sqc-flags">
-            {p.num != null && <em className="sqc-num">{p.num}</em>}
+            {p.num != null && <em className="sqc-num">n°{p.num}</em>}
             {starter && <span className="sqc-xi" title="Titulaire">XI</span>}
-            <AbsentTag p={p} />
           </span>
         </span>
-        <span className="sqc-face"><Portrait p={p} size={70} /></span>
+        <span className="sqc-face"><Portrait p={p} size={96} /></span>
         <span className="sqc-name">{rest.length > 0 && <small>{first}</small>}<strong>{rest.length ? rest.join(' ') : first}</strong></span>
         <SaleTag state={state} p={p} />
         <span className="sqc-stats">
           {topAttrs(p).map((a) => <span key={a.key} className={heat(a.v, refLvl)}><b>{Math.round(a.v)}</b><em>{a.short}</em></span>)}
         </span>
+        {absent
+          ? <span className={`sqc-strap ${absent.kind}`}>{absent.short}</span>
+          : <span className={`sqc-fit ${fitTone(fit)}`} title="Condition physique"><span className="sqc-fit-bar"><i style={{ width: `${fit}%` }} /></span><em>{fit} %</em></span>}
         <span className="sqc-foot">
-          <span>{p.age} ans</span>
-          <span className={`sqc-fit ${fitTone(fitOf(p))}`} title="Condition physique">{Math.round(fitOf(p))} %</span>
-          {f === null ? <span className="sqc-form">pas joué</span> : <span className={`sqc-form ${f >= 7.5 ? 'good' : f < 5.5 ? 'low' : ''}`}>forme {fmtRating(f)}</span>}
+          <span>{p.age} ans{pot ? <> · pot. {fmtRating(pot[0])}–{fmtRating(pot[1])}</> : ''}</span>
+          <Form5 form={p.form} />
         </span>
       </button>
     </li>
@@ -500,6 +563,9 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
   const talks = (market && p.talks) || {};
   const avg = st.apps ? st.sum / st.apps : null;
   const plural = (n, one, many) => (n > 1 ? many : one);
+  const [nameFirst, ...nameRest] = p.name.split(' ');
+  const note = market ? f : avg; // joueur du mercato : sa forme ; joueur du club : sa note moyenne de la saison
+  const noteTone = note >= 7 ? 'good' : note !== null && note < 5.5 ? 'low' : '';
 
   // changement de joueur : la fiche remonte en haut et le nouveau joueur arrive du côté du geste
   const ref = useRef(null);
@@ -531,50 +597,57 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
           <button className="hud-icon" onClick={onClose} aria-label="Fermer la fiche"><IconClose /></button>
         </header>
 
-        <section className="sh-hero">
-          <Portrait p={p} size={76} club={market ? p.club || null : null} free={market && !p.club} className="sh-face" />
+        <section className={`sh-hero ${tierOf(r, refLvl)}`}>
+          {p.num != null && <span className="sh-bignum" aria-hidden="true">{p.num}</span>}
           <div className="sh-id">
+            <div className="sh-rate">
+              <b>{fmtRating(r)}</b>
+              {!market && p.lastDelta ? <em className={p.lastDelta > 0 ? 'up' : 'down'} title="Progression du dernier été">{p.lastDelta > 0 ? '+' : ''}{fmtRating(p.lastDelta)}</em> : null}
+            </div>
             <div className="sh-meta">
               <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
-              <span>{p.num ? `N°${p.num} · ` : ''}{p.age} ans · {p.foot === 'les deux' ? 'des deux pieds' : `pied ${p.foot}`}</span>
+              <span>{POS_LABELS[p.pos]}{p.num ? ` · n°${p.num}` : ''}</span>
             </div>
-            <h3>{p.name}</h3>
-            <div className="sh-tags">
-              <span className={`sh-tag ${role === 'Titulaire' ? 'on' : ''}`}>{role}</span>
-              {!market && <AbsentTag p={p} long />}
-              {!market && p.academy && <span className="sh-tag on">Formé au club</span>}
-              {listed && <span className="sh-tag sale">En vente</span>}
-              {market && p.interest > 0 && <span className="sh-tag warn">Courtisé{p.interest > 1 ? ` par ${p.interest} clubs` : ''}</span>}
-              {p.alt && <span className="sh-tag">Dépanne : {POS_LABELS[p.alt].toLowerCase()} {fmtRating(ratingAt(p, p.alt))}</span>}
-            </div>
+            <h3 className="sh-name">{nameRest.length > 0 && <small>{nameFirst}</small>}<b>{nameRest.length ? nameRest.join(' ') : nameFirst}</b></h3>
           </div>
-          <div className={`sh-level ${heat(r, refLvl)}`}>
-            <b>{fmtRating(r)}</b>
-            <span>niveau / 20</span>
+          <Portrait p={p} size={136} club={market ? p.club || null : null} free={market && !p.club} className="sh-face" />
+          <div className="sh-tags">
+            <span className={`sh-tag ${role === 'Titulaire' ? 'on' : ''}`}>{role}</span>
+            <span className="sh-tag">{p.foot === 'les deux' ? 'Des deux pieds' : `Pied ${p.foot}`}</span>
+            {!market && <AbsentTag p={p} long />}
+            {!market && p.academy && <span className="sh-tag on">Formé au club</span>}
+            {listed && <span className="sh-tag sale">En vente</span>}
+            {market && p.interest > 0 && <span className="sh-tag warn">Courtisé{p.interest > 1 ? ` par ${p.interest} clubs` : ''}</span>}
+            {p.alt && <span className="sh-tag">Dépanne : {POS_LABELS[p.alt].toLowerCase()} {fmtRating(ratingAt(p, p.alt))}</span>}
           </div>
         </section>
 
-        <section className="sh-sec">
+        <section className="sh-sec sh-levelsec">
           <div className="sh-row">
-            <span className="sh-cap">Niveau et potentiel</span>
-            <span className="sh-pot">{pot ? <>potentiel <b>{fmtRating(pot[0])} – {fmtRating(pot[1])}</b></> : 'plafond atteint'}</span>
+            <span className="sh-cap">Niveau <b className={heat(r, refLvl)}>{fmtRating(r)}</b><small> / 20</small></span>
+            <span className="sh-pot">{pot ? <>Potentiel <b>{fmtRating(pot[0])}–{fmtRating(pot[1])}</b></> : 'Plafond atteint'}</span>
           </div>
           <div className="sh-scale" aria-hidden="true">
             <i className="now" style={{ width: `${(r / 20) * 100}%` }} />
             {pot && <i className="pot" style={{ left: `${(pot[0] / 20) * 100}%`, width: `${((pot[1] - pot[0]) / 20) * 100}%` }} />}
           </div>
-          <div className="sh-ticks" aria-hidden="true"><span>0</span><span>10</span><span>20</span></div>
+          <div className="sh-ticks" aria-hidden="true"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span></div>
         </section>
+
+        <div className="sh-tiles">
+          <div><span>Âge</span><b>{p.age}<small> ans</small></b></div>
+          {!market && <div><span>Condition</span><b className={fitTone(fitOf(p))}>{Math.round(fitOf(p))} %</b></div>}
+          {!market && <div><span>Cette saison</span><b>{st.apps || 0}<small> {plural(st.apps || 0, 'match', 'matchs')}</small></b></div>}
+          <div><span>{market ? 'Forme' : 'Note moy.'}</span><b className={noteTone}>{note !== null ? fmtRating(note) : '–'}</b></div>
+        </div>
 
         {!market && (
           <section className="sh-sec">
             <span className="sh-cap">Saison {state.seasonNumber}</span>
             <div className="sh-stats">
-              <div><b>{st.apps || 0}</b><span>{plural(st.apps || 0, 'match', 'matchs')}</span></div>
               <div><b>{st.goals || 0}</b><span>{plural(st.goals || 0, 'but', 'buts')}</span></div>
               <div><b>{st.assists || 0}</b><span>{plural(st.assists || 0, 'passe', 'passes')}</span></div>
               <div><b>{(st.yellow || 0) + (st.red || 0)}</b><span>{plural((st.yellow || 0) + (st.red || 0), 'carton', 'cartons')}</span></div>
-              <div><b className={avg >= 7 ? 'good' : avg !== null && avg < 5.5 ? 'low' : ''}>{avg !== null ? fmtRating(avg) : '–'}</b><span>note</span></div>
               <div className="sh-wrap"><b className={st.motm ? 'gold' : ''}>{st.motm || 0}</b><span>homme du match</span></div>
             </div>
             <button className="btn ghost wide sh-career" onClick={onCareer}>Toute sa carrière au club</button>
@@ -615,7 +688,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
           <section className="sh-sec">
             <span className="sh-cap">{plural(p.traits.length, 'Signe distinctif', 'Signes distinctifs')}</span>
             <ul className="sh-traits">
-              {p.traits.map((t) => <li key={t}><b>{TRAITS[t].name}</b><span>{TRAITS[t].desc}</span></li>)}
+              {p.traits.map((t) => <li key={t}><i aria-hidden="true" /><b>{TRAITS[t].name}</b><span>{TRAITS[t].desc}</span></li>)}
             </ul>
           </section>
         )}
@@ -625,18 +698,20 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
             <span className="sh-cap">Attributs</span>
             <span className="sh-legend"><i className="key" /> clés au poste · <em>or</em> : fort pour ta division</span>
           </div>
-          {fams.map((fam) => (
-            <div className="sh-fam" key={fam}>
-              {fams.length > 1 && <span className="sh-famname">{FAMILIES[fam]}</span>}
-              {all.filter((a) => a.fam === fam).map((a) => (
-                <div className={`sh-attr ${keys.has(a.key) ? 'key' : ''}`} key={a.key}>
-                  <span>{a.name}</span>
-                  <span className="sh-track"><i className={heat(a.v, refLvl)} style={{ width: `${(a.v / 20) * 100}%` }} /></span>
-                  <b className={heat(a.v, refLvl)}>{Math.round(a.v)}</b>
-                </div>
-              ))}
-            </div>
-          ))}
+          <div className={`sh-fams n${fams.length}`}>
+            {fams.map((fam) => (
+              <div className="sh-fam" key={fam}>
+                <span className="sh-famname">{fams.length > 1 ? FAMILIES[fam].split(' ')[0] : FAMILIES[fam]}</span>
+                {all.filter((a) => a.fam === fam).map((a) => (
+                  <div className={`sh-attr ${keys.has(a.key) ? 'key' : ''}`} key={a.key}>
+                    <span>{a.name}</span>
+                    <b className={heat(a.v, refLvl)}>{Math.round(a.v)}</b>
+                    <span className="sh-track"><i className={heat(a.v, refLvl)} style={{ width: `${(a.v / 20) * 100}%` }} /></span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </section>
 
         <footer className={`sh-foot ${market ? 'market' : 'own'}`}>

@@ -110,6 +110,8 @@ export function sessionPin(s) {
   return plot ? { plotId: plot.id, count: todo.length } : null;
 }
 
+const followedCount = (s) => (s.shortlist || []).filter((x) => !x.gone).length;
+
 // Pastilles du menu du bas, par section (nav.jsx) : bâtiment prêt à être construit ou amélioré (Complexe), séance
 // d'entraînement à faire (Équipe), offres reçues en nombre ou recrue intéressante (Mercato), saison qui finirait
 // dans le rouge (Club). items : les mêmes signaux sur les onglets des sections.
@@ -128,7 +130,11 @@ export function dockSignals(s) {
     // mercato : offres reçues et contre-propositions à traiter avant la prochaine journée, en nombre
     mercato: deals || (bestSigning(s) ? 'dot' : null),
     club: red ? 'warn' : null,
-    items: { training: session ? 'dot' : null, academy: youth ? 'dot' : null, finances: red ? 'dot' : null },
+    items: {
+      training: session ? 'dot' : null, academy: youth ? 'dot' : null, finances: red ? 'dot' : null,
+      'mercato:offers': deals || null, // offres et contre-propositions à traiter
+      'mercato:watch': followedCount(s) ? { n: followedCount(s), tone: 'muted', label: `${followedCount(s)} joueurs suivis` } : null,
+    },
   };
 }
 
