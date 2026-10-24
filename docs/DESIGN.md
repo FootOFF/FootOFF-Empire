@@ -133,8 +133,10 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
   bout de 0,3 s, ce qui relançait l'animation d'entrée : le panneau disparaissait puis revenait (« sursaut »,
   2026-10-24). Les écrans d'une même section ont la même taille : Finances, Journal, Notoriété et Direction en
   panneau normal ; Équipe, Mercato et Saison en grand écran.
-- Pastilles d'un onglet actif (fond doré) : en foncé, jamais or sur or (académie : « Mes jeunes 3 », « Détection 3 »,
-  point « à voir » d'une section).
+- Sur un fond doré (onglet, segment ou entrée de menu choisis), tout le contenu passe à l'encre foncée : texte,
+  gains, points et pastilles, jamais or, vert ou blanc sur or (académie : « Mes jeunes 3 », « Détection 3 », point
+  « à voir » d'une section ; entraînement : « Réflexes +0,08 » et le point de la qualité conseillée ; écran titre :
+  point des Nouveautés). Règle générale `.segmented button.on :is(em, b, small, span)`.
 
 ## Briques (`src/ui/kit.jsx`)
 

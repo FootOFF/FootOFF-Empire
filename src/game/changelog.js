@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.4', date: '2026-10-24', title: 'Lisibilité',
+    items: [
+      'Entraînement : la qualité choisie se lit enfin (son gain vert et le point de la qualité conseillée disparaissaient sur le fond doré).',
+      'Même correction partout où un élément choisi est doré : académie, mercato, menu de l’écran titre.',
+    ],
+  },
+  {
     version: '0.3.3', date: '2026-10-24', title: 'Notification d’origine',
     items: [
       'Les notifications retrouvent leur dessin d’origine, plus élégant : coins arrondis, lettres fines et espacées.',

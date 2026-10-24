@@ -1432,6 +1432,11 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 0; border-radius: 0; background: none; border: 0; }
 .segmented button { position: relative; isolation: isolate; border: none; background: var(--plate-2); min-height: 36px; padding: var(--s-2); border-radius: 0; font-family: var(--font-disp); font-size: 16px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--text-2); }
 .segmented button.on { background: var(--gold-grad); color: var(--gold-ink); }
+/* choisi sur fond doré : tout son contenu passe à l'encre foncée. Un gain vert, un point ou une pastille dorés y
+   disparaissaient (entraînement : « Réflexes +0,08 » et la qualité conseillée ; plan conseillé de l'académie) */
+.segmented button.on :is(em, b, small, span) { color: var(--gold-ink); }
+.segmented button.on .ac-advised { background: var(--gold-ink); box-shadow: none; }
+.segmented button.on .mc-count-badge { background: var(--gold-ink); color: var(--gold-light); }
 
 /* ---- repli 2D (sans WebGL) ---- */
 .empire2d { position: absolute; inset: 0; padding: 96px 340px 100px; display: flex; flex-direction: column; gap: 12px; justify-content: center; overflow: auto; }
@@ -4344,7 +4349,6 @@ html, body { overscroll-behavior: none; }
 .sh-stats.ac-prog { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .ac-plans button { display: inline-flex; align-items: center; justify-content: center; }
 .ac-advised { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-left: 6px; background: var(--gold); box-shadow: 0 0 6px rgba(199, 161, 90, .6); }
-.ac-plans button.on .ac-advised { background: var(--gold-ink); box-shadow: none; } /* plan choisi (fond doré) : point foncé, visible */
 .ac-plan-text { font-size: var(--t-sm); color: var(--text-2); line-height: 1.55; }
 .ac-plan-text b { font-weight: 600; color: var(--text); }
 .ac-plan-text b.ac-slow { color: #f0b3ab; }
@@ -4671,6 +4675,7 @@ html, body { overscroll-behavior: none; }
 .news-v ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
 .news-v li { font-size: var(--t-sm); line-height: 1.55; color: var(--text-2); max-width: 62ch; }
 .cm-badge { display: inline-block; width: 8px; height: 8px; margin-left: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px rgba(199, 161, 90, .7); vertical-align: 2px; }
+.cm-item.on .cm-badge { background: var(--gold-ink); box-shadow: none; } /* entrée choisie (barre dorée) : point foncé, visible */
 .cm-card-list { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
 .cm-card-list li { font-size: var(--t-sm); line-height: 1.5; color: var(--text-2); }
 .crash-links { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
