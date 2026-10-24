@@ -438,8 +438,12 @@ Calage : `tmp/calib-training.mjs` (carrières), contrôles : `tmp/check-training
   buts avec filets animés, les filets pare-ballons, les mâts et un ballon à panneaux et coutures.
 - Toutes les caméras regardent vers le nord, soleil dans le dos. Les joueurs sont low-poly : jamais filmés de près ni
   de dos (plan large, vue subjective ou vue d'en haut). Le 3D du complexe est figé pendant l'épreuve.
-- Précision : caméra derrière le ballon, deux appuis (ligne verticale, puis horizontale), six frappes vers des cibles
-  dorées.
+- Précision : caméra derrière le ballon, six frappes vers des cibles dorées. Au doigt ou à la souris, comme sur les
+  jeux de foot mobiles (choix de l'utilisateur, 2026-10-24) : on glisse du ballon vers le but (une flèche dorée au-dessus
+  du ballon y invite, un tracé doré suit le doigt) ; le ballon part là où le doigt se lève ; un geste bombé donne de
+  l'effet (le ballon s'enroule du côté du bombé, et contourne le mur en coup franc) ; un geste lent (plus de 0,45 s)
+  rend la frappe molle et moins précise ; la dispersion grandit un peu à chaque frappe. Au clavier et à la manette :
+  deux appuis (ligne verticale, puis horizontale).
 - Arrêts réflexes : vue subjective du gardien, gants noir et or, plongeon réel de la caméra, huit tirs.
 - Sprint et haies : travelling latéral, départ au signal, dix haies, zone d'appel dorée, chrono.
 - Lecture du jeu : tablette de l'analyste vue d'en haut, cadrage automatique, trois partenaires numérotés, une seule

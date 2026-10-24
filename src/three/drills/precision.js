@@ -2,10 +2,13 @@ import * as THREE from 'three';
 import { BALL_R, GOAL, KITS } from './stage';
 import { agent, bezier, clamp01, cones, pingPong, rnd } from './kit';
 
-// Tirs au but en deux temps : une ligne verticale balaie le but (premier appui : la direction), puis une ligne
-// horizontale (second appui : la hauteur). Plus le ballon arrive près du cœur d'une cible allumée, plus la frappe
-// rapporte ; les lignes vont de plus en plus vite. Caméra derrière le ballon, dans l'axe du but ; le tireur n'apparaît
-// que dans le plan d'ensemble de l'intro (vu de près et de dos, il masquerait le but).
+// Tirs au but. Au doigt ou à la souris, comme sur les jeux de foot mobiles : on glisse du ballon vers le but, le
+// ballon part là où le doigt se lève ; un tracé courbé lui donne de l'effet (il s'enroule du côté où le geste
+// s'est bombé) ; un geste lent fait une frappe molle et moins précise, et la précision se resserre moins à chaque
+// frappe. Au clavier et à la manette, en deux temps : une ligne verticale balaie le but (premier appui : la
+// direction), puis une ligne horizontale (second appui : la hauteur), de plus en plus vite. Plus le ballon arrive
+// près du cœur d'une cible allumée, plus la frappe rapporte. Caméra derrière le ballon, dans l'axe du but ; le
+// tireur n'apparaît que dans le plan d'ensemble de l'intro (vu de près et de dos, il masquerait le but).
 // - Précision (technique) : six frappes depuis l'entrée de la surface, quatre cibles, cage vide.
 // - Coups francs (technique, niveau 2) : cinq coups francs à 21-25 m, un mur de quatre joueurs qui saute à la frappe
 //   et un gardien ; il faut viser haut pour passer au-dessus du mur, ou le contourner, et loin du gardien.
@@ -16,6 +19,9 @@ const X_RANGE = [-0.43, 0.43];
 const Y_RANGE = [0.008, 0.29];
 const AUTO = 3.4; // secondes : sans appui, la ligne s'arrête d'elle-même
 const FRAME = { v: 21, h: 27 }; // cadrage d'une frappe : le but, en grand (le ballon entre dans le champ quand il part)
+const SWIPE_MIN = 34; // pixels : un geste plus court n'est pas un tir
+const GOAL_PLANE = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+const gauss = () => Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random());
 
 const PRECISION = {
   targets: CORNERS,
@@ -107,6 +113,7 @@ function createShooting(stage, ctx, cfg) {
 
   const s = {
     k: -1, phase: 'intro', t: 0, aimX: 0, aimY: 0, points: 0, hits: 0, flight: null, jump: null, dive: null,
+    mode: null, swipe: null, curl: 0, retry: false, // mode : 'swipe' (glissé) ou 'lines' (clavier, manette)
     spot: new THREE.Vector3(), from: new THREE.Vector3(), ctrl: new THREE.Vector3(), to: new THREE.Vector3(), out: null,
     wallAt: new THREE.Vector3(), wallSide: new THREE.Vector3(), keeperX: 0,
   };
@@ -166,16 +173,43 @@ function createShooting(stage, ctx, cfg) {
   }
 
   function hud(extra = {}) {
-    const prompt = s.phase === 'aimX' ? 'Direction : arrête la ligne' : s.phase === 'aimY' ? (cfg.wall ? 'Hauteur : au-dessus du mur' : 'Hauteur : arrête la ligne') : '';
-    ctx.hud({ round: Math.max(1, s.k + 1), rounds: SHOTS.length, points: s.points, max: MAX, prompt, action: s.phase === 'aimX' || s.phase === 'aimY', ...extra });
+    const prompt = s.phase === 'aim' ? (s.retry ? 'Glisse plus franchement vers le but' : 'Glisse du ballon vers le but')
+      : s.phase === 'aimX' ? 'Direction : arrête la ligne' : s.phase === 'aimY' ? (cfg.wall ? 'Hauteur : au-dessus du mur' : 'Hauteur : arrête la ligne') : '';
+    const aim = s.phase === 'aim';
+    ctx.hud({
+      round: Math.max(1, s.k + 1), rounds: SHOTS.length, points: s.points, max: MAX, prompt, action: s.phase === 'aimX' || s.phase === 'aimY',
+      swipe: aim, hint: aim ? stage.toScreen(tmp.set(s.spot.x, BALL_R, s.spot.z)) : null, ...extra,
+    });
   }
 
-  // où le ballon passe-t-il le mur ? (en plan, ligne droite du ballon au point visé)
-  function wallCheck(x, y) {
+  // tir au glissé : le point où le doigt se lève, ramené dans le plan du but, est la cible ; le tracé bombé donne
+  // l'effet ; un geste lent (plus de 0,45 s) rend la frappe molle et l'écarte
+  function swipeShot(sw) {
+    const [x0, y0] = sw.pts[0];
+    const [x1, y1] = sw.pts[sw.pts.length - 1];
+    const dx = x1 - x0, dy = y1 - y0;
+    const len = Math.hypot(dx, dy);
+    const hit = len >= SWIPE_MIN && dy < -len * 0.3 ? stage.pickPlane(x1, y1, GOAL_PLANE) : null; // vers le haut, vers le but
+    if (!hit) { s.retry = true; hud(); return; }
+    const nx = -dy / len, ny = dx / len; // à droite du geste, à l'écran
+    let bow = 0;
+    for (const [px, py] of sw.pts) { const d = (px - x0) * nx + (py - y0) * ny; if (Math.abs(d) > Math.abs(bow)) bow = d; }
+    s.curl = THREE.MathUtils.clamp((bow / len) * 3, -1, 1);
+    const slow = clamp01(((performance.now() - sw.t0) / 1000 - 0.45) / 0.6);
+    const sigma = 0.01 * (1.9 / SHOTS[s.k].px) + 0.025 * slow + 0.008 * Math.abs(s.curl);
+    s.aimX = THREE.MathUtils.clamp(hit.x + gauss() * sigma, -0.7, 0.7);
+    s.aimY = THREE.MathUtils.clamp(Math.max(Y_RANGE[0], hit.y) + gauss() * sigma * 0.8 - 0.03 * slow, Y_RANGE[0], 0.5);
+    s.retry = false;
+    s.mode = 'swipe';
+    shoot();
+  }
+
+  // où le ballon passe-t-il le mur ? (en plan : la ligne du ballon au point visé, écartée par l'effet `off`)
+  function wallCheck(x, y, off = 0) {
     if (!cfg.wall) return null;
     const d = Math.hypot(x - s.spot.x, -s.spot.z);
     const k = WALL.dist / d;
-    const px = s.spot.x + (x - s.spot.x) * k;
+    const px = s.spot.x + (x - s.spot.x) * k + 2 * k * (1 - k) * off;
     const pz = s.spot.z + (0 - s.spot.z) * k;
     const lateral = (px - s.wallAt.x) * s.wallSide.x + (pz - s.wallAt.z) * s.wallSide.z;
     const covered = Math.abs(lateral) <= 1.5 * WALL.gap + 0.022;
@@ -183,9 +217,9 @@ function createShooting(stage, ctx, cfg) {
   }
 
   // où arrive le ballon : mur, gardien, cible touchée (points selon la distance au cœur), cadré, montant ou à côté
-  function judge(x, y) {
+  function judge(x, y, off = 0) {
     const shot = SHOTS[s.k];
-    const w = wallCheck(x, y);
+    const w = wallCheck(x, y, off);
     if (w?.blocked) return { pts: 0, wall: true, text: 'Dans le mur', tone: 'bad' };
     const inGoal = Math.abs(x) < GOAL.w / 2 - BALL_R * 0.3 && y < GOAL.h - BALL_R * 0.3;
     if (keeper && inGoal && Math.abs(x - s.keeperX) <= 0.13 && y <= 0.205) return { pts: 10, saved: true, text: 'Arrêté par le gardien', tone: 'meh' };
@@ -216,21 +250,22 @@ function createShooting(stage, ctx, cfg) {
 
   function launch() {
     const x = s.aimX, y = s.aimY;
-    s.out = judge(x, y);
+    // effet : celui du geste (glissé) ; sinon le ballon s'enroule vers l'intérieur (coup franc : effet marqué)
+    const off = s.mode === 'swipe' ? s.curl * (cfg.wall ? 0.16 : 0.1)
+      : cfg.wall ? (x - s.spot.x > 0 ? -1 : 1) * 0.07 : (s.spot.x > 0 ? -1 : 1) * 0.04 * (0.5 + Math.random() * 0.5);
+    s.out = judge(x, y, off);
     s.from.set(s.spot.x, BALL_R, s.spot.z);
     s.to.set(x, y + (y < 0.02 ? 0.006 : 0), 0);
     const dist = s.from.distanceTo(s.to);
     s.ctrl.copy(s.from).lerp(s.to, 0.5);
+    s.ctrl.x += off;
     if (cfg.wall) {
-      // coup franc : effet marqué, et une cloche qui passe le mur (ou s'y écrase)
-      const w = wallCheck(x, y);
-      s.ctrl.x += (s.to.x - s.from.x > 0 ? -1 : 1) * 0.07;
+      // coup franc : une cloche qui passe le mur (ou s'y écrase)
+      const w = wallCheck(x, y, off);
       s.ctrl.y = s.out.wall ? 0.16 : Math.max(0.3, y + 0.14);
       if (s.out.wall) { s.to.copy(w.at); s.to.y = 0.13; }
     } else {
-      // effet : le ballon s'enroule un peu vers l'intérieur ; légère cloche selon la hauteur visée
-      s.ctrl.x += (s.spot.x > 0 ? -1 : 1) * 0.04 * (0.5 + Math.random() * 0.5);
-      s.ctrl.y += 0.02 + y * 0.35;
+      s.ctrl.y += 0.02 + y * 0.35; // légère cloche selon la hauteur visée
     }
     s.flight = { t: 0, dur: (cfg.wall ? 0.5 : 0.38) + dist * 0.06 * (s.out.wall ? 0.4 : 1) };
     s.phase = 'flight';
@@ -279,9 +314,23 @@ function createShooting(stage, ctx, cfg) {
       stage.camTo(c.pos, c.look, 3.4, FRAME);
       s.phase = 'intro';
     },
-    start() { s.phase = 'aimX'; s.t = 0; hud(); },
-    press() {
+    start() { s.phase = s.mode === 'lines' ? 'aimX' : 'aim'; s.t = 0; hud(); },
+    press(e = {}) {
+      if (s.phase === 'aim') {
+        if (e.pointer) { s.swipe = { pts: [[e.cx, e.cy]], t0: performance.now() }; return; }
+        s.mode = 'lines'; // clavier ou manette : les deux lignes, pour cette frappe et les suivantes
+        s.phase = 'aimX'; s.t = 0; hud();
+        return;
+      }
       if (s.phase === 'aimX') { s.phase = 'aimY'; s.t = 0; ctx.sfx('lock'); hud(); } else if (s.phase === 'aimY') { ctx.sfx('lock'); shoot(); }
+    },
+    move(e = {}) { if (s.swipe && e.pointer && e.cx != null) s.swipe.pts.push([e.cx, e.cy]); },
+    release(e = {}) {
+      if (!s.swipe || !e.pointer) return;
+      const sw = s.swipe;
+      s.swipe = null;
+      if (e.cx != null) sw.pts.push([e.cx, e.cy]);
+      if (s.phase === 'aim') swipeShot(sw);
     },
     update(dt) {
       const shot = SHOTS[Math.max(0, s.k)];
@@ -295,7 +344,7 @@ function createShooting(stage, ctx, cfg) {
       });
       reticle.material.uniforms.uTime.value = stage.time;
       // viseur
-      if (s.phase === 'ready' && !stage.camMoving && s.t > 0.25) { s.phase = 'aimX'; s.t = 0; hud(); }
+      if (s.phase === 'ready' && !stage.camMoving && s.t > 0.25) { s.phase = s.mode === 'lines' ? 'aimX' : 'aim'; s.t = 0; hud(); }
       beamV.visible = s.phase === 'aimX' || s.phase === 'aimY';
       beamH.visible = s.phase === 'aimY';
       reticle.visible = s.phase === 'aimY';

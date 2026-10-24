@@ -44,6 +44,7 @@ export function createDrillEngine(canvas, { onHud, onPop, onEnd, sfx }) {
     start() { if (drill && mode === 'intro') { mode = 'play'; drill.start(); } },
     press(e) { if (mode === 'play' && !paused) drill?.press?.(e); },
     release(e) { if (mode === 'play' && !paused) drill?.release?.(e); },
+    move(e) { if (mode === 'play' && !paused) drill?.move?.(e); }, // doigt ou souris qui glisse (frappes)
     dir(d) { if (mode === 'play' && !paused) drill?.dir?.(d); },
     pause(v) { paused = !!v; },
     get mode() { return mode; },

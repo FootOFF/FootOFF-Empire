@@ -23,11 +23,11 @@ const attrName = (p, k) => (p.pos === 'G' ? GK_ATTRS : ATTRS).find((a) => a.key 
 
 // commandes de chaque épreuve, selon le moyen utilisé : [touche ou bouton (null au doigt), explication]
 const CONTROLS = {
-  precision: { keyboard: ['Espace', 'deux fois : la direction, puis la hauteur'], touch: [null, 'Touche l’écran deux fois : la direction, puis la hauteur.'], gamepad: ['A', 'deux fois : la direction, puis la hauteur'] },
+  precision: { keyboard: ['Espace', 'deux fois : la direction, puis la hauteur, ou glisse à la souris du ballon vers le but'], touch: [null, 'Glisse du ballon vers le but : il part là où ton doigt se lève. Courbe ton geste pour lui donner de l’effet.'], gamepad: ['A', 'deux fois : la direction, puis la hauteur'] },
   sprint: { keyboard: ['Espace', 'au signal, puis pour sauter chaque haie'], touch: [null, 'Touche l’écran au signal, puis pour sauter chaque haie.'], gamepad: ['A', 'au signal, puis pour sauter chaque haie'] },
   lecture: { keyboard: ['1 · 2 · 3', 'ou les flèches puis Espace : la passe choisie'], touch: [null, 'Touche le partenaire à qui faire la passe.'], gamepad: ['Croix puis A', 'pour choisir la passe'] },
   arrets: { keyboard: ['← ↓ →', 'plonger à gauche, rester au centre, plonger à droite'], touch: [null, 'Touche la gauche, le centre ou la droite de l’écran pour plonger.'], gamepad: ['Croix', 'gauche, bas ou droite pour plonger'] },
-  coupsFrancs: { keyboard: ['Espace', 'deux fois : la direction, puis la hauteur'], touch: [null, 'Touche l’écran deux fois : la direction, puis la hauteur.'], gamepad: ['A', 'deux fois : la direction, puis la hauteur'] },
+  coupsFrancs: { keyboard: ['Espace', 'deux fois : la direction, puis la hauteur, ou glisse à la souris du ballon vers le but'], touch: [null, 'Glisse du ballon vers le but, au-dessus du mur : courbe ton geste pour enrouler le ballon autour.'], gamepad: ['A', 'deux fois : la direction, puis la hauteur'] },
   penalties: { keyboard: ['← ↓ →', 'plonger à gauche, rester au centre, plonger à droite'], touch: [null, 'Touche la gauche, le centre ou la droite de l’écran pour plonger.'], gamepad: ['Croix', 'gauche, bas ou droite pour plonger'] },
   centres: { keyboard: ['Espace', 'pour lancer la course, puis pour sauter'], touch: [null, 'Touche l’écran pour lancer la course, puis pour sauter.'], gamepad: ['A', 'pour lancer la course, puis pour sauter'] },
   contre: { keyboard: ['← → ↑', 'passe à gauche, passe à droite, tir (ou 1, 2, 3)'], touch: [null, 'Touche le partenaire à servir, ou « Tir ».'], gamepad: ['Croix', 'gauche, droite pour passer, haut pour tirer'] },
@@ -190,12 +190,30 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
     return () => { window.removeEventListener('keydown', onKey, true); window.removeEventListener('keyup', onKeyUp, true); cancelAnimationFrame(raf); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // doigt ou souris : appui (avec sa position), glissé (frappes : le tracé doré suit le doigt), relâché
+  const [trail, setTrail] = useState(null);
+  const dragging = useRef(false);
+  const local = (e) => { const r = wrapRef.current.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top, r]; };
   const onPointerDown = (e) => {
     if (phase !== 'play' || paused || e.target.closest('button')) return;
-    const r = wrapRef.current.getBoundingClientRect();
-    engine.current?.press({ x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, h: r.height, pointer: true });
+    const [x, y, r] = local(e);
+    dragging.current = true;
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* pointeur déjà relâché */ }
+    if (hud.swipe) setTrail([[x, y]]);
+    engine.current?.press({ x, y, cx: e.clientX, cy: e.clientY, w: r.width, h: r.height, pointer: true });
   };
-  const onPointerUp = () => { if (phase === 'play') engine.current?.release({ pointer: true }); };
+  const onPointerMove = (e) => {
+    if (!dragging.current || phase !== 'play') return;
+    const [x, y] = local(e);
+    engine.current?.move({ x, y, cx: e.clientX, cy: e.clientY, pointer: true });
+    setTrail((t) => (t ? [...t.slice(-60), [x, y]] : t));
+  };
+  const onPointerUp = (e) => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    setTimeout(() => setTrail(null), 260);
+    if (phase === 'play') engine.current?.release({ cx: e.clientX, cy: e.clientY, pointer: true });
+  };
 
   const cat = item ? catsFor(item.pos)[item.cat] : null;
   const ctl = item ? (CONTROLS[item.drill]?.[inputMode] || CONTROLS[item.drill]?.keyboard) : null;
@@ -208,7 +226,9 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
       role="dialog"
       aria-label="Épreuve d’entraînement"
       onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
       onContextMenu={(e) => e.preventDefault()}
     >
       <canvas ref={canvasRef} className="drill-canvas" />
@@ -251,6 +271,12 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
         </div>
       )}
       {item?.drill === 'lecture' && phase !== 'summary' && <div className="drill-tablet" aria-hidden="true"><span>Analyse vidéo</span></div>}
+      {phase === 'play' && hud.swipe && hud.hint && !trail && (
+        <span className="drill-swipe-hint" style={{ left: hud.hint.x, top: hud.hint.y }} aria-hidden="true"><IconArrowUp /></span>
+      )}
+      {trail && trail.length > 1 && (
+        <svg className="drill-trail" aria-hidden="true"><polyline points={trail.map(([x, y]) => `${x},${y}`).join(' ')} /></svg>
+      )}
       {phase === 'play' && hud.marks?.map((m) => (
         <span key={m.n} className={`drill-mark ${m.on ? 'on' : ''}`} style={{ left: m.x, top: m.y }} aria-hidden="true">{m.n}</span>
       ))}
