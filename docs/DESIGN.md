@@ -530,7 +530,11 @@ Calage : `tmp/calib-training.mjs` (carrières), contrôles : `tmp/check-training
 - Intro (gain parfait / simulé / raté, commandes selon le moyen utilisé), compte à rebours, tableau de bord (points
   ou chrono, tentatives, consigne), points à l'impact, résultat (score, mention, gain, programme), bilan.
 - Échap (B ou Start) met en pause ; une épreuve interrompue n'est pas comptée.
-- Sons synthétisés (`sfx` de `src/ui/sound.js`). Toute erreur referme l'écran sans toucher au jeu.
+- Sons synthétisés (`sfx` de `src/ui/sound.js`). Une erreur avant l'épreuve referme l'écran sans toucher au jeu ; une
+  erreur pendant l'épreuve (boucle d'images, hors de portée de la barrière React) l'arrête et propose « Simuler » ou
+  « Fermer » (`onError` du moteur, `src/three/drills/index.js`) : l'image ne se fige plus (2026-10-25, Lecture du jeu
+  figée sur iPhone : le tirage d'une situation échouait une fois sur quarante ; il relâche désormais ses contraintes
+  et ne renvoie jamais rien de vide).
 - GPU mesuré en 2880 × 1620 sur la puce intégrée : de 9 ms (Lecture, Contre-attaque) à 16 ms (Précision) par image.
 - Essais : `tmp/ph3/drilltest.js` (ouvrir une épreuve, état, mesure GPU).
 

@@ -14,14 +14,23 @@ import { createCounter } from './contre';
 const DRILLS = { precision: createPrecision, arrets: createSaves, sprint: createSprint, lecture: createReading, coupsFrancs: createFreeKicks, penalties: createPenalties, centres: createCrosses, contre: createCounter };
 export const drillReady = (id) => !!DRILLS[id];
 
-export function createDrillEngine(canvas, { onHud, onPop, onEnd, sfx }) {
+export function createDrillEngine(canvas, { onHud, onPop, onEnd, onError, sfx }) {
   const stage = createStage(canvas);
   if (import.meta.env.DEV) window.__drillStage = stage; // mesures en développement (temps de rendu)
   let drill = null;
   let mode = 'idle'; // intro | play | done
   let paused = false;
+  // Une erreur dans l'épreuve (boucle d'images, hors de portée de la barrière d'erreur React) ne fige plus l'écran :
+  // l'épreuve s'arrête, l'interface est prévenue (onError) et propose de simuler ou de fermer.
   stage.onTick((dt, t) => {
-    if (drill && !paused) drill.update(dt, t);
+    if (!drill || paused || mode === 'done') return;
+    try {
+      drill.update(dt, t);
+    } catch (e) {
+      console.warn('[drill] erreur pendant l’épreuve', e);
+      mode = 'done';
+      onError?.(e);
+    }
   });
   const ctx = {
     hud: (h) => onHud?.(h),

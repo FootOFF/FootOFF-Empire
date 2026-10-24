@@ -79,6 +79,7 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
             setTimeout(() => setPops((list) => list.filter((x) => x.id !== id)), 1300);
           },
           onEnd: (score) => finish(score),
+          onError: () => { setFailed('crash'); setPhase('intro'); }, // l'épreuve s'est interrompue : simuler ou fermer
           sfx,
         });
         if (import.meta.env.DEV) window.__drill = engine.current; // essais en développement
@@ -236,8 +237,10 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
       {!loaded && !failed && <div className="drill-loading"><span className="drill-spinner" aria-hidden="true" />Préparation du terrain…</div>}
       {failed && (
         <div className="drill-card drill-fail">
-          <h3>Épreuve en 3D indisponible</h3>
-          <p>Ton appareil n’a pas pu afficher le terrain d’entraînement. Tu peux simuler l’épreuve : le gain moyen est assuré.</p>
+          <h3>{failed === 'crash' ? 'L’épreuve s’est interrompue' : 'Épreuve en 3D indisponible'}</h3>
+          <p>{failed === 'crash'
+            ? 'Une erreur a arrêté l’épreuve en cours. Tu peux la simuler : le gain moyen est assuré.'
+            : 'Ton appareil n’a pas pu afficher le terrain d’entraînement. Tu peux simuler l’épreuve : le gain moyen est assuré.'}</p>
           <div className="drill-actions">
             <button type="button" className="btn ghost" onClick={close}>Fermer</button>
             {item && phase === 'intro' && <button type="button" className="btn" onClick={() => finish(null)}>Simuler</button>}
@@ -288,7 +291,7 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
       {phase === 'count' && <div className="drill-count" key={count}>{count > 0 ? count : 'Go'}</div>}
 
       {/* intro */}
-      {item && player && phase === 'intro' && loaded && (
+      {item && player && phase === 'intro' && loaded && !failed && (
         <Intro state={state} item={item} p={player} index={i} total={queue.length} ctl={ctl} onGo={begin} onSim={() => finish(null)} onQuit={close} />
       )}
       {/* résultat d'une épreuve */}

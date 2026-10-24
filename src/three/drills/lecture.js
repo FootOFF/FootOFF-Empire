@@ -21,8 +21,15 @@ function segDist(p, a, b) {
 }
 
 // Une action jouable (en mètres) : une seule bonne passe, chaque mauvaise coupée ou son receveur marqué.
+// Le tirage ne renvoie jamais rien : 200 essais aux contraintes pleines, puis des contraintes d'espacement relâchées
+// (un tirage sur quarante n'aboutissait pas, et l'épreuve se figeait à la situation suivante), puis la meilleure
+// configuration rencontrée (celle qui respecte le plus de contraintes).
+const TRIES = 200;
 function makeSituation() {
-  for (let tries = 0; tries < 200; tries++) {
+  let fallback = null;
+  let fallbackScore = -1;
+  for (let tries = 0; tries < TRIES * 4; tries++) {
+    const relax = tries >= TRIES ? 0.75 : 1; // au-delà des essais stricts, les distances minimales baissent d'un quart
     const C = { x: rnd(-13, 13), z: rnd(25, 32) };
     const angles = [-64, -30, 4, 36, 66].sort(() => Math.random() - 0.5).slice(0, 3).sort((a, b) => a - b);
     const opts = angles.map((a) => {
@@ -52,13 +59,16 @@ function makeSituation() {
     defs.push({ x: rnd(-9, 9), z: rnd(9, 14) });
     defs.push({ x: rnd(-18, 18), z: rnd(13, 20) });
     const B = opts[best];
-    const okBest = defs.every((d) => segDist(d, C, B) >= 3.2 && Math.hypot(d.x - B.x, d.z - B.z) >= 4.5);
+    const okBest = defs.every((d) => segDist(d, C, B) >= 3.2 * relax && Math.hypot(d.x - B.x, d.z - B.z) >= 4.5 * relax);
     const okTraps = opts.every((o, i) => i === best || defs.some((d) => segDist(d, C, o) <= 1.0 || Math.hypot(d.x - o.x, d.z - o.z) <= 1.5));
     const all = [C, ...opts, ...defs];
-    const apart = all.every((p, i) => all.every((q, j) => i >= j || Math.hypot(p.x - q.x, p.z - q.z) >= 1.3));
-    if (okBest && okTraps && apart) return { C, opts, defs, best, traps };
+    const apart = all.every((p, i) => all.every((q, j) => i >= j || Math.hypot(p.x - q.x, p.z - q.z) >= 1.3 * relax));
+    const sit = { C, opts, defs, best, traps };
+    if (okBest && okTraps && apart) return sit;
+    const score = (okTraps ? 2 : 0) + (okBest ? 1 : 0) + (apart ? 1 : 0); // la bonne passe doit rester la seule : les pièges d'abord
+    if (score > fallbackScore) { fallbackScore = score; fallback = sit; }
   }
-  return null;
+  return fallback;
 }
 
 export function createReading(stage, ctx) {
