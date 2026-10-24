@@ -3,6 +3,7 @@ import {
 } from './constants';
 import { clamp, rnd } from './utils';
 import { REP_START, mercatoRep, sponsorRep } from './reputation';
+import { localTv, maxCut, tvPerMatch } from './direction';
 
 // Économie du club : affluence, recettes d'un match, revenus de saison, salaires, entretien.
 // Ordres de grandeur réalistes, du football amateur (quelques centaines de spectateurs, budgets de
@@ -77,7 +78,7 @@ export function matchGate(s, opp, noise = rnd(0.93, 1.07), comp = 'league') {
     buvette: Math.round(attendance * per.food),
     boutique: Math.round(attendance * per.shop),
     loges: Math.round(loges * div.ticket * cg.ticket * 10),
-    tv: comp === 'c1' ? C1_TV : Math.round(div.tv * cg.tv),
+    tv: comp === 'c1' ? C1_TV : Math.round(tvPerMatch(s) * cg.tv), // droits TV : base, Direction du club, hausse négociée
   };
   const revenue = breakdown.billetterie + breakdown.buvette + breakdown.boutique + breakdown.loges + breakdown.tv;
   return { capacity: cap, demand, attendance, breakdown, revenue };
@@ -189,7 +190,7 @@ const drillsAt = (lvl) => Object.values(DRILLS).filter((d) => d.level <= lvl);
 const newDrill = (lvl) => Object.values(DRILLS).find((d) => d.level === lvl && lvl > 1);
 
 // Famille d'un bâtiment (vitrine de construction) : ce qu'il apporte d'abord.
-export const BUILDING_KIND = { terrain: 'Revenus', training: 'Sport', academy: 'Sport', fans: 'Revenus', sponsor: 'Revenus', transfers: 'Mercato' };
+export const BUILDING_KIND = { terrain: 'Revenus', training: 'Sport', academy: 'Sport', fans: 'Revenus', sponsor: 'Revenus', transfers: 'Mercato', direction: 'Revenus' };
 
 // Effets d'un bâtiment à un niveau, en chiffres (vitrine et fenêtre d'aperçu) : le premier est l'effet phare, celui
 // que montre la carte ; les suivants détaillent. Mêmes formules que buildingEffect.
@@ -236,6 +237,13 @@ export function buildingStats(key, lvl, s) {
         { label: 'Revenus hors ligne', value: `${fmt(offlinePerHour(lvl, s.divisionIndex))} €`, sub: 'par heure d’absence' },
       ];
     }
+    case 'direction':
+      return [
+        { label: 'Droits TV', value: `+${lvl * 8} %`, short: `Droits TV +${lvl * 8} %`, sub: s && !DIVISIONS[s.divisionIndex].tv ? `télé locale : ${fmt(localTv(lvl))} € par match` : 'par match à domicile' },
+        { label: 'Baisse de salaire', value: `jusqu’à ${Math.round(maxCut(lvl) * 100)} %`, sub: 'négociée joueur par joueur' },
+        { label: 'Négociations', value: 'droits TV, salaires', sub: 'chances d’accord exactes' },
+        { label: 'Billetterie', value: '4 formules', sub: 'recette prévue de chacune' },
+      ];
     case 'transfers':
       return [
         { label: 'Joueurs sous contrat', value: fmt(officeSize(lvl)), short: `${officeSize(lvl)} joueurs suivis`, sub: 'sur ton mercato' },
@@ -264,6 +272,10 @@ export function buildingEffect(key, lvl, divIndex, rep = REP_START) {
     }
     case 'fans':
       return `Public attiré : +${lvl * 7} % · Buvette +${lvl * 10} %, boutique +${lvl * 12} % · Réputation par match : +${lvl * 10} %.`;
+    case 'direction':
+      return lvl > 0
+        ? `Négociations du club : droits TV +${lvl * 8} %${DIVISIONS[divIndex].tv ? '' : ` (télé locale : ${fmt(localTv(lvl))} € par match)`}, hausse à demander chaque saison · baisses de salaire jusqu’à ${Math.round(maxCut(lvl) * 100)} % · formule des billets.`
+        : 'Pas de négociations tant que la Direction du club n’est pas construite.';
     case 'transfers':
       return lvl > 0
         ? `Réseau de recruteurs : ${officeSize(lvl)} joueurs sous contrat sur ton mercato · indemnités −${lvl * 3} % · vendeurs plus conciliants · potentiel mieux cerné.`

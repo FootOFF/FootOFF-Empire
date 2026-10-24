@@ -25,6 +25,7 @@ export const BLURB = {
   fans: 'Plus de public, des recettes annexes et de la réputation à chaque match.',
   sponsor: 'Des partenaires qui paient chaque saison, et des revenus pendant ton absence.',
   transfers: 'Des recruteurs qui t’ouvrent le marché des joueurs sous contrat.',
+  direction: 'Le bureau du président : tu y négocies les droits TV, les salaires et la billetterie.',
 };
 
 // Ce que rapporte un niveau, avant de cliquer : recettes en plus par saison, entretien, rentabilité.

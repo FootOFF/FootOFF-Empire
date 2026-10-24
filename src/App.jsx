@@ -24,6 +24,7 @@ import { OfflineReturn, SeasonReview } from './ui/overlays';
 import PostMatch from './ui/postmatch';
 import { LiveMatch, PreMatch } from './ui/match';
 import { CoachCard, StaffTip } from './ui/guide';
+import { DirectionView } from './ui/direction';
 import ConfirmDialog from './ui/confirm';
 import { Presence } from './ui/presence';
 import { LoadingScreen } from './ui/loading';
@@ -198,6 +199,7 @@ export default function App({ preview = null }) {
     const k = !how?.pin && state ? plotBuilding(state, plotId) : null;
     if (k === 'academy') openAcademy();
     else if (k === 'training') openTraining();
+    else if (k === 'direction') openPanel('direction'); // la Direction du club : ses négociations
     else selectPlot(plotId, sector);
   };
   // une notification ouvre ce qu'elle annonce : le succès lui-même (salle des trophées, mis en évidence), les offres
@@ -370,7 +372,7 @@ export default function App({ preview = null }) {
   const sceneState = state || (demo.current ||= createInitialState('FootOFF FC'));
 
   return (
-    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'academy', 'training', 'season', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
+    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'academy', 'training', 'direction', 'season', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
       <div className="stage">
         {preview ? (
           <div className="stage-preview" aria-hidden="true" />
@@ -494,6 +496,18 @@ export default function App({ preview = null }) {
           />
         )}
       </Presence>
+      <Presence>
+        {inGame && panel === 'direction' && (
+          <DirectionView
+            state={state}
+            run={run}
+            notify={notify}
+            initialTab={boot.ui.directionTab}
+            onClose={() => setPanel(null)}
+            onBuilding={() => { const plot = plotOf(state, 'direction'); if (plot) selectPlot(plot.id, plot.sector); }}
+          />
+        )}
+      </Presence>
       {inGame && drills && <DrillRunner key={drillsKey} state={state} queue={drills} run={run} sound={sound.current} notify={notify} onClose={() => setDrills(null)} />}
       <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} initialTab={boot.ui.seasonTab} initialSel={boot.ui.seasonSel} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); setPanel('stats'); }} />}</Presence>
       <Presence>{inGame && panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
@@ -517,6 +531,7 @@ export default function App({ preview = null }) {
             onTransfers={() => { setSel(null); setSquadTab('market'); setPanel('squad'); }}
             onAcademy={() => openAcademy()}
             onTraining={() => openTraining()}
+            onDirection={() => openPanel('direction')}
             onTicketPolicy={(id) => run((s) => setTicketPolicy(s, id))}
             onPreview={setBuildView}
             onSwitchPlot={(id) => selectPlot(id, 'main')}

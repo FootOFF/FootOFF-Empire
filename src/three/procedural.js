@@ -380,7 +380,84 @@ function transfersMesh(lvl) {
   return g;
 }
 
-const BUILDERS = { training: trainingMesh, academy: academyMesh, fans: fansMesh, sponsor: sponsorMesh, transfers: transfersMesh };
+// Direction du club : la maison du président, où se négocient droits TV, salaires et billetterie. Pierre claire et
+// encadrements dorés, mâts aux couleurs du club ; elle grandit de l'hôtel particulier au grand siège à rotonde.
+function flagPole(g, x, z, h = 1.25) {
+  g.add(mesh(cyl(0.018, 0.024, h, 6), M.steel(), x, h / 2, z));
+  g.add(mesh(box(0.36, 0.22, 0.012), M.gold(), x + 0.19, h - 0.14, z));
+}
+function stoneBlock(g, x, z, w, d, h) {
+  g.add(mesh(box(w, h, d), M.facade(), x, h / 2, z));
+  g.add(mesh(box(w + 0.06, 0.06, d + 0.06), M.concreteDark(), x, h + 0.03, z)); // corniche
+}
+// sous-groupe décalé (fenêtres centrées sur un bloc, tour posée sur un socle)
+const at = (g, x = 0, y = 0) => { const r = new THREE.Group(); r.position.set(x, y, 0); g.add(r); return r; };
+function directionMesh(lvl) {
+  const g = new THREE.Group();
+  if (lvl === 1) { // l'hôtel particulier : deux niveaux de pierre, porte encadrée d'or, mât du club
+    plaza(g, S * 0.85, S * 0.34, S * 0.22);
+    stoneBlock(g, -S * 0.06, -S * 0.15, S * 0.56, S * 0.34, 0.9);
+    windowsOn(at(g, -S * 0.06), S * 0.56, 0.9, 2, -S * 0.15 + S * 0.17 + 0.02, 5);
+    g.add(mesh(box(0.34, 0.5, 0.05), darkGlass(), -S * 0.06, 0.25, -S * 0.15 + S * 0.17 + 0.03)); // entrée
+    g.add(mesh(box(0.42, 0.05, 0.08), M.gold(), -S * 0.06, 0.52, -S * 0.15 + S * 0.17 + 0.05));
+    panel(g, logoMat(), 0.42, 0.42, -S * 0.06, 0.74, -S * 0.15 + S * 0.17 + 0.035);
+    flagPole(g, S * 0.3, S * 0.18);
+    return g;
+  }
+  if (lvl === 2) { // le siège : trois niveaux, auvent vitré, deux mâts
+    plaza(g, S * 0.92, S * 0.36, S * 0.24);
+    stoneBlock(g, -S * 0.06, -S * 0.16, S * 0.62, S * 0.36, 1.3);
+    windowsOn(at(g, -S * 0.06), S * 0.62, 1.3, 3, -S * 0.16 + S * 0.18 + 0.02, 6);
+    const front = -S * 0.16 + S * 0.18;
+    g.add(mesh(box(0.5, 0.55, 0.05), darkGlass(), -S * 0.06, 0.275, front + 0.03));
+    g.add(mesh(box(0.8, 0.04, 0.42), darkGlass(), -S * 0.06, 0.6, front + 0.2)); // auvent
+    g.add(mesh(box(0.84, 0.03, 0.03), M.gold(), -S * 0.06, 0.62, front + 0.41));
+    panel(g, logoMat(), 0.5, 0.5, -S * 0.06, 1.0, front + 0.035);
+    flagPole(g, S * 0.28, S * 0.2);
+    flagPole(g, S * 0.36, S * 0.2);
+    return g;
+  }
+  if (lvl === 3) { // l'immeuble : socle de pierre, quatre étages vitrés, salle du conseil sur le toit
+    plaza(g, S * 0.95, S * 0.4, S * 0.24);
+    stoneBlock(g, -S * 0.08, -S * 0.17, S * 0.56, S * 0.38, 0.5);
+    const h = 0.56 + tower(at(g, 0, 0.56), { x: -S * 0.08, z: -S * 0.17, w: S * 0.5, d: S * 0.34, floors: 3, fh: 0.42 });
+    g.add(mesh(box(S * 0.3, 0.38, S * 0.22), darkGlass(), -S * 0.08, h + 0.19, -S * 0.17)); // salle du conseil
+    g.add(mesh(box(S * 0.32, 0.04, S * 0.24), M.gold(), -S * 0.08, h + 0.4, -S * 0.17));
+    panel(g, logoMat(), 0.6, 0.6, -S * 0.08, 0.28, -S * 0.17 + S * 0.19 + 0.035);
+    for (const fx of [S * 0.26, S * 0.33, S * 0.4]) flagPole(g, fx, S * 0.2, 1.35);
+    return g;
+  }
+  if (lvl === 4) { // la tour : six étages, ailettes dorées, salle du conseil vitrée en couronne, fontaine
+    plaza(g, S * 0.95, S * 0.42, S * 0.24);
+    const w = S * 0.46, d = S * 0.38, x = -S * 0.1, z = -S * 0.17;
+    stoneBlock(g, x, z, w + 0.1, d + 0.1, 0.5);
+    const h = 0.56 + tower(at(g, 0, 0.56), { x, z, w, d, floors: 5, fh: 0.4 });
+    for (let i = 0; i <= 4; i++) g.add(mesh(box(0.04, h - 0.5, 0.07), M.gold(), x - w / 2 + (w / 4) * i, 0.5 + (h - 0.5) / 2, z + d / 2 + 0.04));
+    g.add(mesh(box(w * 0.8, 0.5, d * 0.8), darkGlass(), x, h + 0.25, z));
+    g.add(mesh(box(w * 0.84, 0.05, d * 0.84), M.gold(), x, h + 0.52, z));
+    panel(g, logoMat(), 0.66, 0.66, x, 0.28, z + d / 2 + 0.085);
+    g.add(mesh(cyl(0.34, 0.38, 0.08, 20), M.concreteDark(), S * 0.3, 0.04, S * 0.08)); // fontaine
+    g.add(mesh(cyl(0.28, 0.28, 0.03, 20), darkGlass(), S * 0.3, 0.09, S * 0.08));
+    for (const fx of [S * 0.22, S * 0.3, S * 0.38]) flagPole(g, fx, S * 0.26, 1.45);
+    return g;
+  }
+  // niveau 5, le grand siège : tour de neuf étages, rotonde à anneau doré, couronne lumineuse, allée de mâts
+  plaza(g, S * 0.98, S * 0.46, S * 0.24);
+  const w = S * 0.36, d = S * 0.34, x = -S * 0.2, z = -S * 0.18;
+  stoneBlock(g, x, z, w + 0.1, d + 0.1, 0.5);
+  const h = 0.56 + tower(at(g, 0, 0.56), { x, z, w, d, floors: 8, fh: 0.4 });
+  for (let i = 0; i <= 4; i++) g.add(mesh(box(0.035, h - 0.5, 0.07), M.gold(), x - w / 2 + (w / 4) * i, 0.5 + (h - 0.5) / 2, z + d / 2 + 0.04));
+  g.add(mesh(box(w + 0.1, 0.12, d + 0.1), tickerMat(), x, h - 0.3, z)); // bandeau lumineux
+  g.add(mesh(box(w * 0.8, 0.55, d * 0.8), darkGlass(), x, h + 0.27, z)); // salle du conseil
+  panel(g, logoMat(), 0.6, 0.6, x, h + 0.3, z + d * 0.4 + 0.01);
+  g.add(mesh(cyl(S * 0.17, S * 0.17, 0.9, 28), M.facade(), S * 0.22, 0.45, -S * 0.14)); // rotonde
+  g.add(mesh(cyl(S * 0.18, S * 0.18, 0.06, 28), M.gold(), S * 0.22, 0.93, -S * 0.14));
+  g.add(mesh(cyl(S * 0.12, S * 0.17, 0.32, 28), darkGlass(), S * 0.22, 1.12, -S * 0.14)); // verrière
+  for (const fx of [S * 0.08, S * 0.16, S * 0.24, S * 0.32, S * 0.4]) flagPole(g, fx, S * 0.3, 1.5);
+  return g;
+}
+
+const BUILDERS = { training: trainingMesh, academy: academyMesh, fans: fansMesh, sponsor: sponsorMesh, transfers: transfersMesh, direction: directionMesh };
 
 export function buildingMesh(key, lvl) {
   return (BUILDERS[key] || trainingMesh)(Math.max(1, lvl));

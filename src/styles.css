@@ -3558,6 +3558,55 @@ html, body { overscroll-behavior: none; }
   mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
 }
 
+/* =========================================================== direction du club (src/ui/direction.jsx)
+   Le bureau du président : cartes de négociation (curseur, montant en grand, jauge de la chance exacte, verte à
+   partir de 70 %, dorée de 40 à 70 %, rouge en dessous), liste des salaires à renégocier. */
+.dir-intro { font-size: var(--t-sm); color: var(--text-2); margin: 0 0 var(--s-2); }
+.dir-card {
+  max-width: 640px; display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); border-radius: var(--r-lg);
+  border: 1px solid var(--line); background: radial-gradient(120% 90% at 0% 0%, rgba(222, 193, 127, .1), transparent 60%), rgba(255, 255, 255, .025);
+}
+.dir-card h3 { margin: 0; font-family: var(--font-title); font-weight: 500; font-size: var(--t-lg); letter-spacing: -.01em; }
+.dir-card.ok { border-color: rgba(122, 196, 140, .45); }
+.dir-card.ko { border-color: rgba(224, 122, 111, .4); }
+.dir-card .btn { align-self: flex-start; }
+.dir-note { font-size: var(--t-sm); color: var(--text-2); line-height: 1.5; margin: 0; }
+.dir-big { margin: 0; font-size: var(--t-sm); color: var(--text-2); }
+.dir-big b { font-family: var(--font-title); font-weight: 600; font-size: 26px; color: var(--text); letter-spacing: -.01em; font-variant-numeric: tabular-nums; margin-right: 4px; }
+.dir-slider { display: flex; flex-direction: column; gap: 8px; }
+.dir-slider span { display: flex; justify-content: space-between; font-size: var(--t-sm); color: var(--text-2); }
+.dir-slider b { font-family: var(--font-mono); color: var(--gold-light); }
+.dir-slider input { width: 100%; accent-color: var(--gold); }
+.dir-chance { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 6px 12px; }
+.dir-chance span { font-size: var(--t-sm); color: var(--text-2); }
+.dir-chance b { font-family: var(--font-title); font-weight: 600; font-size: var(--t-lg); font-variant-numeric: tabular-nums; }
+.dir-chance i { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+.dir-chance i em { display: block; height: 100%; border-radius: inherit; transition: width .3s var(--ease); }
+.dir-chance.good b { color: var(--green); } .dir-chance.good i em { background: var(--green); }
+.dir-chance.mid b { color: var(--gold-light); } .dir-chance.mid i em { background: var(--gold-grad); }
+.dir-chance.low b { color: var(--red); } .dir-chance.low i em { background: rgba(224, 122, 111, .8); }
+.dir-wages { display: flex; flex-direction: column; gap: var(--s-3); max-width: 760px; }
+.dir-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.dir-row {
+  width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 14px;
+  border-radius: var(--r-md); border: 1px solid var(--line); background: rgba(255, 255, 255, .025); color: var(--text); text-align: left;
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+.dir-row.on { border-color: var(--gold-line); background: var(--gold-soft); }
+.dir-row:disabled { opacity: .55; cursor: default; }
+@media (hover: hover) { .dir-row:hover:not(:disabled):not(.on) { border-color: var(--line-strong); } }
+.dir-who, .dir-wage { display: flex; flex-direction: column; min-width: 0; }
+.dir-who strong { font-weight: 600; overflow-wrap: anywhere; }
+.dir-who em, .dir-wage em { font-style: normal; font-size: var(--t-xs); color: var(--muted); }
+.dir-wage { align-items: flex-end; }
+.dir-wage b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dir-talk { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4); margin-top: 6px; border-radius: var(--r-md); border: 1px solid var(--gold-line); background: rgba(222, 193, 127, .05); }
+.dir-talk .btn { align-self: flex-start; }
+@media (max-width: 760px) {
+  .dir-card { padding: var(--s-4); }
+  .dir-big b { font-size: 22px; }
+}
+
 /* =========================================================== académie (src/ui/academy.jsx)
    Même famille que l'Effectif : tableau détaillé sur PC, liste compacte sur téléphone, fiche à droite (plein écran
    au téléphone). Six cases de places dans la barre d'outils ; orange : un jeune dans sa dernière saison. */

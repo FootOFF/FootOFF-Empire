@@ -63,6 +63,7 @@ export function loadGame() {
       const y = ensureTutorial(ensureLineup(addReserves(ensureFixedPlots(migratePlayers(x)))));
       ensureLedger(y);
       y.buildings.transfers ??= 0; // bureau des transferts (ajouté après coup)
+      y.buildings.direction ??= 0; // direction du club (ajoutée après coup)
       y.crest = normalizeCrest(y.crest); // écusson du club (ajouté après coup : écusson par défaut, noir et or)
       y.alumni ||= []; // anciens joueurs (archivés à partir de cette version)
       y.ticketPolicy ||= 'standard';

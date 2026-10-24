@@ -324,6 +324,26 @@ en est le club (« Tu grimpes à la 2e place », « Tu restes en tête »). L'or
   leur écusson, rangé dans la famille la plus proche. Planche de contrôle : `tmp/ph3/crests.html`
   (`?sec=clubs|familles|symboles|motifs`).
 
+## Direction du club
+
+Nouveau bâtiment (2026-10-24, demande de l'utilisateur : « négocier les contrats, les droits TV, les tarifs des billets,
+les salaires des joueurs ») : `direction` dans `BUILDINGS` (5 500 €, cinq niveaux, famille Revenus), modèle procédural
+`directionMesh` (`src/three/procedural.js` : hôtel particulier, siège à auvent, immeuble à salle du conseil, tour à
+ailettes dorées et fontaine, grand siège à rotonde), vignettes `public/ui/buildings/direction_L*.webp` rendues par
+`tmp/ph3/vignettes.html`. Un clic sur le bâtiment ouvre son écran (`src/ui/direction.jsx`, logique dans
+`src/game/direction.js`), trois onglets :
+- Droits TV : une demande de hausse par saison au diffuseur (0 à 60 %), chance exacte d'accord (le diffuseur suit
+  sans discuter jusqu'à une marge qui grandit avec le niveau et la réputation), puis le contrat de la saison. Chaque
+  niveau ajoute aussi 8 % aux droits ; en Départementale (pas de télévision nationale), une télé locale paie 250 € par
+  niveau et par match à domicile.
+- Salaires : une baisse proposée par joueur et par saison, jusqu'à 14 % (niveau 1) à 30 % (niveau 5), avec l'économie
+  sur la saison et la chance exacte d'accord (un joueur fort pour la division résiste davantage). Acceptée, la baisse
+  reste (`wageCut`) jusqu'à une prochaine renégociation ; la prime de signature et la valeur de revente partent du
+  salaire de référence.
+- Billetterie : la formule des billets avec la recette prévue de chacune (même outil que la fiche du stade).
+Les chances affichées sont celles du tirage (vérifié sur 3 000 négociations). Aperçus : `?ecran=direction`,
+`direction-salaires`.
+
 ## Tutoriel des premiers pas
 
 Refait le 2026-10-24 (`src/game/tutorial.js`, carte `CoachCard` de `src/ui/guide.jsx`) pour être intéressant,

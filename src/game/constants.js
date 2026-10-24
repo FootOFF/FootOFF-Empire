@@ -46,6 +46,7 @@ export const BUILDINGS = {
   fans: { name: 'Espace supporters', max: 5, baseCost: 3500, mult: 6.2, first: 1 },
   sponsor: { name: 'Siège & partenaires', max: 5, baseCost: 6000, mult: 6.2, first: 1 },
   transfers: { name: 'Bureau des transferts', max: 5, baseCost: 4500, mult: 6.2, first: 1 },
+  direction: { name: 'Direction du club', max: 5, baseCost: 5500, mult: 6.2, first: 1 },
 };
 
 export const START_MONEY = 8000;

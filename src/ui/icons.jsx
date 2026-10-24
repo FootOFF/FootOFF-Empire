@@ -44,6 +44,8 @@ export const IconDice = I(<><rect x="4" y="4" width="16" height="16" rx="3.5" />
 export const IconGear = I(<><circle cx="12" cy="12" r="3" /><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M6 18l1.6-1.6M16.4 7.6 18 6" /></>);
 // grue de chantier (Construire) et flèches qui s'écartent (voir en grand)
 export const IconCrane = I(<><path d="M7.5 21V3.5M3.5 7.5h17M3.5 7.5l4-4 13 4" /><path d="M16.5 7.5v4.5" /><path d="M16.5 12a1.6 1.6 0 1 1-1.6 1.6" /><path d="M4.5 21h6" /></>);
+// porte-documents (Direction du club)
+export const IconDirection = I(<><rect x="3.5" y="7.5" width="17" height="12" rx="2" /><path d="M9 7.5V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 6v1.5M3.5 12.5h17M11 12.5v1.6h2v-1.6" /></>);
 // loupe (recherche)
 export const IconSearch = I(<><circle cx="11" cy="11" r="6.2" /><path d="m15.6 15.6 4.4 4.4" /></>);
 // bulle de parole (conseil du staff)

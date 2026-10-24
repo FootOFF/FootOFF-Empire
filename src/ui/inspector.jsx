@@ -7,7 +7,7 @@ import { Tabs } from './glass';
 import { recommendedBuilding } from '../game/advice';
 import {
   IconAcademy, IconArrowUp, IconChevron, IconChevronLeft, IconClose, IconCrane, IconExpand, IconEye, IconFans, IconSponsor, IconStadium,
-  IconTraining, IconTransfer,
+  IconTraining, IconTransfer, IconDirection,
 } from './icons';
 import { Eyebrow } from './kit';
 import { Presence, useKeydown } from './presence';
@@ -17,11 +17,11 @@ import { uiSound } from './uisound';
 import { haptic } from './haptics';
 import { BuildCard, BuildWindow, HoldButton, Payoff, StatRows, imgOf, spendHint } from './build';
 
-const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor, transfers: IconTransfer };
+const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor, transfers: IconTransfer, direction: IconDirection };
 const KINDS = ['Sport', 'Revenus', 'Mercato'];
 
 // Tarifs des billets : le joueur voit tout de suite le public et les recettes attendus à chaque match.
-function TicketPricing({ state, onChange }) {
+export function TicketPricing({ state, onChange }) {
   const current = state.ticketPolicy || 'standard';
   const at = (id) => expectedGate({ ...state, ticketPolicy: id }, null);
   const g = at(current);
@@ -236,7 +236,7 @@ function FreePlot({ state, sel, onClose, onBuild, onPreview, onSwitchPlot }) {
 // Parcelle bâtie : le bâtiment tel qu'il est (vignette du niveau atteint), le niveau suivant chiffré avant / après,
 // l'amélioration sous le pouce. « Aperçu des niveaux » ouvre la fenêtre d'aperçu : sur PC, le niveau montré s'y
 // dessine en hologramme à la place du bâtiment.
-function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTransfers, onAcademy, onTraining, onTicketPolicy, onPreview }) {
+function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTransfers, onAcademy, onTraining, onDirection, onTicketPolicy, onPreview }) {
   const phone = useMedia(PHONE);
   const sec = SECTORS.find((s) => s.id === sel.sector) || SECTORS[0];
   const b = BUILDINGS[k];
@@ -315,6 +315,9 @@ function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTra
         {k === 'training' && onTraining && (
           <button type="button" className="btn ghost wide" onClick={onTraining}><IconTraining /> Séance d’entraînement</button>
         )}
+        {k === 'direction' && onDirection && (
+          <button type="button" className="btn ghost wide" onClick={onDirection}><IconDirection /> Ouvrir la Direction du club</button>
+        )}
         {k === 'terrain' && onTicketPolicy && <TicketPricing state={state} onChange={onTicketPolicy} />}
         {k === 'terrain' && onMatchDay && (
           <button type="button" className="btn ghost wide" onClick={onMatchDay}><IconStadium /> Voir le stade en jour de match</button>
@@ -339,7 +342,7 @@ function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTra
 
 // Fiche d'une parcelle, ouverte au clic dans la vue 3D (ou par le bouton Construire du HUD).
 // onPreview : ce que la scène doit montrer (hologramme du bâtiment et du niveau choisis, fenêtre d'aperçu ouverte).
-export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade, onMatchDay, onTransfers, onAcademy, onTraining, onTicketPolicy, onPreview = () => {}, onSwitchPlot = () => {} }) {
+export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade, onMatchDay, onTransfers, onAcademy, onTraining, onDirection, onTicketPolicy, onPreview = () => {}, onSwitchPlot = () => {} }) {
   usePanelSound();
   const k = plotBuilding(state, sel.plotId);
   const lvl = k ? state.buildings[k] : 0;
@@ -367,6 +370,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
       onTransfers={onTransfers}
       onAcademy={onAcademy}
       onTraining={onTraining}
+      onDirection={onDirection}
       onTicketPolicy={onTicketPolicy}
       onPreview={onPreview}
     />

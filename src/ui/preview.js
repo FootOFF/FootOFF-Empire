@@ -50,6 +50,8 @@ export const SCREENS = [
   ['entrainement-programme', 'Centre d’entraînement · programme d’un joueur'],
   ['entrainement-progres', 'Centre d’entraînement · progrès et niveaux'],
   ['entrainement-batiment', 'Inspecteur · centre d’entraînement'],
+  ['direction', 'Direction du club · droits TV'],
+  ['direction-salaires', 'Direction du club · salaires'],
   ['comparateur', 'Comparateur radar'],
   ['avant-match', 'Avant-match'],
   ['direct', 'Match en direct'],
@@ -123,6 +125,7 @@ export function previewState(screen) {
   if (MERCATO.includes(screen)) mercatoPreview(s, screen);
   if (screen.startsWith('academie')) academyPreview(s, screen);
   if (screen.startsWith('entrainement')) trainingPreview(s);
+  if (screen.startsWith('direction')) { s.money = 1e6; build(s, 't3', 'direction'); upgrade(s, 'direction'); s.money = 42000; } // Direction du club, niveau 2
   if (screen === 'bilan' || screen === 'bilan-champion') {
     while (s.round < 7) playRound(s);
     endSeason(s);
@@ -280,6 +283,8 @@ export function previewUi(screen, s) {
     case 'academie-repere': return { panel: 'academy', academyTab: 'scout', academy: { sheet: s.scouting.list[0].id, list: 'scout' } };
     case 'academie-batiment': return { sel: { plotId: 't2', sector: 'main' } };
     case 'entrainement': return { panel: 'training' };
+    case 'direction': return { panel: 'direction' };
+    case 'direction-salaires': return { panel: 'direction', directionTab: 'wages' };
     case 'entrainement-joueur': return { panel: 'training', training: { chooser: 'D' } };
     case 'entrainement-programmes': return { panel: 'training', trainingTab: 'programs' };
     case 'entrainement-programme': return { panel: 'training', trainingTab: 'programs', training: { program: s.players.find((p) => !s.training?.programs?.[p.id] && programsFor(s, p).length)?.id } };

@@ -153,10 +153,13 @@ export function assignNumber(players, p) {
   return p;
 }
 
-// Salaire annuel (voir economy.js) : suit la note du joueur et la division du club.
-export const wageOf = (p, divisionIndex = 0) => wageFor(playerRating(p), divisionIndex);
-export const signingFee = (p, divisionIndex = 0) => signingFor(wageOf(p, divisionIndex));
-export const saleValue = (p, divisionIndex = 0) => saleFor(wageOf(p, divisionIndex));
+// Salaire annuel (voir economy.js) : suit la note du joueur et la division du club ; un salaire renégocié à la
+// Direction du club (direction.js) garde sa baisse (wageCut). Prime de signature et valeur de revente partent du
+// salaire de référence, sans la baisse.
+const baseWage = (p, divisionIndex) => wageFor(playerRating(p), divisionIndex);
+export const wageOf = (p, divisionIndex = 0) => Math.round(baseWage(p, divisionIndex) * (1 - (p.wageCut || 0)));
+export const signingFee = (p, divisionIndex = 0) => signingFor(baseWage(p, divisionIndex));
+export const saleValue = (p, divisionIndex = 0) => saleFor(baseWage(p, divisionIndex));
 
 // Indemnité de transfert demandée par le club vendeur : bien plus qu'un joueur libre, environ deux saisons et
 // demie de salaire ; plus pour un jeune à potentiel ou un long contrat, moins pour un trentenaire en fin de

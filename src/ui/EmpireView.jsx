@@ -1,9 +1,9 @@
 import React from 'react';
 import { BUILDINGS } from '../game/constants';
 import { PLOTS, SECTORS, plotBuilding } from '../game/map';
-import { IconAcademy, IconFans, IconPitch, IconPlus, IconSponsor, IconTransfer, IconTraining } from './icons';
+import { IconAcademy, IconDirection, IconFans, IconPitch, IconPlus, IconSponsor, IconTransfer, IconTraining } from './icons';
 
-const ICONS = { terrain: IconPitch, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor, transfers: IconTransfer };
+const ICONS = { terrain: IconPitch, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor, transfers: IconTransfer, direction: IconDirection };
 
 // Repli 2D quand WebGL est indisponible : plan du complexe (toutes les parcelles ouvertes), mêmes interactions que
 // la 3D.

@@ -68,6 +68,6 @@ export function ensureFixedPlots(s) {
 // bâtiment se construit une seule fois (le stade a sa parcelle).
 export function allowedBuildingsFor(s) {
   const built = new Set(Object.keys(s.buildings).filter((k) => s.buildings[k] > 0));
-  return ['training', 'academy', 'fans', 'sponsor', 'transfers'].filter((k) => BUILDINGS[k] && !built.has(k));
+  return ['training', 'academy', 'fans', 'sponsor', 'transfers', 'direction'].filter((k) => BUILDINGS[k] && !built.has(k));
 }
 
