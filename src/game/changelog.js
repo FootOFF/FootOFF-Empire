@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.5', date: '2026-10-24', title: 'Négociation plus claire',
+    items: [
+      'Achat, mise en vente et vente négociée : la chance d’accord s’affiche juste au-dessus du bouton et suit la somme en direct, sans faire défiler.',
+    ],
+  },
+  {
     version: '0.3.4', date: '2026-10-24', title: 'Lisibilité',
     items: [
       'Entraînement : la qualité choisie se lit enfin (son gain vert et le point de la qualité conseillée disparaissaient sur le fond doré).',

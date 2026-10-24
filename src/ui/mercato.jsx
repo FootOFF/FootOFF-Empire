@@ -824,11 +824,8 @@ export function Negotiation({ state, p, run, refLvl, onClose, onSheet, onLineup 
               </div>
             </section>
 
-            <section className={`ng-chance ${shown >= 70 ? 'good' : shown >= 35 ? 'mid' : 'low'}`}>
-              <div className="ng-chance-top"><span className="eyebrow">Chances d’accord</span><b>{shown} %</b></div>
-              <span className="ng-gauge"><i style={{ width: `${shown}%` }} /></span>
-              {shown === 0 && <p className="ng-sure low">Offre trop basse : refus assuré.</p>}
-              {shown === 100 && <p className="ng-sure good">Accord assuré à ce prix.</p>}
+            <section className="ng-chance">
+              <span className="eyebrow">Ce qui joue sur sa réponse</span>
               <ul className="ng-reasons">
                 {reasons.map(([tone, text]) => <li key={text} className={tone}>{text}</li>)}
               </ul>
@@ -848,13 +845,27 @@ export function Negotiation({ state, p, run, refLvl, onClose, onSheet, onLineup 
             <p className="ng-closed">Le vendeur ne discutera plus avant la prochaine journée{talks.counter ? ' (sa contre-offre tient toujours)' : ''}.</p>
           ) : (
             <>
-              <span className="ng-tries">{plural(left, 'tentative', 'tentatives')} aujourd’hui</span>
+              <LiveChance label="Chances d’accord" shown={shown} note={shown === 0 ? 'Offre trop basse : refus assuré' : shown === 100 ? 'Accord assuré à ce prix' : null} />
               <button className="btn btn-xl" disabled={!!block} onClick={send} title={block || ''}>Envoyer l’offre · {fmtMoney(offer)}</button>
-              {block && <span className="ng-block">{block}</span>}
+              {block ? <span className="ng-block">{block}</span> : <span className="ng-tries">{plural(left, 'tentative', 'tentatives')} aujourd’hui</span>}
             </>
           )}
         </footer>
       </article>
+    </div>
+  );
+}
+
+// Chance exacte du montant choisi, collée au-dessus du bouton de la négociation : elle suit le curseur et reste à
+// l'écran quel que soit le défilement (sous les raccourcis, le bas de la fenêtre la cachait au téléphone). note : ce
+// qui est certain à 0 % ou 100 % (refus, club qui se retire, accord assuré).
+function LiveChance({ label, shown, note = null }) {
+  return (
+    <div className={`ng-live ${toneOf(shown)}`}>
+      <span className="ng-live-label">{label}</span>
+      <span className="ng-gauge" aria-hidden="true"><i style={{ width: `${shown}%` }} /></span>
+      <b aria-live="polite">{shown} %</b>
+      {note && <em className="ng-live-note">{note}</em>}
     </div>
   );
 }
@@ -961,12 +972,9 @@ export function ListingSheet({ state, p, run, refLvl, onClose, onOffers }) {
             <p className="ls-again">Déjà proposé aux clubs aujourd’hui : ceux qui ont fait une offre la retrouvent, et de nouveaux clubs se présenteront après la prochaine journée, à ce prix.</p>
           </section>
         ) : (
-          <section className={`ng-chance ${toneOf(shown)}`}>
-            <div className="ng-chance-top"><span className="eyebrow">Ce prix payé aussitôt</span><b>{shown} %</b></div>
-            <span className="ng-gauge"><i style={{ width: `${shown}%` }} /></span>
-            {shown === 100 && <p className="ng-sure good">Au moins un club paiera ce prix dès la mise en vente.</p>}
-            {shown === 0 && <p className="ng-sure low">Aucun club ne paiera ce prix d’emblée : leurs offres seront plus basses, à négocier.</p>}
-            {shown > 0 && shown < 100 && <p className="ls-duo">Chance qu’un club t’offre ce prix dès la mise en vente ; sinon, son offre sera plus basse, à négocier.</p>}
+          <section className="ng-chance">
+            <span className="eyebrow">Ce qui joue sur les offres</span>
+            {shown > 0 && shown < 100 && <p className="ls-duo">« Payé aussitôt » : la chance qu’un club t’offre ce prix dès la mise en vente ; sinon, son offre sera plus basse, à négocier.</p>}
             <p className="ls-duo">Au moins deux clubs en lice, de quoi faire monter les enchères : <b>{pctOf(out.duo)} %</b></p>
             <ul className="ng-reasons">
               {out.reasons.map(([tone, text]) => <li key={text} className={tone}>{text}</li>)}
@@ -979,8 +987,9 @@ export function ListingSheet({ state, p, run, refLvl, onClose, onOffers }) {
         </dl>
 
         <footer className="ng-foot">
-          <span className="ng-tries">{again ? 'Pas de nouveau club avant la prochaine journée' : `Au moins un club fait aussitôt une offre · jusqu’à ${CANDIDATES} étudient le dossier`}</span>
+          {!again && <LiveChance label="Payé aussitôt" shown={shown} note={shown === 100 ? 'Au moins un club paiera ce prix dès la mise en vente' : shown === 0 ? 'Aucun club ne paiera ce prix d’emblée : offres plus basses, à négocier' : null} />}
           <button className="btn btn-xl" onClick={list}>Mettre en vente · {fmtMoney(price)}</button>
+          <span className="ng-tries">{again ? 'Pas de nouveau club avant la prochaine journée' : `Au moins un club fait aussitôt une offre · jusqu’à ${CANDIDATES} étudient le dossier`}</span>
         </footer>
       </article>
     </div>
@@ -1118,11 +1127,8 @@ export function SaleNegotiation({ state, offerId, since, run, refLvl, onClose, o
               </div>
             </section>
 
-            <section className={`ng-chance ${toneOf(shown)}`}>
-              <div className="ng-chance-top"><span className="eyebrow">Chances d’accord</span><b>{shown} %</b></div>
-              <span className="ng-gauge"><i style={{ width: `${shown}%` }} /></span>
-              {shown === 0 && <p className="ng-sure low">Demande hors de sa portée : le club se retirera.</p>}
-              {shown === 100 && <p className="ng-sure good">Accord assuré à ce prix.</p>}
+            <section className="ng-chance">
+              <span className="eyebrow">Ce qui joue sur sa réponse</span>
               {shown > 0 && shown < 100 && <p className="ls-duo">Refusée, le club dira son dernier mot : son offre montera à ce qu’il paie à coup sûr.</p>}
               <ul className="ng-reasons">
                 {saleReasons(state, o).map(([t, text]) => <li key={text} className={t}>{text}</li>)}
@@ -1141,9 +1147,9 @@ export function SaleNegotiation({ state, offerId, since, run, refLvl, onClose, o
             <p className="ng-closed">Le club a dit son dernier mot : {fmtMoney(o.amount)}, valable jusqu’à la prochaine journée.</p>
           ) : (
             <>
-              <span className="ng-tries">{plural(left, 'demande possible', 'demandes possibles')} · l’offre vaut jusqu’à la prochaine journée</span>
+              <LiveChance label="Chances d’accord" shown={shown} note={shown === 0 ? 'Hors de sa portée : le club se retirera' : shown === 100 ? 'Accord assuré à ce prix' : null} />
               <button className="btn btn-xl" disabled={!!blocked} onClick={send} title={blocked || ''}>Demander · {fmtMoney(demand)}</button>
-              {blocked && <span className="ng-block">{blocked}</span>}
+              {blocked ? <span className="ng-block">{blocked}</span> : <span className="ng-tries">{plural(left, 'demande possible', 'demandes possibles')} · l’offre vaut jusqu’à la prochaine journée</span>}
             </>
           )}
         </footer>

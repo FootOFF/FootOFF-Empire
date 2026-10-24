@@ -565,6 +565,12 @@ l'est) avec les raisons du vendeur, coût réel (salaire, part des salaires, fin
 restantes, contre-offre en carte dorée, écran d'accord (économie réalisée, gain pour le onze, « Composer
 l'équipe »).
 
+Les trois feuilles à curseur (achat, mise en vente, vente négociée) montrent la chance exacte du montant choisi dans
+leur pied collé, juste au-dessus du bouton (`LiveChance` : libellé, jauge, grand pourcentage coloré, et ce qui est
+certain à 0 % ou 100 % : refus, club qui se retire, accord assuré). Elle suit le curseur et reste à l'écran sans
+défiler : sous les raccourcis, le bas de la fenêtre la cachait au téléphone (demande de l'utilisateur, 2026-10-24).
+Le corps garde « Ce qui joue » : les raisons, et pour la mise en vente la chance d'avoir deux clubs en lice.
+
 Ventes (une seule voie, la négociation ; plus de vente immédiate à sa valeur), en trois temps :
 1. Mise en vente à son prix : « Mettre en vente » (fiche d'un joueur de l'effectif, ou interrupteur de la vue Offres)
    ouvre une fenêtre avec le prix au curseur (60 à 200 % de sa valeur), la chance exacte qu'un club paie ce prix

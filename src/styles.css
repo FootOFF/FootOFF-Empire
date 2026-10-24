@@ -3930,6 +3930,20 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ng-counter { background: linear-gradient(90deg, rgba(222, 193, 127, .16), rgba(222, 193, 127, .04)); }
 .ng-costs div { font-size: 14px; }
 .ng-foot { background: var(--plate-solid); }
+/* chance exacte du montant choisi, collée au-dessus du bouton : elle suit le curseur, toujours à l'écran */
+.ng-live { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 2px; }
+.ng-live-label { font-family: var(--font-disp); font-weight: 600; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); white-space: nowrap; }
+.ng-live .ng-gauge { height: 6px; }
+.ng-live b { min-width: 2.7em; text-align: right; font-family: var(--font-disp); font-weight: 700; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; transition: color var(--dur-fast); }
+.ng-live.good b { color: var(--green); }
+.ng-live.mid b { color: var(--gold-light); }
+.ng-live.low b { color: var(--red); }
+.ng-live.good .ng-gauge i { background: var(--green); }
+.ng-live.mid .ng-gauge i { background: var(--gold-grad); }
+.ng-live.low .ng-gauge i { background: var(--red); }
+.ng-live-note { grid-column: 1 / -1; font-style: normal; font-size: 13px; font-weight: 600; line-height: 1.3; }
+.ng-live.good .ng-live-note { color: var(--green); }
+.ng-live.low .ng-live-note { color: var(--red); }
 .ng-tries { font-size: 13px; }
 .ls-clubs li { border: 0; border-radius: 0; background: var(--plate-2); }
 @media (max-width: 760px) {
