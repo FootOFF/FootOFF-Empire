@@ -378,7 +378,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* journal façon FootOFF Media */
 /* rubriques : une seule ligne, défilement horizontal si l'écran est étroit */
-.chips.journal-filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.chips.journal-filters { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
 .chips.journal-filters::-webkit-scrollbar { display: none; }
 .chips.journal-filters button { flex-shrink: 0; }
 .news-kicker { font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
@@ -1371,8 +1371,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .season-stats .ui-stat { padding: var(--s-2); }
   .season-stats .ui-stat-label { letter-spacing: .06em; }
   .news-lead { padding: var(--s-4); }
-  /* puces des panneaux (rubriques, postes) : une seule ligne, défilement en secours */
-  .panel .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 6px; }
+  /* puces des panneaux (rubriques, postes) : une seule ligne, défilement en secours, jamais en hauteur (au doigt,
+     la rangée glisserait et couperait ses puces) */
+  .panel .chips { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; gap: 6px; }
   .panel .chips::-webkit-scrollbar { display: none; }
   .panel .chips button { flex-shrink: 0; padding: 4px 9px; font-size: 12px; }
   .post { padding: 0; }
@@ -2527,7 +2528,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .sc-progress i { display: block; height: 100%; border-radius: inherit; background: var(--gold-grad); transition: width .6s var(--ease); }
 .sc-track {
   display: grid; grid-auto-flow: column; grid-auto-columns: minmax(58px, 1fr); gap: var(--s-2);
-  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity;
+  overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x proximity;
   padding: 6px 4px 14px; margin: -6px -4px -14px;
 }
 .sc-date {
@@ -2840,7 +2841,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .mc-net p b { display: block; color: var(--text); font-weight: 600; }
 
 .mc-filters { display: flex; flex-direction: column; gap: var(--s-2); }
-.mc-filters .chips { margin-bottom: 0; }
+.mc-filters :where(.chips) { margin-bottom: 0; } /* sans écraser la place des zones tactiles (.panel .chips) */
 .mc-filters-row { display: flex; align-items: center; gap: var(--s-2); }
 .mc-filters-row .chips { flex: 1; min-width: 0; }
 .mc-sep { width: 1px; align-self: stretch; margin: 4px 2px; background: var(--line-strong); flex-shrink: 0; }
@@ -3068,8 +3069,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .mc-row-actions { flex-basis: auto; }
 }
 @media (max-width: 760px) {
-  .mc-filters > .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--s-4)); padding: 0 var(--s-4); }
-  .mc-filters-row .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-left: calc(-1 * var(--s-4)); padding-left: var(--s-4); }
+  .mc-filters > .chips { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; margin-inline: calc(-1 * var(--s-4)); padding-inline: var(--s-4); }
+  .mc-filters-row .chips { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; margin-left: calc(-1 * var(--s-4)); padding-left: var(--s-4); }
   .mc-filters .chips::-webkit-scrollbar { display: none; }
   .mc-filters .chips { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); } /* la rangée défile : bord fondu */
   .mc-filters .chips button { flex-shrink: 0; }

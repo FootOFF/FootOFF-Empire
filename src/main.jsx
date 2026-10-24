@@ -9,7 +9,7 @@ import { installScrollCues } from './ui/scrollcue';
 const params = new URLSearchParams(window.location.search);
 const Gallery = lazy(() => import('./ui/gallery'));
 installFrenchTypography(document.body); // espaces insécables, apostrophes, unités (voir typography.js)
-installScrollCues(); // défilement aux couleurs du jeu : curseur doré au doigt, bords estompés (voir scrollcue.js)
+installScrollCues(); // défilement sans barre : bords estompés là où il reste du contenu (voir scrollcue.js)
 
 // Pas de zoom de la page au doigt : le pincement agrandissait toute l'interface (écran titre compris). Safari sur
 // iPhone ignore user-scalable=no (index.html) : on bloque ses gestes de pincement. La caméra 3D garde son propre

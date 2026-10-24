@@ -181,7 +181,10 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 - Défilement (`src/ui/scrollcue.js`) : aucune barre de défilement, nulle part (PC, téléphone, tablette ; choix de
   l'utilisateur, « plus esthétique sans »). Une zone qui défile s'estompe sur le bord où il reste du contenu
   (`data-fade`, liste des zones dans `scrollcue.js` : jamais une zone à pied collé, qui s'estomperait avec) ;
-  arrivée au bout, elle n'entraîne plus la page (pas de rebond de la page).
+  arrivée au bout, elle n'entraîne plus la page (pas de rebond de la page). Une rangée qui défile en largeur
+  (puces, frise de la saison) ne défile jamais en hauteur (`overflow-y: hidden`) et, sur écran tactile, garde la
+  place des zones `::after` de ses boutons (retrait et marge de 9 px) : sinon elle glisse au doigt et coupe ses
+  puces. Contrôle de tous les écrans : `tmp/ph3/scrollcheck.html`.
 - Sélection : rien ne se sélectionne dans le jeu, quel que soit le geste (appui long, double toucher, « Tout
   sélectionner » d'iOS) : CSS `user-select: none` jusqu'à `html`, et `main.jsx` annule toute sélection hors des
   champs de saisie (la bulle « Copier / Traduire » n'apparaît jamais) ; pas de menu contextuel.
