@@ -413,7 +413,7 @@ export default function App({ preview = null }) {
             <ObjectiveWidget state={state} collapsed={goalCollapsed} onToggle={() => setGoalCollapsed((c) => !c)} />
           )}
           <Presence>
-            {shownTip && (
+            {shownTip && !webglOk && ( // sans 3D, pas de colonne d'outils : le conseil garde sa carte
               <StaffTip
                 tip={shownTip}
                 onAction={() => doAction(shownTip.action)}
@@ -432,6 +432,9 @@ export default function App({ preview = null }) {
               build={buildTool}
               onBuild={toggleShop}
               keys={hudKeys && !panel}
+              tip={shownTip}
+              onTipAction={() => doAction(shownTip.action)}
+              onTipDismiss={() => setDismissedTips((d) => new Set(d).add(shownTip.id))}
             />
           )}
           <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} keys={hudKeys && !panel && !sel} />

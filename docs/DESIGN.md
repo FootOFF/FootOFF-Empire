@@ -64,14 +64,19 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 |---|---|---|
 | Haut gauche | identité du club | largeur `--rail-w` (320 px), hauteur 56 px |
 | Haut droite | trésorerie, réputation, menu | pastilles de 40 px |
-| Colonne de gauche | objectif ou tutoriel, puis conseil du staff | même largeur que la carte du club, 12 px entre les cartes |
-| Droite | outils de vue (heure, jour de match, recentrer) | centrés verticalement ; derrière un seul bouton sur mobile |
+| Colonne de gauche | objectif ou tutoriel | même largeur que la carte du club, 12 px entre les cartes |
+| Droite | Construire, conseil du staff, outils de vue (heure, jour de match, recentrer) | centrés verticalement ; sur mobile en haut à droite, Construire et staff visibles, la vue derrière un bouton |
 | Bas | dock centré + carte de match à droite | même hauteur (`--bar-h`, 68 px) et même ligne de base ; sous 1240 px le dock se cale à gauche |
 
 - La 3D occupe tout l'écran. `--hb` réserve la place du badge imposé par l'hébergeur de test (0 sur footoff.media) :
   seuls les éléments posés en bas l'utilisent (`--hud-bottom`).
 - Mobile (≤ 760 px) : barre du haut (écusson et nom du club, ressources), objectif replié, puis en bas, de haut en bas :
-  conseil du staff, carte de match, dock. Jamais plus de six éléments à l'écran.
+  carte de match, dock. Jamais plus de six éléments à l'écran.
+- Conseil du staff (`SceneTools`, `src/ui/hud.jsx`) : un bouton à bulle de parole dans la colonne d'outils, présent
+  tant que le staff a un conseil, avec un point doré (rouge pour une alerte) tant qu'il n'est pas lu. Un conseil
+  nouveau s'annonce 7 s dans une bulle opaque à gauche de la colonne (en haut sur téléphone), puis se range ; un appui
+  sur le bouton la rouvre, un appui ailleurs la range ; « Masquer ce conseil » l'écarte pour la session. Plus de
+  bandeau en bas de l'écran (choix de l'utilisateur, 2026-10-24 : il « dérangeait »).
 - Un contrôle automatique (galerie) vérifie qu'aucun élément ne se chevauche ni ne sort de l'écran à
   1440, 1280, 1000, 800 et 375 px.
 

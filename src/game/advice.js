@@ -10,7 +10,7 @@ import { capacity, endOfSeasonForecast, expectedGate, investmentPreview, seasonF
 import { nextOpponent, standingsOf } from './season';
 
 // Signaux et conseils : ce que le joueur peut faire d'utile maintenant (pastilles dorées du dock et de
-// la vue 3D, recrue recommandée, carte « Conseil du staff »). Tout est calculé à partir de l'état.
+// la vue 3D, recrue recommandée, bouton du staff de la colonne d'outils). Tout est calculé à partir de l'état.
 
 const n = (v) => new Intl.NumberFormat('fr-FR').format(Math.round(v));
 const money = (v) => (v >= 1e6 ? `${(v / 1e6).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} M€` : `${n(v)} €`);

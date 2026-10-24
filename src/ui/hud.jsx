@@ -10,7 +10,7 @@ import { AnimatedMoney } from './moneyfx';
 import { fmtRating } from './format';
 import {
   IconCal, IconCheck, IconCoin, IconEmpire, IconMenu, IconMoon, IconNews, IconPlay, IconStadium, IconStar, IconSun,
-  IconTarget, IconTrophy, IconUsers, IconClock, IconEye, IconStats, IconCrane,
+  IconTarget, IconTrophy, IconUsers, IconClock, IconEye, IconStats, IconCrane, IconStaff, IconClose,
 } from './icons';
 import { clubStars } from '../game/crest';
 
@@ -208,17 +208,68 @@ const TIME_UI = {
 
 // Outils de la vue, et en tête le bouton Construire (vitrine des bâtiments, touche B) : build vaut null (rien à
 // construire), 'idle', 'dot' (un bâtiment est payable tout de suite : pastille dorée) ou 'open' (vitrine ouverte).
-export function SceneTools({ timeMode, matchDay, onTime, onMatchDay, onRecenter, build = null, onBuild, keys = false }) {
+// Conseil du staff : un bouton de la colonne d'outils, présent tant que le staff a un conseil (point doré, rouge
+// pour une alerte, tant qu'on ne l'a pas lu). Un conseil nouveau s'annonce quelques secondes dans une bulle à gauche
+// de la colonne, puis la bulle se range dans le bouton ; un appui la rouvre, un appui ailleurs la range.
+const PEEK_MS = 7000;
+function useStaffBubble(tip) {
+  const [open, setOpen] = useState(false); // false | 'peek' (annonce) | 'open' (ouverte par le joueur)
+  const [read, setRead] = useState(() => new Set());
+  const seen = useRef(new Set());
+  const id = tip?.id;
+  useEffect(() => {
+    if (!id) { setOpen(false); return undefined; }
+    if (seen.current.has(id)) return undefined;
+    seen.current.add(id);
+    setOpen('peek');
+    const t = setTimeout(() => setOpen((o) => (o === 'peek' ? false : o)), PEEK_MS);
+    return () => clearTimeout(t);
+  }, [id]);
+  useEffect(() => { if (id && open === 'open') setRead((r) => (r.has(id) ? r : new Set(r).add(id))); }, [id, open]);
+  return { open, setOpen, unread: !!id && !read.has(id) };
+}
+
+function StaffBubble({ tip, onAction, onDismiss, onClose }) {
+  const ref = useRef(null);
+  useEffect(() => { // un appui ailleurs range la bulle (le bouton du staff la gère lui-même)
+    const away = (e) => { if (!ref.current?.contains(e.target) && !e.target.closest?.('.tools-staff')) onClose(); };
+    document.addEventListener('pointerdown', away);
+    return () => document.removeEventListener('pointerdown', away);
+  }, [onClose]);
+  return (
+    <aside ref={ref} className={`staff-bubble glass ${tip.tone || ''}`} aria-live="polite" aria-label="Conseil du staff">
+      <span className="staff-eyebrow">Conseil du staff</span>
+      <strong className="staff-title">{tip.title}</strong>
+      <p className="staff-text">{tip.text}</p>
+      <div className="staff-actions">
+        <button className="btn btn-sm" onClick={onAction}>{tip.action.label}</button>
+        <button className="linkbtn" onClick={onDismiss}>Masquer ce conseil</button>
+      </div>
+      <button className="tip-close" onClick={onClose} aria-label="Ranger le conseil"><IconClose /></button>
+    </aside>
+  );
+}
+
+export function SceneTools({ timeMode, matchDay, onTime, onMatchDay, onRecenter, build = null, onBuild, keys = false, tip = null, onTipAction, onTipDismiss }) {
   const T = TIME_UI[timeMode] || TIME_UI.auto;
   const [open, setOpen] = useState(false); // mobile : outils repliés derrière un seul bouton
+  const staff = useStaffBubble(tip);
   useHudKey(['KeyB'], () => onBuild?.(), keys && !!build);
   return (
+    <>
     <div className={`hud-tools glass ${open ? 'open' : ''}`} role="toolbar" aria-label="Construction et vue">
       <button className={`tools-toggle ${open ? 'on' : ''}`} onClick={() => setOpen((o) => !o)} aria-expanded={open} title="Réglages de la vue"><IconEye /></button>
       {build && (
         <button className={`tools-build ${build === 'open' ? 'on' : ''}`} onClick={onBuild} aria-pressed={build === 'open'} aria-keyshortcuts="B" title="Construire · touche B">
           <IconCrane />
           {build === 'dot' && <i className="tools-dot" aria-hidden="true" />}
+        </button>
+      )}
+      {tip && (
+        <button className={`tools-staff ${staff.open ? 'on' : ''} ${tip.tone || ''}`} onClick={() => staff.setOpen((o) => (o === 'open' ? false : 'open'))}
+          aria-expanded={!!staff.open} title="Conseil du staff">
+          <IconStaff />
+          {staff.unread && !staff.open && <i className="tools-dot" aria-hidden="true" />}
         </button>
       )}
       <button className={timeMode !== 'auto' ? 'on' : ''} onClick={onTime} disabled={matchDay} title={`${T.title} — cliquer pour changer`}>
@@ -229,5 +280,10 @@ export function SceneTools({ timeMode, matchDay, onTime, onMatchDay, onRecenter,
       </button>
       <button onClick={onRecenter} title="Recentrer la vue"><IconTarget /></button>
     </div>
+    {tip && staff.open && (
+      <StaffBubble key={tip.id} tip={tip} onClose={() => staff.setOpen(false)}
+        onAction={() => { staff.setOpen(false); onTipAction?.(); }} onDismiss={() => { staff.setOpen(false); onTipDismiss?.(); }} />
+    )}
+    </>
   );
 }
