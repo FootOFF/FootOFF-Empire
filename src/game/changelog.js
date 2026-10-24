@@ -4,6 +4,17 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.0', date: '2026-10-24', title: 'Nouvelle interface',
+    items: [
+      'Toute l’interface refaite façon habillage télé : plaques sombres, or FootOFF, grands chiffres en capitales condensées.',
+      'Menu du bas en cinq sections, Complexe, Équipe, Mercato, Saison et Club, chacune avec ses onglets.',
+      'Match en direct : bandeau du score avec les clubs en trois lettres, bandeau du but, temps forts et pronostic exact pendant tout le match.',
+      'Nouvelles cartes de joueurs et nouvelle fiche joueur ; le mercato s’affiche en tableau sur ordinateur.',
+      'Saison : frise des dates avec les résultats, classement avec victoires, nuls et défaites, course à la montée et meilleurs joueurs du club.',
+      'Nouvel écran titre ; une partie en cours n’est plus jamais effacée par une nouvelle partie.',
+    ],
+  },
+  {
     version: '0.2.1', date: '2026-10-24', title: 'La mémoire du club',
     items: [
       'Le journal garde toute l’histoire du club, saison par saison, au lieu des quarante dernières nouvelles.',

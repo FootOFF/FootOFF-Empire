@@ -1,8 +1,30 @@
 # Guide de style de l'interface
 
-Charte FootOFF Media : noir #090909, or #C7A15A (dégradé #B9924C → #DEC17F), blanc cassé #F3F2EE, gris #8B8B8B.
-Titres en Geist, libellés en Geist Mono (capitales espacées), texte en Inter. Tous les jetons sont dans
-`:root` (`src/styles.css`) ; les briques React dans `src/ui/kit.jsx`.
+Habillage « Tribune » (refonte du 2026-10-24, direction A des maquettes validée par l'utilisateur) : l'habillage télé
+de FootOFF Media posé sur la 3D. Charte : fond #08090A, or #C7A15A (dégradé du logo #B9924C → #DEC17F), blanc cassé
+#F3F2EE. Titres, libellés, boutons et chiffres en Barlow Condensed (capitales pour les titres et libellés), texte en
+Inter, petites mentions techniques (touches, version) en Geist Mono. Tous les jetons sont dans `:root`
+(`src/styles.css`) ; les briques React dans `src/ui/kit.jsx`.
+
+## Habillage Tribune
+
+- Plaques : pleines et sombres (`--plate` sur la 3D, `--plate-solid` pour un panneau, `--plate-2` et `--plate-3`
+  pour les blocs posés dessus), coin haut-droit coupé (`--cut-shape`, `--cut-shape-sm`), un filet de lumière en
+  haut (`--plate-hi`). Pas de bordure fine autour d'un bloc : une plaque plus claire le détache.
+- Formes penchées : boutons, onglets, pastilles de résultat (V 1–0, N 0–0, D 0–1), forme, codes des équipes, bande
+  « Empire » du logo, en parallélogramme (`--skew`, pente `--slant`).
+- Titre de section : marqueur doré penché devant des capitales condensées (`SectionHead`, `.mark-head`).
+- États : l'élément choisi ou réussi se signale par un liseré intérieur (3 px à gauche : or choisi, vert réussi,
+  rouge en danger ; ou 3 px en bas pour une date ou une carte choisie) ou par un fond plein, jamais par une bordure.
+- Verre liquide (flou d'arrière-plan) : seulement dans le menu du bas. Partout ailleurs, des plaques pleines : un flou
+  se recalcule à chaque image (la 3D bouge derrière).
+- Découpe (`clip-path`) : elle rogne aussi les ombres et filtres de l'élément lui-même ; l'ombre portée se met sur
+  un parent (étiquettes des parcelles en 3D), un anneau de focus devient un liseré intérieur.
+- Préfixes de classes réservés, sans partage : `lv-` direct, `lm-` carte du dernier match, `sc-` calendrier,
+  `sq-sorter` menu de tri (`.sq-sort` est la flèche du tableau), `is-<phase>` pour l'horloge du direct (`.halftime`
+  et `.fulltime` sont des panneaux).
+- Noms longs : `useFitText` (`src/ui/fittext.js`) réduit la taille jusqu'à un minimum pour tenir sur une ligne, sinon
+  passe en deux lignes équilibrées (carte du prochain match, affiche de l'avant-match, bandeau du club).
 
 ## Grille
 
@@ -15,7 +37,9 @@ Titres en Geist, libellés en Geist Mono (capitales espacées), texte en Inter. 
 | `--t-xl` | 24 px | titres de panneau |
 | `--t-2xl` | 32 px | grands chiffres |
 | `--t-3xl` | 40 px | score, note vedette |
-| `--r-sm` / `--r-md` / `--r-lg` | 12 / 16 / 22 px | tuiles et champs / cartes / panneaux |
+| `--d-xs` … `--d-3xl` | 13 · 15 · 18 · 21 · 28 · 38 · 48 px | tailles d'affichage (Barlow Condensed) |
+| `--r-sm` / `--r-md` / `--r-lg` | 2 / 3 / 3 px | presque aucun arrondi : plaques, coins coupés, parallélogrammes |
+| `--cut` / `--cut-sm` | 14 / 10 px | coin coupé des plaques / des petits blocs |
 | espacements | multiples de 4 px | `--s-1` 4 · `--s-2` 8 · `--s-3` 12 · `--s-4` 16 · `--s-6` 24 · `--s-8` 32 |
 | marge d'écran | `--gap` (16 px, 10 px sur mobile) | distance aux bords pour tout élément du HUD |
 
@@ -29,9 +53,9 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 - Libellé au-dessus, valeur en dessous ; les valeurs numériques en chiffres tabulaires.
 - Un seul bouton principal (doré) par écran ; les autres en contour (`.btn.ghost`) ou en lien (`.linkbtn`).
 - Mobile : zones tactiles de 44 px minimum, panneaux en plein écran ou en feuille basse.
-- Peu de cadres : un cadre pour un vrai bloc, de simples filets fins ailleurs (fiche joueur, comparateur).
-- Capitales espacées (Geist Mono) réservées aux titres de section et sur-titres ; les petits libellés (tuiles,
-  statistiques, lignes de confirmation, puces de filtre) sont en texte normal discret.
+- Peu de cadres : une plaque pour un vrai bloc, de simples filets fins entre les lignes ailleurs.
+- Capitales condensées (Barlow Condensed) pour les titres de section, sur-titres, onglets et boutons ; les petits
+  libellés (tuiles, statistiques, lignes de confirmation, puces de filtre) sont en texte normal discret.
 - Dans une rangée de cases, les montants tombent au même niveau : libellés courts, et valeurs calées en bas de la
   case quand un libellé passe sur deux lignes (bilan de saison) ; une dernière rangée incomplète se centre, avec des
   cases de même largeur que les autres.
@@ -62,11 +86,17 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 
 | Zone | Contenu | Règle |
 |---|---|---|
-| Haut gauche | identité du club | largeur `--rail-w` (320 px), hauteur 56 px |
-| Haut droite | trésorerie, réputation, menu | pastilles de 40 px |
-| Colonne de gauche | objectif ou tutoriel | même largeur que la carte du club, 12 px entre les cartes |
-| Droite | Construire, conseil du staff, outils de vue (heure, jour de match, recentrer) | centrés verticalement ; sur mobile en haut à droite, Construire et staff visibles, la vue derrière un bouton |
-| Bas | dock centré + carte de match à droite | même hauteur (`--bar-h`, 68 px) et même ligne de base ; sous 1240 px le dock se cale à gauche |
+| Haut gauche | bandeau du club comme un score télé : écusson, nom, division, saison et journée, classement | hauteur `--top-h` (60 px, 52 sur téléphone) ; le classement ouvre la Saison |
+| Haut droite | trésorerie (ouvre les Finances), réputation (ouvre la Notoriété), menu | même hauteur que le bandeau |
+| Colonne de gauche | objectifs du président (repliables sur une ligne) ou tutoriel, fiche d'une parcelle | largeur `--rail-w` (380 px, 340 de 761 à 1260 px) |
+| Droite | colonne d'outils : Bâtir, Staff, Vue (dépliée : heure, jour de match, recentrer) | boutons de `--tool` × `--tool-h` (66 × 64, 54 × 54 sur téléphone) |
+| Bas | menu du bas centré (le seul verre du jeu) et carte du prochain match à droite | même ligne de base (`--hud-bottom`) ; carte de 80 px (`--bar-h`) ; sous 1260 px le menu se cale à gauche |
+
+- Marge d'écran `--gap` : 20 px dès 1240 px, 16 px sinon, 12 px sur téléphone.
+- Carte du prochain match (`MatchCta`) : journée, domicile, adversaire (taille ajustée à la longueur du nom),
+  chances exactes de victoire, nul et défaite en barre (`prematchOdds`, les mêmes que l'avant-match), bouton Jouer.
+- Étiquettes des parcelles en 3D : flèche dorée pour améliorer, plaque sombre « Séance » avec le nombre de joueurs
+  qui peuvent encore s'entraîner (`sessionPin`, ouvre l'entraînement).
 
 - La 3D occupe tout l'écran. `--hb` réserve la place du badge imposé par l'hébergeur de test (0 sur footoff.media) :
   seuls les éléments posés en bas l'utilisent (`--hud-bottom`).
@@ -79,6 +109,24 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
   bandeau en bas de l'écran (choix de l'utilisateur, 2026-10-24 : il « dérangeait »).
 - Un contrôle automatique (galerie) vérifie qu'aucun élément ne se chevauche ni ne sort de l'écran à
   1440, 1280, 1000, 800 et 375 px.
+
+## Menu du bas : cinq sections
+
+Complexe, Équipe, Mercato, Saison, Club (`src/ui/nav.jsx`, `SECTIONS`). Chaque panneau appartient à une section ;
+son en-tête porte le nom de la section en grand et, en onglets, les écrans voisins :
+
+| Section | Onglets |
+|---|---|
+| Complexe | la vue 3D du complexe (fermer un panneau y revient) |
+| Équipe | Joueurs, Composition, Entraînement, Académie, Anciens |
+| Mercato | Recruter, Suivis, Offres, Bilan |
+| Saison | Calendrier, Classement, Statistiques, Palmarès |
+| Club | Finances, Journal, Notoriété, Direction |
+
+- Un onglet d'un bâtiment pas encore construit reste visible, cadenassé (Entraînement, Académie, Direction).
+- Pastilles sur le menu et les onglets (`dockSignals`, `src/game/advice.js`) : rouge pour ce qui attend une
+  décision (offres à traiter), discrète pour une information (joueurs suivis), point doré pour une nouveauté.
+- D'un onglet à l'autre, l'écran change sur place (ni glissement ni fondu).
 
 ## Briques (`src/ui/kit.jsx`)
 
@@ -99,32 +147,42 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 - Puces de filtre : toujours sur une ligne ; sur téléphone elles se resserrent et défilent en secours.
 - Inspecteur de parcelle : même famille (en-tête séparé, corps), largeur de la colonne de gauche sur PC,
   feuille basse opaque avec poignée sur téléphone.
-- Saison (grand écran sur PC depuis le 2026-10-23, le HUD s'efface) : onglets Calendrier (ouvert d'emblée) et
-  Classement dans la barre fixe, à droite des quatre repères (position, points, différence, ambition) ; sur
-  téléphone, ces repères tiennent sur une ligne, sans leur précision.
+- Saison (grand écran sur PC, le HUD s'efface ; maquette A9) : onglets Calendrier, Classement, Statistiques,
+  Palmarès dans l'en-tête de la section ; quatre repères en barre fixe (position, points, différence, ambition),
+  sur une ligne et sans leur précision au téléphone.
   - Calendrier (`src/ui/calendar.jsx`, dates calculées par `seasonFixtures` dans `src/game/fixtures.js`), en trois
     parties. Championnat en or, Coupe nationale en argent, Coupe d'Europe en bleu, partout.
-    1. La frise : toutes les dates dans l'ordre où elles se jouent, une case par date (liseré de la compétition en
-       tête, trophée ou étoile pour les coupes, écusson de l'adversaire, « J3 » ou le tour, score coloré V / N / D ou
-       point doré du prochain match ; « ? » pour un tour à tirer, « — » pour un tour non disputé), barre de
-       progression de la saison au-dessus. La date choisie se lève, soulignée ; le prochain match respire en or. Sur
-       PC les cases remplissent la largeur (quinze dates avec la Coupe d'Europe) ; sur téléphone la frise défile et
-       garde la date choisie au centre. Clavier et manette : flèches, début, fin (le focus suit).
-    2. L'affiche de la date choisie, dessinée comme le terrain vu du dessus : bandes de tonte, ligne médiane, rond
-       central ; notre moitié dorée, celle de l'adversaire à la couleur de son maillot (`kitOf`). Écussons en grand,
-       noms (jamais coupés), niveaux, rang et points de l'adversaire ; écussons et score toujours sur la même ligne en championnat (sa division en coupe) ; au
-       centre le score ou « VS », et l'état (Prochain match, Victoire, Qualifié, Éliminé, Tirage au sort, Non
-       disputé). Prochain match : pronostic exact du moteur avec le onze actuel (le même que l'avant-match),
-       qualification en coupe, rapport de force, affluence et recette attendues, billets, prime de coupe, « Jouer le
-       match ». Match joué : buteurs, homme du match, affluence, recette, dispositif, billets, « Voir le Stats Pass ».
-       Un geste vers la gauche ou la droite sur l'affiche change de date (téléphone).
-    3. Le bilan (colonne de droite sur PC, dessous au téléphone) : victoires, nuls, défaites et leur barre, buts ;
-       forme des cinq derniers matchs ; les sept journées du championnat avec la place et l'enjeu ; le parcours de
-       chaque coupe tour par tour. Chaque élément choisit sa date dans la frise.
-  - Classement : sur deux colonnes en grand écran (le tableau et sa légende ; les coupes, le dernier match, les
-    trophées et les classements passés). Zones colorées avec leur légende sous le tableau. Montée (2 premiers, or)
-    hors Elite ; Coupe d'Europe des clubs (2 premiers de l'Elite, bleu) ; descente (2 derniers, rouge). Hors Elite, la
-    légende rappelle que l'Europe se gagne en Elite.
+    1. La frise : toutes les dates dans l'ordre où elles se jouent, une plaque par date : la journée (« J3 ») ou le
+       tour de coupe à la couleur de sa compétition (trophée ou étoile), l'écusson et le nom de l'adversaire, puis
+       le résultat en pastille penchée (V 1–0 vert, N 0–0 gris, D 0–1 rouge), « À suivre » en or pour le prochain
+       match (bandeau doré en haut de sa plaque), « à venir » ensuite, « tirage » pour un tour à tirer ; un tour que
+       le club ne jouera pas est grisé, cadenassé, « Éliminé ». La date choisie porte un trait en bas. Barre de
+       progression de la saison au-dessus. Sur PC les plaques remplissent la largeur ; sur téléphone la frise défile
+       et garde la date choisie au centre. Clavier et manette : flèches, début, fin (le focus suit).
+    2. L'affiche de la date choisie, plaque au bandeau de la compétition, dessinée comme le terrain vu du dessus :
+       notre moitié dorée, celle de l'adversaire à la couleur de son maillot (`kitOf`). Écussons en grand, noms en
+       capitales (jamais coupés), niveaux, rang et points de l'adversaire en championnat (sa division en coupe) ; au
+       centre le score ou « VS », et l'état en pastille penchée (Prochain match, Victoire, Qualifié, Éliminé, Tirage
+       au sort, Non disputé). Prochain match : pronostic exact du moteur avec le onze actuel (mêmes couleurs que
+       l'avant-match : or, gris, rouge), qualification en coupe, rapport de force, affluence et recette attendues,
+       billets, prime de coupe, « Jouer le match ». Match joué : buteurs, homme du match, affluence, recette,
+       dispositif, billets, « Voir le Stats Pass ». Un geste vers la gauche ou la droite change de date (téléphone).
+    3. Le bilan (colonne de droite sur PC, dessous au téléphone), en plaques : victoires, nuls, défaites et leur
+       barre, buts ; forme des cinq derniers matchs et les sept journées en pastilles penchées (teintées, pleines
+       pour la date choisie) ; le parcours de chaque coupe tour par tour. Chaque élément choisit sa date.
+  - Classement (`StandingsTable`, `src/ui/panels.jsx`) : le tableau dans sa plaque, bord à bord ; rang et points en
+    grands chiffres condensés, colonnes J, G, N, P, Diff, Pts (G, N, P comptés depuis le 2026-10-24 : une saison
+    commencée avant n'affiche que J, Diff, Pts jusqu'à la suivante ; jamais de G, N, P au téléphone, faute de
+    place). Zone de chaque place en liseré à gauche : montée (2 premiers, or) hors Elite, Coupe d'Europe des clubs
+    (2 premiers de l'Elite, bleu), descente (2 derniers, rouge) ; légende en carrés de couleur dessous (hors Elite,
+    elle rappelle que l'Europe se gagne en Elite). Notre ligne teintée d'or, notre nom en or. Le même tableau suit
+    chaque journée de championnat dans l'après-match, avec les places gagnées ou perdues.
+  - À droite du classement, des plaques : la course de la saison (« Monter en fin de saison », « Jouer l'Europe »
+    ou « Sauver sa place » : la règle, la place, l'écart en points avec le club à rattraper ou à tenir derrière, les
+    journées qui restent, la prime de classement exacte de la place actuelle, `prizeFor`) ; chaque coupe tour par
+    tour (après une élimination, seulement les tours joués et une phrase) ; les meilleurs du club cette saison
+    (meilleure note moyenne sur 3 matchs au moins, meilleur buteur, gardien ou défenseur aux matchs sans encaisser :
+    un nom ouvre la fiche du joueur) ; le dernier match ; la vitrine ; les classements passés.
   - Aperçus : `?ecran=saison`, `saison-joue`, `saison-coupe`, `saison-fin`, `calendrier-europe`, `classement`,
     `europe`.
 - Réglages (écran titre et menu pause, voir plus bas) : Son et Vibrations en interrupteurs. Plus de qualité graphique
@@ -249,7 +307,8 @@ le glissement et la loupe du doigt décale la pastille.
 
 Façon jeu de console : un seul chargement au démarrage, puis l'écran titre devant le complexe en 3D, puis le jeu.
 
-- Chargement (`index.html` puis `src/ui/loading.jsx`, mêmes styles dans `index.html`) : logo au centre, astuce en
+- Chargement (`index.html` puis `src/ui/loading.jsx`, mêmes styles dans `index.html`) : logo du jeu au centre (comme
+  l'écran titre), astuce en
   bas à gauche, étape et pourcentage en bas à droite, barre dorée sur toute la largeur. Sur téléphone, barre, étape
   et pourcentage sous le rond central, l'astuce en bas (collée au bord du bas, la barre passait sous la barre
   d'outils du navigateur ou le trait d'accueil du téléphone). La progression est réelle
@@ -261,9 +320,14 @@ Façon jeu de console : un seul chargement au démarrage, puis l'écran titre de
   compiler à la fin prenait 8 s au lieu de 3,5). Onglet en arrière-plan : une minuterie termine le chargement.
 - Écran titre (`src/ui/title.jsx`) : la caméra tourne lentement autour du complexe (`attract` d'Empire3D, le
   complexe décalé hors du menu), sur téléphone comme sur PC. La page elle-même ne se zoome pas au doigt
-  (`index.html`, `main.jsx`) ; seule la caméra 3D du jeu garde son zoom. Logo FootOFF Empire (monogramme, FootOFF, « Empire » en sous-titre espacé, comme
-  sur l'écran de chargement), sans horloge ; menu Continuer, Nouvelle partie, Réglages, FootOFF Media ;
-  à droite (PC) la carte de l'entrée active (classement, points, journée, forme, prochain match, trésorerie).
+  (`index.html`, `main.jsx`) ; seule la caméra 3D du jeu garde son zoom. Maquette A10 : logo du jeu
+  (`EmpireWordmark`, `src/ui/brand.jsx` : monogramme or, « FOOT » blanc et « OFF » or en grandes capitales
+  condensées, « EMPIRE » en bande dorée penchée ; le même sur l'écran de chargement), sans horloge ; menu Continuer
+  (ou Nouvelle partie s'il n'y a pas de partie), Règles du jeu, Nouveautés, Réglages, FootOFF Media. L'entrée active
+  devient une barre dorée penchée, plus haute, texte sombre et flèche. Jamais de « Nouvelle partie » par-dessus une
+  sauvegarde (règle du projet : une partie n'est jamais effacée ; ni au titre ni dans la pause). À droite (PC) la
+  plaque de l'entrée active : pour la partie, le club en grand, classement, points, journées, forme en pastilles
+  penchées, prochain adversaire avec son écusson, trésorerie.
   Avant la création du club, la scène montre le complexe de départ. Sous-écrans avec leur propre en-tête :
   réglages, création du club (nom proposé au hasard, dé pour en tirer un autre). Fenêtre peu haute (ordinateur
   sous 760 px, puis sous 680 px de haut) : le formulaire de création se resserre et tient en entier dès 600 px ;
@@ -271,8 +335,9 @@ Façon jeu de console : un seul chargement au démarrage, puis l'écran titre de
   recouvrait le milieu de « Fonder le club » en 793 × 639). Continuer : la caméra plonge
   vers la vue d'ensemble et le HUD apparaît.
 - Menu pause (`src/ui/pause.jsx`) : Échap, le bouton menu du HUD, ou Start à la manette. La scène se fige (Empire3D
-  ne dessine plus, `paused`) et se floute ; le nom du club avec son écusson ; Reprendre, Réglages, Écran titre, Nouvelle partie (confirmation),
-  FootOFF Media ; à droite la saison en cours et l'objectif. Ses classes portent le préfixe `pz-` : le préfixe
+  ne dessine plus, `paused`) et se floute ; le nom du club avec son écusson ; Reprendre, Réglages, Règles du jeu,
+  Nouveautés, Écran titre, FootOFF Media (même barre dorée que l'écran titre) ; à droite la saison en cours et les
+  objectifs. Ses classes portent le préfixe `pz-` : le préfixe
   `pm-` appartient à l'avant-match (un `.pm-side` commun masquait le coup d'envoi sur téléphone).
 - Commandes (`src/ui/console.jsx`, `src/ui/input.js`) : flèches, Entrée, Échap ; souris (l'entrée suit le
   survol) ; doigt ; manette (croix ou stick, A, B, Start), traduite en touches du clavier. Les aides en bas
@@ -436,7 +501,14 @@ Onglet Joueurs de l'Effectif (`src/ui/squad.jsx`, refait le 2026-10-24 : « mode
 - Condition physique en pourcentage (cartes, colonne « Cond. » du tableau, barre de la fiche avec le coût d'un match et
   la récupération par date) ; étiquette « Blessé · entorse · 3 matchs » ou « Suspendu · 1 match » sur la carte, sous le
   nom dans le tableau, dans les étiquettes de la fiche (`AbsentTag`).
-- Vue d'ensemble en quatre tuiles : niveau du onze (doré), âge moyen, forme, valeur totale.
+- Vue d'ensemble en cinq repères : niveau du onze (doré), condition moyenne, âge moyen, forme, valeur totale.
+- Filtres en onglets avec leur nombre (Tous, Gardiens, Défenseurs, Milieux, Attaquants) et menu de tri (poste :
+  rangées par ligne ; niveau, âge, condition : d'un seul tenant).
+- Habillage Tribune (maquette A6) : carte en plaque au coin coupé, bandeau du rang en haut (bronze, argent, or,
+  élite), niveau en grand, portrait de 96 px, nom en capitales, trois points forts, barre de condition (ou bandeau
+  rouge d'absence), pied avec la fourchette du potentiel et la forme des cinq derniers matchs en pastilles penchées.
+- Fiche joueur (maquette A7) : en-tête en plaque (prénom au-dessus du nom en grand, poste, numéro, titulaire, pied),
+  niveau et potentiel sur l'échelle de 0 à 20, puis condition, saison, carrière ; action principale collée en bas.
 - Joueurs en cartes rangées par ligne (Gardiens, Défenseurs, Milieux, Attaquants ; effectif et moyenne de la ligne).
   Une carte : teinte du rang pour la division (bronze : faible, argent, or : fort, élite : très fort, avec halo et
   reflet qui passe), niveau en grand (dégradé doré dès l'or) et poste, numéro, « XI » pour un titulaire, portrait sur
@@ -453,8 +525,11 @@ légendes de l'onglet Stats, le Stats Pass d'un match, la fiche joueur et l'ongl
 
 ## Mercato
 
-Un seul onglet « Mercato » dans l'Effectif (`src/ui/mercato.jsx`) : joueurs libres et joueurs sous contrat dans la
-même liste, quatre vues.
+Section Mercato du menu du bas (`src/ui/mercato.jsx`, maquette A8) : joueurs libres et joueurs sous contrat dans la
+même liste, quatre vues en onglets dans l'en-tête de la section (Recruter, Suivis, Offres avec la pastille rouge des
+offres à traiter, Bilan). Sur PC, la liste est un tableau d'analyste par défaut (joueur, poste, niveau, potentiel,
+gain pour le onze, repères, prix, suivre, « Offre ») ; « Cartes / Tableau » ramène les cartes, le choix est gardé
+(`fo-market-view`). Au téléphone, les cartes.
 - Recruter : mode d'emploi en trois temps à la première visite, actualité de la journée (arrivées, départs, joueurs
   suivis courtisés ou partis), recherche par nom ou par club (sans accents ni majuscules), filtres (poste, statut,
   dans mes moyens, renforce mon onze, pépites), tri en menu compact. Cartes (refaites le 2026-10-24, « moderne et
@@ -628,11 +703,13 @@ pastille ne mord sur un nom, vérifié sur les six dispositifs, PC et téléphon
 reste collé au bas de la carte quand la composition dépliée la fait défiler. Jusqu'à cinq entrants (`SUBS_MAX`, `live.applyLineup`), expulsés figés, résumé des changements visible
 une fois la composition dépliée, pronostic recalculé.
 
-Avant-match (`PreMatch`, `src/ui/match.jsx`), même principe : sous l'affiche, des pastilles (niveau contre niveau,
-affluence, recettes) ; puis la composition (les absents listés dessous), le dispositif et la tactique ; en bas, collés à
-l'écran et ensemble, le pronostic (victoire, nul, défaite, buts attendus) et le coup d'envoi : chaque réglage montre
-aussitôt son effet sur les chances, juste au-dessus du bouton qui lance le match. Le pronostic intègre la condition
-physique du onze, qui baisse au fil du match (`src/game/live.js`, `prematchOdds`).
+Avant-match (`PreMatch`, `src/ui/match.jsx`, maquette A3), même principe : en tête la compétition et la journée, les
+deux clubs face à face (noms ajustés à leur longueur), l'affluence et la recette attendues ; puis la composition (les
+absents listés dessous), le plan de jeu (dispositif ; tactique avec son effet chiffré, « +28 % d'occasions · +22 %
+subies », l'équilibrée étant « le plan de référence ») ; en bas, collés à l'écran et ensemble, le pronostic (victoire,
+nul, défaite en or, gris, rouge ; buts attendus) et le coup d'envoi : chaque réglage montre aussitôt son effet sur les
+chances, juste au-dessus du bouton qui lance le match. Le pronostic intègre la condition physique du onze, qui baisse
+au fil du match (`src/game/live.js`, `prematchOdds`).
 
 Direct (`LiveMatch`, moteur `src/game/live.js`, refait le 2026-10-24) : le match se simule au fil de l'horloge, avec
 quatorze minutes d'avance pour que la scène 3D prépare chaque action. Le bouton « Changement » (avec le nombre de
@@ -645,6 +722,21 @@ pelouse en 3D) arrête le match d'elle-même s'il reste un changement et un remp
 dix. Cinq changements par match, à la pause ou en jeu. Aperçu : `?ecran=changement`. La composition est dépliée d'office sur PC (le onze à
 gauche, les réglages à droite) et repliée sur téléphone dans la même carte qu'à la mi-temps (`CompoCard`), avec
 « Meilleur onze » dessous ; dépliée, elle cachait sur téléphone le pronostic et tout le reste de l'avant-match.
+
+Habillage du direct (maquette A4 et A5, classes `lv-`) :
+- Bandeau du score façon télé en haut à gauche : écussons, codes de trois lettres des clubs (`src/ui/teamcode.js` :
+  le mot le plus distinctif du nom, sans accents ni mots génériques ; « Saint-Clair » → SCL, « FootOFF FC » → FOF ;
+  l'adversaire prend une variante si les deux codes se ressemblent), score en plaque dorée, horloge (rouge en jeu,
+  « MT » à la pause). Le nom complet reste partout ailleurs.
+- Bandeau « BUT ! » (« But VAU » pour l'adversaire) : portrait et nom du buteur, minute, passeur, rang du but dans
+  la saison pour nos joueurs (« 3e but de la saison »), score.
+- Temps forts : 45 colonnes de deux minutes au-dessus et au-dessous d'un axe (notre domination en or, celle de
+  l'adversaire en gris bleuté), tirées des tirs déjà montrés (but, arrêt ou poteau, à côté, pondérés par la qualité de
+  l'occasion) et de la possession, avec un point pour chaque but ; rien n'annonce une action pas encore montrée.
+- Pronostic final pendant tout le match : les chances exactes du moteur (`live.oddsShown`) à partir de ce que le
+  direct a déjà montré (buts, cartons rouges, blessures), jamais des quatorze minutes simulées d'avance ; à la
+  mi-temps, calculé depuis la fin réelle de la première période (temps additionnel compris).
+- Sur téléphone, le fil, les statistiques et la composition en onglets au-dessus des commandes.
 
 Chaque match enregistre son onze de départ (dans l'ordre des postes de la formation), ses changements, la formule
 des billets du jour, le prix du billet et les recettes détaillées (`recordMatch`, `src/game/season.js`). Le Stats
