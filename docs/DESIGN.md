@@ -324,6 +324,18 @@ en est le club (« Tu grimpes à la 2e place », « Tu restes en tête »). L'or
   leur écusson, rangé dans la famille la plus proche. Planche de contrôle : `tmp/ph3/crests.html`
   (`?sec=clubs|familles|symboles|motifs`).
 
+## Effectif
+
+Onglet Joueurs de l'Effectif (`src/ui/squad.jsx`, refait le 2026-10-24 : « moderne et super esthétique ») :
+- Vue d'ensemble en quatre tuiles : niveau du onze (doré), âge moyen, forme, valeur totale.
+- Joueurs en cartes rangées par ligne (Gardiens, Défenseurs, Milieux, Attaquants ; effectif et moyenne de la ligne).
+  Une carte : teinte du rang pour la division (bronze : faible, argent, or : fort, élite : très fort, avec halo et
+  reflet qui passe), niveau en grand (dégradé doré dès l'or) et poste, numéro, « XI » pour un titulaire, portrait sur
+  un halo, prénom puis nom, pastille de vente ou de clubs intéressés, trois points forts en grands chiffres (dorés
+  s'ils sont forts pour la division), âge et forme. Apparition en cascade ; deux colonnes au téléphone.
+- Sur PC, « Cartes / Tableau » ramène le tableau d'analyste (tri par colonne) ; le choix est gardé (navigateur). Au
+  téléphone, les cartes seulement.
+
 ## Carrières et anciens joueurs
 
 Chaque départ (vente, plan de redressement, retraite) archive le joueur dans `alumni` avec tout son parcours.
@@ -335,9 +347,11 @@ légendes de l'onglet Stats, le Stats Pass d'un match, la fiche joueur et l'ongl
 Un seul onglet « Mercato » dans l'Effectif (`src/ui/mercato.jsx`) : joueurs libres et joueurs sous contrat dans la
 même liste, quatre vues.
 - Recruter : mode d'emploi en trois temps à la première visite, actualité de la journée (arrivées, départs, joueurs
-  suivis courtisés ou partis), filtres (poste, statut, dans mes moyens, renforce mon onze, pépites), tri en menu
-  compact. Cartes : note en médaille (code couleur de l'Effectif), club et écusson, trois meilleures qualités,
-  potentiel et salaire, étoile pour suivre, comparateur ; étiquettes Recommandé, Onze +x, Courtisé, Nouveau, Pépite,
+  suivis courtisés ou partis), recherche par nom ou par club (sans accents ni majuscules), filtres (poste, statut,
+  dans mes moyens, renforce mon onze, pépites), tri en menu compact. Cartes (refaites le 2026-10-24, « moderne et
+  super esthétique ») : teinte du rang pour la division comme les cartes de l'Effectif (bronze, argent, or, élite),
+  note en médaille, club et écusson, âge, poste et salaire, trois meilleures qualités en grands chiffres, jauge du
+  niveau et de la fourchette du potentiel sur l'échelle de 0 à 20, étoile pour suivre, comparateur ; étiquettes Recommandé, Onze +x, Courtisé, Nouveau, Pépite,
   Bonne affaire, Prix en hausse ou en baisse, Fin de contrat ; prix (rouge s'il dépasse la trésorerie), tendance,
   « Faire une offre ». Le réseau de recruteurs (bureau des transferts) ferme la liste.
 - Suivis : écart de prix depuis le suivi (vert s'il a baissé), joueurs partis ailleurs.

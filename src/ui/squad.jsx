@@ -4,6 +4,7 @@ import {
   ATTRS, FAMILIES, GK_ATTRS, TRAITS, WEIGHTS, costOf, playerRating, potentialRange, ratingAt, saleValue, wageOf,
 } from '../game/players';
 import { seasonForecast } from '../game/economy';
+import { teamLevel } from '../game/match';
 import { clubAfter, deName } from '../game/names';
 import { bestSigning } from '../game/advice';
 import { findOnMarket, offersFor, pendingCounters, poolOf } from '../game/mercato';
@@ -20,8 +21,9 @@ import { PHONE, useSwipe } from './gestures';
 import { FollowButton, ListingSheet, Mercato, Negotiation, SaleNegotiation, SaleToggle, heat } from './mercato';
 import { Portrait } from './portrait';
 
-// Effectif : tableau d'analyste (PC) ou liste compacte (mobile), fiche joueur façon magazine FootOFF Media,
-// comparateur radar. Les couleurs des cases disent si une valeur est forte ou faible pour ta division.
+// Effectif : vue d'ensemble, puis les joueurs en cartes rangées par ligne (teinte du rang pour ta division : bronze,
+// argent, or, élite) ou, sur PC, en tableau d'analyste ; fiche joueur façon magazine FootOFF Media, comparateur
+// radar. Les couleurs des cases disent si une valeur est forte ou faible pour ta division.
 
 const ORDER = { G: 0, D: 1, M: 2, A: 3 };
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
@@ -31,6 +33,10 @@ const topAttrs = (p, n = 3) => [...attrsOf(p)].sort((a, b) => b.v - a.v).slice(0
 const formAvg = (p) => (p.form?.length ? p.form.reduce((a, b) => a + b, 0) / p.form.length : null);
 const divRef = (s) => { const d = DIVISIONS[s.divisionIndex]; return (d.oppMin + d.oppMax) / 2; };
 const onSale = (s, p) => (s.saleList || []).some((x) => x.id === p.id); // mis en vente au mercato
+// rang d'un joueur pour la division (teinte de sa carte) : élite, or, argent, bronze
+export const tierOf = (r, ref) => (r >= ref + 3 ? 'elite' : r >= ref + 1 ? 'gold' : r <= ref - 2 ? 'bronze' : 'silver');
+const VIEW_KEY = 'fo-squad-view';
+const LINES = [['G', 'Gardiens'], ['D', 'Défenseurs'], ['M', 'Milieux'], ['A', 'Attaquants']];
 
 // Pastille d'un joueur mis en vente ou convoité : le nombre de clubs intéressés, sinon « En vente ».
 function SaleTag({ state, p }) {
@@ -47,6 +53,8 @@ function SaleTag({ state, p }) {
 export function SquadView({ state, run, ask, onClose, onFinances, initialTab = 'players', preview = null, initialSheet = null, initialMercato = null }) {
   const [tab, setTab] = useState(initialTab);
   const [filter, setFilter] = useState('all');
+  const [view, setView] = useState(() => { try { return localStorage.getItem(VIEW_KEY) === 'table' ? 'table' : 'cards'; } catch { return 'cards'; } });
+  const pickView = (v) => { setView(v); try { localStorage.setItem(VIEW_KEY, v); } catch { /* préférence non conservée */ } };
   const [sheet, setSheet] = useState(preview?.sheet ? { id: preview.sheet } : initialSheet ? { id: initialSheet } : null); // { id, market, order }
   const [compare, setCompare] = useState(null); // { a, b } identifiants
   const [career, setCareer] = useState(null); // fiche carrière (joueur actuel ou ancien)
@@ -219,23 +227,33 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
     >
         {tab === 'players' ? (
           <>
-            <div className="chips">
-              {FILTERS.map(([id, label]) => (
-                <button key={id} className={filter === id ? 'active' : ''} onClick={() => setFilter(id)}>{label}</button>
-              ))}
-              <span className="sq-legend"><i className="hi" /> fort pour la division <i className="low" /> faible</span>
+            <SquadOverview state={state} squad={squad} />
+            <div className="sq-controls">
+              <div className="chips">
+                {FILTERS.map(([id, label]) => (
+                  <button key={id} className={filter === id ? 'active' : ''} onClick={() => setFilter(id)}>{label}</button>
+                ))}
+              </div>
+              {view === 'table'
+                ? <span className="sq-legend"><i className="hi" /> fort pour la division <i className="low" /> faible</span>
+                : <span className="sq-legend tiers"><i className="gold" /> or : fort pour ta division <i className="bronze" /> bronze : faible</span>}
+              <div className="sq-view" role="group" aria-label="Affichage de l’effectif">
+                <button type="button" className={view === 'cards' ? 'on' : ''} aria-pressed={view === 'cards'} onClick={() => pickView('cards')}>Cartes</button>
+                <button type="button" className={view === 'table' ? 'on' : ''} aria-pressed={view === 'table'} onClick={() => pickView('table')}>Tableau</button>
+              </div>
             </div>
-            <div className="sq-tables">
-              {shown.some((p) => p.pos === 'G') && (
-                <PlayerTable title="Gardiens" cols={GK_ATTRS} span={ATTRS.length} players={shown.filter((p) => p.pos === 'G')} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
-              )}
-              {shown.some((p) => p.pos !== 'G') && (
-                <PlayerTable title="Joueurs de champ" cols={ATTRS} span={ATTRS.length} players={shown.filter((p) => p.pos !== 'G')} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
-              )}
-            </div>
-            <ul className="sq-list">
-              {shown.map((p) => <PlayerRow key={p.id} p={p} state={state} refLvl={ref} onOpen={() => setSheet({ id: p.id })} />)}
-            </ul>
+            {view === 'table' && (
+              <div className="sq-tables">
+                {shown.some((p) => p.pos === 'G') && (
+                  <PlayerTable title="Gardiens" cols={GK_ATTRS} span={ATTRS.length} players={shown.filter((p) => p.pos === 'G')} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
+                )}
+                {shown.some((p) => p.pos !== 'G') && (
+                  <PlayerTable title="Joueurs de champ" cols={ATTRS} span={ATTRS.length} players={shown.filter((p) => p.pos !== 'G')} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
+                )}
+              </div>
+            )}
+            {/* le tableau ne tient pas sur un téléphone : les cartes y restent */}
+            <SquadCards className={view === 'table' ? 'only-sm' : ''} players={shown} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
           </>
         ) : tab === 'market' ? (
           <Mercato
@@ -258,6 +276,83 @@ export function SquadView({ state, run, ask, onClose, onFinances, initialTab = '
           <Alumni state={state} onOpen={setCareer} />
         )}
     </Panel>
+  );
+}
+
+// --- Vue d'ensemble et cartes ---------------------------------------------------------------------------------
+// Quatre chiffres de l'effectif, puis une carte par joueur, rangées par ligne : la teinte dit son rang pour la
+// division (élite, or, argent, bronze), le niveau en grand avec le poste, le portrait, le prénom et le nom, ses
+// trois points forts (dorés s'ils sont forts pour la division), l'âge et la forme ; « XI » pour un titulaire.
+
+function SquadOverview({ state, squad }) {
+  if (!squad.length) return null;
+  const forms = squad.map(formAvg).filter((f) => f !== null);
+  const value = squad.reduce((a, p) => a + saleValue(p, state.divisionIndex), 0);
+  const tiles = [
+    ['Niveau du onze', fmtRating(teamLevel(state)), 'gold'],
+    ['Âge moyen', `${fmtRating(squad.reduce((a, p) => a + p.age, 0) / squad.length)} ans`],
+    ['Forme', forms.length ? fmtRating(forms.reduce((a, b) => a + b, 0) / forms.length) : '–'],
+    ['Valeur totale', fmtMoney(value)],
+  ];
+  return (
+    <div className="sq-overview">
+      {tiles.map(([label, v, tone]) => <div key={label} className={tone || ''}><span>{label}</span><b>{v}</b></div>)}
+    </div>
+  );
+}
+
+function SquadCards({ players, state, refLvl, onOpen, className = '' }) {
+  let k = 0;
+  return (
+    <div className={`sq-cards ${className}`}>
+      {LINES.map(([pos, label]) => {
+        const group = players.filter((p) => p.pos === pos);
+        if (!group.length) return null;
+        const avg = group.reduce((a, p) => a + playerRating(p), 0) / group.length;
+        return (
+          <section key={pos} className="sq-line">
+            <header className="sq-line-head">
+              <span className={`pos-pill ${pos}`}>{pos}</span>
+              <h3>{label}</h3>
+              <span className="sq-line-meta">{group.length} · moyenne {fmtRating(avg)}</span>
+            </header>
+            <ul className="sqc-grid">
+              {group.map((p) => <PlayerCard key={p.id} p={p} state={state} refLvl={refLvl} index={k++} onOpen={() => onOpen(p)} />)}
+            </ul>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+function PlayerCard({ p, state, refLvl, index, onOpen }) {
+  const r = playerRating(p);
+  const f = formAvg(p);
+  const starter = state.lineup?.includes(p.id);
+  const [first, ...rest] = p.name.split(' ');
+  return (
+    <li style={{ '--k': Math.min(index, 18) }}>
+      <button type="button" className={`sqc ${tierOf(r, refLvl)}`} onClick={onOpen} aria-label={`Fiche de ${p.name}, niveau ${fmtRating(r)}`}>
+        <span className="sqc-top">
+          <span className="sqc-rating"><b>{fmtRating(r)}</b><span className={`pos-pill ${p.pos}`}>{p.pos}</span></span>
+          <span className="sqc-flags">
+            {p.num != null && <em className="sqc-num">{p.num}</em>}
+            {starter && <span className="sqc-xi" title="Titulaire">XI</span>}
+          </span>
+        </span>
+        <span className="sqc-face"><Portrait p={p} size={70} /></span>
+        <span className="sqc-name">{rest.length > 0 && <small>{first}</small>}<strong>{rest.length ? rest.join(' ') : first}</strong></span>
+        <SaleTag state={state} p={p} />
+        <span className="sqc-stats">
+          {topAttrs(p).map((a) => <span key={a.key} className={heat(a.v, refLvl)}><b>{Math.round(a.v)}</b><em>{a.short}</em></span>)}
+        </span>
+        <span className="sqc-foot">
+          <span>{p.age} ans</span>
+          {f === null ? <span className="sqc-form">pas encore joué</span> : <span className={`sqc-form ${f >= 7.5 ? 'good' : f < 5.5 ? 'low' : ''}`}>forme {fmtRating(f)}</span>}
+        </span>
+      </button>
+    </li>
   );
 }
 
@@ -338,32 +433,6 @@ function PlayerTable({ title, cols, span = cols.length, players, state, refLvl, 
         </tbody>
       </table>
     </div>
-  );
-}
-
-// --- Liste compacte (mobile) ---------------------------------------------------------------------------
-
-function PlayerRow({ p, state, refLvl, onOpen, extra }) {
-  const f = formAvg(p);
-  const r = playerRating(p);
-  return (
-    <li>
-      <button className="sq-row" onClick={onOpen}>
-        <span className="sq-face"><Portrait p={p} size={42} /><span className={`pos-pill ${p.pos}`}>{p.pos}</span></span>
-        <span className="sq-row-main">
-          <span className="sq-row-name">{p.num ? <em>{p.num}</em> : null}{p.name}{state.lineup?.includes(p.id) && <i className="sq-starter" title="Titulaire" />}<SaleTag state={state} p={p} /></span>
-          <span className="sq-row-meta">
-            {p.age} ans · {topAttrs(p).map((a) => <span key={a.key} className={heat(a.v, refLvl)}>{a.short} {Math.round(a.v)}</span>)}
-          </span>
-        </span>
-        <span className="sq-row-side">
-          <b className={heat(r, refLvl)}>{fmtRating(r)}</b>
-          {extra ? <span>{extra}</span> : f === null ? <span>pas encore joué</span> : (
-            <span className="sq-row-form">forme <i className={f >= 7.5 ? 'good' : f < 5.5 ? 'low' : ''}>{fmtRating(f)}</i></span>
-          )}
-        </span>
-      </button>
-    </li>
   );
 }
 

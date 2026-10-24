@@ -16,7 +16,7 @@ import { capitalize, clubAfter, isPluralClub, withArticle } from '../game/names'
 import { Crest } from './crest';
 import { fmtMoney, fmtRating } from './format';
 import { Tabs } from './glass';
-import { IconCheck, IconChevron, IconClose, IconRadar, IconStar, IconTransfer, IconTrend } from './icons';
+import { IconCheck, IconChevron, IconClose, IconRadar, IconSearch, IconStar, IconTransfer, IconTrend } from './icons';
 import { useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { haptic } from './haptics';
@@ -44,6 +44,10 @@ export function heat(v, ref) { // même code couleur que l'Effectif : fort, bon,
   return '';
 }
 const potMid = (s, p) => { const r = potentialRange(p, s); return r ? (r[0] + r[1]) / 2 : playerRating(p); };
+// rang d'un joueur pour la division (teinte de sa carte, comme dans l'Effectif) : élite, or, argent, bronze
+const tierOf = (r, ref) => (r >= ref + 3 ? 'elite' : r >= ref + 1 ? 'gold' : r <= ref - 2 ? 'bronze' : 'silver');
+// recherche sans accents ni majuscules (« leo » trouve « Léo »)
+const fold = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const pct = (v) => `${v > 0 ? '+' : ''}${Math.round(v * 100)} %`;
 // noms de clubs dans une phrase : l'article et l'accord du verbe (« l'AS … accepte », « les Bleus … acceptent »)
 const Club = (c) => capitalize(withArticle(c));
@@ -76,7 +80,7 @@ export function MarketCard({ p, state, refLvl, followed, recommended, onOpen, on
   const talks = p.talks || {};
   const full = state.players.length >= SQUAD_MAX;
   return (
-    <li className={`mc-card ${recommended ? 'rec' : ''} ${p.club ? 'pro' : 'free'}`}>
+    <li className={`mc-card t-${tierOf(r, refLvl)} ${recommended ? 'rec' : ''} ${p.club ? 'pro' : 'free'}`}>
       <div className="mc-head">
         <button type="button" className="mc-main" onClick={() => onOpen(p)} aria-label={`Fiche de ${p.name}`}>
           <span className="mc-face">
@@ -90,14 +94,26 @@ export function MarketCard({ p, state, refLvl, followed, recommended, onOpen, on
                 <><Crest name={p.club} className="mc-crest" /><span className="mc-club-name">{p.club}</span></>
               ) : <span className="mc-free">Joueur libre</span>}
             </span>
-            <span className="mc-attrs">{p.age} ans · {topAttrs(p).map((a) => <span key={a.key} className={heat(a.v, refLvl)}>{a.short} {Math.round(a.v)}</span>)}</span>
-            <span className="mc-pot">Potentiel {pot ? <b>{fmtRating(pot[0])} – {fmtRating(pot[1])}</b> : 'atteint'} · salaire {fmtMoney(wageOf(p, state.divisionIndex))}</span>
+            <span className="mc-pot">{p.age} ans · {POS_LABELS[p.pos]} · salaire {fmtMoney(wageOf(p, state.divisionIndex))}</span>
           </span>
         </button>
         <div className="mc-quick">
           <button type="button" className={`mc-icon ${followed ? 'on' : ''}`} aria-pressed={followed} onClick={() => onFollow(p)} title={followed ? 'Ne plus suivre' : 'Suivre ce joueur'} aria-label={followed ? `Ne plus suivre ${p.name}` : `Suivre ${p.name}`}><IconStar /></button>
           <button type="button" className="mc-icon" onClick={() => onCompare(p)} title="Comparer" aria-label={`Comparer ${p.name}`}><IconRadar /></button>
         </div>
+      </div>
+      {/* points forts en grand, puis le niveau et la fourchette du potentiel sur l'échelle de 0 à 20 */}
+      <div className="mc-body">
+        <span className="mc-stats">
+          {topAttrs(p).map((a) => <span key={a.key} className={heat(a.v, refLvl)}><b>{Math.round(a.v)}</b><em>{a.short}</em></span>)}
+        </span>
+        <span className="mc-potential">
+          <span className="mc-potential-top"><em>Potentiel</em><b>{pot ? `${fmtRating(pot[0])} – ${fmtRating(pot[1])}` : 'atteint'}</b></span>
+          <span className="sh-scale" aria-hidden="true">
+            <i className="now" style={{ width: `${(r / 20) * 100}%` }} />
+            {pot && <i className="pot" style={{ left: `${(pot[0] / 20) * 100}%`, width: `${((pot[1] - pot[0]) / 20) * 100}%` }} />}
+          </span>
+        </span>
       </div>
       {(recommended || gain >= 0.3 || tags.length > 0 || p.interest > 0 || note) && (
         <div className="mc-tags">
@@ -224,6 +240,7 @@ function BuyView({ state, run, refLvl, recommended, followed, onOpen, onCompare,
   const [kind, setKind] = useState('all');
   const [only, setOnly] = useState({ afford: false, fit: false, gem: false });
   const [sort, setSort] = useState('fit');
+  const [query, setQuery] = useState('');
   const toggle = (k) => setOnly((o) => ({ ...o, [k]: !o[k] }));
   const pool = poolOf(state);
   const list = useMemo(() => {
@@ -231,11 +248,13 @@ function BuyView({ state, run, refLvl, recommended, followed, onOpen, onCompare,
       fit: (p) => -(p.id === recommended ? 100 : 0) - fitGain(state, p) * 10 - playerRating(p) / 10,
       lvl: (p) => -playerRating(p), price: (p) => costOf(p, state), pot: (p) => -potMid(state, p), age: (p) => p.age,
     };
+    const q = fold(query.trim());
     return pool
+      .filter((p) => !q || fold(`${p.name} ${p.club || 'libre'}`).includes(q))
       .filter((p) => (pos === 'all' || p.pos === pos) && (kind === 'all' || (kind === 'free') === !p.club))
       .filter((p) => (!only.afford || costOf(p, state) <= state.money) && (!only.fit || fitGain(state, p) >= 0.3) && (!only.gem || tagsOf(state, p).includes('gem')))
       .sort((a, b) => score[sort](a) - score[sort](b));
-  }, [state, pos, kind, only, sort, recommended]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state, pos, kind, only, sort, recommended, query]); // eslint-disable-line react-hooks/exhaustive-deps
   const chip = (active, onClick, label, pressed = undefined) => (
     <button key={label} type="button" className={active ? 'active' : ''} aria-pressed={pressed} onClick={onClick}>{label}</button>
   );
@@ -244,6 +263,11 @@ function BuyView({ state, run, refLvl, recommended, followed, onOpen, onCompare,
       {!state.mercatoTips && <HowTo run={run} />}
       <News state={state} />
       <div className="mc-filters">
+        <label className="mc-search">
+          <IconSearch />
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher un joueur ou un club" aria-label="Rechercher un joueur ou un club" enterKeyHint="search" autoComplete="off" spellCheck={false} />
+          {query && <button type="button" className="mc-search-clear" onClick={() => setQuery('')} aria-label="Effacer la recherche"><IconClose /></button>}
+        </label>
         <div className="chips">
           {POS_FILTERS.map(([id, label]) => chip(pos === id, () => setPos(id), label))}
           <span className="mc-sep" aria-hidden="true" />

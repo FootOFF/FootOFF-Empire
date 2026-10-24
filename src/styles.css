@@ -475,6 +475,92 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .pos-pill.M { color: var(--blue); }
 .pos-pill.A { color: var(--red); }
 .sq-list { display: none; list-style: none; margin: 0; padding: 0; flex-direction: column; gap: 8px; }
+
+/* ---- effectif : vue d'ensemble et cartes de joueur (src/ui/squad.jsx) ----
+   Teinte de la carte selon le rang pour la division : bronze (faible), argent, or (fort), élite (très fort, halo). */
+.sq-overview { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); margin-bottom: var(--s-4); }
+.sq-overview > div {
+  min-width: 0; padding: 12px 14px; border-radius: var(--r-md); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 3px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .045), rgba(255, 255, 255, .012));
+}
+.sq-overview > div.gold { border-color: var(--gold-line); background: radial-gradient(120% 120% at 0% 0%, rgba(222, 193, 127, .16), transparent 60%), rgba(255, 255, 255, .02); }
+.sq-overview span { font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sq-overview b { font-family: var(--font-title); font-weight: 600; font-size: 22px; line-height: 1.15; letter-spacing: -.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sq-overview .gold b { color: var(--gold-light); }
+.sq-controls { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-4); }
+.sq-controls .chips { flex: 1; min-width: 0; margin-bottom: 0; }
+.sq-controls .sq-legend { margin-left: 0; }
+@media (max-width: 1180px) { .sq-controls .sq-legend { display: none; } } /* la ligne garde ses filtres sur une rangée */
+.sq-legend.tiers i.gold { background: rgba(222, 193, 127, .6); }
+.sq-legend.tiers i.bronze { background: rgba(196, 128, 82, .6); }
+.sq-view { flex: none; display: inline-flex; padding: 3px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); }
+.sq-view button { padding: 6px 14px; border-radius: 999px; border: none; background: none; color: var(--text-2); font-size: var(--t-sm); transition: color var(--dur-fast), background var(--dur-fast); }
+.sq-view button.on { background: var(--gold-soft); color: var(--gold-light); box-shadow: inset 0 0 0 1px var(--gold-line); }
+@media (hover: hover) { .sq-view button:hover:not(.on) { color: var(--text); } }
+.sq-cards { display: flex; flex-direction: column; gap: var(--s-5); }
+.sq-cards.only-sm { display: none; }
+.sq-line-head { display: flex; align-items: center; gap: 10px; margin-bottom: var(--s-3); }
+.sq-line-head h3 { margin: 0; font-family: var(--font-title); font-weight: 500; font-size: var(--t-md); letter-spacing: -.01em; }
+.sq-line-meta { margin-left: auto; font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .06em; color: var(--muted); white-space: nowrap; }
+.sqc-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: var(--s-3); }
+.sqc {
+  --tint: rgba(205, 214, 228, .1); --edge: rgba(205, 214, 228, .16); --hi: linear-gradient(90deg, transparent, rgba(220, 228, 240, .75), transparent);
+  position: relative; width: 100%; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 14px 12px 12px; border-radius: 18px; border: 1px solid var(--edge); color: var(--text); text-align: center; overflow: hidden; isolation: isolate;
+  background: radial-gradient(130% 75% at 50% 0%, var(--tint), transparent 72%), linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, .008)), rgb(16, 16, 17);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .35);
+  transition: transform .25s var(--ease), border-color var(--dur-fast), box-shadow .25s var(--ease);
+  animation: sqc-in .45s var(--ease) both; animation-delay: calc(var(--k, 0) * 26ms);
+}
+.sqc::before { content: ''; position: absolute; top: 0; left: 16%; right: 16%; height: 2px; border-radius: 0 0 2px 2px; background: var(--hi); }
+.sqc.gold { --tint: rgba(222, 193, 127, .22); --edge: rgba(222, 193, 127, .34); --hi: var(--gold-grad); }
+.sqc.elite {
+  --tint: rgba(255, 214, 130, .34); --edge: rgba(255, 214, 130, .62); --hi: var(--gold-grad);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .4), 0 0 26px rgba(222, 193, 127, .2);
+}
+.sqc.elite::after { /* reflet qui passe sur une carte d'élite */
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 236, 190, .12) 50%, transparent 65%); background-size: 260% 100%;
+  animation: sqc-sheen 4.5s ease-in-out infinite;
+}
+.sqc.bronze { --tint: rgba(196, 128, 82, .18); --edge: rgba(196, 128, 82, .3); --hi: linear-gradient(90deg, transparent, rgba(214, 146, 98, .85), transparent); }
+@media (hover: hover) { .sqc:hover { transform: translateY(-3px); border-color: var(--gold-line); box-shadow: 0 16px 34px rgba(0, 0, 0, .45); } }
+.sqc:active { transform: scale(.98); }
+.sqc-top { position: absolute; top: 11px; left: 11px; right: 11px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
+.sqc-rating { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.sqc-rating b { font-family: var(--font-title); font-weight: 600; font-size: 25px; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.sqc.gold .sqc-rating b, .sqc.elite .sqc-rating b { background: var(--gold-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sqc-flags { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.sqc-num { font-style: normal; font-family: var(--font-mono); font-size: var(--t-xs); color: var(--muted); }
+.sqc-xi { font-family: var(--font-mono); font-size: 9px; font-weight: 600; letter-spacing: .08em; padding: 2px 6px; border-radius: 999px; background: var(--gold-soft); color: var(--gold-light); border: 1px solid var(--gold-line); }
+.sqc-face { margin-top: 4px; width: 84px; height: 84px; flex: none; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(closest-side, var(--tint), transparent); }
+.sqc-name { display: flex; flex-direction: column; min-width: 0; max-width: 100%; line-height: 1.15; }
+.sqc-name small { font-size: var(--t-xs); color: var(--text-2); }
+.sqc-name strong { font-family: var(--font-title); font-weight: 600; font-size: var(--t-md); letter-spacing: -.01em; overflow-wrap: anywhere; }
+.sqc > .sq-sale { margin: -2px 0 0; }
+.sqc-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; margin-top: auto; padding-top: 9px; border-top: 1px solid rgba(255, 255, 255, .07); }
+.sqc-stats span { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; }
+.sqc-stats b { font-family: var(--font-title); font-weight: 600; font-size: var(--t-md); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.sqc-stats em { font-style: normal; font-family: var(--font-mono); font-size: 9px; letter-spacing: .08em; color: var(--muted); }
+.sqc-stats .hi b, .sqc-stats .good b { color: var(--gold-light); }
+.sqc-stats .low b { color: #e7a39a; }
+.sqc-foot { display: flex; justify-content: space-between; gap: 6px; width: 100%; font-size: var(--t-xs); color: var(--muted); white-space: nowrap; }
+.sqc-form.good { color: var(--green); }
+.sqc-form.low { color: #e7a39a; }
+@keyframes sqc-in { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+@keyframes sqc-sheen { 0%, 55% { background-position: 130% 0; } 100% { background-position: -130% 0; } }
+@media (prefers-reduced-motion: reduce) { .sqc, .sqc.elite::after { animation: none; } }
+@media (max-width: 760px) {
+  .sq-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: var(--s-3); }
+  .sq-overview b { font-size: 19px; }
+  .sq-controls { flex-wrap: wrap; gap: var(--s-2); margin-bottom: var(--s-3); }
+  .sq-controls .chips { flex-basis: 100%; }
+  .sq-view, .sq-controls .sq-legend { display: none; } /* au téléphone : les cartes seulement */
+  .sq-cards.only-sm { display: flex; }
+  .sqc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
+  .sqc { padding: 12px 10px 10px; border-radius: 16px; }
+  .sqc-face { width: 74px; height: 74px; }
+}
 .sq-row {
   width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 12px; border-radius: var(--r-md); text-align: left;
   border: 1px solid var(--line); background: rgba(255, 255, 255, .025); color: inherit;
@@ -2841,6 +2927,30 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .mc-net p b { display: block; color: var(--text); font-weight: 600; }
 
 .mc-filters { display: flex; flex-direction: column; gap: var(--s-2); }
+/* recherche par nom ou par club (sans accents) */
+.mc-search {
+  position: relative; display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 12px 0 14px; border-radius: 14px;
+  border: 1px solid var(--line-strong); background: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .02));
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+}
+.mc-search:focus-within { border-color: var(--gold-line); box-shadow: 0 0 0 3px rgba(222, 193, 127, .12); }
+.mc-search > svg { width: 18px; height: 18px; flex: none; color: var(--muted); }
+.mc-search:focus-within > svg { color: var(--gold-light); }
+.mc-search input {
+  flex: 1; min-width: 0; height: 100%; border: none; outline: none; background: none; color: var(--text);
+  font: inherit; font-size: 16px; /* 16 px : iOS ne zoome pas sur le champ */ -webkit-user-select: text; user-select: text;
+}
+.mc-search input::placeholder { color: var(--muted); }
+.mc-search input::-webkit-search-cancel-button { display: none; }
+.mc-search-clear { flex: none; width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(255, 255, 255, .06); color: var(--text-2); display: grid; place-items: center; }
+.mc-search-clear svg { width: 13px; height: 13px; }
+/* cartes du marché : teinte du rang pour la division, comme les cartes de l'Effectif */
+.mc-card.t-gold { border-color: rgba(222, 193, 127, .3); background: radial-gradient(120% 90% at 0% 0%, rgba(222, 193, 127, .14), transparent 60%), rgba(255, 255, 255, .025); }
+.mc-card.t-elite { border-color: rgba(255, 214, 130, .55); background: radial-gradient(120% 90% at 0% 0%, rgba(255, 214, 130, .24), transparent 62%), rgba(255, 255, 255, .03); box-shadow: 0 0 24px rgba(222, 193, 127, .12); }
+.mc-card.t-bronze { border-color: rgba(196, 128, 82, .26); background: radial-gradient(120% 90% at 0% 0%, rgba(196, 128, 82, .12), transparent 60%), rgba(255, 255, 255, .02); }
+.mc-card.t-silver { background: radial-gradient(120% 90% at 0% 0%, rgba(205, 214, 228, .07), transparent 60%), rgba(255, 255, 255, .025); }
+.mc-card.rec { border-color: var(--gold-line); }
+@media (hover: hover) { .mc-card:hover { border-color: var(--gold-line); } }
 .mc-filters :where(.chips) { margin-bottom: 0; } /* sans écraser la place des zones tactiles (.panel .chips) */
 .mc-filters-row { display: flex; align-items: center; gap: var(--s-2); }
 .mc-filters-row .chips { flex: 1; min-width: 0; }
@@ -2867,8 +2977,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .mc-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--s-3); }
 .mc-grid .empty { grid-column: 1 / -1; padding: var(--s-3) 0; font-size: var(--t-sm); color: var(--muted); }
 .mc-card { min-width: 0; display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); border-radius: var(--r-md); border: 1px solid var(--line); background: rgba(255, 255, 255, .025); transition: border-color var(--dur-fast), background var(--dur-fast); animation: fo-up .3s var(--ease) both; }
-@media (hover: hover) { .mc-card:hover { border-color: var(--line-strong); background: rgba(255, 255, 255, .04); } }
-.mc-card.rec { border-color: var(--gold-line); background: radial-gradient(120% 90% at 0% 0%, rgba(199, 161, 90, .18), transparent 62%), rgba(255, 255, 255, .025); }
+.mc-card.rec { border-color: var(--gold-line); }
 .mc-head { display: flex; align-items: flex-start; gap: var(--s-2); }
 .mc-main { flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: var(--s-3); padding: 0; border: none; background: none; color: inherit; text-align: left; }
 .mc-quick { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
@@ -2902,6 +3011,19 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .mc-attrs .hi, .mc-attrs .good { color: var(--gold-light); }
 .mc-attrs .low { color: #f0b3ab; }
 .mc-pot { font-size: var(--t-xs); color: var(--muted); }
+/* corps de la carte : trois points forts en grand, puis le niveau et le potentiel sur l'échelle de 0 à 20 */
+.mc-body { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--s-4); padding: 10px 2px 2px; border-top: 1px solid rgba(255, 255, 255, .06); }
+.mc-stats { display: grid; grid-template-columns: repeat(3, 44px); }
+.mc-stats span { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.mc-stats b { font-family: var(--font-title); font-weight: 600; font-size: var(--t-lg); line-height: 1.05; font-variant-numeric: tabular-nums; }
+.mc-stats em { font-style: normal; font-family: var(--font-mono); font-size: 9px; letter-spacing: .08em; color: var(--muted); }
+.mc-stats .hi b, .mc-stats .good b { color: var(--gold-light); }
+.mc-stats .low b { color: #f0b3ab; }
+.mc-potential { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.mc-potential-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.mc-potential-top em { font-style: normal; font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.mc-potential-top b { font-weight: 600; font-size: var(--t-sm); color: var(--gold-light); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mc-potential .sh-scale { height: 6px; }
 .mc-pot b { font-weight: 500; color: var(--gold-light); font-variant-numeric: tabular-nums; }
 .mc-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .mc-tag { padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line-strong); font-size: var(--t-xs); color: var(--text-2); white-space: nowrap; }
