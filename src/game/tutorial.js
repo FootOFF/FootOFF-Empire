@@ -9,12 +9,12 @@ import { seasonObjectives } from './objectives';
 import { rnd } from './utils';
 
 // Tutoriel des premières minutes, mené par la directrice sportive du club : bienvenue → centre d'entraînement →
-// première séance (une épreuve en 3D) → première recrue → premier match → objectifs du président → cap sur le
-// stade. Chaque étape dit ce qu'il faut faire et pourquoi ; une étape d'action réussie rapporte une prime au club
+// première séance (une épreuve en 3D) → première recrue → premier match → effectif (condition physique, blessures,
+// suspensions, changements) → objectifs du président → cap sur le stade. Chaque étape dit ce qu'il faut faire et pourquoi ; une étape d'action réussie rapporte une prime au club
 // (annoncée par une notification). Chaque étape se valide toute seule dès que son objectif est atteint ; l'étape
 // courante est sauvegardée avec la partie.
 
-export const STEPS = ['welcome', 'build', 'train', 'sign', 'match', 'goals', 'stadium'];
+export const STEPS = ['welcome', 'build', 'train', 'sign', 'match', 'squad', 'goals', 'stadium'];
 
 const goalReached = {
   build: (s) => s.buildings.training > 0,
@@ -150,6 +150,14 @@ export function stepContent(step, s) {
         why: 'Chaque match à domicile remplit la caisse, et chaque victoire rapproche de la montée.',
         cta: 'Jouer le match',
         action: { kind: 'match' },
+      };
+    case 'squad':
+      return {
+        ...base,
+        title: 'Ménage ton effectif',
+        text: 'Sous chaque joueur, une barre : sa condition physique. Un match la fait baisser selon l’endurance, chaque date la remonte. Fatigué, un joueur joue moins bien et se blesse plus souvent : fais tourner, « Meilleur onze » s’en charge.',
+        why: 'Blessés et suspendus (rouge : deux matchs, second jaune ou trois jaunes : un) restent sur le banc, grisés. Pendant un match, « Changement » arrête le jeu à toute minute : cinq changements par match.',
+        cta: 'Compris',
       };
     case 'goals': {
       const obj = seasonObjectives(s);

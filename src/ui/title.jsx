@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { FootOFFLockup } from './brand';
 import { ClubCard, Hints, MenuList, SettingsView, uiSound, useMenu } from './console';
+import { RulesView } from './rules';
+import { NewsView, unseenNews } from './news';
+import { CHANGELOG, CURRENT } from '../game/changelog';
 import { useInputMode } from './input';
 import { useKeydown } from './presence';
 import { IconChevron, IconChevronLeft, IconDice } from './icons';
@@ -46,6 +49,26 @@ function SideCard({ id, state, settings }) {
       </section>
     );
   }
+  if (id === 'rules') {
+    return (
+      <section className="cm-card">
+        <span className="eyebrow">Règles du jeu</span>
+        <p className="cm-card-lead">Tout ce qui décide, <em>en clair.</em></p>
+        <p className="cm-card-note">Le match et son pronostic exact, les joueurs et leur condition, le mercato et la valeur, l’argent, la réputation.</p>
+      </section>
+    );
+  }
+  if (id === 'news') {
+    const v = CHANGELOG[0];
+    return (
+      <section className="cm-card">
+        <span className="eyebrow">Nouveautés · version {v.version}</span>
+        <p className="cm-card-lead">{v.title}</p>
+        <ul className="cm-card-list">{v.items.slice(0, 3).map((t, i) => <li key={i}>{t}</li>)}</ul>
+        <p className="cm-card-note">{v.date}{CHANGELOG.length > 1 ? ` · et les versions précédentes` : ''}</p>
+      </section>
+    );
+  }
   if (id === 'settings') {
     return (
       <section className="cm-card">
@@ -71,12 +94,14 @@ function SideCard({ id, state, settings }) {
 }
 
 // Entrées du menu principal : Continuer (s'il y a une partie), Nouvelle partie, Réglages, FootOFF Media.
-function menuItems(state, { onContinue, onNew, onSettings }) {
+function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews }) {
   const div = state && DIVISIONS[state.divisionIndex];
   return [
     ...(state ? [{ id: 'continue', label: 'Continuer', sub: `${state.clubName} · ${div.name} · Saison ${state.seasonNumber}`, onSelect: onContinue }] : []),
     { id: 'new', label: 'Nouvelle partie', sub: state ? 'Fonder un autre club' : 'Fonde ton club et bâtis ton empire', onSelect: onNew },
-    { id: 'settings', label: 'Réglages', sub: 'Son et vibrations', onSelect: onSettings },
+    { id: 'rules', label: 'Règles du jeu', sub: 'Matchs, joueurs, mercato, argent, réputation', onSelect: onRules },
+    { id: 'news', label: 'Nouveautés', sub: `Version ${CURRENT}${unseenNews() ? ' · à lire' : ''}`, badge: unseenNews(), onSelect: onNews },
+    { id: 'settings', label: 'Réglages', sub: 'Son, vibrations, sauvegarde, signaler un problème', onSelect: onSettings },
     { id: 'media', label: 'FootOFF Media', sub: 'footoff.media', href: 'https://footoff.media' },
   ];
 }
@@ -184,12 +209,12 @@ function CreateClub({ onCreate, onBack, active }) {
 
 export function TitleScreen({ state, view, onView, onContinue, onNewGame, onCreate, settings, blocked = false }) {
   const active = !blocked;
-  const items = menuItems(state, { onContinue, onNew: () => (state ? onNewGame() : onView('create')), onSettings: () => onView('settings') });
+  const items = menuItems(state, { onContinue, onNew: () => (state ? onNewGame() : onView('create')), onSettings: () => onView('settings'), onRules: () => onView('rules'), onNews: () => onView('news') });
   const menu = useMenu(items, { active: active && view === 'menu' }); // l'entrée active est gardée au retour des réglages
   const current = items[Math.min(menu.cur, items.length - 1)].id;
   const [entered, setEntered] = useState(false); // la première apparition joue l'animation d'entrée complète
   useEffect(() => { const t = setTimeout(() => setEntered(true), 1400); return () => clearTimeout(t); }, []);
-  const hints = view === 'settings'
+  const hints = view === 'settings' || view === 'rules' || view === 'news'
     ? [['nav', 'Choisir'], ['select', 'Valider'], ['back', 'Retour']]
     : view === 'create'
       ? [['nav', 'Choisir'], ['select', 'Valider'], ['back', 'Retour']]
@@ -222,9 +247,23 @@ export function TitleScreen({ state, view, onView, onContinue, onNewGame, onCrea
             <SettingsView settings={settings} active={active} onBack={() => onView('menu')} />
           </div>
         )}
+        {view === 'rules' && (
+          <div className="ts-main ts-sub">
+            <span className="eyebrow">FootOFF Empire</span>
+            <h2>Règles du jeu</h2>
+            <RulesView active={active} onBack={() => onView('menu')} />
+          </div>
+        )}
+        {view === 'news' && (
+          <div className="ts-main ts-sub">
+            <span className="eyebrow">FootOFF Empire</span>
+            <h2>Nouveautés</h2>
+            <NewsView active={active} onBack={() => onView('menu')} />
+          </div>
+        )}
         {view === 'create' && <CreateClub active={active} onCreate={onCreate} onBack={() => onView('menu')} />}
       </div>
-      {view !== 'settings' && (
+      {view !== 'settings' && view !== 'rules' && view !== 'news' && (
         <aside className="ts-side" key={view === 'create' ? 'create' : current}>
           <SideCard id={view === 'create' ? 'new' : current} state={view === 'create' ? null : state} settings={settings} />
         </aside>

@@ -128,7 +128,7 @@ Départementale) : la première montée se gagne en deux ou trois saisons, pas d
 `node tools/sim/career.mjs 30 8` fait jouer huit carrières de trente saisons par un président automatique raisonnable
 (meilleur onze condition comprise, recrue utile avec une réserve d'une demi-saison de salaires, stade dès que le public
 dépasse la capacité, bâtiment conseillé puis améliorations, jeunes repérés recrutés, vente d'un remplaçant quand les
-salaires pèsent trop). Rééquilibrage du 2026-10-25 :
+salaires pèsent trop). Rééquilibrage du 2026-10-24 :
 
 | | Avant | Après |
 |---|---|---|

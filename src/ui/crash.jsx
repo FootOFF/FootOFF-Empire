@@ -1,6 +1,7 @@
 import React from 'react';
 import { FOMonogram } from './brand';
-import { hasBackup, peekBackup, restoreBackup } from '../game/save';
+import { SAVE_KEY } from '../game/constants';
+import { exportCode, hasBackup, peekBackup, restoreBackup } from '../game/save';
 import { DIVISIONS } from '../game/constants';
 import { errorReport } from './errlog';
 
@@ -9,6 +10,10 @@ import { errorReport } from './errlog';
 // touchée), de revenir à la copie de secours de la session (si le problème revient à chaque fois) et de copier un
 // rapport pour le signaler. Aperçu : ?ecran=erreur.
 
+// le rapport, suivi du code de sauvegarde de la partie en cours (lu dans le stockage : l'écran d'erreur n'a pas l'état)
+const withSave = async (report) => {
+  try { const raw = localStorage.getItem(SAVE_KEY); return raw ? `${report}\n\nPARTIE (code de sauvegarde) :\n${await exportCode(JSON.parse(raw))}` : report; } catch { return report; }
+};
 const copyText = async (text) => {
   try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
 };
@@ -33,9 +38,12 @@ export function CrashScreen({ error, summary = null, preview = false }) {
               Copie de secours{backup ? ` · ${backup.clubName}, saison ${backup.season} (${DIVISIONS[backup.division]?.name || ''})` : ''}
             </button>
           )}
-          <button type="button" className="linkbtn" onClick={async () => setCopied(await copyText(report))}>{copied ? 'Rapport copié' : 'Copier le rapport'}</button>
+          <span className="crash-links">
+            <button type="button" className="linkbtn" onClick={async () => setCopied((await copyText(report)) ? 'short' : false)}>{copied === 'short' ? 'Rapport copié' : 'Copier le rapport'}</button>
+            <button type="button" className="linkbtn" onClick={async () => setCopied((await copyText(await withSave(report))) ? 'full' : false)}>{copied === 'full' ? 'Rapport et partie copiés' : 'Copier le rapport avec la partie'}</button>
+          </span>
         </div>
-        <p className="crash-note">Le rapport ne contient que la version du jeu, ton navigateur et l’erreur : colle-le dans un message pour le signaler.</p>
+        <p className="crash-note">Le rapport contient la version du jeu, ton navigateur et l’erreur ; « avec la partie », il ajoute le code de ta sauvegarde pour rejouer le problème. Rien n’est envoyé : colle-le dans un message pour le signaler.</p>
       </div>
     </div>
   );

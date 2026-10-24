@@ -401,6 +401,7 @@ export default function App({ preview = null }) {
   const setTuto = (step) => run((s) => setTutorialStep(s, step));
   const onCoachPrimary = () => {
     if (tutoStep === 'welcome') setTuto('build');
+    else if (tutoStep === 'squad') setTuto('goals');
     else if (tutoStep === 'goals') setTuto('stadium');
     else if (tutoStep === 'stadium') { setTuto('done'); notify({ kind: 'success', title: 'À toi de jouer, président !' }); }
     else doAction(tuto.action);

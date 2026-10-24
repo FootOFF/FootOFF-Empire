@@ -1,0 +1,45 @@
+// Nouveautés du jeu, de la plus récente à la plus ancienne : l'écran « Nouveautés » (écran titre et menu pause) les
+// affiche, et une pastille signale une version pas encore lue (version vue : stockage local, src/ui/news.jsx).
+// La version courante est celle de package.json (__APP_VERSION__), à faire avancer avec chaque entrée ajoutée ici.
+
+export const CHANGELOG = [
+  {
+    version: '0.2.0', date: '2026-10-24', title: 'Prêt pour les premiers joueurs',
+    items: [
+      'Sauvegarde protégée : copie de secours à chaque session, code de sauvegarde à copier et à coller d’un appareil à l’autre (réglages).',
+      'Le jeu s’ouvre hors ligne après une première visite et annonce lui-même les nouvelles versions.',
+      'Un écran clair si le jeu rencontre un problème, avec retour à la copie de secours et rapport à copier.',
+      '« Signaler un problème » dans les réglages : un rapport complet, avec ta partie si tu l’acceptes, pour reproduire chaque bug.',
+      'Cet écran Nouveautés, le numéro de version au bas de l’écran titre, et les Règles du jeu en langage joueur.',
+      'Le tutoriel explique la condition physique, les blessures, les suspensions et les changements en cours de match.',
+    ],
+  },
+  {
+    version: '0.1.3', date: '2026-10-24', title: 'Équilibre et cohérence',
+    items: [
+      'Une seule valeur de marché par joueur, référence des primes, des indemnités et des offres reçues.',
+      'Les stars de l’Elite coûtent vraiment cher ; salaires et entretien se paient à chaque journée.',
+      'La réputation se gagne selon la division et s’oublie un peu chaque été ; nouveaux statuts jusqu’à « Club de légende » à 80.',
+      'Effectif de départ au milieu de la Départementale, haut de l’Elite relevé, recruteurs et notoriété qui attirent des joueurs jusqu’à 19.',
+    ],
+  },
+  {
+    version: '0.1.2', date: '2026-10-24', title: 'Le banc compte enfin',
+    items: [
+      'Condition physique : un match fatigue selon l’endurance, chaque date repose ; un joueur fatigué joue moins bien et se blesse plus souvent.',
+      'Blessures (une à neuf dates d’absence) et suspensions (rouge direct : deux matchs ; second jaune ou trois jaunes : un).',
+      'Changements à toute minute pendant le direct : le match s’arrête, composition, tactique et pronostic final se règlent ; cinq changements par match.',
+      'Lecture du jeu ne se fige plus, et une erreur pendant une épreuve propose de la simuler.',
+    ],
+  },
+  {
+    version: '0.1.0', date: '2026-10-24', title: 'Version de départ',
+    items: [
+      'Direction du club : droits TV, salaires et billetterie à négocier.',
+      'Tutoriel en sept étapes mené par la directrice sportive, objectifs du président à chaque saison.',
+      'Centre d’entraînement avec huit épreuves en 3D, académie, mercato négocié, Coupe nationale et Coupe d’Europe.',
+    ],
+  },
+];
+
+export const CURRENT = CHANGELOG[0].version;

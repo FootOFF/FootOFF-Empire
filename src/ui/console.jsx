@@ -78,7 +78,7 @@ export function MenuList({ items, menu, className = '', label }) {
           <>
             <span className="cm-bar" aria-hidden="true" />
             <span className="cm-text">
-              <span className="cm-label">{it.label}</span>
+              <span className="cm-label">{it.label}{it.badge && <i className="cm-badge" aria-label="nouveau" />}</span>
               {it.sub && <span className="cm-sub">{it.sub}</span>}
             </span>
             {it.href ? <IconExternal className="cm-go" /> : <IconChevron className="cm-go" />}
@@ -133,7 +133,7 @@ export function SettingsView({ settings, onBack, active = true }) {
   const [mode, setMode] = useState('menu'); // menu | export (code affiché) | import (code à coller)
   const [code, setCode] = useState('');
   const [note, setNote] = useState(null);
-  const rows = [{ id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'back' }];
+  const rows = [{ id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'report' }, { id: 'back' }];
   const menu = useMenu(rows, { onBack: () => (mode === 'menu' ? onBack() : setMode('menu')), active: active && mode === 'menu' });
   const { cur, setCur, refs, hover } = menu;
   const row = (i) => ({ ref: (el) => { refs.current[i] = el; }, onPointerEnter: hover(i), onFocus: () => setCur(i), style: { '--i': i } });
@@ -154,16 +154,40 @@ export function SettingsView({ settings, onBack, active = true }) {
     setCode('');
     setNote(null);
   };
+  // Signaler un problème : un rapport à coller dans un message (version, navigateur, dernières erreurs), avec ou sans la
+  // partie en cours (son code de sauvegarde, pour rejouer le problème) : c'est le joueur qui choisit.
+  const doReport = async (withSave) => {
+    uiSound('select');
+    let text = errorReport(null, save ? `${save.clubName} · saison ${save.season} · ${save.division}` : 'aucune partie');
+    if (withSave && onExport) text += `\n\nPARTIE (code de sauvegarde) :\n${await onExport()}`;
+    setCode(text);
+    let copied = false;
+    try { await navigator.clipboard.writeText(text); copied = true; } catch { /* presse-papiers refusé : le texte s'affiche */ }
+    setNote(copied ? `Rapport copié (${sizeOf(text)}). Colle-le dans ton message, avec ce que tu faisais au moment du problème.` : 'Copie-le toi-même ci-dessous.');
+    setMode('report-done');
+  };
+  if (mode === 'report') {
+    return (
+      <div className="cm-settings cm-save" role="group" aria-label="Signaler un problème">
+        <p className="cm-save-lead">Le rapport contient la version du jeu, ton navigateur, la taille de l’écran et les vingt dernières erreurs. Avec la partie, il contient aussi son code de sauvegarde : c’est ce qui permet de rejouer exactement ce qui s’est passé. Rien n’est envoyé : tu le colles toi-même dans un message.</p>
+        <div className="cm-save-actions">
+          <button type="button" className="btn ghost" onClick={() => { uiSound('back'); setMode('menu'); }}>Retour</button>
+          <button type="button" className="btn ghost" onClick={() => doReport(false)}>Sans la partie</button>
+          <button type="button" className="btn" disabled={!save || !onExport} onClick={() => doReport(true)}>Avec la partie</button>
+        </div>
+      </div>
+    );
+  }
   if (mode !== 'menu') {
     return (
       <div className="cm-settings cm-save" role="group" aria-label={mode === 'export' ? 'Code de sauvegarde' : 'Restaurer une sauvegarde'}>
-        <p className="cm-save-lead">{mode === 'export' ? `Code de sauvegarde de ${save?.clubName} · saison ${save?.season}` : 'Colle ici un code de sauvegarde copié depuis un autre appareil.'}</p>
+        <p className="cm-save-lead">{mode === 'export' ? `Code de sauvegarde de ${save?.clubName} · saison ${save?.season}` : mode === 'report-done' ? 'Rapport à signaler' : 'Colle ici un code de sauvegarde copié depuis un autre appareil.'}</p>
         <textarea
           className="cm-code"
           value={code}
-          readOnly={mode === 'export'}
+          readOnly={mode !== 'import'}
           onChange={(e) => setCode(e.target.value)}
-          onFocus={(e) => { if (mode === 'export') e.target.select(); }}
+          onFocus={(e) => { if (mode !== 'import') e.target.select(); }}
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
@@ -207,7 +231,14 @@ export function SettingsView({ settings, onBack, active = true }) {
           <span>{save ? 'La partie actuelle sera gardée en copie de secours.' : 'Reprends une partie copiée depuis un autre appareil.'}</span>
         </span>
       </button>
-      <button type="button" className={`cm-row back ${cur === 4 ? 'on' : ''}`} {...row(4)} onClick={() => { uiSound('back'); onBack(); }}>
+      <button type="button" role="menuitem" className={`cm-row ${cur === 4 ? 'on' : ''}`} {...row(4)} onClick={() => { uiSound('select'); setMode('report'); setNote(null); }}>
+        <span className="cm-bar" aria-hidden="true" />
+        <span className="cm-row-text">
+          <strong>Signaler un problème</strong>
+          <span>Un rapport à coller dans un message : version, erreurs, et ta partie si tu l’acceptes.</span>
+        </span>
+      </button>
+      <button type="button" className={`cm-row back ${cur === 5 ? 'on' : ''}`} {...row(5)} onClick={() => { uiSound('back'); onBack(); }}>
         <span className="cm-bar" aria-hidden="true" />
         <IconChevronLeft className="cm-back-icon" />
         <span className="cm-row-text"><strong>Retour</strong></span>

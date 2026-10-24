@@ -203,7 +203,7 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 La galerie (`?galerie` dans l'adresse du jeu) affiche chaque écran avec des données fictives, sur téléphone
 (390 × 844) et sur PC (1280 × 720), sans toucher à la sauvegarde. Chaque modification d'interface se relit là.
 
-## Sauvegarde, mises à jour, erreurs (socle de publication, 2026-10-25)
+## Sauvegarde, mises à jour, erreurs (socle de publication, 2026-10-24)
 
 - Sauvegarde (`src/game/save.js`) : la partie dans le stockage local du navigateur (`SAVE_KEY`), plus une copie de secours
   (`BACKUP_KEY`) prise à l'ouverture de chaque session. Au chargement, une sauvegarde illisible ou invalide (`validSave`)
@@ -222,6 +222,17 @@ La galerie (`?galerie` dans l'adresse du jeu) affiche chaque écran avec des don
   « Le jeu a rencontré un problème » (Reprendre, Copie de secours avec son club et sa saison, Copier le rapport : version,
   navigateur, erreur, vingt dernières erreurs du navigateur ; rien n'est envoyé). Aperçu : `?ecran=erreur`. La version et
   la date de construction (`__APP_VERSION__`, `__BUILD_DATE__`) s'affichent au bas de l'écran titre.
+- Signaler un problème (réglages, `SettingsView`) : un rapport à coller dans un message, version, navigateur, taille de
+  l'écran, vingt dernières erreurs (`src/ui/errlog.js`), avec ou sans la partie (son code de sauvegarde) : le joueur
+  choisit, rien n'est envoyé. L'écran d'erreur propose les deux mêmes copies. Un code de sauvegarde reçu se rejoue dans
+  une session cloud avec `decodeCode` puis `repairSave` (`src/game/save.js`).
+- Nouveautés (`src/game/changelog.js`, `src/ui/news.jsx`) : écran titre et menu pause, une entrée par version avec sa date
+  et ses apports ; pastille dorée et « à lire » tant que la version courante n'a pas été ouverte (stockage local). La
+  version courante est celle de `package.json` : la faire avancer avec chaque entrée du journal.
+- Règles du jeu (`src/ui/rules.jsx`) : écran titre et menu pause, sept chapitres en langage joueur (but du jeu, match,
+  joueurs, mercato et valeur, complexe, argent, réputation), à tenir à jour avec `docs/ECONOMIE.md` et `docs/JOUEURS.md`.
+- Tutoriel : huit étapes depuis le 2026-10-24, avec « Ménage ton effectif » après le premier match (condition physique,
+  blessures, suspensions, changements à toute minute).
 - Navigateur trop ancien (`index.html`) : un contrôle avant le code du jeu (opérateurs récents, regard arrière des
   expressions régulières, `Array.at`, `CompressionStream`, WebGL) affiche un message clair (iOS 16.4, Chrome, Edge ou
   Firefox récents) au lieu d'un chargement sans fin ; et si le jeu n'a pas démarré après 25 s, un message avec
@@ -373,9 +384,10 @@ Les chances affichées sont celles du tirage (vérifié sur 3 000 négociations)
 ## Tutoriel des premiers pas
 
 Refait le 2026-10-24 (`src/game/tutorial.js`, carte `CoachCard` de `src/ui/guide.jsx`) pour être intéressant,
-didactique et donner envie de continuer. La directrice sportive du club mène sept étapes : bienvenue (le but du jeu),
+didactique et donner envie de continuer. La directrice sportive du club mène huit étapes : bienvenue (le but du jeu),
 construire le centre d'entraînement, jouer une première épreuve en 3D, recruter la recrue recommandée, jouer le
-premier match, découvrir les trois objectifs du président (tirés pour la saison), puis cap sur le stade. Chaque
+premier match, ménager son effectif (condition, blessures, suspensions, changements), découvrir les trois objectifs du
+président (tirés pour la saison), puis cap sur le stade. Chaque
 carte dit quoi faire (texte), pourquoi (filet doré) et, pour les quatre étapes d'action, sa prime (1 000 €, 500 €,
 500 €, 1 000 €, versée une fois, notification « Étape réussie »). Chaque étape se valide toute seule ; la cible de
 l'étape pulse à l'écran (parcelle, bouton Jouer d'une ligne du centre, offre de la recrue, bouton du match, stade).
@@ -561,7 +573,7 @@ Calage : `tmp/calib-training.mjs` (carrières), contrôles : `tmp/check-training
 - Échap (B ou Start) met en pause ; une épreuve interrompue n'est pas comptée.
 - Sons synthétisés (`sfx` de `src/ui/sound.js`). Une erreur avant l'épreuve referme l'écran sans toucher au jeu ; une
   erreur pendant l'épreuve (boucle d'images, hors de portée de la barrière React) l'arrête et propose « Simuler » ou
-  « Fermer » (`onError` du moteur, `src/three/drills/index.js`) : l'image ne se fige plus (2026-10-25, Lecture du jeu
+  « Fermer » (`onError` du moteur, `src/three/drills/index.js`) : l'image ne se fige plus (2026-10-24, Lecture du jeu
   figée sur iPhone : le tirage d'une situation échouait une fois sur quarante ; il relâche désormais ses contraintes
   et ne renvoie jamais rien de vide).
 - GPU mesuré en 2880 × 1620 sur la puce intégrée : de 9 ms (Lecture, Contre-attaque) à 16 ms (Précision) par image.
@@ -600,7 +612,7 @@ l'écran et ensemble, le pronostic (victoire, nul, défaite, buts attendus) et l
 aussitôt son effet sur les chances, juste au-dessus du bouton qui lance le match. Le pronostic intègre la condition
 physique du onze, qui baisse au fil du match (`src/game/live.js`, `prematchOdds`).
 
-Direct (`LiveMatch`, moteur `src/game/live.js`, refait le 2026-10-25) : le match se simule au fil de l'horloge, avec
+Direct (`LiveMatch`, moteur `src/game/live.js`, refait le 2026-10-24) : le match se simule au fil de l'horloge, avec
 quatorze minutes d'avance pour que la scène 3D prépare chaque action. Le bouton « Changement » (avec le nombre de
 changements restants) arrête le match à toute minute et ouvre la même carte qu'à la mi-temps : composition sur le
 terrain (notes du match en pastille, condition en barre), tactique, pronostic final recalculé ; « Reprendre » applique

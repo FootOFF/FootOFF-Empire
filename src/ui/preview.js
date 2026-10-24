@@ -16,8 +16,11 @@ export const SCREENS = [
   ['accueil', 'Écran titre · nouveau joueur'],
   ['creation', 'Création du club'],
   ['reglages', 'Écran titre · réglages'],
+  ['regles', 'Écran titre · règles du jeu'],
+  ['nouveautes', 'Écran titre · nouveautés'],
   ['empire', 'Empire (HUD)'],
   ['tutoriel', 'Tutoriel des premiers pas'],
+  ['tutoriel-effectif', 'Tutoriel · ménage ton effectif'],
   ['inspecteur', 'Inspecteur du stade'],
   ['parcelle', 'Vitrine de construction · parcelle libre'],
   ['vitrine-fonds', 'Vitrine de construction · fonds insuffisants'],
@@ -85,7 +88,7 @@ export const SCREENS = [
 export function previewState(screen) {
   if (screen === 'accueil' || screen === 'creation' || screen === 'erreur') return null;
   const s = createInitialState('FootOFF FC');
-  s.tutorial = { step: screen === 'tutoriel' ? 'build' : 'done' };
+  s.tutorial = { step: screen === 'tutoriel' ? 'build' : screen === 'tutoriel-effectif' ? 'squad' : 'done' };
   if (screen === 'finances' || screen === 'stats' || screen === 'stats-pass' || screen === 'stats-detail' || screen === 'anciens' || screen === 'trophees') { // deux saisons bouclées, puis trois matchs : courbe et comptes remplis
     build(s, 'main', 'training');
     for (let k = 0; k < 2; k++) { while (s.round < 7) playRound(s); endSeason(s); s.seasonReview = null; }
@@ -263,6 +266,8 @@ export function previewUi(screen, s) {
   switch (screen) {
     case 'titre': case 'accueil': return { screen: 'title' };
     case 'reglages': return { screen: 'title', titleView: 'settings' };
+    case 'regles': return { screen: 'title', titleView: 'rules' };
+    case 'nouveautes': return { screen: 'title', titleView: 'news' };
     case 'creation': return { screen: 'title', titleView: 'create' };
     case 'inspecteur': return { sel: { plotId: 't0', sector: 'main' } };
     case 'parcelle': case 'vitrine-fonds': return { sel: { plotId: 't2', sector: 'main' } };
