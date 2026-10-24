@@ -2,7 +2,8 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useGlass } from './glass';
 import { DIVISIONS } from '../game/constants';
 import { repLevel } from '../game/reputation';
-import { activeGoal, tierOf } from '../game/goals';
+import { activeGoal } from '../game/goals';
+import { seasonObjectives } from '../game/objectives';
 import { teamLevel } from '../game/match';
 import { matchContext } from '../game/season';
 import { ClubCrest, Crest } from './crest';
@@ -62,25 +63,38 @@ export function TopHud({ state, onMenu, onFinances, onReputation }) {
   );
 }
 
+// Objectifs de la saison (objectives.js) : les trois défis du président, leur avancée en direct (barre, chiffre du
+// jour), leur prime ; le bonus de la saison parfaite ; puis la grande étape de réputation en cours (goals.js).
+const euros = (v) => `${new Intl.NumberFormat('fr-FR').format(v)} €`;
 export function ObjectiveWidget({ state, collapsed, onToggle }) {
-  if (!state.goals) return null;
-  const g = activeGoal(state);
-  const tier = tierOf(state.reputation);
-  const done = state.goals.completed.filter(Boolean).length;
-  // atteint en cours de saison (stade comblé, académie au niveau 3) : la prime n'arrive qu'au bilan, on le dit
-  const achieved = !state.goals.completed[g.tier] && g.active.done(state);
+  const obj = seasonObjectives(state);
+  if (!obj) return null;
+  const g = state.goals ? activeGoal(state) : null;
+  // grande étape atteinte en cours de saison : la prime n'arrive qu'au bilan, on le dit
+  const step = g && !state.goals.completed[g.tier] && g.active.done(state);
   return (
-    <aside className={`hud-goal glass ${collapsed ? 'collapsed' : ''} ${achieved ? 'achieved' : ''}`}>
+    <aside className={`hud-goal glass ${collapsed ? 'collapsed' : ''} ${obj.done === obj.list.length ? 'achieved' : ''}`}>
       <button className="hud-goal-head" onClick={onToggle} aria-expanded={!collapsed}>
         <IconTrophy />
-        <span className="eyebrow">Objectif de saison</span>
-        <span className="hud-goal-tier">{done}/{tier + 1}</span>
+        <span className="eyebrow">Objectifs de la saison</span>
+        <span className="hud-goal-tier">{obj.done}/{obj.list.length}</span>
       </button>
       {!collapsed && (
         <div className="hud-goal-body">
-          <strong>{g.active.name}</strong>
-          <p>{typeof g.active.desc === 'function' ? g.active.desc(state) : g.active.desc}</p>
-          <span className="hud-goal-reward">{achieved ? <><IconCheck /> Atteint · {g.goal.reward.label} au bilan de la saison</> : g.goal.reward.label}</span>
+          <ul className="hud-objs">
+            {obj.list.map((o) => (
+              <li key={o.id} className={`hud-obj ${o.state}`}>
+                <span className="hud-obj-mark" aria-hidden="true">{o.state === 'done' ? <IconCheck /> : o.state === 'failed' ? <IconClose /> : <i />}</span>
+                <span className="hud-obj-main">
+                  <strong>{o.title}</strong>
+                  <span className="hud-obj-bar" aria-hidden="true"><i style={{ width: `${Math.round(o.ratio * 100)}%` }} /></span>
+                  <span className="hud-obj-meta"><em>{o.state === 'done' ? 'atteint, prime au bilan' : o.state === 'failed' ? 'manqué' : o.now}</em><b>+{euros(o.prize.money)}</b></span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <span className="hud-goal-reward">Les trois réussis : +{euros(obj.perfect.money)} de bonus</span>
+          {g && <span className="hud-goal-step">Grande étape · {g.active.name}{step ? ' (atteinte)' : ''} : {g.goal.reward.label}</span>}
         </div>
       )}
     </aside>

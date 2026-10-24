@@ -10,6 +10,7 @@ import { fixLeagueNames, playerName, registerNames, renameRetired } from './name
 import { buildCalendar } from './cups';
 import { BUYERS, roundTo, valueOf } from './mercato';
 import { refreshScouting } from './academy';
+import { drawObjectives } from './objectives';
 import { refreshTransfers } from './transfers';
 import { rebuildRecords } from './records';
 import { normalizeCrest } from './crest';
@@ -65,6 +66,7 @@ export function loadGame() {
       y.crest = normalizeCrest(y.crest); // écusson du club (ajouté après coup : écusson par défaut, noir et or)
       y.alumni ||= []; // anciens joueurs (archivés à partir de cette version)
       y.ticketPolicy ||= 'standard';
+      if (!y.objectives) drawObjectives(y); // objectifs du président (ajoutés après coup) : tirés pour la saison en cours
       y.records ||= rebuildRecords(y); // records du club : reconstitués depuis l'historique des matchs
       // trophées : les titres de champion déjà gagnés sont retrouvés dans l'historique des classements
       if (!y.trophies) y.trophies = (y.history || []).filter((h) => h.position === 1).map((h) => ({ comp: 'league', season: h.season, division: h.division }));

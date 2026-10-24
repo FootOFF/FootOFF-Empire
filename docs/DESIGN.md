@@ -324,6 +324,22 @@ en est le club (« Tu grimpes à la 2e place », « Tu restes en tête »). L'or
   leur écusson, rangé dans la famille la plus proche. Planche de contrôle : `tmp/ph3/crests.html`
   (`?sec=clubs|familles|symboles|motifs`).
 
+## Objectifs de la saison
+
+Refaits le 2026-10-24 (`src/game/objectives.js`) : à chaque début de saison, le président fixe trois objectifs,
+adaptés à l'écart entre le niveau du onze et la moyenne de la division :
+- un classement : être champion, monter (ou finir dans les deux premiers en Elite), finir dans la première moitié,
+  se maintenir (finir 6e ou mieux en Départementale) ;
+- un défi sportif en championnat : gagner N matchs, marquer N buts, encaisser N buts au plus, garder sa cage
+  inviolée N fois ;
+- un défi du club : finir la saison dans le vert (au moins autant d'argent au bilan qu'au début), faire grandir le
+  complexe (construire ou améliorer), lancer un jeune de l'académie (si elle est construite).
+Primes connues d'avance (argent selon la division, et réputation), bonus « saison parfaite » si les trois sont
+atteints ; verdict au bilan (événements, journal). Cibles calées sur des saisons simulées (chaque défi réussi environ
+deux fois sur trois à niveau attendu). Carte du HUD : une ligne par objectif (point doré, coche verte, croix rouge),
+barre d'avancée, avancée en mots, prime ; puis le bonus et la grande étape de réputation en cours (`goals.js`, qui
+garde ses paliers et leurs primes). Le menu pause résume les trois objectifs.
+
 ## Effectif
 
 Onglet Joueurs de l'Effectif (`src/ui/squad.jsx`, refait le 2026-10-24 : « moderne et super esthétique ») :

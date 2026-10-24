@@ -6,7 +6,7 @@ import { fmtMoney } from './format';
 import { IconChevron, IconChevronLeft, IconExternal } from './icons';
 import { DIVISIONS } from '../game/constants';
 import { matchContext, standingsOf } from '../game/season';
-import { activeGoal } from '../game/goals';
+import { seasonObjectives } from '../game/objectives';
 import { ordinal } from '../game/utils';
 
 // Briques des écrans « console » (écran titre, menu pause) : liste de menu pilotée au clavier, à la souris, au
@@ -167,7 +167,7 @@ export function ClubCard({ state, eyebrow, objective = false, head = true }) {
   const total = state.schedule?.length || 7;
   const ctx = matchContext(state);
   const form = (state.matches || []).filter((m) => m.season === state.seasonNumber).slice(-5);
-  const goal = objective && state.goals ? activeGoal(state) : null;
+  const goals = objective ? seasonObjectives(state) : null; // objectifs du président (objectives.js)
   return (
     <section className="cm-card">
       <span className="eyebrow">{eyebrow}</span>
@@ -194,7 +194,7 @@ export function ClubCard({ state, eyebrow, objective = false, head = true }) {
         ) : (
           <div><dt>Prochain match</dt><dd>Saison terminée, place au bilan</dd></div>
         )}
-        {goal && <div className="stack"><dt>Objectif de saison{!state.goals.completed[goal.tier] && goal.active.done(state) ? ' · atteint, prime au bilan' : ''}</dt><dd>{goal.active.name}</dd></div>}
+        {goals && <div className="stack"><dt>Objectifs de la saison · {goals.done}/{goals.list.length}</dt><dd>{goals.list.map((o) => `${o.state === 'done' ? '✓ ' : o.state === 'failed' ? '✗ ' : ''}${o.title}`).join(' · ')}</dd></div>}
         <div><dt>Trésorerie</dt><dd className={state.money < 0 ? 'neg' : ''}>{fmtMoney(state.money)}</dd></div>
       </dl>
     </section>
