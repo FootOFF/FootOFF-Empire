@@ -35,9 +35,11 @@ Joueur des grands soirs (contre plus fort), Infatigable, Flèche, Frappe lointai
 
 ## Progression
 
-- Intersaison : vers le potentiel caché, selon l'âge et le centre d'entraînement, plus lente au sommet ;
+- Intersaison : vers le potentiel caché, selon l'âge, plus lente au sommet ;
   déclin dès 32 ans (le physique d'abord). Rythme calé par la simulation de 50 saisons (`docs/ECONOMIE.md`) :
   Elite vers la saison 11, premier titre vers la 19e, masse salariale à 79 % des revenus en Elite.
+- Au fil de la saison : séances du centre d'entraînement pour l'équipe première (`docs/DESIGN.md`) ; à l'académie,
+  un petit progrès après chaque journée, sans effet du centre.
 - Potentiel affiché en fourchette : elle se resserre avec l'académie et les saisons passées au club.
 - Vie du joueur : forme (5 derniers matchs), statistiques de saison, historique des 10 dernières saisons,
   évolution du dernier été.

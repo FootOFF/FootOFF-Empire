@@ -197,28 +197,28 @@ export function potentialRange(p, s) {
 // gardent leurs décimales, chaque gain compte, d'où un facteur plus bas que l'ancien modèle arrondi.
 const PROGRESSION = 0.5;
 
-// Bond de l'intersaison vers le potentiel, en points de note : d'autant plus grand que le joueur est jeune (et, pour
-// l'académie, que le centre d'entraînement est développé) ; au sommet, chaque progrès coûte plus cher.
-export function seasonGain(p, trainingLvl) {
+// Bond de l'intersaison vers le potentiel, en points de note : d'autant plus grand que le joueur est jeune ; au
+// sommet, chaque progrès coûte plus cher. Le même pour les jeunes de l'académie (academy.js) : le centre
+// d'entraînement n'y change rien.
+export function seasonGain(p) {
   const before = playerRating(p);
   const room = Math.max(0, p.pot - before);
-  const t = (1 + trainingLvl * 0.25) * PROGRESSION;
   let gain = 0;
-  if (p.age <= 19) gain = room * rnd(0.3, 0.55) * t;
-  else if (p.age <= 23) gain = room * rnd(0.15, 0.35) * t;
-  else if (p.age <= 28) gain = room * rnd(0.04, 0.15) * t;
-  return gain * clamp(1.4 - before / 20, 0.45, 1);
+  if (p.age <= 19) gain = room * rnd(0.3, 0.55);
+  else if (p.age <= 23) gain = room * rnd(0.15, 0.35);
+  else if (p.age <= 28) gain = room * rnd(0.04, 0.15);
+  return gain * PROGRESSION * clamp(1.4 - before / 20, 0.45, 1);
 }
 
 // Le bond de l'été est réduit depuis que les joueurs progressent au fil de la saison, au centre d'entraînement
-// (séances entre les matchs et séance collective : training.js) : six dixièmes du bond sans centre, à tous les niveaux.
+// (séances entre les matchs et séance collective : training.js) : six dixièmes du bond, à tous les niveaux du centre.
 const SUMMER = 0.6;
 
 // Intersaison : progression vers le potentiel, puis déclin physique après 32 ans. Les qualités clés du poste
 // progressent le plus.
 export function progressPlayer(p) {
   const before = playerRating(p);
-  const gain = seasonGain(p, 0) * SUMMER;
+  const gain = seasonGain(p) * SUMMER;
   if (gain > 0) {
     const w = WEIGHTS[p.pos];
     const pool = p.pos === 'G' ? p.g : p.a;

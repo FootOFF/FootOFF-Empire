@@ -384,10 +384,13 @@ détaillé sur PC (tri par colonne), liste compacte sur téléphone, fiche à dr
   (confirmation rouge, focus sur « Le garder »). Un joueur monté garde l'étiquette « Formé au club ».
 Règles : recrutement gratuit dans la limite des places, sans salaire ; nouveaux jeunes après chaque journée de
 championnat (2 à 6 selon le niveau de l'académie, plus doués et mieux cernés quand elle grandit) ; progrès après
-chaque journée puis bond de l'été (centre d'entraînement compris) ; à 19 ans, un jeune qui n'est pas monté quitte le
-club (conseil du staff à partir de la 4e journée, notification après le dernier match, ligne du bilan). Les points
-d'entraînement sont les mêmes quel que soit le plan : le conseillé fait monter le niveau le plus vite (×1,14 à ×1,28
-selon le poste), un autre développe d'autres qualités (×0,7 à ×0,96) ; une qualité à 20 cède ses points aux autres.
+chaque journée puis bond de l'été, sans effet du centre d'entraînement (il fait progresser l'équipe première par ses
+séances ; choix du 2026-10-24, pour ne pas compter son effet deux fois) : niveau moyen à 18 ans de 10,8 avec
+l'académie 1, 13,8 au niveau 3 et 15,9 au niveau 5 (`tmp/calib-youth-options.mjs`, option « Sans le centre ») ; à
+19 ans, un jeune qui n'est pas monté quitte le club (conseil du staff à partir de la 4e journée, notification après le
+dernier match, ligne du bilan). Les points d'entraînement sont les mêmes quel que soit le plan : le conseillé fait
+monter le niveau le plus vite (×1,14 à ×1,28 selon le poste), un autre développe d'autres qualités (×0,7 à ×0,96) ;
+une qualité à 20 cède ses points aux autres.
 
 Aperçus : `?ecran=academie`, `academie-detection`, `academie-jeune`, `academie-repere`, `academie-vide`,
 `academie-batiment`. Simulation : `tmp/ph3/simcheck.js` (gestes et contrôles de l'académie) ; calage des progrès :

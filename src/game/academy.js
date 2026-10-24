@@ -5,10 +5,11 @@ import { clamp, ri, rnd } from './utils';
 // Académie : l'équipe de jeunes du club, six places. On recrute quand on veut, gratuitement, parmi les jeunes repérés
 // (renouvelés après chaque journée de championnat ; plus nombreux et plus doués quand l'académie grandit, leur
 // potentiel mieux cerné : players.js, potentialRange). Chaque jeune suit un plan d'entraînement (technique, physique ou
-// mental) : il progresse un peu après chaque journée et fait un bond à l'intersaison, selon son potentiel et le centre
-// d'entraînement. Il monte en équipe première quand on le décide ; à 19 ans, un jeune qui n'est pas monté quitte le
-// club. Pas de salaire : les jeunes sont à la charge de l'académie (son entretien). Les actions (recruter, faire
-// monter, libérer, choisir le plan) sont dans engine.js.
+// mental) : il progresse un peu après chaque journée et fait un bond à l'intersaison, selon son potentiel (le centre
+// d'entraînement n'y change rien : il fait progresser l'équipe première, par ses séances). Il monte en équipe première
+// quand on le décide ; à 19 ans, un jeune qui n'est pas monté quitte le club. Pas de salaire : les jeunes sont à la
+// charge de l'académie (son entretien). Les actions (recruter, faire monter, libérer, choisir le plan) sont dans
+// engine.js.
 
 export { SCOUTED, YOUTH_LEAVE_AGE, YOUTH_PLACES };
 export const PLANS = {
@@ -18,7 +19,7 @@ export const PLANS = {
 };
 const FOCUS = 2.4; // part d'entraînement des qualités travaillées par le plan : quatre fois celle des autres
 const REST = 0.6;
-const ROUND_PACE = 0.03; // part de la marge vers le potentiel gagnée à chaque journée (× centre d'entraînement)
+const ROUND_PACE = 0.03; // part de la marge vers le potentiel gagnée à chaque journée
 
 const r1 = (v) => Math.round(v * 10) / 10;
 const roundKey = (s) => `${s.seasonNumber}:${s.round}`;
@@ -91,12 +92,11 @@ function grow(p, gain) {
 }
 
 // Après chaque journée de championnat : un petit progrès pour chaque jeune, d'autant plus grand qu'il est loin de son
-// potentiel (plus vite avec le centre d'entraînement).
+// potentiel.
 export function trainYouth(s) {
-  const t = 1 + (s.buildings.training || 0) * 0.25;
   for (const p of s.youth || []) {
     const room = Math.max(0, p.pot - playerRating(p));
-    const g = grow(p, room * ROUND_PACE * t * rnd(0.7, 1.3));
+    const g = grow(p, room * ROUND_PACE * rnd(0.7, 1.3));
     p.gain = { ...(p.gain || {}), round: g, season: r1((p.gain?.season || 0) + g) };
   }
 }
@@ -106,7 +106,7 @@ export function trainYouth(s) {
 export function youthSeasonEnd(s) {
   const gone = [];
   for (const p of s.youth || []) {
-    const g = grow(p, seasonGain(p, s.buildings.training || 0));
+    const g = grow(p, seasonGain(p));
     p.gain = { round: 0, season: 0, summer: g };
     p.age += 1;
     if (p.age >= YOUTH_LEAVE_AGE) gone.push(p);

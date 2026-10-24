@@ -190,12 +190,11 @@ function Places({ state, youth, upgradable, onBuilding }) {
 
 function YouthTab({ state, youth, scouted, refLvl, focus, onOpen, onScout }) {
   const leaving = youth.filter(isLeaving);
-  const training = state.buildings.training || 0;
   const rules = (
     <p className="sq-hint ac-rules">
       Après chaque journée de championnat, tes jeunes progressent, surtout dans les qualités de leur plan, puis ils font un
-      bond à l’intersaison{training ? ` (+${training * 25} % de progrès grâce à ton centre d’entraînement)` : ''}. Ils ne touchent
-      pas de salaire. À {YOUTH_LEAVE_AGE} ans, un jeune qui n’est pas monté en équipe première quitte le club.
+      bond à l’intersaison. Ils ne touchent pas de salaire. À {YOUTH_LEAVE_AGE} ans, un jeune qui n’est pas monté en équipe
+      première quitte le club.
     </p>
   );
   if (!youth.length) {
@@ -492,7 +491,6 @@ function AcademySheet({ p, scout, state, refLvl, full, place, onClose, onPrev, o
   const gain = fitGain(state, p);
   const squadFull = state.players.length >= SQUAD_MAX;
   const g = p.gain || {};
-  const training = state.buildings.training || 0;
   const workedNames = listFr(planAttrs(p, plan).map((k) => attrName(p, k)));
   const slower = Math.round((1 - planPace(p, plan) / planPace(p, advised)) * 100); // niveau : moins vite qu'avec le plan conseillé
 
@@ -568,7 +566,7 @@ function AcademySheet({ p, scout, state, refLvl, full, place, onClose, onPrev, o
               <div><b className={(g.summer || 0) >= 0.05 ? 'good' : ''}>{g.summer != null ? plus(g.summer) : '–'}</b><span>dernier été</span></div>
             </div>
             <p className="sh-evo">
-              Prochain bond à l’intersaison{training ? `, +${training * 25} % avec ton centre d’entraînement` : ''}.
+              Prochain bond à l’intersaison, d’autant plus grand qu’il est loin de son potentiel.
             </p>
           </section>
         )}
