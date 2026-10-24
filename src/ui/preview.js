@@ -58,6 +58,7 @@ export const SCREENS = [
   ['mi-temps', 'Mi-temps (composition repliée)'],
   ['mi-temps-compo', 'Mi-temps · composition déployée'],
   ['changement', 'Direct · changement en cours de jeu'],
+  ['erreur', 'Écran d’erreur (barrière globale)'],
   ['apres-match', 'Après-match'],
   ['apres-match-classement', 'Après-match · classement de la journée'],
   ['bilan', 'Bilan de saison'],
@@ -82,7 +83,7 @@ export const SCREENS = [
 ];
 
 export function previewState(screen) {
-  if (screen === 'accueil' || screen === 'creation') return null;
+  if (screen === 'accueil' || screen === 'creation' || screen === 'erreur') return null;
   const s = createInitialState('FootOFF FC');
   s.tutorial = { step: screen === 'tutoriel' ? 'build' : 'done' };
   if (screen === 'finances' || screen === 'stats' || screen === 'stats-pass' || screen === 'stats-detail' || screen === 'anciens' || screen === 'trophees') { // deux saisons bouclées, puis trois matchs : courbe et comptes remplis

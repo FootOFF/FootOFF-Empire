@@ -15,6 +15,14 @@ import { refreshTransfers } from './transfers';
 import { rebuildRecords } from './records';
 import { normalizeCrest } from './crest';
 
+// Sauvegarde : un emplacement principal (SAVE_KEY) et une copie de secours (BACKUP_KEY), prise au chargement de chaque
+// session (la partie telle qu'elle était quand on a ouvert le jeu). Au chargement, une sauvegarde illisible ou
+// invalide (stockage abîmé, migration ratée) laisse la place à la copie de secours, et l'interface le dit. Un code de
+// sauvegarde (exportCode / importCode : JSON compressé en base64, préfixe FOE1) permet de copier la partie d'un appareil
+// à l'autre ; importer une partie range l'ancienne en copie de secours, rien n'est jamais effacé sans trace.
+export const BACKUP_KEY = `${SAVE_KEY}.backup`;
+export const lastLoad = { source: null, corrupt: false }; // d'où vient la partie chargée : 'main' | 'backup' | null
+
 export function saveGame(state) {
   try {
     state.version = 4;
@@ -22,6 +30,78 @@ export function saveGame(state) {
   } catch {
     /* stockage indisponible : le prototype reste jouable sans sauvegarde */
   }
+}
+
+// Une sauvegarde a-t-elle la forme d'une partie ? (club, effectif, saison, division)
+export function validSave(s) {
+  return !!s && typeof s === 'object' && typeof s.clubName === 'string' && Array.isArray(s.players) && s.players.length > 0
+    && Number.isFinite(s.seasonNumber) && Number.isInteger(s.divisionIndex) && s.divisionIndex >= 0 && s.divisionIndex <= 3
+    && !!s.buildings && typeof s.buildings === 'object';
+}
+
+export function hasBackup() {
+  try { return !!localStorage.getItem(BACKUP_KEY); } catch { return false; }
+}
+// Copie de secours : la sauvegarde principale telle quelle (texte), ou une partie donnée.
+export function backupSave(state = null) {
+  try {
+    const raw = state ? JSON.stringify(state) : localStorage.getItem(SAVE_KEY);
+    if (raw) localStorage.setItem(BACKUP_KEY, raw);
+  } catch { /* stockage indisponible */ }
+}
+// Remet la copie de secours en sauvegarde principale (écran d'erreur) ; l'ancienne principale devient la copie.
+export function restoreBackup() {
+  try {
+    const raw = localStorage.getItem(BACKUP_KEY);
+    if (!raw) return false;
+    const main = localStorage.getItem(SAVE_KEY);
+    localStorage.setItem(SAVE_KEY, raw);
+    if (main) localStorage.setItem(BACKUP_KEY, main);
+    return true;
+  } catch { return false; }
+}
+// Résumé d'une sauvegarde (écran d'erreur, confirmation d'import) sans la réparer.
+export function peekSave(raw) {
+  try {
+    const s = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return validSave(s) ? { clubName: s.clubName, season: s.seasonNumber, division: s.divisionIndex } : null;
+  } catch { return null; }
+}
+export function peekBackup() {
+  try { return peekSave(localStorage.getItem(BACKUP_KEY)); } catch { return null; }
+}
+
+// --- Code de sauvegarde ---------------------------------------------------------------------------------------
+const bytesToB64 = (bytes) => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); };
+const b64ToBytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+async function pipe(bytes, stream) {
+  const out = new Blob([bytes]).stream().pipeThrough(stream);
+  return new Uint8Array(await new Response(out).arrayBuffer());
+}
+export async function exportCode(state) {
+  const text = JSON.stringify({ ...state, lastSeen: Date.now() });
+  const bytes = new TextEncoder().encode(text);
+  if (typeof CompressionStream === 'function') return `FOE1:${bytesToB64(await pipe(bytes, new CompressionStream('gzip')))}`;
+  return `FOE0:${bytesToB64(bytes)}`;
+}
+// Lit un code : la partie brute (non réparée), ou null s'il est illisible.
+export async function decodeCode(code) {
+  try {
+    const m = /^\s*FOE([01]):([A-Za-z0-9+/=\s]+)$/.exec(code || '');
+    if (!m) return null;
+    let bytes = b64ToBytes(m[2].replace(/\s+/g, ''));
+    if (m[1] === '1') bytes = await pipe(bytes, new DecompressionStream('gzip'));
+    const s = JSON.parse(new TextDecoder().decode(bytes));
+    return validSave(s) ? s : null;
+  } catch { return null; }
+}
+// Installe une partie importée : l'ancienne sauvegarde devient la copie de secours. Renvoie la partie réparée.
+export function importSave(raw) {
+  if (!validSave(raw)) return null;
+  backupSave();
+  const s = repairSave(JSON.parse(JSON.stringify(raw)));
+  saveGame(s);
+  return s;
 }
 
 // Migration : les sauvegardes v1 (avant l'Empire) n'ont ni goals ni seasonStats.
@@ -49,16 +129,11 @@ function migrateEconomy(s) {
   return s;
 }
 
-export function loadGame() {
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return null;
-    const s = JSON.parse(raw);
-    // toute sauvegarde : le stade retrouve sa parcelle (réparation des parties déjà commencées)
-    // parties commencées avant le match en direct : banc de 4 remplaçants offert une fois
-    // parties commencées avant l'écran Finances : le livre de comptes démarre à la trésorerie actuelle
-    // noms des joueurs : équivalents francophones pour les prénoms et noms sortis des listes, y compris dans
-    // l'historique des matchs (notes, buteurs, passeurs, fil du match)
+// Toute sauvegarde : le stade retrouve sa parcelle (réparation des parties déjà commencées) ; parties commencées avant
+// le match en direct : banc de 4 remplaçants offert une fois ; avant l'écran Finances : le livre de comptes démarre à la
+// trésorerie actuelle ; noms des joueurs : équivalents francophones pour les prénoms et noms sortis des listes, y compris
+// dans l'historique des matchs (notes, buteurs, passeurs, fil du match). Migrations v1 → v4 comprises.
+export function repairSave(s) {
     const fix = (x) => {
       const y = ensureTutorial(ensureLineup(addReserves(ensureFixedPlots(migratePlayers(x)))));
       ensureLedger(y);
@@ -138,9 +213,41 @@ export function loadGame() {
     if (s.version === 2) return fix(migrateEconomy(s));
     if (s.version === 1) return fix(migrateEconomy(migrate(s)));
     return null;
-  } catch {
-    return null;
+}
+
+// Charge la partie : la principale, sinon la copie de secours (lastLoad le dit). Une fois chargée, la principale devient
+// la copie de secours de la session.
+export function loadGame() {
+  lastLoad.source = null;
+  lastLoad.corrupt = false;
+  let main = null;
+  try { main = localStorage.getItem(SAVE_KEY); } catch { return null; }
+  const attempt = (raw) => {
+    if (!raw) return null;
+    try {
+      const s = JSON.parse(raw);
+      if (!validSave(s)) return null;
+      const fixed = repairSave(s);
+      return validSave(fixed) ? fixed : null;
+    } catch { return null; }
+  };
+  const fromMain = attempt(main);
+  if (fromMain) {
+    lastLoad.source = 'main';
+    backupSave(); // la partie telle qu'elle est à l'ouverture de la session
+    return fromMain;
   }
+  if (main) lastLoad.corrupt = true; // il y avait une sauvegarde, elle est illisible
+  let backup = null;
+  try { backup = localStorage.getItem(BACKUP_KEY); } catch { return null; }
+  const fromBackup = attempt(backup);
+  if (fromBackup) {
+    lastLoad.source = 'backup';
+    try { if (main) localStorage.setItem(`${SAVE_KEY}.corrupt`, main); } catch { /* rien */ } // gardée pour analyse, jamais effacée
+    saveGame(fromBackup);
+    return fromBackup;
+  }
+  return null;
 }
 
 export function clearGame() {

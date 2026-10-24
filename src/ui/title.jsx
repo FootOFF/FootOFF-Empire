@@ -231,7 +231,7 @@ export function TitleScreen({ state, view, onView, onContinue, onNewGame, onCrea
       )}
       <footer className="ts-bottom">
         <Hints items={hints} />
-        <span className="ts-legal">FootOFF Empire · bêta 2026</span>
+        <span className="ts-legal">FootOFF Empire · bêta {__APP_VERSION__} · {__BUILD_DATE__}</span>
       </footer>
     </div>
   );

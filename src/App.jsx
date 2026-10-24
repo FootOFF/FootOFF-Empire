@@ -4,7 +4,9 @@ import {
 } from './game/engine';
 import { BUILDINGS, DIVISIONS, upgradeCost } from './game/constants';
 import { fmtMoney } from './ui/format';
-import { clearGame, loadGame, saveGame } from './game/save';
+import { clearGame, decodeCode, exportCode, importSave, lastLoad, loadGame, saveGame } from './game/save';
+import { applyUpdate } from './ui/updates';
+import { CrashScreen } from './ui/crash';
 import { clone } from './game/utils';
 import Empire2D from './ui/EmpireView';
 import { Dock, MatchCta, ObjectiveWidget, SceneTools, TopHud } from './ui/hud';
@@ -57,6 +59,7 @@ function cycle(current, order, storageKey) {
 // Échap (ou Start à la manette) ouvre le menu pause, qui fige la scène.
 // preview : nom d'un écran à afficher d'emblée avec une partie fictive (galerie), sans sauvegarde ni 3D.
 export default function App({ preview = null }) {
+  if (preview === 'erreur') return <CrashScreen error={new Error('TypeError: Cannot read properties of null (reading \'C\')')} summary="FootOFF FC · saison 3 · Régionale" preview />;
   const [boot] = useState(() => {
     if (!preview) return { state: loadGame(), ui: {} };
     const st = previewState(preview);
@@ -132,6 +135,17 @@ export default function App({ preview = null }) {
   useEffect(() => {
     (boot.ui.notes || []).forEach(notify);
     if (import.meta.env.DEV) window.__notify = notify; // essais en développement
+    if (preview) return undefined;
+    // la sauvegarde principale était illisible : la copie de secours de la dernière session a pris le relais
+    if (lastLoad.source === 'backup') {
+      notify({ kind: 'warn', eyebrow: 'Sauvegarde', title: 'Partie restaurée depuis la copie de secours', text: 'Ta sauvegarde était illisible. Tu reprends là où tu en étais à l’ouverture de ta dernière session.' });
+    } else if (lastLoad.corrupt) {
+      notify({ kind: 'warn', eyebrow: 'Sauvegarde', title: 'Sauvegarde illisible', text: 'Elle a été mise de côté, sans copie de secours disponible. Fonde un nouveau club, ou colle un code de sauvegarde dans les réglages.' });
+    }
+    // une nouvelle version du jeu est prête (service worker) : un bandeau propose de recharger
+    const onUpdate = () => notify({ kind: 'info', eyebrow: 'Nouvelle version', title: 'FootOFF Empire a été mis à jour', text: 'Recharge pour en profiter : ta partie est sauvegardée.', action: { kind: 'update' } });
+    window.addEventListener('fo-update', onUpdate);
+    return () => window.removeEventListener('fo-update', onUpdate);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Succès : débloqués au fil du jeu, datés. Une partie déjà commencée les retrouve d'un coup, sans notification.
@@ -205,6 +219,7 @@ export default function App({ preview = null }) {
   // une notification ouvre ce qu'elle annonce : le succès lui-même (salle des trophées, mis en évidence), les offres
   // reçues ou les joueurs suivis du mercato
   const onNoteAction = (a) => {
+    if (a.kind === 'update') { applyUpdate(); return; }
     if (a.panel === 'trophies') { setTrophyTab(a.tab || 'honours'); setTrophyFocus(a.ids || []); }
     if (a.panel === 'squad') { setSquadTab(a.tab || 'players'); setSquadMercato(a.view || null); setSquadSheet(a.sheet ?? null); }
     if (a.panel === 'academy') setAcademyNav({ tab: a.tab || 'youth', ids: a.ids || [] });
@@ -314,13 +329,39 @@ export default function App({ preview = null }) {
     }
   });
 
-  // Réglages partagés par l'écran titre et le menu pause.
+  // Réglages partagés par l'écran titre et le menu pause ; code de sauvegarde à copier (d'un appareil à l'autre) ou à
+  // coller (la partie importée remplace l'actuelle après confirmation, l'ancienne devient la copie de secours).
   const settings = {
     muted: sound.current.muted,
     onToggleSound: () => { sound.current.setMuted(!sound.current.muted); bumpSound((n) => n + 1); },
     vibration,
     canVibrate: canVibrate(),
     onToggleVibration: () => { setVibration(!vibration); setVibrationState(!vibration); },
+    save: state ? { clubName: state.clubName, season: state.seasonNumber, division: DIVISIONS[state.divisionIndex].name } : null,
+    onExport: state ? () => exportCode(state) : null,
+    onImport: async (code) => {
+      const raw = await decodeCode(code);
+      if (!raw) return 'Ce code n’est pas une sauvegarde FootOFF Empire.';
+      const apply = () => {
+        const next = importSave(raw);
+        if (!next) return;
+        setState(next);
+        setMenu(false); setSel(null); setPanel(null); setMatchDay(false); setShowResult(false); setMatchPhase(null);
+        setTitleView('menu');
+        setScreen('game');
+        notify({ kind: 'success', eyebrow: 'Sauvegarde', title: `${next.clubName} : partie restaurée`, text: `Saison ${next.seasonNumber}, ${DIVISIONS[next.divisionIndex].name}. L’ancienne partie est gardée en copie de secours.` });
+      };
+      if (!state) { apply(); return null; }
+      setConfirm({
+        tone: 'danger',
+        title: `Remplacer ${state.clubName} par ${raw.clubName} ?`,
+        text: `La partie actuelle (saison ${state.seasonNumber}, ${DIVISIONS[state.divisionIndex].name}) sera mise en copie de secours, et ${raw.clubName} (saison ${raw.seasonNumber}, ${DIVISIONS[raw.divisionIndex].name}) prendra sa place.`,
+        confirmLabel: 'Restaurer cette partie',
+        cancelLabel: 'Garder ma partie',
+        onConfirm: apply,
+      });
+      return null;
+    },
   };
   // Retour à l'écran titre (la partie reste sauvegardée) : la caméra repart en vitrine autour du complexe.
   const toTitle = () => {

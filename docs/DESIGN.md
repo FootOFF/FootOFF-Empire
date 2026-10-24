@@ -203,6 +203,30 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 La galerie (`?galerie` dans l'adresse du jeu) affiche chaque écran avec des données fictives, sur téléphone
 (390 × 844) et sur PC (1280 × 720), sans toucher à la sauvegarde. Chaque modification d'interface se relit là.
 
+## Sauvegarde, mises à jour, erreurs (socle de publication, 2026-10-25)
+
+- Sauvegarde (`src/game/save.js`) : la partie dans le stockage local du navigateur (`SAVE_KEY`), plus une copie de secours
+  (`BACKUP_KEY`) prise à l'ouverture de chaque session. Au chargement, une sauvegarde illisible ou invalide (`validSave`)
+  laisse la place à la copie de secours, le texte illisible est gardé à part (`.corrupt`, jamais effacé) et une
+  notification le dit. Réglages (écran titre et menu pause, `SettingsView` de `src/ui/console.jsx`) : « Copier le code
+  de sauvegarde » (JSON compressé en base64, préfixe `FOE1`, quelques Ko, copié dans le presse-papiers ou affiché à
+  copier) et « Restaurer un code de sauvegarde » (champ à coller ; la partie en cours est mise en copie de secours après
+  une confirmation du jeu). C'est le passage d'un appareil à l'autre en attendant une synchronisation.
+- Mises à jour (`src/sw.js`, publié en `sw.js` par le greffon de `vite.config.js` ; `src/ui/updates.js`) : service worker
+  en production. Enveloppe de la version précachée (scripts, styles, page), ressources lourdes (modèles, ciels, vignettes,
+  végétation) servies depuis le cache et rafraîchies en arrière-plan, polices de même ; la page se demande d'abord au
+  réseau puis au cache : le jeu s'ouvre hors ligne après une première visite. Une nouvelle version s'installe en attente ;
+  le jeu vérifie à chaque retour au premier plan et toutes les trente minutes, puis une notification « Nouvelle version »
+  propose de recharger (la partie est sauvegardée). Plus besoin de fermer puis rouvrir l'app sur iPhone.
+- Erreurs (`src/ui/crash.jsx`, `src/ui/errlog.js`) : barrière d'erreur globale autour du jeu. Une erreur de rendu affiche
+  « Le jeu a rencontré un problème » (Reprendre, Copie de secours avec son club et sa saison, Copier le rapport : version,
+  navigateur, erreur, vingt dernières erreurs du navigateur ; rien n'est envoyé). Aperçu : `?ecran=erreur`. La version et
+  la date de construction (`__APP_VERSION__`, `__BUILD_DATE__`) s'affichent au bas de l'écran titre.
+- Navigateur trop ancien (`index.html`) : un contrôle avant le code du jeu (opérateurs récents, regard arrière des
+  expressions régulières, `Array.at`, `CompressionStream`, WebGL) affiche un message clair (iOS 16.4, Chrome, Edge ou
+  Firefox récents) au lieu d'un chargement sans fin ; et si le jeu n'a pas démarré après 25 s, un message avec
+  « Réessayer ».
+
 ## Sélection en verre liquide
 
 Réservée au menu du bas (`src/ui/glass.jsx`, `useGlass`) : la pastille glisse vers la section choisie en

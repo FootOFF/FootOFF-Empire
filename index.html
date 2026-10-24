@@ -90,6 +90,11 @@
         .ld-tip { position: absolute; left: 24px; right: 24px; bottom: calc(28px + env(safe-area-inset-bottom, 0px) + var(--host-badge-h, 0px)); min-height: 92px; font-size: 13px; }
       }
       @media (prefers-reduced-motion: reduce) { .ld-glow, .ld-logo, .ld-bar::after { animation: none; } .ld-spin { animation-duration: 3s; } .ld-bar b { animation-duration: 1ms; } }
+      /* navigateur trop ancien, ou jeu qui ne démarre pas : un message à la place de la barre */
+      .ld-old { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); width: min(520px, calc(100% - 48px)); text-align: center; font-size: 15px; line-height: 1.6; color: rgba(243, 242, 238, .85); }
+      .ld-old b { display: block; margin-bottom: 8px; font-family: Geist, Inter, system-ui, sans-serif; font-size: 20px; font-weight: 500; color: #f3f2ee; }
+      .ld-old a, .ld-old button { display: inline-block; margin-top: 14px; padding: 10px 22px; border-radius: 999px; border: 1px solid rgba(199, 161, 90, .5); background: none; color: #dec17f; font: inherit; font-size: 14px; cursor: pointer; text-decoration: none; }
+      .ld.old .ld-bottom, .ld.old .ld-bar { display: none; }
     </style>
   </head>
   <body>
@@ -124,7 +129,28 @@
     </div>
     <script>
       // Instant de départ : l'écran React (src/ui/loading.jsx) reprend les animations là où elles en sont.
-      window.__foBoot = { t0: performance.now() };
+      window.__foBoot = { t0: performance.now(), started: false };
+      // Navigateur trop ancien (le code du jeu demande iOS 16.4 / Safari 16.4, Chrome 98, Firefox 110 ou plus récent) :
+      // un message clair plutôt qu'un chargement qui n'aboutit jamais. Et si le jeu n'a pas démarré après 25 s (script
+      // non chargé, réseau coupé à la première visite), un message avec un bouton pour réessayer.
+      (function () {
+        var ld = document.querySelector('.ld');
+        function message(html) { if (!ld) return; ld.className += ' old'; var d = document.createElement('div'); d.className = 'ld-old'; d.innerHTML = html; ld.appendChild(d); }
+        var ok = false;
+        try {
+          ok = !!window.WebGLRenderingContext && typeof window.CompressionStream === 'function' && [].at
+            && new Function('return (null ?? 1) === 1 && ({}).a?.b === undefined && /(?<=a)b/.test("ab")')();
+        } catch (e) { ok = false; }
+        if (!ok) {
+          message('<b>Ce navigateur est trop ancien pour FootOFF Empire</b>Il faut au moins iOS 16.4 (Safari), ou une version récente de Chrome, Edge ou Firefox. Mets ton appareil à jour, puis reviens : ta partie t’attendra.');
+          window.__foBoot.unsupported = true;
+          return;
+        }
+        setTimeout(function () {
+          if (window.__foBoot.started) return;
+          message('<b>Le jeu n’a pas pu démarrer</b>Vérifie ta connexion, puis réessaie. Si le problème persiste, ferme complètement l’app ou l’onglet et rouvre-le.<br><button type="button" onclick="location.reload()">Réessayer</button>');
+        }, 25000);
+      })();
     </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>

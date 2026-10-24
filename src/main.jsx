@@ -4,6 +4,9 @@ import App from './App.jsx';
 import './styles.css';
 import { installFrenchTypography } from './ui/typography';
 import { installScrollCues } from './ui/scrollcue';
+import ErrorBoundary from './ui/crash';
+import { installErrorLog } from './ui/errlog';
+import { registerUpdates } from './ui/updates';
 
 // ?galerie : tous les écrans côte à côte · ?ecran=nom : un écran seul avec une partie fictive (jamais sauvegardée)
 const params = new URLSearchParams(window.location.search);
@@ -32,7 +35,12 @@ document.addEventListener('selectionchange', () => {
   sel.removeAllRanges();
 });
 document.addEventListener('contextmenu', (e) => { if (!editable(e.target)) e.preventDefault(); });
+window.__foBoot.started = true; // le code du jeu tourne : index.html n'affichera pas « le jeu n'a pas pu démarrer »
+installErrorLog(); // dernières erreurs du navigateur, pour le rapport de l'écran d'erreur
 const root = createRoot(document.getElementById('root'));
 if (params.has('galerie')) root.render(<Suspense fallback={null}><Gallery /></Suspense>);
-else if (params.has('ecran')) root.render(<App preview={params.get('ecran')} />);
-else root.render(<App />);
+else if (params.has('ecran')) root.render(<ErrorBoundary><App preview={params.get('ecran')} /></ErrorBoundary>);
+else {
+  root.render(<ErrorBoundary><App /></ErrorBoundary>);
+  registerUpdates(); // service worker : jeu hors ligne, ressources en cache, bandeau « Nouvelle version »
+}

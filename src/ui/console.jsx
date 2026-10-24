@@ -124,13 +124,60 @@ function PadGlyph({ k }) {
 
 // Réglages partagés par l'écran titre et le menu pause : son, vibrations, retour. Pas de qualité graphique : un seul
 // rendu, le plus net (render.js).
+// Réglages : son, vibrations, puis la sauvegarde (code à copier pour la retrouver sur un autre appareil, code à coller
+// pour restaurer une partie). Le code est copié dans le presse-papiers ; s'il ne peut pas l'être, il s'affiche dans un
+// champ à copier soi-même. Coller un code mène à une confirmation du jeu (App) avant de remplacer la partie.
+const sizeOf = (code) => `${Math.max(1, Math.round(code.length / 1024))} Ko`;
 export function SettingsView({ settings, onBack, active = true }) {
-  const { muted, onToggleSound, vibration, canVibrate, onToggleVibration } = settings;
-  const rows = [{ id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'back' }];
-  const menu = useMenu(rows, { onBack, active });
+  const { muted, onToggleSound, vibration, canVibrate, onToggleVibration, save = null, onExport = null, onImport = null } = settings;
+  const [mode, setMode] = useState('menu'); // menu | export (code affiché) | import (code à coller)
+  const [code, setCode] = useState('');
+  const [note, setNote] = useState(null);
+  const rows = [{ id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'back' }];
+  const menu = useMenu(rows, { onBack: () => (mode === 'menu' ? onBack() : setMode('menu')), active: active && mode === 'menu' });
   const { cur, setCur, refs, hover } = menu;
   const row = (i) => ({ ref: (el) => { refs.current[i] = el; }, onPointerEnter: hover(i), onFocus: () => setCur(i), style: { '--i': i } });
   const vibOn = vibration && canVibrate;
+  const doExport = async () => {
+    uiSound('select');
+    const c = await onExport();
+    setCode(c);
+    let copied = false;
+    try { await navigator.clipboard.writeText(c); copied = true; } catch { /* presse-papiers refusé : le code s'affiche */ }
+    setNote(copied ? `Code copié (${sizeOf(c)}). Colle-le dans les réglages du jeu sur ton autre appareil.` : 'Copie-le toi-même ci-dessous.');
+    setMode('export');
+  };
+  const doImport = async () => {
+    const err = await onImport(code);
+    if (err) { uiSound('back'); setNote(err); return; }
+    setMode('menu');
+    setCode('');
+    setNote(null);
+  };
+  if (mode !== 'menu') {
+    return (
+      <div className="cm-settings cm-save" role="group" aria-label={mode === 'export' ? 'Code de sauvegarde' : 'Restaurer une sauvegarde'}>
+        <p className="cm-save-lead">{mode === 'export' ? `Code de sauvegarde de ${save?.clubName} · saison ${save?.season}` : 'Colle ici un code de sauvegarde copié depuis un autre appareil.'}</p>
+        <textarea
+          className="cm-code"
+          value={code}
+          readOnly={mode === 'export'}
+          onChange={(e) => setCode(e.target.value)}
+          onFocus={(e) => { if (mode === 'export') e.target.select(); }}
+          spellCheck={false}
+          autoCapitalize="off"
+          autoCorrect="off"
+          placeholder={mode === 'import' ? 'FOE1:…' : ''}
+          aria-label="Code de sauvegarde"
+        />
+        {note && <p className={`cm-save-note ${mode === 'import' && note ? 'warn' : ''}`}>{note}</p>}
+        <div className="cm-save-actions">
+          <button type="button" className="btn ghost" onClick={() => { uiSound('back'); setMode('menu'); setNote(null); if (mode === 'import') setCode(''); }}>Retour</button>
+          {mode === 'import' && <button type="button" className="btn" disabled={!code.trim()} onClick={doImport}>Restaurer</button>}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="cm-settings" role="menu" aria-label="Réglages">
       <button type="button" role="menuitemcheckbox" aria-checked={!muted} className={`cm-row ${cur === 0 ? 'on' : ''}`} {...row(0)} onClick={() => { onToggleSound(); uiSound('select'); }}>
@@ -146,7 +193,21 @@ export function SettingsView({ settings, onBack, active = true }) {
         </span>
         <span className={`switch ${vibOn ? 'on' : ''}`} aria-hidden="true"><i /></span>
       </button>
-      <button type="button" className={`cm-row back ${cur === 2 ? 'on' : ''}`} {...row(2)} onClick={() => { uiSound('back'); onBack(); }}>
+      <button type="button" role="menuitem" disabled={!save || !onExport} className={`cm-row ${cur === 2 ? 'on' : ''}`} {...row(2)} onClick={doExport}>
+        <span className="cm-bar" aria-hidden="true" />
+        <span className="cm-row-text">
+          <strong>Copier le code de sauvegarde</strong>
+          <span>{save ? `${save.clubName} · saison ${save.season}, ${save.division} · pour continuer sur un autre appareil.` : 'Aucune partie en cours.'}</span>
+        </span>
+      </button>
+      <button type="button" role="menuitem" disabled={!onImport} className={`cm-row ${cur === 3 ? 'on' : ''}`} {...row(3)} onClick={() => { uiSound('select'); setCode(''); setNote(null); setMode('import'); }}>
+        <span className="cm-bar" aria-hidden="true" />
+        <span className="cm-row-text">
+          <strong>Restaurer un code de sauvegarde</strong>
+          <span>{save ? 'La partie actuelle sera gardée en copie de secours.' : 'Reprends une partie copiée depuis un autre appareil.'}</span>
+        </span>
+      </button>
+      <button type="button" className={`cm-row back ${cur === 4 ? 'on' : ''}`} {...row(4)} onClick={() => { uiSound('back'); onBack(); }}>
         <span className="cm-bar" aria-hidden="true" />
         <IconChevronLeft className="cm-back-icon" />
         <span className="cm-row-text"><strong>Retour</strong></span>

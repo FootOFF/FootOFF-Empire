@@ -14,8 +14,8 @@ AMD intégrée, écran à 200 %) et sur iPhone, souvent à distance, depuis son 
   sur https://footoff.github.io/FootOFF-Empire/ (version finale prévue sur footoff.media).
 - Vérifier `git diff --cached --stat` avant chaque commit. Messages de commit en français, terminés par la ligne
   d'attribution de Claude.
-- Après un déploiement, rappeler qu'il faut fermer puis rouvrir l'app sur iPhone (elle garde l'ancienne version en
-  mémoire).
+- Après un déploiement, le jeu propose lui-même « Nouvelle version » (service worker) ; si le bandeau ne vient pas,
+  fermer puis rouvrir l'app sur iPhone.
 
 ## Règles du jeu et de l'interface
 - Jamais de fenêtre du navigateur (`alert`, `confirm`) : toute confirmation passe par la fenêtre du jeu (`ConfirmDialog`).
