@@ -100,7 +100,7 @@ export default function App({ preview = null }) {
   const [confirm, setConfirm] = useState(boot.ui.confirm || null); // fenêtre de confirmation du jeu (vente, nouvelle partie…)
   const [squadTab, setSquadTab] = useState(boot.ui.squadTab && boot.ui.squadTab !== 'market' ? boot.ui.squadTab : 'players'); // onglet de l'Effectif (joueurs, composition, anciens)
   const [seasonTab, setSeasonTab] = useState(boot.ui.seasonTab || 'calendar'); // onglet de la Saison (calendrier, classement)
-  const [navSwitch, setNavSwitch] = useState(false); // passage d'un onglet de section à l'autre : sans glissement
+  const [navSwitch, setNavSwitch] = useState(false); // ouvert depuis un onglet de la même section : sans glissement
   const [squadSheet, setSquadSheet] = useState(null); // fiche joueur ouverte d'emblée (depuis une fiche carrière)
   const [statsMatch, setStatsMatch] = useState(boot.ui.statsMatch || null); // 'last' : Stats Pass du dernier match ouvert d'emblée
   const [trophyTab, setTrophyTab] = useState('honours'); // onglet d'ouverture de la salle des trophées
@@ -184,7 +184,9 @@ export default function App({ preview = null }) {
   });
 
   const run = (fn, failMsg) => {
-    const ns = fn(clone(state));
+    const base = clone(state);
+    if (base?.tutorial) base.tutorial.just = []; // seules les primes gagnées par cette action s'annoncent, une fois
+    const ns = fn(base);
     if (!ns) { notify({ kind: 'warn', title: failMsg || 'Action impossible.' }); return false; }
     setState(advanceTutorial(ns)); // une étape du tutoriel se valide dès que son objectif est atteint
     for (const r of ns.tutorial?.just || []) { // et sa prime s'annonce
@@ -196,10 +198,11 @@ export default function App({ preview = null }) {
   const openPanel = (id) => {
     if (id === 'stadium') { setPanel(null); setSel({ plotId: 't0', sector: 'main' }); return; } // accès direct au stade
     const target = id === 'club' ? 'finances' : id; // section Club : les finances d'abord
-    // d'un onglet à l'autre de la même section, l'écran change sur place (sans glissement ni fondu)
-    const same = !!target && !!panel && sectionOf(target) === sectionOf(panel);
-    setNavSwitch(same);
-    if (same) setTimeout(() => setNavSwitch(false), 260);
+    // d'un onglet à l'autre de la même section, l'écran change sur place (sans glissement ni fondu) et le reste tant
+    // que le panneau est ouvert : retirer la règle au bout d'un instant relançait l'animation d'entrée (le panneau
+    // disparaissait puis revenait, 0,3 s après chaque changement d'onglet)
+    const sec = panel ? sectionOf(panel) : null;
+    setNavSwitch(!!target && !!sec && sectionOf(target) === sec);
     setPanel(target);
     if (target) setSel(null);
   };
@@ -441,7 +444,7 @@ export default function App({ preview = null }) {
   const signals = state ? dockSignals(state) : {};
   // navigation par sections (nav.jsx) : l'en-tête de chaque panneau y lit l'onglet actif et ses pastilles
   const nav = {
-    panel, squadTab, seasonTab, mercatoView, go: goNav, badges: signals.items || {},
+    panel, squadTab, seasonTab, mercatoView, go: goNav, badges: signals.items || {}, switching: navSwitch && !!panel,
     built: state ? { training: state.buildings.training > 0, academy: state.buildings.academy > 0, direction: state.buildings.direction > 0 } : {},
   };
   const hudKeys = inGame && !menu && !cinematic && !confirm && !preview; // raccourcis clavier du HUD (PC)
@@ -462,7 +465,7 @@ export default function App({ preview = null }) {
 
   return (
     <NavContext.Provider value={nav}>
-    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'mercato', 'academy', 'training', 'direction', 'season', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''} ${navSwitch ? 'nav-switch' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
+    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'mercato', 'academy', 'training', 'season', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''} ${navSwitch && panel ? 'nav-switch' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
       <div className="stage">
         {preview ? (
           <div className="stage-preview" aria-hidden="true" />

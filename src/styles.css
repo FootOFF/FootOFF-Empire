@@ -3787,6 +3787,10 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .sq-tab-count { border-radius: 9px; background: var(--live); color: #fff; font-family: 'Inter', sans-serif; letter-spacing: 0; }
 .sq-tab-count.muted { background: rgba(255, 255, 255, .14); color: var(--text-2); }
 .sq-tabs button.on .sq-tab-count.muted { background: rgba(18, 15, 8, .2); color: var(--gold-ink); }
+/* onglet actif (fond doré) : ses pastilles passent en foncé, sinon or sur or ou blanc sur or, illisibles (académie :
+   « Mes jeunes 3 », « Détection 3 » ; point « à voir » d'une section) */
+.sq-tabs button.on .mc-count-badge, .sq-tabs button.on .mc-count-badge.hot { background: var(--gold-ink); color: var(--gold-light); }
+.sq-tabs button.on .sq-tab-dot { background: var(--gold-ink); animation: none; }
 .mc { gap: 14px; }
 
 /* filtres */
@@ -4275,7 +4279,7 @@ html, body { overscroll-behavior: none; }
 .ac-tab-n { display: inline-block; margin-left: 6px; vertical-align: 1px; }
 
 /* bandeaux : jeune dans sa dernière saison, équipe complète */
-.ac-alert { display: flex; align-items: flex-start; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: var(--r-md); border: 1px solid rgba(224, 122, 111, .35); background: rgba(224, 122, 111, .07); }
+.ac-alert { display: flex; align-items: flex-start; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: 0; border: 0; background: rgba(238, 142, 131, .08); box-shadow: inset 3px 0 0 var(--red); clip-path: var(--cut-shape-sm); }
 .ac-alert svg { flex-shrink: 0; width: 18px; height: 18px; margin-top: 1px; color: #f0b3ab; }
 .ac-alert p { font-size: var(--t-sm); color: var(--text-2); line-height: 1.5; }
 .ac-alert b { color: var(--text); font-weight: 600; }
@@ -4308,11 +4312,11 @@ html, body { overscroll-behavior: none; }
 .ac-table td.c-act { padding-top: 4px; padding-bottom: 4px; }
 .ac-table td.c-act .btn { width: 100%; padding: 8px 12px; }
 .ac-best { display: inline-flex; gap: 8px; font-family: var(--font-disp); font-weight: 600; font-size: var(--d-xs); color: var(--text-2); white-space: nowrap; }
-.ac-plan { display: inline-block; padding: 3px 10px; border-radius: 3px; border: 1px solid var(--line-strong); font-size: var(--t-xs); color: var(--text-2); white-space: nowrap; }
+.ac-plan { display: inline-block; padding: 3px 10px; border-radius: 0; border: 0; background: var(--plate-3); font-size: var(--t-xs); color: var(--text-2); white-space: nowrap; }
 .ac-flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px; }
-.ac-tag { font-style: normal; font-size: var(--t-xs); font-weight: 500; padding: 1px 7px; border-radius: 3px; border: 1px solid var(--line-strong); white-space: nowrap; }
-.ac-tag.good { border-color: var(--gold-line); background: var(--gold-soft); color: var(--gold-light); }
-.ac-tag.warn { border-color: rgba(224, 122, 111, .45); color: #f0b3ab; }
+.ac-tag { font-style: normal; font-size: var(--t-xs); font-weight: 600; padding: 1px 7px; border-radius: 0; border: 0; background: var(--plate-3); white-space: nowrap; }
+.ac-tag.good { background: var(--gold-soft); color: var(--gold-light); }
+.ac-tag.warn { background: rgba(238, 142, 131, .16); color: #f0b3ab; }
 
 /* liste (téléphone) : les noms passent à la ligne plutôt que d'être coupés */
 .ac-list .sq-row-name { white-space: normal; overflow: visible; }
@@ -4338,6 +4342,7 @@ html, body { overscroll-behavior: none; }
 .sh-stats.ac-prog { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .ac-plans button { display: inline-flex; align-items: center; justify-content: center; }
 .ac-advised { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-left: 6px; background: var(--gold); box-shadow: 0 0 6px rgba(199, 161, 90, .6); }
+.ac-plans button.on .ac-advised { background: var(--gold-ink); box-shadow: none; } /* plan choisi (fond doré) : point foncé, visible */
 .ac-plan-text { font-size: var(--t-sm); color: var(--text-2); line-height: 1.55; }
 .ac-plan-text b { font-weight: 600; color: var(--text); }
 .ac-plan-text b.ac-slow { color: #f0b3ab; }

@@ -4,6 +4,14 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.2', date: '2026-10-24', title: 'Corrections',
+    items: [
+      'La « Subvention de la mairie » ne s’annonce plus à chaque action : une prime du tutoriel s’annonce une seule fois (elle n’a jamais été versée deux fois).',
+      'Académie plus lisible : nombres des onglets visibles sur l’onglet choisi, fiche d’un jeune au même modèle que la fiche joueur.',
+      'Plus de sursaut en passant d’un onglet à l’autre d’une section (Finances, Journal, Notoriété, Direction…) ; Direction a la taille des autres écrans du Club.',
+    ],
+  },
+  {
     version: '0.3.1', date: '2026-10-24', title: 'Retour du logo',
     items: [
       'Le logo FootOFF Empire d’origine revient sur l’écran de chargement et l’écran titre.',

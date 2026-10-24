@@ -27,12 +27,14 @@ export const REWARDS = {
   build: [1000, 'Subvention de la mairie'], train: [500, 'Premier entraînement'], sign: [500, 'Première recrue'], match: [1000, 'Premier match'],
 };
 
-// Fait avancer le tutoriel tant que les objectifs des étapes sont déjà remplis ; les primes gagnées pendant cet
-// appel restent dans s.tutorial.just (l'interface les annonce).
+// Fait avancer le tutoriel tant que les objectifs des étapes sont déjà remplis ; les primes gagnées s'ajoutent à
+// s.tutorial.just, que l'interface annonce puis vide au début de l'action suivante (App.jsx, run) : une prime ne
+// s'annonce qu'une fois. Elle n'était vidée qu'ici, sauf tutoriel terminé : une prime suivie de « Passer le
+// tutoriel » restait dans la sauvegarde et s'annonçait à chaque action (« Subvention de la mairie » en boucle).
 export function advanceTutorial(s) {
   const t = s.tutorial;
   if (!t || t.step === 'done') return s;
-  t.just = [];
+  t.just ||= [];
   while (goalReached[t.step]?.(s)) {
     const r = REWARDS[t.step];
     if (r && !(t.paid || []).includes(t.step)) {

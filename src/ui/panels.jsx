@@ -16,12 +16,14 @@ import { useDialogFocus, useKeydown, useLeaving } from './presence';
 import { uiSound } from './uisound';
 import { PHONE, useSwipe } from './gestures';
 import { SeasonCalendar } from './calendar';
-import { SECTIONS, SectionTabs, sectionOf } from './nav';
+import { SECTIONS, SectionTabs, sectionOf, useNav } from './nav';
 
-// Un panneau ou une fiche qui s'ouvre fait un léger souffle qui monte, qui descend quand il se ferme.
+// Un panneau ou une fiche qui s'ouvre fait un léger souffle qui monte, qui descend quand il se ferme. D'un onglet à
+// l'autre d'une section, le clic de l'onglet suffit : ni souffle d'ouverture, ni souffle de fermeture.
 export function usePanelSound() {
   const leaving = useLeaving();
-  useEffect(() => { uiSound(leaving ? 'close' : 'open'); }, [leaving]);
+  const quiet = !!useNav()?.switching;
+  useEffect(() => { if (!quiet) uiSound(leaving ? 'close' : 'open'); }, [leaving]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 // Panneau du jeu : un seul modèle pour tous les écrans du menu (en-tête, barre d'outils, corps défilant,

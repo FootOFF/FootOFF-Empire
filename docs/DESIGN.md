@@ -128,7 +128,13 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
 - Un onglet d'un bâtiment pas encore construit reste visible, cadenassé (Entraînement, Académie, Direction).
 - Pastilles sur le menu et les onglets (`dockSignals`, `src/game/advice.js`) : rouge pour ce qui attend une
   décision (offres à traiter), discrète pour une information (joueurs suivis), point doré pour une nouveauté.
-- D'un onglet à l'autre, l'écran change sur place (ni glissement ni fondu).
+- D'un onglet à l'autre, l'écran change sur place (ni glissement ni fondu, ni souffle d'ouverture : le clic de
+  l'onglet suffit) et le reste tant que le panneau est ouvert (`nav-switch` sur `.game`). La règle était retirée au
+  bout de 0,3 s, ce qui relançait l'animation d'entrée : le panneau disparaissait puis revenait (« sursaut »,
+  2026-10-24). Les écrans d'une même section ont la même taille : Finances, Journal, Notoriété et Direction en
+  panneau normal ; Équipe, Mercato et Saison en grand écran.
+- Pastilles d'un onglet actif (fond doré) : en foncé, jamais or sur or (académie : « Mes jeunes 3 », « Détection 3 »,
+  point « à voir » d'une section).
 
 ## Briques (`src/ui/kit.jsx`)
 
@@ -479,7 +485,10 @@ construire le centre d'entraînement, jouer une première épreuve en 3D, recrut
 premier match, ménager son effectif (condition, blessures, suspensions, changements), découvrir les trois objectifs du
 président (tirés pour la saison), puis cap sur le stade. Chaque
 carte dit quoi faire (texte), pourquoi (filet doré) et, pour les quatre étapes d'action, sa prime (1 000 €, 500 €,
-500 €, 1 000 €, versée une fois, notification « Étape réussie »). Chaque étape se valide toute seule ; la cible de
+500 €, 1 000 €, versée une fois, notification « Étape réussie » une seule fois : la liste des primes à annoncer se
+vide au début de chaque action, `run` dans `App.jsx` ; elle restait sinon dans la sauvegarde quand le tutoriel se
+terminait juste après une prime, et « Subvention de la mairie » s'annonçait à chaque action). Chaque étape se valide
+toute seule ; la cible de
 l'étape pulse à l'écran (parcelle, bouton Jouer d'une ligne du centre, offre de la recrue, bouton du match, stade).
 
 ## Objectifs de la saison
@@ -587,8 +596,10 @@ détaillé sur PC (tri par colonne), liste compacte sur téléphone, fiche à dr
   rappel pour les jeunes qui auront 19 ans à l'intersaison, règles en bas de liste.
 - Détection : les jeunes repérés de la journée, le plus prometteur d'abord, « Signer » (gratuit) ; carte du niveau
   de l'académie et du suivant (jeunes repérés, potentiel, fourchette) avec « Améliorer ».
-- Fiche : niveau et potentiel, progrès (dernière journée, saison, dernier été), plan d'entraînement en sélecteur (le
-  conseillé marqué d'un point doré ; un autre plan dit de combien le niveau progresse moins vite), qualités
+- Fiche : même modèle que la fiche joueur (niveau en grand, poste, âge et pied, nom en capitales, portrait,
+  étiquettes ; échelle du niveau et du potentiel ; attributs en trois familles), puis progrès (dernière journée,
+  saison, dernier été), plan d'entraînement en sélecteur (le conseillé marqué d'un point, foncé sur le plan choisi ;
+  un autre plan dit de combien le niveau progresse moins vite), qualités
   travaillées marquées dans les attributs ; « Faire monter » (confirmation : salaire, effectif) et « Libérer »
   (confirmation rouge, focus sur « Le garder »). Un joueur monté garde l'étiquette « Formé au club ».
 Règles : recrutement gratuit dans la limite des places, sans salaire ; nouveaux jeunes après chaque journée de

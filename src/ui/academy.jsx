@@ -15,6 +15,7 @@ import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { Portrait } from './portrait';
 import { heat } from './mercato';
+import { tierOf } from './squad';
 
 // Académie : l'équipe de jeunes du club (academy.js), ouverte d'un clic sur le bâtiment dans la vue 3D. Deux onglets,
 // dans le style de l'Effectif (tableau détaillé sur PC, liste compacte sur téléphone) : « Mes jeunes » (six places,
@@ -494,6 +495,7 @@ function AcademySheet({ p, scout, state, refLvl, full, place, onClose, onPrev, o
   const g = p.gain || {};
   const workedNames = listFr(planAttrs(p, plan).map((k) => attrName(p, k)));
   const slower = Math.round((1 - planPace(p, plan) / planPace(p, advised)) * 100); // niveau : moins vite qu'avec le plan conseillé
+  const [nameFirst, ...nameRest] = p.name.split(' ');
 
   // changement de jeune : la fiche remonte en haut et le nouveau arrive du côté du geste (comme la fiche joueur)
   const ref = useRef(null);
@@ -525,37 +527,35 @@ function AcademySheet({ p, scout, state, refLvl, full, place, onClose, onPrev, o
           <button className="hud-icon" onClick={onClose} aria-label="Fermer la fiche"><IconClose /></button>
         </header>
 
-        <section className="sh-hero">
-          <Portrait p={p} size={76} className="sh-face" />
+        {/* même en-tête que la fiche joueur (squad.jsx PlayerSheet) : niveau en grand, poste, nom, portrait, étiquettes */}
+        <section className={`sh-hero ${tierOf(r, refLvl)}`}>
           <div className="sh-id">
+            <div className="sh-rate"><b>{fmtRating(r)}</b></div>
             <div className="sh-meta">
               <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
               <span>{p.age} ans · {p.foot === 'les deux' ? 'des deux pieds' : `pied ${p.foot}`}</span>
             </div>
-            <h3>{p.name}</h3>
-            <div className="sh-tags">
-              <span className="sh-tag on">{scout ? 'Repéré par tes éducateurs' : `Académie depuis la saison ${p.youthSince ?? state.seasonNumber}`}</span>
-              {leaving && <span className="sh-tag warn">{YOUTH_LEAVE_AGE} ans à l’intersaison</span>}
-              {gain >= 0.3 && <span className="sh-tag sale">Niveau titulaire</span>}
-              {p.alt && <span className="sh-tag">Dépanne : {POS_LABELS[p.alt].toLowerCase()} {fmtRating(ratingAt(p, p.alt))}</span>}
-            </div>
+            <h3 className="sh-name">{nameRest.length > 0 && <small>{nameFirst}</small>}<b>{nameRest.length ? nameRest.join(' ') : nameFirst}</b></h3>
           </div>
-          <div className={`sh-level ${heat(r, refLvl)}`}>
-            <b>{fmtRating(r)}</b>
-            <span>niveau / 20</span>
+          <Portrait p={p} size={136} className="sh-face" />
+          <div className="sh-tags">
+            <span className="sh-tag on">{scout ? 'Repéré par tes éducateurs' : `Académie depuis la saison ${p.youthSince ?? state.seasonNumber}`}</span>
+            {leaving && <span className="sh-tag warn">{YOUTH_LEAVE_AGE} ans à l’intersaison</span>}
+            {gain >= 0.3 && <span className="sh-tag sale">Niveau titulaire</span>}
+            {p.alt && <span className="sh-tag">Dépanne : {POS_LABELS[p.alt].toLowerCase()} {fmtRating(ratingAt(p, p.alt))}</span>}
           </div>
         </section>
 
-        <section className="sh-sec">
+        <section className="sh-sec sh-levelsec">
           <div className="sh-row">
-            <span className="sh-cap">Niveau et potentiel</span>
-            <span className="sh-pot">{pot ? <>potentiel estimé <b>{potText(pot)}</b></> : 'plafond atteint'}</span>
+            <span className="sh-cap">Niveau <b className={heat(r, refLvl)}>{fmtRating(r)}</b><small> / 20</small></span>
+            <span className="sh-pot">{pot ? <>Potentiel estimé <b>{potText(pot)}</b></> : 'Plafond atteint'}</span>
           </div>
           <div className="sh-scale" aria-hidden="true">
             <i className="now" style={{ width: `${(r / 20) * 100}%` }} />
             {pot && <i className="pot" style={{ left: `${(pot[0] / 20) * 100}%`, width: `${((pot[1] - pot[0]) / 20) * 100}%` }} />}
           </div>
-          <div className="sh-ticks" aria-hidden="true"><span>0</span><span>10</span><span>20</span></div>
+          <div className="sh-ticks" aria-hidden="true"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span></div>
         </section>
 
         {!scout && (
@@ -597,7 +597,7 @@ function AcademySheet({ p, scout, state, refLvl, full, place, onClose, onPrev, o
           <section className="sh-sec">
             <span className="sh-cap">{p.traits.length > 1 ? 'Signes distinctifs' : 'Signe distinctif'}</span>
             <ul className="sh-traits">
-              {p.traits.map((t) => <li key={t}><b>{TRAITS[t].name}</b><span>{TRAITS[t].desc}</span></li>)}
+              {p.traits.map((t) => <li key={t}><i aria-hidden="true" /><b>{TRAITS[t].name}</b><span>{TRAITS[t].desc}</span></li>)}
             </ul>
           </section>
         )}
@@ -607,18 +607,20 @@ function AcademySheet({ p, scout, state, refLvl, full, place, onClose, onPrev, o
             <span className="sh-cap">Attributs</span>
             <span className="sh-legend"><i className="key" /> travaillés par {scout ? 'ce' : 'son'} plan · <em>or</em> : fort pour ta division</span>
           </div>
-          {fams.map((fam) => (
-            <div className="sh-fam" key={fam}>
-              {fams.length > 1 && <span className="sh-famname">{FAMILIES[fam]}</span>}
-              {all.filter((a) => a.fam === fam).map((a) => (
-                <div className={`sh-attr ${worked.has(a.key) ? 'key' : ''}`} key={a.key}>
-                  <span>{a.name}</span>
-                  <span className="sh-track"><i className={heat(a.v, refLvl)} style={{ width: `${(a.v / 20) * 100}%` }} /></span>
-                  <b className={heat(a.v, refLvl)}>{Math.round(a.v)}</b>
-                </div>
-              ))}
-            </div>
-          ))}
+          <div className={`sh-fams n${fams.length}`}>
+            {fams.map((fam) => (
+              <div className="sh-fam" key={fam}>
+                <span className="sh-famname">{fams.length > 1 ? FAMILIES[fam].split(' ')[0] : FAMILIES[fam]}</span>
+                {all.filter((a) => a.fam === fam).map((a) => (
+                  <div className={`sh-attr ${worked.has(a.key) ? 'key' : ''}`} key={a.key}>
+                    <span>{a.name}</span>
+                    <b className={heat(a.v, refLvl)}>{Math.round(a.v)}</b>
+                    <span className="sh-track"><i className={heat(a.v, refLvl)} style={{ width: `${(a.v / 20) * 100}%` }} /></span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </section>
 
         <footer className={`sh-foot ${scout ? 'market' : 'own'}`}>
