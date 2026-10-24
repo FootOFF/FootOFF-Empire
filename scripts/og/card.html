@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@500;600&family=Geist+Mono:wght@500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #070707; }
+  .card { position: relative; width: 1200px; height: 630px; color: #f3f2ee; font-family: Inter, system-ui, sans-serif;
+    background: radial-gradient(ellipse 80% 70% at 30% 40%, #13211a 0%, #0a0f0c 50%, #070707 100%); }
+  .card::before { content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 78% 50%, transparent 0 199px, rgba(255,255,255,.07) 200px 202px, transparent 203px),
+      linear-gradient(90deg, transparent calc(78% - 1px), rgba(255,255,255,.06) 0 calc(78% + 1px), transparent 0); }
+  .glow { position: absolute; inset: -20%; background: radial-gradient(closest-side, rgba(199,161,90,.16), transparent) 22% 40% / 60% 70% no-repeat; }
+  .logo { position: absolute; left: 96px; top: 150px; display: flex; align-items: center; gap: 34px; }
+  .mono { height: 150px; width: auto; }
+  .sep { width: 1px; align-self: stretch; background: rgba(199,161,90,.4); }
+  .words { display: flex; flex-direction: column; line-height: 1; }
+  .name { font-family: Geist, Inter, sans-serif; font-weight: 500; font-size: 92px; letter-spacing: -.02em; }
+  .name b { font-weight: 500; color: #c7a15a; }
+  .sub { margin-top: 16px; font-family: Geist, Inter, sans-serif; font-weight: 500; font-size: 30px; letter-spacing: .55em; text-transform: uppercase; color: #c7a15a; }
+  .tag { position: absolute; left: 96px; top: 372px; font-size: 34px; color: rgba(243,242,238,.82); }
+  .tag em { font-style: normal; color: #dec17f; }
+  .foot { position: absolute; left: 96px; bottom: 56px; display: flex; gap: 28px; align-items: center; font-family: 'Geist Mono', monospace; font-size: 17px; letter-spacing: .22em; text-transform: uppercase; color: #8b8b8b; }
+  .foot i { width: 6px; height: 6px; border-radius: 50%; background: #c7a15a; }
+  .pitch { position: absolute; right: 70px; top: 100px; width: 300px; height: 430px; border: 2px solid rgba(255,255,255,.14); border-radius: 6px; }
+  .pitch::before { content: ''; position: absolute; left: 50%; top: 50%; width: 110px; height: 110px; border: 2px solid rgba(255,255,255,.14); border-radius: 50%; transform: translate(-50%, -50%); }
+  .pitch::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px solid rgba(255,255,255,.14); }
+  .box { position: absolute; left: 50%; width: 170px; height: 70px; border: 2px solid rgba(255,255,255,.14); transform: translateX(-50%); }
+  .box.t { top: -2px; border-top: 0; } .box.b { bottom: -2px; border-bottom: 0; }
+</style></head>
+<body><div class="card"><div class="glow"></div>
+  <div class="pitch"><div class="box t"></div><div class="box b"></div></div>
+  <div class="logo">
+    <svg class="mono" viewBox="594 256 744 768"><defs><linearGradient id="g" gradientUnits="userSpaceOnUse" x1="940" y1="640" x2="1180" y2="300"><stop offset="0" stop-color="#B9924C"/><stop offset=".55" stop-color="#B9924C"/><stop offset="1" stop-color="#DEC17F"/></linearGradient></defs>
+      <path d="M594 256H1035V351H689V588H770.6A300 300 0 0 0 744.5 662H689V835L594 938Z" fill="url(#g)"/><path d="M770.6 588A300 300 0 1 1 744.5 662H829A218 218 0 1 0 867.6 588Z" fill="url(#g)"/></svg>
+    <span class="sep"></span>
+    <span class="words"><span class="name">Foot<b>OFF</b></span><span class="sub">Empire</span></span>
+  </div>
+  <p class="tag">Un terrain de quartier. <em>Un empire</em> à bâtir.</p>
+  <div class="foot"><span>Jeu de gestion de football</span><i></i><span>Gratuit, dans le navigateur</span><i></i><span>FootOFF Media</span></div>
+</div></body></html>

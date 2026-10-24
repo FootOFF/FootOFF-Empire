@@ -19,10 +19,15 @@ const INJURY_TIRED = 2.5; // à zéro de condition, le risque est multiplié par
 export const SUBS_MAX = 5; // changements par match (cinq, comme en championnat professionnel)
 const SNAPS_KEEP = 30; // minutes d'instantanés gardées derrière l'horloge (reprise après un changement)
 
+// Gabarits du commentaire. {p} joueur, {home} / {away} clubs (article accordé), {n} accord du verbe pour un club au
+// pluriel, {team} club nu entre parenthèses. Pas deux fois la même phrase d'ambiance dans un match ; chaque occasion
+// a sa famille (pied, tête, lointaine, contre, coup de pied arrêté) et son issue ; un but se commente selon le score.
 const T = {
   kickoff: [
     'Coup d’envoi ! {home} et {away} lancent la partie.',
     'C’est parti ! Le stade est debout pour le coup d’envoi.',
+    'L’arbitre siffle : {home} engage, {away} attend{n} dans son camp.',
+    'Coup d’envoi sous les encouragements du public : {home} donne le ton d’entrée.',
   ],
   chanceHome: [
     '{p} s’infiltre côté gauche et frappe…',
@@ -30,32 +35,72 @@ const T = {
     '{p} reprend de volée à l’entrée de la surface…',
     'Centre millimétré, {p} place sa tête…',
     '{p} élimine son vis-à-vis et tente sa chance…',
+    'Une-deux dans la surface, {p} se retrouve face au gardien…',
+    'Corner de {home} : {p} monte plus haut que tout le monde…',
+    '{p} récupère haut et frappe en première intention…',
+    'Décalage côté droit, {p} enroule du gauche…',
+    'Contre éclair de {home}, {p} déboule dans l’axe…',
+    '{p} talonne, puis reprend lui-même dans le rond adverse…',
+    'Coup franc excentré, {p} tente sa chance directement…',
+    '{p} pivote dans la surface et déclenche…',
+    'Remise en retrait, {p} frappe du plat du pied…',
   ],
   chanceLong: [
     '{p} arme une frappe lointaine…',
     'De loin, {p} tente sa chance…',
+    'À trente mètres, {p} voit le gardien avancé et frappe…',
+    '{p} n’hésite pas : frappe puissante de l’extérieur de la surface…',
   ],
   chanceAway: [
-    '{away} contre{n} vite, {p} se présente face au but…', // {n} : accord du verbe (« les Jaunes contrent »)
+    '{away} contre{n} vite, {p} se présente face au but…',
     'Frappe lointaine de {p}…',
     '{p} déborde et centre fort devant le but…',
     'Coup franc dangereux pour {away}, {p} s’élance…',
+    'Perte de balle au milieu : {p} file au but…',
+    'Corner pour {away}, {p} surgit au premier poteau…',
+    '{p} s’infiltre entre deux défenseurs et frappe…',
+    'Centre de la droite, {p} reprend de la tête…',
+    '{p} fixe la défense et déclenche à l’entrée de la surface…',
+    'Long ballon dans le dos de la défense, {p} est parti…',
+    '{p} profite d’un cafouillage dans la surface…',
+    'Contre rapide de {away} : {p} choisit la frappe…',
   ],
-  saved: ['arrêt du gardien !', 'parade décisive !', 'le gardien capte sans trembler.'],
-  wide: ['à côté !', 'au-dessus de la barre.', 'ça frôle le poteau, mais c’est dehors.'],
-  post: ['sur le poteau !', 'la barre transversale tremble encore !'],
-  goalHome: ['BUT ! {p} trompe le gardien !', 'BUT ! Quelle frappe de {p} !', 'BUT ! {p} conclut une action collective magnifique !'],
+  saved: [
+    'arrêt du gardien !', 'parade décisive !', 'le gardien capte sans trembler.', 'détourné en corner du bout des gants !',
+    'claqué au-dessus par le gardien !', 'le portier se couche bien et bloque.', 'repoussé des poings !', 'le gardien gagne son face-à-face !',
+  ],
+  wide: [
+    'à côté !', 'au-dessus de la barre.', 'ça frôle le poteau, mais c’est dehors.', 'dévissé, loin du cadre.',
+    'dans les tribunes…', 'contré par un défenseur, en corner.', 'juste à côté du montant !', 'trop croisé, ça sort.',
+  ],
+  post: ['sur le poteau !', 'la barre transversale tremble encore !', 'le poteau sauve le gardien !', 'sur la barre, puis dégagé en catastrophe !'],
+  // but du club selon le score après le but (nous − adversaire) et, en fin de match, selon la minute
+  goalHome: {
+    level: ['BUT ! {p} égalise d’une frappe imparable !', 'BUT ! {p} remet {home} à hauteur, le stade exulte !', 'ÉGALISATION ! {p} trompe le gardien !'],
+    lead: ['BUT ! {p} trompe le gardien et donne l’avantage à {home} !', 'BUT ! Quelle frappe de {p} ! {home} passe devant !', 'BUT ! {p} conclut une action collective magnifique, {home} mène !'],
+    more: ['BUT ! {p} creuse l’écart !', 'BUT ! {p} enfonce le clou, {home} se met à l’abri !', 'ENCORE ! {p} alourdit la marque !'],
+    back: ['BUT ! {p} réduit l’écart, {home} y croit encore !', 'BUT ! {p} relance le match pour {home} !', 'BUT ! {p} redonne espoir à {home} !'],
+    late: ['BUT DANS LES ARRÊTS DE JEU ! {p} fait chavirer le stade !', 'BUT ! {p} à la dernière minute, le public n’en revient pas !'],
+  },
   // but adverse, selon l'écart après le but (adversaire − nous)
   goalAway: {
-    level: ['Égalisation : {p} remet {away} à hauteur.', '{p} égalise pour {away}.'],
-    lead: ['But de {away} : {p} donne l’avantage aux siens.', 'Coup dur : {p} marque pour {away}.'],
-    more: ['{p} creuse l’écart pour {away}.', 'Coup dur : {p} enfonce le clou pour {away}.'],
-    back: ['{p} réduit l’écart pour {away}.', 'But de {away} : {p} relance le suspense.'],
+    level: ['Égalisation : {p} remet {away} à hauteur.', '{p} égalise pour {away}.', 'Le stade se tait : {p} égalise pour {away}.'],
+    lead: ['But de {away} : {p} donne l’avantage aux siens.', 'Coup dur : {p} marque pour {away}.', '{p} ouvre le score pour {away}, silence dans les tribunes.'],
+    more: ['{p} creuse l’écart pour {away}.', 'Coup dur : {p} enfonce le clou pour {away}.', '{p} encore pour {away}, la soirée se complique.'],
+    back: ['{p} réduit l’écart pour {away}.', 'But de {away} : {p} relance le suspense.', '{p} marque pour {away} : il va falloir tenir.'],
+    late: ['But de {away} dans les arrêts de jeu : {p} glace le stade.', 'Dernière minute : {p} marque pour {away}, cruel.'],
   },
-  yellow: ['Carton jaune pour {p} ({team}) après une faute tactique.', 'Avertissement : {p} ({team}) est sanctionné.'],
-  red: ['CARTON ROUGE ! {p} ({team}) est expulsé !'],
-  secondYellow: ['Second carton jaune pour {p} ({team}) : expulsion !'],
-  injury: ['Blessure : {p} reste au sol et ne peut pas continuer.', '{p} se tient la cuisse : il doit sortir.', 'Coup dur pour {home} : {p} est blessé et quitte le terrain.'],
+  yellow: [
+    'Carton jaune pour {p} ({team}) après une faute tactique.', 'Avertissement : {p} ({team}) est sanctionné.',
+    '{p} ({team}) arrive en retard : carton jaune.', 'Jaune pour {p} ({team}), qui a protesté un peu trop fort.',
+    'Semelle de {p} ({team}) : l’arbitre sort le jaune.', '{p} ({team}) stoppe un contre de la main : avertissement.',
+  ],
+  red: ['CARTON ROUGE ! {p} ({team}) est expulsé !', 'ROUGE DIRECT ! {p} ({team}) est renvoyé aux vestiaires !', 'Expulsion ! {p} ({team}) a fauché le dernier défenseur !'],
+  secondYellow: ['Second carton jaune pour {p} ({team}) : expulsion !', '{p} ({team}) prend un second jaune : il sort !'],
+  injury: [
+    'Blessure : {p} reste au sol et ne peut pas continuer.', '{p} se tient la cuisse : il doit sortir.',
+    'Coup dur pour {home} : {p} est blessé et quitte le terrain.', '{p} grimace, le staff médical entre : il ne peut pas reprendre.',
+  ],
   ambience: [
     'Possession patiente de {home} au milieu de terrain.',
     '{away} resserre{n} les lignes et laisse{n} venir.',
@@ -64,6 +109,15 @@ const T = {
     'Temps faible pour {home}, {away} confisque{n} le ballon.',
     'Corner pour {home}… dégagé par la défense.',
     'Récupération haute de {home}, mais la passe est trop longue.',
+    'Touche pour {away} dans sa moitié : le rythme retombe.',
+    'Hors-jeu signalé contre {away}, à raison.',
+    '{home} fait tourner, la défense adverse recule.',
+    'Le capitaine de {home} replace ses coéquipiers.',
+    'Le banc de {away} s’agite : consignes criées depuis la ligne.',
+    'Faute sans gravité au milieu, coup franc indirect pour {home}.',
+    'Les supporters entonnent le chant du club.',
+    'Chaleur dans les duels : {away} ne lâche{n} rien.',
+    'Le gardien de {home} relance court, patiemment.',
   ],
 };
 
@@ -371,9 +425,10 @@ export function createLiveMatch(s, ctx) {
         m.stats.onTarget[idx]++;
         if (side === 'home') perf(p.id).onTarget++;
         m.score[side]++;
-        const gap = m.score.away - m.score.home;
-        const awayPool = gap === 0 ? T.goalAway.level : gap === 1 ? T.goalAway.lead : gap > 1 ? T.goalAway.more : T.goalAway.back;
-        let text = fill(pick(side === 'home' ? T.goalHome : awayPool), vars({ p: p.name }));
+        const gap = m.score.away - m.score.home; // écart après le but, vu de l'adversaire
+        const late = at >= 89 || (m.half === 1 && at >= 44.5); // arrêts de jeu : un commentaire sur deux le souligne
+        const poolOf = (G, g) => (late && G.late && Math.random() < 0.5 ? G.late : g === 0 ? G.level : g === 1 ? G.lead : g > 1 ? G.more : G.back);
+        let text = fill(pick(side === 'home' ? poolOf(T.goalHome, -gap) : poolOf(T.goalAway, gap)), vars({ p: p.name }));
         let assist = null;
         if (side === 'home') {
           assist = homeAssist(p);

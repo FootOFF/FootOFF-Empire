@@ -3,7 +3,7 @@
 // du contenu à voir (attribut data-fade, dessiné par styles.css).
 
 // Zones suivies pour l'estompe : celles sans pied collé (un pied « sticky » s'estomperait avec le contenu).
-const FADE = '.panel-body, .ins-body, .bw-body, .post-body, .cmp-list, .cine-events, .feed-list, .cm-settings, .cm-rules-body, .cm-rules-chips, .chips, .sq-table-wrap, .sp-table-wrap, .sc-track';
+const FADE = '.panel-body, .ins-body, .bw-body, .post-body, .cmp-list, .cine-events, .feed-list, .cm-settings, .cm-rules-body, .cm-rules-chips, .chips, .journal-seasons, .sq-table-wrap, .sp-table-wrap, .sc-track';
 const EDGE = 2; // px de tolérance (arrondis du défilement)
 
 function fadeOf(el) {

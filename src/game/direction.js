@@ -17,7 +17,7 @@ export const tvBoost = (lvl) => 0.08 * lvl;
 export const localTv = (lvl) => 250 * lvl; // télé locale par match à domicile (Départementale)
 export const maxCut = (lvl) => (lvl > 0 ? Math.round((0.1 + 0.04 * lvl) * 100) / 100 : 0);
 const refOf = (s) => { const d = DIVISIONS[s.divisionIndex]; return (d.oppMin + d.oppMax) / 2; };
-const pushJournal = (s, entry) => { s.journal.unshift(entry); if (s.journal.length > 40) s.journal.length = 40; }; // comme season.js
+import { pushJournal } from './journal';
 
 // Droits TV d'un match de championnat à domicile : base de la division (ou télé locale), bonus de la Direction et
 // hausse négociée pour la saison.

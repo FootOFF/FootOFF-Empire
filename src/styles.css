@@ -4023,3 +4023,8 @@ html, body { overscroll-behavior: none; }
 .cm-card-list li { font-size: var(--t-sm); line-height: 1.5; color: var(--text-2); }
 .crash-links { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
 @media (max-width: 760px) { .cm-rules-body { max-height: none; } }
+
+/* journal : rangée des saisons au-dessus des articles */
+.chips.journal-seasons { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; margin: 0 0 14px; padding-bottom: 2px; }
+.chips.journal-seasons::-webkit-scrollbar { display: none; }
+.chips.journal-seasons button { flex-shrink: 0; min-width: 44px; }

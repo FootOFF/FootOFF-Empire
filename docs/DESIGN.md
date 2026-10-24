@@ -329,6 +329,28 @@ colonne d'évolution montre les places gagnées (▲ vert) ou perdues (▼ rouge
 en est le club (« Tu grimpes à la 2e place », « Tu restes en tête »). L'ordre d'avant la journée est gardé dans
 `lastMatch.before`. Après un match de coupe, le résultat suffit. Aperçu : `?ecran=apres-match-classement`.
 
+## Journal du club
+
+`src/game/journal.js` : une entrée par événement, jusqu'à 600 (une saison en écrit une trentaine) ; au-delà, les plus
+anciennes des rubriques les moins marquantes partent d'abord (entraînement, académie, puis matchs), jamais une saison
+bouclée, un titre, un objectif ou un fait du club. Le panneau (`JournalPanel`, `src/ui/panels.jsx`) garde la rubrique en
+barre d'outils et ajoute une rangée de saisons au-dessus des articles (la saison en cours d'abord, « Tout » pour
+l'histoire entière).
+
+## Commentaires du direct
+
+`T` dans `src/game/live.js` : quatorze amorces d'occasion pour le club (pied, tête, lointaine, contre, coups de pied
+arrêtés), douze pour l'adversaire, huit issues d'arrêt, huit à côté, quatre sur le poteau ; les buts se commentent selon
+le score après le but (égalisation, avantage, écart creusé, écart réduit), et dans les arrêts de jeu une fois sur deux
+(« BUT DANS LES ARRÊTS DE JEU ! ») ; six cartons jaunes, trois rouges, quatre blessures, seize phrases d'ambiance
+(jamais deux fois la même dans un match). Mesuré : plus de 300 phrases distinctes sur 40 matchs.
+
+## Partage
+
+`index.html` : description, balises Open Graph et Twitter (titre, description, image 1200 × 630 `public/og.jpg`, rendue
+par `node scripts/og/build.mjs` depuis `scripts/og/card.html` avec Playwright). Les adresses absolues visent l'hébergeur
+de test : à remplacer par footoff.media à la mise en ligne finale.
+
 ## Noms et écussons
 
 - Joueurs (`src/game/names.js`) : prénoms et noms francophones, courts et faciles à prononcer, de toutes les

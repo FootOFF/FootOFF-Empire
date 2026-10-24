@@ -1,4 +1,5 @@
 import { DIVISIONS, PAY_SPLIT, SQUAD_MIN } from './constants';
+import { pushJournal } from './journal';
 import { REP_DECAY, REP_DIVISION } from './reputation';
 import { refreshTransfers } from './transfers';
 import { refreshScouting, trainYouth, youthSeasonEnd } from './academy';
@@ -29,10 +30,7 @@ export function roundRobin(n) {
   return rounds;
 }
 
-export function pushJournal(s, entry) {
-  s.journal.unshift(entry);
-  if (s.journal.length > 40) s.journal.length = 40;
-}
+export { pushJournal } from './journal';
 
 export function startSeason(s) {
   const div = DIVISIONS[s.divisionIndex];

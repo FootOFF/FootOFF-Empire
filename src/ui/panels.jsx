@@ -294,17 +294,22 @@ function article(e) {
 
 const dateOf = (e) => (e.round ? `Saison ${e.season} · journée ${e.round}` : `Saison ${e.season}`);
 
+// Le journal garde l'histoire du club (jusqu'à 600 entrées, src/game/journal.js) : la rubrique en barre d'outils, et une
+// rangée de saisons (la saison en cours d'abord, « Tout » pour l'histoire entière) au-dessus des articles.
 export function JournalPanel({ state, onClose }) {
   const [filter, setFilter] = useState('all');
+  const [season, setSeason] = useState(state.seasonNumber);
   const all = state.journal.map(article);
-  const list = filter === 'all' ? all
-    : filter === 'club' ? all.filter((a) => ['club', 'saison', 'objectif', 'academie', 'entrainement'].includes(a.kind))
-      : all.filter((a) => a.kind === filter);
+  const seasons = [...new Set(all.map((a) => a.season).filter((x) => x != null))].sort((a, b) => b - a);
+  const inSeason = season === 'all' ? all : all.filter((a) => a.season === season);
+  const list = filter === 'all' ? inSeason
+    : filter === 'club' ? inSeason.filter((a) => ['club', 'saison', 'objectif', 'academie', 'entrainement'].includes(a.kind))
+      : inSeason.filter((a) => a.kind === filter);
   const [lead, ...rest] = list;
   return (
     <Panel
       title="Le journal du club"
-      eyebrow={`FootOFF Media · Saison ${state.seasonNumber}`}
+      eyebrow={`FootOFF Media · ${season === 'all' ? `${seasons.length} saison${seasons.length > 1 ? 's' : ''} d’histoire` : `Saison ${season}`}`}
       onClose={onClose}
       toolbar={(
         <div className="chips journal-filters">
@@ -314,7 +319,15 @@ export function JournalPanel({ state, onClose }) {
         </div>
       )}
     >
-      {!lead && <p className="muted">{state.journal.length ? 'Rien dans cette rubrique pour l’instant.' : 'L’histoire commence au premier coup de sifflet.'}</p>}
+      {seasons.length > 1 && (
+        <div className="chips journal-seasons" role="tablist" aria-label="Saison">
+          <button role="tab" aria-selected={season === 'all'} className={season === 'all' ? 'active' : ''} onClick={() => setSeason('all')}>Tout</button>
+          {seasons.map((n) => (
+            <button key={n} role="tab" aria-selected={season === n} className={season === n ? 'active' : ''} onClick={() => setSeason(n)}>S{n}</button>
+          ))}
+        </div>
+      )}
+      {!lead && <p className="muted">{state.journal.length ? 'Rien dans cette rubrique pour cette saison.' : 'L’histoire commence au premier coup de sifflet.'}</p>}
       {lead && (
         <article className={`news-lead k-${lead.kind}`}>
           <span className="news-kicker"><b>À la une</b> · {KINDS[lead.kind]} · {dateOf(lead)}</span>

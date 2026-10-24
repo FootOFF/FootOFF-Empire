@@ -1,5 +1,6 @@
 import { REP_LEVELS, repLevel } from './reputation';
 import { book } from './ledger';
+import { pushJournal } from './journal';
 
 // Système d'objectifs : 4 paliers, chacun lié à un seuil de réputation.
 // Le palier courant est DÉCIDE PAR LA REPUTATION (c'est elle qui mène l'Empire).
@@ -108,7 +109,7 @@ export function closeSeasonGoals(s, events) {
     book(s, 'bonus', s.money - before);
     s.goals.completed[tier] = true;
     events.push(`Objectif « ${active.name} » accompli : ${goal.reward.label} !`);
-    s.journal.unshift({
+    pushJournal(s, {
       season: s.seasonNumber,
       kind: 'objectif',
       title: `Objectif accompli : ${active.name.toLowerCase()}`,
@@ -136,7 +137,7 @@ export function reputationStatusEvent(s, before) {
     const lvl = REP_LEVELS[i];
     if (i > top && before < lvl.min && s.reputation >= lvl.min) {
       reached = lvl;
-      s.journal.unshift({
+      pushJournal(s, {
         season: s.seasonNumber,
         kind: 'club',
         title: `Nouveau statut : ${lvl.name}`,

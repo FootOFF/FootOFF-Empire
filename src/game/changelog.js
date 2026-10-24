@@ -4,6 +4,14 @@
 
 export const CHANGELOG = [
   {
+    version: '0.2.1', date: '2026-10-24', title: 'La mémoire du club',
+    items: [
+      'Le journal garde toute l’histoire du club, saison par saison, au lieu des quarante dernières nouvelles.',
+      'Le direct raconte mieux : bien plus d’occasions, d’arrêts, de buts selon le score, de cartons et d’ambiance.',
+      'Un lien partagé (messages, réseaux) montre désormais le titre, une description et une image du jeu.',
+    ],
+  },
+  {
     version: '0.2.0', date: '2026-10-24', title: 'Prêt pour les premiers joueurs',
     items: [
       'Sauvegarde protégée : copie de secours à chaque session, code de sauvegarde à copier et à coller d’un appareil à l’autre (réglages).',

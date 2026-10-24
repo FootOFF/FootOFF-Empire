@@ -1,6 +1,7 @@
 import { DIVISIONS } from './constants';
 import { teamLevel } from './match';
 import { book } from './ledger';
+import { pushJournal } from './journal';
 import { standingsOf } from './season';
 
 // Objectifs de la saison : trois défis fixés par le président à chaque début de saison, adaptés au club (force de
@@ -155,7 +156,7 @@ export function closeSeasonObjectives(s, events) {
     s.reputation = r1(s.reputation + prize.rep);
     events.push(`Saison parfaite : les trois objectifs du président sont atteints (+${prize.money.toLocaleString('fr-FR')} €).`);
   }
-  s.journal.unshift({
+  pushJournal(s, {
     season: s.seasonNumber, kind: 'objectif',
     title: reached === results.length ? 'Saison parfaite : les trois objectifs atteints' : `Objectifs de la saison : ${reached} sur ${results.length}`,
     text: results.map((x) => `${x.title} : ${x.ok ? 'atteint' : 'manqué'}`).join(' · '),
