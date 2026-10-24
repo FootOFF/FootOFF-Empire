@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGlass } from './glass';
 import { DIVISIONS } from '../game/constants';
 import { repLevel } from '../game/reputation';
@@ -15,36 +15,12 @@ import {
 } from './icons';
 import { sectionOf } from './nav';
 import { clubStars } from '../game/crest';
+import { useFitText } from './fittext';
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran, en plaques façon habillage télé (docs/DESIGN.md).
 
 const euros = (v) => `${new Intl.NumberFormat('fr-FR').format(v)} €`;
 const ordinal = (n) => <>{n}<sup>{n === 1 ? 'er' : 'e'}</sup></>;
-
-// Nom trop long pour sa case (club, adversaire) : le texte rapetisse juste assez pour tenir sur une ligne, jusqu'à
-// « min » pixels ; s'il déborde encore, classe « long » : deux lignes à cette taille, jamais coupé. Remesuré quand la
-// case change de largeur et quand la police arrive.
-function useFitText(text, min) {
-  const ref = useRef(null);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
-    const fit = () => {
-      el.style.fontSize = '';
-      el.classList.remove('long');
-      if (el.scrollWidth <= el.clientWidth + 1) return;
-      const max = parseFloat(getComputedStyle(el).fontSize);
-      el.style.fontSize = `${Math.max(min, Math.floor((max * el.clientWidth) / el.scrollWidth))}px`;
-      if (el.scrollWidth > el.clientWidth + 1) el.classList.add('long');
-    };
-    fit();
-    document.fonts?.ready.then(() => { if (ref.current === el) fit(); });
-    const ro = new ResizeObserver(fit);
-    ro.observe(el.parentElement);
-    return () => ro.disconnect();
-  }, [text, min]);
-  return ref;
-}
 
 // Bandeaux du haut, découpés en cases comme un score télé : à gauche le club (écusson, nom, division et saison,
 // journée, classement en or), à droite la trésorerie et la notoriété, puis le menu. Téléphone : le club et le menu

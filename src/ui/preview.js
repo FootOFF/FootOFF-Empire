@@ -58,6 +58,7 @@ export const SCREENS = [
   ['comparateur', 'Comparateur radar'],
   ['avant-match', 'Avant-match'],
   ['direct', 'Match en direct'],
+  ['direct-but', 'Match en direct · bandeau du but'],
   ['mi-temps', 'Mi-temps (composition repliée)'],
   ['mi-temps-compo', 'Mi-temps · composition déployée'],
   ['changement', 'Direct · changement en cours de jeu'],
@@ -311,6 +312,7 @@ export function previewUi(screen, s) {
     case 'trophees': return { panel: 'trophies' };
     case 'avant-match': return { matchPhase: 'prematch', matchCtx: matchContext(s), matchDay: true };
     case 'direct': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34 } };
+    case 'direct-but': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34, goal: true } };
     case 'mi-temps': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime' } };
     case 'mi-temps-compo': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime', board: true } };
     case 'changement': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'subs', minute: 31 } };

@@ -436,7 +436,7 @@ export function createLiveMatch(s, ctx) {
           if (assist) { perf(assist.id).assists++; text += ` Passe décisive ${deName(assist.name)}.`; }
           m.scorers.push({ name: p.name, id: p.id, minute: Math.ceil(at), assist: assist?.name || null });
         }
-        add(at, 'goal', side, text, { player: p.name, playerId: side === 'home' ? p.id : null, score: { ...m.score }, lead });
+        add(at, 'goal', side, text, { player: p.name, playerId: side === 'home' ? p.id : null, score: { ...m.score }, lead, assist: assist?.name || null, xg: conv });
       } else {
         const r = Math.random();
         const outcome = r < 0.45 ? 'saved' : r < 0.85 ? 'wide' : 'post';
@@ -446,7 +446,7 @@ export function createLiveMatch(s, ctx) {
           m.stats.saves[1 - idx]++; // arrêt du gardien d'en face
           if (side === 'home') perf(p.id).onTarget++;
         } else m.stats[outcome === 'wide' ? 'wide' : 'post'][idx]++;
-        add(at, 'chance', side, `${lead} ${pick(T[outcome])}`, { player: p.name, outcome });
+        add(at, 'chance', side, `${lead} ${pick(T[outcome])}`, { player: p.name, outcome, xg: conv });
       }
     }
     // cartons
@@ -460,7 +460,7 @@ export function createLiveMatch(s, ctx) {
           m.sent[side].add(side === 'home' ? p.id : p.name);
           if (side === 'home') { perf(p.id).red++; perf(p.id).out = Math.ceil(cat); }
           m.stats.red[side === 'home' ? 0 : 1]++;
-          add(cat, 'red', side, fill(pick(T.red), vars({ p: p.name, team: side === 'home' ? m.home : m.away })), { player: p.name });
+          add(cat, 'red', side, fill(pick(T.red), vars({ p: p.name, team: side === 'home' ? m.home : m.away })), { player: p.name, playerId: side === 'home' ? p.id : null });
         }
       } else if (r < RED_PER_MIN + YELLOW_PER_MIN) {
         const pool = side === 'home' ? playersOn().filter((p) => p.pos !== 'G') : awayOn().filter((p) => p.pos !== 'G');
@@ -475,7 +475,7 @@ export function createLiveMatch(s, ctx) {
           m.sent[side].add(key);
           if (side === 'home') { perf(p.id).red++; perf(p.id).out = Math.ceil(cat); }
           m.stats.red[side === 'home' ? 0 : 1]++;
-          add(cat, 'red', side, fill(pick(T.secondYellow), vars({ p: p.name, team })), { player: p.name });
+          add(cat, 'red', side, fill(pick(T.secondYellow), vars({ p: p.name, team })), { player: p.name, playerId: side === 'home' ? p.id : null });
         } else {
           m.booked[side].add(key);
           if (side === 'home') perf(p.id).yellow++;
@@ -599,6 +599,28 @@ export function createLiveMatch(s, ctx) {
       return outcomeOdds(chancesAt, m.score.home - m.score.away, durations, (k) => (k <= rest ? minute + k : 45 + k - rest));
     },
     secondHalfOdds(opts) { return this.oddsFrom(45, opts); },
+    // Pronostic de fin de match tel que le direct l'a montré (shown : les événements déjà affichés). Le moteur a
+    // quelques minutes d'avance sur l'horloge : ce qu'il a simulé sans l'avoir encore montré (un but, un carton, une
+    // blessure) ne compte pas. minute : la minute de jeu affichée (la fin de la mi-temps à la pause) ; le onze et la
+    // tactique envisagés peuvent remplacer les actuels (changement en préparation).
+    oddsShown(minute, shown, { lineup = m.lineup, tactic = m.tactic } = {}) {
+      let lead = 0;
+      let sentA = 0;
+      const sentH = new Set();
+      const out = new Set();
+      for (const e of shown) {
+        if (e.type === 'goal') lead += e.side === 'home' ? 1 : -1;
+        else if (e.type === 'red') { if (e.side === 'home') sentH.add(e.playerId); else sentA += 1; }
+        else if (e.type === 'injury') out.add(e.playerId);
+      }
+      const short = { home: sentH.size + [...out].filter((id) => lineup.includes(id)).length, away: sentA };
+      const off = new Set([...sentH, ...out]);
+      const sinceOf = (id) => m.perf[id]?.in ?? (m.lineup.includes(id) ? 0 : minute);
+      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, off, m.formation, factorAt(min, sinceOf)));
+      const rest = Math.max(0, halfEnd() - minute);
+      const durations = [rest + (m.half === 1 ? m.halfLength[1] : 0)];
+      return outcomeOdds(chancesAt, lead, durations, (k) => (k <= rest ? minute + k : 45 + k - rest));
+    },
     // Changement et tactique à une minute du match, ou à la pause (halftime : les événements ouvrent la seconde
     // période). En cours de jeu, les minutes déjà simulées à partir de là sont reprises depuis l'instantané et
     // rejouées ensuite avec le nouveau onze. Renvoie null si c'est accepté, sinon la raison.

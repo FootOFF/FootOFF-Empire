@@ -55,7 +55,7 @@ export const TACTICS = {
   },
   balanced: {
     id: 'balanced', name: 'Équilibrée', for: 1, against: 1,
-    blurb: 'Bloc médian, transitions maîtrisées : le plan de référence.',
+    blurb: 'Bloc médian, transitions maîtrisées.',
   },
   low: {
     id: 'low', name: 'Bloc bas', for: 0.72, against: 0.68,
