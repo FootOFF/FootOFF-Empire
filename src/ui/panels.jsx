@@ -2,13 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { DIVISIONS } from '../game/constants';
 import { standingsOf } from '../game/season';
 import { ordinal } from '../game/utils';
-import { fmtMoney, fmtNum } from './format';
+import { fmtMoney, fmtNum, fmtRating } from './format';
 import { IconClose, IconCoin } from './icons';
 import { ClubCrest, Crest } from './crest';
 import { AnimatedMoney } from './moneyfx';
 import { Eyebrow, IconBall, RatingBadge, SectionHead, Stat } from './kit';
 import { Trophy, TROPHY_NAMES } from './trophy';
 import { STAGES_SHORT, STAGES, nextFixture, ofDiv } from '../game/cups';
+import { prizeFor } from '../game/economy';
+import { clubAfter } from '../game/names';
+import { Portrait } from './portrait';
 import { useDialogFocus, useKeydown, useLeaving } from './presence';
 import { uiSound } from './uisound';
 import { PHONE, useSwipe } from './gestures';
@@ -64,15 +67,25 @@ export function zoneOf(divisionIndex, i) {
   if (i >= 6 && divisionIndex > 0) return 'releg';
   return null;
 }
-const ZONE_TAG = { promo: 'Montée', europe: 'Europe', releg: 'Descente' };
+const ZONE_TAG = { promo: 'montée', europe: 'Coupe d’Europe', releg: 'descente' };
+const signed = (v) => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0');
 
-// Classement de la division (panneau Saison, et après chaque journée de championnat). before : ordre des clubs
-// avant la dernière journée (indices) ; chaque club montre alors ce qu'il a gagné ou perdu de places.
+// Classement de la division (panneau Saison, et après chaque journée de championnat) : la zone de chaque place en
+// liseré à gauche (or : montée, bleu : Europe, rouge : descente ; la légende dessous), notre ligne dorée. Colonnes
+// G, N, P quand la saison les a comptés depuis la 1re journée. before : ordre des clubs avant la dernière journée
+// (indices) ; chaque club montre alors ce qu'il a gagné ou perdu de places.
 export function StandingsTable({ state, before = null }) {
   const standings = standingsOf(state);
+  const wdl = standings.every((t) => t.w != null && t.w + t.d + t.l === t.played);
   return (
     <table className={`table standings ${before ? 'moves' : ''}`}>
-      <thead><tr><th>#</th>{before && <th className="t-move-h" aria-label="Évolution" />}<th>Club</th><th>J</th><th>Diff</th><th>Pts</th></tr></thead>
+      <thead>
+        <tr>
+          <th>#</th>{before && <th className="t-move-h" aria-label="Évolution" />}<th>Club</th><th>J</th>
+          {wdl && <><th className="t-wdl" title="Gagnés">G</th><th className="t-wdl" title="Nuls">N</th><th className="t-wdl" title="Perdus">P</th></>}
+          <th>Diff</th><th>Pts</th>
+        </tr>
+      </thead>
       <tbody>
         {standings.map((t, i) => {
           const zone = zoneOf(state.divisionIndex, i);
@@ -88,10 +101,11 @@ export function StandingsTable({ state, before = null }) {
               )}
               <td className="t-club">
                 {t.i === 0 ? <ClubCrest crest={state.crest} name={t.name} className="t-crest" /> : <Crest name={t.name} className="t-crest" />}
-                <span className="t-name">{t.name}</span>{zone && <span className={`t-zone ${zone}`}>{ZONE_TAG[zone]}</span>}
+                <span className="t-name">{t.name}</span>{zone && <span className="sr-only">, zone de {ZONE_TAG[zone]}</span>}
               </td>
               <td>{t.played}</td>
-              <td>{t.gd > 0 ? '+' : ''}{t.gd}</td>
+              {wdl && <><td className="t-wdl">{t.w}</td><td className="t-wdl">{t.d}</td><td className="t-wdl">{t.l}</td></>}
+              <td>{signed(t.gd)}</td>
               <td className="t-pts">{t.pts}</td>
             </tr>
           );
@@ -101,25 +115,25 @@ export function StandingsTable({ state, before = null }) {
   );
 }
 
-// Légende des places (montée, Europe, descente) sous le classement.
+// Légende des zones (montée, Europe, descente) sous le classement : la couleur du liseré, ce que la place apporte.
 export function ZoneLegend({ state }) {
   const rel = state.divisionIndex > 0;
-  const promo = state.divisionIndex < 3;
+  const promo = state.divisionIndex < DIVISIONS.length - 1;
   return (
     <ul className="zone-legend">
       {promo ? (
-        <li className="promo"><b>1 – 2</b>Montée en {DIVISIONS[state.divisionIndex + 1].name}</li>
+        <li className="promo"><i aria-hidden="true" />Montée en {DIVISIONS[state.divisionIndex + 1].name}</li>
       ) : (
-        <li className="europe"><b>1 – 2</b>Qualifiés pour la Coupe d’Europe des clubs la saison prochaine</li>
+        <li className="europe"><i aria-hidden="true" />Coupe d’Europe des clubs la saison prochaine</li>
       )}
-      {rel && <li className="releg"><b>7 – 8</b>Descente en {DIVISIONS[state.divisionIndex - 1].name}</li>}
-      {promo && <li className="europe"><b>Europe</b>La Coupe d’Europe des clubs se joue depuis l’Elite : ses deux premiers s’y qualifient.</li>}
+      {rel && <li className="releg"><i aria-hidden="true" />Descente en {DIVISIONS[state.divisionIndex - 1].name}</li>}
+      {promo && <li className="note">La Coupe d’Europe des clubs se joue depuis l’Elite : ses deux premiers s’y qualifient.</li>}
     </ul>
   );
 }
 
-// tab, onTab : l'onglet (calendrier ou classement), piloté par les onglets de la section Saison (nav.jsx).
-export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = null, onOpenMatch, onPlay }) {
+// tab : l'onglet (calendrier ou classement), piloté par les onglets de la section Saison (nav.jsx).
+export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = null, onOpenMatch, onPlay, onPlayerSheet }) {
   const standings = standingsOf(state);
   const div = DIVISIONS[state.divisionIndex];
   const lm = state.lastMatch;
@@ -153,7 +167,7 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
           <div className="season-stats">
           <Stat label="Position" value={ordinal(pos)} sub="sur 8" tone={pos <= 2 ? 'up' : rel && pos >= 7 ? 'down' : ''} />
           <Stat label="Points" value={me.pts} sub={`${me.played} match${me.played > 1 ? 's' : ''}`} />
-          <Stat label="Diff." value={`${me.gd > 0 ? '+' : ''}${me.gd}`} />
+          <Stat label="Diff." value={signed(me.gd)} />
           {/* « Ambition » : la place visée au classement (l'« objectif de saison » du HUD est celui des primes de palier) */}
           <Stat label="Ambition" value={promo ? 'Top 2' : 'Europe'} sub={goal} />
           </div>
@@ -161,51 +175,134 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
       )}
     >
       {tab === 'calendar' && <SeasonCalendar state={state} initialSel={initialSel} onOpenMatch={onOpenMatch} onPlay={onPlay} />}
-      {tab === 'table' && <div className="season-cols">
-      <div className="season-col">
-      <SectionHead label="Classement" aside={`${div.name} · ${standings.length} clubs`} />
-      <StandingsTable state={state} />
-      <ZoneLegend state={state} />
-      </div>
+      {tab === 'table' && (
+        <div className="season-cols">
+          <section className="season-plate season-table" aria-label={`Classement de ${div.name}`}>
+            <SectionHead label={`Classement · ${div.name}`} aside={me.played ? `après ${me.played} journée${me.played > 1 ? 's' : ''} sur 7` : 'avant la 1re journée'} />
+            <StandingsTable state={state} />
+            <ZoneLegend state={state} />
+          </section>
 
-      <div className="season-col">
-      <CupRuns state={state} />
+          <div className="season-col">
+            <RaceCard state={state} standings={standings} pos={pos} />
+            <CupRuns state={state} />
+            <Leaders state={state} onPlayer={onPlayerSheet} />
 
-      {lm && (
-        <>
-          <SectionHead label={`Dernier match · ${lm.comp && lm.comp !== 'league' ? `${lm.comp === 'c1' ? 'Europe' : 'Coupe'} · ${STAGES_SHORT[lm.stage].toLowerCase()}` : `journée ${lm.round}`}`} aside={lmPens ? `${lmWon ? 'Qualifié' : 'Éliminé'} aux t.a.b. ${lm.pens[0]}–${lm.pens[1]}` : lm.gf > lm.ga ? 'Victoire' : lm.gf < lm.ga ? 'Défaite' : 'Match nul'} />
-          <div className="last-match">
-            <div className="lm-score">
-              <span className="lm-team">{state.clubName}</span>
-              <b className={lmWon ? 'win' : lm.gf < lm.ga || lmPens ? 'loss' : ''}>{lm.gf} – {lm.ga}</b>
-              <span className="lm-team away">{lm.oppName}</span>
-            </div>
-            {lm.scorers?.length > 0 && (
-              <p className="lm-scorers"><IconBall /> {lm.scorers.map((x) => `${x.name} ${x.minute}′`).join(' · ')}</p>
+            {lm && (
+              <section className="season-plate">
+                <SectionHead label={`Dernier match · ${lm.comp && lm.comp !== 'league' ? `${lm.comp === 'c1' ? 'Europe' : 'Coupe'} · ${STAGES_SHORT[lm.stage].toLowerCase()}` : `journée ${lm.round}`}`} aside={lmPens ? `${lmWon ? 'Qualifié' : 'Éliminé'} aux t.a.b. ${lm.pens[0]}–${lm.pens[1]}` : lm.gf > lm.ga ? 'Victoire' : lm.gf < lm.ga ? 'Défaite' : 'Match nul'} />
+                <div className="last-match">
+                  <div className="lm-score">
+                    <span className="lm-team">{state.clubName}</span>
+                    <b className={lmWon ? 'win' : lm.gf < lm.ga || lmPens ? 'loss' : ''}>{lm.gf} – {lm.ga}</b>
+                    <span className="lm-team away">{lm.oppName}</span>
+                  </div>
+                  {lm.scorers?.length > 0 && (
+                    <p className="lm-scorers"><IconBall /> {lm.scorers.map((x) => `${x.name} ${x.minute}′`).join(' · ')}</p>
+                  )}
+                  <div className="lm-facts">
+                    {motm && <span className="lm-motm"><RatingBadge value={motm.rating} /> {motm.name}, homme du match</span>}
+                    <span>{fmtNum(lm.attendance)} spectateurs · {fmtMoney(lm.revenue)}</span>
+                  </div>
+                </div>
+              </section>
             )}
-            <div className="lm-facts">
-              {motm && <span className="lm-motm"><RatingBadge value={motm.rating} /> {motm.name}, homme du match</span>}
-              <span>{fmtNum(lm.attendance)} spectateurs · {fmtMoney(lm.revenue)}</span>
-            </div>
+
+            <section className="season-plate"><TrophyCase trophies={state.trophies || []} /></section>
+
+            {state.history.length > 0 && (
+              <section className="season-plate">
+                <SectionHead label="Classements" />
+                <ul className="honours">
+                  {state.history.slice().reverse().map((h) => (
+                    <li key={h.season}><span>Saison {h.season}</span><em>{h.division}</em><b>{ordinal(h.position)}</b></li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </div>
-        </>
+        </div>
       )}
-
-      <TrophyCase trophies={state.trophies || []} />
-
-      {state.history.length > 0 && (
-        <>
-          <SectionHead label="Classements" />
-          <ul className="honours">
-            {state.history.slice().reverse().map((h) => (
-              <li key={h.season}><span>Saison {h.season}</span><em>{h.division}</em><b>{ordinal(h.position)}</b></li>
-            ))}
-          </ul>
-        </>
-      )}
-      </div>
-      </div>}
     </Panel>
+  );
+}
+
+const pts = (n) => `${n} point${n > 1 ? 's' : ''}`;
+const days = (n) => `${n} journée${n > 1 ? 's' : ''}`;
+
+// Course de la saison : la place visée (montée, Europe, maintien), où en est le club, l'écart avec le club à
+// rattraper (ou à tenir derrière), les journées qui restent et la prime de classement de la place actuelle.
+function RaceCard({ state, standings, pos }) {
+  const d = state.divisionIndex;
+  const elite = d === DIVISIONS.length - 1;
+  const me = standings[pos - 1];
+  const left = Math.max(0, 7 - me.played);
+  const danger = d > 0 && pos >= 7;
+  const target = danger ? 6 : 2; // place à atteindre (6e : maintien) ou à garder (2e)
+  const title = danger ? 'Sauver sa place' : elite ? 'Jouer l’Europe' : 'Monter en fin de saison';
+  const aim = danger
+    ? `Les deux derniers descendent en ${DIVISIONS[d - 1].name}.`
+    : elite ? 'Les deux premiers jouent la Coupe d’Europe des clubs la saison prochaine.' : `Les deux premiers montent en ${DIVISIONS[d + 1].name}.`;
+  let where;
+  if (pos <= target && !danger) {
+    const chaser = standings[target]; // le premier club hors de la zone
+    const n = me.pts - chaser.pts;
+    where = n > 0
+      ? <>Tu es <b>{ordinal(pos)}</b>, <b>{pts(n)}</b> devant {clubAfter('', chaser.name)}, {ordinal(target + 1)}.</>
+      : <>Tu es <b>{ordinal(pos)}</b>, à égalité de points {clubAfter('avec ', chaser.name)}, {ordinal(target + 1)} : la différence de buts vous départage.</>;
+  } else {
+    const ahead = standings[target - 1]; // le dernier club dans la zone visée
+    const n = ahead.pts - me.pts;
+    where = n > 0
+      ? <>Tu es <b>{ordinal(pos)}</b>, à <b>{pts(n)}</b> {clubAfter('de ', ahead.name)}, {ordinal(target)}.</>
+      : <>Tu es <b>{ordinal(pos)}</b>, à égalité de points {clubAfter('avec ', ahead.name)}, {ordinal(target)} : la différence de buts vous départage.</>;
+  }
+  return (
+    <section className={`season-plate sc-race ${danger ? 'danger' : pos <= 2 ? 'in' : ''}`} aria-label="Course de la saison">
+      <SectionHead label={danger ? 'Maintien' : elite ? 'Course à l’Europe' : 'Course à la montée'} />
+      <h3>{title}</h3>
+      <p>{aim} {where} {left ? `Il reste ${days(left)}.` : 'Le championnat est terminé.'}</p>
+      <p className="sc-race-prize">Prime de classement à ta place : <b>{fmtMoney(prizeFor(pos, d))}</b></p>
+    </section>
+  );
+}
+
+// Les meilleurs du club cette saison : meilleure note moyenne (3 matchs au moins), meilleur buteur, et le gardien ou
+// défenseur aux matchs sans encaisser. Un nom ouvre la fiche du joueur.
+function Leaders({ state, onPlayer }) {
+  const rows = state.players.map((p) => {
+    const st = p.season || {};
+    return { p, apps: st.apps || 0, goals: st.goals || 0, motm: st.motm || 0, clean: st.clean || 0, avg: st.apps ? st.sum / st.apps : 0 };
+  });
+  const top = (score) => rows.reduce((b, r) => (score(r) > 0 && (!b || score(r) > score(b)) ? r : b), null);
+  const rated = top((r) => (r.apps >= 3 ? r.avg : 0));
+  const scorer = top((r) => r.goals);
+  const wall = top((r) => (r.p.pos === 'G' || r.p.pos === 'D' ? r.clean : 0));
+  const items = [
+    rated && { r: rated, label: `Meilleure note${rated.motm ? ` · ${rated.motm} fois homme du match` : ''}`, value: fmtRating(rated.avg) },
+    scorer && { r: scorer, label: 'Meilleur buteur', value: scorer.goals },
+    wall && { r: wall, label: 'Matchs sans encaisser', value: wall.clean },
+  ].filter(Boolean);
+  const games = Math.max(0, ...rows.map((r) => r.apps));
+  return (
+    <section className="season-plate" aria-label="Les meilleurs du club">
+      <SectionHead label="Les meilleurs du club" aside={`Saison ${state.seasonNumber}`} />
+      {items.length === 0 ? (
+        <p className="tc-empty">{games ? 'Encore trop tôt : la note moyenne se compte sur 3 matchs.' : 'Les premiers matchs désigneront les meilleurs du club.'}</p>
+      ) : (
+        <ul className="sc-leaders">
+          {items.map(({ r, label, value }) => (
+            <li key={label}>
+              <button type="button" onClick={() => onPlayer?.(r.p.id)} disabled={!onPlayer}>
+                <Portrait p={r.p} size={40} />
+                <span><b>{r.p.name}</b><small>{label}</small></span>
+                <em>{value}</em>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -217,13 +314,15 @@ function CupRuns({ state }) {
   return ['cup', 'c1'].filter((k) => cups[k]).map((k) => {
     const c = cups[k];
     const status = c.won ? 'Vainqueur' : c.alive ? `En course · ${STAGES[c.stage].toLowerCase()}` : 'Éliminé';
+    const lost = c.results.find((x) => !x.won);
     return (
-      <React.Fragment key={k}>
+      <section key={k} className={`season-plate sc-cupcard ${k}`}>
         <SectionHead label={k === 'c1' ? 'Coupe d’Europe des clubs' : 'Coupe nationale'} aside={status} />
         <ol className="cup-run">
           {STAGES.map((st, i) => {
             const r = c.results.find((x) => x.stage === i);
             const upcoming = c.alive && c.stage === i;
+            if (!r && !c.alive) return null; // tours que le club ne jouera pas
             return (
               <li key={st} className={r ? (r.won ? 'won' : 'lost') : upcoming ? 'next' : 'later'}>
                 <span className="cr-stage">{STAGES_SHORT[i]}</span>
@@ -242,7 +341,12 @@ function CupRuns({ state }) {
             );
           })}
         </ol>
-      </React.Fragment>
+        {lost && (
+          <p className="cr-out">
+            {lost.stage === 3 ? <>Finaliste : battu en finale {clubAfter('par ', lost.opp)}.</> : <>Éliminé en {STAGES[lost.stage].toLowerCase()} {clubAfter('par ', lost.opp)} : rendez-vous la saison prochaine.</>}
+          </p>
+        )}
+      </section>
     );
   });
 }

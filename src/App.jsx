@@ -620,7 +620,7 @@ export default function App({ preview = null }) {
         )}
       </Presence>
       {inGame && drills && <DrillRunner key={drillsKey} state={state} queue={drills} run={run} sound={sound.current} notify={notify} onClose={() => setDrills(null)} />}
-      <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} tab={seasonTab} initialSel={boot.ui.seasonSel} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); openPanel('stats'); }} />}</Presence>
+      <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} tab={seasonTab} initialSel={boot.ui.seasonSel} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); openPanel('stats'); }} onPlayerSheet={(id) => { setSquadSheet(id); setSquadTab('players'); setPanel('squad'); }} />}</Presence>
       <Presence>{inGame && panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'reputation' && <ReputationPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'trophies' && <TrophyRoom key={navKey} state={state} initialTab={trophyTab} focus={trophyFocus} onClose={() => { setPanel(null); setTrophyTab('honours'); setTrophyFocus([]); }} />}</Presence>

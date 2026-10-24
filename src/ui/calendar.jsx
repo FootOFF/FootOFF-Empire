@@ -10,7 +10,7 @@ import { kitOf } from '../game/kits';
 import { ordinal } from '../game/utils';
 import { ClubCrest, Crest } from './crest';
 import { Eyebrow } from './kit';
-import { IconCheck, IconChevron, IconClose, IconPlay, IconStar, IconTrophy } from './icons';
+import { IconCheck, IconChevron, IconClose, IconLock, IconPlay, IconStar, IconTrophy } from './icons';
 import { fmtMoney, fmtNum, fmtPrice, fmtRating, roundPercents } from './format';
 import { useSwipe } from './gestures';
 import { uiSound } from './uisound';
@@ -125,11 +125,18 @@ function Rail({ state, fixtures, sel, onPick }) {
   );
 }
 
+// Une date de la frise : la journée (ou le tour de coupe, à la couleur de la compétition), l'écusson et le nom de
+// l'adversaire, puis le résultat en pastille (V 1–0, N 0–0, D 0–1), « À suivre » pour le prochain match, « à venir »
+// ensuite. Un tour de coupe qui ne sera pas disputé est cadenassé.
 function DateChip({ f, k, on, onPick }) {
   const r = f.match || f.result;
   const o = r ? outcomeOf(r) : null;
   const Icon = COMP_ICON[f.comp];
   const name = nameOf(f, r);
+  const res = r ? <em className={`sc-res o-${o}`}>{LETTER[o]} {r.gf}–{r.ga}</em>
+    : f.status === 'next' ? <em className="sc-res next">À suivre</em>
+      : f.status === 'upcoming' ? <em className="sc-res soon">à venir</em>
+        : f.status === 'tbd' ? <em className="sc-res soon">tirage</em> : null;
   return (
     <button
       type="button"
@@ -143,15 +150,12 @@ function DateChip({ f, k, on, onPick }) {
       style={{ '--k': k }}
       onClick={() => onPick(f.index)}
     >
-      {Icon && <Icon className="sc-date-ico" aria-hidden="true" />}
+      <b className="sc-date-key">{Icon && <Icon aria-hidden="true" />}{tagOf(f)}</b>
       <span className="sc-date-top" aria-hidden="true">
-        {f.opp ? <Crest name={f.opp.name} className="sc-date-crest" /> : f.status === 'tbd' ? <i className="q">?</i> : <i className="x">—</i>}
+        {f.opp ? <Crest name={f.opp.name} className="sc-date-crest" /> : f.status === 'out' ? <IconLock className="sc-date-lock" /> : <i className="q">?</i>}
       </span>
-      <b>{tagOf(f)}</b>
-      <span className="sc-date-foot" aria-hidden="true">
-        {r ? <em>{r.gf}–{r.ga}</em> : f.status === 'next' ? <i className="now" /> : null}
-      </span>
-      {on && <i className="sc-date-mark" aria-hidden="true" />}
+      <span className="sc-date-opp" aria-hidden="true"><span>{f.opp?.name || (f.status === 'out' ? 'Éliminé' : 'À tirer')}</span></span>
+      <span className="sc-date-foot" aria-hidden="true">{res}</span>
     </button>
   );
 }

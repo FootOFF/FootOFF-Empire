@@ -47,7 +47,7 @@ export function startSeason(s) {
   }
   s.schedule = roundRobin(8);
   s.round = 0;
-  s.table = Array.from({ length: 8 }, () => ({ pts: 0, gd: 0, played: 0 }));
+  s.table = Array.from({ length: 8 }, () => ({ pts: 0, gd: 0, played: 0, w: 0, d: 0, l: 0 }));
   refreshTransfers(s, 'full'); // mercato neuf : joueurs libres et joueurs sous contrat (transfers.js)
   refreshScouting(s); // académie : premiers jeunes repérés de la saison
   resetSeasonStats(s);
@@ -73,11 +73,21 @@ function applyResult(s, i, j, gi, gj) {
   b.played++;
   a.gd += gi - gj;
   b.gd += gj - gi;
-  if (gi > gj) a.pts += 3;
-  else if (gj > gi) b.pts += 3;
-  else {
+  // victoires, nuls, défaites (colonnes G, N, P du classement ; absentes des saisons commencées avant leur ajout)
+  const tally = (t, k) => { if (t.w != null) t[k] += 1; };
+  if (gi > gj) {
+    a.pts += 3;
+    tally(a, 'w');
+    tally(b, 'l');
+  } else if (gj > gi) {
+    b.pts += 3;
+    tally(b, 'w');
+    tally(a, 'l');
+  } else {
     a.pts++;
     b.pts++;
+    tally(a, 'd');
+    tally(b, 'd');
   }
 }
 
