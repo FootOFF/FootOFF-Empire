@@ -1,5 +1,5 @@
 import { DRILLS, PROGRAM_STEPS, TRAINING_COLLECTIVE, TRAINING_MULT } from './constants';
-import { TRAITS, WEIGHTS, playerRating } from './players';
+import { TRAITS, WEIGHTS, isInjured, playerRating } from './players';
 import { nextFixture } from './cups';
 import { clamp } from './utils';
 
@@ -132,7 +132,7 @@ export function suggestFor(s, pos) {
   const lvl = Math.max(1, s.buildings.training || 0);
   let best = null;
   for (const p of s.players) {
-    if (p.pos !== pos) continue;
+    if (p.pos !== pos || isInjured(p)) continue; // un blessé ne s'entraîne pas
     const cat = bestCat(s, p);
     const g = applySession(lvl, copyOf(p), cat, drillsFor(lvl, pos, cat)[0], 1);
     if (!best || g > best.g + 1e-9 || (Math.abs(g - best.g) < 1e-9 && playerRating(p) > playerRating(best.p))) best = { p, g };
@@ -145,7 +145,7 @@ export function suggestFor(s, pos) {
 export function pickOf(s, pos) {
   const lvl = Math.max(1, s.buildings.training || 0);
   const saved = s.training?.picks?.[pos];
-  const p = (saved && s.players.find((q) => q.id === saved.id && q.pos === pos)) || suggestFor(s, pos);
+  const p = (saved && s.players.find((q) => q.id === saved.id && q.pos === pos && !isInjured(q))) || suggestFor(s, pos);
   if (!p) return null;
   const same = saved && saved.id === p.id;
   const cat = same && catsFor(pos)[saved.cat] ? saved.cat : bestCat(s, p);
@@ -212,7 +212,7 @@ export function stopProgram(s, playerId) {
 export function trainLine(s, pos, { id, cat, drill, score = null }) {
   const p = s.players.find((q) => q.id === id && q.pos === pos);
   const lvl = s.buildings.training || 0;
-  if (!p || !lvl || !catsFor(pos)[cat] || !drillsFor(lvl, pos, cat).includes(drill)) return null;
+  if (!p || isInjured(p) || !lvl || !catsFor(pos)[cat] || !drillsFor(lvl, pos, cat).includes(drill)) return null;
   const session = sessionOf(s);
   if (session.done[pos]) return null;
   const factor = score === null ? 1 : factorOf(score);
@@ -246,7 +246,7 @@ export function trainLine(s, pos, { id, cat, drill, score = null }) {
 // Choix gardé pour la séance (sans s'entraîner) : joueur, catégorie, épreuve.
 export function setPick(s, pos, pick) {
   const p = s.players.find((q) => q.id === pick.id && q.pos === pos);
-  if (!p || !catsFor(pos)[pick.cat]) return null;
+  if (!p || isInjured(p) || !catsFor(pos)[pick.cat]) return null;
   s.training = { ...(s.training || {}), picks: { ...(s.training?.picks || {}), [pos]: { id: pick.id, cat: pick.cat, drill: pick.drill } } };
   return s;
 }
@@ -260,7 +260,7 @@ export function collectiveSession(s, key) {
   let n = 0;
   let total = 0;
   for (const p of s.players) {
-    if (trained.includes(p.id)) continue;
+    if (trained.includes(p.id) || isInjured(p)) continue; // les blessés sont à l'infirmerie
     const room = Math.max(0, p.pot - playerRating(p));
     if (!room) continue;
     const g = spend(p, Object.keys(poolOf(p)), pointsFor(p, room * TRAINING_COLLECTIVE[lvl] * paceOf(p)));

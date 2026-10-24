@@ -3926,3 +3926,56 @@ html, body { overscroll-behavior: none; }
   .drill-timer { width: 108px; }
 }
 .tr-log li.tr-log-head { padding: var(--s-4) 0 6px; border-bottom: none; font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+
+/* --- Condition physique, blessures, suspensions, changements à toute minute ------------------------------------- */
+/* barre de condition sous un joueur (composition, banc) : vert ≥ 75 %, ambre ≥ 50 %, rouge en dessous */
+.lu-fit { display: block; width: 34px; height: 3px; margin: 3px auto 0; border-radius: 2px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+.lu-fit i { display: block; height: 100%; border-radius: 2px; background: var(--green); }
+.lu-fit.mid i { background: #e0b35a; }
+.lu-fit.low i { background: var(--red); }
+.lu-bchip .lu-fit { width: 100%; max-width: 44px; margin: 3px 0 0; }
+.lu-chip.hurt .p2-num { border: 1.5px solid rgba(224, 122, 111, .9); color: var(--red); background: rgba(224, 122, 111, .12); }
+.lu-hurt { position: absolute; right: -5px; top: -5px; width: 12px; height: 12px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 2px #0d0b07; }
+.lu-hurt::before, .lu-hurt::after { content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 1.6px; background: #fff; transform: translate(-50%, -50%); }
+.lu-hurt::after { transform: translate(-50%, -50%) rotate(90deg); }
+.lu-bchip.na { opacity: .5; cursor: not-allowed; }
+.lu-bchip.na .lu-bname { color: var(--muted); }
+.lu-why { display: block; font-weight: 400; font-size: 10px; color: #e7a39a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lu-dot.fit { background: var(--green); }
+/* étiquette blessé / suspendu (cartes, tableau, fiche) */
+.abs-tag { display: inline-block; font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px; border: 1px solid rgba(224, 122, 111, .5); color: #e7a39a; background: rgba(224, 122, 111, .12); white-space: nowrap; }
+.abs-tag.ban { border-color: rgba(224, 179, 90, .5); color: #e0b35a; background: rgba(224, 179, 90, .12); }
+.sq-who-text .abs-tag { margin-left: 8px; vertical-align: 1px; }
+.sqc-flags .abs-tag { font-size: 9px; padding: 2px 6px; }
+.sqc-fit { font-variant-numeric: tabular-nums; }
+.sqc-fit.good, .c-fit.good, .sh-pot b.good { color: var(--green); }
+.sqc-fit.mid, .c-fit.mid, .sh-pot b.mid { color: #e0b35a; }
+.sqc-fit.low, .c-fit.low, .sh-pot b.low { color: #e7a39a; }
+.sq-table .c-fit { width: 58px; }
+.sq-table td.c-fit { font-family: var(--font-mono); }
+.sh-fit .now { background: var(--green); }
+.sh-fit .now.mid { background: #e0b35a; }
+.sh-fit .now.low { background: var(--red); }
+/* avant-match : absents ; après-match : infirmerie et suspensions */
+.pm-absent { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 10px 0 0; font-size: var(--t-sm); color: var(--text-2); }
+.pm-absent-one b { font-weight: 500; color: var(--text); }
+.pm-absent-one.injury::before, .pm-absent-one.ban::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: var(--red); vertical-align: 1px; }
+.pm-absent-one.ban::before { background: #e0b35a; }
+.post-absent { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: var(--t-sm); }
+.post-absent li { display: flex; gap: 8px; align-items: baseline; }
+.post-absent li::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--red); flex-shrink: 0; align-self: center; }
+.post-absent li.ban::before { background: #e0b35a; }
+.post-absent b { font-weight: 500; }
+.post-absent span { color: var(--text-2); }
+/* direct : blessure dans le fil, bouton Changement, match arrêté */
+.ev-injury { color: var(--text); background: rgba(224, 122, 111, .08); border-color: rgba(224, 122, 111, .3); }
+.ev-injury .ev-icon svg { color: var(--red); }
+.live-dot.hold { animation: none; background: #e0b35a; }
+.lc-sub { display: inline-flex; align-items: center; gap: 6px; }
+.lc-sub svg { font-size: 15px; }
+.lc-sub small { font-family: var(--font-mono); font-size: 10px; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--text-2); }
+.lc-sub:disabled { opacity: .45; cursor: not-allowed; }
+.ht-note { margin: 0; font-size: var(--t-sm); line-height: 1.5; color: var(--text-2); }
+.ht-note.warn { color: #e7a39a; }
+.halftime.subs .ht-go { display: flex; gap: 10px; }
+.halftime.subs .ht-go .btn-xl { width: auto; flex: 1; }

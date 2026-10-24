@@ -1,5 +1,5 @@
 import { clamp } from './utils';
-import { ratingAt } from './players';
+import { available, fitFactor, fitOf, ratingAt } from './players';
 
 // Onze de départ, dispositif (formation) et tactique : décisions d'avant-match ; la tactique se change aussi à la
 // mi-temps. Le onze est une liste de 11 joueurs rangés dans l'ordre des postes du dispositif (gardien, défenseurs,
@@ -105,25 +105,29 @@ function hungarian(a) {
 // Meilleur onze : la répartition des joueurs sur les postes du dispositif qui donne le niveau d'équipe le plus haut
 // (même pondération que lineupRating). Un joueur hors de son poste est retenu s'il y reste meilleur que le
 // spécialiste ; à égalité, le joueur à son poste naturel passe devant.
+// Les joueurs blessés ou suspendus (players.js, available) ne sont jamais alignés ; la condition physique compte
+// (fitFactor : un titulaire épuisé vaut moins qu'un remplaçant frais), comme dans le pronostic.
+export const fitWeight = (p) => fitFactor(fitOf(p));
 export function autoLineup(players, formation = '433') {
   const slots = slotsOf(formation);
   const [nd, nm, na] = formationOf(formation).lines;
   const weight = { G: 0.12, D: 0.3 / nd, M: 0.26 / nm, A: 0.32 / na };
-  const cols = [...players];
+  const cols = players.filter(available);
   while (cols.length < slots.length) cols.push(null); // effectif trop court : poste laissé vide (niveau 3)
-  const cost = slots.map((pos) => cols.map((p) => (p ? -(weight[pos] * ratingAt(p, pos)) - (p.pos === pos ? 1e-4 : 0) : -weight[pos] * 3)));
+  const cost = slots.map((pos) => cols.map((p) => (p ? -(weight[pos] * ratingAt(p, pos) * fitWeight(p)) - (p.pos === pos ? 1e-4 : 0) : -weight[pos] * 3)));
   return hungarian(cost).map((j) => (cols[j] ? cols[j].id : null));
 }
 
-// Répare un onze après des départs (retraite, libération) : garde les titulaires présents, complète au mieux.
+// Répare un onze après des départs (retraite, libération), une blessure ou une suspension : garde les titulaires
+// disponibles, complète au mieux.
 export function repairLineup(players, lineup, formation = '433') {
   const slots = slotsOf(formation);
-  const ids = new Set(players.map((p) => p.id));
+  const ids = new Set(players.filter(available).map((p) => p.id));
   const seen = new Set();
   const kept = (lineup || []).slice(0, slots.length).map((id) => (ids.has(id) && !seen.has(id) && seen.add(id) ? id : null));
   while (kept.length < slots.length) kept.push(null);
   if (kept.every((id) => id !== null)) return kept;
-  const rest = players.filter((p) => !seen.has(p.id));
+  const rest = players.filter((p) => !seen.has(p.id) && available(p));
   return kept.map((id, k) => {
     if (id !== null) return id;
     const pos = slots[k];
@@ -151,13 +155,14 @@ export const lineupPlayers = (players, lineup) => lineup.map((id) => players.fin
 // Niveau d'un onze : même pondération par ligne que le moteur historique (gardien, défense, milieu, attaque).
 // Le poids de chaque ligne ne dépend pas du dispositif : un dispositif à un seul attaquant ne compte que le
 // meilleur, à cinq défenseurs la moyenne des cinq. Le bon dispositif est celui qui met en valeur ton effectif.
-export function lineupRating(players, lineup, formation = '433') {
+// factorOf(p) : facteur appliqué au niveau de chaque joueur (condition physique en match, live.js) ; absent : aucun.
+export function lineupRating(players, lineup, formation = '433', factorOf = null) {
   const slots = slotsOf(formation);
   const [nd, nm, na] = formationOf(formation).lines;
   const line = { G: [], D: [], M: [], A: [] };
   lineup.forEach((id, k) => {
     const p = players.find((x) => x.id === id);
-    if (slots[k]) line[slots[k]].push(p ? ratingAt(p, slots[k]) : 3);
+    if (slots[k]) line[slots[k]].push(p ? ratingAt(p, slots[k]) * (factorOf ? factorOf(p) : 1) : 3);
   });
   const avg = (a, n) => (a.reduce((s, v) => s + v, 0) + (n - a.length) * 3) / n;
   const leader = lineup.some((id) => players.find((x) => x.id === id)?.traits?.includes('leader')) ? 0.1 : 0;

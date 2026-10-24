@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from '../game/constants';
 import {
-  ATTRS, FAMILIES, GK_ATTRS, TRAITS, WEIGHTS, costOf, playerRating, potentialRange, ratingAt, saleValue, wageOf,
-} from '../game/players';
+  ATTRS, FAMILIES, GK_ATTRS, TRAITS, WEIGHTS, costOf, playerRating, potentialRange, ratingAt, saleValue, wageOf, absenceOf, fitOf, matchCost, recoveryOf } from '../game/players';
 import { seasonForecast } from '../game/economy';
 import { teamLevel } from '../game/match';
 import { clubAfter, deName } from '../game/names';
@@ -31,6 +30,13 @@ const FILTERS = [['all', 'Tous'], ['G', 'Gardiens'], ['D', 'Défense'], ['M', 'M
 const attrsOf = (p) => (p.pos === 'G' ? GK_ATTRS.map((x) => ({ ...x, v: p.g[x.key] })) : ATTRS.map((x) => ({ ...x, v: p.a[x.key] })));
 const topAttrs = (p, n = 3) => [...attrsOf(p)].sort((a, b) => b.v - a.v).slice(0, n);
 const formAvg = (p) => (p.form?.length ? p.form.reduce((a, b) => a + b, 0) / p.form.length : null);
+const fitTone = (f) => (f >= 75 ? 'good' : f >= 50 ? 'mid' : 'low');
+// Blessé ou suspendu : une pastille rouge ou ambre, partout où l'on voit le joueur.
+function AbsentTag({ p, long = false }) {
+  const a = absenceOf(p);
+  if (!a) return null;
+  return <span className={`abs-tag ${a.kind}`} title={a.label}>{long ? a.label : a.short}</span>;
+}
 const divRef = (s) => { const d = DIVISIONS[s.divisionIndex]; return (d.oppMin + d.oppMax) / 2; };
 const onSale = (s, p) => (s.saleList || []).some((x) => x.id === p.id); // mis en vente au mercato
 // rang d'un joueur pour la division (teinte de sa carte) : élite, or, argent, bronze
@@ -339,6 +345,7 @@ function PlayerCard({ p, state, refLvl, index, onOpen }) {
           <span className="sqc-flags">
             {p.num != null && <em className="sqc-num">{p.num}</em>}
             {starter && <span className="sqc-xi" title="Titulaire">XI</span>}
+            <AbsentTag p={p} />
           </span>
         </span>
         <span className="sqc-face"><Portrait p={p} size={70} /></span>
@@ -349,7 +356,8 @@ function PlayerCard({ p, state, refLvl, index, onOpen }) {
         </span>
         <span className="sqc-foot">
           <span>{p.age} ans</span>
-          {f === null ? <span className="sqc-form">pas encore joué</span> : <span className={`sqc-form ${f >= 7.5 ? 'good' : f < 5.5 ? 'low' : ''}`}>forme {fmtRating(f)}</span>}
+          <span className={`sqc-fit ${fitTone(fitOf(p))}`} title="Condition physique">{Math.round(fitOf(p))} %</span>
+          {f === null ? <span className="sqc-form">pas joué</span> : <span className={`sqc-form ${f >= 7.5 ? 'good' : f < 5.5 ? 'low' : ''}`}>forme {fmtRating(f)}</span>}
         </span>
       </button>
     </li>
@@ -368,6 +376,7 @@ function PlayerTable({ title, cols, span = cols.length, players, state, refLvl, 
     if (key === 'lvl') return playerRating(p);
     if (key === 'age') return p.age;
     if (key === 'form') return formAvg(p) ?? -1;
+    if (key === 'fit') return fitOf(p);
     if (key === 'wage') return wageOf(p, state.divisionIndex);
     return (p.pos === 'G' ? p.g : p.a)[key];
   };
@@ -396,6 +405,7 @@ function PlayerTable({ title, cols, span = cols.length, players, state, refLvl, 
             {cols.map((c) => th(c.key, c.short, 'c-attr', c.name))}
             {pad.map((i) => <th key={`pad${i}`} className="c-attr c-pad" aria-hidden="true" />)}
             {th('form', 'Forme', 'c-form')}
+            {th('fit', 'Cond.', 'c-fit', 'Condition physique')}
             {th('wage', 'Salaire', 'c-wage')}
           </tr>
         </thead>
@@ -412,6 +422,7 @@ function PlayerTable({ title, cols, span = cols.length, players, state, refLvl, 
                       <span className="sq-num">{p.num ?? '–'}</span>
                       <span className="sq-name">{p.name}</span>
                       {starter && <i className="sq-starter" title="Titulaire" />}
+                      <AbsentTag p={p} />
                       <SaleTag state={state} p={p} />
                       {p.traits?.length > 0 && <span className="sq-traits">{p.traits.map((t) => TRAITS[t]?.name).join(' · ')}</span>}
                     </span>
@@ -426,6 +437,7 @@ function PlayerTable({ title, cols, span = cols.length, players, state, refLvl, 
                 })}
                 {pad.map((i) => <td key={`pad${i}`} className="c-attr c-pad" aria-hidden="true" />)}
                 <td className="c-form">{f === null ? '–' : fmtRating(f)}</td>
+                <td className={`c-fit ${fitTone(fitOf(p))}`}>{Math.round(fitOf(p))} %</td>
                 <td className="c-wage">{fmtMoney(wageOf(p, state.divisionIndex))}</td>
               </tr>
             );
@@ -532,6 +544,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
             <h3>{p.name}</h3>
             <div className="sh-tags">
               <span className={`sh-tag ${role === 'Titulaire' ? 'on' : ''}`}>{role}</span>
+              {!market && <AbsentTag p={p} long />}
               {!market && p.academy && <span className="sh-tag on">Formé au club</span>}
               {listed && <span className="sh-tag sale">En vente</span>}
               {market && p.interest > 0 && <span className="sh-tag warn">Courtisé{p.interest > 1 ? ` par ${p.interest} clubs` : ''}</span>}
@@ -575,6 +588,17 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
                 {prev && <>saison {prev.season} : {prev.apps} {plural(prev.apps, 'match', 'matchs')}, {prev.goals} {plural(prev.goals, 'but', 'buts')}{prev.avg ? `, note ${fmtRating(prev.avg)}` : ''}</>}
               </p>
             )}
+          </section>
+        )}
+
+        {!market && (
+          <section className="sh-sec">
+            <div className="sh-row">
+              <span className="sh-cap">Condition physique</span>
+              <span className="sh-pot"><b className={fitTone(fitOf(p))}>{Math.round(fitOf(p))} %</b></span>
+            </div>
+            <div className="sh-scale sh-fit" aria-hidden="true"><i className={`now ${fitTone(fitOf(p))}`} style={{ width: `${fitOf(p)}%` }} /></div>
+            <p className="sh-empty">Un match complet coûte environ {Math.round(matchCost(p))} points ; chaque date en rend {recoveryOf(p, state.buildings.training || 0)}. Fatigué, il joue moins bien et se blesse plus souvent.</p>
           </section>
         )}
 

@@ -20,6 +20,8 @@ export const matchFeed = {
   awayNames: [], // noms des onze adverses (4-3-3)
   awayName: '',
   skipped: 0, // incrémenté quand le joueur passe directement à la fin d'une mi-temps
+  rewound: 0, // incrémenté quand des minutes simulées mais pas encore vues sont reprises (changement à toute minute) :
+  // les actions préparées pour des événements disparus sont oubliées
   // La 3D en retard sur une action (tir pas encore arrivé, faute pas encore commise) retient l'affichage de son
   // commentaire jusqu'à ce que le ballon arrive : waitAt = minute de l'événement retenu, waitUntil = limite en
   // temps réel (performance.now) au-delà de laquelle le direct reprend quoi qu'il arrive (3D cachée, onglet masqué).
@@ -30,6 +32,6 @@ export const matchFeed = {
 export function resetFeed() {
   Object.assign(matchFeed, {
     active: false, phase: 'off', half: 1, clock: 0, speed: 1, pause: 0, events: [], homeNames: [], awayNames: [], skipped: 0,
-    waitAt: -1, waitUntil: 0,
+    rewound: 0, waitAt: -1, waitUntil: 0,
   });
 }

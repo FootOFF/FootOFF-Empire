@@ -190,6 +190,19 @@ export default function PostMatch({ state, onClose, onStats, initialStep = 'resu
               )}
               {lm.demand > lm.capacity && <p className="post-note">Stade complet : {fmtNum(lm.demand - lm.capacity)} supporters sont restés dehors.</p>}
             </div>
+            {lm.absences?.length > 0 && (
+              <>
+                <SectionHead label="Infirmerie et suspensions" aside={`${lm.absences.length} absent${lm.absences.length > 1 ? 's' : ''}`} />
+                <ul className="post-absent">
+                  {lm.absences.map((a) => (
+                    <li key={`${a.kind}-${a.id}`} className={a.kind}>
+                      <b>{a.name}</b>
+                      <span>{a.kind === 'injury' ? 'blessé' : 'suspendu'} · {a.matches} match{a.matches > 1 ? 's' : ''} · {a.why}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </section>
         </div>
 

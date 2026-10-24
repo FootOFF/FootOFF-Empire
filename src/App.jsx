@@ -244,6 +244,17 @@ export default function App({ preview = null }) {
         action: { panel: 'academy', tab: 'youth', ids: leaving.map((p) => p.id) },
       });
     }
+    // blessés et suspendus du match : ils manqueront les prochaines dates
+    const abs = state.lastMatch?.absences || [];
+    if (abs.length) {
+      const one = abs[0];
+      notify({
+        kind: 'warn', eyebrow: abs.length > 1 ? `${abs.length} absents pour la suite` : one.kind === 'injury' ? 'Blessure' : 'Suspension',
+        title: abs.length > 1 ? abs.map((a) => a.name).join(', ') : `${one.name} : ${one.kind === 'injury' ? 'blessé' : 'suspendu'} ${one.matches} match${one.matches > 1 ? 's' : ''}`,
+        text: abs.length > 1 ? abs.map((a) => `${a.name} ${a.matches} match${a.matches > 1 ? 's' : ''}`).join(' · ') : one.why[0].toUpperCase() + one.why.slice(1) + '.',
+        action: { panel: 'squad', tab: 'players' },
+      });
+    }
     // ce qui a bougé au mercato pendant la journée : offres reçues, joueurs suivis partis ailleurs
     const n = state.mercatoNews;
     if (!n || n.key !== roundKey(state) || n.season) return;

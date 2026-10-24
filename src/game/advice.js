@@ -3,7 +3,7 @@ import { BUILDINGS, POS_LABELS, SQUAD_MAX, YOUTH_LEAVE_AGE, YOUTH_PLACES, upgrad
 import { leavingYouth } from './academy';
 import { LINES, sessionOf, windowKey } from './training';
 import { PLOTS, allowedBuildingsFor, plotBuilding } from './map';
-import { autoLineup, lineupRating, slotsOf } from './tactics';
+import { autoLineup, fitWeight, lineupRating, slotsOf } from './tactics';
 import { costOf, ratingAt, wageOf } from './players';
 import { fitGain, pendingCounters, poolOf } from './mercato';
 import { capacity, endOfSeasonForecast, expectedGate, investmentPreview, seasonForecast } from './economy';
@@ -145,10 +145,10 @@ export function staffTip(s) {
     };
   }
   const best = autoLineup(s.players, s.formation);
-  if (lineupRating(s.players, best, s.formation) > lineupRating(s.players, s.lineup, s.formation) + 0.15) {
+  if (lineupRating(s.players, best, s.formation, fitWeight) > lineupRating(s.players, s.lineup, s.formation, fitWeight) + 0.15) {
     return {
       id: `lineup-${s.seasonNumber}-${s.round}`, title: 'Ton onze peut faire mieux',
-      text: 'Des remplaçants sont plus forts que certains titulaires. Choisis « Meilleur onze » dans l’avant-match.',
+      text: 'Des remplaçants sont plus forts, ou plus frais, que certains titulaires. Choisis « Meilleur onze » dans l’avant-match.',
       action: { kind: 'match', label: 'Préparer le match' },
     };
   }

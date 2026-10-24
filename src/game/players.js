@@ -239,6 +239,46 @@ export function progressPlayer(p) {
   p.lastDelta = r1(playerRating(p) - before);
 }
 
+// --- Condition physique, blessures, suspensions ---------------------------------------------------------------
+// Condition (fit, 0 à 100, 100 au repos) : un match en coûte selon l'endurance (25 points pour un joueur très
+// endurant, 36 pour un joueur peu endurant ; moitié pour un gardien ; « Infatigable » : ×0,6), et chaque date du
+// calendrier en rend (28 points jusqu'à 27 ans, 24 jusqu'à 31, 20 ensuite, +2 par niveau du centre d'entraînement,
+// son centre médical). En match, la condition baisse minute après minute et pèse sur le niveau du joueur
+// (fitFactor : −15 % à zéro). Un joueur fatigué se blesse plus souvent.
+export const fitOf = (p) => clamp(p.fit ?? 100, 0, 100);
+export const fitFactor = (fit) => 0.85 + (0.15 * clamp(fit, 0, 100)) / 100;
+export function matchCost(p) {
+  const end = p.a?.end ?? 10;
+  const base = 30 * (1.35 - end / 40) * (p.pos === 'G' ? 0.5 : 1) * (p.traits?.includes('infatigable') ? 0.6 : 1);
+  return Math.round(base * 10) / 10;
+}
+export const recoveryOf = (p, trainingLvl = 0) => (p.age <= 27 ? 28 : p.age <= 31 ? 24 : 20) + 2 * trainingLvl;
+// condition d'un joueur à une minute du match, entré à la minute `since`
+export const fitAt = (p, minute, since = 0) => Math.max(0, fitOf(p) - (matchCost(p) * Math.max(0, minute - since)) / 90);
+
+// Blessures : durée en dates du calendrier (matchs du club), tirée au moment de la blessure.
+export const INJURIES = [
+  { out: 1, label: 'Coup reçu', w: 34 }, { out: 2, label: 'Élongation', w: 30 }, { out: 3, label: 'Entorse', w: 16 },
+  { out: 4, label: 'Claquage', w: 10 }, { out: 6, label: 'Déchirure musculaire', w: 7 }, { out: 9, label: 'Fracture', w: 3 },
+];
+export function drawInjury() {
+  const total = INJURIES.reduce((a, i) => a + i.w, 0);
+  let r = Math.random() * total;
+  for (const i of INJURIES) { r -= i.w; if (r <= 0) return { out: i.out, total: i.out, label: i.label }; }
+  return { out: 1, total: 1, label: INJURIES[0].label };
+}
+export const isInjured = (p) => (p.injury?.out || 0) > 0;
+export const isBanned = (p) => (p.ban || 0) > 0;
+// disponible pour le prochain match (ni blessé, ni suspendu)
+export const available = (p) => !isInjured(p) && !isBanned(p);
+const matches = (n) => `${n} match${n > 1 ? 's' : ''}`;
+// « Blessé · entorse · 3 matchs », « Suspendu · 1 match », ou null
+export function absenceOf(p) {
+  if (isInjured(p)) return { kind: 'injury', label: `Blessé · ${p.injury.label.toLowerCase()} · ${matches(p.injury.out)}`, short: `Blessé · ${matches(p.injury.out)}`, matches: p.injury.out };
+  if (isBanned(p)) return { kind: 'ban', label: `Suspendu · ${matches(p.ban)}`, short: `Suspendu · ${matches(p.ban)}`, matches: p.ban };
+  return null;
+}
+
 export function wantsRetirement(p) {
   return p.age >= 36 || (p.age >= 34 && Math.random() < 0.5);
 }

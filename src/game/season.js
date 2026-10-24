@@ -5,7 +5,7 @@ import { logMove } from './mercato';
 import { expectedGate, matchGate, prizeFor, sponsorIncome, ticketPrice, upkeepOf } from './economy';
 import { clamp, ordinal, pick, rnd } from './utils';
 import { clubAfter, leagueClubNames, randomClubName } from './names';
-import { assignNumber, freshSeason, makePlayer, playerRating, progressPlayer, saleValue, wageOf, wantsRetirement } from './players';
+import { assignNumber, drawInjury, fitOf, freshSeason, makePlayer, matchCost, playerRating, progressPlayer, recoveryOf, saleValue, wageOf, wantsRetirement } from './players';
 import { quickMatch } from './live';
 import { ensureLineup } from './tactics';
 import { closeSeasonGoals, reputationStatusEvent, resetSeasonStats } from './goals';
@@ -265,6 +265,12 @@ export function applyMatchResult(s, live) {
   };
   if (league) applyResult(s, 0, ctx.oppIdx, res.gf, res.ga);
   const cupNote = league ? null : cupResult(s, ctx, res);
+  // les absents de ce match purgent une date : suspension et blessure diminuent d'un match
+  for (const p of s.players) {
+    if (p.ban > 0) p.ban -= 1;
+    if (p.injury?.out > 0) { p.injury.out -= 1; if (p.injury.out <= 0) delete p.injury; }
+  }
+  const absences = []; // blessés et suspendus du match, pour l'après-match et le journal
   // vie des joueurs : matchs, buts, passes, cartons, note du match et forme (5 derniers matchs)
   for (const st of live.players || []) {
     const p = s.players.find((q) => q.id === st.id);
@@ -282,7 +288,21 @@ export function applyMatchResult(s, live) {
     // match sans encaisser : gardien et défenseurs présents au moins une heure
     if (res.ga === 0 && (st.pos === 'G' || st.pos === 'D') && (st.minutes ?? 90) >= 60) p.season.clean = (p.season.clean || 0) + 1;
     p.form = [...(p.form || []), st.rating].slice(-5);
+    // suspensions : un rouge direct vaut deux matchs, un second jaune un ; trois jaunes dans la saison, un match
+    if (st.red) { p.ban = (p.ban || 0) + (st.yellow ? 1 : 2); absences.push({ id: p.id, name: p.name, kind: 'ban', matches: p.ban, why: st.yellow ? 'second carton jaune' : 'carton rouge' }); }
+    else if (st.yellow && p.season.yellow % 3 === 0) { p.ban = (p.ban || 0) + 1; absences.push({ id: p.id, name: p.name, kind: 'ban', matches: p.ban, why: 'trois cartons jaunes' }); }
+    // condition physique : le match coûte selon le temps de jeu et l'endurance
+    p.fit = Math.max(0, Math.round((fitOf(p) - (matchCost(p) * (st.minutes ?? 90)) / 90) * 10) / 10);
   }
+  // blessures du match : durée tirée maintenant, en dates du calendrier
+  for (const inj of live.injuries || []) {
+    const p = s.players.find((q) => q.id === inj.id);
+    if (!p) continue;
+    p.injury = drawInjury();
+    absences.push({ id: p.id, name: p.name, kind: 'injury', matches: p.injury.out, why: p.injury.label.toLowerCase() });
+  }
+  // récupération avant la prochaine date, pour tous (le centre d'entraînement et son centre médical aident)
+  for (const p of s.players) p.fit = Math.min(100, Math.round((fitOf(p) + recoveryOf(p, s.buildings.training || 0)) * 10) / 10);
   s.money += res.revenue;
   for (const [k, v] of Object.entries(res.breakdown)) book(s, k, v);
   markTreasury(s);
@@ -293,8 +313,16 @@ export function applyMatchResult(s, live) {
   const status = reputationStatusEvent(s, repWas); // nouveau statut de notoriété atteint sur ce match
   if (league) s.round++;
   if (ctx.fixture >= 0) s.calIndex = ctx.fixture + 1;
-  s.lastMatch = { ...res, round: s.round, comp: ctx.comp, stage: ctx.stage, label: league ? fixtureLabel(null, s.round) : ctx.label, cup: cupNote, status: status?.name || null, before };
+  s.lastMatch = { ...res, round: s.round, comp: ctx.comp, stage: ctx.stage, label: league ? fixtureLabel(null, s.round) : ctx.label, cup: cupNote, status: status?.name || null, before, absences };
   recordMatch(s, s.lastMatch);
+  if (absences.length) {
+    pushJournal(s, {
+      season: s.seasonNumber, round: s.round, kind: 'club',
+      title: absences.length > 1 ? `${absences.length} absents après le match` : absences[0].kind === 'injury' ? `${absences[0].name} blessé` : `${absences[0].name} suspendu`,
+      text: absences.map((a) => `${a.name} : ${a.kind === 'injury' ? 'blessé' : 'suspendu'} ${a.matches} match${a.matches > 1 ? 's' : ''} (${a.why})`).join(' · ') + '.',
+    });
+  }
+  ensureLineup(s); // blessés et suspendus quittent le onze du prochain match
   refreshTransfers(s); // le marché des transferts bouge à chaque journée
   if (league) trainYouth(s); // académie : les jeunes progressent à chaque journée de championnat
   refreshScouting(s); // et de nouveaux jeunes sont repérés
@@ -391,6 +419,8 @@ export function endSeason(s) {
     p.season = freshSeason();
     progressPlayer(p);
     p.age += 1;
+    p.fit = 100; // l'intersaison repose et soigne tout le monde ; une suspension, elle, se purge à la reprise
+    delete p.injury;
   }
   const staying = [];
   for (const p of s.players) {

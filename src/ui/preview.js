@@ -57,6 +57,7 @@ export const SCREENS = [
   ['direct', 'Match en direct'],
   ['mi-temps', 'Mi-temps (composition repliée)'],
   ['mi-temps-compo', 'Mi-temps · composition déployée'],
+  ['changement', 'Direct · changement en cours de jeu'],
   ['apres-match', 'Après-match'],
   ['apres-match-classement', 'Après-match · classement de la journée'],
   ['bilan', 'Bilan de saison'],
@@ -306,6 +307,7 @@ export function previewUi(screen, s) {
     case 'direct': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34 } };
     case 'mi-temps': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime' } };
     case 'mi-temps-compo': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime', board: true } };
+    case 'changement': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'subs', minute: 31 } };
     case 'apres-match': return { showResult: true, matchDay: true };
     case 'apres-match-classement': return { showResult: true, matchDay: true, postStep: 'table' };
     case 'menu': return { menu: true };

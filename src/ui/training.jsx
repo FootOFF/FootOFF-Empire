@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { BUILDINGS, DIVISIONS, POS_LABELS, PROGRAM_STEPS, TRAINING_COLLECTIVE, TRAINING_MULT, upgradeCost } from '../game/constants';
-import { ATTRS, GK_ATTRS, TRAITS, playerRating, potentialRange } from '../game/players';
+import { ATTRS, GK_ATTRS, TRAITS, isInjured, playerRating, potentialRange } from '../game/players';
 import {
   DRILLS, GREAT, LINES, PLAY_MAX, PLAY_MIN, PROGRAMS, attrsAfter, bestCat, catsFor, drillsFor, pickOf, programDesc, programLabel, programNeed,
   programOf, programsFor, sessionOf, sessionPreview, suggestFor,
@@ -364,7 +364,7 @@ function ProgramBar({ label, steps, need, note = null, warn = false }) {
 function Chooser({ state, pos, current, onPick, onClose }) {
   const lvl = state.buildings.training || 0;
   const advised = suggestFor(state, pos);
-  const rows = state.players.filter((p) => p.pos === pos).map((p) => {
+  const rows = state.players.filter((p) => p.pos === pos && !isInjured(p)).map((p) => { // un blessé ne s'entraîne pas
     const cat = bestCat(state, p);
     return { p, cat, g: sessionPreview(state, p, cat, latest(lvl, pos, cat)).sim };
   }).sort((a, b) => b.g - a.g || playerRating(b.p) - playerRating(a.p));

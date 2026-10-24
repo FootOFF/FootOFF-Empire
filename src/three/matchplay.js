@@ -75,6 +75,8 @@ export function createMatchScene(parent) {
     restart: null, // remise en jeu (dégagement, coup franc, relance du gardien)
     celebrate: null,
     skipped: 0,
+    rewound: 0,
+    names: [], // noms de notre onze, poste par poste (un nom qui change : un remplaçant entre)
     hold: null, // le porteur : contrôle, conduite, frappe
     warm: null,
     cardTimer: 0,
@@ -231,12 +233,14 @@ export function createMatchScene(parent) {
   function scan() {
     for (const e of matchFeed.events) {
       if (S.handled.has(e)) continue;
-      if (!['chance', 'goal', 'yellow', 'red'].includes(e.type)) continue;
+      if (!['chance', 'goal', 'yellow', 'red', 'injury'].includes(e.type)) continue;
       if (realUntil(e) > Math.max(lead(), 6.2 / Math.sqrt(Math.max(1, matchFeed.speed))) + 0.4) break; // buildUp() compris
       S.handled.add(e);
       if (realUntil(e) < -1) continue; // déjà annoncé depuis longtemps (scène remise en place en cours de jeu) : jamais rejoué
       const t = sideTeam(e.side);
-      if (e.type === 'chance' || e.type === 'goal') {
+      if (e.type === 'injury') { // blessé : il quitte le terrain à l'instant du commentaire
+        S.queue.push({ kind: 'exit', e, team: t, who: nameToAgent(e.side, e.player), started: false });
+      } else if (e.type === 'chance' || e.type === 'goal') {
         const shooter = nameToAgent(e.side, e.player);
         const [su, sv] = [rnd(3.5, 4.15), clamp(rnd(-0.9, 0.9), -1.2, 1.2)];
         // v : vitesse prévue de la frappe (u/s), recalculée au contact pour arriver pile à l'heure
@@ -246,9 +250,23 @@ export function createMatchScene(parent) {
       }
     }
   }
+  // Des minutes simulées mais pas encore vues ont été reprises (changement à toute minute) : les actions préparées
+  // pour des événements disparus sont oubliées ; une frappe déjà lancée pour un événement disparu finit à côté.
+  function dropVanished() {
+    const live = new Set(matchFeed.events);
+    S.queue = S.queue.filter((q) => live.has(q.e) || (q.started && q === S.seq));
+    if (S.seq && !live.has(S.seq.e)) { S.seq.outcome = 'w'; S.seq.e = { ...S.seq.e, type: 'chance', outcome: 'wide' }; }
+    if (S.foul && !live.has(S.foul.e)) finishItem(S.foul);
+    matchFeed.waitAt = -1;
+  }
   function director() {
     scan();
     let it = S.queue[0];
+    if (it && it.kind === 'exit') { // blessé : sort dès que son commentaire tombe
+      it.tAt = S.now + realUntil(it.e);
+      if (it.tAt - S.now <= 0.3) { S.leaving.add(it.who); finishItem(it); }
+      return;
+    }
     // 3D en retard sur le direct (×4, actions rapprochées) : une action déjà annoncée qui n'a pas encore commencé
     // est sautée, sauf un but, pour rattraper le commentaire (jouée après coup, elle le contredirait)
     while (it && !it.started && it.e.type !== 'goal' && realUntil(it.e) < -0.2) { finishItem(it); it = S.queue[0]; }
@@ -814,6 +832,9 @@ export function createMatchScene(parent) {
     S.seq = S.foul = S.restart = S.celebrate = null;
     matchFeed.waitAt = -1;
     if (half === 1) { S.out.fill(false); S.leaving.clear(); }
+    // changements de la pause : un blessé remplacé rend sa place à l'entrant
+    for (let k = 0; k < 11; k++) if (half === 2 && S.names[k] !== undefined && matchFeed.homeNames[k] !== S.names[k]) { S.out[k] = false; S.leaving.delete(k); }
+    S.names = [...matchFeed.homeNames];
     setFormation(matchFeed.formation);
     setKickoff(half === 1 ? 0 : 1);
     placeAll(kickoffSpot);
@@ -842,6 +863,21 @@ export function createMatchScene(parent) {
     // direct
     if (matchFeed.half !== S.half || ['off', 'gone', 'warmup', 'break', 'walkoff'].includes(S.play)) setupHalf(matchFeed.half);
     if (matchFeed.skipped !== S.skipped) { S.skipped = matchFeed.skipped; S.queue = []; S.seq = S.foul = null; matchFeed.waitAt = -1; }
+    if (matchFeed.rewound !== S.rewound) { S.rewound = matchFeed.rewound; dropVanished(); }
+    // changement : un autre nom sur un poste du onze, c'est un remplaçant qui entre par la touche (à la place d'un
+    // joueur sorti, blessé ou remplacé)
+    for (let k = 0; k < 11; k++) {
+      const name = matchFeed.homeNames[k];
+      if (name === S.names[k]) continue;
+      if (S.names[k] !== undefined && (S.out[k] || S.leaving.has(k) || name)) {
+        S.leaving.delete(k);
+        S.out[k] = false;
+        agents[k].x = clamp(agents[k].x, -3, 3);
+        agents[k].z = Math.sign(agents[k].z || 1) * 3.72;
+        agents[k].vx = agents[k].vz = 0;
+      }
+      S.names[k] = name;
+    }
   }
 
   function walkTo(tx, tz, dt, speed) {

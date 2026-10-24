@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { POS_LABELS } from '../game/constants';
-import { playerRating, ratingAt } from '../game/players';
-import { FORMATIONS, FORMATION_ORDER, autoLineup, formationOf, lineupRating, reshapeLineup, slotsOf } from '../game/tactics';
+import { absenceOf, available, fitOf, playerRating, ratingAt } from '../game/players';
+import { FORMATIONS, FORMATION_ORDER, autoLineup, fitWeight, formationOf, lineupRating, reshapeLineup, slotsOf } from '../game/tactics';
 import { fmtRating } from './format';
 import { RatingBadge } from './kit';
 import { haptic } from './haptics';
@@ -14,6 +14,9 @@ import { haptic } from './haptics';
 // peuvent entrer et les expulsés restent figés.
 // Au doigt, un joueur du terrain se saisit tout de suite ; sur le banc (qui défile), il faut le maintenir un
 // instant, sinon le geste fait défiler la page.
+// Blessés et suspendus (players.js, available) restent sur le banc, grisés : ils ne peuvent pas entrer. En match, un
+// blessé encore sur le terrain (hurt) ne peut qu'être remplacé ; un joueur sorti (unavailable) ne revient pas. La barre
+// sous chaque joueur est sa condition physique (fitness : condition à l'instant du match).
 
 const ORDER = { G: 0, D: 1, M: 2, A: 3 };
 const HOLD_MS = 170;
@@ -42,10 +45,11 @@ export function FormationPicker({ value, onChange }) {
   );
 }
 
-// « Meilleur onze » : le bouton dit ce qu'il apporte (+0,4), ou que le onze est déjà le meilleur possible.
+// « Meilleur onze » : le bouton dit ce qu'il apporte (+0,4), ou que le onze est déjà le meilleur possible. Le gain
+// se mesure condition physique comprise (comme le pronostic) : un titulaire épuisé peut céder sa place.
 export function BestEleven({ players, lineup, formation, onApply }) {
   const best = useMemo(() => autoLineup(players, formation), [players, formation]);
-  const gain = lineupRating(players, best, formation) - lineupRating(players, lineup, formation);
+  const gain = lineupRating(players, best, formation, fitWeight) - lineupRating(players, lineup, formation, fitWeight);
   if (gain < 1e-6) return <span className="lu-best done">Meilleur onze possible</span>;
   return (
     <button className="linkbtn lu-best" onClick={() => { haptic('tap'); onApply(best); }}>
@@ -54,12 +58,22 @@ export function BestEleven({ players, lineup, formation, onApply }) {
   );
 }
 
-export function LineupBoard({ players, lineup, formation, onChange, locked = null, booked = null, maxIn = Infinity, original = null, notes = null }) {
+const FIT_TONE = (f) => (f >= 75 ? 'good' : f >= 50 ? 'mid' : 'low');
+function FitBar({ value }) {
+  if (value == null) return null;
+  const v = Math.round(Math.max(0, Math.min(100, value)));
+  return <span className={`lu-fit ${FIT_TONE(v)}`} title={`Condition physique : ${v} %`} aria-label={`condition ${v} %`}><i style={{ width: `${v}%` }} /></span>;
+}
+
+export function LineupBoard({ players, lineup, formation, onChange, locked = null, booked = null, maxIn = Infinity, original = null, notes = null, hurt = null, unavailable = null, fitness = null }) {
   const slots = slotsOf(formation);
   const pitch = formationOf(formation).pitch;
   const byId = useMemo(() => Object.fromEntries(players.map((p) => [p.id, p])), [players]);
   const names = useMemo(() => displayNames(players), [players]);
-  const bench = players.filter((p) => !lineup.includes(p.id)).sort((a, b) => ORDER[a.pos] - ORDER[b.pos] || playerRating(b) - playerRating(a));
+  const canEnter = (p) => available(p) && !unavailable?.has(p.id);
+  const isHurt = (id) => !!hurt?.has(id);
+  const fitValue = (p) => (fitness ? fitness(p) : fitOf(p));
+  const bench = players.filter((p) => !lineup.includes(p.id)).sort((a, b) => canEnter(b) - canEnter(a) || ORDER[a.pos] - ORDER[b.pos] || playerRating(b) - playerRating(a));
   const [sel, setSel] = useState(null); // { kind: 'slot', k } | { kind: 'bench', id }
   const [ghost, setGhost] = useState(null); // joueur suivi par le doigt
   const [over, setOver] = useState(null); // cible survolée pendant le glissé
@@ -87,14 +101,14 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
     if (!from || !to) return false;
     const next = [...lineup];
     if (from.kind === 'slot' && to.kind === 'slot') {
-      if (from.k === to.k || isLocked(next[from.k]) || isLocked(next[to.k])) return false;
+      if (from.k === to.k || isLocked(next[from.k]) || isLocked(next[to.k]) || isHurt(next[from.k]) || isHurt(next[to.k])) return false;
       [next[from.k], next[to.k]] = [next[to.k], next[from.k]];
     } else if (from.kind === 'bench' && to.kind === 'bench') {
       return false;
     } else {
       const k = from.kind === 'slot' ? from.k : to.k;
       const id = from.kind === 'bench' ? from.id : to.id;
-      if (isLocked(next[k])) return false;
+      if (isLocked(next[k]) || !canEnter(byId[id])) return false; // expulsé, ou remplaçant indisponible
       next[k] = id;
       if (entering(next) > maxIn) return false; // plus de changement disponible
     }
@@ -119,6 +133,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
   const down = (e, item) => {
     if (e.button > 0) return;
     if (item.kind === 'slot' && isLocked(lineup[item.k])) return;
+    if (item.kind === 'bench' && !canEnter(byId[item.id])) return;
     clearTimeout(drag.current?.timer);
     const hold = e.pointerType === 'touch' && item.kind === 'bench';
     const d = { item, x: e.clientX, y: e.clientY, moved: false, armed: !hold, timer: 0 };
@@ -147,6 +162,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
     if (keyOf(sel) === keyOf(item)) { setSel(null); return; }
     if (sel && act(sel, item)) { setSel(null); return; }
     if (item.kind === 'slot' && isLocked(lineup[item.k])) return;
+    if (item.kind === 'bench' && !canEnter(byId[item.id])) return;
     setSel(item);
   };
   const handlers = (item) => ({
@@ -176,7 +192,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
           const key = `slot:${k}`;
           const cur = ratingAt(p, pos);
           const preview = chosen && chosen.id !== id ? ratingAt(chosen, pos) : null;
-          const cls = ['p2-chip', 'lu-chip', !natural && 'off', keyOf(sel) === key && 'sel', over === key && 'over', ghost?.from === key && 'src', isLocked(id) && 'locked'];
+          const cls = ['p2-chip', 'lu-chip', !natural && 'off', keyOf(sel) === key && 'sel', over === key && 'over', ghost?.from === key && 'src', isLocked(id) && 'locked', isHurt(id) && 'hurt'];
           return (
             <button
               key={k}
@@ -184,8 +200,8 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
               data-drop={key}
               className={cls.filter(Boolean).join(' ')}
               style={{ left: `${pitch[k][0]}%`, top: `${pitch[k][1]}%` }}
-              title={isLocked(id) ? 'Expulsé : il ne peut pas être remplacé' : `${POS_LABELS[pos]}${natural ? '' : ` · hors de son poste (${POS_LABELS[p.pos].toLowerCase()})`}`}
-              aria-label={`${p.name}, ${POS_LABELS[pos].toLowerCase()}, niveau ${fmtRating(cur)}`}
+              title={isLocked(id) ? 'Expulsé : il ne peut pas être remplacé' : isHurt(id) ? 'Blessé : à remplacer par un joueur du banc' : `${POS_LABELS[pos]}${natural ? '' : ` · hors de son poste (${POS_LABELS[p.pos].toLowerCase()})`}`}
+              aria-label={`${p.name}, ${POS_LABELS[pos].toLowerCase()}, niveau ${fmtRating(cur)}${isHurt(id) ? ', blessé' : ''}`}
               {...handlers({ kind: 'slot', k })}
             >
               <span className="p2-num">
@@ -193,8 +209,10 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
                 {preview !== null && <span className={`lu-alt ${preview > cur ? 'up' : preview < cur ? 'down' : ''}`}>{fmtRating(preview)}</span>}
                 {notes?.[id] != null && <span className="lu-note"><RatingBadge value={notes[id]} size="sm" /></span>}
                 {(isLocked(id) || booked?.has(id)) && <i className={`card ${isLocked(id) ? 'red' : 'yellow'} lu-flag`} />}
+                {isHurt(id) && <i className="lu-hurt" aria-hidden="true" />}
               </span>
               <span className="p2-name">{names[id]}</span>
+              {!isHurt(id) && <FitBar value={fitValue(p)} />}
             </button>
           );
         })}
@@ -208,11 +226,13 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
           {bench.length === 0 && <span className="muted small">Aucun remplaçant : recrute dans l’Effectif.</span>}
           {bench.map((p) => {
             const key = `bench:${p.id}`;
-            const cls = ['lu-bchip', keyOf(sel) === key && 'sel', over === key && 'over', (ghost?.from === key || lift === key) && 'src', lift === key && 'lift'];
+            const ok = canEnter(p);
+            const why = ok ? null : absenceOf(p)?.short || (hurt?.has(p.id) ? 'Blessé' : 'Déjà sorti');
+            const cls = ['lu-bchip', keyOf(sel) === key && 'sel', over === key && 'over', (ghost?.from === key || lift === key) && 'src', lift === key && 'lift', !ok && 'na'];
             return (
-              <button key={p.id} type="button" data-drop={key} className={cls.filter(Boolean).join(' ')} {...handlers({ kind: 'bench', id: p.id })}>
+              <button key={p.id} type="button" data-drop={key} className={cls.filter(Boolean).join(' ')} title={why || undefined} aria-disabled={!ok || undefined} {...handlers({ kind: 'bench', id: p.id })}>
                 <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
-                <span className="lu-bname">{names[p.id]}</span>
+                <span className="lu-bname">{names[p.id]}{why ? <em className="lu-why">{why}</em> : <FitBar value={fitValue(p)} />}</span>
                 <b>{fmtRating(playerRating(p))}</b>
               </button>
             );
@@ -262,6 +282,7 @@ export function LineupEditor({ state, run }) {
           <p><i className="lu-dot" /><span>Le chiffre est le niveau du joueur <b>à ce poste</b>.</span></p>
           <p><i className="lu-dot off" /><span>Contour en pointillés rouges : il joue hors de son poste{offPos ? ` (${offPos} dans ton onze)` : ''}.</span></p>
           <p><i className="lu-dot alt" /><span>Joueur choisi : chaque poste affiche le niveau qu’il y aurait, en vert s’il y ferait mieux.</span></p>
+          <p><i className="lu-dot fit" /><span>Barre sous le nom : condition physique. Un joueur fatigué joue moins bien et se blesse plus souvent ; les absents (blessés, suspendus) restent sur le banc, grisés.</span></p>
           <p className="muted small">Ce onze est repris à l’avant-match, où tu peux encore le retoucher.</p>
         </div>
       </aside>

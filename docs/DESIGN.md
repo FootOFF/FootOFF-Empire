@@ -286,6 +286,8 @@ la caméra le cadre dans la zone libre puis oscille lentement autour, comme en v
 
 ## Après-match et classement
 
+L'après-match liste l'infirmerie et les suspensions du match (joueur, durée, motif), repris dans une notification
+d'avertissement qui mène à l'Effectif, et au journal.
 Après une journée de championnat, l'après-match a deux temps : le résultat (bouton « Voir le classement »), puis le
 classement de la division mis à jour (`StandingsTable` de `src/ui/panels.jsx`, partagé avec le panneau Saison) : la
 colonne d'évolution montre les places gagnées (▲ vert) ou perdues (▼ rouge) sur la journée, et une pastille dit où
@@ -373,6 +375,9 @@ garde ses paliers et leurs primes). Le menu pause résume les trois objectifs.
 ## Effectif
 
 Onglet Joueurs de l'Effectif (`src/ui/squad.jsx`, refait le 2026-10-24 : « moderne et super esthétique ») :
+- Condition physique en pourcentage (cartes, colonne « Cond. » du tableau, barre de la fiche avec le coût d'un match et
+  la récupération par date) ; étiquette « Blessé · entorse · 3 matchs » ou « Suspendu · 1 match » sur la carte, sous le
+  nom dans le tableau, dans les étiquettes de la fiche (`AbsentTag`).
 - Vue d'ensemble en quatre tuiles : niveau du onze (doré), âge moyen, forme, valeur totale.
 - Joueurs en cartes rangées par ligne (Gardiens, Défenseurs, Milieux, Attaquants ; effectif et moyenne de la ligne).
   Une carte : teinte du rang pour la division (bronze : faible, argent, or : fort, élite : très fort, avec halo et
@@ -489,7 +494,7 @@ Règles :
 - Programmes : 6, 5 ou 4 séances dans la bonne catégorie selon le niveau ; une épreuve très réussie (deux tiers des
   points) compte double. Trois signes positifs au plus ; « Maîtrise de soi » retire « Sang chaud ». Un signe appris
   entre au journal.
-- « Infatigable » et « Flèche » pèsent en match (`live.js`), pronostic compris.
+- « Flèche » pèse en match (`live.js`), pronostic compris ; « Infatigable » fatigue bien moins vite (`docs/JOUEURS.md`).
 Calage : `tmp/calib-training.mjs` (carrières), contrôles : `tmp/check-training.mjs`, simulation : `tmp/ph3/simcheck.js`.
 
 Épreuves en 3D (`src/three/drills/`, écran `src/ui/drill.jsx`), plein écran, chargées à la première épreuve :
@@ -551,7 +556,10 @@ occasions des deux équipes et sur la possession. Le pronostic en tient compte (
 ## Composition sur le terrain
 
 Un seul composant (`LineupBoard`, `src/ui/lineup.jsx`) pour l'onglet Composition de l'Effectif (enregistré à chaque
-geste, repris à l'avant-match), l'avant-match et la mi-temps. On glisse un joueur sur un poste ou sur un coéquipier,
+geste, repris à l'avant-match), l'avant-match, la mi-temps et les changements en cours de jeu. Sous chaque joueur, une
+barre de condition physique (vert, ambre, rouge ; `docs/JOUEURS.md`). Blessés et suspendus restent sur le banc, grisés
+avec leur motif, et ne peuvent pas entrer ; en match, un blessé encore sur le terrain (pastille rouge) ne peut qu'être
+remplacé, un joueur sorti ne revient pas. On glisse un joueur sur un poste ou sur un coéquipier,
 ou on en touche deux ; au doigt, un remplaçant se saisit après un court maintien (sinon le banc défile). Le joueur
 choisi affiche sur chaque poste le niveau qu'il y aurait (vert s'il y ferait mieux). « Meilleur onze » annonce son
 gain et dit quand le onze est déjà optimal. À la mi-temps, la composition est repliée : une carte « Composition et
@@ -563,9 +571,20 @@ reste collé au bas de la carte quand la composition dépliée la fait défiler.
 une fois la composition dépliée, pronostic recalculé.
 
 Avant-match (`PreMatch`, `src/ui/match.jsx`), même principe : sous l'affiche, des pastilles (niveau contre niveau,
-affluence, recettes) ; puis la composition, le dispositif et la tactique ; en bas, collés à l'écran et ensemble, le
-pronostic (victoire, nul, défaite, buts attendus) et le coup d'envoi : chaque réglage montre aussitôt son effet sur
-les chances, juste au-dessus du bouton qui lance le match. La composition est dépliée d'office sur PC (le onze à
+affluence, recettes) ; puis la composition (les absents listés dessous), le dispositif et la tactique ; en bas, collés à
+l'écran et ensemble, le pronostic (victoire, nul, défaite, buts attendus) et le coup d'envoi : chaque réglage montre
+aussitôt son effet sur les chances, juste au-dessus du bouton qui lance le match. Le pronostic intègre la condition
+physique du onze, qui baisse au fil du match (`src/game/live.js`, `prematchOdds`).
+
+Direct (`LiveMatch`, moteur `src/game/live.js`, refait le 2026-10-25) : le match se simule au fil de l'horloge, avec
+quatorze minutes d'avance pour que la scène 3D prépare chaque action. Le bouton « Changement » (avec le nombre de
+changements restants) arrête le match à toute minute et ouvre la même carte qu'à la mi-temps : composition sur le
+terrain (notes du match en pastille, condition en barre), tactique, pronostic final recalculé ; « Reprendre » applique
+tout au prochain arrêt de jeu, une à deux minutes plus tard (`subMinute`), après tout ce que le direct a déjà montré : les
+minutes simulées d'avance sont reprises depuis un instantané et rejouées avec le nouveau onze (`change`), la scène 3D
+oublie les actions disparues (`matchFeed.rewound`). Une blessure (croix médicale dans le fil, le joueur quitte la
+pelouse en 3D) arrête le match d'elle-même s'il reste un changement et un remplaçant disponible ; sinon l'équipe joue à
+dix. Cinq changements par match, à la pause ou en jeu. Aperçu : `?ecran=changement`. La composition est dépliée d'office sur PC (le onze à
 gauche, les réglages à droite) et repliée sur téléphone dans la même carte qu'à la mi-temps (`CompoCard`), avec
 « Meilleur onze » dessous ; dépliée, elle cachait sur téléphone le pronostic et tout le reste de l'avant-match.
 
