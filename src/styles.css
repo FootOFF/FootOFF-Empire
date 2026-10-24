@@ -272,6 +272,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .coach-dots i.on { background: var(--gold); }
 .coach-title { font-family: var(--font-title); font-weight: 500; font-size: var(--t-md); line-height: 1.25; letter-spacing: -.01em; }
 .coach-text { font-size: var(--t-sm); color: var(--text-2); line-height: 1.5; }
+/* la directrice sportive parle : qui, quoi (texte), pourquoi (filet doré), et la prime de l'étape */
+.coach-who { font-size: var(--t-xs); color: var(--muted); margin-bottom: -4px; }
+.coach-why { position: relative; padding-left: 12px; font-size: var(--t-xs); color: var(--text-2); line-height: 1.5; }
+.coach-why::before { content: ''; position: absolute; left: 0; top: 2px; bottom: 2px; width: 2px; border-radius: 1px; background: var(--gold-grad); }
+.coach-reward { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; padding: 4px 10px; border-radius: 999px; font-family: var(--font-mono); font-size: var(--t-xs); color: var(--gold-light); background: var(--gold-soft); border: 1px solid var(--gold-line); }
+.coach-reward svg { width: 13px; height: 13px; }
 .coach-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 .coach-skip { margin-left: auto; text-decoration: none; }
 @media (hover: hover) { .coach-skip:hover:not(:disabled) { color: var(--text-2); } }
@@ -321,7 +327,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @keyframes tuto-ring { 0% { box-shadow: 0 0 0 0 rgba(222, 193, 127, .8); } 70% { box-shadow: 0 0 0 14px rgba(222, 193, 127, 0); } 100% { box-shadow: 0 0 0 0 rgba(222, 193, 127, 0); } }
 .game[data-tuto="build"] .hold[data-key="training"],
 .game[data-tuto="sign"] .hud-dock button[data-id="squad"],
-.game[data-tuto="sign"] .pcard.market.recommended .btn,
+.game[data-tuto="sign"] .mc-card.rec .mc-offer,
+.game[data-tuto="train"] .tr-line:not(.is-done):not(.empty) .btn,
+.game[data-tuto="train"] .plotpin[data-plot="t1"] i,
 .game[data-tuto="sign"] .sq-tabs button[data-key="market"]:not(.on),
 .game[data-tuto="match"] .hud-match .btn,
 .game[data-tuto="match"] .pm-side .btn-xl,

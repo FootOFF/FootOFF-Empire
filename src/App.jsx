@@ -169,6 +169,9 @@ export default function App({ preview = null }) {
     const ns = fn(clone(state));
     if (!ns) { notify({ kind: 'warn', title: failMsg || 'Action impossible.' }); return false; }
     setState(advanceTutorial(ns)); // une étape du tutoriel se valide dès que son objectif est atteint
+    for (const r of ns.tutorial?.just || []) { // et sa prime s'annonce
+      notify({ kind: 'success', eyebrow: 'Étape réussie', title: `${r.label} : +${r.money.toLocaleString('fr-FR')} €`, text: 'La prime est versée au club.' });
+    }
     return true;
   };
 
@@ -344,6 +347,7 @@ export default function App({ preview = null }) {
   const setTuto = (step) => run((s) => setTutorialStep(s, step));
   const onCoachPrimary = () => {
     if (tutoStep === 'welcome') setTuto('build');
+    else if (tutoStep === 'goals') setTuto('stadium');
     else if (tutoStep === 'stadium') { setTuto('done'); notify({ kind: 'success', title: 'À toi de jouer, président !' }); }
     else doAction(tuto.action);
   };

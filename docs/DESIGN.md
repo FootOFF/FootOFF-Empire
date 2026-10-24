@@ -324,6 +324,16 @@ en est le club (« Tu grimpes à la 2e place », « Tu restes en tête »). L'or
   leur écusson, rangé dans la famille la plus proche. Planche de contrôle : `tmp/ph3/crests.html`
   (`?sec=clubs|familles|symboles|motifs`).
 
+## Tutoriel des premiers pas
+
+Refait le 2026-10-24 (`src/game/tutorial.js`, carte `CoachCard` de `src/ui/guide.jsx`) pour être intéressant,
+didactique et donner envie de continuer. La directrice sportive du club mène sept étapes : bienvenue (le but du jeu),
+construire le centre d'entraînement, jouer une première épreuve en 3D, recruter la recrue recommandée, jouer le
+premier match, découvrir les trois objectifs du président (tirés pour la saison), puis cap sur le stade. Chaque
+carte dit quoi faire (texte), pourquoi (filet doré) et, pour les quatre étapes d'action, sa prime (1 000 €, 500 €,
+500 €, 1 000 €, versée une fois, notification « Étape réussie »). Chaque étape se valide toute seule ; la cible de
+l'étape pulse à l'écran (parcelle, bouton Jouer d'une ligne du centre, offre de la recrue, bouton du match, stade).
+
 ## Objectifs de la saison
 
 Refaits le 2026-10-24 (`src/game/objectives.js`) : à chaque début de saison, le président fixe trois objectifs,

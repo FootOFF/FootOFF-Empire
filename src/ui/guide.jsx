@@ -1,6 +1,6 @@
 import React from 'react';
 import { FOMonogram } from './brand';
-import { IconClose } from './icons';
+import { IconClose, IconCoin } from './icons';
 
 // Guidage du joueur : carte du tutoriel (premières minutes) et « Conseil du staff » (ensuite).
 
@@ -15,8 +15,11 @@ export function CoachCard({ content, onPrimary, onSecondary, onSkip }) {
           {Array.from({ length: content.total }, (_, i) => <i key={i} className={i < content.index ? 'on' : ''} />)}
         </span>
       </header>
+      <span className="coach-who">Ta directrice sportive</span>
       <strong className="coach-title">{content.title}</strong>
       <p className="coach-text">{content.text}</p>
+      {content.why && <p className="coach-why">{content.why}</p>}
+      {content.reward && <span className="coach-reward"><IconCoin /> Prime de l’étape : +{content.reward.toLocaleString('fr-FR')} €</span>}
       <div className="coach-actions">
         <button className="btn btn-sm" onClick={onPrimary}>{content.cta}</button>
         {content.secondary && <button className="btn btn-sm ghost" onClick={onSecondary}>{content.secondary.label}</button>}
