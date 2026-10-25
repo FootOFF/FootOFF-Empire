@@ -885,6 +885,9 @@ export function createMatchScene(parent) {
   }
 
   function update(dtReal, time) {
+    // changement en cours (matchFeed.hold) : le match est en pause, l'image se fige (joueurs, ballon, carton) ;
+    // le décor (public, ciel) continue de vivre autour
+    if (matchFeed.hold && S.play !== 'off' && S.play !== 'gone') dtReal = 0;
     const dt = Math.min(dtReal, 0.05) * S.slow;
     S.now += Math.min(dtReal, 0.05);
     syncPhase();

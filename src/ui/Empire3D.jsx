@@ -697,7 +697,7 @@ export default function Empire3D({
       if (!down) return;
       const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
       down = null;
-      if (moved > 6 || modeRef.current.attract) return;
+      if (moved > 6 || modeRef.current.attract || modeRef.current.live) return; // direct : la réalisation garde la caméra
       const id = pick(e.clientX, e.clientY);
       const act = () => {
         if (id === 'parvis') { trophiesRef.current?.(); return; } // allée d'honneur : salle des trophées
@@ -722,7 +722,7 @@ export default function Empire3D({
       camera.position.copy(controls.target).addScaledVector(dir, dist);
     };
     const onCapDown = (e) => {
-      if (e.pointerType !== 'touch' || !e.isPrimary) return;
+      if (e.pointerType !== 'touch' || !e.isPrimary || modeRef.current.live) return;
       const now = performance.now();
       press = { x: e.clientX, y: e.clientY, t: now };
       if (tap && now - tap.t < 300 && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 40) {
@@ -750,7 +750,7 @@ export default function Empire3D({
           ctx.tweenCamera({ pos: controls.target.clone().addScaledVector(dir, d), target: controls.target.clone() }, 0.45);
         }
         zoomDrag = null;
-        controls.enabled = true;
+        controls.enabled = !modeRef.current.live && !modeRef.current.attract;
         return;
       }
       if (e.pointerType === 'touch' && press && e.type === 'pointerup') {
@@ -873,7 +873,7 @@ export default function Empire3D({
         scene.fog.near = Math.max(fogBase[0], d + 35);
         scene.fog.far = Math.max(scene.fog.near + 120, Math.min(fogBase[1] * k, d + 320));
       }
-      if (pointer) { setHovered(modeRef.current.attract ? null : pick(pointer.x, pointer.y)); pointer = null; }
+      if (pointer) { setHovered(modeRef.current.attract || modeRef.current.live ? null : pick(pointer.x, pointer.y)); pointer = null; }
       frame.update(time);
       selFrame.update(time * 0.6);
       let shakeX = 0, shakeY = 0;
@@ -1016,7 +1016,7 @@ export default function Empire3D({
     modeRef.current.attract = attract;
     const ctx = ctxRef.current;
     if (!ctx || !ready) return;
-    ctx.controls.enabled = !attract;
+    ctx.controls.enabled = !attract && !live;
     ctx.orbit = null;
     if (attract) ctx.camTween = null;
     else ctx.tweenCamera(ctx.home, 2.2);
@@ -1026,6 +1026,8 @@ export default function Empire3D({
     const ctx = ctxRef.current;
     if (!ctx || !ready) return;
     const arena = (stateRef.current.buildings?.terrain || 0) >= 5;
+    // direct : la réalisation tient la caméra du début à la fin (ni rotation, ni zoom, ni déplacement)
+    ctx.controls.enabled = !modeRef.current.attract && !live;
     ctx.tweenCamera(live ? (arena ? TV_VIEW_ARENA : TV_VIEW) : matchDay ? (arena ? MATCH_VIEW_ARENA : MATCH_VIEW) : ctx.home);
   }, [matchDay, live, recenter]); // eslint-disable-line react-hooks/exhaustive-deps
 

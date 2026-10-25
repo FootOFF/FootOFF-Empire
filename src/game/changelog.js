@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.11', date: '2026-10-25', title: 'Le direct, rien que le direct',
+    items: [
+      'Pendant un match, la caméra reste à la réalisation : plus de rotation, de zoom ni de déplacement, et les bâtiments ne s’ouvrent plus d’un toucher.',
+      'Un changement met vraiment le match en pause : les joueurs et le ballon s’immobilisent jusqu’à la reprise.',
+    ],
+  },
+  {
     version: '0.3.10', date: '2026-10-25', title: 'Fiche joueur sur place',
     items: [
       'Saison et Statistiques : la fiche d’un joueur s’ouvre par-dessus l’écran en cours ; la fermer ramène au même endroit (même onglet, même défilement, fiche carrière comprise) au lieu de l’Équipe.',

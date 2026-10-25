@@ -14,6 +14,7 @@ export const matchFeed = {
   clock: 0, // minute de jeu (décimale)
   speed: 1,
   pause: 0, // secondes réelles de pause restantes (célébration d'un but)
+  hold: false, // un changement est en cours : le jeu est arrêté, la scène 3D se fige jusqu'à la reprise
   events: [], // événements de la mi-temps en cours (triés)
   formation: '433',
   homeNames: [], // noms des onze, dans l'ordre des postes du dispositif
@@ -31,7 +32,7 @@ export const matchFeed = {
 
 export function resetFeed() {
   Object.assign(matchFeed, {
-    active: false, phase: 'off', half: 1, clock: 0, speed: 1, pause: 0, events: [], homeNames: [], awayNames: [], skipped: 0,
+    active: false, phase: 'off', half: 1, clock: 0, speed: 1, pause: 0, hold: false, events: [], homeNames: [], awayNames: [], skipped: 0,
     rewound: 0, waitAt: -1, waitUntil: 0,
   });
 }

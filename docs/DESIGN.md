@@ -815,8 +815,12 @@ les gants du gardien pour un arrêt, sur le poteau, au-delà de la ligne pour un
   « BUT ! », puis engagement.
 Réalisation télé (`broadcastStep`, `src/ui/Empire3D.jsx`) : caméra dans l'axe de la tribune principale qui suit le
 ballon et serre le plan selon l'action (jeu, attaque dans le dernier tiers, carton, joie du buteur) ; la largeur de
-pelouse montrée se règle sur la zone libre de l'écran (à gauche du fil sur PC, au-dessus sur téléphone) ; le joueur
-reprend la main en bougeant la caméra, la réalisation revient en douceur. Plus proche de la pelouse, elle coûte
+pelouse montrée se règle sur la zone libre de l'écran (à gauche du fil sur PC, au-dessus sur téléphone). Pendant tout
+le direct (mi-temps et changements compris), la réalisation garde la caméra : ni rotation, ni zoom (molette, pincement,
+double tap glissé), ni déplacement, et le complexe ne réagit à rien (survol, toucher d'un bâtiment, allée d'honneur) ;
+`pickPlot` d'App refuse aussi toute parcelle pendant un match (avant-match compris). Un changement en cours de jeu
+arrête le match : l'horloge s'arrête et la scène 3D se fige (`matchFeed.hold` : joueurs, ballon et carton immobiles,
+le public et le ciel continuent), jusqu'à la reprise. Plus proche de la pelouse, elle coûte
 moins que l'ancienne vue large (soir de match, 2880 × 1620 : 26,1 → 22,4 ms au stade 6). Bancs de développement :
 `tmp/ph3/matchbench.js` (synchronisme, mi-temps simulées) et `tmp/ph3/matchdemo.js` (démo en temps réel, arrêt sur
 image). Fautes et cartons (expulsé qui sort), engagements, changement de côté et retour aux vestiaires. Public

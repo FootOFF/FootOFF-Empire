@@ -346,10 +346,10 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
       formation: live.state.formation, homeNames: homeNames(), awayNames: live.state.awayRoster.map((p) => p.name),
       awayName: live.state.away, skipped: 0, rewound: 0,
     });
-    return () => { matchFeed.active = false; };
+    return () => { matchFeed.active = false; matchFeed.hold = false; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    Object.assign(matchFeed, { phase: phase === 'subs' ? 'playing' : phase, half, events, speed, homeNames: homeNames(), rewound: live.state.rewound });
+    Object.assign(matchFeed, { phase: phase === 'subs' ? 'playing' : phase, hold: phase === 'subs', half, events, speed, homeNames: homeNames(), rewound: live.state.rewound });
     if (phase === 'fulltime') matchFeed.ended = true;
   }, [phase, half, events, speed, lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps
 

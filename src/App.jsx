@@ -244,6 +244,7 @@ export default function App({ preview = null }) {
     openPanel('training');
   };
   const pickPlot = (plotId, sector, how) => {
+    if (matchPhase) return; // pendant un match (avant-match, direct), les bâtiments ne s'ouvrent pas
     const k = !how?.pin && state ? plotBuilding(state, plotId) : null;
     if (k === 'academy') openAcademy();
     else if (k === 'training') openTraining();
