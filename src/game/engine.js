@@ -36,7 +36,7 @@ export function createInitialState(clubName, crest = null) {
     divisionIndex: 0,
     seasonNumber: 1,
     round: 0,
-    buildings: { terrain: 1, training: 0, academy: 0, fans: 0, sponsor: 0, transfers: 0, direction: 0 },
+    buildings: { terrain: 1, training: 0, academy: 0, fans: 0, sponsor: 0, transfers: 0, direction: 0, medical: 0 },
     slots: Array(8).fill(null),
     players: [],
     youth: [], // équipe de jeunes de l'académie (academy.js)

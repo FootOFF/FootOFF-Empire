@@ -27,6 +27,7 @@ import PostMatch from './ui/postmatch';
 import { LiveMatch, PreMatch } from './ui/match';
 import { CoachCard, StaffTip } from './ui/guide';
 import { DirectionView } from './ui/direction';
+import { MedicalView } from './ui/medical';
 import ConfirmDialog from './ui/confirm';
 import { Presence } from './ui/presence';
 import { LoadingScreen } from './ui/loading';
@@ -250,6 +251,7 @@ export default function App({ preview = null }) {
     if (k === 'academy') openAcademy();
     else if (k === 'training') openTraining();
     else if (k === 'direction') openPanel('direction'); // la Direction du club : ses négociations
+    else if (k === 'medical') openPanel('medical'); // le centre médical : les blessés à soigner
     else selectPlot(plotId, sector);
   };
   // une notification ouvre ce qu'elle annonce : le succès lui-même (salle des trophées, mis en évidence), les offres
@@ -304,7 +306,8 @@ export default function App({ preview = null }) {
         kind: 'warn', eyebrow: abs.length > 1 ? `${abs.length} absents pour la suite` : one.kind === 'injury' ? 'Blessure' : 'Suspension',
         title: abs.length > 1 ? abs.map((a) => a.name).join(', ') : `${one.name} : ${one.kind === 'injury' ? 'blessé' : 'suspendu'} ${one.matches} match${one.matches > 1 ? 's' : ''}`,
         text: abs.length > 1 ? abs.map((a) => `${a.name} ${a.matches} match${a.matches > 1 ? 's' : ''}`).join(' · ') : one.why[0].toUpperCase() + one.why.slice(1) + '.',
-        action: { panel: 'squad', tab: 'players' },
+        // centre médical construit et un blessé : la notification mène aux soins
+        action: state.buildings.medical > 0 && abs.some((a) => a.kind === 'injury') ? { panel: 'medical' } : { panel: 'squad', tab: 'players' },
       });
     }
     // ce qui a bougé au mercato pendant la journée : offres reçues, joueurs suivis partis ailleurs
@@ -454,7 +457,7 @@ export default function App({ preview = null }) {
   // navigation par sections (nav.jsx) : l'en-tête de chaque panneau y lit l'onglet actif et ses pastilles
   const nav = {
     panel, squadTab, seasonTab, mercatoView, go: goNav, badges: signals.items || {}, switching: navSwitch && !!panel,
-    built: state ? { training: state.buildings.training > 0, academy: state.buildings.academy > 0, direction: state.buildings.direction > 0 } : {},
+    built: state ? { training: state.buildings.training > 0, academy: state.buildings.academy > 0, direction: state.buildings.direction > 0, medical: state.buildings.medical > 0 } : {},
   };
   const hudKeys = inGame && !menu && !cinematic && !confirm && !preview; // raccourcis clavier du HUD (PC)
   const plotBadges = inGame && !cinematic ? actionablePlots(state) : [];
@@ -636,6 +639,16 @@ export default function App({ preview = null }) {
           />
         )}
       </Presence>
+      <Presence>
+        {inGame && panel === 'medical' && (
+          <MedicalView
+            state={state}
+            run={run}
+            onClose={() => setPanel(null)}
+            onBuilding={() => { const plot = plotOf(state, 'medical'); if (plot) selectPlot(plot.id, plot.sector); }}
+          />
+        )}
+      </Presence>
       {inGame && drills && <DrillRunner key={drillsKey} state={state} queue={drills} run={run} sound={sound.current} notify={notify} onClose={() => setDrills(null)} />}
       <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} tab={seasonTab} initialSel={boot.ui.seasonSel} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); openPanel('stats'); }} onPlayerSheet={setPeek} sheet={peekSheet} sheetOpen={peek !== null} />}</Presence>
       <Presence>{inGame && panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
@@ -660,6 +673,7 @@ export default function App({ preview = null }) {
             onAcademy={() => openAcademy()}
             onTraining={() => openTraining()}
             onDirection={() => { setDirectionTab('tv'); openPanel('direction'); }}
+            onMedical={() => openPanel('medical')}
             onTickets={() => { setSel(null); setDirectionTab('tickets'); openPanel('direction'); }}
             onPreview={setBuildView}
             onSwitchPlot={(id) => selectPlot(id, 'main')}

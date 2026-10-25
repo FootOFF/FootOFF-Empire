@@ -4,6 +4,7 @@ import {
 import { clamp, rnd } from './utils';
 import { REP_START, mercatoRep, sponsorRep } from './reputation';
 import { localTv, maxCut, tvPerMatch } from './direction';
+import { treatPct } from './medical';
 
 // Économie du club : affluence, recettes d'un match, revenus de saison, salaires, entretien.
 // Ordres de grandeur réalistes, du football amateur (quelques centaines de spectateurs, budgets de
@@ -192,7 +193,7 @@ const drillsAt = (lvl) => Object.values(DRILLS).filter((d) => d.level <= lvl);
 const newDrill = (lvl) => Object.values(DRILLS).find((d) => d.level === lvl && lvl > 1);
 
 // Famille d'un bâtiment (vitrine de construction) : ce qu'il apporte d'abord.
-export const BUILDING_KIND = { terrain: 'Revenus', training: 'Sport', academy: 'Sport', fans: 'Revenus', sponsor: 'Revenus', transfers: 'Mercato', direction: 'Revenus' };
+export const BUILDING_KIND = { terrain: 'Revenus', training: 'Sport', academy: 'Sport', fans: 'Revenus', sponsor: 'Revenus', transfers: 'Mercato', direction: 'Revenus', medical: 'Sport' };
 
 // Effets d'un bâtiment à un niveau, en chiffres (vitrine et fenêtre d'aperçu) : le premier est l'effet phare, celui
 // que montre la carte ; les suivants détaillent. Mêmes formules que buildingEffect.
@@ -246,6 +247,13 @@ export function buildingStats(key, lvl, s) {
         { label: 'Négociations', value: 'droits TV, salaires', sub: 'chances d’accord exactes' },
         { label: 'Billetterie', value: '4 formules', sub: 'recette prévue de chacune' },
       ];
+    case 'medical':
+      return [
+        { label: 'Soin d’une blessure légère', value: `${treatPct(lvl, 1)} %`, short: `Soins réussis à ${treatPct(lvl, 1)} %`, sub: 'un match d’absence en moins' },
+        { label: 'Soin d’une fracture', value: `${treatPct(lvl, 9)} %`, sub: 'neuf matchs d’absence' },
+        { label: 'Risque de blessure', value: `−${lvl * 8} %`, sub: 'en match, grâce à la prévention' },
+        { label: 'Coût d’un soin', value: '15 % du salaire', sub: 'annuel du joueur soigné' },
+      ];
     case 'transfers':
       return [
         { label: 'Joueurs sous contrat', value: fmt(officeSize(lvl)), short: `${officeSize(lvl)} joueurs suivis`, sub: 'sur ton mercato' },
@@ -278,6 +286,10 @@ export function buildingEffect(key, lvl, divIndex, rep = REP_START) {
       return lvl > 0
         ? `Négociations du club : droits TV +${lvl * 8} %${DIVISIONS[divIndex].tv ? '' : ` (télé locale : ${fmt(localTv(lvl))} € par match)`}, hausse à demander chaque saison · baisses de salaire jusqu’à ${Math.round(maxCut(lvl) * 100)} % · formule des billets.`
         : 'Pas de négociations tant que la Direction du club n’est pas construite.';
+    case 'medical':
+      return lvl > 0
+        ? `Soins des blessés : un par joueur et par date, réussis à ${treatPct(lvl, 1)} % pour une blessure légère, ${treatPct(lvl, 9)} % pour une fracture · risque de blessure en match −${lvl * 8} %.`
+        : 'Pas de soins tant que le centre médical n’est pas construit : un blessé attend sa guérison.';
     case 'transfers':
       return lvl > 0
         ? `Réseau de recruteurs : ${officeSize(lvl)} joueurs sous contrat sur ton mercato · indemnités −${lvl * 3} % · vendeurs plus conciliants · potentiel mieux cerné.`

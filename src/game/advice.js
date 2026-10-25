@@ -3,6 +3,7 @@ import { BUILDINGS, POS_LABELS, SQUAD_MAX, YOUTH_LEAVE_AGE, YOUTH_PLACES, upgrad
 import { leavingYouth } from './academy';
 import { LINES, sessionOf, windowKey } from './training';
 import { PLOTS, allowedBuildingsFor, plotBuilding, plotOf } from './map';
+import { treatFee, treatOpen } from './medical';
 import { autoLineup, fitWeight, lineupRating, slotsOf } from './tactics';
 import { costOf, ratingAt, wageOf } from './players';
 import { fitGain, pendingCounters, poolOf } from './mercato';
@@ -77,11 +78,15 @@ export function actionablePlots(s) {
 }
 
 // Bâtiment conseillé par le staff dans la vitrine de construction : le centre d'entraînement d'abord (toute
-// l'équipe progresse), puis celui qui rembourse le plus vite son prix et son entretien, sinon le premier proposé.
+// l'équipe progresse), puis l'académie, puis celui qui rembourse le plus vite son prix et son entretien, sinon le
+// premier proposé.
 export function recommendedBuilding(s) {
   const options = allowedBuildingsFor(s);
   if (!options.length) return null;
+  // l'académie avant les bâtiments qui rapportent : des jeunes gratuits à fort potentiel, qui font monter le club et
+  // se revendent (classée sur la seule rentabilité, elle passait après tous les autres)
   if (options.includes('training')) return 'training';
+  if (options.includes('academy')) return 'academy';
   const paying = options
     .map((k) => [k, investmentPreview(s, k).payback])
     .filter(([, p]) => p !== null)
@@ -122,16 +127,18 @@ export function dockSignals(s) {
   const deals = (s.offers || []).length + pendingCounters(s).length;
   const session = trainingTodo(s).length > 0;
   const youth = s.buildings.academy > 0 && leavingYouth(s).length > 0;
+  // un blessé à soigner aujourd'hui, et de quoi payer le soin (centre médical)
+  const care = s.players.some((p) => treatOpen(s, p) && s.money >= treatFee(s, p));
   const red = forecast.net < 0;
   return {
     empire: plots.some((id) => id !== 't0') ? 'dot' : null,
     stadium: plots.includes('t0') || (gate.demand > gate.capacity * 1.05 && s.buildings.terrain < BUILDINGS.terrain.max) ? 'dot' : null,
-    squad: session || youth ? 'dot' : null,
+    squad: session || youth || care ? 'dot' : null,
     // mercato : offres reçues et contre-propositions à traiter avant la prochaine journée, en nombre
     mercato: deals || (bestSigning(s) ? 'dot' : null),
     club: red ? 'warn' : null,
     items: {
-      training: session ? 'dot' : null, academy: youth ? 'dot' : null, finances: red ? 'dot' : null,
+      training: session ? 'dot' : null, academy: youth ? 'dot' : null, medical: care ? 'dot' : null, finances: red ? 'dot' : null,
       'mercato:offers': deals || null, // offres et contre-propositions à traiter
       'mercato:watch': followedCount(s) ? { n: followedCount(s), tone: 'muted', label: `${followedCount(s)} joueurs suivis` } : null,
     },

@@ -457,7 +457,107 @@ function directionMesh(lvl) {
   return g;
 }
 
-const BUILDERS = { training: trainingMesh, academy: academyMesh, fans: fansMesh, sponsor: sponsorMesh, transfers: transfersMesh, direction: directionMesh };
+// ---------- Centre médical (niveaux 1 à 5) ----------
+// Façades claires, croix verte de pharmacie en enseigne lumineuse (jamais la croix rouge, emblème protégé), bassins
+// de récupération bleus ; du cabinet du kiné au campus de médecine du sport avec son héliport.
+const crossTex = () => canvasTexture('medCross', 256, 256, (g2, w, h) => {
+  g2.fillStyle = '#0b0b0c'; g2.fillRect(0, 0, w, h);
+  g2.strokeStyle = 'rgba(199,161,90,.6)'; g2.lineWidth = 6; g2.strokeRect(6, 6, w - 12, h - 12);
+  g2.fillStyle = '#3fbf7f';
+  const a = w * 0.2, b = w * 0.6; // bras de la croix
+  g2.fillRect((w - a) / 2, (h - b) / 2, a, b);
+  g2.fillRect((w - b) / 2, (h - a) / 2, b, a);
+});
+const crossMat = () => {
+  const t = crossTex();
+  return mat('medCross', t ? { map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0.2, roughness: 0.4 } : { color: 0x3fbf7f }, 1.4);
+};
+const water = () => mat('medWater', { color: 0x2f86b0, metalness: 0.3, roughness: 0.12, emissive: 0x2f86b0, emissiveIntensity: 0.05 }, 0.35);
+const medGreen = () => mat('medGreen', { color: 0x3fbf7f, roughness: 0.5, emissive: 0x3fbf7f, emissiveIntensity: 0.05 }, 0.9);
+// enseigne : la croix sur un caisson sombre, face caméra (rotY : tournée vers un côté)
+function crossSign(g, x, y, z, size, rotY = 0) {
+  const sign = new THREE.Group();
+  sign.position.set(x, y, z);
+  sign.rotation.y = rotY;
+  sign.add(mesh(box(size + 0.08, size + 0.08, 0.06), M.canvas(), 0, 0, -0.035));
+  panel(sign, crossMat(), size, size, 0, 0, 0);
+  g.add(sign);
+}
+// bassin de récupération : margelle claire, eau bleue
+function pool(g, x, z, w, d) {
+  g.add(mesh(box(w + 0.12, 0.08, d + 0.12), M.facade(), x, 0.04, z));
+  const wv = mesh(box(w, 0.03, d), water(), x, 0.085, z);
+  wv.castShadow = false; g.add(wv);
+}
+function medicalMesh(lvl) {
+  const g = new THREE.Group();
+  if (lvl === 1) { // le cabinet : un pavillon clair, entrée vitrée, croix en enseigne, bande verte
+    plaza(g, S * 0.85, S * 0.34, S * 0.22);
+    g.add(mesh(box(S * 0.6, 0.62, S * 0.34), M.facade(), -S * 0.06, 0.31, -S * 0.15));
+    windowsOn(at(g, -S * 0.06), S * 0.6, 0.62, 1, -S * 0.15 + S * 0.17 + 0.02, 5);
+    g.add(mesh(box(S * 0.64, 0.07, S * 0.38), M.concreteDark(), -S * 0.06, 0.66, -S * 0.15));
+    g.add(mesh(box(S * 0.6, 0.06, 0.04), medGreen(), -S * 0.06, 0.56, -S * 0.15 + S * 0.17 + 0.03));
+    crossSign(g, S * 0.18, 0.98, -S * 0.15 + S * 0.17 + 0.04, 0.5);
+    g.add(mesh(box(0.06, 0.3, 0.06), M.steel(), S * 0.18, 0.8, -S * 0.15 + S * 0.17 - 0.02));
+    return g;
+  }
+  if (lvl === 2) { // le centre de soins : deux étages, aile de rééducation, croix sur le toit
+    plaza(g, S * 0.92, S * 0.36, S * 0.24);
+    const front = -S * 0.16 + S * 0.18;
+    g.add(mesh(box(S * 0.56, 1.0, S * 0.36), M.facade(), -S * 0.1, 0.5, -S * 0.16));
+    windowsOn(at(g, -S * 0.1), S * 0.56, 1.0, 2, front + 0.02, 5);
+    g.add(mesh(box(S * 0.6, 0.07, S * 0.4), M.concreteDark(), -S * 0.1, 1.04, -S * 0.16));
+    g.add(mesh(box(S * 0.56, 0.06, 0.04), medGreen(), -S * 0.1, 0.5, front + 0.03));
+    crossSign(g, -S * 0.1, 1.42, -S * 0.16, 0.6);
+    g.add(mesh(box(S * 0.3, 0.45, S * 0.3), darkGlass(), S * 0.3, 0.225, -S * 0.12)); // rééducation
+    g.add(mesh(box(S * 0.33, 0.05, S * 0.33), M.concreteDark(), S * 0.3, 0.47, -S * 0.12));
+    return g;
+  }
+  if (lvl === 3) { // la clinique du sport : trois étages, bassins de récupération, croix en façade
+    plaza(g, S * 0.95, S * 0.4, S * 0.24);
+    const front = -S * 0.18 + S * 0.19;
+    g.add(mesh(box(S * 0.56, 1.35, S * 0.38), M.facade(), -S * 0.14, 0.675, -S * 0.18));
+    windowsOn(at(g, -S * 0.14), S * 0.56, 1.35, 3, front + 0.02, 5);
+    g.add(mesh(box(S * 0.6, 0.08, S * 0.42), M.concreteDark(), -S * 0.14, 1.39, -S * 0.18));
+    for (let i = 0; i <= 3; i++) g.add(mesh(box(0.04, 1.35, 0.06), medGreen(), -S * 0.14 - S * 0.28 + (S * 0.56 / 3) * i, 0.675, front + 0.04));
+    crossSign(g, -S * 0.14, 1.75, -S * 0.18 + 0.1, 0.62);
+    pool(g, S * 0.28, -S * 0.12, S * 0.26, S * 0.2);
+    pool(g, S * 0.28, S * 0.1, S * 0.26, S * 0.12);
+    return g;
+  }
+  if (lvl === 4) { // le centre de médecine du sport : tour vitrée, pavillon de cryothérapie, bassins
+    plaza(g, S * 0.95, S * 0.42, S * 0.24);
+    const w = S * 0.44, d = S * 0.38, x = -S * 0.16, z = -S * 0.17;
+    g.add(mesh(box(w + 0.1, 0.5, d + 0.1), M.facade(), x, 0.25, z));
+    const h = 0.5 + tower(at(g, 0, 0.5), { x, z, w, d, floors: 4, fh: 0.42, band: false });
+    g.add(mesh(box(w + 0.08, 0.1, d + 0.08), medGreen(), x, h - 0.12, z));
+    crossSign(g, x, h + 0.42, z, 0.66);
+    g.add(mesh(cyl(S * 0.12, S * 0.12, 0.6, 24), M.facade(), S * 0.27, 0.3, -S * 0.16)); // cryothérapie
+    g.add(mesh(cyl(S * 0.09, S * 0.12, 0.22, 24), darkGlass(), S * 0.27, 0.71, -S * 0.16));
+    pool(g, S * 0.22, S * 0.12, S * 0.4, S * 0.14);
+    return g;
+  }
+  // niveau 5, le campus médical : deux bâtiments reliés, héliport sur le toit, bassins, croix sur deux faces
+  plaza(g, S * 0.98, S * 0.46, S * 0.24);
+  const w = S * 0.38, d = S * 0.36, x = -S * 0.2, z = -S * 0.18;
+  g.add(mesh(box(w + 0.1, 0.5, d + 0.1), M.facade(), x, 0.25, z));
+  const h = 0.5 + tower(at(g, 0, 0.5), { x, z, w, d, floors: 6, fh: 0.42, band: false });
+  g.add(mesh(box(w + 0.08, 0.1, d + 0.08), medGreen(), x, h - 0.12, z));
+  g.add(mesh(cyl(w * 0.42, w * 0.42, 0.05, 28), M.concreteDark(), x, h + 0.1, z)); // héliport
+  g.add(mesh(box(0.08, 0.02, w * 0.36), M.line(), x - w * 0.1, h + 0.135, z));
+  g.add(mesh(box(0.08, 0.02, w * 0.36), M.line(), x + w * 0.1, h + 0.135, z));
+  g.add(mesh(box(w * 0.2, 0.02, 0.08), M.line(), x, h + 0.135, z));
+  crossSign(g, x, h - 0.75, z + d / 2 + 0.08, 0.6);
+  const hB = tower(g, { x: S * 0.25, z: -S * 0.2, w: S * 0.3, d: S * 0.3, floors: 3, fh: 0.42, glassMat: M.facade(), band: false });
+  windowsOn(at(g, S * 0.25), S * 0.3, hB, 3, -S * 0.2 + S * 0.15 + 0.02, 3);
+  g.add(mesh(box(S * 0.3 + 0.06, 0.08, S * 0.3 + 0.06), medGreen(), S * 0.25, hB - 0.1, -S * 0.2));
+  crossSign(g, S * 0.25 + S * 0.15 + 0.05, hB * 0.6, -S * 0.2, 0.42, Math.PI / 2);
+  g.add(mesh(box(S * 0.14, 0.34, S * 0.14), darkGlass(), S * 0.02, 1.2, -S * 0.19)); // passerelle
+  pool(g, S * 0.18, S * 0.14, S * 0.46, S * 0.14);
+  return g;
+}
+
+const BUILDERS = { training: trainingMesh, academy: academyMesh, fans: fansMesh, sponsor: sponsorMesh, transfers: transfersMesh, direction: directionMesh, medical: medicalMesh };
 
 export function buildingMesh(key, lvl) {
   return (BUILDERS[key] || trainingMesh)(Math.max(1, lvl));

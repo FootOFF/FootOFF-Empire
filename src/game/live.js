@@ -3,6 +3,7 @@ import { capitalize, clubAfter, deName, isPluralClub, playerName } from './names
 import { shootout } from './cups';
 import { SLOTS, TACTICS, expectedGoals, formationOf, lineupRating, slotsOf } from './tactics';
 import { available, fitAt, fitFactor, ratingAt } from './players';
+import { injuryCut } from './medical';
 
 // Match en direct : simulation minute par minute, au fil de l'horloge du direct (advanceTo), avec une avance de
 // quelques minutes pour que la scène 3D prépare chaque action. Un changement ou une nouvelle tactique peut se décider
@@ -488,7 +489,8 @@ export function createLiveMatch(s, ctx) {
     for (const p of playersOn()) {
       if (p.pos === 'G') continue;
       const fit = fitAt(p, minute, since(p.id));
-      if (Math.random() >= INJURY_PER_MIN * (1 + INJURY_TIRED * (1 - fit / 100))) continue;
+      // centre médical : la prévention retire 8 % du risque par niveau (medical.js)
+      if (Math.random() >= INJURY_PER_MIN * (1 - injuryCut(s.buildings?.medical || 0)) * (1 + INJURY_TIRED * (1 - fit / 100))) continue;
       const iat = minute - Math.random() * 0.9;
       m.out.add(p.id);
       m.gone.add(p.id);

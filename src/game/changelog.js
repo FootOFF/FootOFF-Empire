@@ -4,6 +4,15 @@
 
 export const CHANGELOG = [
   {
+    version: '0.4.0', date: '2026-10-25', title: 'Centre médical',
+    items: [
+      'Nouveau bâtiment : le centre médical. Entre deux matchs, fais soigner tes blessés : un soin par joueur et par date, avec sa chance exacte de le faire revenir un match plus tôt (une blessure légère soignée, il est disponible pour le prochain match).',
+      'Sa prévention réduit aussi le risque de blessure en match : −8 % par niveau, jusqu’à −40 %.',
+      'Nouvel onglet « Médical » dans l’Équipe ; la notification des blessés y mène une fois le centre construit.',
+      'Construction conseillée : l’académie passe juste après le centre d’entraînement, avant l’espace supporters.',
+    ],
+  },
+  {
     version: '0.3.17', date: '2026-10-25', title: 'Réponse claire aux baisses de salaire',
     items: [
       'Direction › Salaires : après ta proposition, la réponse du joueur s’affiche à sa place (accord et nouveau salaire, ou refus) ; plus de bouton « Proposer » qui menait à « Négociation impossible ».',

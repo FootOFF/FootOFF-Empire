@@ -393,7 +393,11 @@ limitée à 54 % de la hauteur et l'objectif s'efface pendant ce temps.
 Fiche d'une parcelle libre (`src/ui/inspector.jsx`, briques dans `src/ui/build.jsx`) : tous les bâtiments en cartes
 illustrées d'un coup d'œil, sans rien faire défiler (vignette rendue avec les modèles 3D du jeu,
 `public/ui/buildings/<bâtiment>_L<niveau>.webp`, famille, effet phare chiffré, prix ou « il manque … »). La
-recommandation du staff (`recommendedBuilding`) est choisie d'emblée et marquée « Conseillé ». Le bâtiment choisi
+recommandation du staff (`recommendedBuilding`) est choisie d'emblée et marquée « Conseillé » : le centre
+d'entraînement, puis l'académie (des jeunes gratuits à fort potentiel ; classée sur la seule rentabilité, elle passait
+après tous les bâtiments qui rapportent), puis le bâtiment le plus vite rentabilisé. Comparé sur 24 carrières de 15
+saisons (`tools/sim/career.mjs 15 24`) : Elite atteinte une saison plus tôt en médiane, moins de descentes (46 contre 53),
+plus de trésorerie en début de partie ; moins de titres d'Elite en 15 saisons (6 carrières sur 24 contre 11). Le bâtiment choisi
 se dessine en hologramme doré sur la parcelle (`holo` d'Empire3D : corps translucide, arêtes, sortie de terre),
 la caméra le cadre dans la zone libre puis oscille lentement autour, comme en vitrine.
 
@@ -505,6 +509,29 @@ ailettes dorées et fontaine, grand siège à rotonde), vignettes `public/ui/bui
   complet » y mène aussi.
 Les chances affichées sont celles du tirage (vérifié sur 3 000 négociations). Aperçus : `?ecran=direction`,
 `direction-salaires`.
+
+## Centre médical
+
+Nouveau bâtiment (2026-10-25, demande de l'utilisateur : « un bâtiment qui permet de soigner les joueurs blessés ») :
+`medical` dans `BUILDINGS` (4 500 €, cinq niveaux, famille Sport, septième et dernière parcelle), modèle procédural
+`medicalMesh` (`src/three/procedural.js` : cabinet, centre de soins, clinique du sport et ses bassins, tour et pavillon
+de cryothérapie, campus à héliport ; croix verte de pharmacie en enseigne lumineuse, jamais la croix rouge, emblème
+protégé), vignettes `public/ui/buildings/medical_L*.webp`. Logique dans `src/game/medical.js`, écran
+`src/ui/medical.jsx` (panneau `medical`, onglet « Médical » de la section Équipe, cadenassé tant qu'il n'est pas
+construit ; un clic sur le bâtiment l'ouvre aussi) :
+- Prévention : en match, le risque de blessure par minute est multiplié par 1 − 0,08 × niveau (`live.js`, `injuryCut`) :
+  −40 % au niveau 5 (mesuré : 0,229 → 0,149 blessure par match sur 1 800 matchs).
+- Soins : un soin par joueur blessé et par date du calendrier (`p.treated.at`, `dateKey`), payé 15 % de son salaire
+  annuel (dépense « Soins médicaux » des finances). Chance exacte en centièmes : 32 + 9 × niveau − 5 × (matchs restants
+  − 1), bornée de 10 à 85 % (41 % pour un coup au niveau 1, 77 % au niveau 5 ; une fracture descend à 10 %). Réussi : un
+  match d'absence en moins, et une blessure d'un match est guérie (disponible au prochain match) ; raté, la blessure
+  suit son cours. La réponse s'affiche sur place, comme à la Direction (vert ou rouge) ; un joueur guéri reste
+  affiché jusqu'au match suivant. Chances vérifiées sur 4 000 soins par cas.
+- Pastille sur l'onglet Médical et la section Équipe quand un blessé peut être soigné et que la caisse le permet ; la
+  notification des blessés d'un match mène au centre médical une fois construit.
+Vignettes rendues dans une session cloud par `tmp/vign/index.html` (Three.js et `buildingMesh`, environnement
+`RoomEnvironment`, cadrage recalé sur les vignettes de la Direction ; `tmp/` n'est pas versionné). Aperçus :
+`?ecran=medical`, `medical-batiment`.
 
 ## Tutoriel des premiers pas
 

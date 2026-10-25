@@ -4311,6 +4311,10 @@ html, body { overscroll-behavior: none; }
 .dir-answer.ok strong { color: var(--green); }
 .dir-answer.ko { box-shadow: inset 3px 0 0 var(--red); background: rgba(224, 122, 111, .06); }
 .dir-answer.ko strong { color: #f0b3ab; }
+/* centre médical (medical.jsx) : les briques de la Direction ; une carte par blessé (gravité en rouge, guéri en vert) */
+.med-prev, .med-list { max-width: 760px; }
+.med-head .dir-wage b { color: #f0b3ab; }
+.med-card.cured .med-head .dir-wage b { color: var(--green); }
 @media (max-width: 760px) {
   .dir-card { padding: var(--s-4); }
   .dir-big b { font-size: 22px; }

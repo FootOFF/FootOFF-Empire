@@ -20,6 +20,7 @@ export const EXPENSE = [
   ['upkeep', 'Entretien'],
   ['works', 'Travaux'],
   ['signings', 'Recrutements'],
+  ['medical', 'Soins médicaux'],
 ];
 
 const fresh = (season, money) => ({ season, start: money, lines: {}, points: [money] });

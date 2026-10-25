@@ -21,10 +21,11 @@ import { fmtMoney, fmtRating } from './format';
 const pct = (v) => `${Math.round(v * 100)} %`;
 const tone = (c) => (c >= 0.7 ? 'good' : c >= 0.4 ? 'mid' : 'low');
 
-function Chance({ value }) {
+// jauge de la chance exacte d'accord (aussi au centre médical, chance d'un soin)
+export function Chance({ value, label = 'Chance d’accord' }) {
   return (
     <div className={`dir-chance ${tone(value)}`}>
-      <span>Chance d’accord</span>
+      <span>{label}</span>
       <b>{pct(value)}</b>
       <i aria-hidden="true"><em style={{ width: `${Math.round(value * 100)}%` }} /></i>
     </div>

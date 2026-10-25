@@ -26,10 +26,11 @@ export const BLURB = {
   sponsor: 'Des partenaires qui paient chaque saison, et des revenus pendant ton absence.',
   transfers: 'Des recruteurs qui t’ouvrent le marché des joueurs sous contrat.',
   direction: 'Le bureau du président : tu y négocies les droits TV, les salaires et la billetterie.',
+  medical: 'Tes kinés soignent les blessés pour les faire revenir plus vite, et la prévention en évite.',
 };
 
 // Ce que rapporte un niveau, avant de cliquer : recettes en plus par saison, entretien, rentabilité.
-const SPORTING = { training: 'il fait progresser l’équipe', academy: 'il forme de jeunes talents', transfers: 'il ouvre le marché des joueurs sous contrat' };
+const SPORTING = { training: 'il fait progresser l’équipe', academy: 'il forme de jeunes talents', transfers: 'il ouvre le marché des joueurs sous contrat', medical: 'il soigne et protège tes joueurs' };
 export function Payoff({ state, k, target, compact = false }) {
   const inv = investmentPreview(state, k, target);
   if (SPORTING[k]) {

@@ -6,7 +6,7 @@ import { advisedPlan } from '../game/academy';
 import { seasonFixtures } from '../game/fixtures';
 import { matchContext, startSeason } from '../game/season';
 import { costOf, playerRating } from '../game/players';
-import { BUYERS, counterFor, lastWordOf, outbidChance, poolOf, roundKey, roundTo, valueOf } from '../game/mercato';
+import { BUYERS, counterFor, dateKey, lastWordOf, outbidChance, poolOf, roundKey, roundTo, valueOf } from '../game/mercato';
 import { distinctClubName } from '../game/names';
 
 // Mode aperçu (galerie d'écrans) : une partie fictive, jamais sauvegardée, et l'écran demandé déjà ouvert.
@@ -56,6 +56,8 @@ export const SCREENS = [
   ['entrainement-batiment', 'Inspecteur · centre d’entraînement'],
   ['direction', 'Direction du club · droits TV'],
   ['direction-salaires', 'Direction du club · salaires'],
+  ['medical', 'Centre médical · blessés et soins'],
+  ['medical-batiment', 'Inspecteur · centre médical'],
   ['comparateur', 'Comparateur radar'],
   ['avant-match', 'Avant-match'],
   ['direct', 'Match en direct'],
@@ -132,6 +134,14 @@ export function previewState(screen) {
   if (MERCATO.includes(screen)) mercatoPreview(s, screen);
   if (screen.startsWith('academie')) academyPreview(s, screen);
   if (screen.startsWith('entrainement')) trainingPreview(s);
+  if (screen.startsWith('medical')) { // centre médical niveau 2 : trois blessés, dont un soigné aujourd'hui avec succès
+    s.money = 1e6; build(s, 't4', 'medical'); upgrade(s, 'medical'); s.money = 42000;
+    const [a, b, c] = [...s.players].filter((p) => p.pos !== 'G').sort((x, y) => playerRating(y) - playerRating(x));
+    a.injury = { out: 3, total: 3, label: 'Entorse' };
+    b.injury = { out: 6, total: 6, label: 'Déchirure musculaire' };
+    c.injury = { out: 1, total: 2, label: 'Élongation' };
+    c.treated = { at: dateKey(s), ok: true, before: 2 };
+  }
   if (screen.startsWith('direction')) { s.money = 1e6; build(s, 't3', 'direction'); upgrade(s, 'direction'); s.money = 42000; } // Direction du club, niveau 2
   if (screen === 'bilan' || screen === 'bilan-champion') {
     while (s.round < 7) playRound(s);
@@ -296,6 +306,8 @@ export function previewUi(screen, s) {
     case 'entrainement': return { panel: 'training' };
     case 'direction': return { panel: 'direction' };
     case 'direction-salaires': return { panel: 'direction', directionTab: 'wages' };
+    case 'medical': return { panel: 'medical' };
+    case 'medical-batiment': return { sel: { plotId: 't4', sector: 'main' } };
     case 'entrainement-joueur': return { panel: 'training', training: { chooser: 'D' } };
     case 'entrainement-programmes': return { panel: 'training', trainingTab: 'programs' };
     case 'entrainement-programme': return { panel: 'training', trainingTab: 'programs', training: { program: s.players.find((p) => !s.training?.programs?.[p.id] && programsFor(s, p).length)?.id } };

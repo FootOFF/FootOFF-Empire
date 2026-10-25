@@ -4,7 +4,7 @@ import { uiSound } from './uisound';
 
 // Navigation du jeu : cinq sections au menu du bas (Complexe, Équipe, Mercato, Saison, Club). Chaque panneau
 // appartient à une section ; son en-tête porte le nom de la section et, en onglets, les écrans voisins de la même
-// section (Équipe : Joueurs, Composition, Entraînement, Académie, Anciens). Un onglet est un panneau, ou un panneau
+// section (Équipe : Joueurs, Composition, Entraînement, Académie, Médical, Anciens). Un onglet est un panneau, ou un panneau
 // ouvert sur un de ses onglets internes (« squad:lineup » : l'Effectif sur la Composition).
 
 export const SECTIONS = {
@@ -15,6 +15,7 @@ export const SECTIONS = {
       ['squad:lineup', 'Composition'],
       ['training', 'Entraînement'],
       ['academy', 'Académie'],
+      ['medical', 'Médical'],
       ['squad:alumni', 'Anciens'],
     ],
   },
@@ -48,7 +49,7 @@ export const SECTIONS = {
 };
 
 const SECTION_OF = {
-  squad: 'equipe', training: 'equipe', academy: 'equipe',
+  squad: 'equipe', training: 'equipe', academy: 'equipe', medical: 'equipe',
   mercato: 'mercato',
   season: 'saison', stats: 'saison', trophies: 'saison',
   finances: 'club', journal: 'club', reputation: 'club', direction: 'club',
@@ -56,10 +57,10 @@ const SECTION_OF = {
 export const sectionOf = (panel) => SECTION_OF[panel] || null;
 
 // Bâtiments qui ouvrent un onglet : tant qu'ils ne sont pas construits, l'onglet reste visible, cadenassé.
-export const LOCKS = { training: 'training', academy: 'academy', direction: 'direction' };
+export const LOCKS = { training: 'training', academy: 'academy', direction: 'direction', medical: 'medical' };
 
 // Contexte fourni par App : panneau ouvert, onglets internes, bâtiments construits, et l'aller vers un onglet.
-// { panel, squadTab, seasonTab, mercatoView, built: { training, academy, direction }, go(key), badges }
+// { panel, squadTab, seasonTab, mercatoView, built: { training, academy, direction, medical }, go(key), badges }
 // Pastille d'un onglet (badges[clé]) : 'dot', un nombre (à traiter), ou { n, tone, label } (un compte discret).
 export const NavContext = createContext(null);
 export const useNav = () => useContext(NavContext);
