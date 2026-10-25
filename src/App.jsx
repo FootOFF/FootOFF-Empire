@@ -101,7 +101,10 @@ export default function App({ preview = null }) {
   const [squadTab, setSquadTab] = useState(boot.ui.squadTab && boot.ui.squadTab !== 'market' ? boot.ui.squadTab : 'players'); // onglet de l'Effectif (joueurs, composition, anciens)
   const [seasonTab, setSeasonTab] = useState(boot.ui.seasonTab || 'calendar'); // onglet de la Saison (calendrier, classement)
   const [navSwitch, setNavSwitch] = useState(false); // ouvert depuis un onglet de la même section : sans glissement
-  const [squadSheet, setSquadSheet] = useState(null); // fiche joueur ouverte d'emblée (depuis une fiche carrière)
+  const [squadSheet, setSquadSheet] = useState(null); // fiche joueur ouverte d'emblée dans l'Effectif (notification)
+  // fiche joueur ouverte par-dessus Saison ou Stats : on la ferme et on retrouve l'écran tel quel (onglet, défilement)
+  const [peek, setPeek] = useState(null);
+  useEffect(() => { setPeek(null); }, [panel]);
   const [statsMatch, setStatsMatch] = useState(boot.ui.statsMatch || null); // 'last' : Stats Pass du dernier match ouvert d'emblée
   const [trophyTab, setTrophyTab] = useState('honours'); // onglet d'ouverture de la salle des trophées
   const [trophyFocus, setTrophyFocus] = useState([]); // succès à montrer d'emblée (notification d'un succès débloqué)
@@ -463,6 +466,10 @@ export default function App({ preview = null }) {
   // avant la création du club, la scène montre le complexe de départ
   const sceneState = state || (demo.current ||= createInitialState('FootOFF FC'));
 
+  // la fiche (et ce qu'elle ouvre : carrière, comparaison, mise en vente) posée sur le panneau en cours ; elle se retire
+  // d'elle-même une fois tout refermé (SquadView mode « sheet »)
+  const peekSheet = <Presence>{peek !== null && <SquadView key={peek} mode="sheet" state={state} run={run} ask={setConfirm} initialSheet={peek} onMercato={openMercato} onClose={() => setPeek(null)} />}</Presence>;
+
   return (
     <NavContext.Provider value={nav}>
     <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'mercato', 'academy', 'training', 'season', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''} ${navSwitch && panel ? 'nav-switch' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
@@ -623,11 +630,11 @@ export default function App({ preview = null }) {
         )}
       </Presence>
       {inGame && drills && <DrillRunner key={drillsKey} state={state} queue={drills} run={run} sound={sound.current} notify={notify} onClose={() => setDrills(null)} />}
-      <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} tab={seasonTab} initialSel={boot.ui.seasonSel} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); openPanel('stats'); }} onPlayerSheet={(id) => { setSquadSheet(id); setSquadTab('players'); setPanel('squad'); }} />}</Presence>
+      <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} tab={seasonTab} initialSel={boot.ui.seasonSel} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); openPanel('stats'); }} onPlayerSheet={setPeek} sheet={peekSheet} sheetOpen={peek !== null} />}</Presence>
       <Presence>{inGame && panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'reputation' && <ReputationPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'trophies' && <TrophyRoom key={navKey} state={state} initialTab={trophyTab} focus={trophyFocus} onClose={() => { setPanel(null); setTrophyTab('honours'); setTrophyFocus([]); }} />}</Presence>
-      <Presence>{inGame && panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} onClose={() => { setPanel(null); setStatsMatch(null); }} onPlayerSheet={(id) => { setSquadSheet(id); setSquadTab('players'); setPanel('squad'); }} />}</Presence>
+      <Presence>{inGame && panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} onClose={() => { setPanel(null); setStatsMatch(null); }} onPlayerSheet={setPeek} sheet={peekSheet} sheetOpen={peek !== null} />}</Presence>
       <Presence>
         {inGame && panel === 'finances' && (
           <FinancesPanel state={state} onClose={() => setPanel(null)} onOpenSquad={() => { setSquadTab('players'); setPanel('squad'); }} />

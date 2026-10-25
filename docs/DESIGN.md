@@ -559,6 +559,10 @@ départ / 20 », poste, nom en deux lignes, portrait, étiquettes Au club / Vend
 la fiche joueur dit seulement « Voir sa fiche joueur » (le libellé long débordait au téléphone). Le niveau de référence
 de la division (`divRef`) et le rang (`tierOf`) viennent de `src/ui/kit.jsx`, partagés par l'effectif, le mercato,
 l'académie, l'entraînement et la carrière.
+Depuis la Saison (les meilleurs du club) et les Stats (fiche carrière), la fiche joueur s'ouvre par-dessus le panneau
+en cours, sans passer à l'Équipe (`SquadView` en mode « sheet », état `peek` d'App) : la fermer (croix, Échap,
+glissement) ramène au même onglet, au même défilement, et à la fiche carrière qui l'a ouverte. Ce qu'elle ouvre
+(carrière, comparaison, mise en vente) s'empile de même ; seules les offres reçues mènent au Mercato.
 
 ## Mercato
 

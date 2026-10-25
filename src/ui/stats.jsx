@@ -665,7 +665,9 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
   );
 }
 
-export function StatsPanel({ state, onClose, initialMatch = null, onPlayerSheet }) {
+// sheet : la fiche joueur posée par-dessus (App), au-dessus de la fiche carrière qui l'a ouverte ; sheetOpen : elle a
+// la main sur Échap
+export function StatsPanel({ state, onClose, initialMatch = null, onPlayerSheet, sheet = null, sheetOpen = false }) {
   const matches = state.matches || [];
   const [tab, setTab] = useState(initialMatch ? 'matches' : 'club');
   const seasons = [...new Set([state.seasonNumber, ...matches.map((m) => m.season)])].sort((a, b) => b - a);
@@ -690,7 +692,7 @@ export function StatsPanel({ state, onClose, initialMatch = null, onPlayerSheet 
       title="Statistiques"
       eyebrow={`${plural(matches.length, 'match enregistré', 'matchs enregistrés')}`}
       onClose={onClose}
-      onEscape={onEscape}
+      onEscape={sheetOpen ? () => {} : onEscape}
       toolbar={(
         <Tabs items={[['club', 'Le club'], ['matches', 'Matchs'], ['players', 'Joueurs']]} value={tab} onChange={pick} />
       )}
@@ -698,6 +700,7 @@ export function StatsPanel({ state, onClose, initialMatch = null, onPlayerSheet 
         <>
           <Presence>{open && <StatsPass state={state} m={open} matches={matches} onClose={() => setOpen(null)} onPrev={() => go(-1)} onNext={() => go(1)} onCareer={setCareer} />}</Presence>
           <Presence>{career !== null && <PlayerCareer state={state} id={career} onClose={() => setCareer(null)} onSheet={onPlayerSheet} />}</Presence>
+          {sheet}
         </>
       )}
     >

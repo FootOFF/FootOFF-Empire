@@ -135,7 +135,8 @@ export function ZoneLegend({ state }) {
 }
 
 // tab : l'onglet (calendrier ou classement), piloté par les onglets de la section Saison (nav.jsx).
-export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = null, onOpenMatch, onPlay, onPlayerSheet }) {
+// sheet : la fiche joueur posée par-dessus (App) ; sheetOpen : elle a la main sur Échap
+export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = null, onOpenMatch, onPlay, onPlayerSheet, sheet = null, sheetOpen = false }) {
   const standings = standingsOf(state);
   const div = DIVISIONS[state.divisionIndex];
   const lm = state.lastMatch;
@@ -164,6 +165,8 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
       title={`Saison ${state.seasonNumber} · ${div.name}`}
       eyebrow={`${div.name} · Saison ${state.seasonNumber} · ${state.round ? `journée ${Math.min(state.round, 7)} / 7` : 'avant la 1re journée'}`}
       onClose={onClose}
+      onEscape={sheetOpen ? () => {} : undefined}
+      overlay={sheet}
       toolbar={(
         <>
           <div className="season-stats">

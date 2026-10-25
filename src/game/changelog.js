@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.10', date: '2026-10-25', title: 'Fiche joueur sur place',
+    items: [
+      'Saison et Statistiques : la fiche d’un joueur s’ouvre par-dessus l’écran en cours ; la fermer ramène au même endroit (même onglet, même défilement, fiche carrière comprise) au lieu de l’Équipe.',
+    ],
+  },
+  {
     version: '0.3.9', date: '2026-10-25', title: 'Cartes et liserés',
     items: [
       'Cartes des joueurs : la note, le poste, « XI » et le numéro forment une colonne à gauche, le portrait se place à côté ; une note à deux chiffres (11,6) ne chevauche plus le visage.',

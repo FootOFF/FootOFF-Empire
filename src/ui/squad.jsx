@@ -14,7 +14,7 @@ import { Panel } from './panels';
 import { PlayerCareer, departureText, reasonTag } from './career';
 import { LineupEditor } from './lineup';
 import { careerOf } from '../game/career';
-import { Presence } from './presence';
+import { Presence, useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { FollowButton, ListingSheet, Mercato, Negotiation, SaleNegotiation, SaleToggle, heat } from './mercato';
 import { Portrait } from './portrait';
@@ -147,6 +147,82 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
     if (next) setSheet({ ...sheet, id: next.id });
   };
 
+  // mode « sheet » : Échap passe par onEscape (pas de Panel ici), et le tout se retire quand plus rien n'est ouvert
+  useKeydown((e) => { if (mode === 'sheet' && e.key === 'Escape') onEscape(); });
+  const empty = !sheetPlayer && !compare && career === null && deal === null && listing === null && saleDeal === null;
+  useEffect(() => { if (mode === 'sheet' && empty) onClose(); }, [empty]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // fenêtres posées sur le panneau : fiche, comparateur, carrière, négociations, mise en vente
+  const overlays = (
+    <>
+      <Presence>{sheetPlayer && (
+        <PlayerSheet
+          p={sheetPlayer}
+          place={`${list.findIndex((q) => q.id === sheetPlayer.id) + 1} / ${list.length}`}
+          state={state}
+          run={run}
+          refLvl={ref}
+          market={!state.players.some((q) => q.id === sheetPlayer.id)}
+          onClose={() => setSheet(null)}
+          onPrev={() => step(-1)}
+          onNext={() => step(1)}
+          onCompare={() => openCompare(sheetPlayer)}
+          onOffers={openOffers}
+          onList={() => setListing(sheetPlayer.id)}
+          onOffer={() => offer(sheetPlayer)}
+          onCareer={() => setCareer(sheetPlayer.id)}
+        />
+      )}</Presence>
+      <Presence>{compare && find(compare.a) && find(compare.b) && (
+        <CompareView
+          state={state}
+          a={find(compare.a)}
+          b={find(compare.b)}
+          onPick={(id) => setCompare({ ...compare, a: id })}
+          onClose={() => setCompare(null)}
+          onOffer={offer}
+        />
+      )}</Presence>
+      <Presence>{career !== null && <PlayerCareer state={state} id={career} onClose={() => setCareer(null)} onSheet={(pid) => { setCareer(null); setSheet({ id: pid }); }} />}</Presence>
+      <Presence>{dealPlayer && (
+        <Negotiation
+          key={dealPlayer.id}
+          state={state}
+          p={dealPlayer}
+          run={run}
+          refLvl={ref}
+          onClose={() => setDeal(null)}
+          onSheet={(id) => { setDeal(null); setCompare(null); setSheet({ id }); }}
+          onLineup={() => { setDeal(null); setCompare(null); setSheet(null); setTab('lineup'); }}
+        />
+      )}</Presence>
+      <Presence>{listingPlayer && (
+        <ListingSheet
+          key={listingPlayer.id}
+          state={state}
+          p={listingPlayer}
+          run={run}
+          refLvl={ref}
+          onClose={() => setListing(null)}
+          onOffers={openOffers}
+        />
+      )}</Presence>
+      <Presence>{saleDeal && (
+        <SaleNegotiation
+          key={saleDeal.id}
+          state={state}
+          offerId={saleDeal.id}
+          since={saleDeal.since}
+          run={run}
+          refLvl={ref}
+          onClose={() => setSaleDeal(null)}
+          onSheet={(id) => { setSaleDeal(null); setSheet({ id }); }}
+        />
+      )}</Presence>
+    </>
+  );
+  if (mode === 'sheet') return overlays; // la fiche seule, posée sur un autre panneau (Saison, Stats : voir App)
+
   return (
     <Panel
       id={mode === 'mercato' ? 'mercato' : 'squad'}
@@ -165,74 +241,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
         </div>
         </>
       )}
-      overlay={(
-        <>
-          <Presence>{sheetPlayer && (
-            <PlayerSheet
-              p={sheetPlayer}
-              place={`${list.findIndex((q) => q.id === sheetPlayer.id) + 1} / ${list.length}`}
-              state={state}
-              run={run}
-              refLvl={ref}
-              market={!state.players.some((q) => q.id === sheetPlayer.id)}
-              onClose={() => setSheet(null)}
-              onPrev={() => step(-1)}
-              onNext={() => step(1)}
-              onCompare={() => openCompare(sheetPlayer)}
-              onOffers={openOffers}
-              onList={() => setListing(sheetPlayer.id)}
-              onOffer={() => offer(sheetPlayer)}
-              onCareer={() => setCareer(sheetPlayer.id)}
-            />
-          )}</Presence>
-          <Presence>{compare && find(compare.a) && find(compare.b) && (
-            <CompareView
-              state={state}
-              a={find(compare.a)}
-              b={find(compare.b)}
-              onPick={(id) => setCompare({ ...compare, a: id })}
-              onClose={() => setCompare(null)}
-              onOffer={offer}
-            />
-          )}</Presence>
-          <Presence>{career !== null && <PlayerCareer state={state} id={career} onClose={() => setCareer(null)} onSheet={(pid) => { setCareer(null); setSheet({ id: pid }); }} />}</Presence>
-          <Presence>{dealPlayer && (
-            <Negotiation
-              key={dealPlayer.id}
-              state={state}
-              p={dealPlayer}
-              run={run}
-              refLvl={ref}
-              onClose={() => setDeal(null)}
-              onSheet={(id) => { setDeal(null); setCompare(null); setSheet({ id }); }}
-              onLineup={() => { setDeal(null); setCompare(null); setSheet(null); setTab('lineup'); }}
-            />
-          )}</Presence>
-          <Presence>{listingPlayer && (
-            <ListingSheet
-              key={listingPlayer.id}
-              state={state}
-              p={listingPlayer}
-              run={run}
-              refLvl={ref}
-              onClose={() => setListing(null)}
-              onOffers={openOffers}
-            />
-          )}</Presence>
-          <Presence>{saleDeal && (
-            <SaleNegotiation
-              key={saleDeal.id}
-              state={state}
-              offerId={saleDeal.id}
-              since={saleDeal.since}
-              run={run}
-              refLvl={ref}
-              onClose={() => setSaleDeal(null)}
-              onSheet={(id) => { setSaleDeal(null); setSheet({ id }); }}
-            />
-          )}</Presence>
-        </>
-      )}
+      overlay={overlays}
     >
         {tab === 'players' ? (
           <>
