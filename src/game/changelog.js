@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.14', date: '2026-10-25', title: 'Notes entières au mercato',
+    items: [
+      'Mercato : la note posée sur le portrait d’un joueur s’élargit avec elle ; une note à deux chiffres (10,5) n’est plus rognée.',
+    ],
+  },
+  {
     version: '0.3.13', date: '2026-10-25', title: 'Plus de loupe, tarifs à la Direction',
     items: [
       'iPhone : un double toucher maintenu n’ouvre plus la loupe de texte de Safari, nulle part dans le jeu ; un bouton touché deux fois de suite répond toujours deux fois.',

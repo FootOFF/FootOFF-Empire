@@ -3896,7 +3896,9 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 @media (hover: hover) { .mc-card:hover { filter: brightness(1.06); } }
 .mc-name { font-family: var(--font-disp); font-weight: 700; font-size: 21px; line-height: 1; letter-spacing: .01em; text-transform: uppercase; }
 .mc-medal { border: 0; border-radius: 0; background: var(--plate-3); clip-path: var(--cut-shape-sm); }
-.mc-face .mc-medal { border-radius: 0; background: var(--plate-solid); clip-path: var(--skew); --slant: 5px; width: 38px; height: 26px; right: -16px; bottom: -4px; flex-direction: row; gap: 3px; box-shadow: none; }
+/* largeur au contenu : une note à deux chiffres (« 10,5 ») ne se fait plus rogner par les coins en biais ; la marge
+   intérieure couvre le biais de chaque côté, la pastille s'élargit vers le portrait (ancrée à droite) */
+.mc-face .mc-medal { border-radius: 0; background: var(--plate-solid); clip-path: var(--skew); --slant: 5px; width: auto; min-width: 38px; padding: 0 calc(var(--slant) + 3px); height: 26px; right: -16px; bottom: -4px; flex-direction: row; gap: 3px; box-shadow: none; }
 .mc-face .mc-medal b { font-size: 17px; }
 .mc-face .mc-medal span { display: none; }
 .mc-medal.good b { color: var(--gold-light); }

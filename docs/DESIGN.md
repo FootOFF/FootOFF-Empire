@@ -588,7 +588,8 @@ gain pour le onze, repères, prix, suivre, « Offre ») ; « Cartes / Tableau »
   suivis courtisés ou partis), recherche par nom ou par club (sans accents ni majuscules), filtres (poste, statut,
   dans mes moyens, renforce mon onze, pépites), tri en menu compact. Cartes (refaites le 2026-10-24, « moderne et
   super esthétique ») : teinte du rang pour la division comme les cartes de l'Effectif (bronze, argent, or, élite),
-  note en médaille, club et écusson, âge, poste et salaire, trois meilleures qualités en grands chiffres, jauge du
+  note en médaille (parallélogramme posé sur le portrait, large au contenu avec une marge qui couvre le biais : une note
+  à deux chiffres n'est jamais rognée), club et écusson, âge, poste et salaire, trois meilleures qualités en grands chiffres, jauge du
   niveau et de la fourchette du potentiel sur l'échelle de 0 à 20, étoile pour suivre, comparateur ; étiquettes Recommandé, Onze +x, Courtisé, Nouveau, Pépite,
   Bonne affaire, Prix en hausse ou en baisse, Fin de contrat ; prix (rouge s'il dépasse la trésorerie), tendance,
   « Faire une offre ». Le réseau de recruteurs (bureau des transferts) ferme la liste.
