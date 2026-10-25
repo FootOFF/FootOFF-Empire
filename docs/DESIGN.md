@@ -496,7 +496,9 @@ ailettes dorées et fontaine, grand siège à rotonde), vignettes `public/ui/bui
 - Salaires : une baisse proposée par joueur et par saison, jusqu'à 14 % (niveau 1) à 30 % (niveau 5), avec l'économie
   sur la saison et la chance exacte d'accord (un joueur fort pour la division résiste davantage). Acceptée, la baisse
   reste (`wageCut`) jusqu'à une prochaine renégociation ; la prime de signature et la valeur de revente partent du
-  salaire de référence.
+  salaire de référence. La réponse remplace la négociation, sur place : accord (vert : nouveau salaire, économie) ou
+  refus (rouge : salaire gardé, prochaine discussion la saison suivante), « Fermer » la replie ; plus de bouton
+  « Proposer » pour un joueur déjà consulté (il ne menait qu'à « Négociation impossible »).
 - Billetterie : la formule des billets avec la recette prévue de chacune. C'est le seul endroit où elle se règle : la
   fiche du stade montre le tarif en vigueur, le public et la recette attendus (`TicketSummary`), avec « Changer le tarif
   · Direction du club » qui ouvre cet onglet (une fois la Direction construite). Le conseil du staff « Ton stade affiche

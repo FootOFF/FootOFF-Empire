@@ -4305,6 +4305,12 @@ html, body { overscroll-behavior: none; }
 .dir-wage b { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .dir-talk { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4); margin-top: 6px; border-radius: 0; border: 0; box-shadow: inset 3px 0 0 var(--gold-light); clip-path: var(--cut-shape-sm); background: rgba(222, 193, 127, .05); }
 .dir-talk .btn { align-self: flex-start; }
+/* réponse du joueur, à la place de la négociation : accord (vert) ou refus (rouge) */
+.dir-answer strong { font-family: var(--font-disp); font-weight: 700; font-size: 21px; line-height: 1.1; letter-spacing: .02em; }
+.dir-answer.ok { box-shadow: inset 3px 0 0 var(--green); background: rgba(122, 196, 140, .07); }
+.dir-answer.ok strong { color: var(--green); }
+.dir-answer.ko { box-shadow: inset 3px 0 0 var(--red); background: rgba(224, 122, 111, .06); }
+.dir-answer.ko strong { color: #f0b3ab; }
 @media (max-width: 760px) {
   .dir-card { padding: var(--s-4); }
   .dir-big b { font-size: 22px; }

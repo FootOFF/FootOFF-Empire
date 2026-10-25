@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.17', date: '2026-10-25', title: 'Réponse claire aux baisses de salaire',
+    items: [
+      'Direction › Salaires : après ta proposition, la réponse du joueur s’affiche à sa place (accord et nouveau salaire, ou refus) ; plus de bouton « Proposer » qui menait à « Négociation impossible ».',
+    ],
+  },
+  {
     version: '0.3.16', date: '2026-10-25', title: 'Fiche joueur visible depuis les Stats',
     items: [
       'Statistiques : « Voir sa fiche joueur » depuis une fiche carrière affiche bien la fiche (elle s’ouvrait derrière la carrière) ; la fermer ramène à la carrière.',
