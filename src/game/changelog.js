@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    version: '0.4.3', date: '2026-10-25', title: 'Condition en pourcentage sur le terrain',
+    items: [
+      'Composition, avant-match, mi-temps et changement en direct : le pourcentage de condition s’affiche sous chaque joueur, même quand il est au vert.',
+      '3-5-2 et 5-3-2 : joueurs un peu mieux espacés, pour qu’aucune note ne cache la condition d’un voisin (sur téléphone comme sur PC).',
+    ],
+  },
+  {
     version: '0.4.2', date: '2026-10-25', title: 'Réponses et chances justes à la Direction',
     items: [
       'Direction › Salaires : quand un joueur refuse une baisse qu’il avait déjà acceptée une saison passée, l’écran annonce bien un refus (il gardait « accepte »). Sa baisse déjà obtenue reste.',

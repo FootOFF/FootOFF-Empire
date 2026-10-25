@@ -69,7 +69,7 @@ export function BestEleven({ players, lineup, formation, onApply }) {
   );
 }
 
-// Condition physique sous le nom : la barre, et le pourcentage dès qu'il baisse (sous 75 %).
+// Condition physique sous le nom : la barre et le pourcentage, toujours (vert, ambre sous 75 %, rouge sous 50 %).
 const FIT_TONE = (f) => (f >= 75 ? 'good' : f >= 50 ? 'mid' : 'low');
 function FitBar({ value }) {
   if (value == null) return null;
@@ -78,7 +78,7 @@ function FitBar({ value }) {
   return (
     <span className={`lu-fit ${tone}`} title={`Condition physique : ${v} %`} aria-label={`condition ${v} %`}>
       <span className="lu-fit-bar"><i style={{ width: `${v}%` }} /></span>
-      {tone !== 'good' && <em>{v} %</em>}
+      <em>{v} %</em>
     </span>
   );
 }
@@ -312,7 +312,7 @@ export function LineupEditor({ state, run }) {
           <p><i className="lu-dot" /><span>Le chiffre à côté du portrait est le niveau du joueur <b>à ce poste</b>.</span></p>
           <p><i className="lu-dot off" /><span>Contour en pointillés rouges : il joue hors de son poste{offPos ? ` (${offPos} dans ton onze)` : ''}.</span></p>
           <p><i className="lu-dot alt" /><span>Joueur choisi : chaque poste affiche le niveau qu’il y aurait, en vert s’il y ferait mieux, en rouge sinon.</span></p>
-          <p><i className="lu-dot fit" /><span>Barre sous le nom : condition physique. Un joueur fatigué joue moins bien et se blesse plus souvent ; les absents (blessés, suspendus) restent sur le banc, grisés.</span></p>
+          <p><i className="lu-dot fit" /><span>Barre et pourcentage sous le nom : condition physique. Un joueur fatigué joue moins bien et se blesse plus souvent ; les absents (blessés, suspendus) restent sur le banc, grisés.</span></p>
           <p className="muted small">Ce onze est repris à l’avant-match, où tu peux encore le retoucher.</p>
         </div>
       </aside>

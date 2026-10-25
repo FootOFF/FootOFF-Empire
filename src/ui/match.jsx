@@ -669,7 +669,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
           </div>
           {board && <div className="ht-col ht-board">
             <div className="ht-board-head">
-              <span className="ht-label">Ton équipe · pastille : note du match · barre : condition</span>
+              <span className="ht-label">Ton équipe · pastille : note du match · sous le nom : condition</span>
               <button type="button" className="linkbtn ht-board-close" onClick={() => setBoard(false)}>Replier</button>
             </div>
             {boardEl}

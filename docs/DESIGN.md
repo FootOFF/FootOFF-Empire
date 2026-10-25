@@ -807,8 +807,11 @@ occasions des deux équipes et sur la possession. Le pronostic en tient compte (
 ## Composition sur le terrain
 
 Un seul composant (`LineupBoard`, `src/ui/lineup.jsx`) pour l'onglet Composition de l'Effectif (enregistré à chaque
-geste, repris à l'avant-match), l'avant-match, la mi-temps et les changements en cours de jeu. Sous chaque joueur, une
-barre de condition physique (vert, ambre, rouge ; `docs/JOUEURS.md`). Blessés et suspendus restent sur le banc, grisés
+geste, repris à l'avant-match), l'avant-match, la mi-temps et les changements en cours de jeu. Sous chaque joueur, sa
+condition physique : une barre et son pourcentage, toujours, même au vert (vert, ambre sous 75 %, rouge sous 50 % ;
+`docs/JOUEURS.md` ; choix de l'utilisateur, 2026-10-25). Sur téléphone la barre se raccourcit (24 px) ; positions du
+3-5-2 et du 5-3-2 et écart du terrain couché (PC) réglés pour qu'aucune note ne recouvre la condition d'un voisin
+(contrôle des chevauchements, six dispositifs, de 375 à 1440 px). Blessés et suspendus restent sur le banc, grisés
 avec leur motif, et ne peuvent pas entrer ; en match, un blessé encore sur le terrain (pastille rouge) ne peut qu'être
 remplacé, un joueur sorti ne revient pas. On glisse un joueur sur un poste ou sur un coéquipier,
 ou on en touche deux ; au doigt, un remplaçant se saisit après un court maintien (sinon le banc défile). Le joueur

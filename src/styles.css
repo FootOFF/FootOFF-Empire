@@ -2646,7 +2646,9 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   display: flex; flex-direction: column; align-items: center; gap: 5px;
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; cursor: grab; transition: opacity .2s;
 }
-@container lu (min-width: 600px) { .lu-chip { left: calc(5% + (100% - var(--y)) * .9); top: calc(9% + var(--x) * .82); } }
+/* terrain couché (large) : les joueurs d'une même ligne s'empilent ; écart vertical élargi pour que la condition
+   (barre et pourcentage) ne passe jamais sous le portrait du voisin (5-3-2, 3-5-2) */
+@container lu (min-width: 600px) { .lu-chip { left: calc(5% + (100% - var(--y)) * .9); top: calc(5% + var(--x) * .9); } }
 .lu-face { position: relative; width: 52px; height: 52px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(12, 13, 15, .9), 0 6px 16px rgba(0, 0, 0, .45); transition: box-shadow .2s, transform .2s var(--ease); }
 .lu-face .pf { display: block; width: 100%; height: 100%; border-radius: 50%; }
 /* marge intérieure = biais + 3 px : les coins en biais ne mordent jamais sur une note à deux chiffres (« 11,6 ») */
@@ -2695,7 +2697,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .lu-fit-bar i { display: block; height: 100%; background: var(--green); }
 .lu-fit.mid .lu-fit-bar i { background: var(--amber); }
 .lu-fit.low .lu-fit-bar i { background: var(--red); }
-.lu-fit em { font-style: normal; color: var(--amber); text-shadow: 0 1px 3px rgba(0, 0, 0, .7); }
+.lu-fit em { font-style: normal; color: var(--green); font-variant-numeric: tabular-nums; text-shadow: 0 1px 3px rgba(0, 0, 0, .7); }
+.lu-fit.mid em { color: var(--amber); }
 .lu-fit.low em { color: var(--red); }
 /* terrain dressé (téléphone, colonnes étroites) : des jetons plus petits ; les cartes du banc passent sur deux
    lignes (nom et niveau, puis poste et condition ou absence, sur toute la largeur) */
@@ -2710,7 +2713,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .lu-face { width: 40px; height: 40px; }
   .lu-rate { right: -15px; min-width: 28px; height: 19px; padding: 0 calc(var(--slant) + 3px); font-size: 14px; }
   .lu-name { font-size: 13px; letter-spacing: .02em; }
-  .lu-fit-bar { width: 34px; }
+  .lu-fit { gap: 4px; }
+  .lu-fit-bar { width: 24px; }
   .lu-fit em { font-size: 10px; }
   .lu-alt { right: -16px; }
 }
