@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.9', date: '2026-10-25', title: 'Cartes et liserés',
+    items: [
+      'Cartes des joueurs : la note, le poste, « XI » et le numéro forment une colonne à gauche, le portrait se place à côté ; une note à deux chiffres (11,6) ne chevauche plus le visage.',
+      'Le liseré doré fait tout le tour, coin coupé compris : succès tout juste débloqué, parcelle choisie, recrue conseillée, niveau de l’académie.',
+    ],
+  },
+  {
     version: '0.3.8', date: '2026-10-25', title: 'Mercato réparé',
     items: [
       'Le mercato s’ouvre de nouveau : la 0.3.7 le faisait planter (« Le jeu a rencontré un problème »).',

@@ -22,6 +22,11 @@ Inter, petites mentions techniques (touches, version) en Geist Mono. Tous les je
   se recalcule à chaque image (la 3D bouge derrière).
 - Découpe (`clip-path`) : elle rogne aussi les ombres et filtres de l'élément lui-même ; l'ombre portée se met sur
   un parent (étiquettes des parcelles en 3D), un anneau de focus devient un liseré intérieur.
+- Liseré sur un élément découpé (`inset 0 0 0 1px` ou bordure) : la découpe l'efface sur la diagonale du coin. Un
+  trait commun le redessine (`::after` de la règle « coin coupé d'un élément à liseré », dans `styles.css` après
+  `.glass`), réglé par `--corner` (taille du coin) et `--ring` (couleur) : succès tout juste débloqué, parcelle
+  choisie, recrue conseillée du mercato, icône de niveau de l'académie. Tout nouvel élément à liseré et coin coupé
+  s'ajoute à cette règle.
 - Préfixes de classes réservés, sans partage : `lv-` direct, `lm-` carte du dernier match, `sc-` calendrier,
   `sq-sorter` menu de tri (`.sq-sort` est la flèche du tableau), `is-<phase>` pour l'horloge du direct (`.halftime`
   et `.fulltime` sont des panneaux).
@@ -530,7 +535,9 @@ Onglet Joueurs de l'Effectif (`src/ui/squad.jsx`, refait le 2026-10-24 : « mode
   chacun un contexte d'empilement ; sans cela les cartes la recouvraient et prenaient ses touchers (le tri semblait
   cassé au téléphone).
 - Habillage Tribune (maquette A6) : carte en plaque au coin coupé, bandeau du rang en haut (bronze, argent, or,
-  élite), niveau en grand, portrait de 96 px, nom en capitales, trois points forts, barre de condition (ou bandeau
+  élite), en haut une colonne (niveau en grand, poste et « XI », numéro) à la largeur de « 20,0 » sur toutes les
+  cartes, le portrait (90 px, 72 au téléphone) centré dans la place qui reste : une note à deux chiffres ne mord
+  jamais sur le médaillon. Puis nom en capitales, trois points forts, barre de condition (ou bandeau
   rouge d'absence), pied avec la fourchette du potentiel et la forme des cinq derniers matchs en pastilles penchées.
 - Fiche joueur (maquette A7) : en-tête en plaque (prénom au-dessus du nom en grand, poste, numéro, titulaire, pied),
   niveau et potentiel sur l'échelle de 0 à 20, puis condition, saison, carrière ; action principale collée en bas.

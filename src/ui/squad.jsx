@@ -397,14 +397,16 @@ function PlayerCard({ p, state, refLvl, index, onOpen }) {
   return (
     <li style={{ '--k': Math.min(index, 18) }}>
       <button type="button" className={`sqc ${tierOf(r, refLvl)} ${absent ? 'out' : ''}`} onClick={onOpen} aria-label={`Fiche de ${p.name}, niveau ${fmtRating(r)}${absent ? `, ${absent.short.toLowerCase()}` : ''}`}>
+        {/* colonne de gauche (note, poste, XI, numéro) à la largeur de « 20,0 », portrait dans la place qui reste :
+            une note à deux chiffres ne mord plus sur le médaillon */}
         <span className="sqc-top">
-          <span className="sqc-rating"><b>{fmtRating(r)}</b><span className={`pos-pill ${p.pos}`}>{p.pos}</span></span>
-          <span className="sqc-flags">
+          <span className="sqc-rating">
+            <b>{fmtRating(r)}</b>
+            <span className="sqc-tags"><span className={`pos-pill ${p.pos}`}>{p.pos}</span>{starter && <span className="sqc-xi" title="Titulaire">XI</span>}</span>
             {p.num != null && <em className="sqc-num">n°{p.num}</em>}
-            {starter && <span className="sqc-xi" title="Titulaire">XI</span>}
           </span>
+          <span className="sqc-face"><Portrait p={p} size={96} /></span>
         </span>
-        <span className="sqc-face"><Portrait p={p} size={96} /></span>
         <span className="sqc-name">{rest.length > 0 && <small>{first}</small>}<strong>{rest.length ? rest.join(' ') : first}</strong></span>
         <SaleTag state={state} p={p} />
         <span className="sqc-stats">
