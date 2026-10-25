@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    version: '0.4.2', date: '2026-10-25', title: 'Réponses et chances justes à la Direction',
+    items: [
+      'Direction › Salaires : quand un joueur refuse une baisse qu’il avait déjà acceptée une saison passée, l’écran annonce bien un refus (il gardait « accepte »). Sa baisse déjà obtenue reste.',
+      'Direction et centre médical : la jauge n’écrit 0 % ou 100 % que si c’est certain ; 99,6 % s’affiche 99 %, comme au mercato.',
+    ],
+  },
+  {
     version: '0.4.1', date: '2026-10-25', title: 'Navigation au doigt entre les sections',
     items: [
       'Sur téléphone, glisse un panneau vers la gauche ou la droite pour passer à la section voisine : Équipe, Mercato, Saison, Club.',

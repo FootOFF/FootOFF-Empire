@@ -514,7 +514,11 @@ ailettes dorées et fontaine, grand siège à rotonde), vignettes `public/ui/bui
   reste (`wageCut`) jusqu'à une prochaine renégociation ; la prime de signature et la valeur de revente partent du
   salaire de référence. La réponse remplace la négociation, sur place : accord (vert : nouveau salaire, économie) ou
   refus (rouge : salaire gardé, prochaine discussion la saison suivante), « Fermer » la replie ; plus de bouton
-  « Proposer » pour un joueur déjà consulté (il ne menait qu'à « Négociation impossible »).
+  « Proposer » pour un joueur déjà consulté (il ne menait qu'à « Négociation impossible »). La réponse vient du
+  tirage lui-même (`lastWageTalk`) : un refus garde la baisse déjà obtenue, et se lisait « accepte » quand elle était
+  égale à la proposition (corrigé en 0.4.2).
+- Jauge `Chance` (Direction, centre médical) : 0 % et 100 % seulement quand c'est certain, sinon de 1 à 99 %
+  (`pctOf`, comme au mercato).
 - Billetterie : la formule des billets avec la recette prévue de chacune. C'est le seul endroit où elle se règle : la
   fiche du stade montre le tarif en vigueur, le public et la recette attendus (`TicketSummary`), avec « Changer le tarif
   · Direction du club » qui ouvre cet onglet (une fois la Direction construite). Le conseil du staff « Ton stade affiche

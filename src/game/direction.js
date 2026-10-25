@@ -71,6 +71,7 @@ export function negotiateWage(s, id, cut) {
   const ok = Math.random() < wageChance(s, p, c);
   p.wageTalk = s.seasonNumber;
   if (ok) p.wageCut = c;
+  s.lastWageTalk = { id: p.id, ok, cut: c }; // la réponse, pour l'écran (un refus garde la baisse déjà obtenue)
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'club',
     title: ok ? `${p.name} accepte une baisse de salaire de ${Math.round(c * 100)} %` : `${p.name} refuse de baisser son salaire`,

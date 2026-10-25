@@ -5,6 +5,7 @@ import {
   TV_ASK_MAX, localTv, maxCut, negotiateTv, negotiateWage, tvBoost, tvChance, tvOpen, tvPerMatch, wageChance, wageOpen,
 } from '../game/direction';
 import { setTicketPolicy } from '../game/engine';
+import { pctOf } from '../game/mercato';
 import { Panel } from './panels';
 import { Tabs } from './glass';
 import { Portrait } from './portrait';
@@ -21,12 +22,13 @@ import { fmtMoney, fmtRating } from './format';
 const pct = (v) => `${Math.round(v * 100)} %`;
 const tone = (c) => (c >= 0.7 ? 'good' : c >= 0.4 ? 'mid' : 'low');
 
-// jauge de la chance exacte d'accord (aussi au centre médical, chance d'un soin)
+// jauge de la chance exacte d'accord (aussi au centre médical, chance d'un soin) : 0 % et 100 % seulement quand
+// c'est certain (99,6 % s'écrit 99 %, comme au mercato)
 export function Chance({ value, label = 'Chance d’accord' }) {
   return (
     <div className={`dir-chance ${tone(value)}`}>
       <span>{label}</span>
-      <b>{pct(value)}</b>
+      <b>{pctOf(value)} %</b>
       <i aria-hidden="true"><em style={{ width: `${Math.round(value * 100)}%` }} /></i>
     </div>
   );
@@ -91,7 +93,7 @@ function WagesTab({ state, run, notify }) {
     const r = negotiateWage(s, p.id, c);
     const q = r && r.players.find((x) => x.id === p.id);
     if (q) {
-      const ok = q.wageCut === c && c > 0;
+      const ok = !!r.lastWageTalk?.ok;
       setTimeout(() => {
         setAnswer({ id: q.id, ok, cut: c });
         notify({ kind: ok ? 'success' : 'warn', eyebrow: 'Salaires', title: ok ? `${q.name} accepte −${pct(c)}` : `${q.name} refuse la baisse` });
