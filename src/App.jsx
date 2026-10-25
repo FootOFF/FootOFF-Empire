@@ -474,7 +474,8 @@ export default function App({ preview = null }) {
 
   // la fiche (et ce qu'elle ouvre : carrière, comparaison, mise en vente) posée sur le panneau en cours ; elle se retire
   // d'elle-même une fois tout refermé (SquadView mode « sheet »)
-  const peekSheet = <Presence>{peek !== null && <SquadView key={peek} mode="sheet" state={state} run={run} ask={setConfirm} initialSheet={peek} onMercato={openMercato} onClose={() => setPeek(null)} />}</Presence>;
+  // calque au-dessus des fenêtres du panneau (la fiche carrière des Stats, qui l'a ouverte, passe dessous)
+  const peekSheet = <Presence>{peek !== null && <div className="peek-layer"><SquadView key={peek} mode="sheet" state={state} run={run} ask={setConfirm} initialSheet={peek} onMercato={openMercato} onClose={() => setPeek(null)} /></div>}</Presence>;
 
   return (
     <NavContext.Provider value={nav}>

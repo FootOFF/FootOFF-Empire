@@ -2441,6 +2441,10 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 @media (hover: hover) { .sp-click:hover td { background: rgba(255, 255, 255, .03); } }
 button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 .cr-overlay { z-index: 40; }
+/* fiche joueur posée sur Saison ou Stats (App, peek) : au-dessus de la fiche carrière qui l'a ouverte ; le calque laisse
+   passer les touchers, seules ses fenêtres les prennent */
+.peek-layer { position: absolute; inset: 0; z-index: 45; pointer-events: none; }
+.peek-layer .sq-overlay { pointer-events: auto; }
 .sq-sheet.cr { width: min(600px, 100%); }
 .cr-title { font-family: var(--font-disp); font-weight: 600; font-size: var(--d-xs); letter-spacing: .07em; text-transform: uppercase; color: var(--gold); }
 .cr-status { margin: 0 0 var(--s-2); font-size: var(--t-sm); color: var(--text-2); }

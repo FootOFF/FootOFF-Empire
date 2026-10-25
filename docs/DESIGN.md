@@ -578,7 +578,9 @@ de la division (`divRef`) et le rang (`tierOf`) viennent de `src/ui/kit.jsx`, pa
 l'académie, l'entraînement et la carrière.
 Depuis la Saison (les meilleurs du club) et les Stats (fiche carrière), la fiche joueur s'ouvre par-dessus le panneau
 en cours, sans passer à l'Équipe (`SquadView` en mode « sheet », état `peek` d'App) : la fermer (croix, Échap,
-glissement) ramène au même onglet, au même défilement, et à la fiche carrière qui l'a ouverte. Ce qu'elle ouvre
+glissement) ramène au même onglet, au même défilement, et à la fiche carrière qui l'a ouverte. Elle est posée sur
+un calque (`.peek-layer`, z-index 45) au-dessus des fenêtres du panneau : la fiche carrière (`.cr-overlay`, 40) passe
+dessous (sinon la fiche s'ouvrait derrière elle, invisible). Ce qu'elle ouvre
 (carrière, comparaison, mise en vente) s'empile de même ; seules les offres reçues mènent au Mercato.
 
 ## Mercato

@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.16', date: '2026-10-25', title: 'Fiche joueur visible depuis les Stats',
+    items: [
+      'Statistiques : « Voir sa fiche joueur » depuis une fiche carrière affiche bien la fiche (elle s’ouvrait derrière la carrière) ; la fermer ramène à la carrière.',
+    ],
+  },
+  {
     version: '0.3.15', date: '2026-10-25', title: 'Notes entières sur le terrain',
     items: [
       'Composition, changement en direct et mi-temps : la note posée sur le portrait des joueurs n’est plus rognée par ses coins en biais (11,6).',
