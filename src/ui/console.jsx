@@ -15,6 +15,7 @@ import { ordinal } from '../game/utils';
 // Sons du menu (déplacement, validation, retour) : branchés par App sur l'ambiance sonore du stade (uisound.js).
 import { uiSound } from './uisound';
 import { clubStars } from '../game/crest';
+import { errorReport } from './errlog';
 
 export { setUiSound, uiSound } from './uisound';
 

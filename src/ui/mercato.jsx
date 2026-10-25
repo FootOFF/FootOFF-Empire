@@ -21,6 +21,7 @@ import { useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { haptic } from './haptics';
 import { Portrait } from './portrait';
+import { tierOf } from './kit';
 
 // Mercato : un seul marché pour recruter (joueurs libres et joueurs sous contrat), des offres négociées, une liste
 // de joueurs suivis, la vente de ses propres joueurs (mise en vente à son prix, clubs intéressés, négociation face à

@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.8', date: '2026-10-25', title: 'Mercato réparé',
+    items: [
+      'Le mercato s’ouvre de nouveau : la 0.3.7 le faisait planter (« Le jeu a rencontré un problème »).',
+      'Réglages : « Signaler un problème » prépare enfin son rapport (le bouton ne faisait rien).',
+    ],
+  },
+  {
     version: '0.3.7', date: '2026-10-25', title: 'Corrections au téléphone',
     items: [
       'Équipe : le menu « Trier par » s’ouvre par-dessus les cartes et répond au doigt (les cartes le recouvraient : le tri semblait cassé).',
