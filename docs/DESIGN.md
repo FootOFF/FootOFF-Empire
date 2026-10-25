@@ -129,12 +129,24 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
 | Section | Onglets |
 |---|---|
 | Complexe | la vue 3D du complexe (fermer un panneau y revient) |
-| Équipe | Joueurs, Composition, Entraînement, Académie, Anciens |
+| Équipe | Joueurs, Composition, Entraînement, Académie, Médical, Anciens |
 | Mercato | Recruter, Suivis, Offres, Bilan |
 | Saison | Calendrier, Classement, Statistiques, Palmarès |
 | Club | Finances, Journal, Notoriété, Direction |
 
-- Un onglet d'un bâtiment pas encore construit reste visible, cadenassé (Entraînement, Académie, Direction).
+- Un onglet d'un bâtiment pas encore construit reste visible, cadenassé (Entraînement, Académie, Médical, Direction).
+- Téléphone : sous un panneau plein écran, le menu du bas s'efface. On passe à la section voisine (Équipe, Mercato,
+  Saison, Club, sans boucler) en glissant le panneau du doigt vers la gauche ou la droite, ou par la barre du bas du
+  panneau (`SectionPager`, à portée du pouce : « ‹ Équipe », les quatre points, « Saison › »). Le nouveau panneau
+  arrive du côté d'où vient le doigt, l'ancien part de l'autre côté depuis l'endroit où le doigt l'a lâché
+  (`data-nav` sur `.game`, `sideExit` de `useSwipe`). Une section se rouvre sur l'écran qu'on y avait laissé, tant
+  qu'un panneau reste ouvert. Le geste ne part ni d'une rangée qui défile en largeur, ni d'une fiche ouverte
+  par-dessus (elle garde son propre glissé : joueur suivant), ni de la composition (`data-noswipe` : glisser un
+  joueur vers le bas fermait le panneau, 2026-10-25). Sans section de ce côté, le panneau ne suit le doigt que de
+  loin et revient. Sur PC, le menu du bas reste visible : pas de barre.
+- Retour du navigateur (bouton Précédent, bouton de la souris, retour d'Android) : il ferme la fenêtre du dessus
+  (fiche, panneau, bâtiment) comme Échap, jamais le jeu ; une entrée d'historique (même adresse) garde la place tant
+  qu'une fenêtre est ouverte (`App.jsx`).
 - Pastilles sur le menu et les onglets (`dockSignals`, `src/game/advice.js`) : rouge pour ce qui attend une
   décision (offres à traiter), discrète pour une information (joueurs suivis), point doré pour une nouveauté.
 - D'un onglet à l'autre, l'écran change sur place (ni glissement ni fondu, ni souffle d'ouverture : le clic de

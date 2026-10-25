@@ -4,6 +4,16 @@
 
 export const CHANGELOG = [
   {
+    version: '0.4.1', date: '2026-10-25', title: 'Navigation au doigt entre les sections',
+    items: [
+      'Sur téléphone, glisse un panneau vers la gauche ou la droite pour passer à la section voisine : Équipe, Mercato, Saison, Club.',
+      'Une barre en bas de chaque panneau, à portée du pouce, fait la même chose : « ‹ Équipe » à gauche, « Saison › » à droite, et des points qui disent où tu es.',
+      'Revenir à une section la rouvre sur l’écran que tu y avais laissé (Classement, Journal…).',
+      'Le bouton Retour du navigateur (ou de la souris, ou d’Android) ferme la fiche ou le panneau ouvert au lieu de quitter le jeu.',
+      'Composition : glisser un joueur vers le bas ne ferme plus tout le panneau.',
+    ],
+  },
+  {
     version: '0.4.0', date: '2026-10-25', title: 'Centre médical',
     items: [
       'Nouveau bâtiment : le centre médical. Entre deux matchs, fais soigner tes blessés : un soin par joueur et par date, avec sa chance exacte de le faire revenir un match plus tôt (une blessure légère soignée, il est disponible pour le prochain match).',

@@ -45,7 +45,7 @@ import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { roundKey } from './game/mercato';
 import { createStadiumSound } from './ui/sound';
 import { achievementById, newAchievements } from './game/achievements';
-import { LOCKS, NavContext, sectionOf } from './ui/nav';
+import { LOCKS, NavContext, SECTION_ENTRY, sectionNear, sectionOf } from './ui/nav';
 
 // three.js et la scène vivent dans un chunk séparé, chargé dès le démarrage (derrière l'écran de chargement).
 const Empire3D = lazy(() => import('./ui/Empire3D'));
@@ -102,11 +102,20 @@ export default function App({ preview = null }) {
   const [squadTab, setSquadTab] = useState(boot.ui.squadTab && boot.ui.squadTab !== 'market' ? boot.ui.squadTab : 'players'); // onglet de l'Effectif (joueurs, composition, anciens)
   const [seasonTab, setSeasonTab] = useState(boot.ui.seasonTab || 'calendar'); // onglet de la Saison (calendrier, classement)
   const [navSwitch, setNavSwitch] = useState(false); // ouvert depuis un onglet de la même section : sans glissement
+  // passage à la section voisine (téléphone : glissé ou barre du bas) : { dir: 'next' | 'prev', panel } ; le panneau
+  // arrive par le côté d'où vient le doigt, l'ancien sort par l'autre côté
+  const [navDir, setNavDir] = useState(null);
+  const lastIn = useRef({}); // dernier écran vu dans chaque section, tant qu'un panneau reste ouvert
   const [squadSheet, setSquadSheet] = useState(null); // fiche joueur ouverte d'emblée dans l'Effectif (notification)
   // fiche joueur ouverte par-dessus Saison ou Stats : on la ferme et on retrouve l'écran tel quel (onglet, défilement)
   const [directionTab, setDirectionTab] = useState(boot.ui.directionTab || 'tv'); // onglet d'ouverture de la Direction
   const [peek, setPeek] = useState(null);
-  useEffect(() => { setPeek(null); if (panel !== 'direction') setDirectionTab('tv'); }, [panel]);
+  useEffect(() => {
+    setPeek(null);
+    if (panel !== 'direction') setDirectionTab('tv');
+    if (panel) lastIn.current[sectionOf(panel)] = panel;
+    else { lastIn.current = {}; setNavDir(null); }
+  }, [panel]);
   const [statsMatch, setStatsMatch] = useState(boot.ui.statsMatch || null); // 'last' : Stats Pass du dernier match ouvert d'emblée
   const [trophyTab, setTrophyTab] = useState('honours'); // onglet d'ouverture de la salle des trophées
   const [trophyFocus, setTrophyFocus] = useState([]); // succès à montrer d'emblée (notification d'un succès débloqué)
@@ -188,6 +197,33 @@ export default function App({ preview = null }) {
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  // Retour du navigateur (bouton Précédent, souris, geste ou touche retour d'Android) : il ferme la fenêtre du dessus
+  // (fiche, panneau, bâtiment), comme Échap, au lieu de quitter le jeu. Une entrée d'historique, sans changer
+  // l'adresse, garde la place tant qu'une fenêtre est ouverte ; fermée autrement, l'entrée est retirée.
+  const layered = inGame && !preview && !!(panel || sel);
+  const layeredRef = useRef(layered);
+  layeredRef.current = layered;
+  const backGuard = useRef({ armed: false, skip: false });
+  useEffect(() => {
+    const g = backGuard.current;
+    if (layered && !g.armed) { window.history.pushState({ fo: 'layer' }, ''); g.armed = true; }
+    else if (!layered && g.armed) { g.armed = false; g.skip = true; window.history.back(); }
+  }, [layered]);
+  useEffect(() => {
+    const g = backGuard.current;
+    const onPop = () => {
+      if (g.skip) { g.skip = false; return; }
+      if (!g.armed) return;
+      g.armed = false;
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true }));
+      setTimeout(() => { // une fenêtre reste ouverte (la fiche fermée, le panneau dessous) : la garde revient
+        if (layeredRef.current && !g.armed) { window.history.pushState({ fo: 'layer' }, ''); g.armed = true; }
+      }, 0);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   const run = (fn, failMsg) => {
     const base = clone(state);
     if (base?.tutorial) base.tutorial.just = []; // seules les primes gagnées par cette action s'annoncent, une fois
@@ -208,8 +244,20 @@ export default function App({ preview = null }) {
     // disparaissait puis revenait, 0,3 s après chaque changement d'onglet)
     const sec = panel ? sectionOf(panel) : null;
     setNavSwitch(!!target && !!sec && sectionOf(target) === sec);
+    setNavDir(null);
     setPanel(target);
     if (target) setSel(null);
+  };
+  // section voisine (Équipe, Mercato, Saison, Club), rouverte sur l'écran qu'on y avait laissé
+  const stepSection = (dir) => {
+    const to = sectionNear(sectionOf(panel), dir);
+    if (!to) return;
+    const target = lastIn.current[to] || (SECTION_ENTRY[to] === 'club' ? 'finances' : SECTION_ENTRY[to]);
+    uiSound('tab');
+    setNavSwitch(false);
+    setNavDir({ dir: dir > 0 ? 'next' : 'prev', panel: target });
+    setPanel(target);
+    setSel(null);
   };
   // onglets d'une section (nav.jsx) : « squad:lineup » ouvre l'Effectif sur la composition ; un bâtiment pas encore
   // construit (centre d'entraînement, académie, direction) le dit au lieu d'ouvrir un écran vide
@@ -454,9 +502,10 @@ export default function App({ preview = null }) {
   const tip = state && !tuto && !sel && !panel ? staffTip(state) : null;
   const shownTip = tip && !dismissedTips.has(tip.id) ? tip : null;
   const signals = state ? dockSignals(state) : {};
+  const navPage = navDir && navDir.panel === panel ? navDir.dir : null; // sens du passage à la section voisine
   // navigation par sections (nav.jsx) : l'en-tête de chaque panneau y lit l'onglet actif et ses pastilles
   const nav = {
-    panel, squadTab, seasonTab, mercatoView, go: goNav, badges: signals.items || {}, switching: navSwitch && !!panel,
+    panel, squadTab, seasonTab, mercatoView, go: goNav, step: stepSection, badges: signals.items || {}, switching: (navSwitch || !!navPage) && !!panel,
     built: state ? { training: state.buildings.training > 0, academy: state.buildings.academy > 0, direction: state.buildings.direction > 0, medical: state.buildings.medical > 0 } : {},
   };
   const hudKeys = inGame && !menu && !cinematic && !confirm && !preview; // raccourcis clavier du HUD (PC)
@@ -482,7 +531,7 @@ export default function App({ preview = null }) {
 
   return (
     <NavContext.Provider value={nav}>
-    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'mercato', 'academy', 'training', 'season', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''} ${navSwitch && panel ? 'nav-switch' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined}>
+    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'mercato', 'academy', 'training', 'season', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''} ${navSwitch && panel ? 'nav-switch' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined} data-nav={navPage || undefined}>
       <div className="stage">
         {preview ? (
           <div className="stage-preview" aria-hidden="true" />

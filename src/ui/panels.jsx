@@ -14,9 +14,9 @@ import { clubAfter } from '../game/names';
 import { Portrait } from './portrait';
 import { useDialogFocus, useKeydown, useLeaving } from './presence';
 import { uiSound } from './uisound';
-import { PHONE, useSwipe } from './gestures';
+import { PHONE, useMedia, useSwipe } from './gestures';
 import { SeasonCalendar } from './calendar';
-import { SECTIONS, SectionTabs, sectionOf, useNav } from './nav';
+import { SECTIONS, SectionPager, SectionTabs, sectionNear, sectionOf, useNav } from './nav';
 
 // Un panneau ou une fiche qui s'ouvre fait un léger souffle qui monte, qui descend quand il se ferme. D'un onglet à
 // l'autre d'une section, le clic de l'onglet suffit : ni souffle d'ouverture, ni souffle de fermeture.
@@ -29,13 +29,25 @@ export function usePanelSound() {
 // Panneau du jeu : un seul modèle pour tous les écrans du menu (en-tête, barre d'outils, corps défilant,
 // trésorerie à droite quand on y dépense). id : le panneau, qui le range dans sa section du menu (nav.jsx) : l'en-tête
 // porte alors le nom de la section et ses onglets. Glisse depuis la droite sur PC, plein écran sur mobile.
+// Téléphone : glisser le panneau vers la gauche ou la droite ouvre la section voisine (nav.jsx SectionPager), sauf
+// sous une fiche ouverte et dans les zones qui ont leur propre geste (data-noswipe : la composition).
 export function Panel({ id = null, title, eyebrow, size = 'md', money = null, toolbar = null, overlay = null, onClose, onEscape, children }) {
   const ref = useRef(null);
+  const nav = useNav();
+  const phone = useMedia(PHONE);
+  const section = sectionOf(id);
+  const pages = phone && !!nav?.step && !!section;
   useDialogFocus(ref);
   useKeydown((e) => { if (e.key === 'Escape') (onEscape || onClose)(); });
-  useSwipe(ref, { onDown: onClose, downMedia: PHONE });
+  useSwipe(ref, {
+    onDown: onClose,
+    downMedia: PHONE,
+    onLeft: pages && sectionNear(section, 1) ? () => nav.step(1) : undefined,
+    onRight: pages && sectionNear(section, -1) ? () => nav.step(-1) : undefined,
+    sideIf: (t) => !t.closest('.sq-overlay'),
+    sideExit: true,
+  });
   usePanelSound();
-  const section = sectionOf(id);
   return (
     <section ref={ref} tabIndex={-1} className={`panel ${size} ${section ? `in-section s-${section}` : ''}`} role="dialog" aria-label={title}>
       <span className="grip" aria-hidden="true" />
@@ -54,6 +66,7 @@ export function Panel({ id = null, title, eyebrow, size = 'md', money = null, to
       </header>
       {toolbar && <div className="panel-bar">{toolbar}</div>}
       <div className="panel-body">{children}</div>
+      {section && <SectionPager section={section} />}
       {overlay}
     </section>
   );

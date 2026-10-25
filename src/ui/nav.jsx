@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef } from 'react';
-import { IconLock } from './icons';
+import { IconChevron, IconChevronLeft, IconLock } from './icons';
 import { uiSound } from './uisound';
 
 // Navigation du jeu : cinq sections au menu du bas (Complexe, Équipe, Mercato, Saison, Club). Chaque panneau
@@ -56,11 +56,19 @@ const SECTION_OF = {
 };
 export const sectionOf = (panel) => SECTION_OF[panel] || null;
 
+// Ordre des sections au menu du bas (après le Complexe), et le panneau qui ouvre chacune.
+export const SECTION_ORDER = ['equipe', 'mercato', 'saison', 'club'];
+export const SECTION_ENTRY = { equipe: 'squad', mercato: 'mercato', saison: 'season', club: 'club' };
+export function sectionNear(section, dir) {
+  const i = SECTION_ORDER.indexOf(section);
+  return i < 0 ? null : SECTION_ORDER[i + dir] || null;
+}
+
 // Bâtiments qui ouvrent un onglet : tant qu'ils ne sont pas construits, l'onglet reste visible, cadenassé.
 export const LOCKS = { training: 'training', academy: 'academy', direction: 'direction', medical: 'medical' };
 
 // Contexte fourni par App : panneau ouvert, onglets internes, bâtiments construits, et l'aller vers un onglet.
-// { panel, squadTab, seasonTab, mercatoView, built: { training, academy, direction, medical }, go(key), badges }
+// { panel, squadTab, seasonTab, mercatoView, built: { training, academy, direction, medical }, go(key), step(dir), badges }
 // Pastille d'un onglet (badges[clé]) : 'dot', un nombre (à traiter), ou { n, tone, label } (un compte discret).
 export const NavContext = createContext(null);
 export const useNav = () => useContext(NavContext);
@@ -110,6 +118,29 @@ export function SectionTabs({ section }) {
           </button>
         );
       })}
+    </nav>
+  );
+}
+
+// Téléphone : sous un panneau plein écran, le menu du bas s'efface. On passe d'une section à sa voisine (Équipe,
+// Mercato, Saison, Club) en glissant le panneau du doigt vers la gauche ou la droite, ou par ces deux boutons, en bas
+// du panneau, à portée du pouce ; les points disent où l'on est. Sur PC, le menu du bas reste visible : barre masquée.
+export function SectionPager({ section }) {
+  const nav = useNav();
+  if (!nav?.step || !SECTION_ORDER.includes(section)) return null;
+  const prev = sectionNear(section, -1);
+  const next = sectionNear(section, 1);
+  return (
+    <nav className="section-pager" aria-label="Sections">
+      <button type="button" className="sp-prev" disabled={!prev} aria-label={prev ? `Section précédente : ${SECTIONS[prev].title}` : undefined} onClick={() => nav.step(-1)}>
+        <IconChevronLeft />{prev && SECTIONS[prev].title}
+      </button>
+      <span className="sp-dots" aria-hidden="true">
+        {SECTION_ORDER.map((k) => <i key={k} className={k === section ? 'on' : ''} />)}
+      </span>
+      <button type="button" className="sp-next" disabled={!next} aria-label={next ? `Section suivante : ${SECTIONS[next].title}` : undefined} onClick={() => nav.step(1)}>
+        {next && SECTIONS[next].title}<IconChevron />
+      </button>
     </nav>
   );
 }

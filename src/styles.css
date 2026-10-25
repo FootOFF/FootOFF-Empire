@@ -507,6 +507,38 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .game.nav-switch .panel { animation: none; }
 .game.nav-switch .panel-body > * { animation: none; }
 .game.nav-switch .leaving > .panel { display: none; }
+/* téléphone : passage à la section voisine (nav.jsx SectionPager, glissé du panneau). Barre en bas du panneau, à
+   portée du pouce : la section précédente à gauche, la suivante à droite, les points au milieu. Le nouveau panneau
+   arrive du côté d'où vient le doigt, l'ancien part de l'autre côté (depuis l'endroit où le doigt l'a lâché). Sur PC
+   le menu du bas reste visible : pas de barre. */
+.section-pager { display: none; }
+@media (max-width: 760px) {
+  .section-pager {
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--s-2); flex-shrink: 0;
+    padding: 4px var(--s-2); border-top: 1px solid var(--line); background: #0b0b0c;
+  }
+  .section-pager .sp-prev { justify-self: start; }
+  .section-pager .sp-next { justify-self: end; }
+  .section-pager button {
+    display: inline-flex; align-items: center; gap: 4px; min-width: 0; min-height: 44px; padding: 0 var(--s-2);
+    border: 0; background: none; color: var(--muted);
+    font-family: var(--font-disp); font-weight: 600; font-size: 16px; line-height: 1; letter-spacing: .08em; text-transform: uppercase;
+  }
+  .section-pager button svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--gold-light); }
+  .section-pager button:disabled { visibility: hidden; }
+  .section-pager button:active { color: var(--text); }
+  .sp-dots { display: flex; align-items: center; gap: 6px; }
+  .sp-dots i { width: 6px; height: 6px; border-radius: 3px; background: var(--line-strong); }
+  .sp-dots i.on { width: 18px; background: var(--gold-light); }
+  .game[data-nav="next"]:not(.nav-switch) .panel { animation: fo-page-in-next var(--dur) var(--ease); }
+  .game[data-nav="prev"]:not(.nav-switch) .panel { animation: fo-page-in-prev var(--dur) var(--ease); }
+  .game[data-nav="next"] .leaving > .panel { animation-name: fo-page-out-next !important; }
+  .game[data-nav="prev"] .leaving > .panel { animation-name: fo-page-out-prev !important; }
+}
+@keyframes fo-page-in-next { from { opacity: 0; transform: translateX(32%); } }
+@keyframes fo-page-in-prev { from { opacity: 0; transform: translateX(-32%); } }
+@keyframes fo-page-out-next { to { opacity: 0; transform: translateX(-32%); } }
+@keyframes fo-page-out-prev { to { opacity: 0; transform: translateX(32%); } }
 .panel-money {
   display: inline-flex; align-items: center; gap: var(--s-2); height: 40px; padding: 0 var(--s-4) 0 var(--s-3); border-radius: 0;
   border: 0; background: var(--plate-2); clip-path: var(--cut-shape-sm);

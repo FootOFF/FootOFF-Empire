@@ -206,7 +206,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
     : 'Glisse un joueur sur un poste, ou choisis-en deux pour les échanger';
 
   return (
-    <div className={`lu ${ghost ? 'dragging' : ''}`} ref={root}>
+    <div className={`lu ${ghost ? 'dragging' : ''}`} ref={root} data-noswipe="">
       <div className="lu-pitch">
         <div className="p2-lines"><i className="half" /><i className="circle" /><i className="box top" /><i className="box bottom" /><i className="six top" /><i className="six bottom" /></div>
         {lineup.map((id, k) => {

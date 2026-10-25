@@ -21,10 +21,13 @@ export function useMedia(query) {
 // l'élément revient en place. Le défilement reste prioritaire : on ne ferme vers le bas que si le contenu est
 // déjà tout en haut, et on ne capte pas un geste horizontal dans une rangée qui défile en largeur.
 // downMedia : condition d'écran pour le geste vers le bas (ex. seulement sur téléphone, où la fenêtre est une
-// feuille qui monte du bas).
-export function useSwipe(ref, { onDown, onLeft, onRight, downMedia = null } = {}) {
+// feuille qui monte du bas). Sans suivant (ou précédent), l'élément ne suit le doigt que de loin, et revient.
+// sideIf(cible) : le geste de côté n'est permis que si le doigt est posé sur une cible acceptée (le panneau d'une
+// section ne change pas de section sous une fiche ouverte). sideExit : l'élément quitte l'écran par le côté (il ne
+// revient pas en place : sa sortie, styles.css, repart de la position du doigt).
+export function useSwipe(ref, { onDown, onLeft, onRight, downMedia = null, sideIf = null, sideExit = false } = {}) {
   const cb = useRef({});
-  cb.current = { onDown, onLeft, onRight };
+  cb.current = { onDown, onLeft, onRight, sideIf, sideExit };
 
   useEffect(() => {
     const el = ref.current;
@@ -57,6 +60,7 @@ export function useSwipe(ref, { onDown, onLeft, onRight, downMedia = null } = {}
         x: t.clientX, y: t.clientY, t: performance.now(), axis: null, dx: 0, dy: 0,
         top: !sy || sy.scrollTop <= 0,
         rowScroll: !!scroller(e.target, 'x'),
+        side: !cb.current.sideIf || cb.current.sideIf(e.target),
         down: !!cb.current.onDown && (!downMedia || window.matchMedia(downMedia).matches),
       };
     };
@@ -67,7 +71,7 @@ export function useSwipe(ref, { onDown, onLeft, onRight, downMedia = null } = {}
       const dy = t.clientY - g.y;
       if (!g.axis) {
         if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-        const sideways = cb.current.onLeft || cb.current.onRight;
+        const sideways = (cb.current.onLeft || cb.current.onRight) && g.side;
         if (g.down && g.top && dy > 0 && Math.abs(dy) > Math.abs(dx) * 1.2) g.axis = 'y';
         else if (sideways && !g.rowScroll && Math.abs(dx) > Math.abs(dy) * 1.5) g.axis = 'x';
         else { g = null; return; } // geste ordinaire : le navigateur fait défiler
@@ -78,8 +82,9 @@ export function useSwipe(ref, { onDown, onLeft, onRight, downMedia = null } = {}
       g.dy = dy;
       if (g.axis === 'y') el.style.transform = `translateY(${Math.max(0, dy)}px)`;
       else {
-        el.style.transform = `translateX(${dx * 0.5}px)`;
-        el.style.opacity = String(1 - Math.min(Math.abs(dx) / 700, 0.25));
+        const can = dx < 0 ? cb.current.onLeft : cb.current.onRight;
+        el.style.transform = `translateX(${dx * (can ? 0.5 : 0.12)}px)`;
+        if (can) el.style.opacity = String(1 - Math.min(Math.abs(dx) / 700, 0.25));
       }
     };
     const end = () => {
@@ -96,12 +101,22 @@ export function useSwipe(ref, { onDown, onLeft, onRight, downMedia = null } = {}
         }, 450);
         return;
       }
-      settle();
       const go = s.dx < 0 ? cb.current.onLeft : cb.current.onRight;
       if (s.axis === 'x' && go && (Math.abs(s.dx) > 80 || (Math.abs(s.dx) > 30 && Math.abs(s.dx) / ms > 0.5))) {
         haptic('tap');
+        if (cb.current.sideExit) {
+          el.dataset.swiped = s.dx < 0 ? 'left' : 'right';
+          go();
+          setTimeout(() => { // sortie refusée : on remet en place
+            if (el.isConnected && !el.closest('.leaving')) { delete el.dataset.swiped; settle(); }
+          }, 450);
+          return;
+        }
+        settle();
         go();
+        return;
       }
+      settle();
     };
 
     el.addEventListener('touchstart', start, { passive: true });
