@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.15', date: '2026-10-25', title: 'Notes entières sur le terrain',
+    items: [
+      'Composition, changement en direct et mi-temps : la note posée sur le portrait des joueurs n’est plus rognée par ses coins en biais (11,6).',
+    ],
+  },
+  {
     version: '0.3.14', date: '2026-10-25', title: 'Notes entières au mercato',
     items: [
       'Mercato : la note posée sur le portrait d’un joueur s’élargit avec elle ; une note à deux chiffres (10,5) n’est plus rognée.',

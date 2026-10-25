@@ -27,6 +27,10 @@ Inter, petites mentions techniques (touches, version) en Geist Mono. Tous les je
   `.glass`), réglé par `--corner` (taille du coin) et `--ring` (couleur) : succès tout juste débloqué, parcelle
   choisie, recrue conseillée du mercato, icône de niveau de l'académie. Tout nouvel élément à liseré et coin coupé
   s'ajoute à cette règle.
+- Texte dans un parallélogramme (`--skew`) : largeur au contenu et marge intérieure d'au moins le biais + 3 px, sinon
+  les coins en biais mordent sur les premiers et derniers caractères (notes à deux chiffres : pastille de la
+  composition `.lu-rate`, médaille des cartes du mercato). Contrôle : chaque note de la galerie passée à « 18,8 », le
+  texte mesuré au glyphe près doit rester à 80 % du biais des bords.
 - Préfixes de classes réservés, sans partage : `lv-` direct, `lm-` carte du dernier match, `sc-` calendrier,
   `sq-sorter` menu de tri (`.sq-sort` est la flèche du tableau), `is-<phase>` pour l'horloge du direct (`.halftime`
   et `.fulltime` sont des panneaux).
