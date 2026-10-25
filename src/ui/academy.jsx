@@ -8,14 +8,13 @@ import { fitGain } from '../game/mercato';
 import { deName } from '../game/names';
 import { fmtMoney, fmtRating } from './format';
 import { IconAcademy, IconArrowUp, IconChevron, IconChevronLeft, IconClock, IconClose } from './icons';
-import { Eyebrow } from './kit';
+import { Eyebrow, divRef, tierOf } from './kit';
 import { Panel } from './panels';
 import { Tabs } from './glass';
 import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { Portrait } from './portrait';
 import { heat } from './mercato';
-import { tierOf } from './squad';
 
 // Académie : l'équipe de jeunes du club (academy.js), ouverte d'un clic sur le bâtiment dans la vue 3D. Deux onglets,
 // dans le style de l'Effectif (tableau détaillé sur PC, liste compacte sur téléphone) : « Mes jeunes » (six places,
@@ -26,7 +25,6 @@ const ORDER = { G: 0, D: 1, M: 2, A: 3 };
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 const attrsOf = (p) => (p.pos === 'G' ? GK_ATTRS.map((x) => ({ ...x, v: p.g[x.key] })) : ATTRS.map((x) => ({ ...x, v: p.a[x.key] })));
 const topAttrs = (p, n = 3) => [...attrsOf(p)].sort((a, b) => b.v - a.v).slice(0, n);
-const divRef = (s) => { const d = DIVISIONS[s.divisionIndex]; return (d.oppMin + d.oppMax) / 2; };
 const plus = (v) => (v >= 0.05 ? `+${fmtRating(v)}` : '–');
 const potText = (r) => (r ? `${fmtRating(r[0])} – ${fmtRating(r[1])}` : 'atteint');
 const potMid = (s, p) => { const r = potentialRange(p, s); return r ? (r[0] + r[1]) / 2 : playerRating(p); };

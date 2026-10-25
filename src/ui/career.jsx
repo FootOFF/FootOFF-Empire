@@ -3,7 +3,8 @@ import { POS_LABELS } from '../game/constants';
 import { ATTRS, GK_ATTRS } from '../game/players';
 import { allCareers, careerOf, topScorers } from '../game/career';
 import { fmtMoney, fmtNum, fmtRating } from './format';
-import { RatingBadge } from './kit';
+import { RatingBadge, divRef, tierOf } from './kit';
+import { Portrait } from './portrait';
 import { IconClose } from './icons';
 import { PHONE, useSwipe } from './gestures';
 
@@ -31,6 +32,7 @@ export function PlayerCareer({ state, id, onClose, onSheet }) {
   if (!c) return null;
   const t = c.totals;
   const p = c.p;
+  const [nameFirst, ...nameRest] = p.name.split(' ');
   const keeper = p.pos === 'G' || p.pos === 'D';
   const gk = p.pos === 'G'; // gardien : pas de cases d'attaque
   const scorers = topScorers(allCareers(state));
@@ -50,25 +52,27 @@ export function PlayerCareer({ state, id, onClose, onSheet }) {
           <button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button>
         </header>
 
-        <section className="sh-hero">
+        {/* même en-tête que la fiche joueur (squad.jsx PlayerSheet) : niveau en grand et sa légende, poste, nom, portrait, étiquettes */}
+        <section className={`sh-hero ${tierOf(c.rating, divRef(state))}`}>
           <div className="sh-id">
+            <div className="sh-rate">
+              <b>{fmtRating(c.rating)}</b>
+              <em className="cap">{c.current ? 'niveau / 20' : 'au départ / 20'}</em>
+            </div>
             <div className="sh-meta">
               <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
-              <span>{p.num ? `N°${p.num} · ` : ''}{POS_LABELS[p.pos]}{c.old ? ` · ${c.age} ans aujourd’hui` : ` · ${c.age} ans`}</span>
+              <span>{POS_LABELS[p.pos]}{p.num ? ` · n°${p.num}` : ''}{c.old ? ` · ${c.age} ans aujourd’hui` : ` · ${c.age} ans`}</span>
             </div>
-            <h3>{p.name}</h3>
-            <div className="sh-tags">
-              <span className={`sh-tag ${c.current ? 'on' : ''}`}>{reasonTag(c)}</span>
-              <span className="sh-tag">Saisons {c.joined}{c.until > c.joined ? `–${c.until}` : ''}</span>
-            </div>
+            <h3 className="sh-name">{nameRest.length > 0 && <small>{nameFirst}</small>}<b>{nameRest.length ? nameRest.join(' ') : nameFirst}</b></h3>
           </div>
-          <div className="sh-level">
-            <b>{fmtRating(c.rating)}</b>
-            <span>{c.current ? 'niveau / 20' : 'au départ / 20'}</span>
+          <Portrait p={p} size={136} className="sh-face" />
+          <div className="sh-tags">
+            <span className={`sh-tag ${c.current ? 'on' : ''}`}>{reasonTag(c)}</span>
+            <span className="sh-tag">Saisons {c.joined}{c.until > c.joined ? `–${c.until}` : ''}</span>
           </div>
         </section>
         <p className="cr-status">{departureText(c)}.</p>
-        {c.current && onSheet && <button className="btn ghost wide cr-sheet" onClick={() => onSheet(id)}>Voir sa fiche joueur · qualités, forme, notes</button>}
+        {c.current && onSheet && <button className="btn ghost wide cr-sheet" onClick={() => onSheet(id)}>Voir sa fiche joueur</button>}
         {!c.current && (c.old.a || c.old.g) && (
           <section className="sh-sec">
             <span className="sh-cap">Ses qualités au moment du départ</span>

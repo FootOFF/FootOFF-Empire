@@ -687,7 +687,9 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .sq-overview .good b { color: var(--green); }
 .sq-overview .mid b { color: var(--amber); }
 .sq-overview .low b { color: var(--red); }
-.sq-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+/* position + z-index : l'animation d'entrée (fo-rise) fait de chaque enfant du panneau un contexte d'empilement ; sans
+   cela, les cartes qui suivent recouvraient la liste « Trier par » et prenaient ses touchers (le tri semblait cassé) */
+.sq-controls { position: relative; z-index: 2; display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .sq-controls .chips { flex: 1; min-width: 0; margin-bottom: 0; }
 .sq-controls .sq-legend { margin-left: 0; }
 .chips button b { margin-left: 7px; font-weight: 600; opacity: .55; }
@@ -862,6 +864,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .sh-rate em { font-style: normal; font-family: var(--font-disp); font-weight: 600; font-size: 19px; line-height: 1; }
 .sh-rate em.up { color: var(--green); }
 .sh-rate em.down { color: var(--red); }
+.sh-rate em.cap { color: var(--text-2); font-weight: 500; } /* légende du niveau (fiche carrière : « niveau / 20 ») */
 .sh-meta { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-2); }
 .sh-meta .pos-pill { --slant: 6px; width: 34px; height: 24px; font-size: 17px; }
 .sh-name { margin: 0; display: flex; flex-direction: column; gap: 5px; min-width: 0; text-transform: none; }
@@ -1902,11 +1905,11 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
   .post-ratings li { grid-template-columns: auto minmax(0, 1fr); }
   .post-goals .g-short { display: inline; }
   .post-breakdown { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  /* réputation sur sa ligne, puis les deux boutons côte à côte (à trois sur une ligne, « Stats du match » se
-     tassait en un cercle de trois lignes) */
+  /* réputation sur sa ligne, puis les deux boutons l'un sous l'autre, pleine largeur (côte à côte, « Voir le
+     classement » débordait de son parallélogramme) */
   .post-foot { flex-wrap: wrap; row-gap: var(--s-3); padding: var(--s-3) var(--s-4) var(--s-4); }
   .post-rep { flex-basis: 100%; text-align: center; }
-  .post-foot .btn-xl { flex: 1; min-width: 0; padding-inline: var(--s-3); white-space: nowrap; }
+  .post-foot .btn-xl { flex: 1 0 100%; min-width: 0; padding-inline: var(--s-3); } /* l'un sous l'autre : « Voir le classement » débordait à deux par ligne */
   .sq-budget { max-width: none; min-width: 0; flex-basis: 100%; }
   .sq-tabs { width: 100%; }
   .sq-tabs button { flex: 1; }

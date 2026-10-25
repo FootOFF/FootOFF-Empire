@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { BUILDINGS, DIVISIONS, POS_LABELS, PROGRAM_STEPS, TRAINING_COLLECTIVE, TRAINING_MULT, upgradeCost } from '../game/constants';
+import { BUILDINGS, POS_LABELS, PROGRAM_STEPS, TRAINING_COLLECTIVE, TRAINING_MULT, upgradeCost } from '../game/constants';
 import { ATTRS, GK_ATTRS, TRAITS, isInjured, playerRating, potentialRange } from '../game/players';
 import {
   DRILLS, GREAT, LINES, PLAY_MAX, PLAY_MIN, PROGRAMS, attrsAfter, bestCat, catsFor, drillsFor, pickOf, programDesc, programLabel, programNeed,
@@ -9,7 +9,7 @@ import { fixtureShort, nextFixture } from '../game/cups';
 import { setTrainingPick, startProgram, stopProgram, trainPlayer } from '../game/engine';
 import { fmtMoney, fmtRating } from './format';
 import { IconArrowUp, IconCheck, IconChevron, IconClose, IconLock, IconPlay, IconStar, IconTraining } from './icons';
-import { Eyebrow } from './kit';
+import { Eyebrow, divRef } from './kit';
 import { Panel } from './panels';
 import { Tabs } from './glass';
 import { Presence } from './presence';
@@ -32,7 +32,6 @@ const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 const attrInfo = (p, key) => (p.pos === 'G' ? GK_ATTRS : ATTRS).find((a) => a.key === key);
 const poolOf = (p) => (p.pos === 'G' ? p.g : p.a);
 const potText = (r) => (r ? `${fmtRating(r[0])} – ${fmtRating(r[1])}` : 'atteint');
-const divRef = (s) => { const d = DIVISIONS[s.divisionIndex]; return (d.oppMin + d.oppMax) / 2; };
 const latest = (lvl, pos, cat) => drillsFor(Math.max(1, lvl), pos, cat).at(-1);
 // séance d'une fenêtre (« saison:indice du match ») : le match qu'elle préparait
 function windowLabel(s, key) {

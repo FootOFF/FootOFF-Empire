@@ -4,6 +4,14 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.7', date: '2026-10-25', title: 'Corrections au téléphone',
+    items: [
+      'Équipe : le menu « Trier par » s’ouvre par-dessus les cartes et répond au doigt (les cartes le recouvraient : le tri semblait cassé).',
+      'Après-match : « Stats du match » et « Voir le classement » l’un sous l’autre, en entier.',
+      'Fiche carrière : même en-tête que la fiche joueur (niveau en grand et sa légende, portrait, étiquettes) ; le bouton « Voir sa fiche joueur » tient dans l’écran.',
+    ],
+  },
+  {
     version: '0.3.6', date: '2026-10-24', title: 'Mises à jour plus discrètes',
     items: [
       'Le bandeau « Nouvelle version » ne revient plus à chaque lancement quand le jeu tourne déjà la dernière version : il ne s’affiche que si une version plus récente reste à charger.',

@@ -18,6 +18,7 @@ import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { FollowButton, ListingSheet, Mercato, Negotiation, SaleNegotiation, SaleToggle, heat } from './mercato';
 import { Portrait } from './portrait';
+import { divRef, tierOf } from './kit';
 
 // Effectif : vue d'ensemble, puis les joueurs en cartes rangées par ligne (teinte du rang pour ta division : bronze,
 // argent, or, élite) ou, sur PC, en tableau d'analyste ; fiche joueur façon magazine FootOFF Media, comparateur
@@ -43,10 +44,7 @@ function AbsentTag({ p, long = false }) {
   if (!a) return null;
   return <span className={`abs-tag ${a.kind}`} title={a.label}>{long ? a.label : a.short}</span>;
 }
-const divRef = (s) => { const d = DIVISIONS[s.divisionIndex]; return (d.oppMin + d.oppMax) / 2; };
 const onSale = (s, p) => (s.saleList || []).some((x) => x.id === p.id); // mis en vente au mercato
-// rang d'un joueur pour la division (teinte de sa carte) : élite, or, argent, bronze
-export const tierOf = (r, ref) => (r >= ref + 3 ? 'elite' : r >= ref + 1 ? 'gold' : r <= ref - 2 ? 'bronze' : 'silver');
 const VIEW_KEY = 'fo-squad-view';
 const LINES = [['G', 'Gardiens'], ['D', 'Défenseurs'], ['M', 'Milieux'], ['A', 'Attaquants']];
 

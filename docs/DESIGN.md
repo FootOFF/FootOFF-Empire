@@ -405,6 +405,8 @@ la caméra le cadre dans la zone libre puis oscille lentement autour, comme en v
 
 L'après-match liste l'infirmerie et les suspensions du match (joueur, durée, motif), repris dans une notification
 d'avertissement qui mène à l'Effectif, et au journal.
+Au téléphone, les deux boutons du pied (« Stats du match », « Voir le classement » ou « Continuer ») sont l'un sous
+l'autre, pleine largeur : côte à côte, le libellé débordait du parallélogramme (un `.btn` ne coupe jamais son texte).
 Après une journée de championnat, l'après-match a deux temps : le résultat (bouton « Voir le classement »), puis le
 classement de la division mis à jour (`StandingsTable` de `src/ui/panels.jsx`, partagé avec le panneau Saison) : la
 colonne d'évolution montre les places gagnées (▲ vert) ou perdues (▼ rouge) sur la journée, et une pastille dit où
@@ -523,7 +525,10 @@ Onglet Joueurs de l'Effectif (`src/ui/squad.jsx`, refait le 2026-10-24 : « mode
   nom dans le tableau, dans les étiquettes de la fiche (`AbsentTag`).
 - Vue d'ensemble en cinq repères : niveau du onze (doré), condition moyenne, âge moyen, forme, valeur totale.
 - Filtres en onglets avec leur nombre (Tous, Gardiens, Défenseurs, Milieux, Attaquants) et menu de tri (poste :
-  rangées par ligne ; niveau, âge, condition : d'un seul tenant).
+  rangées par ligne ; niveau, âge, condition : d'un seul tenant). La liste du tri s'ouvre par-dessus les cartes :
+  `.sq-controls` est positionné avec un `z-index`, car l'animation d'entrée des enfants du panneau (`fo-rise`) fait de
+  chacun un contexte d'empilement ; sans cela les cartes la recouvraient et prenaient ses touchers (le tri semblait
+  cassé au téléphone).
 - Habillage Tribune (maquette A6) : carte en plaque au coin coupé, bandeau du rang en haut (bronze, argent, or,
   élite), niveau en grand, portrait de 96 px, nom en capitales, trois points forts, barre de condition (ou bandeau
   rouge d'absence), pied avec la fourchette du potentiel et la forme des cinq derniers matchs en pastilles penchées.
@@ -541,7 +546,12 @@ Onglet Joueurs de l'Effectif (`src/ui/squad.jsx`, refait le 2026-10-24 : « mode
 
 Chaque départ (vente, plan de redressement, retraite) archive le joueur dans `alumni` avec tout son parcours.
 La fiche carrière (`src/ui/career.jsx`, calculs dans `src/game/career.js`) s'ouvre depuis les classements et les
-légendes de l'onglet Stats, le Stats Pass d'un match, la fiche joueur et l'onglet Anciens de l'effectif.
+légendes de l'onglet Stats, le Stats Pass d'un match, la fiche joueur et l'onglet Anciens de l'effectif. Son en-tête
+est celui de la fiche joueur (`sh-hero` teinté du rang, niveau en grand avec sa légende « niveau / 20 » ou « au
+départ / 20 », poste, nom en deux lignes, portrait, étiquettes Au club / Vendu / Retraité et saisons) ; le bouton vers
+la fiche joueur dit seulement « Voir sa fiche joueur » (le libellé long débordait au téléphone). Le niveau de référence
+de la division (`divRef`) et le rang (`tierOf`) viennent de `src/ui/kit.jsx`, partagés par l'effectif, le mercato,
+l'académie, l'entraînement et la carrière.
 
 ## Mercato
 

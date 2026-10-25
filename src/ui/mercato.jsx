@@ -44,8 +44,6 @@ export function heat(v, ref) { // même code couleur que l'Effectif : fort, bon,
   return '';
 }
 const potMid = (s, p) => { const r = potentialRange(p, s); return r ? (r[0] + r[1]) / 2 : playerRating(p); };
-// rang d'un joueur pour la division (teinte de sa carte, comme dans l'Effectif) : élite, or, argent, bronze
-const tierOf = (r, ref) => (r >= ref + 3 ? 'elite' : r >= ref + 1 ? 'gold' : r <= ref - 2 ? 'bronze' : 'silver');
 // recherche sans accents ni majuscules (« leo » trouve « Léo »)
 const fold = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const pct = (v) => `${v > 0 ? '+' : ''}${Math.round(v * 100)} %`;

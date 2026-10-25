@@ -1,8 +1,14 @@
 import React from 'react';
+import { DIVISIONS } from '../game/constants';
 import { fmtRating } from './format';
 
 // Briques de l'interface FootOFF Empire (voir docs/DESIGN.md) : un seul dessin pour chaque élément récurrent,
 // pour que les écrans partagent les mêmes tailles, espacements et alignements.
+
+// Niveau de référence de la division du club (milieu de la fourchette des adversaires) : les niveaux se lisent par
+// rapport à lui. Rang d'un joueur pour la division (teinte de sa carte et de sa fiche) : élite, or, argent, bronze.
+export const divRef = (s) => { const d = DIVISIONS[s.divisionIndex]; return (d.oppMin + d.oppMax) / 2; };
+export const tierOf = (r, ref) => (r >= ref + 3 ? 'elite' : r >= ref + 1 ? 'gold' : r <= ref - 2 ? 'bronze' : 'silver');
 
 // Libellé en capitales (Geist Mono), au-dessus d'un titre ou d'un bloc.
 export function Eyebrow({ children, muted = false, className = '' }) {
