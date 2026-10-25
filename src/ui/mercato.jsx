@@ -3,8 +3,8 @@ import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from '../game/constants';
 import { ATTRS, GK_ATTRS, costOf, playerRating, potentialRange, wageOf } from '../game/players';
 import {
   BUYERS, CANDIDATES, SALE_TRIES, TRIES, acceptChance, auctionDone, ceilTo, demandChance, findOnMarket, fitGain,
-  listingOutlook, offerBlock, offersFor, outbidChance, pctOf, pendingCounters, poolOf, roundKey, roundTo, saleReasons,
-  stanceOf, stepFor, tagsOf, valueOf,
+  listingOutlook, moveWhen, offerBlock, offersFor, outbidChance, pctOf, pendingCounters, poolOf, roundKey, roundTo, saleBlock,
+  saleReasons, stanceOf, stepFor, tagsOf, valueOf,
 } from '../game/mercato';
 import {
   acceptCounter, answerOffer, demandOffer, makeOffer, setForSale, startAuction, toggleShortlist,
@@ -541,12 +541,13 @@ function OffersView({ state, refLvl, run, ask, onOffer, onSale, onList }) {
             <p className="mc-hint">Valables jusqu’à la prochaine journée. « Négocier » : tu fixes ta demande, avec ta chance exacte d’accord. « Faire monter les enchères » : chaque club tente de battre la meilleure offre, ou se retire.</p>
             {groups.map((g) => {
               const done = auctionDone(state, g.p.id);
+              const block = saleBlock(state, g.p); // blessé ou suspendu : ni acceptée, ni négociée
               const hopeless = g.list.length >= 2 && g.list.slice(1).every((o) => outbidChance(o, g.list[0].amount) <= 0);
               return (
                 <div key={g.p.id} className="mc-group">
                   <div className="mc-group-head">
                     <span className={`mc-medal sm ${heat(playerRating(g.p), refLvl)}`}><b>{fmtRating(playerRating(g.p))}</b><span>{g.p.pos}</span></span>
-                    <span className="mc-row-main"><b>{g.p.name}</b><em>{g.sale ? `En vente à ${fmtMoney(g.sale.price)}` : 'Pas à vendre'} · valeur {fmtMoney(valueOf(state, g.p))}</em></span>
+                    <span className="mc-row-main"><b>{g.p.name}</b><em>{block ? block.text : <>{g.sale ? `En vente à ${fmtMoney(g.sale.price)}` : 'Pas à vendre'} · valeur {fmtMoney(valueOf(state, g.p))}</>}</em></span>
                     <span className="mc-group-count">{plural(g.list.length, 'club', 'clubs')}</span>
                   </div>
                   <ul className="mc-rows">
@@ -561,8 +562,8 @@ function OffersView({ state, refLvl, run, ask, onOffer, onSale, onList }) {
                           </span>
                           <span className="mc-amount"><b>{fmtMoney(o.amount)}</b><em className={o.talks?.closed ? '' : tone}>{o.talks?.closed ? 'dernier mot' : note}</em></span>
                           <div className="mc-row-actions">
-                            <button className="btn btn-sm" disabled={!canSell} onClick={() => accept(o, g.p)} title={canSell ? '' : 'Effectif au minimum (11 joueurs)'}>Accepter</button>
-                            {!o.talks?.closed && <button className="btn ghost btn-sm" onClick={() => onSale(o.id)}>Négocier</button>}
+                            <button className="btn btn-sm" disabled={!canSell || !!block} onClick={() => accept(o, g.p)} title={block ? block.text : canSell ? '' : 'Effectif au minimum (11 joueurs)'}>Accepter</button>
+                            {!o.talks?.closed && !block && <button className="btn ghost btn-sm" onClick={() => onSale(o.id)}>Négocier</button>}
                             <button className="linkbtn" onClick={() => run((s) => answerOffer(s, o.id, 'refuse'))}>Refuser</button>
                           </div>
                         </li>
@@ -590,12 +591,13 @@ function OffersView({ state, refLvl, run, ask, onOffer, onSale, onList }) {
           <ul className="mc-rows">
             {[...state.players].sort((a, b) => 'GDMA'.indexOf(a.pos) - 'GDMA'.indexOf(b.pos) || playerRating(b) - playerRating(a)).map((p) => {
               const on = listed.some((x) => x.p === p);
+              const block = saleBlock(state, p);
               return (
-                <li key={p.id} className={`mc-row pick ${on ? 'on' : ''}`}>
+                <li key={p.id} className={`mc-row pick ${on ? 'on' : ''} ${block && !on ? 'blocked' : ''}`}>
                   <span className={`mc-medal sm ${heat(playerRating(p), refLvl)}`}><b>{fmtRating(playerRating(p))}</b><span>{p.pos}</span></span>
-                  <span className="mc-row-main"><b>{p.name}</b><em>{p.age} ans · valeur {fmtMoney(valueOf(state, p))}{state.lineup?.includes(p.id) ? ' · titulaire' : ''}</em></span>
+                  <span className="mc-row-main"><b>{p.name}</b><em>{block && !on ? `${block.short} : vente impossible` : <>{p.age} ans · valeur {fmtMoney(valueOf(state, p))}{state.lineup?.includes(p.id) ? ' · titulaire' : ''}</>}</em></span>
                   {/* mise en vente : la fenêtre du prix s'ouvre ; retrait immédiat */}
-                  <button className={`switch ${on ? 'on' : ''}`} role="switch" aria-checked={on} aria-label={`${p.name} en vente`} onClick={() => (on ? run((s) => setForSale(s, p.id, false)) : onList(p.id))}><i /></button>
+                  <button className={`switch ${on ? 'on' : ''}`} role="switch" aria-checked={on} aria-label={`${p.name} en vente`} disabled={!!block && !on} title={block && !on ? block.text : ''} onClick={() => (on ? run((s) => setForSale(s, p.id, false)) : onList(p.id))}><i /></button>
                 </li>
               );
             })}
@@ -606,10 +608,11 @@ function OffersView({ state, refLvl, run, ask, onOffer, onSale, onList }) {
           <ul className="mc-rows">
             {listed.map(({ p, price }) => {
               const n = offersFor(state, p.id).length;
+              const block = saleBlock(state, p);
               return (
                 <li key={p.id} className="mc-row">
                   <span className={`mc-medal sm ${heat(playerRating(p), refLvl)}`}><b>{fmtRating(playerRating(p))}</b><span>{p.pos}</span></span>
-                  <span className="mc-row-main"><b>{p.name}</b><em>En vente à {fmtMoney(price)} · {n ? plural(n, 'club intéressé', 'clubs intéressés') : 'd’autres clubs après la journée'}</em></span>
+                  <span className="mc-row-main"><b>{p.name}</b><em>En vente à {fmtMoney(price)} · {block ? `${block.short.toLowerCase()} : les clubs reviendront à son retour` : n ? plural(n, 'club intéressé', 'clubs intéressés') : 'd’autres clubs après la journée'}</em></span>
                   <button className="linkbtn" onClick={() => run((s) => setForSale(s, p.id, false))}>Retirer</button>
                 </li>
               );
@@ -658,7 +661,7 @@ function LogView({ state }) {
               <span className={`mc-way ${x.kind}`}>{x.kind === 'in' ? 'Arrivée' : 'Départ'}</span>
               <span className="mc-row-main">
                 <b>{x.name}</b>
-                <em>{x.pos} · {x.age} ans · {fmtRating(x.rating)} · {x.kind === 'in' ? (x.club ? clubAfter('de ', x.club) : 'joueur libre') : `vers ${withArticle(x.club)}${x.board ? ' (vendu par le conseil)' : ''}`} · Saison {x.season}{x.round ? `, après la journée ${x.round}` : ', avant la reprise'}</em>
+                <em>{x.pos} · {x.age} ans · {fmtRating(x.rating)} · {x.kind === 'in' ? (x.club ? clubAfter('de ', x.club) : 'joueur libre') : `vers ${withArticle(x.club)}${x.board ? ' (vendu par le conseil)' : ''}`} · {moveWhen(x.season, x.round)}</em>
               </span>
               <b className={`mc-fee ${x.kind === 'in' ? 'down' : 'up'}`}>{x.kind === 'in' ? '−' : '+'}{fmtMoney(x.fee)}</b>
             </li>
@@ -987,7 +990,7 @@ export function ListingSheet({ state, p, run, refLvl, onClose, onOffers }) {
 
         <footer className="ng-foot">
           {!again && <LiveChance label="Payé aussitôt" shown={shown} note={shown === 100 ? 'Au moins un club paiera ce prix dès la mise en vente' : shown === 0 ? 'Aucun club ne paiera ce prix d’emblée : offres plus basses, à négocier' : null} />}
-          <button className="btn btn-xl" onClick={list}>Mettre en vente · {fmtMoney(price)}</button>
+          <button className="btn btn-xl" onClick={list} disabled={!!saleBlock(state, p)}>Mettre en vente · {fmtMoney(price)}</button>
           <span className="ng-tries">{again ? 'Pas de nouveau club avant la prochaine journée' : `Au moins un club fait aussitôt une offre · jusqu’à ${CANDIDATES} étudient le dossier`}</span>
         </footer>
       </article>
@@ -1171,8 +1174,9 @@ export function FollowButton({ state, p, run }) {
 // « Ne plus vendre » le retire tout de suite.
 export function SaleToggle({ state, p, run, onList }) {
   const on = (state.saleList || []).some((x) => x.id === p.id);
+  const block = !on && saleBlock(state, p); // la fiche dit pourquoi (squad.jsx, pied de la fiche)
   return (
-    <button type="button" className={`btn ${on ? 'ghost' : ''}`} onClick={() => (on ? run((s) => setForSale(s, p.id, false)) : onList(p))}>
+    <button type="button" className={`btn ${on ? 'ghost' : ''}`} disabled={!!block} onClick={() => (on ? run((s) => setForSale(s, p.id, false)) : onList(p))}>
       {on ? 'Ne plus vendre' : 'Mettre en vente'}
     </button>
   );

@@ -4,6 +4,14 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.12', date: '2026-10-25', title: 'Ventes encadrées',
+    items: [
+      'Un joueur blessé ou suspendu ne peut plus être vendu : ni mise en vente, ni offre acceptée ; les clubs reviennent à son retour.',
+      'Une recrue ne peut pas être revendue avant le match qui suit sa signature.',
+      'Fiche joueur : « Arrivée au club » montre ce qu’il a coûté (indemnité ou prime), quand et d’où il est venu.',
+    ],
+  },
+  {
     version: '0.3.11', date: '2026-10-25', title: 'Le direct, rien que le direct',
     items: [
       'Pendant un match, la caméra reste à la réalisation : plus de rotation, de zoom ni de déplacement, et les bâtiments ne s’ouvrent plus d’un toucher.',

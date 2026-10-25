@@ -1,5 +1,5 @@
 import { DIVISIONS, SQUAD_MAX } from './constants';
-import { costOf, marketValue, playerRating, potentialRange, ratingAt } from './players';
+import { absenceOf, costOf, marketValue, playerRating, potentialRange, ratingAt } from './players';
 import { slotsOf } from './tactics';
 import { clamp, rnd } from './utils';
 import { mercatoRep } from './reputation';
@@ -17,6 +17,30 @@ export const TRIES = 3; // offres possibles par joueur et par journée
 const SPREAD = 0.07; // largeur de la zone d'hésitation du vendeur (en part du prix demandé)
 
 export const roundKey = (s) => `${s.seasonNumber}:${s.round}`;
+// Date du calendrier : la période entre deux matchs, coupes comprises (roundKey ne change qu'aux journées de
+// championnat). Une recrue ne se revend pas avant le match suivant sa signature.
+export const dateKey = (s) => `${s.seasonNumber}:${s.calIndex || 0}:${s.round}`;
+// Moment d'un transfert, pour le bilan du mercato et la fiche du joueur.
+export const moveWhen = (season, round) => `Saison ${season}${round ? `, après la journée ${round}` : ', avant la 1re journée'}`;
+
+// Pourquoi un joueur de l'effectif ne peut pas être vendu maintenant (null : il peut l'être). Blessé ou suspendu, il
+// attend son retour ; recruté depuis le dernier match, il attend le suivant. Ni mise en vente, ni offre acceptée ou
+// négociée, ni offre des clubs (transfers.js) tant que dure le blocage.
+export function saleBlock(s, p) {
+  const a = absenceOf(p);
+  if (a?.kind === 'injury') return { short: 'Blessé', text: 'Blessé : il ne peut pas être vendu avant son retour.' };
+  if (a) return { short: 'Suspendu', text: 'Suspendu : il ne peut pas être vendu avant d’avoir purgé sa suspension.' };
+  if (p.signed?.date === dateKey(s)) return { short: 'Recruté aujourd’hui', text: 'Recruté aujourd’hui : il ne peut pas être revendu avant le prochain match.' };
+  return null;
+}
+
+// Arrivée d'un joueur de l'effectif : montant, club d'origine (null : joueur libre) et moment de la signature.
+// Signatures d'avant cette fiche : retrouvées dans le bilan du mercato. null : effectif de départ ou formé au club.
+export function arrivalOf(s, p) {
+  if (p.signed) return p.signed;
+  const m = [...(s.mercatoLog || [])].reverse().find((x) => x.kind === 'in' && x.id === p.id);
+  return m ? { fee: m.fee, from: m.club, season: m.season, round: m.round } : null;
+}
 export const poolOf = (s) => [...(s.market || []), ...(s.transfers || [])];
 export const findOnMarket = (s, id) => poolOf(s).find((p) => p.id === id) || null;
 

@@ -3,7 +3,7 @@ import { officeSize } from './economy';
 import { makePlayer, playerRating } from './players';
 import { distinctClubName, randomClubName } from './names';
 import {
-  BUYERS, CANDIDATES, buyerView, drawBuyer, formOf, openingOffer, roundTo, spontaneousBuyer, valueOf, withinReach,
+  BUYERS, CANDIDATES, buyerView, drawBuyer, formOf, openingOffer, roundTo, saleBlock, spontaneousBuyer, valueOf, withinReach,
 } from './mercato';
 import { clamp, pick, ri, rnd } from './utils';
 
@@ -99,11 +99,13 @@ function interestFor(s, p, price, key, listing, taken = []) {
 }
 
 // Offres de la journée : les clubs intéressés par chaque joueur mis en vente (sans club assuré), et plus rarement une
-// offre spontanée pour un joueur en grande forme qui n'est pas à vendre.
+// offre spontanée pour un joueur en grande forme qui n'est pas à vendre. Aucune pour un joueur blessé ou suspendu : mis
+// en vente, il le reste, et les clubs reviennent à son retour.
 function incomingOffers(s, key) {
   const offers = [];
   const listed = new Map((s.saleList || []).map((x) => [x.id, x]));
   for (const p of s.players) {
+    if (saleBlock(s, p)) continue;
     const sale = listed.get(p.id);
     if (sale) {
       offers.push(...interestFor(s, p, sale.price || roundTo(valueOf(s, p)), key, false));

@@ -6,7 +6,7 @@ import { seasonForecast } from '../game/economy';
 import { teamLevel } from '../game/match';
 import { clubAfter, deName } from '../game/names';
 import { bestSigning } from '../game/advice';
-import { findOnMarket, offersFor, poolOf } from '../game/mercato';
+import { arrivalOf, findOnMarket, moveWhen, offersFor, poolOf, saleBlock } from '../game/mercato';
 import { slotsOf } from '../game/tactics';
 import { fmtMoney, fmtRating } from './format';
 import { IconChevron, IconChevronLeft, IconClose, IconRadar } from './icons';
@@ -569,6 +569,8 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
   // offres reçues pour ce joueur, la meilleure d'abord (mis en vente, les clubs intéressés font aussitôt la leur)
   const offers = market ? [] : offersFor(state, p.id);
   const bid = offers[0] || null;
+  const block = market ? null : saleBlock(state, p); // blessé, suspendu ou recruté depuis le dernier match : pas de vente
+  const arrival = market ? null : arrivalOf(state, p); // montant, club d'origine et moment de sa signature
   const talks = (market && p.talks) || {};
   const avg = st.apps ? st.sum / st.apps : null;
   const plural = (n, one, many) => (n > 1 ? many : one);
@@ -646,9 +648,25 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
         <div className="sh-tiles">
           <div><span>Âge</span><b>{p.age}<small> ans</small></b></div>
           {!market && <div><span>Condition</span><b className={fitTone(fitOf(p))}>{Math.round(fitOf(p))} %</b></div>}
-          {!market && <div><span>Cette saison</span><b>{st.apps || 0}<small> {plural(st.apps || 0, 'match', 'matchs')}</small></b></div>}
+          {!market && <div><span>Saison</span><b>{st.apps || 0}<small> {plural(st.apps || 0, 'match', 'matchs')}</small></b></div>}
           <div><span>{market ? 'Forme' : 'Note moy.'}</span><b className={noteTone}>{note !== null ? fmtRating(note) : '–'}</b></div>
         </div>
+
+        {!market && (
+          <section className="sh-sec sh-arrival">
+            <div className="sh-row">
+              <span className="sh-cap">Arrivée au club</span>
+              {arrival && <span className="sh-pot">{arrival.from ? 'Indemnité' : 'Prime'} <b className="gold">{fmtMoney(arrival.fee)}</b></span>}
+            </div>
+            <p className="sh-empty">
+              {arrival
+                ? `${moveWhen(arrival.season, arrival.round)} · ${arrival.from ? `venu ${clubAfter('de ', arrival.from)}` : 'joueur libre'}`
+                : p.academy
+                  ? `Formé au club · en équipe première depuis la saison ${p.joined ?? 1}`
+                  : `Au club depuis la saison ${p.joined ?? 1}${(p.joined ?? 1) === 1 ? ' · effectif de départ' : ''}`}
+            </p>
+          </section>
+        )}
 
         {!market && (
           <section className="sh-sec">
@@ -735,6 +753,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
           ) : (
             <span>Salaire <b>{fmtMoney(wageOf(p, state.divisionIndex))}</b> par saison · valeur <b>{fmtMoney(value)}</b></span>
           )}
+          {block && <span className="sh-block">{block.text}</span>}
           <div className="sh-actions">
             {market && <FollowButton state={state} p={p} run={run} />}
             <button className="sh-compare" onClick={onCompare} aria-label="Comparer" title="Comparer"><IconRadar /></button>

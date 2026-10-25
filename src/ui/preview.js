@@ -27,6 +27,7 @@ export const SCREENS = [
   ['apercu', 'Fenêtre d’aperçu · niveaux d’un bâtiment construit'],
   ['effectif', 'Effectif · joueurs'],
   ['fiche', 'Fiche joueur'],
+  ['fiche-recrue', 'Fiche joueur · recrue du jour (arrivée, vente bloquée)'],
   ['composition', 'Effectif · composition'],
   ['anciens', 'Effectif · anciens joueurs'],
   ['marche', 'Mercato · recruter'],
@@ -143,6 +144,7 @@ export function previewState(screen) {
       s.trophies = [...r.trophies];
     }
   }
+  if (screen === 'fiche-recrue') { s.money += 50000; signPlayer(s, s.market[0].id); } // signé aujourd'hui : pas de revente avant le match
   s.offline = null;
   return s;
 }
@@ -275,6 +277,7 @@ export function previewUi(screen, s) {
     case 'apercu': return { sel: { plotId: 't1', sector: 'main', window: true } };
     case 'effectif': return { panel: 'squad' };
     case 'fiche': return { panel: 'squad', squad: { sheet: s.players.find((p) => p.season?.apps)?.id ?? s.players[0].id } };
+    case 'fiche-recrue': return { panel: 'squad', squad: { sheet: (s.players.find((p) => p.signed) || s.players[0]).id } };
     case 'composition': return { panel: 'squad', squadTab: 'lineup' };
     case 'anciens': return { panel: 'squad', squadTab: 'alumni' };
     case 'marche': case 'transferts': return { panel: 'mercato' };

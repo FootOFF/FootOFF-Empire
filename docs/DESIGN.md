@@ -541,6 +541,11 @@ Onglet Joueurs de l'Effectif (`src/ui/squad.jsx`, refait le 2026-10-24 : « mode
   rouge d'absence), pied avec la fourchette du potentiel et la forme des cinq derniers matchs en pastilles penchées.
 - Fiche joueur (maquette A7) : en-tête en plaque (prénom au-dessus du nom en grand, poste, numéro, titulaire, pied),
   niveau et potentiel sur l'échelle de 0 à 20, puis condition, saison, carrière ; action principale collée en bas.
+  Sous les quatre repères, « Arrivée au club » (`arrivalOf`, `src/game/mercato.js`) : indemnité (transfert) ou prime
+  (joueur libre) en or, moment (`moveWhen` : « Saison 2, après la journée 3 », comme le bilan du mercato) et club
+  d'origine. La signature est notée sur le joueur (`p.signed` : montant, club, saison, journée, date du calendrier) ;
+  pour les signatures plus anciennes, elle est retrouvée dans le bilan du mercato. Formé au club ou effectif de départ :
+  la saison d'arrivée. Aperçu : `?ecran=fiche-recrue`.
 - Joueurs en cartes rangées par ligne (Gardiens, Défenseurs, Milieux, Attaquants ; effectif et moyenne de la ligne).
   Une carte : teinte du rang pour la division (bronze : faible, argent, or : fort, élite : très fort, avec halo et
   reflet qui passe), niveau en grand (dégradé doré dès l'or) et poste, numéro, « XI » pour un titulaire, portrait sur
@@ -596,7 +601,11 @@ certain à 0 % ou 100 % : refus, club qui se retire, accord assuré). Elle suit 
 défiler : sous les raccourcis, le bas de la fenêtre la cachait au téléphone (demande de l'utilisateur, 2026-10-24).
 Le corps garde « Ce qui joue » : les raisons, et pour la mise en vente la chance d'avoir deux clubs en lice.
 
-Ventes (une seule voie, la négociation ; plus de vente immédiate à sa valeur), en trois temps :
+Ventes (une seule voie, la négociation ; plus de vente immédiate à sa valeur), en trois temps. Un joueur blessé, suspendu
+ou recruté depuis le dernier match (même date du calendrier, coupes comprises : `dateKey`) ne peut pas être vendu
+(`saleBlock`, `src/game/mercato.js`) : ni mise en vente (bouton grisé, la raison en ambre dans le pied de la fiche ;
+interrupteur grisé dans la vue Offres), ni offre acceptée ou négociée, et les clubs ne font aucune offre tant que dure
+le blocage (`transfers.js`). Déjà en vente, il le reste : les clubs reviennent à son retour.
 1. Mise en vente à son prix : « Mettre en vente » (fiche d'un joueur de l'effectif, ou interrupteur de la vue Offres)
    ouvre une fenêtre avec le prix au curseur (60 à 200 % de sa valeur), la chance exacte qu'un club paie ce prix
    aussitôt et celle d'avoir au moins deux clubs en lice, avec ce qui joue (forme, âge, potentiel, niveau pour la

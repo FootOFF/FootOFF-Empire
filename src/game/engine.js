@@ -2,8 +2,8 @@ import { BUILDINGS, DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN, START_MONEY, up
 import { OFFLINE_CAP, offlinePerHour } from './economy';
 import { assignNumber, costOf, makePlayer, saleValue, wageOf } from './players';
 import {
-  SALE_TRIES, TRIES, acceptChance, auctionDone, counterFor, demandChance, findOnMarket, isSerious, lastWordOf, logMove,
-  offersFor, outbidAmount, outbidChance, roundKey, roundTo, valueOf,
+  SALE_TRIES, TRIES, acceptChance, auctionDone, counterFor, dateKey, demandChance, findOnMarket, isSerious, lastWordOf,
+  logMove, offersFor, outbidAmount, outbidChance, roundKey, roundTo, saleBlock, valueOf,
 } from './mercato';
 import { listingOffers, refreshTransfers } from './transfers';
 import { PLANS, YOUTH_PLACES, advisedPlan, refreshScouting } from './academy';
@@ -248,6 +248,8 @@ function completeSigning(s, p, fee) {
   book(s, 'signings', fee);
   addSigning(s.records ||= rebuildRecords(s), p, fee, s); // record : plus gros achat
   p.joined = s.seasonNumber;
+  // montant, club d'origine et moment de la signature (fiche du joueur) ; date : pas de revente avant le match suivant
+  p.signed = { fee, from: from || null, season: s.seasonNumber, round: s.round, date: dateKey(s) };
   assignNumber(s.players, p);
   s.players.push(p);
   s.signings = (s.signings || 0) + 1;
@@ -317,7 +319,7 @@ export function toggleShortlist(s, id) {
 // jusqu'à la fin de la journée : remis en vente, il les retrouve, sans nouveaux clubs avant la journée suivante.
 export function setForSale(s, id, on, price = null) {
   const p = s.players.find((q) => q.id === id);
-  if (!p) return null;
+  if (!p || (on && saleBlock(s, p))) return null; // blessé, suspendu ou tout juste recruté : pas de mise en vente
   const was = (s.saleList || []).find((x) => x.id === id);
   s.saleList = (s.saleList || []).filter((x) => x.id !== id);
   s.offers ||= [];
@@ -346,6 +348,7 @@ export function answerOffer(s, offerId, action) {
   const p = o && s.players.find((q) => q.id === o.playerId);
   if (!p) return null;
   if (action === 'accept') {
+    if (saleBlock(s, p)) return null;
     const note = saleNote(s, o, p, 'sold');
     if (!sellPlayer(s, p.id, o.amount, o.club)) return null;
     s.lastSale = note;
@@ -362,7 +365,7 @@ export function answerOffer(s, offerId, action) {
 export function demandOffer(s, offerId, demand) {
   const o = (s.offers || []).find((x) => x.id === offerId);
   const p = o && s.players.find((q) => q.id === o.playerId);
-  if (!p || !(demand > o.amount) || o.talks?.closed || s.players.length <= SQUAD_MIN) return null;
+  if (!p || !(demand > o.amount) || o.talks?.closed || s.players.length <= SQUAD_MIN || saleBlock(s, p)) return null;
   const chance = demandChance(o, demand);
   if (Math.random() < chance) {
     const note = saleNote(s, o, p, 'sold', { amount: demand, demand, offered: o.amount });

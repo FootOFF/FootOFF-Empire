@@ -959,6 +959,8 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .sh-actions { display: flex; gap: 8px; }
 .sh-foot > span.sh-bid { color: var(--text-2); animation: fo-up .35s var(--ease); }
 .sh-foot > span.sh-bid b.gold { color: var(--gold-light); font-weight: 600; }
+.sh-foot > span.sh-block { color: var(--amber); } /* pourquoi il ne peut pas être vendu (mercato.js, saleBlock) */
+.sh-arrival .sh-pot b.gold { color: var(--gold-light); }
 .sh-actions .btn { flex: 1; min-height: 48px; font-size: 19px; }
 .sh-compare {
   width: 48px; height: 48px; flex-shrink: 0; border: 0; background: var(--plate-3); clip-path: var(--cut-shape-sm); color: var(--gold-light);
@@ -3663,6 +3665,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .mc-row.counter { border-color: var(--gold-line); background: var(--gold-soft); }
 .mc-row.offer { flex-wrap: wrap; padding: var(--s-3); animation: fo-up .3s var(--ease) both; }
 .mc-row.pick.on { border-color: var(--gold-line); }
+.mc-row.pick.blocked em { color: var(--amber); } /* ne peut pas être vendu (blessé, suspendu, tout juste recruté) */
 .mc-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .mc-row-main b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mc-row-main em { font-style: normal; font-size: var(--t-xs); color: var(--muted); }
