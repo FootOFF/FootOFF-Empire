@@ -47,7 +47,7 @@ export const RULES = [
     id: 'complexe', title: 'Le complexe',
     body: [
       'Sept parcelles autour du stade, à bâtir dans l’ordre que tu veux, chaque bâtiment une seule fois, cinq niveaux chacun.',
-      'Stade : 600 places au départ, jusqu’à 75 000. Quand la demande dépasse la capacité, des supporters restent dehors : agrandis, ou passe en tarif Premium ou Prestige.',
+      'Stade : 600 places au départ, jusqu’à 75 000. Quand la demande dépasse la capacité, des supporters restent dehors : agrandis, ou passe en tarif Premium ou Prestige (Direction du club, onglet Billetterie).',
       'Centre d’entraînement : séances entre les matchs, une épreuve en 3D par ligne (jouée, elle rapporte plus ; simulée, le gain moyen est assuré), nouvelles épreuves à chaque niveau, programmes de signes distinctifs dès le niveau 3, meilleure récupération.',
       'Académie : six jeunes recrutés gratuitement parmi les repérés après chaque journée, qui progressent et montent en équipe première quand tu le décides ; à 19 ans, un jeune qui n’est pas monté s’en va.',
       'Espace supporters (public, buvette, boutique, réputation), Siège et partenaires (sponsors, revenus pendant ton absence), Bureau des transferts (réseau de recruteurs), Direction du club (droits TV, baisses de salaire, billetterie).',

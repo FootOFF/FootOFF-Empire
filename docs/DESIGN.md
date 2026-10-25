@@ -267,7 +267,12 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
   puces. Contrôle de tous les écrans : `tmp/ph3/scrollcheck.html`.
 - Sélection : rien ne se sélectionne dans le jeu, quel que soit le geste (appui long, double toucher, « Tout
   sélectionner » d'iOS) : CSS `user-select: none` jusqu'à `html`, et `main.jsx` annule toute sélection hors des
-  champs de saisie (la bulle « Copier / Traduire » n'apparaît jamais) ; pas de menu contextuel.
+  champs de saisie (la bulle « Copier / Traduire » n'apparaît jamais) ; pas de menu contextuel. La loupe de Safari
+  (double toucher maintenu, même sur du texte non sélectionnable) : `main.jsx` bloque à la source (`touchstart`) le
+  second appui d'un double toucher, quand il suit de moins de 350 ms un toucher bref au même endroit (40 px), hors
+  champs de saisie ; si c'est encore un toucher bref, son clic est rejoué (`detail: 1`, qu'un bouton à maintenir
+  ignore). Les défilements enchaînés ne sont jamais bloqués (seul un toucher bref ouvre la fenêtre) ; les gestes en
+  pointer events (appui long « Construire », double toucher glissé du zoom 3D) restent intacts.
 - Typographie : le code écrit des espaces ordinaires ; `src/ui/typography.js` pose à l'affichage les insécables
   (avant `: ; ! ?`, dans les guillemets, entre un nombre et son unité), l'apostrophe ’ et les points de
   suspension. Ordinaux avec `ordinal()` : 1er, 1re, 2e.
@@ -488,7 +493,10 @@ ailettes dorées et fontaine, grand siège à rotonde), vignettes `public/ui/bui
   sur la saison et la chance exacte d'accord (un joueur fort pour la division résiste davantage). Acceptée, la baisse
   reste (`wageCut`) jusqu'à une prochaine renégociation ; la prime de signature et la valeur de revente partent du
   salaire de référence.
-- Billetterie : la formule des billets avec la recette prévue de chacune (même outil que la fiche du stade).
+- Billetterie : la formule des billets avec la recette prévue de chacune. C'est le seul endroit où elle se règle : la
+  fiche du stade montre le tarif en vigueur, le public et la recette attendus (`TicketSummary`), avec « Changer le tarif
+  · Direction du club » qui ouvre cet onglet (une fois la Direction construite). Le conseil du staff « Ton stade affiche
+  complet » y mène aussi.
 Les chances affichées sont celles du tirage (vérifié sur 3 000 négociations). Aperçus : `?ecran=direction`,
 `direction-salaires`.
 

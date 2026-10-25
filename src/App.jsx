@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import {
-  applyMatchResult, applyOffline, build, setTicketPolicy, createInitialState, dismissOffline, dismissReview, endSeason, matchContext, upgrade,
+  applyMatchResult, applyOffline, build, createInitialState, dismissOffline, dismissReview, endSeason, matchContext, upgrade,
 } from './game/engine';
 import { BUILDINGS, DIVISIONS, upgradeCost } from './game/constants';
 import { fmtMoney } from './ui/format';
@@ -103,8 +103,9 @@ export default function App({ preview = null }) {
   const [navSwitch, setNavSwitch] = useState(false); // ouvert depuis un onglet de la même section : sans glissement
   const [squadSheet, setSquadSheet] = useState(null); // fiche joueur ouverte d'emblée dans l'Effectif (notification)
   // fiche joueur ouverte par-dessus Saison ou Stats : on la ferme et on retrouve l'écran tel quel (onglet, défilement)
+  const [directionTab, setDirectionTab] = useState(boot.ui.directionTab || 'tv'); // onglet d'ouverture de la Direction
   const [peek, setPeek] = useState(null);
-  useEffect(() => { setPeek(null); }, [panel]);
+  useEffect(() => { setPeek(null); if (panel !== 'direction') setDirectionTab('tv'); }, [panel]);
   const [statsMatch, setStatsMatch] = useState(boot.ui.statsMatch || null); // 'last' : Stats Pass du dernier match ouvert d'emblée
   const [trophyTab, setTrophyTab] = useState('honours'); // onglet d'ouverture de la salle des trophées
   const [trophyFocus, setTrophyFocus] = useState([]); // succès à montrer d'emblée (notification d'un succès débloqué)
@@ -432,7 +433,11 @@ export default function App({ preview = null }) {
     else if (a.kind === 'panel' && a.panel === 'academy') openAcademy(a.tab, a.ids);
     else if (a.kind === 'panel' && a.panel === 'training') openTraining(a.tab);
     else if (a.kind === 'panel' && (a.panel === 'mercato' || (a.panel === 'squad' && a.tab === 'market'))) openMercato(a.view || null);
-    else if (a.kind === 'panel') { if (a.panel === 'squad') setSquadTab(a.tab || 'players'); openPanel(a.panel); }
+    else if (a.kind === 'panel') {
+      if (a.panel === 'squad') setSquadTab(a.tab || 'players');
+      if (a.panel === 'direction') setDirectionTab(a.tab || 'tv');
+      openPanel(a.panel);
+    }
     else if (a.kind === 'match') play();
   };
   const setTuto = (step) => run((s) => setTutorialStep(s, step));
@@ -624,7 +629,7 @@ export default function App({ preview = null }) {
             state={state}
             run={run}
             notify={notify}
-            initialTab={boot.ui.directionTab}
+            initialTab={directionTab}
             onClose={() => setPanel(null)}
             onBuilding={() => { const plot = plotOf(state, 'direction'); if (plot) selectPlot(plot.id, plot.sector); }}
           />
@@ -653,8 +658,8 @@ export default function App({ preview = null }) {
             onTransfers={() => { setSel(null); openMercato(); }}
             onAcademy={() => openAcademy()}
             onTraining={() => openTraining()}
-            onDirection={() => openPanel('direction')}
-            onTicketPolicy={(id) => run((s) => setTicketPolicy(s, id))}
+            onDirection={() => { setDirectionTab('tv'); openPanel('direction'); }}
+            onTickets={() => { setSel(null); setDirectionTab('tickets'); openPanel('direction'); }}
             onPreview={setBuildView}
             onSwitchPlot={(id) => selectPlot(id, 'main')}
           />

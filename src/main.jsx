@@ -35,6 +35,40 @@ document.addEventListener('selectionchange', () => {
   sel.removeAllRanges();
 });
 document.addEventListener('contextmenu', (e) => { if (!editable(e.target)) e.preventDefault(); });
+
+// iPhone : un double toucher maintenu ouvre la loupe de texte de Safari, même là où rien ne se sélectionne (HUD, fiches).
+// Le second appui d'un double toucher (juste après un toucher bref, au même endroit) est bloqué à la source, comme sur
+// le complexe 3D (Empire3D.jsx) ; s'il reste un toucher bref, son clic est rejoué : un bouton touché deux fois de suite
+// répond deux fois. Seul un toucher bref ouvre la fenêtre : les défilements enchaînés ne sont jamais bloqués. Les
+// gestes au doigt (pointer events) ne sont pas touchés : maintenir « Construire » ou le double toucher glissé du zoom 3D
+// marchent comme avant.
+let lastTap = null; // dernier toucher bref : { t, x, y }
+let touch = null; // toucher en cours : { t, x, y, moved, blocked, target }
+document.addEventListener('touchstart', (e) => {
+  touch = null;
+  if (e.touches.length !== 1) return;
+  const t = e.touches[0];
+  touch = { t: performance.now(), x: t.clientX, y: t.clientY, moved: false, blocked: false, target: e.target };
+  const again = lastTap && touch.t - lastTap.t < 350 && Math.hypot(touch.x - lastTap.x, touch.y - lastTap.y) < 40;
+  if (again && !editable(e.target) && e.cancelable) { e.preventDefault(); touch.blocked = true; }
+}, { passive: false, capture: true });
+document.addEventListener('touchmove', (e) => {
+  const t = e.touches[0];
+  if (touch && t && Math.hypot(t.clientX - touch.x, t.clientY - touch.y) > 10) touch.moved = true;
+}, { passive: true, capture: true });
+document.addEventListener('touchend', () => {
+  if (!touch) return;
+  const now = performance.now();
+  const tap = !touch.moved && now - touch.t < 300;
+  // clic rejoué (le blocage l'a annulé), comme un toucher (detail 1 : un bouton à maintenir, « Construire », l'ignore et
+  // garde son appui long ; detail 0 passerait pour le clavier), sauf sur la 3D : elle sélectionne au relâcher
+  if (touch.blocked && tap && touch.target.isConnected && !touch.target.closest?.('canvas')) {
+    touch.target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window, detail: 1, clientX: touch.x, clientY: touch.y }));
+  }
+  lastTap = tap ? { t: now, x: touch.x, y: touch.y } : null;
+  touch = null;
+}, { capture: true });
+document.addEventListener('touchcancel', () => { touch = null; lastTap = null; }, { capture: true });
 window.__foBoot.started = true; // le code du jeu tourne : index.html n'affichera pas « le jeu n'a pas pu démarrer »
 installErrorLog(); // dernières erreurs du navigateur, pour le rapport de l'écran d'erreur
 const root = createRoot(document.getElementById('root'));

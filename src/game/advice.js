@@ -191,11 +191,12 @@ export function staffTip(s) {
   }
   const gate = expectedGate(s, null);
   const lvl = s.buildings.terrain;
-  if (lvl >= BUILDINGS.terrain.max && gate.demand > gate.capacity * 1.3 && ['popular', 'standard'].includes(s.ticketPolicy || 'standard')) {
+  // les tarifs se règlent à la Direction du club (onglet Billetterie) : le conseil n'a de sens qu'une fois construite
+  if (lvl >= BUILDINGS.terrain.max && s.buildings.direction > 0 && gate.demand > gate.capacity * 1.3 && ['popular', 'standard'].includes(s.ticketPolicy || 'standard')) {
     return {
       id: `pricing-${s.seasonNumber}`, title: 'Ton stade affiche complet',
       text: `${n(gate.demand - gate.capacity)} supporters restent dehors. Passe en tarif Premium ou Prestige : l’enceinte reste pleine et chaque billet rapporte plus.`,
-      action: { kind: 'plot', plot: 't0', sector: 'main', label: 'Régler les tarifs' },
+      action: { kind: 'panel', panel: 'direction', tab: 'tickets', label: 'Régler les tarifs' },
     };
   }
   if (lvl < BUILDINGS.terrain.max && gate.demand > gate.capacity * 1.05) {

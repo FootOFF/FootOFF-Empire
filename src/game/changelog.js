@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    version: '0.3.13', date: '2026-10-25', title: 'Plus de loupe, tarifs à la Direction',
+    items: [
+      'iPhone : un double toucher maintenu n’ouvre plus la loupe de texte de Safari, nulle part dans le jeu ; un bouton touché deux fois de suite répond toujours deux fois.',
+      'Les tarifs des billets se règlent uniquement à la Direction du club (onglet Billetterie) ; la fiche du stade affiche le tarif en vigueur et y mène.',
+    ],
+  },
+  {
     version: '0.3.12', date: '2026-10-25', title: 'Ventes encadrées',
     items: [
       'Un joueur blessé ou suspendu ne peut plus être vendu : ni mise en vente, ni offre acceptée ; les clubs reviennent à son retour.',
