@@ -178,6 +178,11 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
   Grand panneau d'une section sur PC : les onglets se rangent entre le titre et la trésorerie quand ils y tiennent,
   sinon sur leur propre ligne sous le titre (`useTabsBelow`, classe `tabs-below`) ; la trésorerie et la fermeture
   restent toujours en haut à droite (0.7.4 : elles passaient sous le titre dans l'Équipe).
+- Composition (`LineupBoard`) : terrain couché dès 480 px de large (`WIDE`, `@container lu`). Taille des joueurs
+  (`useChipScale`, `--lu-s`, de 0,6 à 1,3) : la plus grande où aucun ne touche son voisin, calculée sur la vraie forme
+  de chaque joueur (portrait et note, nom à sa longueur, condition) et la formation. PC, mi-temps et changement avec la
+  composition dépliée : le panneau prend toute la hauteur et le terrain tout ce qui reste à droite des consignes
+  (0.7.5). Contrôle : aucun chevauchement à 960, 1280 et 1920 px de large ni sur téléphone, pour les six formations.
 - Avant-match sur téléphone : poignée et glisser vers le bas (contenu tout en haut) pour revenir au complexe, comme
   les autres fenêtres (0.7.4) ; la composition dépliée garde son propre geste.
 - Puces de filtre : toujours sur une ligne ; sur téléphone elles se resserrent et défilent en secours.

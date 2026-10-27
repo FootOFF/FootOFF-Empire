@@ -4,6 +4,14 @@
 
 export const CHANGELOG = [
   {
+    version: '0.7.5', date: '2026-10-27', title: 'Une composition plus grande',
+    items: [
+      'Sur PC, à la mi-temps et pendant un changement, la composition dépliée prend tout l’écran : le terrain couché, bien plus grand, à droite des consignes.',
+      'Les joueurs du terrain prennent la plus grande taille possible sans jamais se toucher, selon la taille de l’écran et la formation : plus de noms qui se chevauchent, même en 3-5-2 ou en 5-3-2. Sur un grand écran, ils sont plus gros qu’avant.',
+      'À l’avant-match et dans l’onglet Composition, le terrain est plus haut et se couche dès que la place le permet.',
+    ],
+  },
+  {
     version: '0.7.4', date: '2026-10-27', title: 'Petites finitions',
     items: [
       'Sur PC, dans l’Équipe, la trésorerie et le bouton Fermer restent en haut à droite, à côté du titre ; les onglets passent sur leur propre ligne quand ils n’y tiennent pas.',

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { POS_LABELS } from '../game/constants';
 import { absenceOf, available, fitOf, playerRating, ratingAt } from '../game/players';
@@ -25,6 +25,71 @@ import { IconCheck } from './icons';
 const ORDER = { G: 0, D: 1, M: 2, A: 3 };
 const HOLD_MS = 170;
 const lastOf = (n) => n.split(' ').slice(1).join(' ') || n;
+
+// Terrain couché dès que la composition a cette largeur (styles.css, @container lu : même seuil).
+const WIDE = 480;
+
+// Taille des joueurs du terrain : la plus grande pour laquelle aucun ne touche son voisin, selon la taille du terrain,
+// la formation (un 3-5-2 serre ses joueurs plus qu'un 4-3-3) et la vraie forme de chaque joueur : portrait et note, nom
+// à sa longueur, condition. Les postes sont placés comme dans styles.css (.lu-chip) ; l'échelle agrandit chaque joueur
+// autour de son poste. Entre 0,6 (petit terrain) et 1,3 (grand écran) ; posée sur le terrain en --lu-s.
+const GAP = 3; // px d'écart minimal entre deux joueurs
+function chipParts(chip) { // rectangles du joueur, sans l'échelle, centrés sur son poste
+  const cx = chip.offsetWidth / 2;
+  const cy = chip.offsetHeight / 2;
+  const rects = [];
+  const add = (x, y, w, h) => { if (w && h) rects.push([x - cx, y - cy, w, h]); };
+  const face = chip.querySelector('.lu-face');
+  if (face) {
+    add(face.offsetLeft, face.offsetTop, face.offsetWidth, face.offsetHeight);
+    for (const b of face.querySelectorAll('.lu-rate, .lu-note')) add(face.offsetLeft + b.offsetLeft, face.offsetTop + b.offsetTop, b.offsetWidth, b.offsetHeight);
+  }
+  for (const b of chip.querySelectorAll(':scope > .lu-name, :scope > .lu-fit')) add(b.offsetLeft, b.offsetTop, b.offsetWidth, b.offsetHeight);
+  return rects;
+}
+function clashes(a, pa, b, pb, s) {
+  for (const [ax, ay, aw, ah] of pa) {
+    for (const [bx, by, bw, bh] of pb) {
+      const x1 = a[0] + ax * s;
+      const y1 = a[1] + ay * s;
+      const x2 = b[0] + bx * s;
+      const y2 = b[1] + by * s;
+      if (x1 < x2 + bw * s + GAP && x2 < x1 + aw * s + GAP && y1 < y2 + bh * s + GAP && y2 < y1 + ah * s + GAP) return true;
+    }
+  }
+  return false;
+}
+function useChipScale(pitchRef, rootRef, pitch, key) {
+  useLayoutEffect(() => {
+    const el = pitchRef.current;
+    const root = rootRef.current;
+    if (!el || !root) return undefined;
+    const fit = () => {
+      const W = el.clientWidth;
+      const H = el.clientHeight;
+      const chips = [...el.querySelectorAll('.lu-chip')];
+      if (chips.length !== pitch.length || !W || !H) return;
+      const wide = root.clientWidth >= WIDE;
+      const at = ([x, y]) => (wide ? [W * (0.05 + (100 - y) * 0.009), H * (0.05 + x * 0.009)] : [W * (0.09 + x * 0.0082), H * (0.05 + y * 0.009)]);
+      const pts = pitch.map(at);
+      const parts = chips.map(chipParts);
+      const ok = (s) => {
+        for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) if (clashes(pts[i], parts[i], pts[j], parts[j], s)) return false;
+        return true;
+      };
+      let lo = 0.6;
+      let hi = 1.3;
+      if (ok(hi)) lo = hi;
+      else for (let k = 0; k < 12; k++) { const mid = (lo + hi) / 2; if (ok(mid)) lo = mid; else hi = mid; }
+      el.style.setProperty('--lu-s', lo.toFixed(3));
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    ro.observe(root);
+    return () => ro.disconnect();
+  }, [pitchRef, rootRef, pitch, key]);
+}
 
 // noms courts lisibles : « Joubert », ou « F. Joubert » quand deux joueurs portent le même nom
 export function displayNames(players) {
@@ -105,6 +170,8 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
   const [lift, setLift] = useState(null); // remplaçant saisi (maintien au doigt)
   const drag = useRef(null);
   const root = useRef(null);
+  const pitchEl = useRef(null);
+  useChipScale(pitchEl, root, pitch, lineup.join(','));
   const isLocked = (id) => !!locked?.has(id);
   const entering = (next) => (original ? next.filter((id) => id !== null && !original.includes(id)).length : 0);
   const keyOf = (item) => (item ? `${item.kind}:${item.kind === 'slot' ? item.k : item.id}` : null);
@@ -207,7 +274,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
 
   return (
     <div className={`lu ${ghost ? 'dragging' : ''}`} ref={root} data-noswipe="">
-      <div className="lu-pitch">
+      <div className="lu-pitch" ref={pitchEl}>
         <div className="p2-lines"><i className="half" /><i className="circle" /><i className="box top" /><i className="box bottom" /><i className="six top" /><i className="six bottom" /></div>
         {lineup.map((id, k) => {
           const p = byId[id];

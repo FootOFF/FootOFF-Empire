@@ -2790,8 +2790,9 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 /* =========================================================== composition interactive (lineup.jsx LineupBoard)
    Terrain (onglet Composition, avant-match, mi-temps) : on glisse un joueur sur un poste ou un coéquipier, ou on
    en touche deux. Le doigt ne fait pas défiler la page quand il saisit un joueur du terrain. La largeur de la
-   composition décide du sens du terrain (@container lu) : couché dès 600 px (notre but à gauche, l'attaque vers la
-   droite), dressé en dessous (l'attaque vers le haut). Les postes (tactics.js, en %, attaque vers le haut) sont
+   composition décide du sens du terrain (@container lu) : couché dès 480 px (notre but à gauche, l'attaque vers la
+   droite ; lineup.jsx WIDE), dressé en dessous (l'attaque vers le haut). La taille des joueurs (--lu-s, lineup.jsx
+   useChipScale) est la plus grande où aucun ne touche son voisin, selon le terrain et la formation. Les postes (tactics.js, en %, attaque vers le haut) sont
    ramenés vers le centre pour que les joueurs des côtés restent entiers sur le terrain. */
 .lu { container: lu / inline-size; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .lu-pitch {
@@ -2804,7 +2805,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .lu-pitch .p2-lines .six { left: 37%; right: 37%; height: 6%; }
 .lu-pitch .p2-lines .six.top { top: -1.5px; border-top: 0; }
 .lu-pitch .p2-lines .six.bottom { bottom: -1.5px; border-bottom: 0; }
-@container lu (min-width: 600px) {
+@container lu (min-width: 480px) {
   .lu-pitch {
     width: 100%; aspect-ratio: auto; height: var(--lu-hh, clamp(300px, 54vh, 520px));
     background: repeating-linear-gradient(90deg, #1c3925 0 6.25%, #193320 6.25% 12.5%);
@@ -2821,14 +2822,14 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 
 /* un joueur du onze : portrait, note au poste (parallélogramme), nom, condition */
 .lu-chip {
-  position: absolute; z-index: 1; left: calc(9% + var(--x) * .82); top: calc(5% + var(--y) * .9); transform: translate(-50%, -50%);
+  position: absolute; z-index: 1; left: calc(9% + var(--x) * .82); top: calc(5% + var(--y) * .9); transform: translate(-50%, -50%) scale(var(--lu-s, 1));
   width: 104px; padding: 0; border: 0; background: none; color: var(--text);
   display: flex; flex-direction: column; align-items: center; gap: 5px;
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; cursor: grab; transition: opacity .2s;
 }
 /* terrain couché (large) : les joueurs d'une même ligne s'empilent ; écart vertical élargi pour que la condition
    (barre et pourcentage) ne passe jamais sous le portrait du voisin (5-3-2, 3-5-2) */
-@container lu (min-width: 600px) { .lu-chip { left: calc(5% + (100% - var(--y)) * .9); top: calc(5% + var(--x) * .9); } }
+@container lu (min-width: 480px) { .lu-chip { left: calc(5% + (100% - var(--y)) * .9); top: calc(5% + var(--x) * .9); } }
 .lu-face { position: relative; width: 52px; height: 52px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(12, 13, 15, .9), 0 6px 16px rgba(0, 0, 0, .45); transition: box-shadow .2s, transform .2s var(--ease); }
 .lu-face .pf { display: block; width: 100%; height: 100%; border-radius: 50%; }
 /* marge intérieure = biais + 3 px : les coins en biais ne mordent jamais sur une note à deux chiffres (« 11,6 ») */
@@ -2889,6 +2890,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .lu-bname { grid-column: 2; grid-row: 1; font-size: 16px; }
   .lu-bmeta { grid-column: 2 / 4; grid-row: 2; }
   .lu-brate { grid-column: 3; grid-row: 1; font-size: 16px; line-height: 1; }
+}
+@container lu (max-width: 479px) {
   .lu-chip { width: 78px; gap: 3px; }
   .lu-face { width: 40px; height: 40px; }
   .lu-rate { right: -15px; min-width: 28px; height: 19px; padding: 0 calc(var(--slant) + 3px); font-size: 14px; }
@@ -2952,7 +2955,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 /* onglet Composition de l'Équipe */
 .lu-editor { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--s-4); align-items: start; }
 .lu-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.lu-main .lu-pitch { --lu-h: 60vh; }
+.lu-main .lu-pitch { --lu-h: 60vh; --lu-hh: clamp(380px, 68vh, 620px); }
+.pm-xi .lu-pitch { --lu-hh: clamp(380px, 70vh, 620px); } /* avant-match : la page défile, le terrain peut être haut */
 .lu-side { display: flex; flex-direction: column; gap: var(--s-3); position: sticky; top: 0; }
 .lu-card { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; background: var(--plate-2); clip-path: var(--cut-shape); }
 .lu-legend p { margin: 0; display: flex; gap: 10px; align-items: baseline; font-size: var(--t-sm); color: var(--text-2); line-height: 1.45; }
@@ -2965,6 +2969,12 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 /* mi-temps : le terrain à droite, consignes et pronostic à gauche */
 .halftime { max-width: 960px; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
 .ht-board .lu-pitch { --lu-h: 46vh; --lu-hh: clamp(260px, 40vh, 420px); }
+/* PC, composition dépliée en match (mi-temps, changement) : le panneau prend toute la hauteur de l'écran (le score
+   reste dans ses chiffres) et le terrain couché tout ce qui reste à droite des consignes */
+@media (min-width: 761px) {
+  .matchscreen.live .halftime.board-open { top: var(--gap); bottom: var(--gap); max-width: 1320px; height: auto; max-height: none; grid-template-columns: minmax(250px, 300px) minmax(0, 1fr); }
+  .halftime.board-open .ht-board .lu-pitch { --lu-hh: clamp(300px, calc(100vh - 170px), 640px); } /* « Reprendre », collé en bas, ne le couvre pas */
+}
 .halftime .ht-go { grid-column: 1 / -1; }
 .ht-board { gap: var(--s-2); }
 .ht-none { margin: 0; font-size: var(--t-sm); color: var(--muted); }
