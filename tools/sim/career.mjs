@@ -1,7 +1,7 @@
 // Simulation de carrières sans interface : un président automatique (raisonnable) gère le club pendant N saisons.
 // Sert à vérifier l'équilibre du jeu : rythme des montées, premier titre d'Elite, trésorerie, part des salaires,
 // réputation, plafond du marché, blessures, âge du onze, jeunes, coupes. Lancer depuis la racine du dépôt :
-//   node tools/sim/career.mjs [saisons=25] [carrières=6] [--detail] [--joueur] [--sans-rotation]
+//   node tools/sim/career.mjs [saisons=25] [carrières=6] [--detail] [--joueur] [--sans-rotation] [--comptes]
 // Le bot : meilleur onze (condition comprise), recrute quand une recrue renforce l'onze et que la caisse garde une
 // réserve d'une demi-saison de salaires, agrandit le stade quand la demande dépasse la capacité, construit le bâtiment
 // conseillé par le staff puis améliore, recrute les jeunes repérés, fait monter un jeune qui renforcerait l'onze,
@@ -12,6 +12,7 @@
 // prometteur pour un plus prometteur) et une place faite en équipe première au jeune qui la mérite.
 // --sans-rotation : le onze ne tient jamais compte de la condition physique (le meilleur onze au repos, à chaque match) :
 // ce que coûte de ne jamais faire tourner.
+// --comptes : comptes moyens d'une saison par division (recettes et dépenses par poste, livre de comptes du club).
 import { createServer } from 'vite';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -38,6 +39,7 @@ const DETAIL = process.argv.includes('--detail');
 const HUMAN = process.argv.includes('--joueur');
 const SCORE = Number(process.env.SCORE || 0.85); // score d'un bon joueur aux épreuves en 3D
 const NO_ROTATION = process.argv.includes('--sans-rotation');
+const ACCOUNTS = process.argv.includes('--comptes');
 // onze du match : le meilleur, condition comprise (« Meilleur onze »), ou sans jamais regarder la condition
 const xiOf = (s) => (NO_ROTATION ? autoLineup(s.players.map((p) => ({ ...p, fit: 100 })), s.formation) : autoLineup(s.players, s.formation));
 const fmt = (v) => Math.round(v).toLocaleString('fr-FR');
@@ -111,7 +113,7 @@ function manage(s) {
 }
 const ageOfXi = (s) => { const xi = s.players.filter((p) => s.lineup?.includes(p.id)); return xi.reduce((a, p) => a + p.age, 0) / Math.max(1, xi.length); };
 
-const agg = { promo: [], elite: [], title: [], euro: [], relegations: 0, red: 0, eliteTitles: 0, eliteSeasons: 0, money: {}, share: {}, rep: {}, team: {}, market: {}, age: {}, young: {}, gap: {}, injuries: 0, matches: 0, cups: 0, euros: 0, euroSeasons: 0, kickFit: 0, tired: 0, spent: 0, out: 0, wins: 0 };
+const agg = { books: {}, promo: [], elite: [], title: [], euro: [], relegations: 0, red: 0, eliteTitles: 0, eliteSeasons: 0, money: {}, share: {}, rep: {}, team: {}, market: {}, age: {}, young: {}, gap: {}, injuries: 0, matches: 0, cups: 0, euros: 0, euroSeasons: 0, kickFit: 0, tired: 0, spent: 0, out: 0, wins: 0 };
 // condition du onze au coup d'envoi (moyenne des titulaires, titulaires sous 70 % et sous 50 %), absences (dates)
 function kickoff(s) {
   const xi = s.lineup.map((id) => s.players.find((p) => p.id === id)).filter(Boolean);
@@ -141,7 +143,9 @@ for (let r = 0; r < RUNS; r++) {
     const young = s.players.filter((p) => s.lineup.includes(p.id) && p.age <= 21).length;
     const gap = teamLevel(s) - (DIVISIONS[s.divisionIndex].oppMin + DIVISIONS[s.divisionIndex].oppMax) / 2; // onze contre le milieu de la division
     if (s.c1) agg.euroSeasons++;
+    const divBefore = DIVISIONS[s.divisionIndex].name;
     engine.endSeason(s);
+    if (ACCOUNTS) { const l = s.ledger.past.at(-1); (agg.books[divBefore] ||= []).push(l.lines); }
     const h = s.history.at(-1);
     const b = band(season);
     push(agg.money, b, s.money); push(agg.share, b, share); push(agg.rep, b, s.reputation); push(agg.team, b, teamLevel(s));
@@ -168,5 +172,20 @@ for (const b of ['S1-5', 'S6-10', 'S11-15', 'S16-25', 'S26+']) {
   if (!agg.money[b]) continue;
   const g = med(agg.gap[b]);
   console.log(`${b.padEnd(9)} ${fmt(med(agg.money[b])).padStart(13)} €   ${String(Math.round(med(agg.share[b]) * 100)).padStart(3)} %             ${String(Math.round(med(agg.rep[b]))).padStart(4)}       ${med(agg.team[b]).toFixed(1)} (${g >= 0 ? '+' : ''}${g.toFixed(1)})    ${med(agg.age[b]).toFixed(1)}         ${med(agg.young[b])}        ${med(agg.market[b]).toFixed(1)}`);
+}
+if (ACCOUNTS) {
+  // comptes moyens d'une saison, par division (milliers d'euros), dans l'ordre du livre de comptes
+  const { INCOME, EXPENSE } = await load('/src/game/ledger.js');
+  for (const d of DIVISIONS.map((x) => x.name)) {
+    const list = agg.books[d];
+    if (!list?.length) continue;
+    const avg = (k) => list.reduce((a, l) => a + (l[k] || 0), 0) / list.length;
+    const line = (pairs) => pairs.map(([k, label]) => [label, avg(k)]).filter(([, v]) => v >= 500).map(([label, v]) => `${label} ${fmt(v / 1000)} k`).join(' · ');
+    const inc = INCOME.reduce((a, [k]) => a + avg(k), 0);
+    const exp = EXPENSE.reduce((a, [k]) => a + avg(k), 0);
+    console.log(`\n${d} (${list.length} saisons) : recettes ${fmt(inc / 1000)} k€, dépenses ${fmt(exp / 1000)} k€`);
+    console.log(`  + ${line(INCOME)}`);
+    console.log(`  − ${line(EXPENSE)}`);
+  }
 }
 await vite.close();

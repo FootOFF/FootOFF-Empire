@@ -4,6 +4,21 @@
 
 export const CHANGELOG = [
   {
+    version: '0.6.0', date: '2026-10-27', title: 'L’Elite pro : aller-retour et vrais millions',
+    items: [
+      'Elite en aller-retour : quatorze journées, chaque adversaire reçu une fois et visité une fois. À l’extérieur, l’avantage du terrain passe chez l’adversaire (pronostic compris, vérifié sur vingt mille matchs) et seuls les droits TV reviennent au club.',
+      'Calendrier, avant-match, après-match et Finances le disent : « Journée 4 / 14 · À l’extérieur », droits TV attendus, matchs restants à domicile et à l’extérieur.',
+      'L’Elite change d’échelle, comme un grand championnat européen : droits TV et sponsors de plusieurs dizaines de millions, titulaires à plusieurs millions par an, stars à plus de dix millions, transferts à plusieurs dizaines de millions. Les petites divisions gardent leurs budgets modestes.',
+      'Coupe d’Europe à vraie échelle : 15 M€ de participation, des primes de tour jusqu’à 30 M€ et 5 M€ de droits TV par match, plus de cent millions pour le vainqueur. Les clubs européens affichent leur budget (de 150 à 800 M€), et ils sont un peu plus forts.',
+      'Mercato : les géants européens suivent tes stars d’Elite, surtout quand tu joues la Coupe d’Europe. Leurs offres dépassent largement la valeur, et une offre spontanée peut la dépasser de moitié.',
+      'Sponsors versés à la reprise, dès la deuxième saison : un club promu touche tout de suite ceux de sa nouvelle division, de quoi se renforcer avant d’affronter des salaires bien plus lourds.',
+      'En Elite, le calendrier est chargé : chaque séance d’entraînement compte pour deux tiers, l’académie repère ses jeunes toutes les deux journées et ils progressent moitié moins par journée. Autant de progrès par saison qu’ailleurs.',
+      'Objectifs du conseil à l’échelle de la saison d’Elite (deux fois plus de victoires, de buts ou de cages inviolées) ; l’arène fermée coûte désormais 55 M€, puis 140 M€ pour la version agrandie.',
+      'Calendrier : la qualification affichée en coupe est exacte, comme à l’avant-match (un nul y comptait pour une demi-qualification).',
+      'Ta partie en cours : déjà en Elite, ta trésorerie et tes offres en cours passent à la nouvelle échelle, comme les salaires. La saison en cours garde ses sept journées ; l’aller-retour commence à la suivante.',
+    ],
+  },
+  {
     version: '0.5.1', date: '2026-10-27', title: 'Pronostic vérifié, match repris, entraînement délégué',
     items: [
       'Pronostic vérifié sur vingt mille matchs : un match annoncé à 70-80 % de victoire (74,7 % en moyenne) est gagné 75,2 % du temps, et le pronostic du direct tombe aussi juste à chaque minute.',

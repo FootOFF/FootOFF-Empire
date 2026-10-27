@@ -1,14 +1,16 @@
 export const SAVE_KEY = 'footoff-empire-save-v1';
 
 // Divisions : niveau des adversaires, prix du billet, dépense par spectateur (buvette, boutique),
-// public potentiel, droits TV par match, sponsoring de base et prime du champion (en euros).
+// public potentiel, droits TV par match de championnat, sponsoring de base et prime du champion (en euros).
+// L'Elite joue à l'échelle d'un grand championnat européen depuis la 0.6.0 (droits TV, sponsors et primes de plusieurs
+// millions, salaires et valeurs des joueurs ×4 : economy.js) ; les petites divisions gardent des budgets modestes.
 // Niveau des adversaires (oppMin à oppMax, répartis dans la division) : chaque division commence un peu au-dessus de
 // la précédente, et le haut de l'Elite (17,0) reste un défi pour un onze arrivé au sommet (18 au plus, en pratique).
 export const DIVISIONS = [
   { name: 'Départementale', oppMin: 5.0, oppMax: 7.4, ticket: 6, food: 2, shop: 1, demand: 650, tv: 0, sponsor: 5000, prize: 6000 },
   { name: 'Régionale', oppMin: 7.6, oppMax: 10.0, ticket: 10, food: 3, shop: 2, demand: 3800, tv: 4000, sponsor: 35000, prize: 40000 },
   { name: 'Nationale', oppMin: 10.2, oppMax: 12.8, ticket: 16, food: 4, shop: 3.5, demand: 15000, tv: 45000, sponsor: 220000, prize: 300000 },
-  { name: 'Elite', oppMin: 13.4, oppMax: 17.0, ticket: 28, food: 5, shop: 6, demand: 40000, tv: 220000, sponsor: 1000000, prize: 1600000 },
+  { name: 'Elite', oppMin: 13.4, oppMax: 17.0, ticket: 40, food: 7, shop: 9, demand: 40000, tv: 1800000, sponsor: 8000000, prize: 6400000 },
 ];
 
 export const POS_LABELS = { G: 'Gardien', D: 'Défenseur', M: 'Milieu', A: 'Attaquant' };
@@ -24,7 +26,7 @@ export const SCOUTED = [0, 1, 1, 2, 2, 2];
 // Tirage d'un jeune repéré (players.js, makePlayer) : centre = base + perLevel × académie + U(0, spread) + perAge × (âge
 // − 15), niveau à l'arrivée = centre + 0,8 (± 0,3) ; potentiel = centre + potBase + potPerLevel × académie + potTail × U³
 // (rarement très haut), arrondi, de 8 à 20. Au niveau 5, sur une saison (16 jeunes repérés : 2 au début de la saison et
-// après chacune des 7 journées) : environ 4 potentiels de 16 ou plus, 1,7 de 18 ou plus, 0,8 de 19 ou plus, et un 20
+// après chacune des 7 journées, toutes les deux en Elite) : environ 4 potentiels de 16 ou plus, 1,7 de 18 ou plus, 0,8 de 19 ou plus, et un 20
 // toutes les cinq à six saisons.
 export const YOUTH_GEN = { base: 2.2, perLevel: 0.55, spread: 1.6, perAge: 0.5, potBase: 4.2, potPerLevel: 0.4, potTail: 7 };
 
@@ -47,9 +49,10 @@ export const DRILLS = {
 };
 
 // Coût du niveau N = baseCost × mult^(N − first) ; le stade est livré au niveau 1. `costs` fixe le prix de
-// certains niveaux à la main (l'arène fermée des niveaux 5 et 6, au-delà de l'arène moderne).
+// certains niveaux à la main (l'arène fermée des niveaux 5 et 6, au-delà de l'arène moderne : un chantier d'Elite,
+// 22 et 55 M€ avant la 0.6.0).
 export const BUILDINGS = {
-  terrain: { name: 'Stade', max: 6, baseCost: 40000, mult: 10, first: 2, costs: { 5: 22000000, 6: 55000000 } },
+  terrain: { name: 'Stade', max: 6, baseCost: 40000, mult: 10, first: 2, costs: { 5: 55000000, 6: 140000000 } },
   training: { name: 'Centre d’entraînement', max: 5, baseCost: 4000, mult: 6.2, first: 1 },
   academy: { name: 'Académie', max: 5, baseCost: 5000, mult: 6.2, first: 1 },
   fans: { name: 'Espace supporters', max: 5, baseCost: 3500, mult: 6.2, first: 1 },
@@ -60,9 +63,11 @@ export const BUILDINGS = {
 };
 
 export const START_MONEY = 8000;
-// Les salaires et l'entretien se paient par septième à chaque journée de championnat (plus de grosse note en fin de
-// saison) : la trésorerie suit la vraie vie du club.
-export const PAY_SPLIT = 7;
+// Échelle de l'argent en Elite depuis la 0.6.0 (×4 : salaires, valeurs, recettes) : les parties commencées avant
+// et déjà en Elite y sont portées une fois (save.js).
+export const ELITE_SCALE = 4;
+// Les salaires et l'entretien se paient à chaque journée de championnat (un septième de la saison, un quatorzième en
+// Elite ; season.js) : pas de grosse note en fin de saison, la trésorerie suit la vraie vie du club.
 
 export function upgradeCost(key, targetLevel) {
   const b = BUILDINGS[key];

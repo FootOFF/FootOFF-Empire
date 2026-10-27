@@ -1,4 +1,4 @@
-import { BUILDINGS, DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN, START_MONEY, upgradeCost } from './constants';
+import { BUILDINGS, DIVISIONS, ELITE_SCALE, POS_LABELS, SQUAD_MAX, SQUAD_MIN, START_MONEY, upgradeCost } from './constants';
 import { OFFLINE_CAP, offlinePerHour } from './economy';
 import { assignNumber, costOf, makePlayer, saleValue, wageOf } from './players';
 import {
@@ -27,6 +27,7 @@ export function createInitialState(clubName, crest = null) {
   registerNames([]); // nouvelle partie : aucun nom de joueur encore porté
   const s = {
     version: 4,
+    eliteScale: ELITE_SCALE, // économie de l'Elite à l'échelle d'un grand championnat (0.6.0, save.js)
     clubName,
     crest: normalizeCrest(crest), // écusson composé à la fondation, toujours noir et or (crest.js)
     createdAt: Date.now(),

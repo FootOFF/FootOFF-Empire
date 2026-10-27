@@ -19,8 +19,8 @@ export const maxCut = (lvl) => (lvl > 0 ? Math.round((0.1 + 0.04 * lvl) * 100) /
 const refOf = (s) => { const d = DIVISIONS[s.divisionIndex]; return (d.oppMin + d.oppMax) / 2; };
 import { pushJournal } from './journal';
 
-// Droits TV d'un match de championnat à domicile : base de la division (ou télé locale), bonus de la Direction et
-// hausse négociée pour la saison.
+// Droits TV d'un match de championnat (à domicile comme à l'extérieur en Elite) : base de la division (ou télé locale),
+// bonus de la Direction et hausse négociée pour la saison.
 export function tvPerMatch(s, deal = s.tvDeal) {
   const lvl = s.buildings.direction || 0;
   const base = DIVISIONS[s.divisionIndex].tv || localTv(lvl);
@@ -59,7 +59,7 @@ export function negotiateTv(s, ask) {
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'club',
     title: ok ? `Droits TV : le diffuseur accepte +${Math.round(a * 100)} %` : 'Droits TV : le diffuseur refuse la hausse',
-    text: ok ? `Chaque match à domicile rapportera ${tvPerMatch(s).toLocaleString('fr-FR')} € de droits TV cette saison.` : 'Le contrat de base est reconduit pour la saison.',
+    text: ok ? `Chaque match de championnat rapportera ${tvPerMatch(s).toLocaleString('fr-FR')} € de droits TV cette saison.` : 'Le contrat de base est reconduit pour la saison.',
   });
   return s;
 }

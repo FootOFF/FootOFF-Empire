@@ -59,7 +59,8 @@ export const GOALS = [
     repNeeded: 25,
     name: 'L’Empire',
     blurb: 'Ton complexe sportif tient sa promesse : un club que tout le pays connaît.',
-    reward: { label: '3 M€ + 2 de réputation', short: '+3 M€, +2 de réputation', apply: (s) => { s.money += 3000000; s.reputation = Math.round((s.reputation + 2) * 10) / 10; } },
+    // une étape d'Elite : prime à l'échelle de la division depuis la 0.6.0 (3 M€ avant)
+    reward: { label: '12 M€ + 2 de réputation', short: '+12 M€, +2 de réputation', apply: (s) => { s.money += 12000000; s.reputation = Math.round((s.reputation + 2) * 10) / 10; } },
     active: () => ({
       id: 'elite',
       name: 'Tenir ta place à l’Elite',

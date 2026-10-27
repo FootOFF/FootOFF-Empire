@@ -3,9 +3,9 @@ import { BUILDINGS, POS_LABELS, PROGRAM_STEPS, TRAINING_COLLECTIVE, TRAINING_MUL
 import { ATTRS, GK_ATTRS, TRAITS, isInjured, playerRating, potentialRange } from '../game/players';
 import {
   DRILLS, GREAT, LINES, PLAY_MAX, PLAY_MIN, PROGRAMS, attrsAfter, bestCat, catsFor, drillsFor, pickOf, programDesc, programLabel, programNeed,
-  programOf, programsFor, sessionOf, sessionPreview, staffOn, suggestFor,
+  programOf, programsFor, sessionOf, sessionPreview, sessionScale, staffOn, suggestFor,
 } from '../game/training';
-import { fixtureShort, nextFixture } from '../game/cups';
+import { fixtureShort, leagueLength, nextFixture } from '../game/cups';
 import { setTrainingPick, setTrainingStaff, startProgram, stopProgram, trainPlayer } from '../game/engine';
 import { fmtMoney, fmtRating } from './format';
 import { IconArrowUp, IconCheck, IconChevron, IconClose, IconLock, IconPlay, IconStar, IconTraining } from './icons';
@@ -42,7 +42,7 @@ function windowLabel(s, key) {
   const f = Number(season) === s.seasonNumber ? s.calendar?.[i] : null;
   if (!f) return 'Séance';
   const round = (s.calendar || []).slice(0, i + 1).filter((x) => x.comp === 'league').length;
-  return `Avant : ${fixtureShort(f, round)}`;
+  return `Avant : ${fixtureShort(f, round, leagueLength(s))}`;
 }
 
 // Textes des épreuves : ce qu'on y fait, et comment on y joue (rappelé au début de l'épreuve).
@@ -112,7 +112,7 @@ export function TrainingView({ state, run, ask, notify = () => {}, onClose, onBu
       id="training"
       size="lg"
       title="Centre d’entraînement"
-      eyebrow={<>Niveau {lvl} / {BUILDINGS.training.max}<span className="hide-sm"> · progrès ×{dec(TRAINING_MULT[lvl] || 0)} par séance</span></>}
+      eyebrow={<>Niveau {lvl} / {BUILDINGS.training.max}<span className="hide-sm"> · progrès ×{dec((TRAINING_MULT[lvl] || 0) * sessionScale(state))} par séance{sessionScale(state) < 1 ? ' (calendrier chargé de l’Elite)' : ''}</span></>}
       onClose={onClose}
       onEscape={onEscape}
       toolbar={(
@@ -184,7 +184,7 @@ function SessionMeter({ state, todo, staff }) {
       <span className="ac-slots tr-slots" aria-hidden="true">
         {lines.map((pos) => <i key={pos} className={sessionOf(state).done[pos] ? 'on' : ''} />)}
       </span>
-      <span className="sq-budget-sub">{f ? `Avant : ${fixtureShort(f, state.round + 1)}${staff && todo.length ? ' · par le staff' : ''}` : 'Avant la fin de la saison'}</span>
+      <span className="sq-budget-sub">{f ? `Avant : ${fixtureShort(f, state.round + 1, leagueLength(state))}${staff && todo.length ? ' · par le staff' : ''}` : 'Avant la fin de la saison'}</span>
     </div>
   );
 }
@@ -573,7 +573,7 @@ function LevelCard({ state, onBuilding }) {
         <span className="ac-level-ico"><IconTraining /></span>
         <div className="panel-title">
           <Eyebrow>Niveau {lvl} / {max}</Eyebrow>
-          <strong>Chaque niveau rend les séances plus fortes ; les programmes de signes s’ouvrent au niveau 3.</strong>
+          <strong>Chaque niveau rend les séances plus fortes ; les programmes de signes s’ouvrent au niveau 3.{sessionScale(state) < 1 ? ' En Elite, deux fois plus de journées : chaque séance y compte pour deux tiers.' : ''}</strong>
         </div>
       </div>
       <table className="tr-level-table">

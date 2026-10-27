@@ -1,15 +1,16 @@
 import {
-  BUILDINGS, DIVISIONS, DRILLS, PAY_SPLIT, PROGRAM_STEPS, SCOUTED, TRAINING_COLLECTIVE, TRAINING_MULT, YOUTH_GEN, YOUTH_PLACES,
-  upgradeCost,
+  BUILDINGS, DIVISIONS, DRILLS, PROGRAM_STEPS, SCOUTED, TRAINING_COLLECTIVE, TRAINING_MULT, YOUTH_GEN, YOUTH_PLACES, upgradeCost,
 } from './constants';
 import { clamp, rnd } from './utils';
+import { isAwayRound, leagueLength } from './cups';
 import { REP_START, mercatoRep, sponsorRep } from './reputation';
 import { localTv, maxCut, tvPerMatch } from './direction';
 import { treatPct } from './medical';
 
 // Économie du club : affluence, recettes d'un match, revenus de saison, salaires, entretien.
 // Ordres de grandeur réalistes, du football amateur (quelques centaines de spectateurs, budgets de
-// quelques dizaines de milliers d'euros) à l'élite (stade de 38 000 places, budgets de plusieurs millions).
+// quelques dizaines de milliers d'euros) à l'élite (stades de 38 000 à 75 000 places, budgets de plus de cent millions,
+// droits TV et sponsors d'abord, comme les grands clubs européens).
 // Réglages validés par simulation de carrières sur 50 saisons (voir docs/ECONOMIE.md).
 
 // Capacité du stade par niveau : terrain municipal, tribune couverte, stade 4 tribunes, arène moderne, puis
@@ -34,7 +35,7 @@ export const COMP_GATE = {
   cup: { demand: 1.15, ticket: 1.1, tv: 1.5 },
   c1: { demand: 1.55, ticket: 1.5, tv: 0 },
 };
-export const C1_TV = 1500000; // droits TV par match européen
+export const C1_TV = 5000000; // droits TV par match européen (1,5 M€ avant la 0.6.0)
 
 // Loges et hospitalités : une part des places vendues très cher, dans les grands stades (niveau 3 et plus).
 const LOGES_SHARE = [0, 0, 0, 0.012, 0.02, 0.025, 0.03];
@@ -64,6 +65,16 @@ export function spendPerHead(s) {
 // Prix moyen d'un billet : tarif de la division × formule choisie (inspecteur du stade) × affiche de la compétition.
 export const ticketPrice = (s, comp = 'league') => DIVISIONS[s.divisionIndex].ticket * policyOf(s).price * (COMP_GATE[comp] || COMP_GATE.league).ticket;
 
+// Droits TV d'un match : base de la division (par match de championnat ; en Elite, à domicile comme à l'extérieur),
+// Direction du club et hausse négociée (direction.js), plus en coupe.
+export const tvOfMatch = (s, comp = 'league') => (comp === 'c1' ? C1_TV : Math.round(tvPerMatch(s) * (COMP_GATE[comp] || COMP_GATE.league).tv));
+
+// Match à l'extérieur (Elite) : pas de billetterie, de buvette ni de boutique, seulement les droits TV.
+export function awayGate(s) {
+  const tv = tvOfMatch(s, 'league');
+  return { capacity: 0, demand: 0, attendance: 0, away: true, breakdown: { billetterie: 0, buvette: 0, boutique: 0, loges: 0, tv }, revenue: tv };
+}
+
 // Affluence et recettes d'un match à domicile.
 export function matchGate(s, opp, noise = rnd(0.93, 1.07), comp = 'league') {
   const div = DIVISIONS[s.divisionIndex];
@@ -80,7 +91,7 @@ export function matchGate(s, opp, noise = rnd(0.93, 1.07), comp = 'league') {
     buvette: Math.round(attendance * per.food),
     boutique: Math.round(attendance * per.shop),
     loges: Math.round(loges * div.ticket * cg.ticket * 10),
-    tv: comp === 'c1' ? C1_TV : Math.round(tvPerMatch(s) * cg.tv), // droits TV : base, Direction du club, hausse négociée
+    tv: tvOfMatch(s, comp),
   };
   const revenue = breakdown.billetterie + breakdown.buvette + breakdown.boutique + breakdown.loges + breakdown.tv;
   return { capacity: cap, demand, attendance, breakdown, revenue };
@@ -103,14 +114,17 @@ export function repEffects(rep) {
 // Prime de classement : le champion touche la prime pleine, le dernier 10 %.
 export const prizeFor = (position, divIndex) => Math.round(DIVISIONS[divIndex].prize * (0.1 + (0.9 * (8 - position)) / 7));
 
-// Revenus hors ligne (siège & partenaires) : une part des contrats de sponsoring, par heure d'absence.
+// Revenus hors ligne (siège & partenaires) : par niveau du siège et par heure d'absence, selon la division (le centième
+// des sponsors de base d'avant la 0.6.0 : l'Elite en reçoit quatre fois plus, comme le reste de ses comptes).
 export const OFFLINE_CAP = 12; // heures comptées au maximum
-export const offlinePerHour = (lvl, divIndex) => Math.round(DIVISIONS[divIndex].sponsor * 0.01 * lvl);
+const OFFLINE_BASE = [50, 350, 2200, 40000];
+export const offlinePerHour = (lvl, divIndex) => Math.round(OFFLINE_BASE[divIndex] * lvl);
 
-// Salaire annuel : il suit la note du joueur (×1,7 par point jusqu'à 13, puis ×1,55 : les stars de l'Elite coûtent
-// vraiment cher, 2,9 M€ à 18, 7 M€ à 20) et la division du club (contrats de plus en plus professionnels).
+// Salaire annuel : il suit la note du joueur (×1,7 par point jusqu'à 13, puis ×1,55) et la division du club (contrats
+// de plus en plus professionnels). En Elite, à l'échelle d'un grand championnat depuis la 0.6.0 (×4) : 1,3 M€ à 13,
+// 4,9 M€ à 16, 11,8 M€ à 18, 28 M€ à 20 ; en Nationale, 200 000 € à 13.
 export const WAGE_BASE = 800;
-export const WAGE_DIVISION = [1, 2.7, 6.2, 10];
+export const WAGE_DIVISION = [1, 2.7, 6.2, 40];
 export function wageFor(rating, divIndex) {
   const r = Math.max(1, rating);
   const curve = 1.7 ** (Math.min(r, 13) - 6) * 1.55 ** Math.max(0, r - 13);
@@ -130,34 +144,53 @@ export function investedIn(key, lvl) {
 }
 export const upkeepOf = (s) => Math.round(Object.keys(BUILDINGS).reduce((a, k) => a + investedIn(k, s.buildings[k] || 0), 0) * 0.04);
 
-// Prévision d'une saison complète (7 journées à domicile, deux tours de Coupe nationale, deux soirs de Coupe d'Europe
-// quand on la joue, sponsors, prime de milieu de classement) : sert aux alertes de l'effectif quand la masse salariale
-// devient trop lourde, et à la part des salaires affichée dans les Finances.
-export function seasonForecast(s, wages) {
+// Recettes de championnat d'une saison : billetterie, buvette, boutique et loges des matchs à domicile (sept, en Elite
+// comme ailleurs), droits TV de toutes les journées.
+export function leagueSeasonGate(s) {
   const gate = expectedGate(s, null);
+  const len = leagueLength(s);
+  const homes = len - (s.away ? s.away.filter(Boolean).length : 0);
+  return (gate.revenue - gate.breakdown.tv) * homes + gate.breakdown.tv * len;
+}
+
+// Prévision d'une saison complète (championnat, deux tours de Coupe nationale, deux soirs de Coupe d'Europe quand on la
+// joue, sponsors, prime de milieu de classement) : sert aux alertes de l'effectif quand la masse salariale devient trop
+// lourde, et à la part des salaires affichée dans les Finances.
+export function seasonForecast(s, wages) {
   const cups = expectedGate(s, null, 'cup').revenue * 2 + (s.c1 ? (expectedGate(s, null, 'c1').revenue) * 2 : 0);
-  const income = gate.revenue * 7 + cups + sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation) + prizeFor(4, s.divisionIndex);
+  const income = leagueSeasonGate(s) + cups + sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation) + prizeFor(4, s.divisionIndex);
   const upkeep = upkeepOf(s);
   return { income, wages, upkeep, net: income - wages - upkeep, wageShare: wages / Math.max(1, income) };
 }
 
-// Prévision de fin de saison (écran Finances) : trésorerie actuelle, plus les matchs restants, les sponsors et
-// la prime au classement actuel, moins les salaires et l'entretien qui tombent au coup de sifflet final.
-// Les salaires et l'entretien se paient par septième à chaque journée (constants.js, PAY_SPLIT) : il ne reste à payer
-// que la part des journées restantes.
+// Prévision de fin de saison (écran Finances) : trésorerie actuelle, plus les matchs restants, les sponsors (s'ils ne
+// sont pas déjà payés : depuis la 0.6.0, ils le sont à la reprise, season.js) et la prime au classement actuel, moins
+// les salaires et l'entretien qui restent à payer.
+// Les salaires et l'entretien se paient à chaque journée de championnat (un septième, un quatorzième en Elite) : il ne
+// reste à payer que la part des journées restantes. Un match à l'extérieur ne rapporte que ses droits TV.
 export function endOfSeasonForecast(s, position, wages) {
-  const left = Math.max(0, 7 - s.round);
+  const len = leagueLength(s);
+  const left = Math.max(0, len - s.round);
   const perMatch = expectedGate(s, null).revenue;
-  const matches = perMatch * left;
-  const sponsors = sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation);
+  let matches = 0;
+  let homes = 0;
+  for (let r = s.round; r < len; r++) {
+    if (isAwayRound(s, r)) matches += awayGate(s).revenue;
+    else { matches += perMatch; homes += 1; }
+  }
+  const sponsorsPaid = s.sponsorsPaid === s.seasonNumber;
+  const sponsors = sponsorsPaid ? 0 : sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation);
   const prize = prizeFor(position, s.divisionIndex);
   const upkeepAll = upkeepOf(s);
-  const wagesLeft = Math.round((wages * left) / PAY_SPLIT);
-  const upkeep = Math.round((upkeepAll * left) / PAY_SPLIT);
-  return { left, perMatch, matches, sponsors, prize, wages: wagesLeft, wagesSeason: wages, upkeep, upkeepSeason: upkeepAll, end: s.money + matches + sponsors + prize - wagesLeft - upkeep };
+  const wagesLeft = Math.round((wages * left) / len);
+  const upkeep = Math.round((upkeepAll * left) / len);
+  return {
+    left, homes, len, perMatch, matches, sponsors, sponsorsPaid, prize, wages: wagesLeft, wagesSeason: wages, upkeep, upkeepSeason: upkeepAll,
+    end: s.money + matches + sponsors + prize - wagesLeft - upkeep,
+  };
 }
 
-// Ce que rapporte un niveau de plus (inspecteur) : recettes gagnées par saison (7 matchs et sponsors), entretien
+// Ce que rapporte un niveau de plus (inspecteur) : recettes gagnées par saison (championnat et sponsors), entretien
 // supplémentaire (4 % du coût), et nombre de saisons pour rentrer dans ses frais. Les bâtiments sportifs
 // (entraînement, académie) ne rapportent pas directement : leur intérêt est sur le terrain.
 // target : le niveau visé (le suivant par défaut ; un niveau plus lointain dans la fenêtre d'aperçu, comparé au
@@ -166,7 +199,7 @@ export function investmentPreview(s, key, target = (s.buildings[key] || 0) + 1) 
   const cost = upgradeCost(key, target);
   const from = { ...s, buildings: { ...s.buildings, [key]: target - 1 } };
   const next = { ...s, buildings: { ...s.buildings, [key]: target } };
-  const seasonIncome = (x) => expectedGate(x, null).revenue * 7 + sponsorIncome(x.buildings.sponsor, x.divisionIndex, x.reputation);
+  const seasonIncome = (x) => leagueSeasonGate(x) + sponsorIncome(x.buildings.sponsor, x.divisionIndex, x.reputation);
   const gain = seasonIncome(next) - seasonIncome(from);
   const upkeep = Math.round(cost * 0.04);
   const net = gain - upkeep;
@@ -262,13 +295,13 @@ export function buildingStats(key, lvl, s) {
     case 'sponsor': {
       const year = sponsorIncome(lvl, s.divisionIndex, s.reputation);
       return [
-        { label: 'Sponsors', value: `${fmt(year)} €`, short: `${fmt(year)} € / saison`, sub: 'par saison' },
+        { label: 'Sponsors', value: `${fmt(year)} €`, short: `${fmt(year)} € / saison`, sub: 'par saison, versés à la reprise' },
         { label: 'Revenus hors ligne', value: `${fmt(offlinePerHour(lvl, s.divisionIndex))} €`, sub: 'par heure d’absence' },
       ];
     }
     case 'direction':
       return [
-        { label: 'Droits TV', value: `+${lvl * 8} %`, short: `Droits TV +${lvl * 8} %`, sub: s && !DIVISIONS[s.divisionIndex].tv ? `télé locale : ${fmt(localTv(lvl))} € par match` : 'par match à domicile' },
+        { label: 'Droits TV', value: `+${lvl * 8} %`, short: `Droits TV +${lvl * 8} %`, sub: s && !DIVISIONS[s.divisionIndex].tv ? `télé locale : ${fmt(localTv(lvl))} € par match` : 'par match de championnat' },
         { label: 'Baisse de salaire', value: `jusqu’à ${Math.round(maxCut(lvl) * 100)} %`, sub: 'négociée joueur par joueur' },
         { label: 'Négociations', value: 'droits TV, salaires', sub: 'chances d’accord exactes' },
         { label: 'Billetterie', value: '4 formules', sub: 'recette prévue de chacune' },
@@ -321,7 +354,7 @@ export function buildingEffect(key, lvl, divIndex, rep = REP_START) {
         ? `Réseau de recruteurs : ${officeSize(lvl)} joueurs sous contrat sur ton mercato · indemnités −${lvl * 3} % · vendeurs plus conciliants · potentiel mieux cerné.`
         : `Sans bureau, ton mercato ne montre que ${officeSize(0)} joueurs sous contrat listés publiquement, en plus des joueurs libres.`;
     case 'sponsor':
-      return `Sponsors : ${fmt(sponsorIncome(lvl, divIndex, rep))} € par saison · ${fmt(offlinePerHour(lvl, divIndex))} € par heure, même hors ligne.`;
+      return `Sponsors : ${fmt(sponsorIncome(lvl, divIndex, rep))} € par saison, versés à la reprise · ${fmt(offlinePerHour(lvl, divIndex))} € par heure, même hors ligne.`;
     default:
       return '';
   }

@@ -1,11 +1,13 @@
 import { SCOUTED, YOUTH_LEAVE_AGE, YOUTH_PLACES } from './constants';
+import { leagueLength } from './cups';
 import { ATTRS, SUMMER, WEIGHTS, makePlayer, playerRating, seasonGain } from './players';
 import { clamp, ri, rnd } from './utils';
 
 // Académie : l'équipe de jeunes du club, six places. On recrute quand on veut, gratuitement, parmi les jeunes repérés
-// (renouvelés après chaque journée de championnat ; plus nombreux et plus doués quand l'académie grandit, leur
-// potentiel mieux cerné : players.js, potentialRange). Chaque jeune suit un plan d'entraînement (technique, physique ou
-// mental) : il progresse un peu après chaque journée et fait un bond à l'intersaison, selon son potentiel (le centre
+// (renouvelés après chaque journée de championnat, toutes les deux en Elite ; plus nombreux et plus doués quand
+// l'académie grandit, leur potentiel mieux cerné : players.js, potentialRange). Chaque jeune suit un plan d'entraînement
+// (technique, physique ou mental) : il progresse un peu après chaque journée et fait un bond à l'intersaison, selon
+// son potentiel (le centre
 // d'entraînement n'y change rien : il fait progresser l'équipe première, par ses séances). Il monte en équipe première
 // quand on le décide ; à 19 ans, un jeune qui n'est pas monté quitte le club. Pas de salaire : les jeunes sont à la
 // charge de l'académie (son entretien). Les actions (recruter, faire monter, libérer, choisir le plan) sont dans
@@ -25,7 +27,21 @@ const ROUND_PACE = 0.012;
 const levelBrake = (p) => clamp(1.4 - playerRating(p) / 20, 0.45, 1);
 
 const r1 = (v) => Math.round(v * 10) / 10;
-const roundKey = (s) => `${s.seasonNumber}:${s.round}`;
+// L'Elite joue quatorze journées (aller-retour) : l'académie y garde le rythme d'une saison de sept (repérage toutes
+// les deux journées, progrès de moitié à chaque journée), autant de jeunes et de progrès par saison qu'ailleurs.
+const perRound = (s) => 7 / leagueLength(s);
+const scoutStep = (s, round = s.round) => Math.floor(round * perRound(s));
+const roundKey = (s) => `${s.seasonNumber}:${scoutStep(s)}`;
+
+// Repérage en cours : journée après laquelle la liste a été tirée (0 : début de saison), et nombre de journées de
+// championnat avant la suivante (null : plus de repérage avant la saison prochaine).
+export function scoutingWhen(s) {
+  const len = leagueLength(s);
+  const step = scoutStep(s);
+  let next = s.round + 1;
+  while (next <= len && scoutStep(s, next) === step) next += 1;
+  return { since: Math.ceil(step / perRound(s)), next: next <= len ? next - s.round : null };
+}
 
 // Qualités travaillées par un plan : une famille pour un joueur de champ, deux qualités de gardien pour un gardien.
 export const planAttrs = (p, plan) => (p.pos === 'G' ? PLANS[plan].gk : ATTRS.filter((a) => a.fam === PLANS[plan].fam).map((a) => a.key));
@@ -95,11 +111,11 @@ function grow(p, gain) {
 }
 
 // Après chaque journée de championnat : un petit progrès pour chaque jeune, d'autant plus grand qu'il est loin de son
-// potentiel.
+// potentiel (de moitié en Elite, qui joue deux fois plus de journées).
 export function trainYouth(s) {
   for (const p of s.youth || []) {
     const room = Math.max(0, p.pot - playerRating(p));
-    const g = grow(p, room * ROUND_PACE * levelBrake(p) * rnd(0.7, 1.3));
+    const g = grow(p, room * ROUND_PACE * perRound(s) * levelBrake(p) * rnd(0.7, 1.3));
     p.gain = { ...(p.gain || {}), round: g, season: r1((p.gain?.season || 0) + g) };
   }
 }
@@ -118,8 +134,8 @@ export function youthSeasonEnd(s) {
   return gone;
 }
 
-// Jeunes repérés de la journée : tirés une fois par journée de championnat (recruter ne les renouvelle pas ; une
-// amélioration de l'académie en ajoute aussitôt), âgés de 15 à 17 ans.
+// Jeunes repérés de la journée : tirés une fois par journée de championnat, toutes les deux en Elite (recruter ne les
+// renouvelle pas ; une amélioration de l'académie en ajoute aussitôt), âgés de 15 à 17 ans.
 export function refreshScouting(s) {
   const lvl = s.buildings.academy || 0;
   const key = roundKey(s);

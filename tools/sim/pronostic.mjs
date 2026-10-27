@@ -4,7 +4,7 @@
 //   node tools/sim/pronostic.mjs [matchs=20000]
 // Chaque match : un effectif tiré au hasard (niveau de 5 à 18, condition physique variée, signes distinctifs), un
 // adversaire de 4 points en dessous à 4 points au-dessus, dispositif et tactique au hasard, une coupe une fois sur quatre
-// (tirs au but). Trois façons de jouer chaque match : d'un bloc (le staff remplace les blessés), en direct en remplaçant
+// (tirs au but), un match de championnat sur trois à l'extérieur (Elite : l'avantage du terrain change de camp). Trois façons de jouer chaque match : d'un bloc (le staff remplace les blessés), en direct en remplaçant
 // chaque blessé comme le direct le propose, et à dix après chaque blessure (le pronostic suppose un blessé remplacé : il
 // y est un peu optimiste). Une tranche bien calibrée a un écart proche de zéro (moins de deux erreurs types).
 import { createServer } from 'vite';
@@ -97,15 +97,16 @@ for (let i = 0; i < N; i++) {
   const s = randomClub();
   const rating = lineupRating(s.players, s.lineup, s.formation);
   const knockout = Math.random() < 0.25;
-  const ctx = { opp: { name: 'Adversaire', strength: Math.round(clamp(rating + rnd(-4, 4), 3, 19.5) * 10) / 10 }, comp: knockout ? 'cup' : 'league', knockout };
-  const odds = prematchOdds(s, { oppStrength: ctx.opp.strength });
+  const away = !knockout && Math.random() < 1 / 3; // match à l'extérieur (Elite)
+  const ctx = { opp: { name: 'Adversaire', strength: Math.round(clamp(rating + rnd(-4, 4), 3, 19.5) * 10) / 10 }, comp: knockout ? 'cup' : 'league', knockout, home: !away };
+  const odds = prematchOdds(s, { oppStrength: ctx.opp.strength, home: !away });
   const xi = s.lineup.map((id) => s.players.find((p) => p.id === id)).filter(Boolean);
   const pens = penaltySkills(xi);
   const qualify = knockout ? odds.win + odds.draw * shootoutWinChance(pens.home, pens.away) : null;
   const a = block(s, ctx); // match joué d'un bloc : le staff remplace les blessés
   const b = play(s, ctx, { replace: true, marks: true }); // direct : blessés remplacés, pronostic relevé
   const c = play(s, ctx); // à dix après chaque blessure (aucun changement)
-  games.push({ odds, knockout, qualify, a, b, c });
+  games.push({ odds, knockout, away, qualify, a, b, c });
   for (const x of b.seen) live.push({ at: x.at, odds: x.odds, outcome: b.outcome });
 }
 
@@ -133,13 +134,19 @@ function table(title, rows, bins) {
 const DECILES = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0001];
 const DRAWS = [0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 1.0001];
 
-console.log(`${N} matchs simulés en ${Math.round((Date.now() - t0) / 1000)} s (dont ${games.filter((g) => g.knockout).length} matchs de coupe)`);
+console.log(`${N} matchs simulés en ${Math.round((Date.now() - t0) / 1000)} s (dont ${games.filter((g) => g.knockout).length} matchs de coupe, ${games.filter((g) => g.away).length} à l’extérieur)`);
 for (const [mode, key] of [['match joué d’un bloc (le staff remplace les blessés)', 'a'], ['direct, blessés remplacés', 'b'], ['à dix après chaque blessure', 'c']]) {
   console.log(`\n=== Avant-match, ${mode} ===`);
   table('Victoire', games.map((g) => ({ p: g.odds.win, hit: g[key].outcome === 'win' })), DECILES);
   table('Nul', games.map((g) => ({ p: g.odds.draw, hit: g[key].outcome === 'draw' })), DRAWS);
   table('Défaite', games.map((g) => ({ p: g.odds.loss, hit: g[key].outcome === 'loss' })), DECILES);
   table('Qualification en coupe', games.filter((g) => g.knockout).map((g) => ({ p: g.qualify, hit: g[key].qualified })), DECILES);
+}
+console.log('\n=== Avant-match selon le lieu (match joué d’un bloc) ===');
+for (const [where, keep] of [['à domicile', (g) => !g.away], ['à l’extérieur', (g) => g.away]]) {
+  const rows = games.filter(keep);
+  table(`Victoire ${where}`, rows.map((g) => ({ p: g.odds.win, hit: g.a.outcome === 'win' })), DECILES);
+  table(`Défaite ${where}`, rows.map((g) => ({ p: g.odds.loss, hit: g.a.outcome === 'loss' })), DECILES);
 }
 console.log('\n=== Pronostic du direct (blessés remplacés) ===');
 for (const at of [30, 'mi-temps', 60, 75, 85]) {

@@ -93,8 +93,9 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const rating = lineupRating(state.players, lineup, formation, fitWeight);
   const rested = lineupRating(state.players, lineup, formation);
   const tired = rested - rating >= 0.05 ? rested - rating : 0;
-  const xg = prematchXg(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength }); // même moteur que le pronostic
-  const odds = prematchOdds(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength }); // calculé sur le moteur
+  const home = ctx.home !== false; // à l'extérieur (Elite) : l'avantage du terrain est à l'adversaire, pronostic compris
+  const xg = prematchXg(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength, home }); // même moteur que le pronostic
+  const odds = prematchOdds(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength, home }); // calculé sur le moteur
   // coupe : qualifié en gagnant, ou en gagnant la séance de tirs au but après un nul (chance exacte, tireurs et gardien de
   // ce onze) ; le nul ne compte plus pour une demi-qualification
   const pens = ctx.knockout ? penaltySkills(lineup.map((id) => state.players.find((p) => p.id === id)).filter(Boolean)) : null;
@@ -116,7 +117,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   return (
     <div className={`matchscreen prematch ${board ? 'board-open' : 'board-closed'}`}>
       <header className="pm-head">
-        <p className={`pm-eyebrow comp-${ctx.comp || 'league'}`}>{league ? `${DIVISIONS[state.divisionIndex].name} · ` : ''}{ctx.label || `Journée ${state.round + 1} / 7`} · À domicile</p>
+        <p className={`pm-eyebrow comp-${ctx.comp || 'league'}`}>{league ? `${DIVISIONS[state.divisionIndex].name} · ` : ''}{ctx.label || `Journée ${state.round + 1} / ${state.schedule.length}`} · {home ? 'À domicile' : 'À l’extérieur'}</p>
         <div className="pm-top">
           <div className="pm-matchup">
             <div className="pm-team home">
@@ -125,16 +126,21 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
             </div>
             <span className="pm-vs" aria-label="contre">VS</span>
             <div className="pm-team away">
-              <div className="pm-tname"><b ref={awayRef}>{ctx.opp.name}</b><small>{standing(them)}niveau <strong>{fmtRating(ctx.opp.strength)}</strong></small></div>
+              <div className="pm-tname"><b ref={awayRef}>{ctx.opp.name}</b><small>{standing(them)}{ctx.opp.budget ? `budget ${fmtMoney(ctx.opp.budget)} · ` : ''}niveau <strong>{fmtRating(ctx.opp.strength)}</strong></small></div>
               <Crest name={ctx.opp.name} className="pm-crest" />
             </div>
           </div>
-          {ctx.gate && (
+          {ctx.gate && (home ? (
             <div className="pm-gate glass" aria-label="Billetterie du jour">
               <div><small>Affluence attendue</small><b>{fmtNum(ctx.gate.attendance)} <em>/ {fmtNum(ctx.gate.capacity)}</em></b></div>
               <div><small>Recettes</small><b>≈ {fmtMoney(ctx.gate.revenue)}</b></div>
             </div>
-          )}
+          ) : (
+            <div className="pm-gate glass" aria-label="Match à l’extérieur">
+              <div><small>Stade adverse</small><b>Extérieur</b></div>
+              <div><small>Droits TV</small><b>≈ {fmtMoney(ctx.gate.revenue)}</b></div>
+            </div>
+          ))}
           <button className="pm-close" onClick={onCancel} aria-label="Retour au complexe"><IconClose /></button>
         </div>
       </header>
@@ -609,7 +615,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
           <span className="lv-team away"><b title={m.away}>{codes[1]}</b><Crest name={m.away} className="lv-crest" /></span>
         </div>
         <span className={`lv-clock is-${phase}`}>{clockEl}</span>
-        <p className="lv-eyebrow">{round} · {period}</p>
+        <p className="lv-eyebrow">{round}{m.atHome === false ? ' · Extérieur' : ''} · {period}</p>
       </header>
 
       {banner && <GoalBanner key={`${banner.half}-${banner.at}`} banner={banner} state={state} m={m} shown={shown} codes={codes} />}

@@ -4,8 +4,9 @@ import {
 import { LINES, pickOf, programsFor } from '../game/training';
 import { advisedPlan } from '../game/academy';
 import { seasonFixtures } from '../game/fixtures';
+import { euroName, leagueLength } from '../game/cups';
 import { matchContext, startSeason } from '../game/season';
-import { costOf, playerRating } from '../game/players';
+import { assignNumber, costOf, makePlayer, playerRating } from '../game/players';
 import { BUYERS, counterFor, dateKey, lastWordOf, outbidChance, poolOf, roundKey, roundTo, valueOf } from '../game/mercato';
 import { distinctClubName } from '../game/names';
 
@@ -36,6 +37,7 @@ export const SCREENS = [
   ['contre-offre', 'Mercato · contre-offre du vendeur'],
   ['suivis', 'Mercato · joueurs suivis'],
   ['offres', 'Mercato · offres reçues'],
+  ['offres-europe', 'Mercato · offre folle d’un géant européen (Elite, Coupe d’Europe)'],
   ['encheres', 'Mercato · enchères entre clubs'],
   ['vente', 'Mercato · mise en vente à ton prix'],
   ['vente-negociation', 'Mercato · négociation d’une vente (dernier mot)'],
@@ -62,6 +64,8 @@ export const SCREENS = [
   ['comparateur', 'Comparateur radar'],
   ['avant-match', 'Avant-match'],
   ['avant-match-coupe', 'Avant-match · tour de coupe (titulaires fatigués, tirs au but)'],
+  ['avant-match-exterieur', 'Avant-match · Elite, journée à l’extérieur (droits TV seulement)'],
+  ['avant-match-europe', 'Avant-match · Coupe d’Europe (budget du géant adverse)'],
   ['direct', 'Match en direct'],
   ['direct-but', 'Match en direct · bandeau du but'],
   ['mi-temps', 'Mi-temps (composition repliée)'],
@@ -97,7 +101,7 @@ export function previewState(screen) {
   s.tutorial = { step: screen === 'tutoriel' ? 'build' : screen === 'tutoriel-effectif' ? 'squad' : 'done' };
   if (screen === 'finances' || screen === 'stats' || screen === 'stats-pass' || screen === 'stats-detail' || screen === 'anciens' || screen === 'trophees') { // deux saisons bouclées, puis trois matchs : courbe et comptes remplis
     build(s, 'main', 'training');
-    for (let k = 0; k < 2; k++) { while (s.round < 7) playRound(s); endSeason(s); s.seasonReview = null; }
+    for (let k = 0; k < 2; k++) { while (s.round < leagueLength(s)) playRound(s); endSeason(s); s.seasonReview = null; }
     for (let k = 0; k < 3; k++) playRound(s);
     sellPlayer(s, [...s.players].sort((x, y) => (y.hist?.length || 0) - (x.hist?.length || 0))[0].id); // un ancien, pour les fiches carrière
     if (screen === 'trophees') { // un palmarès fourni : titres, coupes, Coupe d'Europe
@@ -111,7 +115,8 @@ export function previewState(screen) {
     s.offline = null;
     return s;
   }
-  if (screen === 'europe' || screen === 'calendrier-europe') { // Elite et Coupe d'Europe : places européennes au classement, dates européennes au calendrier
+  const elite = ELITE.includes(screen);
+  if (elite) { // Elite et Coupe d'Europe : places européennes au classement, dates européennes au calendrier
     s.divisionIndex = 3;
     s.reputation = 60;
     s.c1Next = true;
@@ -120,8 +125,12 @@ export function previewState(screen) {
   if (screen !== 'tutoriel') {
     build(s, 'main', 'training');
     for (let k = 0; k < 3; k++) playRound(s); // statistiques, forme, dernier match
-    s.money = 42000;
+    s.money = elite ? 38500000 : 42000;
   }
+  if (screen === 'avant-match-exterieur') { // prochaine journée chez l'adversaire
+    for (let k = 0; k < 8 && !(matchContext(s)?.comp === 'league' && matchContext(s)?.home === false); k++) playRound(s);
+  }
+  if (screen === 'avant-match-europe') for (let k = 0; k < 8 && matchContext(s)?.comp !== 'c1'; k++) playRound(s); // soir européen
   if (screen === 'avant-match-coupe') { // prochain tour de la Coupe nationale, trois titulaires pas frais
     for (let k = 0; k < 6 && matchContext(s)?.comp === 'league'; k++) playRound(s);
     s.lineup.slice(1, 4).forEach((id, k) => { s.players.find((p) => p.id === id).fit = [52, 61, 70][k]; });
@@ -151,7 +160,7 @@ export function previewState(screen) {
   }
   if (screen.startsWith('direction')) { s.money = 1e6; build(s, 't3', 'direction'); upgrade(s, 'direction'); s.money = 42000; } // Direction du club, niveau 2
   if (screen === 'bilan' || screen === 'bilan-champion') {
-    while (s.round < 7) playRound(s);
+    while (s.round < leagueLength(s)) playRound(s);
     endSeason(s);
     if (screen === 'bilan-champion') { // titre et coupe : la célébration complète
       const r = s.seasonReview;
@@ -215,8 +224,10 @@ function trainingPreview(s) {
 // Mercato en aperçu : une négociation (avec ou sans contre-offre), des joueurs suivis dont un parti ailleurs, des
 // offres reçues (trois clubs pour un joueur, un pour un autre, une offre spontanée), des enchères, une négociation de
 // vente au dernier mot, une vente conclue, un bilan avec une arrivée et un départ.
-const MERCATO = ['negociation', 'contre-offre', 'suivis', 'offres', 'encheres', 'vente-negociation', 'vente-conclue', 'bilan-mercato'];
-const SALES = ['offres', 'encheres', 'vente-negociation', 'vente-conclue'];
+const MERCATO = ['negociation', 'contre-offre', 'suivis', 'offres', 'offres-europe', 'encheres', 'vente-negociation', 'vente-conclue', 'bilan-mercato'];
+const SALES = ['offres', 'offres-europe', 'encheres', 'vente-negociation', 'vente-conclue'];
+// écrans joués en Elite, qualifié pour la Coupe d'Europe
+const ELITE = ['europe', 'calendrier-europe', 'avant-match-exterieur', 'avant-match-europe', 'offres-europe'];
 const later = () => Date.now() + 60000; // réponse affichée à l'ouverture de la vue
 function mercatoPreview(s, screen) {
   const mine = [...s.players].sort((a, b) => playerRating(a) - playerRating(b));
@@ -242,16 +253,23 @@ function mercatoPreview(s, screen) {
     s.saleOffered = { [a.id]: key, [b.id]: key };
     s.offerSeq = 0;
     const offer = (p, tier, k, cap, club, unsolicited = false) => ({
-      id: ++s.offerSeq, playerId: p.id, club, tier, div: Math.min(3, Math.max(0, s.divisionIndex + BUYERS[tier].step)), b: cap,
+      id: ++s.offerSeq, playerId: p.id, club, tier, div: BUYERS[tier].step == null ? null : Math.min(3, Math.max(0, s.divisionIndex + BUYERS[tier].step)), b: cap,
       v: valueOf(s, p), amount: roundTo(valueOf(s, p) * k), atAsk: false, unsolicited, at: key, talks: { tries: 0, closed: false },
     });
     const far = distinctClubName([s.clubName, ...s.rivals.map((r) => r.name)]);
+    let courted = mine[mine.length - 1]; // le meilleur joueur : une offre spontanée
+    if (screen === 'offres-europe') { // une star de 21 ans, en grande forme, convoitée par un géant européen
+      courted = makePlayer({ level: 6.4, pos: 'A' });
+      Object.assign(courted, { id: s.nextId++, age: 21, form: [8.2, 7.6, 8.5], joined: s.seasonNumber - 1 });
+      assignNumber(s.players, courted);
+      s.players.push(courted);
+    }
     s.offers = [
       offer(a, 'big', 1.12, 1.32, far),
       offer(a, 'mid', 1.02, 1.14, s.rivals[0].name),
       offer(a, 'small', 0.9, 0.99, s.rivals[3].name),
       { ...offer(b, 'mid', 1, 1.12, s.rivals[5].name), amount: s.saleList[1].price, atAsk: true },
-      offer(mine[mine.length - 1], 'big', 1.38, 1.5, distinctClubName([s.clubName, far]), true),
+      screen === 'offres-europe' ? offer(courted, 'euro', 1.42, 1.66, euroName(), true) : offer(courted, 'big', 1.38, 1.5, distinctClubName([s.clubName, far]), true),
     ];
     const [top, second, third] = s.offers;
     // plafonds choisis pour que les enchères se jouent vraiment (les petites sommes, arrondies, sont tranchées)
@@ -309,7 +327,7 @@ export function previewUi(screen, s) {
     case 'marche': case 'transferts': return { panel: 'mercato' };
     case 'negociation': case 'contre-offre': return { panel: 'mercato', squad: { deal: s.transfers[0].id } };
     case 'suivis': return { panel: 'mercato', squad: { mercato: 'watch' } };
-    case 'offres': case 'encheres': return { panel: 'mercato', squad: { mercato: 'offers' } };
+    case 'offres': case 'offres-europe': case 'encheres': return { panel: 'mercato', squad: { mercato: 'offers' } };
     case 'vente': return { panel: 'mercato', squad: { mercato: 'offers', listing: [...s.players].sort((a, b) => playerRating(a) - playerRating(b))[2].id } };
     case 'vente-negociation': case 'vente-conclue': return { panel: 'mercato', squad: { mercato: 'offers', sale: 1 } };
     case 'bilan-mercato': return { panel: 'mercato', squad: { mercato: 'log' } };
@@ -341,7 +359,7 @@ export function previewUi(screen, s) {
     case 'stats-pass': return { panel: 'stats', statsMatch: 'last' };
     case 'stats-detail': return { panel: 'stats', statsMatch: 'last' };
     case 'trophees': return { panel: 'trophies' };
-    case 'avant-match': case 'avant-match-coupe': return { matchPhase: 'prematch', matchCtx: matchContext(s), matchDay: true };
+    case 'avant-match': case 'avant-match-coupe': case 'avant-match-exterieur': case 'avant-match-europe': return { matchPhase: 'prematch', matchCtx: matchContext(s), matchDay: true };
     case 'direct': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34 } };
     case 'direct-but': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34, goal: true } };
     case 'mi-temps': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime' } };

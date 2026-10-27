@@ -2,6 +2,7 @@ import { DIVISIONS } from './constants';
 import { officeSize } from './economy';
 import { makePlayer, playerRating } from './players';
 import { distinctClubName, randomClubName } from './names';
+import { euroName } from './cups';
 import {
   BUYERS, CANDIDATES, buyerView, drawBuyer, formOf, openingOffer, roundTo, saleBlock, spontaneousBuyer, valueOf, withinReach,
 } from './mercato';
@@ -69,10 +70,12 @@ function drift(p, s) {
 const leaveChance = (p) => (p.interest ? 0.26 + 0.12 * p.interest : 0.1);
 
 // Nom d'un club acheteur : un rival de la division une fois sur deux s'il joue à notre niveau, sinon un club
-// d'ailleurs ; jamais le nôtre ni un club déjà en lice pour ce joueur (taken, complété au passage).
+// d'ailleurs (un club européen pour un géant européen, div null) ; jamais le nôtre ni un club déjà en lice pour ce
+// joueur (taken, complété au passage).
 function buyerName(s, div, taken) {
   let club = null;
-  if (div === s.divisionIndex && Math.random() < 0.5) {
+  if (div == null) club = euroName(taken);
+  else if (div === s.divisionIndex && Math.random() < 0.5) {
     const free = (s.rivals || []).filter((r) => !taken.includes(r.name));
     if (free.length) club = pick(free).name;
   }
@@ -84,7 +87,8 @@ function buyerName(s, div, taken) {
 // Offre d'un club acheteur (mercato.js) : sa sorte, sa division, son plafond secret (dont découlent les chances
 // affichées) et la valeur du joueur à ce moment. Une offre vaut jusqu'à la journée suivante.
 function newOffer(s, p, buyer, v, opening, unsolicited, key, taken) {
-  const div = clamp(s.divisionIndex + BUYERS[buyer.tier].step, 0, DIVISIONS.length - 1);
+  const step = BUYERS[buyer.tier].step;
+  const div = step == null ? null : clamp(s.divisionIndex + step, 0, DIVISIONS.length - 1);
   s.offerSeq = (s.offerSeq || 0) + 1;
   return {
     id: s.offerSeq, playerId: p.id, club: buyerName(s, div, taken), tier: buyer.tier, div, b: buyer.b, v,

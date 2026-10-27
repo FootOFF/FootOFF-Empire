@@ -15,16 +15,31 @@ export const COMPS = {
 export const STAGES = ['Huitièmes de finale', 'Quarts de finale', 'Demi-finale', 'Finale'];
 export const STAGES_SHORT = ['8es', 'Quarts', 'Demies', 'Finale'];
 
-// ordre de la saison : championnat, puis les tours de coupe glissés entre les journées
+// ordre de la saison : championnat, puis les tours de coupe glissés entre les journées ; en Elite, quatorze journées
+// (aller-retour), deux journées entre deux tours de coupe
 const ORDER = [
   ['league'], ['league'], ['cup', 0], ['league'], ['c1', 0], ['league'], ['cup', 1], ['c1', 1],
   ['league'], ['cup', 2], ['c1', 2], ['league'], ['cup', 3], ['league'], ['c1', 3],
 ];
+const ORDER_ELITE = [
+  ['league'], ['league'], ['cup', 0], ['league'], ['league'], ['c1', 0], ['league'], ['league'], ['cup', 1], ['c1', 1],
+  ['league'], ['league'], ['cup', 2], ['c1', 2], ['league'], ['league'], ['cup', 3], ['league'], ['league'], ['c1', 3],
+  ['league'], ['league'],
+];
+
+// Journées de championnat de la saison : 7 (une rencontre contre chacun, toutes à domicile), 14 en Elite depuis la
+// 0.6.0 (aller-retour : chaque adversaire reçu une fois, visité une fois, une journée sur deux à l'extérieur).
+export const leagueLength = (s) => s.schedule?.length || 7;
+// Journée `round` (0 = la première) jouée à l'extérieur (s.away, tiré au début de la saison ; jamais hors de l'Elite).
+export const isAwayRound = (s, round = s.round) => !!s.away?.[round];
 
 // Primes : Coupe nationale à l'échelle de la division (part de la prime du champion), Coupe d'Europe en montants européens.
 const CUP_SHARE = [0.06, 0.12, 0.25, 0.75]; // tour gagné
-export const C1_ENTRY = 4000000; // participation
-const C1_WIN = [2500000, 4000000, 6500000, 15000000];
+// Coupe d'Europe à l'échelle des vraies (0.6.0 ; 4 M€ de participation et 28 M€ de primes de tour avant) : 15 M€ de
+// participation, puis 10, 12, 18 et 30 M€ par tour gagné, et 5 M€ de droits TV par match (economy.js, C1_TV) : plus de
+// cent millions pour le vainqueur.
+export const C1_ENTRY = 15000000; // participation
+const C1_WIN = [10000000, 12000000, 18000000, 30000000];
 
 export const cupPrize = (comp, stage, divIndex) => (comp === 'c1' ? C1_WIN[stage] : Math.round(DIVISIONS[divIndex].prize * CUP_SHARE[stage]));
 
@@ -32,14 +47,22 @@ export const cupPrize = (comp, stage, divIndex) => (comp === 'c1' ? C1_WIN[stage
 const EURO_PREFIX = ['Real', 'Inter', 'Sporting', 'Dynamo', 'Athletic', 'Union', 'Olympia', 'Rapid', 'Vitoria', 'Royal'];
 const EURO_CITY = ['Valmora', 'Castellano', 'Lisvar', 'Kravets', 'Norrhavn', 'Melithi', 'Bergamonte', 'Aldenburg', 'Zurvic',
   'Halmstrand', 'Corvina', 'Ostrava Nova', 'Belmira', 'Sankt Arlen', 'Varnacci', 'Tirelli', 'Doruva', 'Lindhaven'];
-const euroName = () => `${pick(EURO_PREFIX)} ${pick(EURO_CITY)}`;
+export const euroName = (taken = []) => {
+  let name = '';
+  for (let k = 0; k < 20 && (!name || taken.includes(name)); k++) name = `${pick(EURO_PREFIX)} ${pick(EURO_CITY)}`;
+  return name;
+};
 
 // Adversaire d'un tour : en Coupe d'Europe, un cador européen, au-dessus du milieu de l'Elite dès les huitièmes et au
-// niveau des meilleurs en finale (de 14,8 à 18,2 ; avant la 0.5.0, de 13,7 à 17,3 : une Coupe d'Europe sur deux gagnée) ;
-// en Coupe nationale, un club d'une division voisine, plus fort à chaque tour.
+// niveau des meilleurs en finale (de 15,1 à 18,5 ; de 14,8 à 18,2 en 0.5.x ; avant la 0.5.0, de 13,7 à 17,3 : une Coupe
+// d'Europe sur deux gagnée),
+// avec son budget de saison (de 150 à 800 M€, à la mesure de son niveau : rien qu'une indication, le match se joue sur
+// le niveau) ; en Coupe nationale, un club d'une division voisine, plus fort à chaque tour.
 export function drawOpponent(s, comp, stage) {
   if (comp === 'c1') {
-    return { name: euroName(), strength: Math.round(clamp(15.6 + stage * 0.6 + rnd(-0.8, 0.8), 14, 19) * 10) / 10, division: 'Europe' };
+    const strength = Math.round(clamp(15.9 + stage * 0.6 + rnd(-0.8, 0.8), 14, 19) * 10) / 10;
+    const budget = Math.round(clamp(220 + (strength - 15.9) * 160 + rnd(-40, 40), 150, 800) / 10) * 10 * 1e6;
+    return { name: euroName(), strength, division: 'Europe', budget };
   }
   const di = clamp(s.divisionIndex + pick([-1, 0, 0, 0, 1]) + (stage >= 2 && Math.random() < 0.4 ? 1 : 0), 0, 3);
   const d = DIVISIONS[di];
@@ -50,7 +73,7 @@ export function drawOpponent(s, comp, stage) {
 
 // Calendrier et parcours en coupe d'une nouvelle saison.
 export function buildCalendar(s) {
-  s.calendar = ORDER.filter(([c]) => c !== 'c1' || s.c1).map(([comp, stage]) => ({ comp, stage: stage ?? null }));
+  s.calendar = (leagueLength(s) > 7 ? ORDER_ELITE : ORDER).filter(([c]) => c !== 'c1' || s.c1).map(([comp, stage]) => ({ comp, stage: stage ?? null }));
   s.calIndex = 0;
   s.cups = {
     cup: { alive: true, stage: 0, results: [], opp: drawOpponent(s, 'cup', 0), won: false },
@@ -60,25 +83,27 @@ export function buildCalendar(s) {
 
 // Prochain match à jouer (les tours d'une coupe dont on est sorti sont sautés), ou null en fin de saison.
 export function nextFixture(s) {
-  if (!s.calendar) return s.round < 7 ? { index: -1, comp: 'league', stage: null } : null;
+  const len = leagueLength(s);
+  if (!s.calendar) return s.round < len ? { index: -1, comp: 'league', stage: null } : null;
   for (let i = s.calIndex || 0; i < s.calendar.length; i++) {
     const f = s.calendar[i];
-    if (f.comp === 'league') { if (s.round < 7) return { index: i, ...f }; continue; }
+    if (f.comp === 'league') { if (s.round < len) return { index: i, ...f }; continue; }
     const c = s.cups?.[f.comp];
     if (c && c.alive && c.stage === f.stage) return { index: i, ...f };
   }
   return null;
 }
 
-// Libellé d'un match : « Journée 3 / 7 », « Coupe nationale · Quarts de finale », « Coupe d'Europe · Finale ».
-export function fixtureLabel(f, round) {
-  if (!f || f.comp === 'league') return `Journée ${round} / 7`;
+// Libellé d'un match : « Journée 3 / 7 » (« / 14 » en Elite), « Coupe nationale · Quarts de finale », « Coupe d'Europe ·
+// Finale ».
+export function fixtureLabel(f, round, total = 7) {
+  if (!f || f.comp === 'league') return `Journée ${round} / ${total}`;
   return `${f.comp === 'c1' ? 'Coupe d’Europe' : 'Coupe nationale'} · ${STAGES[f.stage]}`;
 }
 // Version courte (bouton « Jouer », petits espaces) : « Coupe · 8es de finale », « Coupe d'Europe · Finale ».
 const STAGES_MID = ['8es de finale', 'Quarts', 'Demies', 'Finale'];
-export function fixtureShort(f, round) {
-  if (!f || f.comp === 'league') return `Journée ${round} / 7`;
+export function fixtureShort(f, round, total = 7) {
+  if (!f || f.comp === 'league') return `Journée ${round} / ${total}`;
   return `${f.comp === 'c1' ? 'Europe' : 'Coupe'} · ${STAGES_MID[f.stage]}`;
 }
 // « de Nationale », « d'Elite » : élision devant une voyelle

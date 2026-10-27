@@ -1,4 +1,4 @@
-import { nextFixture } from './cups';
+import { leagueLength, nextFixture } from './cups';
 import { BUILDINGS, POS_LABELS, SQUAD_MAX, YOUTH_LEAVE_AGE, YOUTH_PLACES, upgradeCost } from './constants';
 import { leavingYouth } from './academy';
 import { LINES, sessionOf, staffOn, windowKey } from './training';
@@ -170,7 +170,7 @@ export function staffTip(s) {
   }
   // académie : en seconde moitié de saison, rappel des jeunes qui auront 19 ans à l'intersaison (ils partiront s'ils
   // ne sont pas montés en équipe première)
-  const leaving = s.round >= 4 ? leavingYouth(s) : [];
+  const leaving = s.round * 2 >= leagueLength(s) + 1 ? leavingYouth(s) : [];
   if (leaving.length) {
     const many = leaving.length > 1;
     return {

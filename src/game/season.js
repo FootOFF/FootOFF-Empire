@@ -1,10 +1,10 @@
-import { DIVISIONS, PAY_SPLIT, SQUAD_MIN } from './constants';
+import { DIVISIONS, SQUAD_MIN } from './constants';
 import { pushJournal } from './journal';
 import { REP_DECAY, REP_DIVISION } from './reputation';
 import { refreshTransfers } from './transfers';
 import { refreshScouting, trainYouth, youthSeasonEnd } from './academy';
-import { logMove } from './mercato';
-import { expectedGate, matchGate, prizeFor, sponsorIncome, ticketPrice, upkeepOf } from './economy';
+import { leagueRounds, logMove } from './mercato';
+import { awayGate, expectedGate, matchGate, prizeFor, sponsorIncome, ticketPrice, upkeepOf } from './economy';
 import { clamp, ordinal, pick, rnd } from './utils';
 import { clubAfter, leagueClubNames, randomClubName } from './names';
 import { assignNumber, drawInjury, fitOf, freshSeason, makePlayer, matchCost, playerRating, progressPlayer, recoveryOf, saleValue, wageOf, wantsRetirement } from './players';
@@ -13,7 +13,7 @@ import { ensureLineup } from './tactics';
 import { closeSeasonGoals, reputationStatusEvent, resetSeasonStats } from './goals';
 import { closeSeasonObjectives, drawObjectives } from './objectives';
 import { book, closeLedger, markTreasury } from './ledger';
-import { C1_ENTRY, COMPS, STAGES, buildCalendar, cupPrize, drawOpponent, fixtureLabel, fixtureShort, nextFixture, ofDiv } from './cups';
+import { C1_ENTRY, COMPS, STAGES, buildCalendar, cupPrize, drawOpponent, fixtureLabel, fixtureShort, isAwayRound, leagueLength, nextFixture, ofDiv } from './cups';
 import { addMatch, rebuildRecords } from './records';
 import { collectiveSession, staffSession, tidyTraining, windowKey } from './training';
 
@@ -45,7 +45,12 @@ export function startSeason(s) {
     const j = Math.floor(Math.random() * (i + 1));
     [s.rivals[i], s.rivals[j]] = [s.rivals[j], s.rivals[i]];
   }
-  s.schedule = roundRobin(8);
+  // Elite (0.6.0) : aller-retour, quatorze journées ; la seconde moitié reprend les mêmes affiches, lieux inversés. Notre
+  // lieu alterne : domicile, extérieur… (sept de chaque) ; ailleurs, toutes nos journées se jouent à domicile.
+  const first = roundRobin(8);
+  const elite = s.divisionIndex === DIVISIONS.length - 1;
+  s.schedule = elite ? [...first, ...first] : first;
+  s.away = elite ? Array.from({ length: 14 }, (_, r) => (r < 7 ? r % 2 === 1 : (r - 7) % 2 === 0)) : null;
   s.round = 0;
   s.table = Array.from({ length: 8 }, () => ({ pts: 0, gd: 0, played: 0, w: 0, d: 0, l: 0 }));
   refreshTransfers(s, 'full'); // mercato neuf : joueurs libres et joueurs sous contrat (transfers.js)
@@ -55,6 +60,8 @@ export function startSeason(s) {
   s.c1 = !!s.c1Next;
   s.c1Next = false;
   buildCalendar(s);
+  drawObjectives(s); // les trois objectifs du conseil d'administration pour la saison (objectives.js)
+  // ce qui tombe à la reprise compte dans les recettes de la saison (objectif « dans le vert » compris)
   if (s.c1) {
     s.money += C1_ENTRY;
     book(s, 'cups', C1_ENTRY);
@@ -63,8 +70,24 @@ export function startSeason(s) {
       text: `Grand soir européen en vue : premier tour face ${clubAfter('à ', s.cups.c1.opp.name)}. Prime de participation : ${C1_ENTRY.toLocaleString('fr-FR')} €.`,
     });
   }
-  drawObjectives(s); // les trois objectifs du conseil d'administration pour la saison (objectives.js)
+  if (s.seasonNumber > 1) paySponsors(s);
 }
+
+// Sponsors : depuis la 0.6.0, les contrats de la saison se signent et se paient à la reprise (au bilan avant ; la
+// première saison du club, au bilan) : un club promu touche tout de suite les sponsors de sa nouvelle division, de quoi
+// se renforcer avant d'affronter des salaires bien plus lourds. Montant selon la division, le siège et la réputation.
+function paySponsors(s) {
+  const amount = sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation);
+  s.money += amount;
+  book(s, 'sponsors', amount);
+  s.seasonStats.sponsors = amount;
+  s.sponsorsPaid = s.seasonNumber;
+  pushJournal(s, {
+    season: s.seasonNumber, kind: 'club', title: `Sponsors de la saison : ${n(amount)} €`,
+    text: `Les partenaires du club signent pour la saison ${s.seasonNumber} ${ofDiv(DIVISIONS[s.divisionIndex].name)} et paient leur contrat à la reprise.`,
+  });
+}
+export const sponsorsPaid = (s) => s.sponsorsPaid === s.seasonNumber;
 
 function applyResult(s, i, j, gi, gj) {
   const a = s.table[i];
@@ -137,7 +160,7 @@ function recordMatch(s, res) {
   s.matches = [...(s.matches || []), {
     season: s.seasonNumber, round: s.round, division: DIVISIONS[s.divisionIndex].name,
     comp: res.comp || 'league', stage: res.stage ?? null, label: res.label || null, pens: res.pens || null,
-    opp: res.oppName, oppStrength: Math.round((res.oppStrength || 0) * 10) / 10, myRating: res.myRating,
+    opp: res.oppName, oppStrength: Math.round((res.oppStrength || 0) * 10) / 10, myRating: res.myRating, ...(res.away ? { away: true } : {}),
     tactic: res.tactic || s.tactic, formation: res.formation || s.formation || '433', gf: res.gf, ga: res.ga,
     stats: st ? {
       possession: st.possession, shots: [...st.shots], onTarget: [...st.onTarget], yellow: [...st.yellow], red: [...st.red],
@@ -200,6 +223,15 @@ function reportText(s, res) {
   const buts = res.gf
     ? `Buts : ${res.scorers.map((x) => `${x.name} ${ordinal(x.minute, true)}`).join(', ')}.`
     : `${s.clubName} n’a pas trouvé la faille.`;
+  const money = new Intl.NumberFormat('fr-FR').format(res.revenue);
+  if (res.away) { // à l'extérieur (Elite) : ni public à nous, ni billetterie, seulement les droits TV
+    const intro = res.gf > res.ga
+      ? pick([`Victoire à l’extérieur : ${s.clubName} fait taire le stade ${opp('de ')}.`, `${s.clubName} s’impose chez ${clubAfter('', res.oppName)} : trois points précieux loin de ses bases.`])
+      : res.gf === res.ga
+        ? pick([`Point arraché chez ${clubAfter('', res.oppName)}.`, `Match nul à l’extérieur face ${opp('à ')} : un point pris loin de chez soi.`])
+        : pick([`Défaite à l’extérieur : ${s.clubName} cède chez ${clubAfter('', res.oppName)}.`, `Soirée difficile dans le stade ${opp('de ')} : ${s.clubName} repart bredouille.`]);
+    return `${intro} ${buts} Droits TV : ${money} €.`;
+  }
   let intro;
   if (res.gf > res.ga) {
     intro = pick([
@@ -219,10 +251,11 @@ function reportText(s, res) {
       `Rien ne fonctionne ce soir. Défaite logique face ${opp('à ')}.`,
     ]);
   }
-  return `${intro} ${buts} Recettes : ${new Intl.NumberFormat('fr-FR').format(res.revenue)} €.`;
+  return `${intro} ${buts} Recettes : ${money} €.`;
 }
 
-// Contexte du prochain match à domicile : adversaire et affluence attendue.
+// Contexte du prochain match : adversaire, lieu (home : à domicile ; les coupes se jouent toujours à domicile, le
+// championnat aussi hors de l'Elite) et affluence attendue.
 export function matchContext(s) {
   const f = nextFixture(s);
   if (!f) return null;
@@ -230,21 +263,24 @@ export function matchContext(s) {
   if (f.comp !== 'league') { // coupe : élimination directe, tirs au but en cas d'égalité
     const opp = s.cups[f.comp].opp;
     return {
-      comp: f.comp, stage: f.stage, fixture: f.index, knockout: true, opp, oppIdx: -1,
+      comp: f.comp, stage: f.stage, fixture: f.index, knockout: true, home: true, opp, oppIdx: -1,
       label: fixtureLabel(f), short: fixtureShort(f), gate: expectedGate(s, opp, f.comp), repMult: repMult * (f.comp === 'c1' ? 1.6 : 1.2),
     };
   }
   const pr = s.schedule[s.round].find((p) => p.includes(0));
   const oppIdx = pr[0] === 0 ? pr[1] : pr[0];
   const opp = s.rivals[oppIdx - 1];
+  const home = !isAwayRound(s);
+  const len = leagueLength(s);
   return {
-    comp: 'league', stage: null, fixture: f.index, knockout: false,
+    comp: 'league', stage: null, fixture: f.index, knockout: false, home,
     opp,
     oppIdx,
-    label: fixtureLabel(f, s.round + 1),
-    short: fixtureShort(f, s.round + 1),
-    gate: expectedGate(s, opp), // estimation : affluence, recettes (sans l'aléa du jour)
-    repMult,
+    label: fixtureLabel(f, s.round + 1, len),
+    short: fixtureShort(f, s.round + 1, len),
+    gate: home ? expectedGate(s, opp) : awayGate(s), // estimation : affluence, recettes (sans l'aléa du jour)
+    // réputation : une journée d'une saison de quatorze compte moitié moins (même total sur la saison)
+    repMult: repMult * (7 / len),
   };
 }
 
@@ -262,9 +298,10 @@ export function applyMatchResult(s, live) {
       applyResult(s, i, j, gi, gj);
     }
   }
-  const gate = matchGate(s, ctx.opp, undefined, ctx.comp); // affluence et recettes du jour
+  const gate = ctx.home === false ? awayGate(s) : matchGate(s, ctx.opp, undefined, ctx.comp); // affluence et recettes du jour
   const res = {
     ...live,
+    away: ctx.home === false,
     attendance: gate.attendance,
     capacity: gate.capacity,
     demand: gate.demand,
@@ -314,22 +351,26 @@ export function applyMatchResult(s, live) {
   for (const p of s.players) p.fit = Math.min(100, Math.round((fitOf(p) + recoveryOf(p, s.buildings.training || 0)) * 10) / 10);
   s.money += res.revenue;
   for (const [k, v] of Object.entries(res.breakdown)) book(s, k, v);
-  if (league) { // paie de la journée : un septième des salaires et de l'entretien
-    const wagePart = Math.round(s.players.reduce((sum, p) => sum + wageOf(p, s.divisionIndex), 0) / PAY_SPLIT);
-    const upkeepPart = Math.round(upkeepOf(s) / PAY_SPLIT);
+  if (league) { // paie de la journée : un septième des salaires et de l'entretien (un quatorzième en Elite)
+    const len = leagueLength(s);
+    const wagePart = Math.round(s.players.reduce((sum, p) => sum + wageOf(p, s.divisionIndex), 0) / len);
+    const upkeepPart = Math.round(upkeepOf(s) / len);
     s.money -= wagePart + upkeepPart;
     book(s, 'wages', wagePart);
     book(s, 'upkeep', upkeepPart);
   }
   markTreasury(s);
   s.seasonStats.gate = (s.seasonStats.gate || 0) + res.revenue; // recettes cumulées, pour le bilan
-  if (gate.attendance >= gate.capacity * 0.6) s.seasonStats.crowd = true;
+  if (gate.capacity && gate.attendance >= gate.capacity * 0.6) s.seasonStats.crowd = true;
   const repWas = s.reputation;
   s.reputation = Math.max(0, Math.round((s.reputation + res.repDelta) * 10) / 10);
   const status = reputationStatusEvent(s, repWas); // nouveau statut de notoriété atteint sur ce match
-  if (league) s.round++;
+  if (league) {
+    s.leagueTotal = leagueRounds(s) + 1; // journées jouées depuis la fondation (blocage de revente, mercato.js)
+    s.round++;
+  }
   if (ctx.fixture >= 0) s.calIndex = ctx.fixture + 1;
-  s.lastMatch = { ...res, round: s.round, comp: ctx.comp, stage: ctx.stage, label: league ? fixtureLabel(null, s.round) : ctx.label, cup: cupNote, status: status?.name || null, before, absences };
+  s.lastMatch = { ...res, round: s.round, comp: ctx.comp, stage: ctx.stage, label: league ? fixtureLabel(null, s.round, leagueLength(s)) : ctx.label, cup: cupNote, status: status?.name || null, before, absences };
   recordMatch(s, s.lastMatch);
   if (absences.length) {
     pushJournal(s, {
@@ -384,21 +425,23 @@ export function nextOpponent(s) {
 const n = (v) => new Intl.NumberFormat('fr-FR').format(v);
 
 export function endSeason(s) {
-  for (let guard = 0; nextFixture(s) && guard < 20; guard++) playRound(s); // dates restantes jouées d'un bloc
+  for (let guard = 0; nextFixture(s) && guard < 40; guard++) playRound(s); // dates restantes jouées d'un bloc (22 en Elite)
   const standings = standingsOf(s);
   const position = standings.findIndex((t) => t.i === 0) + 1;
   const div = DIVISIONS[s.divisionIndex];
   const prize = prizeFor(position, s.divisionIndex);
-  const sponsors = sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation);
+  // sponsors de la saison : payés à la reprise (paySponsors), sinon maintenant (première saison, partie d'avant la 0.6.0)
+  const upfront = sponsorsPaid(s);
+  const sponsors = upfront ? s.seasonStats?.sponsors || 0 : sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation);
   // salaires et entretien déjà payés journée après journée : le bilan en montre le total de la saison
   const wages = s.ledger?.lines?.wages || 0;
   const upkeep = s.ledger?.lines?.upkeep || 0;
   const promoted = position <= 2 && s.divisionIndex < 3;
   const relegated = position >= 7 && s.divisionIndex > 0;
 
-  s.money += prize + sponsors;
+  s.money += prize + (upfront ? 0 : sponsors);
   book(s, 'prize', prize);
-  book(s, 'sponsors', sponsors);
+  if (!upfront) book(s, 'sponsors', sponsors);
   const events = [];
   // Champion : trophée, prime de titre (moitié de la prime du champion), bonus des sponsors et réputation
   let titleBonus = 0;
@@ -470,7 +513,7 @@ export function endSeason(s) {
     return { comp: k, won: c.won, reached: c.won ? 'vainqueur' : `éliminé en ${STAGES[Math.max(0, (c.results.at(-1)?.stage ?? 0))].toLowerCase()}` };
   });
   s.seasonReview = {
-    position, division: div.name, matchday, prize, sponsors, wages, upkeep, promoted, relegated, events, nextDivision: nextDivName,
+    position, division: div.name, matchday, prize, sponsors, sponsorsUpfront: upfront, wages, upkeep, promoted, relegated, events, nextDivision: nextDivName,
     titleBonus, cups: cupsMoney, trophies, cupRuns, champion: position === 1, c1Next: !!s.c1Next,
   };
   closeSeasonGoals(s, events);

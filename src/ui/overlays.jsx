@@ -33,7 +33,7 @@ export function SeasonReview({ state, onClose }) {
           <div><span>Prime</span><b className="up">+{fmtMoney(r.prize)}</b></div>
           {r.titleBonus > 0 && <div><span>Primes de titre</span><b className="up">+{fmtMoney(r.titleBonus)}</b></div>}
           {r.cups > 0 && <div><span>Primes de coupes</span><b className="up">+{fmtMoney(r.cups)}</b></div>}
-          <div><span>Sponsors</span><b className="up">+{fmtMoney(r.sponsors)}</b></div>
+          <div><span>Sponsors{r.sponsorsUpfront ? ' (à la reprise)' : ''}</span><b className="up">+{fmtMoney(r.sponsors)}</b></div>
           <div><span>Salaires</span><b className="down">−{fmtMoney(r.wages)}</b></div>
           {r.upkeep > 0 && <div><span>Entretien</span><b className="down">−{fmtMoney(r.upkeep)}</b></div>}
           <div><span>Bilan de la saison</span><b className={net >= 0 ? 'up' : 'down'}><AnimatedMoney value={Math.abs(net)} from={0} delay={600} duration={1300} prefix={net >= 0 ? '+' : '−'} /></b></div>

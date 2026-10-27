@@ -210,7 +210,7 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false }) {
   const ctx = matchContext(state);
   const done = !ctx;
   useHudKey(['KeyJ'], () => (done ? onEndSeason() : onPlay()), keys); // J : jouer (ou bilan de fin de saison)
-  const odds = useMemo(() => (ctx ? prematchOdds(state, { oppStrength: ctx.opp.strength }) : null), [state]); // eslint-disable-line react-hooks/exhaustive-deps
+  const odds = useMemo(() => (ctx ? prematchOdds(state, { oppStrength: ctx.opp.strength, home: ctx.home !== false }) : null), [state]); // eslint-disable-line react-hooks/exhaustive-deps
   const titleRef = useFitText(ctx?.opp.name, 17);
   if (done) {
     return (
@@ -232,7 +232,7 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false }) {
       <Crest name={opp.name} className="hm-crest" />
       <div className="hm-info">
         <span className="hm-eyebrow" title={ctx.label}>
-          {league ? <><span className="hm-long">Journée </span><span className="hm-short">J</span>{state.round + 1}/{state.schedule.length}</> : ctx.short} · À domicile
+          {league ? <><span className="hm-long">Journée </span><span className="hm-short">J</span>{state.round + 1}/{state.schedule.length}</> : ctx.short} · {ctx.home === false ? 'À l’extérieur' : 'À domicile'}
         </span>
         <strong className="hud-match-title" ref={titleRef} title={opp.name}>{opp.name}</strong>
         <span className="hm-odds" title={`Pronostic : victoire ${w.label}, nul ${d.label}, défaite ${l.label}`}>

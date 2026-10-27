@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BUILDINGS, DIVISIONS, POS_LABELS, SQUAD_MAX, upgradeCost } from '../game/constants';
 import { ATTRS, FAMILIES, GK_ATTRS, TRAITS, playerRating, potentialRange, ratingAt, wageOf } from '../game/players';
-import { PLANS, SCOUTED, YOUTH_LEAVE_AGE, YOUTH_PLACES, advisedPlan, planAttrs, planPace } from '../game/academy';
+import { PLANS, SCOUTED, YOUTH_LEAVE_AGE, YOUTH_PLACES, advisedPlan, planAttrs, planPace, scoutingWhen } from '../game/academy';
 import { academyTalent, scoutingError } from '../game/economy';
+import { leagueLength } from '../game/cups';
 import { promoteYouth, releaseYouth, setYouthPlan, signYouth } from '../game/engine';
 import { fitGain } from '../game/mercato';
 import { deName } from '../game/names';
@@ -188,6 +189,13 @@ function Places({ state, youth, upgradable, onBuilding }) {
 
 // --- Mes jeunes -----------------------------------------------------------------------------------------------
 
+// Prochain repérage : après la prochaine journée de championnat, dans deux journées (Elite : une liste toutes les deux
+// journées), ou au début de la saison prochaine.
+function nextScouting(state) {
+  const { next } = scoutingWhen(state);
+  return next == null ? 'au début de la saison prochaine' : next > 1 ? 'dans deux journées de championnat' : 'après la prochaine journée de championnat';
+}
+
 function YouthTab({ state, youth, scouted, refLvl, focus, onOpen, onScout }) {
   const leaving = youth.filter(isLeaving);
   const rules = (
@@ -207,7 +215,7 @@ function YouthTab({ state, youth, scouted, refLvl, focus, onOpen, onScout }) {
             {YOUTH_PLACES} places, sans frais :{' '}
             {scouted.length
               ? `recrute parmi les ${plural(scouted.length, 'jeune repéré', 'jeunes repérés')} par tes éducateurs.`
-              : 'de nouveaux jeunes seront repérés après la prochaine journée de championnat.'}
+              : `de nouveaux jeunes seront repérés ${nextScouting(state)}.`}
           </p>
           {scouted.length > 0 && <button className="btn" onClick={onScout}>Voir la détection</button>}
         </div>
@@ -350,11 +358,12 @@ function YouthRow({ p, state, refLvl, focus, onOpen }) {
 
 function ScoutTab({ state, scouted, full, refLvl, onOpen, onSign, onBuilding }) {
   const lvl = state.buildings.academy || 0;
-  const when = state.round >= 7 ? 'au début de la saison prochaine' : 'après la prochaine journée de championnat';
+  const { since } = scoutingWhen(state); // en Elite (quatorze journées), une liste toutes les deux journées
+  const when = nextScouting(state);
   return (
     <>
       <p className="sq-hint ac-intro">
-        {state.round > 0 ? `Repérés après la journée ${state.round}` : 'Repérés pour le début de saison'} · d’autres jeunes {when} · recrutement gratuit
+        {since > 0 ? `Repérés après la journée ${since}` : 'Repérés pour le début de saison'} · d’autres jeunes {when} · recrutement gratuit
       </p>
       {full && (
         <div className="ac-alert" role="note">
@@ -456,7 +465,7 @@ function LevelCard({ state, onBuilding }) {
   const max = BUILDINGS.academy.max;
   const line = (l) => {
     const t = academyTalent(l);
-    return `${plural(SCOUTED[l], 'jeune repéré', 'jeunes repérés')} après chaque journée · potentiel ${t.pot[0]} à ${t.pot[1]}, rarement ${t.top} · fourchette de ${dec(2 * scoutingError(l))} points`;
+    return `${plural(SCOUTED[l], 'jeune repéré', 'jeunes repérés')} ${leagueLength(state) > 7 ? 'toutes les deux journées' : 'après chaque journée'} · potentiel ${t.pot[0]} à ${t.pot[1]}, rarement ${t.top} · fourchette de ${dec(2 * scoutingError(l))} points`;
   };
   return (
     <section className="ac-level">

@@ -72,10 +72,15 @@ export function FinancesPanel({ state, onClose, onOpenSquad }) {
       <SectionHead label="Prévision de fin de saison" aside={fc.left ? `${fc.left} match${fc.left > 1 ? 's' : ''} à jouer` : 'saison terminée'} />
       <ul className="fin-flow">
         <li><span>Trésorerie actuelle</span><b>{fmtEuros(state.money)}</b></li>
-        {fc.left > 0 && <li className="in"><span>Matchs restants <em>{fc.left} × environ {fmtEuros(fc.perMatch)}</em></span><b>{signed(fc.matches)}</b></li>}
-        <li className="in"><span>Sponsors</span><b>{signed(fc.sponsors)}</b></li>
+        {fc.left > 0 && (
+          <li className="in">
+            <span>Matchs restants <em>{fc.homes < fc.left ? `${fc.homes} à domicile, ${fc.left - fc.homes} à l’extérieur (droits TV)` : `${fc.left} × environ ${fmtEuros(fc.perMatch)}`}</em></span>
+            <b>{signed(fc.matches)}</b>
+          </li>
+        )}
+        <li className="in"><span>Sponsors <em>{fc.sponsorsPaid ? `${fmtEuros(state.seasonStats?.sponsors || 0)} reçus à la reprise` : 'versés au bilan'}</em></span><b>{fc.sponsorsPaid ? 'déjà en caisse' : signed(fc.sponsors)}</b></li>
         <li className="in"><span>Prime de classement <em>à la {ordinal(pos, true)} place</em></span><b>{signed(fc.prize)}</b></li>
-        <li className="out"><span>Salaires restants <em>{state.players.length} joueurs · {fc.left} journée{fc.left > 1 ? 's' : ''} sur 7</em></span><b>{signed(-fc.wages)}</b></li>
+        <li className="out"><span>Salaires restants <em>{state.players.length} joueurs · {fc.left} journée{fc.left > 1 ? 's' : ''} sur {fc.len}</em></span><b>{signed(-fc.wages)}</b></li>
         {fc.upkeep > 0 && <li className="out"><span>Entretien restant</span><b>{signed(-fc.upkeep)}</b></li>}
         <li className={`fin-total ${fc.end < 0 ? 'neg' : ''}`}><span>Trésorerie en fin de saison</span><b>{fmtEuros(fc.end)}</b></li>
       </ul>
@@ -105,7 +110,7 @@ export function FinancesPanel({ state, onClose, onOpenSquad }) {
               {spent.map((x) => <Line key={x.k} label={x.label} value={x.v} max={max} kind="out" />)}
             </ul>
           )}
-          <p className="fin-note">Salaires et entretien se paient par septième à chaque journée de championnat.</p>
+          <p className="fin-note">Salaires et entretien se paient à chaque journée de championnat : un {state.schedule?.length > 7 ? 'quatorzième' : 'septième'} de la saison.</p>
         </>
       )}
 

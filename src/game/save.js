@@ -1,4 +1,4 @@
-import { SAVE_KEY } from './constants';
+import { DIVISIONS, ELITE_SCALE, SAVE_KEY } from './constants';
 import { initGoals } from './goals';
 import { ensureFixedPlots } from './map';
 import { ensureLineup } from './tactics';
@@ -140,6 +140,24 @@ function migratePlayers(s) {
   return s;
 }
 
+// 0.6.0 : l'Elite passe à l'échelle d'un grand championnat (salaires, valeurs, droits TV, sponsors et primes ×4 environ).
+// Une partie déjà en Elite garde sa situation : sa trésorerie, les offres reçues, les prix demandés, les contre-
+// propositions en cours et la référence de l'objectif « dans le vert » suivent la même échelle (les comptes des saisons
+// passées et le bilan du mercato restent tels qu'ils ont été). Ailleurs, rien ne change avant la montée en Elite.
+function scaleElite(y) {
+  if (y.eliteScale === ELITE_SCALE) return y;
+  if (y.divisionIndex === DIVISIONS.length - 1) {
+    const k = (v) => Math.round(v * ELITE_SCALE);
+    y.money = k(y.money);
+    if (y.objectives?.startMoney != null) y.objectives.startMoney = k(y.objectives.startMoney);
+    for (const o of [...(y.offers || []), ...(y.parkedOffers || [])]) { o.amount = k(o.amount); if (o.v) o.v = k(o.v); }
+    for (const x of y.saleList || []) if (x.price) x.price = k(x.price);
+    for (const p of [...(y.market || []), ...(y.transfers || [])]) if (p.talks?.counter) p.talks.counter = k(p.talks.counter);
+  }
+  y.eliteScale = ELITE_SCALE;
+  return y;
+}
+
 // v2 → v3 : nouvelle économie (montants ×12 environ) ; la trésorerie suit la même échelle.
 function migrateEconomy(s) {
   s.money = Math.round(s.money * 12);
@@ -225,6 +243,7 @@ export function repairSave(s) {
       registerNames([...y.players, ...y.youth, ...(y.scouting?.list || []), ...y.market, ...y.transfers, ...y.alumni].map((p) => p.name));
       if (!y.scouting) refreshScouting(y); // jeunes repérés de la journée, tout de suite (noms déjà tous connus)
       fixLeagueNames(y); // un club adverse en double (même nom ou même lieu) dans la division est renommé
+      scaleElite(y); // Elite à l'échelle d'un grand championnat (0.6.0)
       return y;
     };
     if (s.version === 4) return fix(s);

@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from '../game/constants';
+import { POS_LABELS, SQUAD_MAX, SQUAD_MIN } from '../game/constants';
 import { ATTRS, GK_ATTRS, costOf, playerRating, potentialRange, wageOf } from '../game/players';
 import {
-  BUYERS, CANDIDATES, SALE_TRIES, TRIES, acceptChance, auctionDone, ceilTo, demandChance, findOnMarket, fitGain,
+  CANDIDATES, SALE_TRIES, TRIES, acceptChance, auctionDone, buyerLine, ceilTo, demandChance, findOnMarket, fitGain,
   listingOutlook, moveWhen, offerBlock, offersFor, outbidChance, pctOf, pendingCounters, poolOf, roundKey, roundTo, saleBlock,
   saleReasons, stanceOf, stepFor, tagsOf, valueOf,
 } from '../game/mercato';
@@ -558,7 +558,7 @@ function OffersView({ state, refLvl, run, ask, onOffer, onSale, onList }) {
                           <Crest name={o.club} className="mc-crest lg" />
                           <span className="mc-row-main">
                             <b>{o.club}</b>
-                            <em>{BUYERS[o.tier].label} · {DIVISIONS[o.div].name}{o.unsolicited ? ' · offre spontanée' : ''}</em>
+                            <em>{buyerLine(o)}{o.unsolicited ? ' · offre spontanée' : ''}</em>
                           </span>
                           <span className="mc-amount"><b>{fmtMoney(o.amount)}</b><em className={o.talks?.closed ? '' : tone}>{o.talks?.closed ? 'dernier mot' : note}</em></span>
                           <div className="mc-row-actions">
@@ -920,7 +920,7 @@ export function ListingSheet({ state, p, run, refLvl, onClose, onOffers }) {
                 {offers.map((o, i) => (
                   <li key={o.id} style={{ animationDelay: `${120 + i * 140}ms` }}>
                     <Crest name={o.club} className="mc-crest lg" />
-                    <span className="ls-club"><b>{o.club}</b><em>{BUYERS[o.tier].label} · {DIVISIONS[o.div].name}</em></span>
+                    <span className="ls-club"><b>{o.club}</b><em>{buyerLine(o)}</em></span>
                     <span className="ls-amount"><b>{fmtMoney(o.amount)}</b><em className={offerNote(o, sale?.price || price)[0]}>{offerNote(o, sale?.price || price)[1]}</em></span>
                   </li>
                 ))}
@@ -1106,7 +1106,7 @@ export function SaleNegotiation({ state, offerId, since, run, refLvl, onClose, o
         <section className="ng-counter sl-club">
           <Crest name={o.club} className="mc-crest lg" />
           <div>
-            <span className="eyebrow">{BUYERS[o.tier].label} · {DIVISIONS[o.div].name}</span>
+            <span className="eyebrow">{buyerLine(o)}</span>
             <strong className="sl-name">{o.club}</strong>
             <b>{fmtMoney(o.amount)}</b>
             <em className={closed ? '' : tone}>{closed ? 'Son dernier mot' : `Son offre · ${note}`}{o.unsolicited ? ' · offre spontanée' : ''}</em>

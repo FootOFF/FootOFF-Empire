@@ -1,4 +1,5 @@
 import { DIVISIONS } from './constants';
+import { leagueLength } from './cups';
 import { autoLineup, lineupRating } from './tactics';
 import { book } from './ledger';
 import { pushJournal } from './journal';
@@ -13,7 +14,7 @@ import { standingsOf } from './season';
 //
 // État : s.objectives = { season, startMoney, startBuildings, list: [{ id, kind, target }] }
 
-const SCALE = [1, 2.6, 6, 10]; // primes selon la division (comme les salaires)
+const SCALE = [1, 2.6, 6, 40]; // primes selon la division (comme les salaires : l'Elite ×4 depuis la 0.6.0)
 const PRIZE = { rank: 10000, sport: 5000, club: 5000, perfect: 6000 };
 const REP = { rank: 0.5, sport: 0.3, club: 0.3, perfect: 0.5 };
 const r1 = (v) => Math.round(v * 10) / 10;
@@ -41,12 +42,15 @@ export function drawObjectives(s) {
   const a = ambition(s);
   const top = s.divisionIndex >= DIVISIONS.length - 1;
   const rank = a >= 1.2 ? 1 : a >= 0.4 ? 2 : a >= -0.4 ? 4 : 6;
-  // cibles calées sur des saisons simulées : chaque défi se réussit environ deux fois sur trois à niveau attendu
+  // cibles calées sur des saisons simulées : chaque défi se réussit environ deux fois sur trois à niveau attendu ; en
+  // Elite, deux fois plus de journées (aller-retour), deux fois plus de victoires, de buts et de cages inviolées
+  const k = leagueLength(s) / 7;
+  const aim = (v, lo, hi) => clamp(Math.round(v * k), Math.round(lo * k), Math.round(hi * k));
   const sport = pick([
-    { id: 'wins', target: clamp(Math.round(3 + a * 1.5), 2, 6) },
-    { id: 'goals', target: clamp(Math.round(11 + a * 3), 6, 18) },
-    { id: 'defense', target: clamp(Math.round(9 - a * 3), 4, 13) },
-    { id: 'clean', target: clamp(Math.round(2 + a), 1, 4) },
+    { id: 'wins', target: aim(3 + a * 1.5, 2, 6) },
+    { id: 'goals', target: aim(11 + a * 3, 6, 18) },
+    { id: 'defense', target: aim(9 - a * 3, 4, 13) },
+    { id: 'clean', target: aim(2 + a, 1, 4) },
   ]);
   const club = pick([
     { id: 'green' },

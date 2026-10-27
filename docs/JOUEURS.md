@@ -67,6 +67,9 @@ Code : `src/game/players.js` (condition, blessures, disponibilité), `src/game/l
 - Au fil de la saison : séances du centre d'entraînement pour l'équipe première (`docs/DESIGN.md`) ; à l'académie,
   un petit progrès après chaque journée (1,2 % de la marge, freiné près du sommet), sans effet du centre, et six
   dixièmes du bond de l'été, comme l'équipe première (depuis la 0.5.0 : un jeune doué touchait son potentiel avant 19 ans).
+  En Elite (quatorze journées depuis la 0.6.0, jusqu'à vingt-deux dates avec les coupes), chaque séance compte pour deux
+  tiers et le progrès d'une journée à l'académie pour moitié : autant de progrès par saison que dans les autres
+  divisions (`sessionScale`, `src/game/training.js` ; `perRound`, `src/game/academy.js`).
 - Jeunes repérés (`YOUTH_GEN`, `src/game/constants.js`) : 15 à 17 ans, niveau à l'arrivée de 4 à 6 (académie 1) à 6 à 8
   (académie 5) ; potentiel de huit jeunes sur dix de 8 à 14 (académie 1) à 12 à 18 (académie 5), un sur cent à 16 ou
   plus (académie 1), à 20 (académie 5). Recruté à 15 ans, un jeune finit ses 18 ans à 7,5 en moyenne (académie 1),

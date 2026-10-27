@@ -8,7 +8,7 @@ import { ClubCrest, Crest } from './crest';
 import { AnimatedMoney } from './moneyfx';
 import { Eyebrow, IconBall, RatingBadge, SectionHead, Stat } from './kit';
 import { Trophy, TROPHY_NAMES } from './trophy';
-import { STAGES_SHORT, STAGES, nextFixture, ofDiv } from '../game/cups';
+import { STAGES_SHORT, STAGES, leagueLength, nextFixture, ofDiv } from '../game/cups';
 import { prizeFor } from '../game/economy';
 import { clubAfter } from '../game/names';
 import { Portrait } from './portrait';
@@ -176,7 +176,7 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
       id="season"
       size="lg"
       title={`Saison ${state.seasonNumber} · ${div.name}`}
-      eyebrow={`${div.name} · Saison ${state.seasonNumber} · ${state.round ? `journée ${Math.min(state.round, 7)} / 7` : 'avant la 1re journée'}`}
+      eyebrow={`${div.name} · Saison ${state.seasonNumber} · ${state.round ? `journée ${Math.min(state.round, leagueLength(state))} / ${leagueLength(state)}` : 'avant la 1re journée'}`}
       onClose={onClose}
       onEscape={sheetOpen ? () => {} : undefined}
       overlay={sheet}
@@ -254,7 +254,7 @@ function RaceCard({ state, standings, pos }) {
   const d = state.divisionIndex;
   const elite = d === DIVISIONS.length - 1;
   const me = standings[pos - 1];
-  const left = Math.max(0, 7 - me.played);
+  const left = Math.max(0, leagueLength(state) - me.played);
   const danger = d > 0 && pos >= 7;
   const target = danger ? 6 : 2; // place à atteindre (6e : maintien) ou à garder (2e)
   const title = danger ? 'Sauver sa place' : elite ? 'Jouer l’Europe' : 'Monter en fin de saison';
@@ -351,7 +351,7 @@ function CupRuns({ state }) {
                   </>
                 ) : upcoming ? (
                   <>
-                    <span className="cr-opp">{c.opp.name}<em>{c.opp.division}{next?.comp === k ? ' · prochain match' : ''}</em></span>
+                    <span className="cr-opp">{c.opp.name}<em>{c.opp.budget ? `Europe · budget ${fmtMoney(c.opp.budget)}` : c.opp.division}{next?.comp === k ? ' · prochain match' : ''}</em></span>
                     <b>niv. {String(c.opp.strength).replace('.', ',')}</b>
                   </>
                 ) : <span className="cr-opp muted">—</span>}

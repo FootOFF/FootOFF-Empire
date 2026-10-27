@@ -17,8 +17,9 @@ export const TRIES = 3; // offres possibles par joueur et par journée
 const SPREAD = 0.07; // largeur de la zone d'hésitation du vendeur (en part du prix demandé)
 
 export const roundKey = (s) => `${s.seasonNumber}:${s.round}`;
-// Journées de championnat jouées depuis la fondation (sept par saison) : compte du blocage de revente.
-export const leagueRounds = (s) => (s.seasonNumber - 1) * 7 + (s.round || 0);
+// Journées de championnat jouées depuis la fondation : compte du blocage de revente. Tenu à jour à chaque journée
+// (season.js, leagueTotal) depuis que l'Elite en compte quatorze ; les parties plus anciennes l'estiment (sept par saison).
+export const leagueRounds = (s) => s.leagueTotal ?? ((s.seasonNumber - 1) * 7 + (s.round || 0));
 // Une recrue, ou un jeune monté de l'académie, reste au moins quatre journées de championnat avant de pouvoir être vendu :
 // plus de joueur libre acheté puis revendu le lendemain, ni d'achat avant une montée revendu à la reprise (sa valeur suit
 // la division), ni de jeune vendu le jour de sa montée.
@@ -178,13 +179,19 @@ const SELL_W = 0.08; // zone d'hésitation d'un club acheteur (en part de la val
 const REACH = 0.35; // un club ignore un joueur dont le prix dépasse son plafond de plus de 35 % de sa valeur
 const CHARACTER = 0.06; // caractère de chaque club : plafond à ± 6 % de la valeur
 const SPONTANEOUS = 0.2; // pour un joueur qui n'est pas à vendre, un club met 20 % de sa valeur en plus
-// step : division du club acheteur par rapport à la nôtre
-// Plafonds en part de la valeur de marché : un petit club paie moins que la valeur, un grand club davantage.
+// step : division du club acheteur par rapport à la nôtre (null : club étranger)
+// Plafonds en part de la valeur de marché : un petit club paie moins que la valeur, un grand club davantage. Les géants
+// européens (0.6.0) ne regardent que les stars d'un club d'Elite, surtout quand il joue la Coupe d'Europe : ils paient
+// bien plus que la valeur, mais négocient très dur.
 export const BUYERS = {
   small: { label: 'Petit club', base: 0.84, gap: [0.02, 0.06], hard: 0.01, step: -1 },
   mid: { label: 'Club ambitieux', base: 0.97, gap: [0.04, 0.1], hard: 0.02, step: 0 },
   big: { label: 'Grand club', base: 1.12, gap: [0.08, 0.16], hard: 0.03, step: 1 },
+  euro: { label: 'Géant européen', base: 1.3, gap: [0.1, 0.2], hard: 0.04, step: null },
 };
+// Club acheteur d'une offre, en clair : « Grand club · Elite », « Géant européen ».
+export const buyerLine = (o) => (o.tier === 'euro' || o.div == null ? BUYERS[o.tier]?.label || 'Club étranger' : `${BUYERS[o.tier].label} · ${DIVISIONS[o.div].name}`);
+const isElite = (s) => s.divisionIndex === DIVISIONS.length - 1;
 
 export const formOf = (p) => (p.form?.length >= 2 ? p.form.reduce((a, b) => a + b, 0) / p.form.length : 6);
 const divRef = (s) => { const d = DIVISIONS[s.divisionIndex]; return (d.oppMin + d.oppMax) / 2; };
@@ -206,7 +213,11 @@ export function buyerView(s, p) {
   if (p.age <= 21 && potMid(s, p) - playerRating(p) >= 3) { prem += 0.05; reasons.push(['good', 'Fort potentiel : les clubs paient pour l’avenir.']); }
   const gap = playerRating(p) - divRef(s);
   let weights;
-  if (gap >= 1.5) { weights = { small: 0.25, mid: 0.45, big: 0.3 }; reasons.push(['good', 'Fort pour ta division : les grands clubs s’y intéressent.', 'tiers']); }
+  if (gap >= 1.5 && isElite(s)) {
+    // une star de l'Elite : les géants européens la suivent, de plus près quand elle joue la Coupe d'Europe
+    weights = s.c1 ? { small: 0.1, mid: 0.3, big: 0.3, euro: 0.3 } : { small: 0.15, mid: 0.4, big: 0.3, euro: 0.15 };
+    reasons.push(['good', s.c1 ? 'Une star de la Coupe d’Europe : les géants européens se l’arrachent.' : 'Une star de l’Elite : les géants européens la suivent.', 'tiers']);
+  } else if (gap >= 1.5) { weights = { small: 0.25, mid: 0.45, big: 0.3 }; reasons.push(['good', 'Fort pour ta division : les grands clubs s’y intéressent.', 'tiers']); }
   else if (gap < -1) { weights = { small: 0.6, mid: 0.35, big: 0.05 }; reasons.push(['bad', 'Faible pour ta division : surtout des petits clubs.', 'tiers']); }
   else { weights = { small: 0.45, mid: 0.4, big: 0.15 }; reasons.push(['', 'Du niveau de ta division : petits clubs et clubs ambitieux, parfois un grand.', 'tiers']); }
   return { prem, attract: clamp(attract, 0.25, 0.8), weights, reasons };
@@ -235,9 +246,12 @@ export function openingOffer(buyer, v, price = Infinity) {
   return amount < price ? { amount, atAsk: false } : { amount: price, atAsk: true };
 }
 
-// Offre spontanée pour un joueur qui n'est pas à vendre : plutôt un grand club, prêt à payer plus.
+// Offre spontanée pour un joueur qui n'est pas à vendre : plutôt un grand club, prêt à payer plus ; pour une star de
+// l'Elite, souvent un géant européen (offre folle : jusqu'à une fois et demie sa valeur, et plus encore en négociant).
 export function spontaneousBuyer(s, p) {
-  return drawBuyer({ ...buyerView(s, p), weights: { small: 0.1, mid: 0.4, big: 0.5 } }, SPONTANEOUS);
+  const view = buyerView(s, p);
+  const weights = view.weights.euro ? { mid: 0.25, big: 0.4, euro: 0.35 } : { small: 0.1, mid: 0.4, big: 0.5 };
+  return drawBuyer({ ...view, weights }, SPONTANEOUS);
 }
 
 // Chance que le plafond d'un club pris au hasard atteigne x (caractère uniforme dans ± CHARACTER).
@@ -294,7 +308,8 @@ export const outbidAmount = (o, best) => Math.min(auctionTop(o), ceilTo(best + r
 export function saleReasons(s, o) {
   const p = s.players.find((q) => q.id === o.playerId);
   const reasons = [];
-  if (o.tier === 'big') reasons.push(['', 'Grand club : il paie plus, mais négocie dur et se braque vite.']);
+  if (o.tier === 'euro') reasons.push(['', 'Géant européen : il paie bien plus que la valeur, mais négocie très dur et se braque vite.']);
+  else if (o.tier === 'big') reasons.push(['', 'Grand club : il paie plus, mais négocie dur et se braque vite.']);
   else if (o.tier === 'small') reasons.push(['', 'Petit club : budget serré, mais il accepte vite.']);
   else reasons.push(['', 'Club ambitieux : il discute sans trop se braquer.']);
   if (o.unsolicited) reasons.push(['good', 'Offre spontanée : il tient à ce joueur, qui n’est pas à vendre.']);

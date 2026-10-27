@@ -9,7 +9,7 @@ import { Card, Eyebrow, IconAssist, IconBall, IconStar, RatingBadge, SectionHead
 import { useKeydown } from './presence';
 import { Trophy } from './trophy';
 import { ClubCrest, Crest } from './crest';
-import { STAGES } from '../game/cups';
+import { STAGES, leagueLength } from '../game/cups';
 import { Portrait } from './portrait';
 import { clubStars } from '../game/crest';
 
@@ -58,7 +58,7 @@ function TableStep({ state, lm, onClose }) {
       <article className="post-card post-standings" key="table">
         <header className="post-head">
           <div className="post-meta">
-            <Eyebrow>Classement · journée {Math.min(lm.round, 7)} / 7</Eyebrow>
+            <Eyebrow>Classement · journée {Math.min(lm.round, leagueLength(state))} / {leagueLength(state)}</Eyebrow>
             <span className={`post-outcome ${tone}`}>{line}</span>
           </div>
           <h2 className="post-standings-title">{DIVISIONS[state.divisionIndex].name}</h2>
@@ -103,7 +103,7 @@ export default function PostMatch({ state, onClose, onStats, initialStep = 'resu
       <article className="post-card">
         <header className="post-head">
           <div className="post-meta">
-            <Eyebrow>{lm.label || `Journée ${lm.round}`}<span className="post-meta-long"> · coup de sifflet final</span></Eyebrow>
+            <Eyebrow>{lm.label || `Journée ${lm.round}`}{lm.away ? ' · Extérieur' : ''}<span className="post-meta-long"> · coup de sifflet final</span></Eyebrow>
             <span className={`post-outcome ${outcome}`}>{lm.pens ? `${outcome === 'win' ? 'Qualifié' : 'Éliminé'} aux t.a.b. ${lm.pens[0]}–${lm.pens[1]}` : OUTCOME[outcome]}</span>
           </div>
           <div className="post-score">
@@ -176,11 +176,12 @@ export default function PostMatch({ state, onClose, onStats, initialStep = 'resu
               </div>
             )}
 
-            <SectionHead label="Billetterie et recettes" aside={lm.capacity ? `${fmtNum(lm.attendance)} / ${fmtNum(lm.capacity)} places` : null} />
+            {/* à l'extérieur (Elite) : la billetterie est celle de l'adversaire, seuls les droits TV reviennent au club */}
+            <SectionHead label={lm.away ? 'Recettes du match' : 'Billetterie et recettes'} aside={lm.away ? 'à l’extérieur' : lm.capacity ? `${fmtNum(lm.attendance)} / ${fmtNum(lm.capacity)} places` : null} />
             <div className="post-money">
               <b className="post-money-total"><AnimatedMoney value={lm.revenue} from={0} delay={500} duration={1200} prefix="+" /></b>
               {lm.capacity ? <span className="post-fill"><i style={{ width: `${Math.min(100, (lm.attendance / lm.capacity) * 100)}%` }} /></span> : null}
-              {b && (
+              {b && !lm.away && (
                 <dl className="post-breakdown">
                   <div><dt>Billetterie</dt><dd>{fmtMoney(b.billetterie)}</dd></div>
                   <div><dt>Buvette</dt><dd>{fmtMoney(b.buvette)}</dd></div>
@@ -188,6 +189,12 @@ export default function PostMatch({ state, onClose, onStats, initialStep = 'resu
                   <div><dt>Droits TV</dt><dd>{b.tv ? fmtMoney(b.tv) : '—'}</dd></div>
                 </dl>
               )}
+              {b && lm.away && (
+                <dl className="post-breakdown">
+                  <div><dt>Droits TV</dt><dd>{fmtMoney(b.tv || 0)}</dd></div>
+                </dl>
+              )}
+              {lm.away && <p className="post-note">Pas de billetterie chez l’adversaire : seuls les droits TV reviennent au club.</p>}
               {lm.demand > lm.capacity && <p className="post-note">Stade complet : {fmtNum(lm.demand - lm.capacity)} supporters sont restés dehors.</p>}
             </div>
             {lm.absences?.length > 0 && (

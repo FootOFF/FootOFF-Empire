@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DIVISIONS } from '../game/constants';
 import { outcomeOf, seasonFixtures } from '../game/fixtures';
-import { STAGES, STAGES_SHORT, cupPrize } from '../game/cups';
-import { TICKET_POLICIES, expectedGate, ticketPrice } from '../game/economy';
+import { STAGES, STAGES_SHORT, cupPrize, leagueLength, penaltySkills, shootoutWinChance } from '../game/cups';
+import { TICKET_POLICIES, awayGate, expectedGate, ticketPrice } from '../game/economy';
 import { TACTICS, formationOf, lineupRating } from '../game/tactics';
 import { standingsOf } from '../game/season';
 import { prematchOdds } from '../game/live';
@@ -31,10 +31,11 @@ const NEXT_STAGE = ['les quarts', 'la demi-finale', 'la finale']; // après un t
 const AFTER = ['', 'les huitièmes de finale', 'les quarts de finale', 'la demi-finale']; // tirage du tour suivant
 const plural = (n, one, many) => `${fmtNum(n)} ${n > 1 ? many : one}`;
 const rgbOf = (hex) => [(hex >> 16) & 255, (hex >> 8) & 255, hex & 255].join(', ');
-const tagOf = (f) => (f.comp === 'league' ? `J${f.round}` : STAGES_SHORT[f.stage]);
-const roundOf = (f) => (f.comp === 'league' ? `Journée ${f.round} / 7` : STAGES[f.stage]);
+// « J4 », « J4 ext » chez l'adversaire (Elite), « Quarts »
+const tagOf = (f) => (f.comp === 'league' ? <>J{f.round}{f.away && <small className="sc-away">ext</small>}</> : STAGES_SHORT[f.stage]);
+const roundOf = (f, total) => (f.comp === 'league' ? `Journée ${f.round} / ${total}` : STAGES[f.stage]);
 const nameOf = (f, r) => `${COMP[f.comp]} · ${f.comp === 'league' ? `journée ${f.round}` : STAGES[f.stage].toLowerCase()}`
-  + `${f.opp?.name ? ` · ${f.opp.name}` : ''}${r ? ` · ${r.gf}–${r.ga}` : ''}`;
+  + `${f.away ? ' · à l’extérieur' : ''}${f.opp?.name ? ` · ${f.opp.name}` : ''}${r ? ` · ${r.gf}–${r.ga}` : ''}`;
 const minus = (v) => `−${fmtRating(Math.abs(v))}`;
 
 // Issue d'une date jouée : en championnat Victoire / Match nul / Défaite ; en coupe Qualifié / Éliminé / Vainqueur.
@@ -174,13 +175,13 @@ function Fact({ label, sub, tone = '', wide = false, children }) {
 
 // Pronostic du prochain match : les chances calculées par le moteur du match, avec le onze et la tactique actuels
 // (les mêmes que celles de l'avant-match tant qu'on n'y change rien).
-function Odds({ odds, knockout }) {
+function Odds({ odds, qualify }) {
   const [w, d, l] = roundPercents([odds.win, odds.draw, odds.loss]); // somme toujours égale à 100 %
   return (
     <section className="sc-odds">
       <div className="sc-odds-head">
         <span>Pronostic avec ton onze actuel</span>
-        {knockout && <span>Qualification ≈ <b>{Math.round((odds.win + odds.draw * 0.5) * 100)} %</b></span>}
+        {qualify != null && <span>Qualification <b>{Math.round(qualify * 100)} %</b></span>}
       </div>
       <div className="sc-odds-bar" aria-hidden="true">
         <i className="w" style={{ flexGrow: odds.win }} />
@@ -236,14 +237,20 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
   const theirs = m?.oppStrength || opp?.strength || null;
   const oppMeta = [
     theirs ? `Niveau ${fmtRating(theirs)}` : null,
-    f.comp === 'league' ? (rank ? `${ordinal(rank)} · ${plural(table[rank - 1].pts, 'point', 'points')}` : null) : opp?.division || null,
+    f.comp === 'league' ? (rank ? `${ordinal(rank)} · ${plural(table[rank - 1].pts, 'point', 'points')}` : null)
+      : opp?.budget ? `Budget ${fmtMoney(opp.budget)}` : opp?.division || null,
   ].filter(Boolean).join(' · ');
   const Icon = COMP_ICON[f.comp];
   const state0 = v ? v.text : { next: 'Prochain match', upcoming: 'À venir', tbd: 'Tirage au sort', out: 'Non disputé' }[f.status] || 'Joué';
   const prize = f.comp !== 'league' ? cupPrize(f.comp, f.stage, state.divisionIndex) : 0;
-  const gate = future && opp ? expectedGate(state, opp, f.comp) : null;
+  // en Elite, une journée sur deux se joue chez l'adversaire : pas de billetterie, les droits TV seulement, et
+  // l'avantage du terrain passe de l'autre côté (pronostic compris)
+  const gate = future && opp ? (f.away ? awayGate(state) : expectedGate(state, opp, f.comp)) : null;
   const policy = TICKET_POLICIES[state.ticketPolicy || 'standard'];
-  const odds = f.status === 'next' && opp ? prematchOdds(state, { oppStrength: opp.strength }) : null;
+  const odds = f.status === 'next' && opp ? prematchOdds(state, { oppStrength: opp.strength, home: !f.away }) : null;
+  // coupe : qualifié en gagnant, ou aux tirs au but après un nul (chance exacte, comme à l'avant-match)
+  const pens = odds && f.comp !== 'league' ? penaltySkills(state.lineup.map((id) => state.players.find((p) => p.id === id)).filter(Boolean)) : null;
+  const qualify = pens ? odds.win + odds.draw * shootoutWinChance(pens.home, pens.away) : null;
   const edge = future && ours != null && theirs ? edgeOf(ours, theirs) : null;
   const cup = f.comp !== 'league' ? state.cups?.[f.comp] : null;
   const lost = cup?.results?.find((x) => !x.won);
@@ -268,12 +275,21 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
   } else if (future && opp) {
     body = (
       <>
-        {odds && <Odds odds={odds} knockout={f.comp !== 'league'} />}
+        {odds && <Odds odds={odds} qualify={qualify} />}
         <div className="sc-facts">
           {edge && <Fact label="Rapport de force" sub={edge.sub} tone={edge.tone}>{edge.text}</Fact>}
-          {gate && <Fact label="Affluence attendue" sub={gate.attendance >= gate.capacity ? 'stade plein' : `sur ${fmtNum(gate.capacity)} places`}>{fmtNum(gate.attendance)}</Fact>}
-          {gate && <Fact label="Recette attendue">{fmtMoney(gate.revenue)}</Fact>}
-          <Fact label="Billets" sub={`formule ${policy.name}`}>{fmtPrice(ticketPrice(state, f.comp))}</Fact>
+          {f.away ? (
+            <>
+              <Fact label="Lieu" sub="pas de billetterie chez l’adversaire">À l’extérieur</Fact>
+              <Fact label="Droits TV attendus">{fmtMoney(gate.revenue)}</Fact>
+            </>
+          ) : (
+            <>
+              {gate && <Fact label="Affluence attendue" sub={gate.attendance >= gate.capacity ? 'stade plein' : `sur ${fmtNum(gate.capacity)} places`}>{fmtNum(gate.attendance)}</Fact>}
+              {gate && <Fact label="Recette attendue">{fmtMoney(gate.revenue)}</Fact>}
+              <Fact label="Billets" sub={`formule ${policy.name}`}>{fmtPrice(ticketPrice(state, f.comp))}</Fact>
+            </>
+          )}
           {prize > 0 && <Fact label={f.stage === 3 ? 'Prime du vainqueur' : 'Prime si qualifié'} tone="gold">{fmtMoney(prize)}</Fact>}
         </div>
       </>
@@ -303,7 +319,7 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
       aria-label={nameOf(f, r)}
     >
       <header className="sc-top">
-        <span className="sc-comp">{Icon && <Icon aria-hidden="true" />}{COMP[f.comp]}<em>{roundOf(f)}</em></span>
+        <span className="sc-comp">{Icon && <Icon aria-hidden="true" />}{COMP[f.comp]}<em>{roundOf(f, leagueLength(state))}{f.away ? ' · Extérieur' : ''}</em></span>
       </header>
 
       <div className="sc-versus">

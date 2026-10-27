@@ -45,7 +45,7 @@ function TvTab({ state, run, notify }) {
       <section className={`dir-card ${deal.ok ? 'ok' : 'ko'}`}>
         <span className="eyebrow">Contrat de la saison {state.seasonNumber}</span>
         <h3>{deal.ok ? `Accordé : +${pct(deal.ask)} sur les droits` : 'Refusé : le contrat de base est reconduit'}</h3>
-        <p className="dir-big"><b>{fmtMoney(tvPerMatch(state))}</b> par match à domicile</p>
+        <p className="dir-big"><b>{fmtMoney(tvPerMatch(state))}</b> par match de championnat</p>
         <p className="dir-note">Prochaine négociation au début de la saison {state.seasonNumber + 1}.</p>
       </section>
     );
@@ -62,7 +62,7 @@ function TvTab({ state, run, notify }) {
       <span className="eyebrow">Droits TV · saison {state.seasonNumber}</span>
       <h3>{local ? 'Télé locale' : 'Diffuseur de la division'}</h3>
       <p className="dir-note">
-        Contrat de base : {fmtMoney(base)} par match à domicile{lvl ? `, dont +${pct(tvBoost(lvl))} grâce à la Direction` : ''}
+        Contrat de base : {fmtMoney(base)} par match de championnat{lvl ? `, dont +${pct(tvBoost(lvl))} grâce à la Direction` : ''}
         {local ? ` (pas de télévision nationale en ${DIVISIONS[state.divisionIndex].name} : ${fmtMoney(localTv(lvl))} de la télé locale)` : ''}.
         Une seule demande par saison : bien dosée, elle s’ajoute à chaque match.
       </p>

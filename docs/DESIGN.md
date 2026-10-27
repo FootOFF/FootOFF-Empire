@@ -104,7 +104,7 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 | Bas | menu du bas centré (le seul verre du jeu) et carte du prochain match à droite | même ligne de base (`--hud-bottom`) ; carte de 80 px (`--bar-h`) ; sous 1260 px le menu se cale à gauche |
 
 - Marge d'écran `--gap` : 20 px dès 1240 px, 16 px sinon, 12 px sur téléphone.
-- Carte du prochain match (`MatchCta`) : journée, domicile, adversaire (taille ajustée à la longueur du nom),
+- Carte du prochain match (`MatchCta`) : journée (« J3/14 » en Elite), domicile ou extérieur, adversaire (taille ajustée à la longueur du nom),
   chances exactes de victoire, nul et défaite en barre (`prematchOdds`, les mêmes que l'avant-match), bouton Jouer.
 - Étiquettes des parcelles en 3D : flèche dorée pour améliorer, plaque sombre « Séance » avec le nombre de joueurs
   qui peuvent encore s'entraîner (`sessionPin`, ouvre l'entraînement).
@@ -183,7 +183,8 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
   sur une ligne et sans leur précision au téléphone.
   - Calendrier (`src/ui/calendar.jsx`, dates calculées par `seasonFixtures` dans `src/game/fixtures.js`), en trois
     parties. Championnat en or, Coupe nationale en argent, Coupe d'Europe en bleu, partout.
-    1. La frise : toutes les dates dans l'ordre où elles se jouent, une plaque par date : la journée (« J3 ») ou le
+    1. La frise : toutes les dates dans l'ordre où elles se jouent (15 au plus, 22 en Elite depuis l'aller-retour de
+       la 0.6.0), une plaque par date : la journée (« J3 ») ou le
        tour de coupe à la couleur de sa compétition (trophée ou étoile), l'écusson et le nom de l'adversaire, puis
        le résultat en pastille penchée (V 1–0 vert, N 0–0 gris, D 0–1 rouge), « À suivre » en or pour le prochain
        match (bandeau doré en haut de sa plaque), « à venir » ensuite, « tirage » pour un tour à tirer ; un tour que
@@ -192,14 +193,16 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
        et garde la date choisie au centre. Clavier et manette : flèches, début, fin (le focus suit).
     2. L'affiche de la date choisie, plaque au bandeau de la compétition, dessinée comme le terrain vu du dessus :
        notre moitié dorée, celle de l'adversaire à la couleur de son maillot (`kitOf`). Écussons en grand, noms en
-       capitales (jamais coupés), niveaux, rang et points de l'adversaire en championnat (sa division en coupe) ; au
+       capitales (jamais coupés), niveaux, rang et points de l'adversaire en championnat (sa division en coupe, son
+       budget de saison en Coupe d'Europe) ; « Journée 3 / 14 · Extérieur » au bandeau d'une journée chez l'adversaire ; au
        centre le score ou « VS », et l'état en pastille penchée (Prochain match, Victoire, Qualifié, Éliminé, Tirage
        au sort, Non disputé). Prochain match : pronostic exact du moteur avec le onze actuel (mêmes couleurs que
-       l'avant-match : or, gris, rouge), qualification en coupe, rapport de force, affluence et recette attendues,
-       billets, prime de coupe, « Jouer le match ». Match joué : buteurs, homme du match, affluence, recette,
+       l'avant-match : or, gris, rouge, avec l'avantage du terrain du bon côté), qualification exacte en coupe (tirs
+       au but compris, comme l'avant-match), rapport de force, affluence et recette attendues (à l'extérieur : le lieu
+       et les droits TV attendus, pas de billetterie), billets, prime de coupe, « Jouer le match ». Match joué : buteurs, homme du match, affluence, recette,
        dispositif, billets, « Voir le Stats Pass ». Un geste vers la gauche ou la droite change de date (téléphone).
     3. Le bilan (colonne de droite sur PC, dessous au téléphone), en plaques : victoires, nuls, défaites et leur
-       barre, buts ; forme des cinq derniers matchs et les sept journées en pastilles penchées (teintées, pleines
+       barre, buts ; forme des cinq derniers matchs et les journées (sept, quatorze en Elite) en pastilles penchées (teintées, pleines
        pour la date choisie) ; le parcours de chaque coupe tour par tour. Chaque élément choisit sa date.
   - Classement (`StandingsTable`, `src/ui/panels.jsx`) : le tableau dans sa plaque, bord à bord ; rang et points en
     grands chiffres condensés, colonnes J, G, N, P, Diff, Pts (G, N, P comptés depuis le 2026-10-24 : une saison
@@ -214,8 +217,8 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
     tour (après une élimination, seulement les tours joués et une phrase) ; les meilleurs du club cette saison
     (meilleure note moyenne sur 3 matchs au moins, meilleur buteur, gardien ou défenseur aux matchs sans encaisser :
     un nom ouvre la fiche du joueur) ; le dernier match ; la vitrine ; les classements passés.
-  - Aperçus : `?ecran=saison`, `saison-joue`, `saison-coupe`, `saison-fin`, `calendrier-europe`, `classement`,
-    `europe`.
+  - Aperçus : `?ecran=saison`, `saison-joue`, `saison-coupe`, `saison-fin`, `calendrier-europe` (Elite : quatorze
+    journées et la Coupe d'Europe), `classement`, `europe`.
 - Réglages (écran titre et menu pause, voir plus bas) : Son et Vibrations en interrupteurs. Plus de qualité graphique
   depuis le 2026-10-23 : un seul rendu pour tous, celui de l'ancienne qualité Économie, jugée la plus belle et la plus
   nette (voir Fluidité) ; l'image est calculée à la pleine résolution de l'écran (un pixel calculé par pixel physique),
@@ -442,6 +445,8 @@ classement de la division mis à jour (`StandingsTable` de `src/ui/panels.jsx`, 
 colonne d'évolution montre les places gagnées (▲ vert) ou perdues (▼ rouge) sur la journée, et une pastille dit où
 en est le club (« Tu grimpes à la 2e place », « Tu restes en tête »). L'ordre d'avant la journée est gardé dans
 `lastMatch.before`. Après un match de coupe, le résultat suffit. Aperçu : `?ecran=apres-match-classement`.
+À l'extérieur (Elite), le bandeau dit « Journée 4 / 14 · Extérieur » et la plaque des recettes devient « Recettes du
+match · à l'extérieur » : seulement les droits TV, avec la phrase « Pas de billetterie chez l'adversaire ».
 
 ## Journal du club
 
@@ -677,6 +682,10 @@ le blocage (`transfers.js`). Déjà en vente, il le reste : les clubs reviennent
    pas), d'autres après chaque journée. Petit club (division inférieure), club ambitieux (la nôtre) ou grand club
    (division supérieure), avec écusson. Chaque club a un plafond secret : il paie le prix demandé s'il le paie à coup
    sûr, sinon il offre un peu moins. Les grands clubs paient plus mais négocient dur ; les petits acceptent vite.
+   Depuis la 0.6.0, une star d'un club d'Elite (1,5 point au-dessus du club moyen de la division) attire aussi les
+   géants européens (« Géant européen », sans division, nom de club européen imaginaire) : plafond à 1,3 fois la valeur,
+   négociation très dure ; un sur six des clubs intéressés, un sur trois quand le club joue la Coupe d'Europe, et plus
+   d'une offre spontanée sur trois pour une star (jusqu'à une fois et demie sa valeur : « +42 % sur sa valeur »).
 3. Sur chaque offre : Accepter (confirmation, puis écran de vente conclue), Négocier (face à face : ta demande au
    curseur, chance exacte d'accord ; refusée, le club donne son dernier mot, qu'il paie à coup sûr ; à 0 %, il part ;
    trois demandes par offre), Refuser (le club se retire). Dès deux clubs pour un joueur, « Faire monter les
@@ -687,8 +696,9 @@ Les offres valent jusqu'à la journée suivante ; un joueur en grande forme reç
 joueurs suivis partis ; la pastille du menu compte les offres et contre-offres à traiter. Les noms de clubs prennent
 leur article et accordent le verbe (« l'AS … accepte », « les Bleus … acceptent »).
 
-Aperçus : `?ecran=marche`, `transferts`, `negociation`, `contre-offre`, `suivis`, `offres`, `encheres`, `vente`,
-`vente-negociation`, `vente-conclue`, `bilan-mercato`. Contrôle des chances de la vente : `tmp/ph3/salecheck.js`.
+Aperçus : `?ecran=marche`, `transferts`, `negociation`, `contre-offre`, `suivis`, `offres`, `offres-europe` (offre
+folle d'un géant européen pour une star de 21 ans), `encheres`, `vente`, `vente-negociation`, `vente-conclue`,
+`bilan-mercato`. Contrôle des chances de la vente : `tmp/ph3/salecheck.js`.
 
 ## Académie
 
@@ -709,17 +719,19 @@ détaillé sur PC (tri par colonne), liste compacte sur téléphone, fiche à dr
   travaillées marquées dans les attributs ; « Faire monter » (confirmation : salaire, effectif) et « Libérer »
   (confirmation rouge, focus sur « Le garder »). Un joueur monté garde l'étiquette « Formé au club ».
 Règles : recrutement gratuit dans la limite des places, sans salaire ; nouveaux jeunes au début de la saison et après
-chaque journée de championnat (un aux niveaux 1 et 2 de l'académie, deux ensuite ; six au plus avant la 0.5.0), plus
+chaque journée de championnat, toutes les deux en Elite (quatorze journées depuis la 0.6.0 : autant de jeunes par
+saison qu'ailleurs, « dans deux journées de championnat » à la détection ; `scoutingWhen`) (un aux niveaux 1 et 2 de
+l'académie, deux ensuite ; six au plus avant la 0.5.0), plus
 doués et mieux cernés quand elle grandit (`YOUTH_GEN`, `src/game/constants.js` ; fourchettes affichées calculées sur la
 même formule, `academyTalent`) : niveau à l'arrivée de 4 à 6 au niveau 1, de 6 à 8 au niveau 5 ; potentiel de huit
 jeunes sur dix de 8 à 14 au niveau 1, de 12 à 18 au niveau 5, et un jeune sur cent à 16 ou plus au niveau 1, à 20 au
 niveau 5. Au niveau 5, une saison apporte environ 1,7 potentiel de 18 ou plus et un 20 toutes les cinq à six saisons (avant
 la 0.5.0 : 48 jeunes par saison, tous au potentiel de 18 ou plus). Progrès après chaque journée (1,2 % de la marge,
-freiné près du sommet comme en équipe première), puis six dixièmes du bond de l'été (comme l'équipe première), sans
+la moitié en Elite, freiné près du sommet comme en équipe première), puis six dixièmes du bond de l'été (comme l'équipe première), sans
 effet du centre d'entraînement (il fait progresser l'équipe première par ses séances ; choix du 2026-10-24, pour ne pas
 compter son effet deux fois) : un jeune recruté à 15 ans finit ses 18 ans à 7,5 en moyenne avec l'académie 1, 9,1 au
 niveau 3, 10,5 au niveau 5, et 12,7 pour un potentiel de 18 ou plus (10,2, 13,1 et 15,1 avant la 0.5.0) ; à
-19 ans, un jeune qui n'est pas monté quitte le club (conseil du staff à partir de la 4e journée, notification après le
+19 ans, un jeune qui n'est pas monté quitte le club (conseil du staff à partir de la mi-saison, notification après le
 dernier match, ligne du bilan). Les points d'entraînement sont les mêmes quel que soit le plan : le conseillé fait
 monter le niveau le plus vite (×1,14 à ×1,28 selon le poste), un autre développe d'autres qualités (×0,7 à ×0,96) ;
 une qualité à 20 cède ses points aux autres.
@@ -742,7 +754,9 @@ finie. Trois onglets :
 - Programmes (dès le niveau 3) : en cours (barre, catégorie, arrêt confirmé en rouge), puis les joueurs qui peuvent en
   commencer un ; la fiche d'un joueur liste les signes possibles avec leur effet.
 - Progrès : épreuves de la saison, niveau gagné, score moyen joué, dernière séance collective, journal groupé par
-  séance (« Avant : journée 3 / 7 »), tableau des niveaux du centre.
+  séance (« Avant : journée 3 / 7 », « / 14 » en Elite), tableau des niveaux du centre. En Elite (quatorze journées,
+  jusqu'à vingt-deux dates), chaque séance compte pour deux tiers (`sessionScale`, `ELITE_PACE`) : autant de progrès
+  par saison qu'ailleurs ; l'en-tête le dit (« progrès ×0,97 par séance (calendrier chargé de l'Elite) »).
 - Séances confiées au staff (0.5.1, demande de l'utilisateur : les épreuves l'ennuient) : un interrupteur en tête de
   l'onglet Séance (`training.js`, `staffOn` / `setStaff`, gardé dans la partie). Activé, le staff fait avant chaque
   match les épreuves que tu n'as pas faites, avec les choix affichés sur les cartes (`pickOf` : tes choix tant que le
@@ -853,13 +867,19 @@ titulaires ne sont pas frais, « fatigue −x » en ambre à côté du niveau (e
 rapport au repos, pour que l'écart entre le niveau et les chances ne paraisse plus aléatoire. En coupe, la ligne sous
 le pronostic donne la chance exacte de gagner une séance de tirs au but avec ce onze (`shootoutWinChance`,
 `src/game/cups.js` : finition des cinq meilleurs tireurs, réflexes du gardien, même tirage que le match) et la
-qualification exacte (victoire, ou nul puis séance gagnée ; le nul comptait pour une demi-qualification). Aperçus :
-`?ecran=avant-match`, `avant-match-coupe` (tour de Coupe nationale, trois titulaires fatigués).
+qualification exacte (victoire, ou nul puis séance gagnée ; le nul comptait pour une demi-qualification). En Elite
+(aller-retour depuis la 0.6.0), une journée sur deux se joue chez l'adversaire : « À l'extérieur » en tête, l'avantage
+du terrain passe dans son camp (pronostic et buts attendus compris, `prematchOdds(…, { home: false })`), et la plaque
+de billetterie devient « Stade adverse · Extérieur » avec les droits TV attendus, seule recette du jour. En Coupe
+d'Europe, le budget de saison du club adverse (de 150 à 800 M€, à la mesure de son niveau) s'affiche à côté de son
+niveau. Aperçus : `?ecran=avant-match`, `avant-match-coupe` (tour de Coupe nationale, trois titulaires fatigués),
+`avant-match-exterieur`, `avant-match-europe`.
 Exactitude vérifiée en 0.5.1 (`node tools/sim/pronostic.mjs 20000`, dans le dépôt) : vingt mille matchs du moteur du
 direct, effectifs, adversaires, dispositifs, tactiques et conditions tirés au hasard, comparés aux chances annoncées
 avant le match et pendant le direct (30e minute, mi-temps, 60e, 75e, 85e). Un match annoncé à 70-80 % de victoire
 (74,7 % en moyenne) est gagné 75,2 % du temps ; chaque tranche reste dans le bruit du tirage, la qualification en coupe
-aussi. Le pronostic suppose qu'un blessé est remplacé : le direct le propose, et le staff le fait quand la fin d'une
+aussi. Revérifié en 0.6.0 avec un match de championnat sur trois à l'extérieur : victoire annoncée 34,3 % à
+l'extérieur, constatée 33,3 % ; défaite 41,0 %, constatée 41,6 % (dans le bruit du tirage). Le pronostic suppose qu'un blessé est remplacé : le direct le propose, et le staff le fait quand la fin d'une
 mi-temps est passée ou que le match se joue d'un bloc (`staffSubs`, `live.js` ; avant la 0.5.1, l'équipe finissait à
 dix et perdait environ un point de victoire sur l'annonce). Finir volontairement à dix coûte ce point.
 

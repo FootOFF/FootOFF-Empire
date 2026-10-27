@@ -122,6 +122,36 @@ const T = {
   ],
 };
 
+// À l'extérieur (Elite, 0.6.0) : le public est celui de l'adversaire. Le coup d'envoi, l'ambiance et les buts se
+// commentent depuis son stade (le reste des gabarits ne change pas).
+const T_AWAY = {
+  ...T,
+  kickoff: [
+    'Coup d’envoi ! {away} reçoi{v} {home} devant son public.',
+    'C’est parti chez {away} : {home} devra faire taire le stade.',
+    'L’arbitre siffle : {away} engage{n} sous les encouragements de ses supporters.',
+    'Coup d’envoi dans un stade bouillant : {home} est attendu de pied ferme.',
+  ],
+  ambience: [
+    ...T.ambience.filter((t) => !/public|supporters/.test(t)),
+    'Le public de {away} pousse derrière les siens.',
+    'Dans le parcage visiteurs, les supporters de {home} donnent de la voix.',
+    'Sifflets du public adverse à chaque ballon touché par {home}.',
+  ],
+  goalHome: {
+    ...T.goalHome,
+    level: ['BUT ! {p} égalise d’une frappe imparable !', 'BUT ! {p} remet {home} à hauteur et fait taire le stade !', 'ÉGALISATION ! {p} trompe le gardien !'],
+    late: ['BUT DANS LES ARRÊTS DE JEU ! {p} crucifie le stade adverse !', 'BUT ! {p} à la dernière minute, le parcage visiteurs explose !'],
+  },
+  goalAway: {
+    level: ['Égalisation : {p} remet {away} à hauteur.', '{p} égalise pour {away}.', 'Le stade exulte : {p} égalise pour {away}.'],
+    lead: ['But de {away} : {p} donne l’avantage aux siens.', 'Coup dur : {p} marque pour {away}.', '{p} ouvre le score pour {away}, le stade explose.'],
+    more: ['{p} creuse l’écart pour {away}.', 'Coup dur : {p} enfonce le clou pour {away}.', '{p} encore pour {away}, la soirée se complique.'],
+    back: ['{p} réduit l’écart pour {away}.', 'But de {away} : {p} relance le suspense.', '{p} marque pour {away} : il va falloir tenir.'],
+    late: ['But de {away} dans les arrêts de jeu : {p} fait chavirer le stade.', 'Dernière minute : {p} marque pour {away}, cruel.'],
+  },
+};
+
 // noms de clubs avec leur article (« pour l’US du Tilleul », « du FC des Bruyères »), élision devant un prénom
 // (« frappe d’Ilyes »), majuscule en tête de phrase. Le club entre parenthèses ({team}) reste nu.
 const CLUB_KEYS = new Set(['home', 'away']);
@@ -162,9 +192,9 @@ const factorAt = (minute, since) => (p) => fitFactor(fitAt(p, minute, since(p.id
 
 // probabilités de but par minute pour chaque équipe, dans l'état donné (onze, tactique, joueurs en moins : expulsés
 // et blessés non remplacés, condition physique)
-function minuteGoalChances(s, lineup, tactic, oppStrength, short = { home: 0, away: 0 }, offIds = new Set(), formation = s.formation, factorOf = null) {
+function minuteGoalChances(s, lineup, tactic, oppStrength, short = { home: 0, away: 0 }, offIds = new Set(), formation = s.formation, factorOf = null, atHome = true) {
   const rating = lineupRating(s.players, lineup, formation, factorOf);
-  const xg = expectedGoals(rating, oppStrength, tactic, formation);
+  const xg = expectedGoals(rating, oppStrength, tactic, formation, atHome);
   const bigGame = oppStrength > rating;
   const on = lineup.map((id) => s.players.find((p) => p.id === id)).filter((p) => p && !offIds.has(p.id));
   const has = (p, t) => p.traits?.includes(t);
@@ -225,9 +255,9 @@ const memoChances = (fn) => { const cache = new Map(); return (minute) => { if (
 
 // avant le coup d'envoi : 90 minutes plus le temps additionnel des deux mi-temps (chaque durée de la première
 // mi-temps à part : la seconde commence à la 46e minute de jeu, quel que soit le temps additionnel), le onze de
-// départ jusqu'au bout, sa condition qui baisse au fil du match
-export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength }) {
-  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0)));
+// départ jusqu'au bout, sa condition qui baisse au fil du match ; home : false pour un match à l'extérieur (Elite)
+export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true }) {
+  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0), home));
   const parts = HALF1.map((h1) => outcomeOdds(chancesAt, 0, HALF2.map((h2) => h1 + h2), (k) => (k <= h1 ? k : 45 + k - h1)));
   const mean = (key) => parts.reduce((a, o) => a + o[key], 0) / parts.length;
   return { win: mean('win'), draw: mean('draw'), loss: mean('loss') };
@@ -238,8 +268,8 @@ export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formatio
 // pourcentages.
 const MEAN_H1 = Math.round(HALF1.reduce((a, b) => a + b, 0) / HALF1.length);
 const MEAN_H2 = Math.round(HALF2.reduce((a, b) => a + b, 0) / HALF2.length);
-export function prematchXg(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength }) {
-  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0)));
+export function prematchXg(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true }) {
+  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0), home));
   let xf = 0, xa = 0;
   for (let k = 1; k <= MEAN_H1; k++) { const c = chancesAt(k); xf += c.pH; xa += c.pA; }
   for (let k = 1; k <= MEAN_H2; k++) { const c = chancesAt(45 + k); xf += c.pH; xa += c.pA; }
@@ -302,6 +332,7 @@ export function createLiveMatch(s, ctx, saved = null) {
     subsList: [], // changements faits : entrant, sortant, minute
     formation: formationOf(s.formation).id,
     comp: ctx.comp || 'league',
+    atHome: ctx.home !== false, // à l'extérieur (Elite) : l'avantage du terrain passe à l'adversaire
     knockout: !!ctx.knockout, // coupe : pas de match nul, tirs au but
     pens: null,
     awayRoster, // onze adverse (4-3-3), pour la scène 3D
@@ -340,10 +371,11 @@ export function createLiveMatch(s, ctx, saved = null) {
   const playersOn = () => m.lineup.map((id) => s.players.find((p) => p.id === id)).filter((p) => p && !m.sent.home.has(p.id) && !m.out.has(p.id));
   const awayOn = () => awayRoster.filter((p) => !m.sent.away.has(p.name));
   const shortOf = (lineup = m.lineup) => ({ home: m.sent.home.size + [...m.out].filter((id) => lineup.includes(id)).length, away: m.sent.away.size });
-  const vars = (extra = {}) => ({ home: m.home, away: m.away, n: isPluralClub(m.away) ? 'nt' : '', ...extra });
+  const vars = (extra = {}) => ({ home: m.home, away: m.away, n: isPluralClub(m.away) ? 'nt' : '', v: isPluralClub(m.away) ? 'vent' : 't', ...extra });
+  const TX = m.atHome === false ? T_AWAY : T; // gabarits du commentaire : à domicile, ou dans le stade adverse
   const ambience = () => { // pas deux fois la même phrase d'ambiance dans un match
-    let pool = T.ambience.filter((t) => !m.usedAmbience.has(t));
-    if (!pool.length) { m.usedAmbience.clear(); pool = T.ambience; }
+    let pool = TX.ambience.filter((t) => !m.usedAmbience.has(t));
+    if (!pool.length) { m.usedAmbience.clear(); pool = TX.ambience; }
     const t = pick(pool);
     m.usedAmbience.add(t);
     return t;
@@ -356,7 +388,7 @@ export function createLiveMatch(s, ctx, saved = null) {
   };
   const make = (at, type, side, text, extra = {}) => ({ at, minute: label(at, extra.half ?? m.half), type, side, text, half: m.half, ...extra });
   const push = (at, type, side, text, extra = {}) => { const e = make(at, type, side, text, extra); events().push(e); return e; };
-  const chancesNow = (minute, lineup = m.lineup, tactic = m.tactic) => minuteGoalChances(s, lineup, tactic, m.oppStrength, shortOf(lineup), offIds(), m.formation, factorAt(minute, since));
+  const chancesNow = (minute, lineup = m.lineup, tactic = m.tactic) => minuteGoalChances(s, lineup, tactic, m.oppStrength, shortOf(lineup), offIds(), m.formation, factorAt(minute, since), m.atHome !== false);
 
   // buteur : la finition compte (beaucoup pour un attaquant, un peu pour un milieu, peu pour un défenseur)
   function homeShooter(bigGame) {
@@ -406,11 +438,12 @@ export function createLiveMatch(s, ctx, saved = null) {
     m.lastAmbience = m.simTo;
     const rating = lineupRating(s.players, m.lineup, m.formation);
     const diff = rating - m.oppStrength;
-    const tilt = (m.tactic === 'offensive' ? 6 : m.tactic === 'low' ? -9 : 0) + (formationOf(m.formation).lines[1] - 3) * 2.5; // un milieu fourni tient le ballon
+    const tilt = (m.tactic === 'offensive' ? 6 : m.tactic === 'low' ? -9 : 0) + (formationOf(m.formation).lines[1] - 3) * 2.5 // un milieu fourni tient le ballon
+      + (m.atHome === false ? -4 : 0); // à l'extérieur, l'adversaire tient davantage le ballon
     m.stats.possHalf[half - 1] = Math.round(clamp(50 + diff * 3 + tilt + (Math.random() - 0.5) * 6, 28, 74));
     const halves = m.stats.possHalf.filter((x) => x !== null);
     m.stats.possession = Math.round(halves.reduce((a, b) => a + b, 0) / halves.length);
-    if (half === 1) push(0, 'kickoff', null, fill(pick(T.kickoff), vars()));
+    if (half === 1) push(0, 'kickoff', null, fill(pick(TX.kickoff), vars()));
     else push(45, 'kickoff', null, 'Reprise de la seconde période !');
   }
   const halfEnd = () => (m.half === 1 ? m.halfLength[0] : 45 + m.halfLength[1]);
@@ -459,7 +492,7 @@ export function createLiveMatch(s, ctx, saved = null) {
         const gap = m.score.away - m.score.home; // écart après le but, vu de l'adversaire
         const late = at >= 89 || (m.half === 1 && at >= 44.5); // arrêts de jeu : un commentaire sur deux le souligne
         const poolOf = (G, g) => (late && G.late && Math.random() < 0.5 ? G.late : g === 0 ? G.level : g === 1 ? G.lead : g > 1 ? G.more : G.back);
-        let text = fill(pick(side === 'home' ? poolOf(T.goalHome, -gap) : poolOf(T.goalAway, gap)), vars({ p: p.name }));
+        let text = fill(pick(side === 'home' ? poolOf(TX.goalHome, -gap) : poolOf(TX.goalAway, gap)), vars({ p: p.name }));
         let assist = null;
         if (side === 'home') {
           assist = homeAssist(p);
@@ -693,7 +726,7 @@ export function createLiveMatch(s, ctx, saved = null) {
     oddsFrom(minute, { lineup = m.lineup, tactic = m.tactic } = {}) {
       const end = halfEnd();
       const sinceOf = (id) => m.perf[id]?.in ?? (m.lineup.includes(id) ? 0 : minute);
-      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, shortOf(lineup), offIds(), m.formation, factorAt(min, sinceOf)));
+      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, shortOf(lineup), offIds(), m.formation, factorAt(min, sinceOf), m.atHome !== false));
       const rest = Math.max(0, end - minute); // la durée des mi-temps est tirée au coup d'envoi : le pronostic en tient compte
       const durations = [rest + (m.half === 1 ? m.halfLength[1] : 0)];
       return outcomeOdds(chancesAt, m.score.home - m.score.away, durations, (k) => (k <= rest ? minute + k : 45 + k - rest));
@@ -716,7 +749,7 @@ export function createLiveMatch(s, ctx, saved = null) {
       const short = { home: sentH.size + [...out].filter((id) => lineup.includes(id)).length, away: sentA };
       const off = new Set([...sentH, ...out]);
       const sinceOf = (id) => m.perf[id]?.in ?? (m.lineup.includes(id) ? 0 : minute);
-      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, off, m.formation, factorAt(min, sinceOf)));
+      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, off, m.formation, factorAt(min, sinceOf), m.atHome !== false));
       const rest = Math.max(0, halfEnd() - minute);
       const durations = [rest + (m.half === 1 ? m.halfLength[1] : 0)];
       return outcomeOdds(chancesAt, lead, durations, (k) => (k <= rest ? minute + k : 45 + k - rest));

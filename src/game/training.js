@@ -1,6 +1,6 @@
 import { DRILLS, PROGRAM_STEPS, TRAINING_COLLECTIVE, TRAINING_MULT } from './constants';
 import { TRAITS, WEIGHTS, isInjured, playerRating } from './players';
-import { nextFixture } from './cups';
+import { leagueLength, nextFixture } from './cups';
 import { pushJournal } from './journal';
 import { clamp } from './utils';
 
@@ -48,6 +48,12 @@ const share = (p, k) => 0.5 + 4.5 * (WEIGHTS[p.pos][k] || 0);
 // coûte plus cher (comme le bond de l'intersaison, players.js).
 const agePace = (age) => (age <= 19 ? 1 : age <= 23 ? 0.75 : age <= 27 ? 0.5 : age <= 30 ? 0.3 : 0.15);
 export const paceOf = (p) => agePace(p.age) * clamp(1.4 - playerRating(p) / 20, 0.45, 1);
+
+// Elite (0.6.0) : quatorze journées au lieu de sept, de dix-huit à vingt-deux dates avec les coupes au lieu de onze à
+// quinze ; chaque séance (individuelle ou collective) y fait progresser des deux tiers, pour garder à peu près les
+// progrès d'une saison des autres divisions.
+export const ELITE_PACE = 2 / 3;
+export const sessionScale = (s) => (leagueLength(s) > 7 ? ELITE_PACE : 1);
 
 // Fenêtre de séance : jusqu'au prochain match (une séance par fenêtre), ou jusqu'à la fin de la saison.
 export const windowKey = (s) => `${s.seasonNumber}:${nextFixture(s)?.index ?? 'fin'}`;
@@ -109,13 +115,13 @@ const copyOf = (p) => ({ ...p, a: { ...p.a }, g: p.g ? { ...p.g } : p.g });
 // Gain de note d'une séance, sans rien toucher : simulée, et les bornes d'une épreuve jouée (score nul, parfait).
 export function sessionPreview(s, p, cat, drill) {
   const lvl = s.buildings.training || 0;
-  const at = (factor) => applySession(lvl, copyOf(p), cat, drill, factor);
+  const at = (factor) => applySession(lvl, copyOf(p), cat, drill, factor * sessionScale(s));
   return { sim: at(1), min: at(PLAY_MIN), max: at(PLAY_MAX) };
 }
 // Qualités d'une catégorie après une séance (fiche : « FIN 12,4 → 12,7 »).
 export function attrsAfter(s, p, cat, drill, factor = 1) {
   const q = copyOf(p);
-  applySession(s.buildings.training || 0, q, cat, drill, factor);
+  applySession(s.buildings.training || 0, q, cat, drill, factor * sessionScale(s));
   return Object.fromEntries(catsFor(p.pos)[cat].attrs.map((k) => [k, poolOf(q)[k]]));
 }
 
@@ -224,7 +230,7 @@ export function trainLine(s, pos, { id, cat, drill, score = null }) {
   if (session.done[pos]) return null;
   const factor = score === null ? 1 : factorOf(score);
   const before = playerRating(p);
-  const gain = applySession(lvl, p, cat, drill, factor);
+  const gain = applySession(lvl, p, cat, drill, factor * sessionScale(s));
   const result = { id, name: p.name, cat, drill, score, gain: r2(gain), before: r2(before), after: r2(playerRating(p)), learned: null, steps: null };
   const programs = { ...(s.training?.programs || {}) };
   const prog = programs[id];
@@ -310,7 +316,7 @@ export function collectiveSession(s, key) {
     if (trained.includes(p.id) || isInjured(p)) continue; // les blessés sont à l'infirmerie
     const room = Math.max(0, p.pot - playerRating(p));
     if (!room) continue;
-    const g = spend(p, Object.keys(poolOf(p)), pointsFor(p, room * TRAINING_COLLECTIVE[lvl] * paceOf(p)));
+    const g = spend(p, Object.keys(poolOf(p)), pointsFor(p, room * TRAINING_COLLECTIVE[lvl] * paceOf(p) * sessionScale(s)));
     if (g > 0) { n += 1; total += g; }
   }
   s.training = { ...(s.training || {}), collective: { season: s.seasonNumber, key, players: n, gain: r2(total) } };
