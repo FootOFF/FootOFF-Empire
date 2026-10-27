@@ -15,7 +15,9 @@ AMD intégrée, écran à 200 %) et sur iPhone, souvent à distance, depuis son 
   https://www.footoff.media/footoffempire/ (réécriture dans `next.config.ts` et `proxy.ts` du site). L'adresse à donner
   est toujours celle de footoff.media. Mode discret jusqu'au lancement public : `noindex` dans `index.html` et en-tête
   `X-Robots-Tag` côté site, aucun lien vers le jeu ; les retirer seulement sur ordre de l'utilisateur.
-- Les sauvegardes d'une partie sont liées à l'adresse : une partie jouée sur github.io n'apparaît pas sur footoff.media.
+- Les sauvegardes sont liées à l'adresse. L'ancienne adresse github.io renvoie vers footoff.media en emportant la partie
+  et les réglages (script en tête de `index.html`) ; une partie déjà présente sur footoff.media n'est jamais écrasée,
+  celle de github.io est alors rangée sous la clé `footoff-empire-save-v1.github`.
 - Mentions légales et politique de confidentialité : celles de footoff.agency, déjà en ligne (décision de l'utilisateur,
   2026-10-27) ; le jeu y renverra, sans pages à lui.
 - Vérifier `git diff --cached --stat` avant chaque commit. Messages de commit en français, terminés par la ligne

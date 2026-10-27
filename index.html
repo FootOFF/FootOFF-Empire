@@ -9,6 +9,59 @@
     <meta name="description" content="Fonde ton club, bâtis ton complexe, monte jusqu’à l’Elite. Un jeu de gestion de football dans le navigateur, sur PC comme sur téléphone, par FootOFF Media." />
     <!-- mode discret jusqu'au lancement public : le jeu n'est pas indexé (à retirer le jour du lancement) -->
     <meta name="robots" content="noindex, nofollow" />
+    <!-- Adresse unique : www.footoff.media/footoffempire/. Sur l'ancienne adresse (footoff.github.io), le jeu part vers
+         la nouvelle en emportant la partie et les réglages : compressés dans le fragment de l'adresse (#transfert=…),
+         jamais envoyé à un serveur. À l'arrivée, rien n'est écrasé : si une partie existe déjà sur footoff.media, celle
+         de github.io est rangée à côté (clé « .github »). Rien n'est effacé sur l'ancienne adresse. Pendant ce passage,
+         window.__foMoving retient le démarrage du jeu (src/main.jsx). -->
+    <script>
+      (function () {
+        var KEEP = /^(footoff-empire-|fo-)/; // clés du jeu (SAVE_KEY de src/game/constants.js, réglages fo-…)
+        var SAVE = 'footoff-empire-save-v1';
+        var DEST = 'https://www.footoff.media/footoffempire/';
+        var MARK = '#transfert=';
+        function b64(bytes) {
+          var s = '';
+          for (var i = 0; i < bytes.length; i += 32768) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768));
+          return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+        function unb64(t) {
+          var s = atob(t.replace(/-/g, '+').replace(/_/g, '/'));
+          var a = new Uint8Array(s.length);
+          for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
+          return a;
+        }
+        function gzip(data, Stream) { return new Response(new Blob([data]).stream().pipeThrough(new Stream('gzip'))).arrayBuffer(); }
+        if (location.hostname === 'footoff.github.io') {
+          window.__foMoving = true;
+          var go = function (hash) { location.replace(DEST + location.search + (hash || '')); };
+          try {
+            var data = {};
+            for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (KEEP.test(k)) data[k] = localStorage.getItem(k); }
+            if (!Object.keys(data).length || typeof CompressionStream !== 'function') { go(); return; }
+            gzip(JSON.stringify(data), CompressionStream).then(function (buf) {
+              var t = b64(new Uint8Array(buf));
+              go(t.length < 1500000 ? MARK + t : ''); // au-delà, adresse trop longue pour certains navigateurs
+            }, function () { go(); });
+          } catch (e) { go(); }
+        } else if (location.hash.indexOf(MARK) === 0) {
+          window.__foMoving = true;
+          var clean = function () { location.replace(location.pathname + location.search); };
+          try {
+            gzip(unb64(location.hash.slice(MARK.length)), DecompressionStream).then(function (buf) {
+              var data = JSON.parse(new TextDecoder().decode(buf));
+              var had = localStorage.getItem(SAVE) !== null;
+              Object.keys(data).forEach(function (k) {
+                if (!KEEP.test(k) || typeof data[k] !== 'string') return;
+                if (had && k === SAVE) localStorage.setItem(SAVE + '.github', data[k]);
+                else if (had && k.indexOf(SAVE) === 0) return; // secours et direct de l'autre partie : ignorés
+                else if (localStorage.getItem(k) === null) localStorage.setItem(k, data[k]);
+              });
+            }).catch(function () {}).then(clean);
+          } catch (e) { clean(); }
+        }
+      })();
+    </script>
     <!-- partage (Messages, WhatsApp, X, Discord…) : titre, description, image 1200 × 630 (public/og.jpg), à l'adresse
          définitive du jeu (footoff.media sert la version publiée sur GitHub Pages). -->
     <meta property="og:type" content="website" />

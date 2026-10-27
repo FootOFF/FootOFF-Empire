@@ -72,7 +72,8 @@ document.addEventListener('touchcancel', () => { touch = null; lastTap = null; }
 window.__foBoot.started = true; // le code du jeu tourne : index.html n'affichera pas « le jeu n'a pas pu démarrer »
 installErrorLog(); // dernières erreurs du navigateur, pour le rapport de l'écran d'erreur
 const root = createRoot(document.getElementById('root'));
-if (params.has('galerie')) root.render(<Suspense fallback={null}><Gallery /></Suspense>);
+if (window.__foMoving) { /* changement d'adresse en cours (index.html) : la page va être remplacée, le jeu ne démarre pas */ }
+else if (params.has('galerie')) root.render(<Suspense fallback={null}><Gallery /></Suspense>);
 else if (params.has('ecran')) root.render(<ErrorBoundary><App preview={params.get('ecran')} /></ErrorBoundary>);
 else {
   root.render(<ErrorBoundary><App /></ErrorBoundary>);
