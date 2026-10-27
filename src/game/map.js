@@ -13,7 +13,7 @@ export const SECTORS = [
     name: 'Complexe',
     short: 'Complexe',
     repNeeded: 0,
-    blurb: 'Ton complexe : le stade au centre, sept parcelles autour, à bâtir dans l’ordre que tu veux.',
+    blurb: 'Ton complexe : le stade au centre, huit parcelles autour, à bâtir dans l’ordre que tu veux.',
   },
 ];
 

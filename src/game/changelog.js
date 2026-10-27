@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    version: '0.7.8', date: '2026-10-27', title: 'Une huitième parcelle',
+    items: [
+      'Le complexe compte maintenant huit parcelles : trois à l’est, comme à l’ouest. Tes bâtiments de l’est se décalent un peu, rien d’autre ne change.',
+      'La nouvelle parcelle est libre : elle accueillera bientôt un bâtiment de prestige, réservé à l’Elite.',
+    ],
+  },
+  {
     version: '0.7.7', date: '2026-10-27', title: 'Plein écran sur PC',
     items: [
       'Nouveau réglage « Plein écran » sur PC (Réglages, à l’écran titre et dans le menu pause) : le jeu occupe tout l’écran, sans la barre du navigateur.',

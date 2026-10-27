@@ -573,6 +573,21 @@ ailettes dorées et fontaine, grand siège à rotonde), vignettes `public/ui/bui
 Les chances affichées sont celles du tirage (vérifié sur 3 000 négociations). Aperçus : `?ecran=direction`,
 `direction-salaires`.
 
+## Siège de la Ligue
+
+Bâtiment des championnats entre amis (cahier des charges du 2026-10-27, réponses de l'utilisateur) : `league` dans
+`BUILDINGS`, un seul niveau, 60 M€, constructible en Elite seulement (`allowedBuildingsFor`), famille Prestige, sans
+entretien, hors des conseils de construction et du succès « tous les bâtiments ». Modèle procédural `leagueMesh` :
+tour de verre fumé aux arêtes dorées, couronne d'or ouverte, écran géant du classement en façade, pavillon d'accueil.
+Fermé tant que le serveur des ligues n'est pas en service (`LEAGUE_OPEN` de `constants.js`).
+- Championnats : jusqu'à 3 à la fois, 8 clubs (amis complétés par l'ordinateur), clubs neufs de quartier à égalité,
+  gérés comme en carrière ; saisons qui s'enchaînent, la ligue grandit avec les clubs ; monde à part de la carrière.
+- Journée : jouée dès que tous ont validé, au plus tard à l'heure fixée par le créateur (fuseau du créateur) ; onze
+  automatique pour les retardataires ; l'ordinateur reprend un club après 7 jours d'absence.
+- Invitation par lien et code de 6 lettres ; pseudo et code secret de reprise, sans compte ni e-mail.
+- Créateur : nom, logo, couleurs, format (aller simple ou aller-retour), calendrier. Classement, palmarès, fil de la
+  ligue ; marché commun et offres entre amis ; direct à l'heure de la journée, sinon résumé et temps forts en 3D.
+
 ## Centre médical
 
 Nouveau bâtiment (2026-10-25, demande de l'utilisateur : « un bâtiment qui permet de soigner les joueurs blessés ») :
@@ -1091,6 +1106,11 @@ contournent l'îlot des ronds-points, plus la chaussée de transit. Parvis de pr
 d'honneur en granit clair du stade à la station du tram, place de la Coupe d'Europe, miroir d'eau, jardinières
 plantées, bannières FootOFF, bornes lumineuses et monogramme doré au sol. La zone au contact du stade reste libre pour
 les totems de l'arène.
+
+Huit parcelles autour du stade depuis 0.7.8 : deux au nord, trois à l'ouest, trois à l'est, symétriques (l'est n'en
+avait que deux ; `t8` est la huitième, ajoutée vide aux parties existantes par `ensureFixedPlots`). Les allées entre
+parcelles sont les mêmes des deux côtés. Régénérer le site : `build_site.py` puis `footoff_export.py` sur `site.blend`,
+puis `npm run models`.
 
 ## Allée d'honneur et salle des trophées
 
