@@ -136,6 +136,20 @@ export function playerName(taken = null) {
   return drawName().join(' ');
 }
 
+// Nom d'un joueur d'un onze adverse (0.7, opponents.js), tiré sous une graine : le même à chaque rencontre, sans passer
+// par les noms de la partie. Jamais un nom interdit ni celui d'un de nos joueurs (taken) ; dans l'onze, chaque nom de
+// famille une seule fois, si possible (lasts).
+export function squadName(taken, lasts) {
+  for (let i = 0; i < 80; i++) {
+    const [f, l] = drawName();
+    const full = `${f} ${l}`;
+    if (BLOCK.has(full) || taken.has(full) || (i < 50 && lasts.has(l))) continue;
+    lasts.add(l);
+    return full;
+  }
+  return drawName().join(' ');
+}
+
 // Parties existantes : un joueur dont le prénom ou le nom n'est plus dans les listes, ou dont la combinaison est
 // interdite, reçoit un équivalent francophone (stable, tiré de son identifiant) ; le reste est conservé.
 export function renameRetired(p) {

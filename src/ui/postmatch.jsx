@@ -27,7 +27,8 @@ function Goals({ list, align }) {
   const byName = [];
   for (const g of list) {
     const e = byName.find((x) => x.name === g.name);
-    if (e) e.minutes.push(g.minute); else byName.push({ name: g.name, minutes: [g.minute] });
+    const m = g.pen ? `${g.minute}′ (pen.)` : `${g.minute}′`; // but sur penalty (0.7)
+    if (e) e.minutes.push(m); else byName.push({ name: g.name, minutes: [m] });
   }
   return (
     <ul className={`post-goals ${align}`}>
@@ -35,7 +36,7 @@ function Goals({ list, align }) {
         <li key={g.name}>
           <IconBall />
           <span className="g-full">{g.name}</span><span className="g-short">{shortName(g.name)}</span>
-          <em>{g.minutes.map((m) => `${m}′`).join(' ')}</em>
+          <em>{g.minutes.join(' ')}</em>
         </li>
       ))}
     </ul>
@@ -91,8 +92,8 @@ export default function PostMatch({ state, onClose, onStats, initialStep = 'resu
   const outcome = lm.pens ? (lm.pens[0] > lm.pens[1] ? 'win' : 'loss') : lm.gf > lm.ga ? 'win' : lm.gf < lm.ga ? 'loss' : 'draw';
   const cup = lm.cup;
   const hl = lm.highlights || [];
-  const homeGoals = (lm.scorers || []).map((x) => ({ name: x.name, minute: x.minute }));
-  const awayGoals = hl.filter((h) => h.type === 'goal' && h.side === 'away').map((h) => ({ name: h.player, minute: h.minute }));
+  const homeGoals = (lm.scorers || []).map((x) => ({ name: x.name, minute: x.minute, pen: x.pen }));
+  const awayGoals = hl.filter((h) => h.type === 'goal' && h.side === 'away').map((h) => ({ name: h.player, minute: h.minute, pen: h.pen }));
   const ratings = [...(lm.players || [])].sort((a, b) => b.rating - a.rating || (b.goals + b.assists) - (a.goals + a.assists));
   const motm = ratings[0];
   const st = lm.stats;

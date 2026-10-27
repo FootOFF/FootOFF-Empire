@@ -19,6 +19,7 @@ import { momentAt } from '../three/sky';
 import { PARVIS, createTrophies } from '../three/trophies';
 import { honoursOf, plural } from '../game/honours';
 import { createMatchScene } from '../three/matchplay';
+import { matchFeed } from '../game/matchFeed';
 import { createCrowd } from '../three/crowd';
 import { HOME_KIT, kitOf } from '../game/kits';
 import {
@@ -573,14 +574,13 @@ export default function Empire3D({
       };
     };
 
-    // Réalisation du direct : caméra télé dans l'axe de la tribune principale, qui suit le ballon (un peu devant
-    // lui quand il file) et serre le plan selon l'action : jeu, attaque dans le dernier tiers, carton, joie du
-    // buteur. La largeur de terrain montrée se règle sur la zone libre de l'écran (à gauche du fil de commentaires
-    // sur PC, toute la largeur sur téléphone). Tout glisse en douceur, y compris le retour après que le joueur a
-    // bougé la caméra lui-même.
+    // Réalisation des temps forts : caméra télé dans l'axe de la tribune principale, en plan large, qui suit le ballon
+    // (un peu devant lui quand il file) et serre le plan selon l'action : attaque, coup de pied arrêté, carton, joie du
+    // buteur, ralenti (jamais un gros plan : les joueurs sont simples). La largeur de terrain montrée se règle sur
+    // l'écran. Tout glisse en douceur ; un nouveau temps fort ou le ralenti changent de plan d'un coup (cut).
     const SHOT_WIDTH = { // largeur de terrain visible (unités du jeu, 1 = 10 m)
-      wide: { play: 6.2, attack: 4.7, card: 3.6, celebrate: 3.1 },
-      narrow: { play: 3.7, attack: 3.0, card: 2.5, celebrate: 2.1 },
+      wide: { play: 6.2, attack: 4.8, set: 4.2, card: 3.6, celebrate: 3.3, replay: 3.4 },
+      narrow: { play: 3.7, attack: 3.1, set: 2.9, card: 2.5, celebrate: 2.3, replay: 2.4 },
     };
     const tvDir = new THREE.Vector3();
     const camOff = new THREE.Vector3();
@@ -590,7 +590,7 @@ export default function Empire3D({
       tvDir.subVectors(view.pos, view.target).normalize();
       const W = mount.clientWidth, H = Math.max(1, mount.clientHeight);
       const narrow = W <= 760;
-      const freeW = narrow ? W : Math.max(240, W - 2 * 188); // même décalage que le centre optique (plus bas)
+      const freeW = W; // pendant un temps fort, toute la largeur de l'écran est à la 3D
       const width = SHOT_WIDTH[narrow ? 'narrow' : 'wide'][mi.cam] || SHOT_WIDTH.wide.play;
       const perUnit = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * (freeW / H);
       const want = THREE.MathUtils.clamp(width / perUnit, 2.6, 12.5);
@@ -598,11 +598,17 @@ export default function Empire3D({
       const tx = THREE.MathUtils.clamp(mi.x + THREE.MathUtils.clamp((mi.vx || 0) * 0.3, -0.7, 0.7), -lim, lim);
       const tz = THREE.MathUtils.clamp(mi.z * 0.55 + (mi.vz || 0) * 0.15, -1.6, 1.6) + 0.3;
       controls.minDistance = Math.min(controls.minDistance, 2.5);
+      if (mi.cut) { // changement de plan franc : la caméra est tout de suite en place
+        controls.target.set(tx, 0, tz);
+        camera.position.copy(controls.target).addScaledVector(tvDir, want);
+        camera.lookAt(controls.target);
+        return;
+      }
       camOff.subVectors(camera.position, controls.target);
       let d = camOff.length();
       camOff.divideScalar(d || 1).lerp(tvDir, 1 - Math.exp(-dt * 1.5)).normalize();
-      d += (want - d) * (1 - Math.exp(-dt * 1.2));
-      const k = 1 - Math.exp(-dt * 2.2);
+      d += (want - d) * (1 - Math.exp(-dt * (mi.cam === 'replay' ? 2.4 : 1.2)));
+      const k = 1 - Math.exp(-dt * (mi.cam === 'replay' ? 3.2 : 2.2));
       controls.target.x += (tx - controls.target.x) * k;
       controls.target.z += (tz - controls.target.z) * k;
       controls.target.y += (0 - controls.target.y) * k;
@@ -847,6 +853,9 @@ export default function Empire3D({
       // menu pause : plus rien ne bouge ni ne se dessine, la dernière image reste à l'écran (floutée derrière le
       // menu) ; une image de plus seulement si la toile change de taille ou de qualité
       if (modeRef.current.paused && !ctx.frameOnce) return;
+      // direct façon FM (0.7) : entre deux temps forts, le centre du match couvre tout l'écran : rien ne bouge ni ne se
+      // dessine, la 3D ne tourne que pendant les temps forts
+      if (modeRef.current.live && !matchFeed.show3D) return;
       ctx.frameOnce = false;
       time += dt;
       if (modeRef.current.attract && !ctx.camTween) orbitStep(dt);
@@ -887,6 +896,7 @@ export default function Empire3D({
       const mi = squad.update(dt, time);
       crowd.update(dt, time);
       // direct : réalisation télé (sauf si le joueur déplace lui-même la caméra)
+      if (mi?.cut) ctx.camTween = null; // un temps fort commence : la réalisation prend la main tout de suite
       if (mi && modeRef.current.live && mi.live && !ctx.camTween && !(ctx.userCam > performance.now())) broadcastStep(mi, dt);
       ctx.anims.forEach((a) => { a.update(dt); if (a.done) ctx.anims.delete(a); });
       if (ctx.holo) { // aperçu : l'hologramme sort de terre puis respire
@@ -940,8 +950,8 @@ export default function Empire3D({
       // Écran titre : le complexe se décale vers la droite (PC) ou vers le haut (téléphone), hors du menu.
       const sheet = ctx.sheetOpen && ctx.frameShift && !modeRef.current.live;
       const attract = modeRef.current.attract;
-      const wantX = attract ? (narrow ? 0 : -W * 0.15) : modeRef.current.live && !narrow ? 188 : sheet ? ctx.frameShift.x : 0;
-      const wantY = attract ? (narrow ? H * 0.14 : 0) : modeRef.current.live && narrow ? H * 0.18 : sheet ? ctx.frameShift.y : 0;
+      const wantX = attract ? (narrow ? 0 : -W * 0.15) : modeRef.current.live ? 0 : sheet ? ctx.frameShift.x : 0;
+      const wantY = attract ? (narrow ? H * 0.14 : 0) : modeRef.current.live ? 0 : sheet ? ctx.frameShift.y : 0;
       viewShift.x += (wantX - viewShift.x) * Math.min(1, dt * 2.6);
       viewShift.y += (wantY - viewShift.y) * Math.min(1, dt * 2.6);
       if (Math.abs(viewShift.x) + Math.abs(viewShift.y) > 0.5) camera.setViewOffset(W, H, viewShift.x, viewShift.y, W, H);

@@ -71,6 +71,10 @@ export const SCREENS = [
   ['avant-match-europe', 'Avant-match · Coupe d’Europe (budget du géant adverse)'],
   ['direct', 'Match en direct'],
   ['direct-but', 'Match en direct · bandeau du but'],
+  ['direct-notes', 'Match en direct · notes des joueurs (téléphone)'],
+  ['direct-fil', 'Match en direct · le fil'],
+  ['direct-temps-fort', 'Match en direct · temps fort (sans la 3D)'],
+  ['direct-ralenti', 'Match en direct · ralenti d’un temps fort (sans la 3D)'],
   ['mi-temps', 'Mi-temps (composition repliée)'],
   ['mi-temps-compo', 'Mi-temps · composition déployée'],
   ['changement', 'Direct · changement en cours de jeu'],
@@ -369,6 +373,10 @@ export function previewUi(screen, s) {
     case 'avant-match': case 'avant-match-coupe': case 'avant-match-exterieur': case 'avant-match-europe': return { matchPhase: 'prematch', matchCtx: matchContext(s), matchDay: true };
     case 'direct': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34 } };
     case 'direct-but': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34, goal: true } };
+    case 'direct-notes': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 38, view: 'notes' } };
+    case 'direct-fil': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 38, view: 'feed' } };
+    case 'direct-temps-fort': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 22, hl: 'play' } };
+    case 'direct-ralenti': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 22, hl: 'replay' } };
     case 'mi-temps': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime' } };
     case 'mi-temps-compo': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime', board: true } };
     case 'changement': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'subs', minute: 31 } };

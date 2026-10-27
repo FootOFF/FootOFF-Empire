@@ -479,11 +479,15 @@ l'histoire entière).
 
 ## Commentaires du direct
 
-`T` dans `src/game/live.js` : quatorze amorces d'occasion pour le club (pied, tête, lointaine, contre, coups de pied
-arrêtés), douze pour l'adversaire, huit issues d'arrêt, huit à côté, quatre sur le poteau ; les buts se commentent selon
-le score après le but (égalisation, avantage, écart creusé, écart réduit), et dans les arrêts de jeu une fois sur deux
-(« BUT DANS LES ARRÊTS DE JEU ! ») ; six cartons jaunes, trois rouges, quatre blessures, seize phrases d'ambiance
-(jamais deux fois la même dans un match). Mesuré : plus de 300 phrases distinctes sur 40 matchs.
+`T` dans `src/game/live.js` : depuis la 0.7, chaque occasion a un type d'action (ouverture, contre, centre en retrait,
+centre, une-deux, cafouillage, percée, corner, pressing, frappe lointaine, coup franc, penalty), tiré selon sa qualité
+(une grosse occasion vient d'une ouverture ou d'un contre, une occasion difficile de loin ou d'un coup franc) : il
+choisit l'amorce du commentaire (deux à quatre par type, pour le club et pour l'adversaire) et l'action que la 3D
+construit ; un centre commenté « place sa tête » se finit de la tête, « reprend de volée » d'une volée. Huit issues
+d'arrêt, huit à côté, quatre sur le poteau, deux pour chaque penalty manqué ; les buts se commentent selon le score
+après le but (égalisation, avantage, écart creusé, écart réduit), sans dire comment il est marqué (l'amorce le dit), et
+dans les arrêts de jeu une fois sur deux ; passeur nommé pour les buts des deux équipes ; six cartons jaunes, trois
+rouges, deux seconds jaunes, quatre blessures, seize phrases d'ambiance (jamais deux fois la même dans un match).
 
 ## Partage
 
@@ -917,21 +921,60 @@ aussi. Revérifié en 0.6.0 avec un match de championnat sur trois à l'extérie
 l'extérieur, constatée 33,3 % ; défaite 41,0 %, constatée 41,6 % (dans le bruit du tirage). Le pronostic suppose qu'un blessé est remplacé : le direct le propose, et le staff le fait quand la fin d'une
 mi-temps est passée ou que le match se joue d'un bloc (`staffSubs`, `live.js` ; avant la 0.5.1, l'équipe finissait à
 dix et perdait environ un point de victoire sur l'annonce). Finir volontairement à dix coûte ce point.
-Matchs très déséquilibrés, vérifiés en 0.6.1 (70 000 matchs, 4,5 à 7 points d'écart de niveau) : le calcul est exact
-dans les deux matchs sur trois sans expulsion ni blessure (gros favori : victoire annoncée 87,40 %, constatée 87,40 %) ;
-les expulsions et blessures encore à venir, qu'il ignore, retirent au gros favori environ 0,4 point de victoire
-(87,4 % annoncés, 87,0 % constatés). L'écart ne se voit pas dans les matchs ordinaires.
+Matchs très déséquilibrés, vérifiés en 0.6.1 (70 000 matchs, 4,5 à 7 points d'écart de niveau) : le calcul était exact
+dans les deux matchs sur trois sans expulsion ni blessure ; les expulsions à venir, qu'il ignorait, retiraient au gros
+favori environ 0,4 point de victoire. Depuis la 0.7, il les compte : chaque équipe a, à chaque minute, un risque
+d'expulsion qui ne dépend que de la minute (`redAt`, `live.js` : 0,10 par équipe et par match comme avant, sept sur
+dix en seconde période, six sur dix sur un second jaune, le carton allant de préférence à un joueur déjà averti), et
+le pronostic suit toutes les combinaisons de zéro à trois expulsés de chaque côté, minute par minute. Les penalties
+(0,28 par match, réussis à 75 %) prennent leur part des buts attendus sans en changer le nombre : le pronostic n'en
+dépend pas. Revérifié (0.7) : sur 40 000 matchs très déséquilibrés, le gros favori est annoncé à 87,22 % et gagne
+87,28 % du temps ; sur 20 000 matchs ordinaires (`pronostic.mjs`), chaque tranche reste dans le bruit du tirage, avant
+le match comme à chaque minute du direct. Seules les blessures à venir restent supposées sans effet (le blessé est
+remplacé). Calcul exact et rapide : un écart de buts plus grand que les minutes restantes est une issue certaine, qui
+sort du calcul (7 ms pour l'avant-match, contre 45 ms sans cela, résultat identique au dix-millionième de milliardième
+près).
 
-Direct (`LiveMatch`, moteur `src/game/live.js`, refait le 2026-10-24) : le match se simule au fil de l'horloge, avec
-quatorze minutes d'avance pour que la scène 3D prépare chaque action. Le bouton « Changement » (avec le nombre de
+Direct (`LiveMatch`, moteur `src/game/live.js`, façon FM depuis la 0.7, choix de l'utilisateur : « entre les temps
+forts, des stats en direct ») : pas de terrain en permanence. Le match se simule au fil de l'horloge, avec quatorze
+minutes d'avance ; l'écran montre le centre du match, plein écran et opaque (entre deux temps forts, la 3D ne se
+dessine pas : c'est aussi un gain de fluidité sur la puce intégrée et l'iPhone) :
+- en tête, le tableau de score : écussons, noms des clubs (codes de trois lettres sur téléphone), score en plaque
+  dorée, horloge, et dessous les buteurs de chaque équipe (minutes, « (pen.) ») et les expulsés ;
+- trois colonnes sur PC : les notes du match de nos joueurs, au centre les statistiques (ou le fil, en onglet), les
+  notes des leurs ; sur téléphone, des onglets Stats, Notes (une équipe à la fois) et Le fil ;
+- statistiques en direct (`statsOf`) : possession (qui ondule minute après minute autour de la tendance de la
+  mi-temps), tirs, tirs cadrés, grosses occasions, buts attendus, arrêts, poteaux, cartons, penalties (dès le
+  premier), en barres opposées ; puis les temps forts en colonnes et le pronostic final ; seulement ce que le direct a
+  déjà montré ;
+- notes du match des deux équipes (`ratingsAt`), qui évoluent au fil du match : numéro, poste, nom, faits (buts,
+  passes décisives, cartons, blessure, entrée et sortie avec la minute), note au dixième ; chez nous, un filet de la
+  couleur de la condition physique sous chaque joueur (`docs/JOUEURS.md` : la note finale est celle du coup de sifflet).
+Temps forts (`highlightOf`, `live.js`) : buts, penalties, expulsions, grosses occasions, arrêts (hors frappes
+difficiles) et poteaux, environ cinq par match ; en accéléré (×4), les buts, les penalties et les expulsions
+seulement, sans ralenti. À l'approche d'un temps fort, l'horloge s'arrête au début de son action (0,12 minute avant
+l'instant décisif), le centre du match s'efface et la 3D le joue (`matchFeed.hl`, `src/three/matchplay.js`) ; le
+direct révèle l'événement (score, bandeau « BUT ! », son, fil) à l'instant décisif que la scène lui signale
+(`hlReveal`), jamais avant ; l'horloge suit l'action, puis vient la joie du buteur et le ralenti d'un but, et le centre
+du match revient (`hlDone`). Pendant un temps fort, il reste le score façon télé en haut à gauche, une étiquette en
+haut à droite qui ne dévoile pas l'issue (« Temps fort 23′ », « Penalty 64′ », « Ralenti » pendant le ralenti) et,
+dans la barre du bas, « Passer le temps fort ». Sans réponse de la scène en 1,5 s (pas de WebGL, onglet caché), le
+direct se passe d'elle : l'événement s'affiche avec son bandeau et une pause, comme avant ; au-delà de 32 s, le temps
+fort se termine quoi qu'il arrive. Le bouton « Changement » (avec le nombre de
 changements restants) arrête le match à toute minute et ouvre la même carte qu'à la mi-temps : composition sur le
 terrain (notes du match en pastille, condition en barre), tactique, pronostic final recalculé ; « Reprendre » applique
 tout au prochain arrêt de jeu, une à deux minutes plus tard (`subMinute`), après tout ce que le direct a déjà montré : les
-minutes simulées d'avance sont reprises depuis un instantané et rejouées avec le nouveau onze (`change`), la scène 3D
-oublie les actions disparues (`matchFeed.rewound`). Une blessure (croix médicale dans le fil, le joueur quitte la
-pelouse en 3D) arrête le match d'elle-même s'il reste un changement et un remplaçant disponible ; sinon l'équipe joue à
-dix. Passer la fin d'une mi-temps (« Mi-temps », « Fin du match ») laisse le staff remplacer un blessé
-(`advanceTo(…, { staff: true })`). Cinq changements par match, à la pause ou en jeu. Aperçu : `?ecran=changement`.
+minutes simulées d'avance sont reprises depuis un instantané et rejouées avec le nouveau onze (`change`). Une blessure
+(croix médicale dans le fil et dans les notes) arrête le match d'elle-même s'il reste un changement et un remplaçant
+disponible ; sinon l'équipe joue à dix. Passer la fin d'une mi-temps (« Mi-temps », « Fin du match ») laisse le staff
+remplacer un blessé (`advanceTo(…, { staff: true })`). Cinq changements par match, à la pause ou en jeu. Aperçus :
+`?ecran=direct`, `direct-but`, `direct-notes`, `direct-fil`, `direct-temps-fort`, `direct-ralenti` (ces deux-là sans
+la 3D), `mi-temps`, `mi-temps-compo`, `changement`.
+Onze adverse (0.7, `src/game/opponents.js`) : de vrais joueurs (noms, postes selon le dispositif du club, numéros, âge,
+qualités, signes, visages) au niveau du club adverse, les mêmes à chaque rencontre de la saison (tirés d'une graine :
+le club et la saison, sans toucher aux noms ni au hasard de la partie). Ils marquent, passent, prennent les cartons et
+ont leurs notes ; le moteur compte encore leurs occasions sur le niveau du club, et opposer deux effectifs réels (ligue
+entre amis) partira de là.
 Reprise après une fermeture de l'app (0.5.1, choix de l'utilisateur : « reprise à la minute ») : le direct se sauvegarde
 à part (`save.js`, `saveLive`, clé `….live`) au coup d'envoi, à chaque étape (changement, mi-temps, fin), au plus toutes
 les deux secondes pendant le jeu et quand l'app passe en arrière-plan : tout l'état du moteur (`live.save`, la suite
@@ -939,25 +982,26 @@ déjà simulée d'avance comprise : fermer l'app ne rejoue rien), la minute, les
 vitesse. À la réouverture, l'écran titre annonce « Match en cours · 63e minute contre … » sous « Continuer », et le
 direct reprend à la minute près (une ligne « Le match reprend à la 63e minute… » en tête du fil, un court temps avant
 de repartir ; un changement en préparation n'est pas repris). L'enregistrement n'est repris que pour le même match
-(`liveKeyOf` : club, date, compétition, adversaire) et la même version du moteur ; il s'efface une fois le résultat
-sauvegardé, à un nouveau coup d'envoi, à une nouvelle partie ou à l'import d'une sauvegarde. La composition est dépliée d'office sur PC (le onze à
+(`liveKeyOf` : club, date, compétition, adversaire) et la même version du moteur (`LIVE_VERSION` 2 depuis la 0.7 : un
+direct d'avant n'est pas repris) ; il s'efface une fois le résultat sauvegardé, à un nouveau coup d'envoi, à une
+nouvelle partie ou à l'import d'une sauvegarde. Avant-match : la composition est dépliée d'office sur PC (le onze à
 gauche, les réglages à droite) et repliée sur téléphone dans la même carte qu'à la mi-temps (`CompoCard`), avec
 « Meilleur onze » dessous ; dépliée, elle cachait sur téléphone le pronostic et tout le reste de l'avant-match.
 
-Habillage du direct (maquette A4 et A5, classes `lv-`) :
-- Bandeau du score façon télé en haut à gauche : écussons, codes de trois lettres des clubs (`src/ui/teamcode.js` :
-  le mot le plus distinctif du nom, sans accents ni mots génériques ; « Saint-Clair » → SCL, « FootOFF FC » → FOF ;
-  l'adversaire prend une variante si les deux codes se ressemblent), score en plaque dorée, horloge (rouge en jeu,
-  « MT » à la pause). Le nom complet reste partout ailleurs.
-- Bandeau « BUT ! » (« But VAU » pour l'adversaire) : portrait et nom du buteur, minute, passeur, rang du but dans
-  la saison pour nos joueurs (« 3e but de la saison »), score.
+Habillage du direct (classes `lv-`) :
+- Score façon télé pendant un temps fort, en haut à gauche : écussons, codes de trois lettres des clubs
+  (`src/ui/teamcode.js` : le mot le plus distinctif du nom, sans accents ni mots génériques ; « Saint-Clair » → SCL,
+  « FootOFF FC » → FOF ; l'adversaire prend une variante si les deux codes se ressemblent), score en plaque dorée,
+  horloge (rouge en jeu).
+- Bandeau « BUT ! » (« But VAU » pour l'adversaire) : portrait et nom du buteur, minute, « sur penalty », passeur, rang
+  du but dans la saison pour nos joueurs (« 3e but de la saison »), score.
 - Temps forts : 45 colonnes de deux minutes au-dessus et au-dessous d'un axe (notre domination en or, celle de
   l'adversaire en gris bleuté), tirées des tirs déjà montrés (but, arrêt ou poteau, à côté, pondérés par la qualité de
   l'occasion) et de la possession, avec un point pour chaque but ; rien n'annonce une action pas encore montrée.
 - Pronostic final pendant tout le match : les chances exactes du moteur (`live.oddsShown`) à partir de ce que le
   direct a déjà montré (buts, cartons rouges, blessures), jamais des quatorze minutes simulées d'avance ; à la
   mi-temps, calculé depuis la fin réelle de la première période (temps additionnel compris).
-- Sur téléphone, le fil, les statistiques et la composition en onglets au-dessus des commandes.
+- Fond du centre du match : sombre, une lueur or en haut, verte en bas, et le tracé d'un terrain à peine visible.
 
 Chaque match enregistre son onze de départ (dans l'ordre des postes de la formation), ses changements, la formule
 des billets du jour, le prix du billet et les recettes détaillées (`recordMatch`, `src/game/season.js`). Le Stats
@@ -968,34 +1012,36 @@ et une section Billetterie (formule, prix, affluence, spectateurs restés aux gu
 
 Hors match, le stade est vide et immobile ; l'équipe s'entraîne au centre d'entraînement (rien tant qu'il n'est pas
 construit). Le jour de match (`src/three/matchplay.js`) : échauffement des deux équipes avant le coup d'envoi,
-puis 11 contre 11 en direct, maillots adverses propres à chaque club (`src/game/kits.js`). L'écran du direct
-écrit l'horloge et les événements de la mi-temps dans `src/game/matchFeed.js` ; la scène construit chaque action
-pour que le ballon ARRIVE à l'instant où le commentaire l'affiche : au fond des filets quand « BUT ! » apparaît, dans
-les gants du gardien pour un arrêt, sur le poteau, au-delà de la ligne pour un tir à côté. Règles :
-- le commentaire n'annonce jamais ce que la 3D n'a pas encore montré : si le ballon est en retard (ou la faute pas
-  commise), l'horloge du direct attend, au plus 2,5 s (1,25 s en accéléré), puis reprend quoi qu'il arrive
-  (`matchFeed.waitAt`, `waitUntil`) ;
-- l'attaque se construit vers un point de frappe dans les 20 derniers mètres : le tireur y fait son appel, la
-  passe décisive est jouée dans sa course, la frappe part à une vitesse réaliste (36 m/s au plus) choisie pour
-  arriver à l'heure ; le tireur nommé frappe s'il peut y être à temps, sinon le partenaire le mieux placé (les noms
-  ne s'affichent pas sur la pelouse, une frappe de 40 m se voit) ;
-- en accéléré, une action déjà annoncée que la 3D n'a pas pu commencer est sautée, jamais un but ; une action
-  déjà annoncée n'est jamais rejouée ;
-- gardien face au jeu (pas chassés), arrêts souvent en plongeant, ballon dans les gants ; contrôle de la poitrine
-  des ballons aériens ; la faute se commet sur le porteur, près du ballon (plus de ballon téléporté) ;
-- but : course de joie du buteur vers le public, ses coéquipiers l'entourent bras levés, le temps du bandeau
-  « BUT ! », puis engagement.
-Réalisation télé (`broadcastStep`, `src/ui/Empire3D.jsx`) : caméra dans l'axe de la tribune principale qui suit le
-ballon et serre le plan selon l'action (jeu, attaque dans le dernier tiers, carton, joie du buteur) ; la largeur de
-pelouse montrée se règle sur la zone libre de l'écran (à gauche du fil sur PC, au-dessus sur téléphone). Pendant tout
-le direct (mi-temps et changements compris), la réalisation garde la caméra : ni rotation, ni zoom (molette, pincement,
-double tap glissé), ni déplacement, et le complexe ne réagit à rien (survol, toucher d'un bâtiment, allée d'honneur) ;
-`pickPlot` d'App refuse aussi toute parcelle pendant un match (avant-match compris). Un changement en cours de jeu
-arrête le match : l'horloge s'arrête et la scène 3D se fige (`matchFeed.hold` : joueurs, ballon et carton immobiles,
-le public et le ciel continuent), jusqu'à la reprise. Plus proche de la pelouse, elle coûte
-moins que l'ancienne vue large (soir de match, 2880 × 1620 : 26,1 → 22,4 ms au stade 6). Bancs de développement :
-`tmp/ph3/matchbench.js` (synchronisme, mi-temps simulées) et `tmp/ph3/matchdemo.js` (démo en temps réel, arrêt sur
-image). Fautes et cartons (expulsé qui sort), engagements, changement de côté et retour aux vestiaires. Public
+maillots adverses propres à chaque club (`src/game/kits.js`). Pendant le direct (0.7), la 3D ne joue que les temps
+forts que l'écran lui demande (`matchFeed.hl`) et ne se dessine que pendant ceux-ci (`matchFeed.show3D`, boucle de
+rendu d'`Empire3D`) :
+- chaque action est construite comme une vraie, selon son type (`live.js`) : les deux équipes placées selon leur
+  dispositif (le onze adverse a le sien), puis la relance, les passes au sol ou en profondeur, le centre (tête ou
+  volée selon le commentaire), le centre en retrait, l'une-deux, la percée, le pressing, la frappe lointaine, le corner
+  (joueurs dans la surface, marquage), le coup franc direct (mur à 9,15 m, frappe enroulée au-dessus), le penalty (tout
+  le monde hors de la surface et de l'arc, élan du tireur, plongeon au moment de la frappe), l'expulsion (contre, le
+  fautif fauche le porteur, qui s'écroule, carton rouge brandi, il sort) ;
+- le tireur est le joueur que le commentaire nomme, le dernier passeur aussi quand il y en a un ; les autres font leurs
+  appels (premier poteau, second poteau, point de penalty), la défense recule en bloc, coulisse, presse le porteur et
+  marque côté but dans la surface ;
+- l'issue est celle du moteur : la frappe vise le petit filet loin du gardien pour un but (il plonge trop court ou du
+  mauvais côté), à sa portée pour un arrêt (il capte ou repousse en corner), le poteau ou la barre, ou à côté ;
+- l'instant décisif (ballon au fond des filets, dans les gants, sur le poteau, dehors, carton brandi) est signalé au
+  direct (`hlReveal`) ; ensuite la joie du buteur (course vers le public, coéquipiers autour, bras levés), le gardien
+  qui garde le ballon ou le fautif qui sort, puis, pour un but, un ralenti de l'action rejoué depuis son enregistrement
+  (2,6 s avant l'instant décisif, 0,8 s après, à mi-vitesse) ; fin signalée par `hlDone` ;
+- toutes les positions sont tirées d'une graine propre à l'occasion : un temps fort se rejoue à l'identique.
+Réalisation télé (`broadcastStep`, `src/ui/Empire3D.jsx`) : caméra dans l'axe de la tribune principale, en plan large,
+qui suit le ballon et serre le plan selon l'action (attaque, coup de pied arrêté, carton, joie du buteur, ralenti un
+peu plus serré), sans jamais filmer les joueurs de près ni de dos ; dans le dernier tiers, le cadre penche vers le but
+pour garder ballon et cage à l'image (écran en portrait compris) ; un nouveau temps fort et le ralenti changent de plan
+d'un coup (`cut`). Pendant tout le direct, la réalisation garde la caméra : ni rotation, ni zoom, ni déplacement, et le
+complexe ne réagit à rien ; `pickPlot` d'App refuse aussi toute parcelle pendant un match (avant-match compris).
+Bancs d'essai (dans le dépôt) : `node tools/sim/temps-forts.mjs` joue sans affichage chaque type d'action avec chaque
+issue, des deux côtés, et l'expulsion (98 temps forts : tous aboutissent, instant décisif entre 2,7 et 7 s, fin entre
+4,2 et 16,8 s ralenti compris) ; `/tools/sim/temps-forts.html` (avec `npx vite`) les joue en temps réel sur une pelouse
+simple, avec la même caméra (`?w=390&h=844` : cadrage d'un téléphone).
+Public
 (`src/three/crowd.js`) : supporters assis sur les sièges du modèle de stade (debout le long de la main courante
 dans les petits stades), nombre selon l'affluence, parcage visiteurs, le camp concerné se lève sur un but.
 Niveaux 5 et 6 : arène fermée générée dans Blender (`arena()` de `tools/blender/models/build_stadium.py`), une

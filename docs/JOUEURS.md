@@ -10,8 +10,12 @@ Code : `src/game/players.js` (modèle, progression), `src/game/live.js` (effets 
   - joueurs de champ : finition, passe, dribble (technique) · vitesse, endurance, puissance (physique) ·
     placement, défense, sang-froid (tactique et mental) ;
   - gardiens : réflexes, placement, jeu aérien, un contre un, relance, sang-froid.
-- **Note de match** sur 10, comme dans la presse : base 6, résultat, buts (+1), passes décisives (+0,6),
-  cartons, niveau face à l'adversaire, clean sheet (gardien +0,8, défenseurs +0,4), part d'aléa.
+- **Note de match** sur 10, au dixième (0.7), comme dans la presse : base 6, niveau face à l'adversaire (un dixième
+  par point d'écart), forme du jour (tirée au coup d'envoi, ±0,6), buts (+1), passes décisives (+0,6), tirs cadrés
+  (+0,1), arrêts du gardien (+0,1), cartons (−0,4 le jaune, −1,5 le rouge), buts encaissés du gardien (−0,3) ; le
+  résultat (±0,5) et la cage inviolée (gardien +0,8, défenseurs +0,4) au prorata du temps écoulé. Elle évolue pendant
+  le direct d'après ce qu'il a montré (`ratingsAt`, `live.js`), pour les deux équipes, et la note finale est celle du
+  coup de sifflet. Mesuré sur 6 000 matchs : moyenne 6,2 (6,1 avant la 0.7), même dispersion.
 - Les couleurs de l'interface comparent une valeur au niveau moyen de la division (forte, faible).
 
 ## Poids par poste (niveau = moyenne pondérée)

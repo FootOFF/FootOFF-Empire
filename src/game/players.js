@@ -127,13 +127,14 @@ function rollTraits(p) {
 const youthCenter = (academy, age) => YOUTH_GEN.base + YOUTH_GEN.perLevel * academy + rnd(0, YOUTH_GEN.spread) + YOUTH_GEN.perAge * (age - 15);
 const youthPot = (center, academy) => center + YOUTH_GEN.potBase + YOUTH_GEN.potPerLevel * academy + YOUTH_GEN.potTail * Math.random() ** 3;
 
-export function makePlayer({ level = 0, youth = false, academy = 0, pos = null, age: forceAge = null } = {}) {
+// name : nom déjà choisi (onze adverse tiré d'une graine, opponents.js) ; sinon un nom neuf de la partie.
+export function makePlayer({ level = 0, youth = false, academy = 0, pos = null, age: forceAge = null, name = null } = {}) {
   const p = pos || pick(['D', 'D', 'M', 'M', 'A', 'A', 'G']);
   const age = forceAge ?? (youth ? ri(15, 17) : ri(19, 30));
   const center = youth ? youthCenter(academy, age) : 4 + level * 2 + rnd(-1, 2);
   const pot = clamp(Math.round(youth ? youthPot(center, academy) : center + ri(2, 6)), 8, 20);
   const player = {
-    name: playerName(), // jamais deux fois le même nom dans la partie (names.js)
+    name: name || playerName(), // jamais deux fois le même nom dans la partie (names.js)
     pos: p,
     age,
     pot,

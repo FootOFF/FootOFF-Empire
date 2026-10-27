@@ -1802,6 +1802,164 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .ht-label { font-family: var(--font-disp); font-weight: 600; font-size: 13px; line-height: 1; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
 .halftime .odds-legend b { font-size: 34px; }
 
+/* ---- centre du match (0.7, façon FM) : plein écran, opaque — entre deux temps forts, la 3D ne se dessine pas. En
+   haut le tableau de score (buteurs, expulsés) ; dessous trois colonnes sur PC : nos notes, les statistiques (ou le
+   fil), leurs notes ; sur téléphone, des onglets Stats, Notes, Le fil. Pendant un temps fort, le centre s'efface :
+   restent le score façon télé, l'étiquette du temps fort et « Passer ». ---- */
+.lv-centre {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden;
+  padding: 18px var(--gap) calc(var(--hud-bottom) + var(--lc-h) + 14px);
+  background:
+    radial-gradient(90% 55% at 50% -5%, rgba(199, 161, 90, .10), transparent 70%),
+    radial-gradient(70% 55% at 50% 112%, rgba(48, 92, 62, .18), transparent 72%),
+    #07080a;
+  transition: opacity .38s var(--ease), visibility 0s linear 0s;
+}
+/* tracé du terrain, très discret, derrière le centre du match */
+.lv-centre::before {
+  content: ''; position: absolute; left: 50%; top: 54%; width: min(1180px, 130vw); aspect-ratio: 105 / 68; transform: translate(-50%, -50%); pointer-events: none; opacity: .045;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1050 680' fill='none' stroke='%23fff' stroke-width='3'%3E%3Crect x='2' y='2' width='1046' height='676'/%3E%3Cpath d='M525 2v676'/%3E%3Ccircle cx='525' cy='340' r='91.5'/%3E%3Cpath d='M2 138h165v404H2M1048 138H883v404h165M2 248h55v184H2M1048 248h-55v184h55'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.lv-centre > * { position: relative; }
+.matchscreen.live.hl .lv-centre { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .38s var(--ease), visibility 0s linear .38s; }
+.matchscreen.live:not(.hl) .lv-top { display: none; }
+.lv-board { width: min(1000px, 100%); display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 16px; }
+.lv-board .lv-eyebrow { margin: 0; text-shadow: none; }
+.lv-sb { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 26px; }
+.lv-sb-team { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.lv-sb-team.home { justify-content: flex-end; }
+.lv-sb-team b { min-width: 0; font-family: var(--font-disp); font-weight: 700; font-size: 36px; line-height: 1; letter-spacing: .03em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lv-sb-team.home b { text-align: right; }
+.crest.lv-sb-crest { width: 48px; height: 56px; flex-shrink: 0; }
+.lv-sb-mid { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.lv-sb-score {
+  --slant: 16px; display: flex; align-items: center; gap: 12px; padding: 6px 32px; background: var(--gold-grad); color: var(--gold-ink); clip-path: var(--skew);
+  font-family: var(--font-disp); font-weight: 700; font-size: 58px; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.lv-sb-score b { min-width: .55em; text-align: center; animation: sb-pop .7s var(--ease); }
+.lv-sb-score i { font-style: normal; opacity: .4; }
+.lv-sb-clock { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-disp); font-weight: 700; font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lv-sb-clock .live-dot { width: 10px; height: 10px; }
+.lv-sb-clock.is-halftime, .lv-sb-clock.is-fulltime { font-size: 16px; letter-spacing: .1em; text-transform: uppercase; color: var(--gold-light); }
+.lv-sb-facts { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 150px; }
+.lv-facts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; min-width: 0; font-size: 13px; line-height: 1.25; color: var(--text-2); }
+.lv-facts.home { align-items: flex-end; text-align: right; }
+.lv-facts li { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; }
+.lv-facts li > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.lv-facts.home li { flex-direction: row-reverse; }
+.lv-facts svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--muted); }
+.lv-facts b { font-weight: 600; color: var(--text); }
+.only-sm { display: none; }
+.lv-cols {
+  flex: 1; min-height: 0; width: min(1400px, 100%); display: grid; gap: 14px;
+  grid-template-columns: minmax(250px, 320px) minmax(0, 1fr) minmax(250px, 320px); transition: opacity .3s var(--ease);
+}
+.matchscreen.live.paused .lv-cols, .matchscreen.live.paused .lv-tabs, .matchscreen.live.paused .lv-sb-facts { opacity: 0; pointer-events: none; }
+.lv-col, .lv-mid {
+  min-height: 0; display: flex; flex-direction: column; padding: 16px 18px 6px; overflow: hidden;
+  background: var(--plate); box-shadow: var(--plate-hi); clip-path: var(--cut-shape);
+}
+.lv-col-head { display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; }
+.lv-col-head .pm-sh { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lv-col-sub { font-size: 12px; color: var(--muted); }
+.lv-notes { list-style: none; margin: 0 -18px; padding: 0 18px 12px; flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.lv-notes li { position: relative; display: grid; grid-template-columns: 22px 28px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 40px; padding: 6px 0; border-top: 1px solid var(--line); }
+.lv-notes li.off { opacity: .45; }
+.lv-notes .pos-pill { width: 28px; height: 18px; }
+.lv-n-num { font-family: var(--font-disp); font-weight: 600; font-size: 16px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.lv-n-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.lv-n-name b { min-width: 0; font-family: var(--font-disp); font-weight: 700; font-size: 17px; letter-spacing: .03em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lv-n-facts { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; color: var(--gold-light); }
+.lv-n-facts svg { width: 14px; height: 14px; }
+.lv-n-facts svg.as { color: var(--text-2); }
+.lv-n-facts svg.hurt { color: var(--red); }
+.lv-n-facts .card { width: 8px; height: 11px; }
+.lv-n-facts em { font-style: normal; font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lv-n-facts em::before { content: ''; display: inline-block; margin-right: 3px; vertical-align: 1px; border: 4px solid transparent; }
+.lv-n-facts em.in { color: var(--green); }
+.lv-n-facts em.in::before { border-bottom: 5px solid currentColor; border-top-width: 0; }
+.lv-n-facts em.out { color: var(--red); }
+.lv-n-facts em.out::before { border-top: 5px solid currentColor; border-bottom-width: 0; }
+.ui-rate.sm { min-width: 38px; height: 24px; font-size: var(--t-sm); font-weight: 600; }
+/* condition physique : un filet sous le nom, de la longueur de sa condition (jusqu'à la note) */
+.lv-n-fit { position: absolute; left: 60px; bottom: -1px; height: 2px; width: calc((100% - 112px) * var(--fit, 1)); background: var(--green); opacity: .7; }
+.lv-n-fit.mid { background: var(--amber); }
+.lv-n-fit.low { background: var(--red); }
+.lv-mid { padding-bottom: 12px; }
+.lv-mid-tabs { display: flex; gap: 22px; flex-shrink: 0; margin: -4px 0 14px; border-bottom: 1px solid var(--line); }
+.lv-mid-tabs button {
+  position: relative; height: 40px; padding: 0; border: 0; background: none; color: var(--muted);
+  font-family: var(--font-disp); font-weight: 600; font-size: 16px; letter-spacing: .09em; text-transform: uppercase;
+}
+.lv-mid-tabs button.on { color: var(--text); }
+.lv-mid-tabs button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: var(--gold-grad); }
+.lv-cols .lv-sec { display: none; }
+.lv-cols.view-stats .lv-sec.stats, .lv-cols.view-feed .lv-sec.feed { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.lv-sec.stats { gap: 6px; overflow-y: auto; }
+.lv-srows { display: flex; flex-direction: column; gap: 11px; padding-bottom: 6px; }
+.lv-srows .ui-vs { grid-template-columns: 56px minmax(0, 1fr) 56px; }
+.lv-srows .ui-vs > b { font-size: 21px; }
+.lv-srows .ui-vs-bars .a { background: #7d8aa3; }
+.lv-cols .feed-list { margin: 0 -18px; padding: 0 18px 12px; }
+.lv-notes-switch { display: none; }
+/* temps fort : l'étiquette (sans dévoiler l'issue), et « Passer » dans la barre de commandes */
+.lv-hl-tag {
+  position: absolute; top: var(--gap); right: var(--gap); display: flex; align-items: center; gap: 14px; height: 56px; padding: 0 22px;
+  background: var(--plate); box-shadow: var(--plate-hi); clip-path: var(--cut-shape); pointer-events: none !important;
+  font-family: var(--font-disp); font-weight: 700; font-size: 20px; line-height: 1; letter-spacing: .1em; text-transform: uppercase; animation: fo-fade .4s var(--ease);
+}
+.lv-hl-tag span { color: var(--gold-light); }
+.lv-hl-tag b { font-variant-numeric: tabular-nums; }
+.lv-hl-tag.replay span::before { content: ''; display: inline-block; width: 10px; height: 10px; margin-right: 10px; border-radius: 50%; background: var(--gold-light); animation: live-pulse 1.4s infinite; }
+.matchscreen.live .lv-controls { left: 0; right: 0; width: fit-content; margin: 0 auto; }
+.matchscreen.live .lv-goal { max-width: calc(100% - 2 * var(--gap)); }
+.matchscreen.live .halftime { top: 168px; }
+@media (max-width: 1180px) {
+  .lv-cols { grid-template-columns: minmax(230px, 280px) minmax(0, 1fr) minmax(230px, 280px); }
+  .lv-sb-facts { gap: 0 110px; }
+}
+
+/* centre du match sur téléphone : onglets Stats, Notes (une équipe à la fois), Le fil */
+@media (max-width: 760px) {
+  .lv-centre { padding: 12px 12px calc(var(--hud-bottom) + var(--lc-h) + 8px); }
+  .lv-centre::before { top: 58%; width: 160vw; transform: translate(-50%, -50%) rotate(90deg); opacity: .028; }
+  .lv-board { gap: 7px; margin-bottom: 8px; }
+  .lv-board .lv-eyebrow { font-size: 12px; }
+  .lv-sb { gap: 12px; }
+  .lv-sb-team { gap: 10px; }
+  .lv-sb-team b { font-size: 28px; }
+  .crest.lv-sb-crest { width: 32px; height: 38px; }
+  .lv-sb-score { --slant: 11px; padding: 4px 18px; font-size: 40px; gap: 8px; }
+  .lv-sb-clock { font-size: 19px; }
+  .lv-sb-facts { gap: 0 20px; }
+  .lv-facts { font-size: 11.5px; gap: 3px; }
+  .lv-facts svg { width: 12px; height: 12px; }
+  .only-sm { display: revert; }
+  .matchscreen.live .lv-tabs { width: 100%; margin: 0 0 10px; }
+  .lv-cols { display: flex; flex-direction: column; gap: 0; width: 100%; }
+  .lv-col, .lv-mid { flex: 1; padding: 0; background: none; box-shadow: none; clip-path: none; }
+  .lv-col-head, .lv-mid-tabs { display: none; }
+  .lv-cols.view-stats .lv-col, .lv-cols.view-feed .lv-col, .lv-cols.view-notes .lv-mid { display: none; }
+  .lv-cols.view-notes.notes-home .lv-col.away, .lv-cols.view-notes.notes-away .lv-col.home { display: none; }
+  .lv-cols.view-notes .lv-notes-switch {
+    order: -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px;
+  }
+  .lv-notes-switch button {
+    height: 38px; min-width: 0; padding: 0 10px; border: 0; background: var(--plate-3); color: var(--text-2); clip-path: var(--cut-shape-sm);
+    font-family: var(--font-disp); font-weight: 600; font-size: 15px; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .lv-notes-switch button.on { background: var(--text); color: var(--gold-ink); }
+  .lv-notes { margin: 0; padding: 0 0 8px; }
+  .lv-notes li { min-height: 38px; }
+  .lv-srows { gap: 9px; }
+  .lv-srows .ui-vs { grid-template-columns: 44px minmax(0, 1fr) 44px; }
+  .lv-srows .ui-vs > b { font-size: 18px; }
+  .lv-cols .feed-list { margin: 0; padding: 0 0 8px; }
+  .lv-hl-tag { top: calc(var(--gap) + 56px); height: 40px; padding: 0 14px; font-size: 15px; }
+  .matchscreen.live .lv-controls { left: var(--gap); right: var(--gap); width: auto; }
+  .matchscreen.live .halftime { top: 118px; }
+}
+
 @media (max-width: 760px) {
   .matchscreen.prematch { padding: 16px 12px 0; gap: 14px; }
   .pm-eyebrow { font-size: 13px; padding-right: 52px; line-height: 1.3; }

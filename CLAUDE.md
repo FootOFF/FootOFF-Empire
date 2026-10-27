@@ -47,6 +47,8 @@ AMD intégrée, écran à 200 %) et sur iPhone, souvent à distance, depuis son 
   titres, trésorerie, salaires, réputation, marché ; `--detail` pour la première carrière saison par saison). À lancer
   après tout changement d'équilibre (économie, joueurs, adversaires). `node tools/sim/pronostic.mjs 20000` vérifie que
   les chances affichées (avant-match, direct, coupe) sont celles que donne le moteur : à lancer après tout changement
-  du moteur de match. La galerie se capture sans tête avec Playwright
+  du moteur de match. `node tools/sim/temps-forts.mjs` joue chaque temps fort 3D du direct sans affichage (à lancer
+  après tout changement de `src/three/matchplay.js`) ; `/tools/sim/temps-forts.html` les montre. La galerie se capture
+  sans tête avec Playwright
   (`npx vite preview`, puis `chromium` sur `/?ecran=<nom>`).
 - Les modèles 3D des bâtiments viennent de scripts Blender (`tools/blender/models/`), que seul le PC peut lancer.

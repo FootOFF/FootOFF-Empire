@@ -171,12 +171,12 @@ function recordMatch(s, res) {
       possHalf: st.possHalf ? [...st.possHalf] : null, longShots: st.longShots ?? null,
     } : null,
     shots: (res.shots || []).map(({ m, h, s: side, o, p, x, q }) => ({ m, h, s: side, o, p, x, q })), // tous les tirs, pour le déroulé
-    scorers: (res.scorers || []).map(({ name, id, minute, assist }) => ({ name, id, minute, assist })),
+    scorers: (res.scorers || []).map(({ name, id, minute, assist, pen }) => ({ name, id, minute, assist, ...(pen ? { pen: true } : {}) })),
     players: (res.players || []).map(({ id, name, pos, rating, goals, assists, yellow, red, shots, onTarget, minutes }) => ({
       id, name, pos, rating, goals, assists, yellow, red, shots, onTarget, minutes,
     })),
     motm: best ? best.id : null,
-    events: (res.highlights || []).map(({ minute, type, side, player }) => ({ minute, type, side, player })), // buts et cartons des deux équipes
+    events: (res.highlights || []).map(({ minute, type, side, player, pen }) => ({ minute, type, side, player, ...(pen ? { pen: true } : {}) })), // buts et cartons des deux équipes
     lineup: res.lineup ? [...res.lineup] : null, // onze de départ, dans l'ordre des postes du dispositif
     subs: (res.subs || []).map(({ in: inId, out, minute }) => ({ in: inId, out, minute })),
     attendance: res.attendance, capacity: res.capacity, revenue: res.revenue, demand: res.demand ?? null,

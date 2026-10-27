@@ -521,7 +521,7 @@ function MatchTimeline({ m }) {
             <li key={i} className={`${x.s === 0 ? 'dom' : 'ext'} ${x.kind === 'shot' ? `o-${x.o}` : ''}`}>
               <span className="sp-min">{x.m}′</span>
               <span className="sp-ico">{x.kind === 'shot' ? (x.o === 'g' ? <IconBall /> : <i className={`sp-shot ${x.o}`} />) : <i className={`card ${x.kind}`} />}</span>
-              <span className="sp-who">{x.p}<em> · {x.kind === 'shot' ? `${OUTCOME[x.o]}${x.q === 'big' ? ' · occasion franche' : x.q === 'hard' ? ' · frappe difficile' : ''}${x.x ? ` · xG ${xgShot(x.x)}` : ''}` : x.kind === 'red' ? 'carton rouge' : 'carton jaune'}</em></span>
+              <span className="sp-who">{x.p}<em> · {x.kind === 'shot' ? `${OUTCOME[x.o]}${x.q === 'pen' ? ' · penalty' : x.q === 'big' ? ' · occasion franche' : x.q === 'hard' ? ' · frappe difficile' : ''}${x.x ? ` · xG ${xgShot(x.x)}` : ''}` : x.kind === 'red' ? 'carton rouge' : 'carton jaune'}</em></span>
             </li>
           ))}
         </ul>
