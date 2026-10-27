@@ -1,5 +1,5 @@
 # GitHub Pages (phase de test) : à chaque envoi sur main, GitHub construit le jeu (Vite) et publie le dossier dist
-# sur https://<compte>.github.io/footoff-empire/. Version définitive : footoff.media.
+# sur https://footoff.github.io/FootOFF-Empire/, que footoff.media sert sous https://www.footoff.media/footoffempire/.
 name: Publication sur GitHub Pages
 
 on:

@@ -11,7 +11,11 @@ AMD intégrée, écran à 200 %) et sur iPhone, souvent à distance, depuis son 
 
 ## Publication
 - Chaque changement terminé et vérifié est publié sans redemander : commit sur `main` puis push. GitHub Actions déploie
-  sur https://footoff.github.io/FootOFF-Empire/ (version finale prévue sur https://footoff.media/footoffempire).
+  sur https://footoff.github.io/FootOFF-Empire/, que le site footoff.media sert tel quel, sans redirection, sous
+  https://www.footoff.media/footoffempire/ (réécriture dans `next.config.ts` et `proxy.ts` du site). L'adresse à donner
+  est toujours celle de footoff.media. Mode discret jusqu'au lancement public : `noindex` dans `index.html` et en-tête
+  `X-Robots-Tag` côté site, aucun lien vers le jeu ; les retirer seulement sur ordre de l'utilisateur.
+- Les sauvegardes d'une partie sont liées à l'adresse : une partie jouée sur github.io n'apparaît pas sur footoff.media.
 - Mentions légales et politique de confidentialité : celles de footoff.agency, déjà en ligne (décision de l'utilisateur,
   2026-10-27) ; le jeu y renverra, sans pages à lui.
 - Vérifier `git diff --cached --stat` avant chaque commit. Messages de commit en français, terminés par la ligne

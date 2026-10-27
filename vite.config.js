@@ -20,7 +20,7 @@ function serviceWorker() {
   };
 }
 
-// base './' : le build peut être servi depuis n'importe quel chemin (futur /empire sur footoff.media)
+// base './' : le build peut être servi depuis n'importe quel chemin (footoff.media/footoffempire/, GitHub Pages)
 export default defineConfig({
   plugins: [react(), serviceWorker()],
   base: './',
