@@ -442,6 +442,7 @@ function SaleFlash({ sale }) {
       {sale.result === 'sold' && <>{sale.name} rejoint {withArticle(c)} pour <b>{fmtMoney(sale.amount)}</b>.</>}
       {sale.result === 'refused' && <>Offre {clubAfter('de ', c)} pour {sale.name} refusée : le club se retire.</>}
       {sale.result === 'walked' && <>{Club(c)} {agree(c, 'juge ta demande excessive et se retire', 'jugent ta demande excessive et se retirent')} ({sale.name}).</>}
+      {sale.result === 'agreed' && <>{Club(c)} {agree(c, 'accepte', 'acceptent')} ta demande de <b>{fmtMoney(sale.amount)}</b> pour {sale.name} : à toi de vendre ou de refuser.</>}
       {sale.result === 'countered' && <>{Club(c)} {agree(c, 'monte', 'montent')} à <b>{fmtMoney(sale.amount)}</b> pour {sale.name} : c’est {agree(c, 'son', 'leur')} dernier mot.</>}
       {sale.result === 'held' && <>{Club(c)} {agree(c, 'maintient son', 'maintiennent leur')} offre de <b>{fmtMoney(sale.amount)}</b> pour {sale.name} : c’est {agree(c, 'son', 'leur')} dernier mot.</>}
     </p>
@@ -560,11 +561,11 @@ function OffersView({ state, refLvl, run, ask, onOffer, onSale, onList }) {
                             <b>{o.club}</b>
                             <em>{buyerLine(o)}{o.unsolicited ? ' · offre spontanée' : ''}</em>
                           </span>
-                          <span className="mc-amount"><b>{fmtMoney(o.amount)}</b><em className={o.talks?.closed ? '' : tone}>{o.talks?.closed ? 'dernier mot' : note}</em></span>
+                          <span className="mc-amount"><b>{fmtMoney(o.amount)}</b><em className={o.talks?.agreed ? 'up' : o.talks?.closed ? '' : tone}>{o.talks?.agreed ? 'accord à ton prix' : o.talks?.closed ? 'dernier mot' : note}</em></span>
                           <div className="mc-row-actions">
                             <button className="btn btn-sm" disabled={!canSell || !!block} onClick={() => accept(o, g.p)} title={block ? block.text : canSell ? '' : 'Effectif au minimum (11 joueurs)'}>Accepter</button>
                             {!o.talks?.closed && !block && <button className="btn ghost btn-sm" onClick={() => onSale(o.id)}>Négocier</button>}
-                            <button className="linkbtn" onClick={() => run((s) => answerOffer(s, o.id, 'refuse'))}>Refuser</button>
+                            <button className="btn ghost btn-sm refuse" onClick={() => run((s) => answerOffer(s, o.id, 'refuse'))}>Refuser</button>
                           </div>
                         </li>
                       );
@@ -1011,7 +1012,7 @@ export function SaleNegotiation({ state, offerId, since, run, refLvl, onClose, o
   const o = (state.offers || []).find((x) => x.id === offerId) || null;
   const result = state.lastSale && state.lastSale.offerId === offerId && state.lastSale.at >= opened ? state.lastSale : null;
   const p = o && state.players.find((q) => q.id === o.playerId);
-  useEffect(() => { if (result?.result === 'sold') haptic('build'); }, [result?.at]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (result?.result === 'sold') haptic('build'); else if (result?.result === 'agreed') haptic('tap'); }, [result?.at]); // eslint-disable-line react-hooks/exhaustive-deps
   const step = stepFor(o?.amount || 1000);
   const lo = o ? Math.floor(o.amount / step) * step + step : 0; // au-dessus de son offre
   const hi = o ? Math.max(lo + step, ceilTo(o.amount * 1.5, step)) : 0;
@@ -1062,6 +1063,7 @@ export function SaleNegotiation({ state, offerId, since, run, refLvl, onClose, o
   const demand = Math.min(hi, Math.max(lo, want)); // l'offre a pu monter depuis (dernier mot)
   const shown = pctOf(demandChance(o, demand));
   const closed = !!o.talks?.closed;
+  const agreed = !!o.talks?.agreed; // le club a dit oui à ta demande : la vente reste à décider
   const left = SALE_TRIES - (o.talks?.tries || 0);
   const sale = (state.saleList || []).find((x) => x.id === p.id);
   const wage = wageOf(p, state.divisionIndex);
@@ -1073,6 +1075,7 @@ export function SaleNegotiation({ state, offerId, since, run, refLvl, onClose, o
   const set = (x) => setWant(Math.min(hi, Math.max(lo, roundTo(x, step))));
   const send = () => run((s) => demandOffer(s, o.id, demand));
   const take = () => run((s) => answerOffer(s, o.id, 'accept'), 'Effectif au minimum (11 joueurs).');
+  const refuse = () => { run((s) => answerOffer(s, o.id, 'refuse')); onClose(); };
   const d = Math.max(1, Math.round((demand / o.amount - 1) * 100));
   // raccourcis : un montant chacun (les petites sommes, arrondies, peuvent tomber sur le même ; « Ton prix » d'abord)
   const quick = sale && sale.price > o.amount && sale.price <= hi ? [[sale.price, 'Ton prix']] : [];
@@ -1096,6 +1099,13 @@ export function SaleNegotiation({ state, offerId, since, run, refLvl, onClose, o
           <button className="linkbtn ng-sheet" onClick={() => onSheet(p.id)}>Sa fiche</button>
         </section>
 
+        {result?.result === 'agreed' && (
+          <section className="ng-answer agreed">
+            <b>Accord ! {Club(o.club)} {agree(o.club, 'accepte', 'acceptent')} ta demande de {fmtMoney(o.amount)}</b>
+            <span>{fmtMoney(o.amount - (result.offered || o.amount))} de plus que {agree(o.club, 'son', 'leur')} offre. Rien n’est signé : vends, ou refuse et garde ton joueur. L’accord vaut jusqu’à la prochaine journée.</span>
+          </section>
+        )}
+
         {result && (result.result === 'countered' || result.result === 'held') && (
           <section className={`ng-answer ${result.result === 'countered' ? 'countered' : ''}`}>
             <b>{result.result === 'countered' ? `Demande refusée… mais ${withArticle(o.club)} ${agree(o.club, 'monte', 'montent')} à ${fmtMoney(o.amount)}` : 'Demande refusée : le club maintient son offre'}</b>
@@ -1109,9 +1119,9 @@ export function SaleNegotiation({ state, offerId, since, run, refLvl, onClose, o
             <span className="eyebrow">{buyerLine(o)}</span>
             <strong className="sl-name">{o.club}</strong>
             <b>{fmtMoney(o.amount)}</b>
-            <em className={closed ? '' : tone}>{closed ? 'Son dernier mot' : `Son offre · ${note}`}{o.unsolicited ? ' · offre spontanée' : ''}</em>
+            <em className={agreed ? 'up' : closed ? '' : tone}>{agreed ? 'Accord à ton prix' : closed ? 'Son dernier mot' : `Son offre · ${note}`}{o.unsolicited ? ' · offre spontanée' : ''}</em>
           </div>
-          <button className="btn" disabled={!!blocked} onClick={take} title={blocked || ''}>Accepter · {fmtMoney(o.amount)}</button>
+          {!closed && <button className="btn" disabled={!!blocked} onClick={take} title={blocked || ''}>Accepter · {fmtMoney(o.amount)}</button>}
         </section>
 
         {!closed && (
@@ -1146,7 +1156,14 @@ export function SaleNegotiation({ state, offerId, since, run, refLvl, onClose, o
 
         <footer className="ng-foot">
           {closed ? (
-            <p className="ng-closed">Le club a dit son dernier mot : {fmtMoney(o.amount)}, valable jusqu’à la prochaine journée.</p>
+            <>
+              {!agreed && <p className="ng-closed">Le club a dit son dernier mot : {fmtMoney(o.amount)}, valable jusqu’à la prochaine journée.</p>}
+              <div className="ng-decide">
+                <button className="btn ghost btn-xl refuse" onClick={refuse}>Refuser</button>
+                <button className="btn btn-xl" disabled={!!blocked} onClick={take} title={blocked || ''}>Vendre · {fmtMoney(o.amount)}</button>
+              </div>
+              {blocked && <span className="ng-block">{blocked}</span>}
+            </>
           ) : (
             <>
               <LiveChance label="Chances d’accord" shown={shown} note={shown === 0 ? 'Hors de sa portée : le club se retirera' : shown === 100 ? 'Accord assuré à ce prix' : null} />

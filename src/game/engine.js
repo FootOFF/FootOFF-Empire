@@ -345,14 +345,14 @@ const saleNote = (s, o, p, result, extra = {}) => ({
 });
 
 // Réponse à une offre reçue : accepter (vente au montant de l'offre) ou refuser (le club se retire). Résultat dans
-// s.lastSale.
+// s.lastSale ; après une négociation, la vente garde la trace de l'offre de départ (ce que la négociation a rapporté).
 export function answerOffer(s, offerId, action) {
   const o = (s.offers || []).find((x) => x.id === offerId);
   const p = o && s.players.find((q) => q.id === o.playerId);
   if (!p) return null;
   if (action === 'accept') {
     if (saleBlock(s, p)) return null;
-    const note = saleNote(s, o, p, 'sold');
+    const note = saleNote(s, o, p, 'sold', o.talks?.first > 0 && o.talks.first < o.amount ? { offered: o.talks.first } : {});
     if (!sellPlayer(s, p.id, o.amount, o.club)) return null;
     s.lastSale = note;
     return s;
@@ -362,18 +362,22 @@ export function answerOffer(s, offerId, action) {
   return s;
 }
 
-// Négociation d'une vente : on demande plus que l'offre d'un club. Il accepte avec exactement la chance affichée (vente
-// à ce prix) ; sinon, si la demande avait une chance, il se braque et donne son dernier mot (son offre monte à ce qu'il
-// paie à coup sûr) ; sans aucune chance, il part. SALE_TRIES demandes par offre. Résultat dans s.lastSale.
+// Négociation d'une vente : on demande plus que l'offre d'un club. Il accepte avec exactement la chance affichée : son
+// offre passe à ce prix et la négociation est close, mais la vente reste à décider (0.7.6 : elle se faisait aussitôt,
+// sans que le joueur l'ait voulu) ; sinon, si la demande avait une chance, il se braque et donne son dernier mot (son
+// offre monte à ce qu'il paie à coup sûr) ; sans aucune chance, il part. SALE_TRIES demandes par offre. Résultat dans
+// s.lastSale.
 export function demandOffer(s, offerId, demand) {
   const o = (s.offers || []).find((x) => x.id === offerId);
   const p = o && s.players.find((q) => q.id === o.playerId);
   if (!p || !(demand > o.amount) || o.talks?.closed || s.players.length <= SQUAD_MIN || saleBlock(s, p)) return null;
   const chance = demandChance(o, demand);
+  o.talks = { ...(o.talks || {}), first: o.talks?.first || o.amount }; // offre de départ, avant toute demande
   if (Math.random() < chance) {
-    const note = saleNote(s, o, p, 'sold', { amount: demand, demand, offered: o.amount });
-    sellPlayer(s, p.id, demand, o.club);
-    s.lastSale = note;
+    const before = o.amount;
+    o.amount = demand;
+    o.talks = { ...o.talks, tries: (o.talks.tries || 0) + 1, closed: true, agreed: true };
+    s.lastSale = saleNote(s, o, p, 'agreed', { demand, offered: before });
     return s;
   }
   if (chance <= 0) {

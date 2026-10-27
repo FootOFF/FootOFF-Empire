@@ -4,6 +4,14 @@
 
 export const CHANGELOG = [
   {
+    version: '0.7.6', date: '2026-10-27', title: 'C’est toi qui vends',
+    items: [
+      'Quand un club accepte ta demande en négociation, la vente ne se fait plus toute seule : son offre passe à ton prix et c’est toi qui choisis, « Vendre » ou « Refuser ». L’accord vaut jusqu’à la prochaine journée.',
+      'De même après le dernier mot d’un club : les deux boutons, côte à côte, en bas de la négociation.',
+      'Dans les offres reçues, « Refuser » est un vrai bouton, de la même taille que « Accepter » et « Négocier ».',
+    ],
+  },
+  {
     version: '0.7.5', date: '2026-10-27', title: 'Une composition plus grande',
     items: [
       'Sur PC, à la mi-temps et pendant un changement, la composition dépliée prend tout l’écran : le terrain couché, bien plus grand, à droite des consignes.',

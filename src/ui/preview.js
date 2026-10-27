@@ -42,6 +42,7 @@ export const SCREENS = [
   ['encheres', 'Mercato · enchères entre clubs'],
   ['vente', 'Mercato · mise en vente à ton prix'],
   ['vente-negociation', 'Mercato · négociation d’une vente (dernier mot)'],
+  ['vente-accord', 'Mercato · négociation d’une vente (accord à ton prix, vente à décider)'],
   ['vente-conclue', 'Mercato · vente conclue'],
   ['bilan-mercato', 'Mercato · bilan des transferts'],
   ['bureau', 'Inspecteur · bureau des transferts'],
@@ -234,8 +235,8 @@ function trainingPreview(s) {
 // Mercato en aperçu : une négociation (avec ou sans contre-offre), des joueurs suivis dont un parti ailleurs, des
 // offres reçues (trois clubs pour un joueur, un pour un autre, une offre spontanée), des enchères, une négociation de
 // vente au dernier mot, une vente conclue, un bilan avec une arrivée et un départ.
-const MERCATO = ['negociation', 'contre-offre', 'suivis', 'offres', 'offres-europe', 'encheres', 'vente-negociation', 'vente-conclue', 'bilan-mercato'];
-const SALES = ['offres', 'offres-europe', 'encheres', 'vente-negociation', 'vente-conclue'];
+const MERCATO = ['negociation', 'contre-offre', 'suivis', 'offres', 'offres-europe', 'encheres', 'vente-negociation', 'vente-accord', 'vente-conclue', 'bilan-mercato'];
+const SALES = ['offres', 'offres-europe', 'encheres', 'vente-negociation', 'vente-accord', 'vente-conclue'];
 // écrans joués en Elite, qualifié pour la Coupe d'Europe
 const ELITE = ['europe', 'calendrier-europe', 'avant-match-exterieur', 'avant-match-europe', 'offres-europe'];
 const later = () => Date.now() + 60000; // réponse affichée à l'ouverture de la vue
@@ -306,6 +307,15 @@ function mercatoPreview(s, screen) {
         result: 'countered', demand: roundTo(before * 1.3), offered: before, at: later(),
       };
     }
+    if (screen === 'vente-accord') { // le grand club accepte la demande : la vente reste à décider
+      const before = top.amount;
+      top.amount = roundTo(before * 1.12);
+      top.talks = { first: before, tries: 1, closed: true, agreed: true };
+      s.lastSale = {
+        offerId: top.id, playerId: a.id, name: a.name, club: top.club, tier: top.tier, div: top.div, amount: top.amount, value: top.v,
+        result: 'agreed', demand: top.amount, offered: before, at: later(),
+      };
+    }
     if (screen === 'vente-conclue') {
       answerOffer(s, top.id, 'accept');
       s.lastSale.at = later();
@@ -339,7 +349,7 @@ export function previewUi(screen, s) {
     case 'suivis': return { panel: 'mercato', squad: { mercato: 'watch' } };
     case 'offres': case 'offres-europe': case 'encheres': return { panel: 'mercato', squad: { mercato: 'offers' } };
     case 'vente': return { panel: 'mercato', squad: { mercato: 'offers', listing: [...s.players].sort((a, b) => playerRating(a) - playerRating(b))[2].id } };
-    case 'vente-negociation': case 'vente-conclue': return { panel: 'mercato', squad: { mercato: 'offers', sale: 1 } };
+    case 'vente-negociation': case 'vente-accord': case 'vente-conclue': return { panel: 'mercato', squad: { mercato: 'offers', sale: 1 } };
     case 'bilan-mercato': return { panel: 'mercato', squad: { mercato: 'log' } };
     case 'bureau': return { sel: { plotId: 't3', sector: 'main' } };
     case 'academie': case 'academie-vide': return { panel: 'academy' };

@@ -690,8 +690,12 @@ gain pour le onze, repères, prix, suivre, « Offre ») ; « Cartes / Tableau »
   Bonne affaire, Prix en hausse ou en baisse, Fin de contrat ; prix (rouge s'il dépasse la trésorerie), tendance,
   « Faire une offre ». Le réseau de recruteurs (bureau des transferts) ferme la liste.
 - Suivis : écart de prix depuis le suivi (vert s'il a baissé), joueurs partis ailleurs.
-- Offres : contre-offres à conclure, offres reçues groupées par joueur (Accepter, Négocier, Refuser, Faire monter les
-  enchères) avec retour immédiat, joueurs en vente et leur prix (un interrupteur ouvre la fenêtre de mise en vente).
+- Offres : contre-offres à conclure, offres reçues groupées par joueur (Accepter, Négocier, Refuser : trois vrais
+  boutons de même taille, Refuser en texte rouge ; Faire monter les enchères) avec retour immédiat, joueurs en vente et
+  leur prix (un interrupteur ouvre la fenêtre de mise en vente).
+- Négociation d'une vente (`SaleNegotiation`) : une demande acceptée n'est jamais une vente (0.7.6) ; l'offre passe au
+  prix demandé (« accord à ton prix », `talks.agreed`), la négociation est close et le joueur décide : « Vendre » ou
+  « Refuser », côte à côte en bas de la feuille (de même après le dernier mot du club).
 - Bilan : achats, ventes et solde de la saison, records, historique des arrivées et départs.
 
 Négociation dans une feuille (`Negotiation`) : montant au curseur, boutons − et +, raccourcis (−20 %, −10 %, prix
