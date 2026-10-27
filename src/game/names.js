@@ -5,62 +5,141 @@ import { pick } from './utils';
 // Afrique de l'Ouest et centrale, Antilles, familles portugaises et italiennes). Aucun nom ne doit évoquer un
 // footballeur connu : les noms de famille trop associés à de vrais joueurs sont écartés (pas de Griezmann, de Giroud,
 // de Dembélé, de Touré ni de Payet), et les rares combinaisons qui tomberaient sur une personne réelle (joueur, autre
-// sportif, personnage célèbre) sont interdites (BLOCK).
+// sportif, personnage célèbre) sont interdites (BLOCK), vérifiées par le fact-checker le 2026-10-27.
+// Environ 450 prénoms et 700 noms (0.7.3, trois fois plus qu'avant) : dans une saison, un même prénom ou un même nom
+// ne revient presque plus trois fois. Ne jamais retirer un nom des listes sans raison grave : au chargement, un
+// joueur dont le nom a disparu est renommé (renameRetired).
 // Prénoms et noms par origine : un joueur porte le plus souvent un prénom et un nom de la même origine (comme dans
 // la vie, avec des mélanges), pour des noms qui sonnent juste.
 const FIRST_FR = [
-  'Léo', 'Hugo', 'Louis', 'Jules', 'Gabriel', 'Arthur', 'Raphaël', 'Paul', 'Victor', 'Adam',
-  'Sacha', 'Nathan', 'Théo', 'Tom', 'Baptiste', 'Mathis', 'Lucas', 'Axel', 'Clément', 'Antoine',
-  'Maxime', 'Quentin', 'Romain', 'Julien', 'Bastien', 'Valentin', 'Simon', 'Robin', 'Marius', 'Gaspard',
-  'Félix', 'Oscar', 'Noé', 'Malo', 'Timothée', 'Elias', 'Nolan', 'Dylan', 'Evan', 'Florent',
-  'Damien', 'Benoît', 'Mathéo', 'Aurélien', 'Marceau', 'Côme', 'Basile', 'Martin', 'Lenny', 'Thibault',
-  'Loïc', 'Yohan', 'Kévin', 'Jérémy', 'Anthony', 'Alexis', 'Adrien', 'Thomas', 'Nicolas', 'Pierre',
-  'Vincent', 'Benjamin', 'Mathieu', 'Guillaume', 'Cédric', 'Olivier', 'Arnaud', 'Rémi', 'Fabien', 'Jordan',
-  'Loris', 'Ethan', 'Gabin', 'Milo', 'Nino', 'Lino', 'Jean', 'Marc', 'Luc', 'Éric',
-  'Yves', 'Gaël', 'Erwan', 'Yann', 'Ronan', 'Killian', 'Samuel', 'Émile', 'William', 'Cyril',
-  'Jérôme', 'Mathias', 'Nils', 'Jonas', 'Hector', 'Achille', 'Léon', 'Lucien', 'Augustin', 'Elio',
+  'Léo', 'Hugo', 'Louis', 'Jules', 'Gabriel', 'Arthur', 'Raphaël', 'Paul', 'Victor', 'Adam', 'Sacha', 'Nathan',
+  'Théo', 'Tom', 'Baptiste', 'Mathis', 'Lucas', 'Axel', 'Clément', 'Antoine', 'Maxime', 'Quentin', 'Romain', 'Julien',
+  'Bastien', 'Valentin', 'Simon', 'Robin', 'Marius', 'Gaspard', 'Félix', 'Oscar', 'Noé', 'Malo', 'Timothée', 'Elias',
+  'Nolan', 'Dylan', 'Evan', 'Florent', 'Damien', 'Benoît', 'Mathéo', 'Aurélien', 'Marceau', 'Côme', 'Basile',
+  'Martin', 'Lenny', 'Thibault', 'Loïc', 'Yohan', 'Kévin', 'Jérémy', 'Anthony', 'Alexis', 'Adrien', 'Thomas',
+  'Nicolas', 'Pierre', 'Vincent', 'Benjamin', 'Mathieu', 'Guillaume', 'Cédric', 'Olivier', 'Arnaud', 'Rémi', 'Fabien',
+  'Jordan', 'Loris', 'Ethan', 'Gabin', 'Milo', 'Nino', 'Lino', 'Jean', 'Marc', 'Luc', 'Éric', 'Yves', 'Gaël', 'Erwan',
+  'Yann', 'Ronan', 'Killian', 'Samuel', 'Émile', 'William', 'Cyril', 'Jérôme', 'Mathias', 'Nils', 'Jonas', 'Hector',
+  'Achille', 'Léon', 'Lucien', 'Augustin', 'Elio', 'Alban', 'Albin', 'Alexandre', 'Amaury', 'Ambroise', 'Anatole',
+  'André', 'Aristide', 'Armand', 'Auguste', 'Aymeric', 'Barnabé', 'Bertrand', 'Brice', 'Bryan', 'Camille', 'Célestin',
+  'César', 'Charles', 'Charlie', 'Christophe', 'Clovis', 'Constant', 'Corentin', 'Cyprien', 'Daniel', 'David',
+  'Denis', 'Dorian', 'Edgar', 'Edmond', 'Édouard', 'Eliott', 'Elouan', 'Émeric', 'Émilien', 'Ernest', 'Esteban',
+  'Étienne', 'Eugène', 'Fabrice', 'Faustin', 'Ferdinand', 'Fernand', 'Firmin', 'Florian', 'Francis', 'François',
+  'Frédéric', 'Gaëtan', 'Geoffrey', 'Georges', 'Gérald', 'Germain', 'Gilles', 'Grégoire', 'Grégory', 'Gustave',
+  'Hadrien', 'Henri', 'Hervé', 'Hippolyte', 'Honoré', 'Ilan', 'Isaac', 'Jacques', 'Jason', 'Jérémie', 'Joachim',
+  'Joël', 'Johan', 'Jonathan', 'Joris', 'Joseph', 'Josselin', 'Justin', 'Kenzo', 'Laurent', 'Lazare', 'Léandre',
+  'Léonard', 'Lohan', 'Loan', 'Louka', 'Ludovic', 'Maël', 'Malone', 'Marcel', 'Marin', 'Marvin', 'Mathurin',
+  'Maurice', 'Max', 'Maxence', 'Maximilien', 'Michel', 'Mickaël', 'Morgan', 'Nathanaël', 'Noah', 'Noam', 'Norbert',
+  'Octave', 'Odilon', 'Owen', 'Pacôme', 'Pascal', 'Patrick', 'Philémon', 'Philibert', 'Philippe', 'Prosper', 'Raoul',
+  'Régis', 'René', 'Rodolphe', 'Roger', 'Roland', 'Romuald', 'Ruben', 'Rudy', 'Sébastien', 'Séraphin', 'Serge',
+  'Soan', 'Stanislas', 'Stéphane', 'Swann', 'Sylvain', 'Teddy', 'Théophile', 'Timéo', 'Titouan', 'Tony', 'Tristan',
+  'Ulysse', 'Valère', 'Vianney', 'Victorien', 'Virgile', 'Warren', 'Wilfried', 'Xavier', 'Yannick', 'Yoann', 'Yvan',
+  'Zacharie', 'Gédéon', 'Ghislain', 'Isidore', 'Jocelyn', 'Baudouin', 'Amédée', 'Anselme', 'Aurèle',
 ];
-const FIRST_ITPT = ['Enzo', 'Mattéo', 'Lorenzo', 'Luca', 'Tiago', 'Nuno', 'Fabio', 'Bruno', 'Sandro', 'Rui'];
+const FIRST_ITPT = [
+  'Enzo', 'Mattéo', 'Lorenzo', 'Luca', 'Tiago', 'Nuno', 'Fabio', 'Bruno', 'Sandro', 'Rui', 'Alessandro', 'Andrea',
+  'Angelo', 'Antonio', 'Carlo', 'Dario', 'Davide', 'Emilio', 'Federico', 'Filippo', 'Franco', 'Gianni', 'Giorgio',
+  'Giulio', 'Leonardo', 'Marco', 'Massimo', 'Michele', 'Nicola', 'Paolo', 'Pietro', 'Renato', 'Riccardo', 'Roberto',
+  'Salvatore', 'Simone', 'Stefano', 'Tommaso', 'Valerio', 'Vittorio', 'Afonso', 'Diogo', 'Gonçalo', 'Henrique',
+  'Jorge', 'José', 'Martim', 'Miguel', 'Pedro', 'Ricardo', 'Rodrigo', 'Tomás', 'Vasco', 'Joaquim', 'Fernando',
+  'Paulo',
+];
 const FIRST_MAG = [
-  'Yanis', 'Rayan', 'Ilyes', 'Amine', 'Malik', 'Samy', 'Mehdi', 'Sofiane', 'Bilal', 'Idriss',
-  'Sami', 'Nabil', 'Yacine', 'Ismaël', 'Ryad', 'Walid', 'Anis', 'Hamza', 'Omar', 'Ayoub', 'Younès', 'Naël',
+  'Yanis', 'Rayan', 'Ilyes', 'Amine', 'Malik', 'Samy', 'Mehdi', 'Sofiane', 'Bilal', 'Idriss', 'Sami', 'Nabil',
+  'Yacine', 'Ismaël', 'Ryad', 'Walid', 'Anis', 'Hamza', 'Omar', 'Ayoub', 'Younès', 'Naël', 'Abdel', 'Adel', 'Adil',
+  'Ali', 'Amir', 'Anouar', 'Ayman', 'Aziz', 'Badr', 'Brahim', 'Djamel', 'Farès', 'Farid', 'Fayçal', 'Fouad', 'Hakim',
+  'Hicham', 'Houssem', 'Ilyas', 'Imad', 'Issam', 'Jamel', 'Kamel', 'Karim', 'Khalil', 'Lyes', 'Madjid', 'Mounir',
+  'Mourad', 'Nassim', 'Nordine', 'Othmane', 'Rachid', 'Redouane', 'Réda', 'Saïd', 'Salim', 'Selim', 'Slimane',
+  'Soufiane', 'Tarik', 'Wassim', 'Yassine', 'Youssef', 'Zakaria', 'Nadir', 'Akram', 'Chakib', 'Hamid', 'Hassan',
+  'Mustapha', 'Rami', 'Haroun', 'Ishak', 'Ilian', 'Kaïs', 'Marwan', 'Taha', 'Wahid', 'Yahia',
 ];
 const FIRST_AFR = [
-  'Moussa', 'Ibrahim', 'Mamadou', 'Lamine', 'Cheikh', 'Aliou', 'Seydou', 'Yao', 'Koffi', 'Issa',
-  'Abdou', 'Bakary', 'Oumar', 'Kader',
+  'Moussa', 'Ibrahim', 'Mamadou', 'Lamine', 'Cheikh', 'Aliou', 'Seydou', 'Yao', 'Koffi', 'Issa', 'Abdou', 'Bakary',
+  'Oumar', 'Kader', 'Abdoulaye', 'Adama', 'Alassane', 'Amadou', 'Aboubacar', 'Babacar', 'Boubacar', 'Daouda', 'Demba',
+  'Djibril', 'Fodé', 'Habib', 'Ismaïla', 'Karamoko', 'Kwame', 'Lassana', 'Mamadi', 'Massamba', 'Modibo', 'Moustapha',
+  'Ousseynou', 'Pape', 'Salif', 'Samba', 'Sékou', 'Souleymane', 'Tidiane', 'Yaya', 'Youssouf', 'Ablaye', 'Assane',
+  'Birame', 'Fallou', 'Ibou', 'Malick', 'Ousmane', 'Saliou', 'Serigne', 'Thierno', 'Waly', 'Yacouba', 'Zoumana',
+  'Emmanuel', 'Junior', 'Prince', 'Landry', 'Rodrigue', 'Armel', 'Herman',
 ];
 
 const LAST_FR = [
-  'Vasseur', 'Delorme', 'Carrel', 'Delmas', 'Hamon', 'Maillard', 'Perrot', 'Tessier', 'Vallet', 'Lefort',
-  'Charron', 'Brunel', 'Masson', 'Poulain', 'Royer', 'Cordier', 'Bellanger', 'Lagarde', 'Voisin', 'Bouvier',
-  'Marais', 'Joubert', 'Combes', 'Ferrière', 'Toussaint', 'Leclerc', 'Marchal', 'Rousseau', 'Faure', 'Mercier',
-  'Chevalier', 'Garnier', 'Bonnet', 'Fournier', 'Picard', 'Renaud', 'Brunet', 'Morel', 'Caron', 'Barbier',
-  'Collin', 'Dumas', 'Lemaire', 'Gauthier', 'Aubry', 'Lacroix', 'Moulin', 'Dupré', 'Besson', 'Rivière',
-  'Loiseau', 'Duval', 'Langlois', 'Noël', 'Granger', 'Delattre', 'Berger', 'Carpentier', 'Chauvin', 'Ferrand',
-  'Bernard', 'Durand', 'Leroy', 'Moreau', 'Laurent', 'Lefebvre', 'Girard', 'Dupont', 'Legrand', 'Guérin',
-  'Roussel', 'Morin', 'Dumont', 'Fontaine', 'Boyer', 'Joly', 'Roche', 'Marchand', 'Dufour', 'Blanchard',
-  'Brun', 'Leroux', 'Colin', 'Renard', 'Rolland', 'Aubert', 'Vidal', 'Lemoine', 'Gaillard', 'Fabre',
-  'Dupuis', 'Hubert', 'Guillot', 'Lecomte', 'Ménard', 'Fleury', 'Jacquet', 'Collet', 'Prévost', 'Poirier',
-  'Huet', 'Baron', 'Dupuy', 'Pons', 'Breton', 'Guyot', 'Marty', 'Cousin', 'Bouchet', 'Delage',
-  'Vallée', 'Bertin', 'Chauvet', 'Maréchal', 'Pasquier', 'Rigaud', 'Sauvage', 'Tissot', 'Verdier', 'Lebrun',
-  'Clerc', 'Gillet', 'Perret', 'Bailly', 'Lacoste', 'Raynaud', 'Carré', 'Monnier', 'Bouvet', 'Hardy',
-  'Millet', 'Texier', 'Barre',
-  // Bretagne, Alsace
-  'Tanguy', 'Morvan', 'Le Gall', 'Le Floch', 'Le Bihan', 'Guillou', 'Schmitt', 'Meyer', 'Weber', 'Klein',
-  'Roth', 'Kessler', 'Haas',
+  'Vasseur', 'Delorme', 'Carrel', 'Delmas', 'Hamon', 'Maillard', 'Perrot', 'Tessier', 'Vallet', 'Lefort', 'Charron',
+  'Brunel', 'Masson', 'Poulain', 'Royer', 'Cordier', 'Bellanger', 'Lagarde', 'Voisin', 'Bouvier', 'Marais', 'Joubert',
+  'Combes', 'Ferrière', 'Toussaint', 'Leclerc', 'Marchal', 'Rousseau', 'Faure', 'Mercier', 'Chevalier', 'Garnier',
+  'Bonnet', 'Fournier', 'Picard', 'Renaud', 'Brunet', 'Morel', 'Caron', 'Barbier', 'Collin', 'Dumas', 'Lemaire',
+  'Gauthier', 'Aubry', 'Lacroix', 'Moulin', 'Dupré', 'Besson', 'Rivière', 'Loiseau', 'Duval', 'Langlois', 'Noël',
+  'Granger', 'Delattre', 'Berger', 'Carpentier', 'Chauvin', 'Ferrand', 'Bernard', 'Durand', 'Leroy', 'Moreau',
+  'Laurent', 'Lefebvre', 'Girard', 'Dupont', 'Legrand', 'Guérin', 'Roussel', 'Morin', 'Dumont', 'Fontaine', 'Boyer',
+  'Joly', 'Roche', 'Marchand', 'Dufour', 'Blanchard', 'Brun', 'Leroux', 'Colin', 'Renard', 'Rolland', 'Aubert',
+  'Vidal', 'Lemoine', 'Gaillard', 'Fabre', 'Dupuis', 'Hubert', 'Guillot', 'Lecomte', 'Ménard', 'Fleury', 'Collet',
+  'Prévost', 'Poirier', 'Huet', 'Baron', 'Dupuy', 'Pons', 'Breton', 'Guyot', 'Marty', 'Cousin', 'Bouchet', 'Delage',
+  'Vallée', 'Bertin', 'Chauvet', 'Maréchal', 'Pasquier', 'Rigaud', 'Sauvage', 'Tissot', 'Verdier', 'Lebrun', 'Clerc',
+  'Gillet', 'Perret', 'Bailly', 'Lacoste', 'Raynaud', 'Carré', 'Monnier', 'Bouvet', 'Hardy', 'Millet', 'Texier',
+  'Barre', 'Tanguy', 'Morvan', 'Le Gall', 'Le Floch', 'Le Bihan', 'Guillou', 'Schmitt', 'Meyer', 'Weber', 'Klein',
+  'Roth', 'Kessler', 'Haas', 'Allard', 'Andrieu', 'Arnoux', 'Aubin', 'Bazin', 'Bénard', 'Benoist', 'Berthier',
+  'Besnard', 'Billard', 'Blondel', 'Boisseau', 'Bonnard', 'Bordier', 'Bossard', 'Bouchard', 'Boucher', 'Bourdon',
+  'Bourgeois', 'Boutin', 'Brault', 'Briand', 'Brossard', 'Buisson', 'Cabanel', 'Castel', 'Chabert', 'Chapuis',
+  'Charpentier', 'Chartier', 'Chatelain', 'Clavel', 'Cochet', 'Collignon', 'Corbin', 'Coste', 'Courtin', 'Couturier',
+  'Cuvelier', 'Delaunay', 'Delcroix', 'Delhaye', 'Desmarais', 'Devaux', 'Drouet', 'Dubois', 'Dubreuil', 'Duclos',
+  'Ducret', 'Dufresne', 'Dumoulin', 'Duprat', 'Duret', 'Esnault', 'Évrard', 'Fauvel', 'Ferrier', 'Forestier',
+  'Fouquet', 'Fournel', 'Gallet', 'Garcin', 'Gautier', 'Genet', 'Giraud', 'Gosselin', 'Goulet', 'Grandin', 'Guichard',
+  'Hébert', 'Humbert', 'Jamet', 'Josse', 'Jourdan', 'Jullien', 'Labbé', 'Lafon', 'Lambert', 'Lamy', 'Langlais',
+  'Larcher', 'Laval', 'Lebon', 'Leclercq', 'Ledoux', 'Lefèvre', 'Lemaître', 'Lenoir', 'Lepage', 'Lévêque', 'Loison',
+  'Macé', 'Mahé', 'Maillet', 'Mallet', 'Martel', 'Maurin', 'Michaud', 'Mignot', 'Moine', 'Morand', 'Naudin',
+  'Normand', 'Pagès', 'Parent', 'Payen', 'Pelletier', 'Petitjean', 'Peyrot', 'Pichon', 'Pineau', 'Prieur', 'Régnier',
+  'Rey', 'Ribot', 'Rocher', 'Rossignol', 'Rouault', 'Roux', 'Roy', 'Sabatier', 'Salmon', 'Samson', 'Savary',
+  'Schneider', 'Sénéchal', 'Simonet', 'Tardy', 'Teyssier', 'Thiébaut', 'Tixier', 'Tournier', 'Turpin', 'Vaillant',
+  'Valette', 'Vauthier', 'Verdon', 'Verger', 'Vernet', 'Viard', 'Viguier', 'Villard', 'Vivier', 'Wagner', 'Weiss',
+  'Dubuisson', 'Lambotte', 'Hennebert', 'Delvaux', 'Hublet', 'Wauters', 'Michiels', 'Lejeune', 'Leblanc', 'Delforge',
+  'Gilson', 'Remacle', 'Rochat', 'Jaquier', 'Pittet', 'Dubey', 'Crausaz', 'Perrenoud', 'Jeanneret', 'Rapin', 'Cuche',
+  'Schaller', 'Roulin', 'Tremblay', 'Gagnon', 'Côté', 'Lavoie', 'Bergeron', 'Gagné', 'Ouellet', 'Paquette',
+  'Lapointe', 'Beaulieu', 'Desjardins', 'Lachance', 'Bélanger', 'Poulin', 'Boivin', 'Fortin', 'Cloutier', 'Thibodeau',
+  'Lévesque', 'Simard', 'Gendron', 'Labelle', 'Vachon', 'Turcotte', 'Guay', 'Bilodeau', 'Le Goff', 'Le Roux',
+  'Le Corre', 'Kerjean', 'Le Meur', 'Quéré', 'Coadou', 'Le Bars', 'Jaouen', 'Hoffmann', 'Keller', 'Bauer', 'Fischer',
+  'Wolff', 'Becker', 'Ritter', 'Stoll', 'Zimmer', 'Kieffer', 'Lang', 'Castan', 'Arnal', 'Bousquet', 'Cazals', 'Galy',
+  'Puech', 'Rouquette', 'Soulié', 'Teulière', 'Delcourt', 'Dewailly', 'Lecocq', 'Delplanque', 'Desmet', 'Verhaeghe',
+  'Hennion', 'Taffin', 'Wattel',
 ];
-const LAST_ANT = ['Lubin', 'Grondin', 'Calixte', 'Bellance', 'Lauret', 'Técher']; // Antilles, Réunion
+// Antilles, Réunion
+const LAST_ANT = [
+  'Lubin', 'Grondin', 'Calixte', 'Bellance', 'Lauret', 'Técher', 'Bélaise', 'Céleste', 'Cyrille', 'Dorival', 'Éloi',
+  'Félicité', 'Labéda', 'Lancelot', 'Lafleur', 'Lamothe', 'Laurencin', 'Marie-Sainte', 'Montout', 'Pétricien',
+  'Pierre-Louis', 'Saint-Éloi', 'Sainte-Rose', 'Sylvestre', 'Théodose', 'Valérius', 'Victorin', 'Clairville',
+  'Hilaire', 'Ramassamy', 'Sinapin', 'Nativel', 'Damour', 'Ethève', 'Gonthier', 'Mussard', 'Ramin', 'Sautron',
+  'Clain', 'Dijoux', 'Mardaye', 'Cadet',
+];
 const LAST_ITPT = [
   'Bianchi', 'Moretti', 'Romano', 'Marino', 'Greco', 'Rinaldi', 'Colombo', 'Lombardi', 'Ferreira', 'Moreira',
-  'Teixeira', 'Cardoso', 'Pinto', 'Fonseca', 'Rocha', 'Monteiro',
+  'Teixeira', 'Cardoso', 'Pinto', 'Fonseca', 'Rocha', 'Monteiro', 'Benedetti', 'Bellini', 'Caruso', 'Fabbri', 'Galli',
+  'Gallo', 'Giordano', 'Grasso', 'Leone', 'Longo', 'Martini', 'Mazza', 'Messina', 'Monti', 'Morelli', 'Neri',
+  'Orlando', 'Palumbo', 'Parisi', 'Rizzo', 'Ruggiero', 'Russo', 'Santoro', 'Serra', 'Testa', 'Valentini', 'Vitale',
+  'Barbieri', 'Bassi', 'Cattaneo', 'De Luca', 'Fiore', 'Fontana', 'Mariani', 'Pace', 'Pagano', 'Piras', 'Sartori',
+  'Ferri', 'Farina', 'Colonna', 'Amato', 'Ricci', 'Sorrentino', 'Vecchio', 'Cirillo', 'Montanari', 'Orsini',
+  'Bernardi', 'Carli', 'Guidi', 'Tosi', 'Zanella', 'Bertolini', 'Pozzi', 'Matos', 'Antunes', 'Azevedo', 'Barros',
+  'Brito', 'Campos', 'Coelho', 'Faria', 'Freitas', 'Lobo', 'Machado', 'Magalhães', 'Marques', 'Medeiros', 'Melo',
+  'Miranda', 'Morais', 'Paiva', 'Peixoto', 'Rebelo', 'Reis', 'Salgado', 'Simões', 'Soares', 'Valente', 'Vaz',
+  'Amaral', 'Baptista', 'Bastos', 'Borges', 'Cabral', 'Carneiro', 'Duarte', 'Esteves', 'Leite', 'Macedo', 'Mota',
+  'Pacheco', 'Sequeira', 'Trindade', 'Varela', 'Nunes', 'Correia',
 ];
 const LAST_MAG = [
-  'Haddad', 'Mansouri', 'Benali', 'Kaci', 'Belkacem', 'Amrani', 'Saïdi', 'Hamdi', 'Bouzid', 'Chérif',
-  'Meziane', 'Taleb', 'Rahmani', 'Ouali', 'Sabri', 'Naceri',
+  'Haddad', 'Mansouri', 'Benali', 'Kaci', 'Belkacem', 'Amrani', 'Saïdi', 'Hamdi', 'Bouzid', 'Chérif', 'Meziane',
+  'Taleb', 'Rahmani', 'Ouali', 'Sabri', 'Amari', 'Aouadi', 'Ayadi', 'Azzouz', 'Belaïd', 'Benamar', 'Benaïssa',
+  'Bendaoud', 'Benmoussa', 'Bensalem', 'Benyahia', 'Bouaziz', 'Boukhari', 'Bouras', 'Chaouch', 'Chaoui', 'Dahmani',
+  'Djebbar', 'Djellal', 'Ferhat', 'Gharbi', 'Guerraoui', 'Hadjadj', 'Hamidi', 'Hammadi', 'Hassani', 'Kaddour',
+  'Kadri', 'Larbi', 'Lounès', 'Madani', 'Mebarki', 'Messaoudi', 'Mokrani', 'Rachidi', 'Saadi', 'Salhi', 'Sebbar',
+  'Touati', 'Yahiaoui', 'Zitouni', 'Belarbi', 'Bensaïd', 'Benchikh', 'Hafsi', 'Kherbache', 'Merabet', 'Rezgui',
+  'Sahraoui', 'Smaïl', 'Allouche', 'Chalabi', 'Hachemi', 'Kebir', 'Maarouf', 'Abdelli', 'Aïssaoui', 'Daoudi',
+  'Fellah', 'Bouchama', 'Laribi', 'Tebbal', 'Nemri', 'Kerroum', 'Mekki', 'Bekkouche',
 ];
 const LAST_AFR = [
-  'Kassé', 'Ndour', 'Faye', 'Thiam', 'Seck', 'Kaba', 'Barry', 'Mbaye', 'Diakité', 'Dramé',
-  'Tall', 'Gassama', 'Konan', 'Aka', 'Tano', 'Etoundi', 'Essomba', 'Mballa', 'Bilong',
+  'Kassé', 'Ndour', 'Faye', 'Thiam', 'Seck', 'Kaba', 'Barry', 'Mbaye', 'Diakité', 'Dramé', 'Tall', 'Gassama', 'Konan',
+  'Aka', 'Tano', 'Etoundi', 'Essomba', 'Mballa', 'Bilong', 'Adjovi', 'Agbo', 'Amoussou', 'Anoh', 'Assi', 'Atangana',
+  'Badji', 'Bah', 'Bitang', 'Coffi', 'Dagnogo', 'Djiba', 'Dossou', 'Edou', 'Ekané', 'Elong', 'Essama', 'Eyenga',
+  'Fall', 'Gnassou', 'Goudiaby', 'Guiro', 'Kambou', 'Kassi', 'Kouadio', 'Kouakou', 'Kpadé', 'Lawson', 'Mbengue',
+  'Mvondo', 'Ndao', 'Ndong', 'Ngom', 'Ngoran', 'Obame', 'Okomo', 'Owona', 'Sambou', 'Soumah', 'Tine', 'Yapi', 'Zongo',
+  'Zinsou', 'Hounsou', 'Akpa', 'Abalo', 'Amegan', 'Djossou', 'Ahanda', 'Abena', 'Ebanda', 'Ewane', 'Mbida', 'Ngono',
+  'Nkeng', 'Simo', 'Tagne', 'Tamo', 'Wandji', 'Yondo', 'Ebongue', 'Ekwalla', 'Kingue', 'Mouelle', 'Njoh', 'Penda',
+  'Sone',
 ];
 
 // origine du nom : [part des joueurs, prénoms, part de prénoms tirés de la liste française, noms]
@@ -85,12 +164,64 @@ function drawName() {
   return [first, pick(o[3])];
 }
 
+// Prénom et nom qui se répètent (Laurent Laurent, Benoît Benoist, Martin Martini, Louis Pierre-Louis) : un nom qui
+// prête à sourire, jamais tiré pour un nouveau joueur.
+const plain = (x) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function echoes(first, last) {
+  const f = plain(first);
+  const l = plain(last);
+  return l.split('-').includes(f) || l.startsWith(f.slice(0, 4)) || f.startsWith(l.slice(0, 4));
+}
+
 // Combinaisons interdites : de vrais joueurs (ou d'autres personnes connues) que le hasard pourrait recomposer.
 export const BLOCK = new Set([
   'Lucas Chevalier', 'Jérémy Morel', 'Benjamin Lecomte', 'Fabien Lemoine', 'Thibault Moulin', 'Mamadou Thiam',
   'Lamine Gassama', 'Tiago Pinto', 'Nuno Pinto', 'Pierre Bernard', 'Thomas Fontaine', 'Vincent Guérin',
   'Pierre Laurent', 'Jérôme Leroy', 'Éric Bailly', 'Léon Bailly', 'Gabriel Faure', 'Jean Moulin', 'Émile Picard',
   'Luc Picard', 'Antoine Dupont', 'Léon Marchand', 'Louis Renaud', 'Paul Faure', 'Marc Lavoine', 'Jean Renard',
+  'Charles Leclerc', 'Christophe Lemaître', 'Georges Lemaître', 'Evan Fournier', 'Vincent Poirier', 'Clément Noël',
+  'Kévin Rolland', 'Vincent Clerc', 'Julien Marchand', 'Julien Clerc', 'Patrick Roy', 'Éric Roy', 'René Lévesque',
+  'Charles Martel', 'Benoît Hamon', 'Olivier Faure', 'Fabien Roussel', 'Fernand Raynaud', 'Jean Marais',
+  'Michel Legrand', 'Laurent Fournier', 'Jacques Rousseau', 'Hervé Renard', 'Stéphane Moulin', 'René Girard',
+  'Stéphane Dumont', 'Léo Dubois', 'Benjamin Leroy', 'Lucas Perrin', 'Loïc Perrin', 'Jordan Ferri',
+  'Alexandre Bonnet', 'Quentin Bernard', 'Maxime Marchand', 'Vincent Le Goff', 'Sylvain Marchal', 'Baptiste Valette',
+  'Nolan Roux', 'Idriss Saadi', 'Marc Gagnon', 'Michel Tremblay', 'Lucien Bouchard', 'Simon Gagné', 'Michel Bergeron',
+  'Sylvain Côté', 'Paul Desmarais', 'Marc Fleury', 'Félix Leclerc', 'Edgar Morin', 'Xavier Dupont', 'Michel Fournier',
+  'Christophe Lambert', 'Maurice Leblanc', 'Théophile Gautier', 'Jean Genet', 'Hervé Bazin', 'Pascal Lamy',
+  'Henri Cochet', 'Aristide Briand', 'Louis Jourdan', 'Michel Vaillant', 'René Arnoux', 'Nicolas Fouquet',
+  'Pierre Laval', 'Jean Giraud', 'Éric Guay', 'René Simard', 'David Pelletier', 'Ludovic Sylvestre', 'Filippo Galli',
+  'Paolo Sorrentino', 'Bruno Giordano', 'Bruno Martini', 'Jorge Campos', 'Paulo Coelho', 'Michel Salgado',
+  'Jorge Borges', 'Pedro Cabral', 'Pedro Rocha', 'Tomás Esteves', 'Paulo Ferreira', 'Anthony Lopes', 'Ismaël Gharbi',
+  'Valentin Atangana', 'Stéphane Badji', 'Jonathan Zongo', 'Demba Seck', 'Abdoulaye Seck', 'Adama Mbengue',
+  'Mamadou Fall', 'Gaëtan Perrin', 'Anthony Rouault', 'Jérémy Jacquet', 'Louis Leroux', 'Clément Akpa',
+  'Jordan Lefort', 'Jonathan Fischer', 'Félix Correia', 'Afonso Moreira', 'Ibrahim Mbaye', 'Oumar Diakité',
+  'Thierno Barry', 'Michel Bastos', 'Rui Barros', 'Nuno Valente', 'Boubacar Barry', 'Guillaume Gillet',
+  'Daniel Cousin', 'Stefano Fiore', 'Riccardo Ferri', 'Paulo Fonseca', 'Paul Joly', 'Ghislain Konan',
+  'Abdoulaye Faye', 'Modibo Diakité', 'Samba Diakité', 'Olivier Verdon', 'Jocelyn Blanchard', 'Diogo Leite',
+  'Rui Faria', 'Grégoire Mbida', 'Francis Benali', 'Fabrice Santoro', 'Jules Bianchi', 'Frédéric Vasseur',
+  'Éric Perrot', 'Luc Abalo', 'Djamel Bouras', 'Angelo Parisi', 'René Lacoste', 'Georges Carpentier',
+  'Romain Lagarde', 'Pierre Rolland', 'Christophe Moreau', 'Jérôme Pineau', 'Florian Sénéchal', 'Roger Rivière',
+  'Jacques Brunel', 'Arthur Leclerc', 'Lucien Bianchi', 'Tiago Monteiro', 'Jorge Fonseca', 'Alexandre Bilodeau',
+  'Éric Gagné', 'Jacques Lemaire', 'Michel Goulet', 'Gaëtan Boucher', 'Alexandre Dumas', 'Romain Rolland',
+  'Jules Renard', 'André Breton', 'Roland Dumas', 'Félix Faure', 'Edgar Faure', 'Émile Combes', 'Philippe Leclerc',
+  'Henri Rousseau', 'Gustave Moreau', 'Pierre Bonnard', 'François Boucher', 'Yves Klein', 'Charles Garnier',
+  'Michel Berger', 'Maurice Chevalier', 'Pierre Perret', 'Laurent Garnier', 'Marin Marais', 'Éric Serra',
+  'Daniel Lavoie', 'Luc Besson', 'Jean Lefebvre', 'Olivier Marchal', 'Samy Naceri', 'Sami Naceri', 'Yves Rocher',
+  'Alexis Carrel', 'Giorgio Parisi', 'Chakib Benmoussa', 'Norbert Zongo', 'Rui Pinto', 'Djamel Zitouni',
+  'Olivier Giraud', 'Charles Perrot', 'Jules Ferri', 'Demba Bah', 'Tidiane Thiam', 'Yassine Salhi', 'Imad Abdelli',
+  'Alban Lafon', 'Mickaël Sylvestre', 'Tiago Mota', 'Amir Rahmani', 'Pascal Duprat', 'Morgan Samson', 'Anthony Kaci',
+  'Christophe Jullien', 'Ousseynou Bah', 'Vittorio Pozzi', 'Kévin Meyer', 'Hugo Humbert', 'Henri Lecomte',
+  'Marc Marques', 'Anthony Hubert', 'Frédéric Bousquet', 'Jason Lamy', 'Luc Ferri', 'Christophe Mahé', 'Paul Raynaud',
+  'Alexandre Benali', 'Francis Weber', 'Hervé Villard', 'Patrick Fiore', 'Henri Michaud', 'Henri Konan',
+  'Brahim Aïssaoui', 'Maxime Dupré', 'Diogo Moreira', 'Victor Cousin', 'Paul Morand', 'Michel Tournier',
+  'Tristan Bernard', 'Henri Lefebvre', 'Jacques Le Goff', 'Antonio Machado', 'Nicolas Bouvier', 'Tony Garnier',
+  'Auguste Perret', 'Yves Tanguy', 'Georges Rouault', 'Paul Delvaux', 'André Masson', 'Alexandre Cabanel',
+  'Jacques Weber', 'Jacques Becker', 'Charles Boyer', 'Henri Langlois', 'André Bazin', 'François Morel',
+  'Daniel Russo', 'Léon Bourgeois', 'Ferdinand Buisson', 'Jacques Duclos', 'Félix Gaillard', 'Éric Besson',
+  'Hervé Morin', 'Frédéric Lefebvre', 'René Dumont', 'Fernando Cardoso', 'Jacques Hébert', 'Henri Giraud',
+  'Philippe Kieffer', 'Daniel Cordier', 'Nicolas Chauvin', 'René Bousquet', 'Christophe Barbier', 'Guillaume Durand',
+  'Honoré Mercier', 'Marc Ouellet', 'Stéphane Rousseau', 'Daniel Bélanger', 'Pierre Lapointe', 'Éric Lapointe',
+  'Kévin Parent', 'Arthur Lancelot',
 ]);
 
 // Noms déjà portés dans la partie (registerNames au chargement et à la création) : un nouveau joueur n'en reprend
@@ -127,7 +258,7 @@ export function playerName(taken = null) {
   for (let i = 0; i < 80; i++) {
     const [f, l] = drawName();
     const full = `${f} ${l}`;
-    if (BLOCK.has(full) || inUse.has(full) || taken?.has(full)) continue;
+    if (BLOCK.has(full) || echoes(f, l) || inUse.has(full) || taken?.has(full)) continue;
     if (i < 50 && lastInUse.has(l)) continue; // un nom de famille que personne ne porte encore, si possible
     inUse.add(full);
     lastInUse.add(l);
@@ -143,7 +274,7 @@ export function squadName(taken, lasts) {
   for (let i = 0; i < 80; i++) {
     const [f, l] = drawName();
     const full = `${f} ${l}`;
-    if (BLOCK.has(full) || taken.has(full) || (i < 50 && lasts.has(l))) continue;
+    if (BLOCK.has(full) || echoes(f, l) || taken.has(full) || (i < 50 && lasts.has(l))) continue;
     lasts.add(l);
     return full;
   }

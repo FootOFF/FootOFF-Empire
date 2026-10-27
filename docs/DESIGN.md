@@ -501,7 +501,11 @@ de test : à remplacer par footoff.media à la mise en ligne finale.
   origines du football français ; le plus souvent un prénom et un nom de la même origine. Jamais deux joueurs du
   même nom dans une partie (`registerNames`, `playerName`), et autant que possible pas le même nom de famille.
   Aucun nom de footballeur connu : noms de famille trop associés à de vrais joueurs écartés, combinaisons qui
-  retomberaient sur une personne réelle interdites (`BLOCK`).
+  retomberaient sur une personne réelle interdites (`BLOCK`, revu par le fact-checker le 2026-10-27), jamais un
+  prénom et un nom qui se répètent (`echoes` : Laurent Laurent, Martin Martini). Depuis 0.7.3 : environ 450 prénoms
+  et 700 noms ; une saison type (notre effectif et quinze onzes adverses) ne montre presque plus un prénom ou un nom
+  trois fois. Un nom retiré des listes renomme les joueurs qui le portent au chargement (`renameRetired`) : on n'en
+  retire que pour une raison grave (0.7.3 : Jacquet et Naceri).
 - Clubs : un type (AS, FC, Stade, Entente, Jeunesse…) et un lieu imaginaire. Dans une division : sept clubs tous
   différents, jamais deux du même lieu, au plus deux du même type, rien qui rappelle notre club
   (`leagueClubNames`) ; les adversaires de coupe non plus (`distinctClubName`). Les parties existantes sont

@@ -4,6 +4,15 @@
 
 export const CHANGELOG = [
   {
+    version: '0.7.3', date: '2026-10-27', title: 'Des noms plus variés',
+    items: [
+      'Trois fois plus de prénoms et de noms pour les joueurs : environ 450 prénoms et 700 noms, toujours francophones, simples à retenir, de toutes les origines du football français.',
+      'Dans une saison, un même prénom ou un même nom ne revient presque plus trois fois, chez toi comme chez les adversaires.',
+      'Aucun nom ne reprend celui d’un vrai joueur ou d’une personne connue, et plus jamais de nom qui se répète (« Laurent Laurent »).',
+      'Tes joueurs gardent leur nom. Seuls deux noms de famille trop proches de personnes réelles sont remplacés à l’ouverture de la partie.',
+    ],
+  },
+  {
     version: '0.7.2', date: '2026-10-27', title: 'Fluidité sur appareil lent',
     items: [
       'Nouveau réglage « Fluidité sur appareil lent » (Réglages, à l’écran titre et dans le menu pause), coupé par défaut : si le jeu rame, la 3D est calculée avec moins de pixels, par paliers, juste assez pour redevenir fluide. L’image est un peu moins nette ; elle remonte dès que l’appareil suit de nouveau.',
