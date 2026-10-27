@@ -3,6 +3,7 @@ import { distinctFace, drawFace, hash } from './faces';
 import { createLiveMatch } from './live';
 import { distinctClubName, squadName } from './names';
 import { seeded } from './opponents';
+import { compactPlayer, incomeOf, initialWorld, paceOfLeague, summer, trainClub, worldSquads } from './leagueWorld';
 import { assignNumber, makePlayer } from './players';
 import { FORMATIONS, TACTICS, autoLineup, lineupRating } from './tactics';
 import { clone } from './utils';
@@ -157,37 +158,61 @@ export function leagueMatch(league, season, round, home, away) {
   });
 }
 
+// Effectifs d'un état de la ligue (leagueWorld.js) ; sans état (avant la première journée) : ceux de départ.
+export function squadsOf(league, world) {
+  const squads = leagueSquads(league);
+  return worldSquads(squads, world || initialWorld(squads));
+}
+
+// Ordres d'un club pour la journée (équipe, séance) : ceux d'un ami présent, sinon rien (choix automatiques).
+const ordersOf = (clubs, teams, slot) => (clubs[slot].human && clubs[slot].active ? teams?.[clubs[slot].member] || null : null);
 // Les deux clubs d'une rencontre, prêts à jouer : l'équipe validée d'un ami présent, sinon l'équipe automatique.
-export function matchSide(league, clubs, teams, slot) {
+function matchSide(clubs, squads, teams, slot) {
   const c = clubs[slot];
-  const players = leagueSquads(league)[slot];
-  const sent = c.human && c.active ? teams?.[c.member] : null;
-  return { slot, name: c.name, crest: c.crest, players, sheet: cleanSheet(sent, players) };
+  return { slot, name: c.name, crest: c.crest, players: squads[slot], sheet: cleanSheet(ordersOf(clubs, teams, slot), squads[slot]) };
 }
 const packSheet = (sh) => ({ f: sh.formation, t: sh.tactic, l: sh.lineup, ...(sh.auto ? { a: 1 } : {}) });
 export const unpackSheet = (x) => ({ formation: x.f, tactic: x.t, lineup: x.l, auto: !!x.a });
 
 // Une journée entière, à envoyer au serveur (le premier envoi fait foi) : chaque rencontre avec son score, ses buts
-// (minute, camp 0 domicile ou 1 extérieur, buteur, penalty) et les équipes jouées, de quoi rejouer le match à l'identique.
-export function playLeagueRound(league, members, teams) {
+// (minute, camp 0 domicile ou 1 extérieur, buteur, penalty) et les équipes jouées, de quoi rejouer le match à
+// l'identique ; puis la semaine qui suit (séances de chaque club, recettes, et après la dernière journée l'intersaison)
+// et l'état de la ligue qui en sort (world, leagueWorld.js). world : l'état d'avant la journée (null : le départ).
+export function playLeagueRound(league, members, teams, world) {
   const clubs = leagueClubs(league, members);
+  const squads = squadsOf(league, world);
+  const before = world || initialWorld(leagueSquads(league));
   const matches = (leagueFixtures(league)[league.round] || []).map(([h, a]) => {
-    const home = matchSide(league, clubs, teams, h);
-    const away = matchSide(league, clubs, teams, a);
+    const home = matchSide(clubs, squads, teams, h);
+    const away = matchSide(clubs, squads, teams, a);
     const { live } = leagueMatch(league, league.season, league.round, home, away);
     const goals = [...live.eventsOf(1), ...live.eventsOf(2)].filter((e) => e.type === 'goal')
       .map((e) => ({ m: e.minute, s: e.side === 'home' ? 0 : 1, p: e.player || '', ...(e.q === 'pen' ? { pen: 1 } : {}) }));
     return { h, a, hg: live.state.score.home, ag: live.state.score.away, g: goals, sh: packSheet(home.sheet), sa: packSheet(away.sheet) };
   });
-  return { v: 1, matches };
+  const last = league.round + 1 >= leagueRounds(league);
+  const scale = paceOfLeague(league);
+  const train = seeded(hash(`${league.code}|${league.seed}|${league.season}|${league.round}|semaine`), () => {
+    const done = squads.map((players, slot) => trainClub(players, ordersOf(clubs, teams, slot)?.train, scale));
+    if (last) squads.forEach(summer);
+    return done;
+  });
+  const money = before.clubs.map((c) => c.money);
+  for (const x of matches) {
+    money[x.h] += incomeOf(x.hg, x.ag);
+    money[x.a] += incomeOf(x.ag, x.hg);
+  }
+  const next = { v: 1, clubs: squads.map((players, slot) => ({ money: money[slot], players: players.map(compactPlayer) })) };
+  return { v: 2, matches, train, world: next };
 }
 
 // Un match joué, à revoir en 3D (l'écran du direct, en rejeu) : rejoué à l'identique depuis les équipes gardées avec le
-// résultat. Seulement si le moteur retrouve le score officiel (une autre version du jeu, ou un calcul d'un autre
-// navigateur qui diverge : pas de rejeu, le résumé reste). clubs : leagueClubs ; x : la rencontre ({ h, a, hg, ag, sh, sa }).
-export function replayOf(league, clubs, round, x) {
+// résultat et l'état de la ligue d'avant la journée (worldBefore). Seulement si le moteur retrouve le score officiel
+// (une autre version du jeu, ou un calcul d'un autre navigateur qui diverge : pas de rejeu, le résumé reste).
+// clubs : leagueClubs ; x : la rencontre ({ h, a, hg, ag, sh, sa }).
+export function replayOf(league, clubs, round, x, worldBefore) {
   if (!x.sh || !x.sa) return null;
-  const squads = leagueSquads(league);
+  const squads = squadsOf(league, worldBefore);
   const side = (slot, packed) => ({ slot, name: clubs[slot].name, crest: clubs[slot].crest, players: squads[slot], sheet: cleanSheet(unpackSheet(packed), squads[slot]) });
   const { live, state, ctx } = leagueMatch(league, league.season, round, side(x.h, x.sh), side(x.a, x.sa));
   if (live.state.score.home !== x.hg || live.state.score.away !== x.ag) return null;
@@ -195,10 +220,11 @@ export function replayOf(league, clubs, round, x) {
   return { live, state, ctx: { ...ctx, label: `${league.name} · journée ${round + 1}` } };
 }
 
-// Ce que le jeu envoie pour une journée due : ses matchs, et à la dernière journée le champion de la saison (palmarès
-// de la ligue). full : l'état du serveur avec les équipes (leagueState, teams).
-export function roundPayload({ league, members, teams, results = [] }) {
-  const data = playLeagueRound(league, members, teams);
+// Ce que le jeu envoie pour une journée due : ses matchs et l'état de la ligue qui suit, et à la dernière journée le
+// champion de la saison (palmarès de la ligue). full : l'état du serveur avec les équipes (leagueState, teams) ;
+// world : l'état de la ligue d'avant la journée.
+export function roundPayload({ league, members, teams, results = [] }, world = null) {
+  const data = playLeagueRound(league, members, teams, world);
   if (league.round + 1 < leagueRounds(league)) return { data };
   const [champion] = leagueTable(leagueClubs(league, members), [...results, data]);
   return { data, seasonEnd: { honour: { season: league.season, club: champion.name, pseudo: champion.human ? champion.pseudo : null } } };

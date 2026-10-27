@@ -5128,3 +5128,25 @@ html, body { overscroll-behavior: none; }
 .lig-detail { display: flex; flex-direction: column; gap: 10px; padding: 2px 0 12px; }
 .lig-detail .btn { align-self: center; }
 .lig-detail .lig-goals { margin: 0; }
+/* Siège de la Ligue, ton club : la séance de la semaine (un joueur par ligne, sa catégorie, le gain attendu), l'effectif */
+.lig-train-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.lig-train-rows li { display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; align-items: center; gap: 6px 10px; }
+.lig-train-line { font-family: var(--font-disp); font-weight: 600; font-size: var(--d-xs); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.lig-train-rows select {
+  min-width: 0; min-height: 38px; padding: 0 30px 0 10px; border: 0; border-radius: 0; background-color: var(--plate-2); clip-path: var(--cut-shape-sm);
+  color: var(--text); font-size: var(--t-sm); appearance: none; -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--gold-light) 50%), linear-gradient(135deg, var(--gold-light) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 16px, calc(100% - 10px) 16px; background-size: 5px 5px; background-repeat: no-repeat;
+}
+.lig-train-rows select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.lig-train-rows option { background: #15171a; color: var(--text); }
+.lig-train-rows em { font-style: normal; font-size: var(--t-xs); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lig-train-rows em.up { color: var(--green); }
+.segmented.lig-cats { grid-column: 2 / -1; grid-template-columns: repeat(3, 1fr); }
+.lig-cats button { min-height: 32px; font-size: 14px; }
+.lig-squad { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lig-squad li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); }
+.lig-rate { display: flex; align-items: baseline; gap: 6px; }
+.lig-rate b { font-family: var(--font-disp); font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
+.lig-rate em { font-style: normal; font-size: var(--t-xs); color: var(--green); font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) { .lig-train-rows li { grid-template-columns: 62px minmax(0, 1fr) auto; } }

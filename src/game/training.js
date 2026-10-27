@@ -112,6 +112,15 @@ function applySession(lvl, p, cat, drill, factor) {
 }
 
 const copyOf = (p) => ({ ...p, a: { ...p.a }, g: p.g ? { ...p.g } : p.g });
+
+// Championnat entre amis (leagueWorld.js) : la même séance, simulée (gain moyen, sans épreuve jouée : rien qu'un ami
+// ne puisse refaire à l'identique), sans fenêtre ni calendrier de carrière ; scale : rythme de la saison (sessionScale).
+export const sessionGain = (lvl, p, cat, scale = 1) => applySession(lvl, p, cat, drillsFor(lvl, p.pos, cat).at(-1), scale);
+// Séance collective d'après-match, pour un joueur qui n'était pas à la séance.
+export function collectiveGain(lvl, p, scale = 1) {
+  const room = Math.max(0, p.pot - playerRating(p));
+  return room ? spend(p, Object.keys(poolOf(p)), pointsFor(p, room * TRAINING_COLLECTIVE[lvl] * paceOf(p) * scale)) : 0;
+}
 // Gain de note d'une séance, sans rien toucher : simulée, et les bornes d'une épreuve jouée (score nul, parfait).
 export function sessionPreview(s, p, cat, drill) {
   const lvl = s.buildings.training || 0;

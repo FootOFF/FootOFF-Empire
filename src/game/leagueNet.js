@@ -37,32 +37,82 @@ async function call(path, { method = 'GET', body, auth } = {}) {
 export const createLeague = (payload) => call('', { method: 'POST', body: { ...payload, engine: LEAGUE_ENGINE } });
 export const leagueInfo = (code) => call(`/${code}/info`);
 export const joinLeague = (code, payload) => call(`/${code}/join`, { method: 'POST', body: payload });
-// teams : avec, si la journée est due, les équipes à faire jouer (celles validées, sinon la dernière connue)
-export const leagueState = (m, { teams = false } = {}) => call(`/${m.code}/state${teams ? '?teams=1' : ''}`, { auth: m });
+// teams : avec, si la journée est due, les équipes à faire jouer (celles validées, sinon la dernière connue) ; since :
+// seulement les résultats de la saison après cette journée (ceux que l'appareil n'a pas encore)
+export const leagueState = (m, { teams = false, since = null } = {}) => {
+  const q = [teams && 'teams=1', since != null && `since=${since}`].filter(Boolean).join('&');
+  return call(`/${m.code}/state${q ? `?${q}` : ''}`, { auth: m });
+};
+export const leagueResults = (m, season) => call(`/${m.code}/results?season=${season}`, { auth: m });
 export const startLeague = (m) => call(`/${m.code}/start`, { method: 'POST', body: {}, auth: m });
 export const kickMember = (m, member) => call(`/${m.code}/kick`, { method: 'POST', body: { member }, auth: m });
 export const leaveLeague = (m) => call(`/${m.code}/leave`, { method: 'POST', body: {}, auth: m });
 export const sendSheet = (m, season, round, sheet) => call(`/${m.code}/sheet`, { method: 'POST', body: { season, round, sheet }, auth: m });
 export const sendResult = (m, body) => call(`/${m.code}/result`, { method: 'POST', body: { ...body, engine: LEAGUE_ENGINE }, auth: m });
 
+// Résultats gardés sur l'appareil, avec l'état de la ligue après chaque journée (leagueWorld.js, une dizaine de Ko) :
+// le serveur n'envoie que les nouveaux. { season, results, prev } ; prev : le dernier état de la saison d'avant (il sert
+// au calcul de la première journée de la saison).
+const RES = (code) => `fo-ligue-res-${code}`;
+function readCache(code) {
+  try {
+    const c = JSON.parse(localStorage.getItem(RES(code)) || 'null');
+    return c && Array.isArray(c.results) ? c : null;
+  } catch {
+    return null;
+  }
+}
+function writeCache(code, c) {
+  try { localStorage.setItem(RES(code), JSON.stringify(c)); } catch { /* stockage plein : relu du serveur la prochaine fois */ }
+}
+export const dropCache = (code) => { try { localStorage.removeItem(RES(code)); } catch { /* rien à effacer */ } };
+
+// État d'un championnat avec tous les résultats de la saison (ceux de l'appareil et les nouveaux), l'état de la ligue en
+// cours (world, null avant la première journée de la première saison) et celui d'avant chaque journée (worldBefore).
+async function syncedState(m, { teams = false } = {}) {
+  let c = readCache(m.code);
+  let d = await leagueState(m, { teams, since: c?.results.length ? c.results[c.results.length - 1].round : null });
+  if (c && c.season !== d.league.season) { // nouvelle saison : tout est relu, le dernier état de la précédente reste
+    const last = c.results[c.results.length - 1];
+    c = { season: d.league.season, results: [], prev: last?.world && c.season === d.league.season - 1 ? { season: c.season, world: last.world } : c.prev };
+    d = await leagueState(m, { teams });
+  }
+  if (!c) c = { season: d.league.season, results: [], prev: null };
+  const known = new Set(c.results.map((r) => r.round));
+  const results = [...c.results, ...(d.results || []).filter((r) => !known.has(r.round))].sort((a, b) => a.round - b.round);
+  let prev = c.prev?.season === d.league.season - 1 ? c.prev : null;
+  if (!prev && d.league.season > 1 && d.league.status === 'running') {
+    const old = await leagueResults(m, d.league.season - 1).catch(() => null);
+    const last = old?.results?.[old.results.length - 1];
+    if (last?.world) prev = { season: d.league.season - 1, world: last.world };
+  }
+  writeCache(m.code, { season: d.league.season, results, prev });
+  const start = prev?.world || null;
+  const worldAt = (round) => { // état d'avant la journée `round`
+    const before = results.filter((r) => r.round < round && r.world);
+    return before.length ? before[before.length - 1].world : start;
+  };
+  return { ...d, results, world: worldAt(Infinity), worldBefore: worldAt };
+}
+
 // État d'un championnat, journée jouée au passage : si elle est due (tous ont validé, ou l'heure est passée), ce jeu la
-// calcule (roundPayload, à l'identique chez chacun) et l'envoie ; le premier envoi fait foi, les autres sont ignorés.
-// Une journée à la fois par championnat sur cet appareil.
+// calcule (roundPayload, à l'identique chez chacun, depuis l'état de la ligue d'avant) et l'envoie ; le premier envoi
+// fait foi, les autres sont ignorés. Une journée à la fois par championnat sur cet appareil.
 const playing = new Set();
 export async function refreshLeague(m) {
-  const d = await leagueState(m);
+  const d = await syncedState(m);
   if (!d.due || playing.has(m.code)) return d;
   playing.add(m.code);
   try {
-    const full = await leagueState(m, { teams: true });
+    const full = await syncedState(m, { teams: true });
     if (!full.due || !full.teams) return full;
-    await sendResult(m, { season: full.league.season, round: full.league.round, ...roundPayload(full) });
+    await sendResult(m, { season: full.league.season, round: full.league.round, ...roundPayload(full, full.world) });
   } catch {
     return d; // journée prise par un autre ami au même instant, ou réseau : l'état d'avant, relu à la prochaine visite
   } finally {
     playing.delete(m.code);
   }
-  return leagueState(m);
+  return syncedState(m);
 }
 
 // ---- mes championnats, gardés sur cet appareil ----
@@ -84,7 +134,7 @@ function store(list) {
   return list;
 }
 export const rememberLeague = (m) => store([m, ...myLeagues().filter((x) => x.code !== m.code)].slice(0, MAX_MY_LEAGUES));
-export const forgetLeague = (code) => store(myLeagues().filter((x) => x.code !== code));
+export const forgetLeague = (code) => { dropCache(code); return store(myLeagues().filter((x) => x.code !== code)); };
 export const updateLeague = (code, patch) => store(myLeagues().map((x) => (x.code === code ? { ...x, ...patch } : x)));
 
 // Code de reprise d'un club sur un autre appareil : « CODE.identifiant.secret » (ni l'identifiant ni le secret ne

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Panel } from './panels';
 import { PreMatch } from './match';
@@ -11,8 +11,12 @@ import { capitalize, isPluralClub, randomClubName, withArticle } from '../game/n
 import { CLUB_BLACK, clubInitials, defaultCrest, hexLum, normalizeCrest, randomCrest, withStyle } from '../game/crest';
 import {
   AI_PSEUDO, LEAGUE_CLUBS, LEAGUE_COLORS, LEAGUE_MIN_HUMANS, MAX_MY_LEAGUES, autoSheet, cleanCode, cleanSheet, deadlineText,
-  deviceZone, hourText, isLeagueCode, leagueClubs, leagueFixtures, leagueRounds, leagueSquads, leagueTable, replayOf,
+  deviceZone, hourText, isLeagueCode, leagueClubs, leagueFixtures, leagueRounds, leagueTable, replayOf, squadsOf,
 } from '../game/league';
+import { LINES, START_BUDGET, paceOfLeague, sessionPreview, trainingPlan } from '../game/leagueWorld';
+import { catsFor } from '../game/training';
+import { playerRating } from '../game/players';
+import { fmtMoney, fmtRating } from './format';
 import {
   createLeague, forgetLeague, inviteLink, joinLeague, kickMember, leagueInfo, leagueState, leaveLeague, myLeagues,
   parseResumeCode, refreshLeague, rememberLeague, resumeCodeOf, sendSheet, startLeague, updateLeague,
@@ -533,7 +537,7 @@ function LeagueDetail({ m, ask, flash, onGone, onTeam, onReplay, reload = 0 }) {
           <p className="dir-note">Une salle d’attente jamais lancée ferme d’elle-même au bout de 48 heures.</p>
         </>
       ) : (
-        <RunningLeague league={league} clubs={clubs} humans={humans} results={data.results} me={me} onTeam={(t) => onTeam({ ...t, m })} onReplay={onReplay} flash={flash} />
+        <RunningLeague league={league} clubs={clubs} humans={humans} results={data.results} world={data.world} worldBefore={data.worldBefore} me={me} m={m} onTeam={(t) => onTeam({ ...t, m, world: data.world })} onReplay={onReplay} flash={flash} onSaved={load} />
       )}
 
       {!lobby && (
@@ -555,7 +559,7 @@ function LeagueDetail({ m, ask, flash, onGone, onTeam, onReplay, reload = 0 }) {
 }
 
 // Saison en cours : la journée (échéance, qui a validé), ses matchs, le classement, le palmarès de la ligue.
-function RunningLeague({ league, clubs, humans, results, me, onTeam, onReplay, flash }) {
+function RunningLeague({ league, clubs, humans, results, world, worldBefore, me, m, onTeam, onReplay, flash, onSaved }) {
   const rounds = leagueRounds(league);
   const table = leagueTable(clubs, results);
   const fixtures = leagueFixtures(league)[league.round] || [];
@@ -612,7 +616,8 @@ function RunningLeague({ league, clubs, humans, results, me, onTeam, onReplay, f
           })}
         </ul>
       </section>
-      {played > 0 && <Results league={league} clubs={clubs} results={results} bySlot={bySlot} mine={mine} onReplay={onReplay} flash={flash} />}
+      {mine && <MyClub league={league} world={world} startWorld={worldBefore(0)} slot={mine.slot} m={m} validated={mine.validated} lastTrain={results[results.length - 1]?.train?.[mine.slot]} flash={flash} onSaved={onSaved} />}
+      {played > 0 && <Results league={league} clubs={clubs} results={results} worldBefore={worldBefore} bySlot={bySlot} mine={mine} onReplay={onReplay} flash={flash} />}
       <section className="lig-block">
         <SectionHead label="Classement" aside={played ? `après ${plural(played, 'journée')}` : 'avant la 1re journée'} />
         <table className="table standings lig-table">
@@ -650,9 +655,98 @@ function RunningLeague({ league, clubs, humans, results, me, onTeam, onReplay, f
   );
 }
 
+// Ton club : la séance de la semaine (un joueur par ligne, sur la catégorie choisie ; simulée au gain moyen, la même
+// chez chaque ami, faite après le match), puis l'effectif (note, âge, progrès depuis le début de la saison) et le
+// budget. La séance part avec l'équipe validée ; si l'équipe est déjà validée depuis cet appareil, elle est renvoyée.
+const LINE_NAMES = { G: 'Gardien', D: 'Défense', M: 'Milieu', A: 'Attaque' };
+const signed2 = (v) => `${v < 0 ? '−' : '+'}${Math.abs(v).toFixed(2).replace('.', ',')}`;
+function MyClub({ league, world, startWorld, slot, m, validated, lastTrain, flash, onSaved }) {
+  const squads = useMemo(() => squadsOf(league, world), [league, world]);
+  const start = useMemo(() => squadsOf(league, startWorld), [league, startWorld]);
+  const players = squads[slot];
+  const byId = new Map(players.map((p) => [p.id, p]));
+  const was = new Map(start[slot].map((p) => [p.id, playerRating(p)]));
+  const money = world?.clubs?.[slot]?.money ?? START_BUDGET;
+  const scale = paceOfLeague(league);
+  const saved = trainingPlan(players, m.draft?.train);
+  const [plan, setPlan] = useState(saved);
+  const [busy, setBusy] = useState(false);
+  const dirty = JSON.stringify(plan) !== JSON.stringify(saved);
+  const sentHere = validated && m.draft?.sent === `${league.season}:${league.round}`;
+  const choose = (pos, patch) => { setPlan((x) => ({ ...x, [pos]: { ...x[pos], ...patch } })); uiSound('move'); };
+  const save = async () => {
+    setBusy(true);
+    const draft = { ...(m.draft || {}), train: plan };
+    try {
+      if (sentHere) {
+        const sheet = cleanSheet(m.draft, players);
+        await sendSheet(m, league.season, league.round, { formation: sheet.formation, lineup: sheet.lineup, tactic: sheet.tactic, train: plan });
+      }
+      updateLeague(m.code, { draft });
+      flash(sentHere ? 'Séance enregistrée avec ton équipe.' : 'Séance enregistrée : elle partira avec ton équipe.');
+      onSaved();
+    } catch (x) {
+      flash(x.message, 'warn');
+    }
+    setBusy(false);
+  };
+  return (
+    <>
+      <section className="dir-card lig-train">
+        <SectionHead label="Séance de la semaine" aside="après le match" />
+        <ul className="lig-train-rows">
+          {LINES.map((pos) => {
+            const pick = plan[pos];
+            const p = pick && byId.get(pick.id);
+            if (!p) return null;
+            const gain = sessionPreview(p, pick.cat, scale);
+            return (
+              <li key={pos}>
+                <span className="lig-train-line">{LINE_NAMES[pos]}</span>
+                <select value={pick.id} aria-label={`${LINE_NAMES[pos]} : joueur`} onChange={(e) => choose(pos, { id: Number(e.target.value) })}>
+                  {players.filter((q) => q.pos === pos).map((q) => <option key={q.id} value={q.id}>{q.name} · {fmtRating(playerRating(q))}</option>)}
+                </select>
+                <em className={gain > 0.0005 ? 'up' : ''}>{gain > 0.0005 ? signed2(gain) : 'au plafond'}</em>
+                <div className="segmented lig-cats" role="radiogroup" aria-label={`${LINE_NAMES[pos]} : catégorie`}>
+                  {Object.entries(catsFor(pos)).map(([id, c]) => (
+                    <button key={id} type="button" role="radio" aria-checked={pick.cat === id} className={pick.cat === id ? 'on' : ''} onClick={() => choose(pos, { cat: id })}>{c.short}</button>
+                  ))}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        {lastTrain?.length > 0 && (
+          <p className="dir-note">Dernière séance · {lastTrain.map(([id, , g]) => `${byId.get(id)?.name || '?'} ${signed2(g / 1000)}`).join(' · ')}</p>
+        )}
+        <div className="lig-actions">
+          <button type="button" className="btn btn-sm" disabled={busy || !dirty} onClick={save}>Enregistrer la séance</button>
+          {!sentHere && <small className="lig-hint">Elle partira avec ton équipe : valide-la avant l’heure.</small>}
+        </div>
+      </section>
+      <section className="lig-block">
+        <SectionHead label="Ton effectif" aside={`${players.length} joueurs · budget ${fmtMoney(money)}`} />
+        <ul className="lig-squad">
+          {LINES.flatMap((pos) => players.filter((p) => p.pos === pos)).map((p) => {
+            const r = playerRating(p);
+            const d = r - (was.get(p.id) ?? r);
+            return (
+              <li key={p.id}>
+                <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
+                <span className="lig-who"><strong>{p.name}</strong><em>{p.age} ans · potentiel {fmtRating(p.pot)}</em></span>
+                <span className="lig-rate"><b>{fmtRating(r)}</b>{d >= 0.005 && <em>{signed2(d)}</em>}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    </>
+  );
+}
+
 // Résultats de la saison, journée par journée (la dernière d'abord) : les scores, notre match en or ; un match s'ouvre
 // sur ses buts, minute par minute, de chaque côté, et peut se revoir en 3D avec ses temps forts.
-function Results({ league, clubs, results, bySlot, mine, onReplay, flash }) {
+function Results({ league, clubs, results, worldBefore, bySlot, mine, onReplay, flash }) {
   const last = results[results.length - 1].round;
   const [round, setRound] = useState(last);
   const [open, setOpen] = useState(null);
@@ -692,7 +786,7 @@ function Results({ league, clubs, results, bySlot, mine, onReplay, flash }) {
                   ) : <p className="dir-note">Aucun but.</p>}
                   {onReplay && x.sh && (
                     <button type="button" className="btn btn-sm ghost" onClick={() => {
-                      const rp = replayOf(league, clubs, r.round, x);
+                      const rp = replayOf(league, clubs, r.round, x, worldBefore(r.round));
                       if (rp) { uiSound('select'); onReplay(rp); } else flash('Ce match ne peut plus être revu avec cette version du jeu. Son résumé reste disponible.', 'warn');
                     }}><IconPlay className="fill" /> Revoir le match en 3D</button>
                   )}
@@ -736,14 +830,15 @@ export function LeagueView({ state, ask, invite = null, overTitle = false, onClo
   const back = () => { uiSound('back'); home(); };
   // Son équipe de la journée : l'avant-match du jeu (onze, dispositif, tactique, pronostic), posé sur tout l'écran ;
   // la dernière équipe choisie revient d'une journée à l'autre (draft, sur l'appareil).
-  const [team, setTeam] = useState(null); // { m, league, slot, opp, atHome, validated }
+  const [team, setTeam] = useState(null); // { m, league, world, slot, opp, atHome, validated }
   const [reload, setReload] = useState(0);
   const teamScreen = team && (() => {
-    const squads = leagueSquads(team.league);
-    const draft = cleanSheet(team.m.draft, squads[team.slot]);
+    const squads = squadsOf(team.league, team.world);
+    const m = myLeagues().find((x) => x.code === team.m.code) || team.m;
+    const draft = cleanSheet(m.draft, squads[team.slot]);
     const rounds = leagueRounds(team.league);
     return {
-      state: { clubName: team.m.club.name, crest: team.m.club.crest, players: squads[team.slot], lineup: draft.lineup, formation: draft.formation, tactic: draft.tactic, trophies: [], buildings: {} },
+      state: { clubName: m.club.name, crest: m.club.crest, players: squads[team.slot], lineup: draft.lineup, formation: draft.formation, tactic: draft.tactic, trophies: [], buildings: {} },
       ctx: {
         comp: 'friends', home: team.atHome, label: `${team.league.name} · journée ${team.league.round + 1} / ${rounds}`,
         goLabel: team.validated ? 'Valider ces changements' : 'Valider mon équipe',
@@ -752,10 +847,12 @@ export function LeagueView({ state, ask, invite = null, overTitle = false, onClo
     };
   })();
   const validate = async (lineup, tactic, formation) => {
-    const { m, league } = team;
+    const { league } = team;
+    const m = myLeagues().find((x) => x.code === team.m.code) || team.m;
+    const train = m.draft?.train || null; // la séance de la semaine part avec l'équipe
     try {
-      await sendSheet(m, league.season, league.round, { formation, lineup, tactic });
-      updateLeague(m.code, { draft: { formation, lineup, tactic } });
+      await sendSheet(m, league.season, league.round, { formation, lineup, tactic, ...(train ? { train } : {}) });
+      updateLeague(m.code, { draft: { formation, lineup, tactic, train, sent: `${league.season}:${league.round}` } });
       setMine(myLeagues());
       setTeam(null);
       uiSound('select');
