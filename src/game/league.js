@@ -1,7 +1,11 @@
 import { LEAGUE_OPEN } from './constants';
-import { hash } from './faces';
-import { distinctClubName } from './names';
+import { distinctFace, drawFace, hash } from './faces';
+import { createLiveMatch } from './live';
+import { distinctClubName, squadName } from './names';
 import { seeded } from './opponents';
+import { assignNumber, makePlayer } from './players';
+import { FORMATIONS, TACTICS, autoLineup, lineupRating } from './tactics';
+import { clone } from './utils';
 
 // Championnats entre amis (Siège de la Ligue). Le serveur des ligues (site footoff.media, /api/ligue ; leagueNet.js)
 // garde chaque ligue, ses membres, les équipes validées et les résultats officiels. Le jeu calcule le reste à
@@ -85,6 +89,119 @@ export function leagueFixtures(league, season = league.season) {
   }
   if (league.settings?.format === 'single') return first;
   return [...first, ...first.map((pairs) => pairs.map(([h, a]) => [a, h]))];
+}
+
+// Effectifs : quinze joueurs par club, sur un même gabarit (postes, âges, qualités et niveaux d'un club de quartier,
+// comme un club fondé en carrière : des clubs neufs à égalité), avec des noms et des visages propres à chaque club. Tirés
+// de la graine de la ligue : identiques chez chaque ami, rien à garder sur le serveur. Identifiants 1 à 15 dans chaque club.
+const STARTERS = ['G', 'D', 'D', 'D', 'D', 'M', 'M', 'M', 'A', 'A', 'A'];
+const RESERVES = ['G', 'D', 'M', 'A'];
+const squadsMemo = new Map();
+export function leagueSquads(league) {
+  const key = `${league.code}|${league.seed}`;
+  if (!squadsMemo.has(key)) {
+    squadsMemo.set(key, seeded(hash(`${key}|effectifs`), () => {
+      const template = [
+        ...STARTERS.map((pos) => makePlayer({ level: 0.55, pos, name: 'Gabarit Commun' })),
+        ...RESERVES.map((pos) => makePlayer({ level: 0.28, pos, name: 'Gabarit Commun' })),
+      ];
+      const taken = new Set();
+      return [...Array(LEAGUE_CLUBS).keys()].map(() => {
+        const lasts = new Set();
+        const players = [];
+        template.forEach((t, i) => {
+          const p = { ...clone(t), id: i + 1, name: squadName(taken, lasts), joined: 1 };
+          delete p.num;
+          taken.add(p.name);
+          p.face = drawFace(p, Math.floor(Math.random() * 4294967296));
+          assignNumber(players, p);
+          distinctFace(players, p);
+          players.push(p);
+        });
+        return players;
+      });
+    }));
+  }
+  return squadsMemo.get(key);
+}
+
+// Équipe d'une journée : { formation, lineup (onze identifiants, dans l'ordre des postes du dispositif), tactic }.
+// L'équipe automatique (club de l'ordinateur, ami absent ou sans équipe) : le meilleur onze en 4-3-3, tactique équilibrée.
+export const autoSheet = (players) => ({ formation: '433', tactic: 'balanced', lineup: autoLineup(players, '433'), auto: true });
+// Équipe relue du serveur (envoyée par un autre ami) : gardée seulement si tout y est valable, sinon l'équipe automatique.
+export function cleanSheet(sheet, players) {
+  const ids = new Set(players.map((p) => p.id));
+  const lineup = Array.isArray(sheet?.lineup) ? sheet.lineup : [];
+  const ok = sheet && FORMATIONS[sheet.formation] && TACTICS[sheet.tactic] && lineup.length === 11
+    && new Set(lineup).size === 11 && lineup.every((id) => ids.has(id));
+  return ok ? { formation: sheet.formation, tactic: sheet.tactic, lineup: [...lineup], auto: !!sheet.auto } : autoSheet(players);
+}
+
+// Un match de la ligue, joué d'un bloc sous la graine de la rencontre : le même chez chaque ami (même version du moteur,
+// LEAGUE_ENGINE). Le moteur suit le club qui reçoit joueur par joueur ; le visiteur y entre avec son vrai onze, son
+// niveau, son dispositif et sa tactique. home, away : { slot, name, crest, players, sheet }.
+export function leagueMatch(league, season, round, home, away) {
+  return seeded(hash(`${league.code}|${league.seed}|${season}|${round}|${home.slot}-${away.slot}|match`), () => {
+    const s = { clubName: home.name, crest: home.crest, players: home.players, lineup: [...home.sheet.lineup], formation: home.sheet.formation, tactic: home.sheet.tactic, buildings: {} };
+    const ctx = {
+      comp: 'friends',
+      home: true,
+      opp: { name: away.name, crest: away.crest, strength: lineupRating(away.players, away.sheet.lineup, away.sheet.formation) },
+      awayEleven: { formation: away.sheet.formation, players: away.sheet.lineup.map((id) => away.players.find((p) => p.id === id)) },
+      oppPlan: { tactic: away.sheet.tactic, formation: away.sheet.formation },
+    };
+    const live = createLiveMatch(s, ctx);
+    live.playHalf(1);
+    live.playHalf(2);
+    return { live, state: s, ctx };
+  });
+}
+
+// Les deux clubs d'une rencontre, prêts à jouer : l'équipe validée d'un ami présent, sinon l'équipe automatique.
+export function matchSide(league, clubs, teams, slot) {
+  const c = clubs[slot];
+  const players = leagueSquads(league)[slot];
+  const sent = c.human && c.active ? teams?.[c.member] : null;
+  return { slot, name: c.name, crest: c.crest, players, sheet: cleanSheet(sent, players) };
+}
+const packSheet = (sh) => ({ f: sh.formation, t: sh.tactic, l: sh.lineup, ...(sh.auto ? { a: 1 } : {}) });
+export const unpackSheet = (x) => ({ formation: x.f, tactic: x.t, lineup: x.l, auto: !!x.a });
+
+// Une journée entière, à envoyer au serveur (le premier envoi fait foi) : chaque rencontre avec son score, ses buts
+// (minute, camp 0 domicile ou 1 extérieur, buteur, penalty) et les équipes jouées, de quoi rejouer le match à l'identique.
+export function playLeagueRound(league, members, teams) {
+  const clubs = leagueClubs(league, members);
+  const matches = (leagueFixtures(league)[league.round] || []).map(([h, a]) => {
+    const home = matchSide(league, clubs, teams, h);
+    const away = matchSide(league, clubs, teams, a);
+    const { live } = leagueMatch(league, league.season, league.round, home, away);
+    const goals = [...live.eventsOf(1), ...live.eventsOf(2)].filter((e) => e.type === 'goal')
+      .map((e) => ({ m: e.minute, s: e.side === 'home' ? 0 : 1, p: e.player || '', ...(e.q === 'pen' ? { pen: 1 } : {}) }));
+    return { h, a, hg: live.state.score.home, ag: live.state.score.away, g: goals, sh: packSheet(home.sheet), sa: packSheet(away.sheet) };
+  });
+  return { v: 1, matches };
+}
+
+// Un match joué, à revoir en 3D (l'écran du direct, en rejeu) : rejoué à l'identique depuis les équipes gardées avec le
+// résultat. Seulement si le moteur retrouve le score officiel (une autre version du jeu, ou un calcul d'un autre
+// navigateur qui diverge : pas de rejeu, le résumé reste). clubs : leagueClubs ; x : la rencontre ({ h, a, hg, ag, sh, sa }).
+export function replayOf(league, clubs, round, x) {
+  if (!x.sh || !x.sa) return null;
+  const squads = leagueSquads(league);
+  const side = (slot, packed) => ({ slot, name: clubs[slot].name, crest: clubs[slot].crest, players: squads[slot], sheet: cleanSheet(unpackSheet(packed), squads[slot]) });
+  const { live, state, ctx } = leagueMatch(league, league.season, round, side(x.h, x.sh), side(x.a, x.sa));
+  if (live.state.score.home !== x.hg || live.state.score.away !== x.ag) return null;
+  live.state.half = 1; // le direct montre la première période d'abord (la seconde est déjà jouée)
+  return { live, state, ctx: { ...ctx, label: `${league.name} · journée ${round + 1}` } };
+}
+
+// Ce que le jeu envoie pour une journée due : ses matchs, et à la dernière journée le champion de la saison (palmarès
+// de la ligue). full : l'état du serveur avec les équipes (leagueState, teams).
+export function roundPayload({ league, members, teams, results = [] }) {
+  const data = playLeagueRound(league, members, teams);
+  if (league.round + 1 < leagueRounds(league)) return { data };
+  const [champion] = leagueTable(leagueClubs(league, members), [...results, data]);
+  return { data, seasonEnd: { honour: { season: league.season, club: champion.name, pseudo: champion.human ? champion.pseudo : null } } };
 }
 
 // Classement tiré des résultats officiels de la saison ({ matches: [{ h, a, hg, ag }] } par journée, places des

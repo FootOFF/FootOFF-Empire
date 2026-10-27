@@ -247,9 +247,9 @@ const factorAt = (minute, since) => (p) => fitFactor(fitAt(p, minute, since(p.id
 // probabilités de but par minute pour chaque équipe, dans l'état donné (onze, tactique, joueurs en moins : expulsés
 // et blessés non remplacés, condition physique) ; convH, convA : conversion moyenne d'une occasion ; penH, penA :
 // réussite d'un penalty
-function minuteGoalChances(s, lineup, tactic, oppStrength, short = { home: 0, away: 0 }, offIds = new Set(), formation = s.formation, factorOf = null, atHome = true) {
+function minuteGoalChances(s, lineup, tactic, oppStrength, short = { home: 0, away: 0 }, offIds = new Set(), formation = s.formation, factorOf = null, atHome = true, oppPlan = null) {
   const rating = lineupRating(s.players, lineup, formation, factorOf);
-  const xg = expectedGoals(rating, oppStrength, tactic, formation, atHome);
+  const xg = expectedGoals(rating, oppStrength, tactic, formation, atHome, oppPlan);
   const bigGame = oppStrength > rating;
   const on = lineup.map((id) => s.players.find((p) => p.id === id)).filter((p) => p && !offIds.has(p.id));
   const has = (p, t) => p.traits?.includes(t);
@@ -385,8 +385,8 @@ const memoChances = (fn) => { const cache = new Map(); return (minute) => { if (
 // avant le coup d'envoi : 90 minutes plus le temps additionnel des deux mi-temps (chaque durée de la première
 // mi-temps à part : la seconde commence à la 46e minute de jeu, quel que soit le temps additionnel), le onze de
 // départ jusqu'au bout, sa condition qui baisse au fil du match ; home : false pour un match à l'extérieur (Elite)
-export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true }) {
-  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0), home));
+export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true, oppPlan = null }) {
+  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0), home, oppPlan));
   const parts = HALF1.map((h1) => outcomeOdds(chancesAt, 0, HALF2.map((h2) => h1 + h2), (k) => (k <= h1 ? k : 45 + k - h1)));
   const mean = (key) => parts.reduce((a, o) => a + o[key], 0) / parts.length;
   return { win: mean('win'), draw: mean('draw'), loss: mean('loss') };
@@ -397,8 +397,8 @@ export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formatio
 // contredisent ses pourcentages.
 const MEAN_H1 = Math.round(HALF1.reduce((a, b) => a + b, 0) / HALF1.length);
 const MEAN_H2 = Math.round(HALF2.reduce((a, b) => a + b, 0) / HALF2.length);
-export function prematchXg(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true }) {
-  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0), home));
+export function prematchXg(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true, oppPlan = null }) {
+  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0), home, oppPlan));
   // répartition des expulsions (a chez nous, b chez eux), qui ne dépendent pas des buts : minute après minute
   let pr = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   let xf = 0, xa = 0;
@@ -488,12 +488,15 @@ export function statsOf(shown) {
 }
 
 // saved : un direct sauvegardé (save(), plus bas) à reprendre tel quel.
+// ctx.awayEleven : le vrai onze de l'adversaire ({ formation, players }, championnat entre amis), sinon tiré de son nom ;
+// ctx.oppPlan : son plan de jeu ({ tactic, formation }), qui pèse sur les occasions des deux côtés (expectedGoals).
 export function createLiveMatch(s, ctx, saved = null) {
-  const opp = saved ? null : opponentEleven(s, ctx.opp);
+  const opp = saved ? null : ctx.awayEleven || opponentEleven(s, ctx.opp);
   const m = {
     home: s.clubName,
     away: ctx.opp.name,
     oppStrength: ctx.opp.strength,
+    oppPlan: ctx.oppPlan || null,
     lineup: [...s.lineup],
     startLineup: [...s.lineup], // onze de départ (historique du match : composition sur le terrain)
     subsList: [], // changements faits : entrant, sortant, minute
@@ -544,7 +547,7 @@ export function createLiveMatch(s, ctx, saved = null) {
   }
   if (saved) Object.assign(m, unpackLive(saved));
   if (!m.preOdds) {
-    const o = prematchOdds(s, { oppStrength: ctx.opp.strength, home: ctx.home !== false });
+    const o = prematchOdds(s, { oppStrength: ctx.opp.strength, home: ctx.home !== false, oppPlan: m.oppPlan });
     const r4 = (v) => Math.round(v * 1e4) / 1e4;
     m.preOdds = { w: r4(o.win), d: r4(o.draw), l: r4(o.loss) };
     if (ctx.knockout) { // qualification : victoire, ou nul puis séance de tirs au but gagnée
@@ -577,7 +580,7 @@ export function createLiveMatch(s, ctx, saved = null) {
   };
   const make = (at, type, side, text, extra = {}) => ({ at, minute: label(at, extra.half ?? m.half), type, side, text, half: m.half, ...extra });
   const push = (at, type, side, text, extra = {}) => { const e = make(at, type, side, text, extra); events().push(e); return e; };
-  const chancesNow = (minute, lineup = m.lineup, tactic = m.tactic) => minuteGoalChances(s, lineup, tactic, m.oppStrength, shortOf(lineup), offIds(), m.formation, factorAt(minute, since), m.atHome !== false);
+  const chancesNow = (minute, lineup = m.lineup, tactic = m.tactic) => minuteGoalChances(s, lineup, tactic, m.oppStrength, shortOf(lineup), offIds(), m.formation, factorAt(minute, since), m.atHome !== false, m.oppPlan);
 
   // tireur : la finition compte (beaucoup pour un attaquant, un peu pour un milieu, peu pour un défenseur), chez nous
   // comme chez eux ; même pondération que le pronostic
@@ -651,7 +654,8 @@ export function createLiveMatch(s, ctx, saved = null) {
     const rating = lineupRating(s.players, m.lineup, m.formation);
     const diff = rating - m.oppStrength;
     const tilt = (m.tactic === 'offensive' ? 6 : m.tactic === 'low' ? -9 : 0) + (formationOf(m.formation).lines[1] - 3) * 2.5 // un milieu fourni tient le ballon
-      + (m.atHome === false ? -4 : 0); // à l'extérieur, l'adversaire tient davantage le ballon
+      + (m.atHome === false ? -4 : 0) // à l'extérieur, l'adversaire tient davantage le ballon
+      - (m.oppPlan?.tactic === 'offensive' ? 6 : m.oppPlan?.tactic === 'low' ? -9 : 0); // son plan de jeu, en miroir du nôtre
     m.stats.possHalf[half - 1] = Math.round(clamp(50 + diff * 3 + tilt + (Math.random() - 0.5) * 6, 28, 74));
     if (half === 1) push(0, 'kickoff', null, fill(pick(TX.kickoff), vars()));
     else push(45, 'kickoff', null, 'Reprise de la seconde période !');
@@ -992,7 +996,7 @@ export function createLiveMatch(s, ctx, saved = null) {
       const end = halfEnd();
       const sinceOf = (id) => m.perf[id]?.in ?? (m.lineup.includes(id) ? 0 : minute);
       const short = shortOf(lineup);
-      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, offIds(), m.formation, factorAt(min, sinceOf), m.atHome !== false));
+      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, offIds(), m.formation, factorAt(min, sinceOf), m.atHome !== false, m.oppPlan));
       const rest = Math.max(0, end - minute); // la durée des mi-temps est tirée au coup d'envoi : le pronostic en tient compte
       const durations = [rest + (m.half === 1 ? m.halfLength[1] : 0)];
       return outcomeOdds(chancesAt, m.score.home - m.score.away, durations, (k) => (k <= rest ? minute + k : 45 + k - rest), short);
@@ -1015,7 +1019,7 @@ export function createLiveMatch(s, ctx, saved = null) {
       const short = { home: sentH.size + [...out].filter((id) => lineup.includes(id)).length, away: sentA };
       const off = new Set([...sentH, ...out]);
       const sinceOf = (id) => m.perf[id]?.in ?? (m.lineup.includes(id) ? 0 : minute);
-      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, off, m.formation, factorAt(min, sinceOf), m.atHome !== false));
+      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, off, m.formation, factorAt(min, sinceOf), m.atHome !== false, m.oppPlan));
       const rest = Math.max(0, halfEnd() - minute);
       const durations = [rest + (m.half === 1 ? m.halfLength[1] : 0)];
       return outcomeOdds(chancesAt, lead, durations, (k) => (k <= rest ? minute + k : 45 + k - rest), short);

@@ -138,6 +138,8 @@ export default function App({ preview = null }) {
   const [confirm, setConfirm] = useState(boot.ui.confirm || null); // fenêtre de confirmation du jeu (vente, nouvelle partie…)
   // Siège de la Ligue ouvert sur l'écran titre (un invité n'a besoin ni du bâtiment ni d'une partie) : { invite } quand
   // on arrive par un lien d'invitation (…/footoffempire/?ligue=CODE), la fenêtre s'ouvre alors sur « rejoindre »
+  // match d'un championnat entre amis revu en 3D (league.js replayOf) : l'écran du direct en rejeu, par-dessus tout
+  const [replay, setReplay] = useState(null);
   const [leagueHub, setLeagueHub] = useState(() => {
     if (preview || !leagueOpen()) return null;
     const code = takeInvite();
@@ -192,7 +194,7 @@ export default function App({ preview = null }) {
   useEffect(() => { if (!preview) setState((prev) => (prev ? applyOffline(clone(prev)) : prev)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const inGame = screen === 'game' && !!state;
-  const cinematic = !!state && (!!matchPhase || showResult || !!state.seasonReview || !!state.offline || !!drills);
+  const cinematic = !!replay || (!!state && (!!matchPhase || showResult || !!state.seasonReview || !!state.offline || !!drills));
   // Notifications (src/ui/notify.jsx) : en attente tant qu'un écran ne doit pas être couvert ; jamais dans les
   // aperçus de la galerie, sauf celui des notifications.
   const notes = useNotifications(preview ? preview !== 'notification' : !inGame || menu || cinematic || !!confirm);
@@ -604,7 +606,7 @@ export default function App({ preview = null }) {
 
   return (
     <NavContext.Provider value={nav}>
-    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'mercato', 'academy', 'training', 'season', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''} ${navSwitch && panel ? 'nav-switch' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined} data-nav={navPage || undefined}>
+    <div className={`game ${inGame ? 'playing' : 'titled'} ${menu ? 'paused' : ''} ${cinematic ? 'cinematic' : ''} ${panel ? 'has-panel' : ''} ${['squad', 'mercato', 'academy', 'training', 'season', 'stats', 'trophies'].includes(panel) ? 'wide-panel' : ''} ${sel ? 'has-sel' : ''} ${navSwitch && panel ? 'nav-switch' : ''} ${replay ? 'replaying' : ''}`} data-tuto={inGame && tuto ? tutoStep : undefined} data-nav={navPage || undefined}>
       <div className="stage">
         {preview ? (
           <div className="stage-preview" aria-hidden="true" />
@@ -613,17 +615,17 @@ export default function App({ preview = null }) {
             <Empire3D
               state={sceneState}
               timeMode={timeMode}
-              matchDay={matchDay}
-              live={matchPhase === 'live'}
+              matchDay={matchDay || !!replay}
+              live={matchPhase === 'live' || !!replay}
               matchFx={matchFx}
-              matchInfo={matchInfo}
+              matchInfo={replay ? { opp: replay.ctx.opp.name } : matchInfo}
               recenter={recenter}
               selectedPlot={inGame ? sel?.plotId || null : null}
               holo={holo}
               badges={plotBadges}
               session={session}
               onSession={() => openPanel('training')}
-              attract={!inGame}
+              attract={!inGame && !replay}
               paused={menu || !!drills}
               hidden={!!drills}
               onLag={onLag}
@@ -782,6 +784,8 @@ export default function App({ preview = null }) {
             ask={setConfirm}
             invite={screen === 'title' ? leagueHub?.invite : null}
             overTitle={screen === 'title'}
+            replaying={!!replay}
+            onReplay={setReplay}
             onClose={() => { if (screen === 'title') setLeagueHub(null); else setPanel(null); }}
           />
         )}
@@ -832,6 +836,18 @@ export default function App({ preview = null }) {
           onFx={(fx) => { if (fx.type === 'goal') haptic('goal'); setMatchFx({ ...fx, id: performance.now() }); }}
           onFinish={finishMatch}
         />
+      )}
+      {replay && (
+        <div className="lig-match">
+          <LiveMatch
+            state={replay.state}
+            ctx={replay.ctx}
+            replay={replay.live}
+            sound={sound.current}
+            onFx={(fx) => { if (fx.type === 'goal') haptic('goal'); setMatchFx({ ...fx, id: performance.now() }); }}
+            onFinish={() => { setReplay(null); setMatchFx(null); }}
+          />
+        </div>
       )}
       <Presence>{inGame && showResult && <PostMatch state={state} initialStep={boot.ui.postStep} onClose={closeResult} onStats={() => { closeResult(); setStatsMatch('last'); setPanel('stats'); }} />}</Presence>
       <Presence>{inGame && !matchPhase && !showResult && state.seasonReview && <SeasonReview state={state} onClose={() => run(dismissReview)} />}</Presence>

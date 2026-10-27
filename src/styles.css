@@ -5093,3 +5093,38 @@ html, body { overscroll-behavior: none; }
   .lig-bigcode { font-size: 36px; }
   .lig-input input { font-size: 22px; }
 }
+
+/* Siège de la Ligue, saison : son équipe de la journée (l'avant-match du jeu, posé au-dessus de tout), les résultats */
+.lig-match { position: absolute; inset: 0; z-index: 38; }
+.lig-team.ok { border-color: rgba(122, 196, 140, .35); }
+.lig-team .btn { align-self: flex-start; }
+.lig-vs { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.lig-vs > span { display: flex; flex-direction: column; min-width: 0; }
+.lig-vs strong { font-family: var(--font-disp); font-weight: 700; font-size: var(--d-lg); text-transform: uppercase; letter-spacing: .02em; }
+.lig-vs em { font-style: normal; font-size: var(--t-sm); color: var(--text-2); overflow-wrap: anywhere; }
+.crest.lig-vs-crest { width: 36px; height: 42px; }
+.chips.lig-rounds { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; margin: 0; padding-bottom: 2px; }
+.chips.lig-rounds::-webkit-scrollbar { display: none; }
+.chips.lig-rounds button { flex-shrink: 0; min-width: 44px; }
+.lig-scores { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lig-scores > li { border-top: 1px solid var(--line); }
+.lig-score {
+  width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 9px 0;
+  border: 0; border-radius: 0; background: none; color: var(--text); font-size: var(--t-sm); text-align: left;
+}
+.lig-score:disabled { cursor: default; opacity: 1; }
+.lig-score b { font-family: var(--font-disp); font-weight: 700; font-size: 20px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lig-scores > li.me .lig-score .lig-fx-team, .lig-scores > li.me .lig-score b { color: var(--gold-light); }
+@media (hover: hover) { .lig-score:not(:disabled):hover { background: rgba(255, 255, 255, .03); } }
+.lig-goals { list-style: none; margin: 0 0 10px; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; font-size: var(--t-xs); color: var(--text-2); }
+.lig-goals li.home { grid-column: 1; }
+.lig-goals li.away { grid-column: 2; text-align: right; }
+.lig-goals em { font-style: normal; color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
+.lig-goals li.away em { margin: 0 6px 0 0; }
+.lig-match.team { background: #090909; } /* opaque : rien du Siège ne transparaît sous l'avant-match */
+.lv-replay { margin-right: 8px; font-size: .62em; letter-spacing: .1em; text-transform: uppercase; color: var(--gold-light); }
+/* match revu en 3D : l'écran titre et les panneaux s'effacent le temps du rejeu (ils restent en place dessous) */
+.game.replaying .ts, .game.replaying .panel, .game.replaying .lig-scrim { visibility: hidden; }
+.lig-detail { display: flex; flex-direction: column; gap: 10px; padding: 2px 0 12px; }
+.lig-detail .btn { align-self: center; }
+.lig-detail .lig-goals { margin: 0; }

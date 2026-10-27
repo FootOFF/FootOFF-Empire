@@ -170,15 +170,18 @@ export function lineupRating(players, lineup, formation = '433', factorOf = null
 }
 
 // Buts attendus (sur 90 minutes) selon l'écart de niveau, la tactique et l'avantage du terrain (home : à domicile ; à
-// l'extérieur, en Elite, l'avantage passe à l'adversaire).
-export function expectedGoals(rating, oppStrength, tacticId, formationId = '433', home = true) {
+// l'extérieur, en Elite, l'avantage passe à l'adversaire). opp : le plan de jeu de l'adversaire quand il est connu
+// (championnat entre amis : { tactic, formation }) ; il joue en miroir (sa prise de risque ouvre aussi le match).
+export function expectedGoals(rating, oppStrength, tacticId, formationId = '433', home = true, opp = null) {
   const t = TACTICS[tacticId] || TACTICS.balanced;
   const f = formationOf(formationId);
+  const ot = opp ? TACTICS[opp.tactic] || TACTICS.balanced : null;
+  const of = opp ? formationOf(opp.formation) : null;
   const diff = rating - oppStrength;
   const bonus = home ? HOME_BONUS : 1 / HOME_BONUS;
   return {
-    for: clamp(1.15 + diff * 0.22, 0.15, 3.6) * t.for * f.for * bonus,
-    against: clamp(1.15 - diff * 0.22, 0.15, 3.6) * t.against * f.against / bonus,
+    for: clamp(1.15 + diff * 0.22, 0.15, 3.6) * t.for * f.for * bonus * (opp ? ot.against * of.against : 1),
+    against: clamp(1.15 - diff * 0.22, 0.15, 3.6) * t.against * f.against / bonus * (opp ? ot.for * of.for : 1),
   };
 }
 

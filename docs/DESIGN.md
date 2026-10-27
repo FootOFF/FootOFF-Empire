@@ -608,8 +608,32 @@ développement (`npm run dev`, `leagueOpen()` de `league.js`), fermée en ligne 
   l'année (`deviceZone`) ; la base des fuseaux du serveur peut retarder sur un pays qui vient de changer d'heure légale
   (une heure d'écart constatée le 2026-10-27). L'échéance s'affiche à l'heure de chaque appareil.
 - Serveur : même origine en ligne (`/api/ligue`), relais de Vite vers le site lancé en local sur le port 3130 en
-  développement (`vite.config.js`). Reste à faire : la gestion du club de ligue (sauvegarde à part par ligue), la
-  validation de l'équipe, le calcul des matchs et leur envoi, le fil de la ligue.
+  développement (`vite.config.js`).
+
+Journée entre amis, première version (2026-10-27, choix de l'utilisateur : « onze et tactique d'abord », « résumé et
+temps forts en 3D ») :
+- Effectifs (`leagueSquads`) : quinze joueurs par club sur un même gabarit tiré de la graine de la ligue (postes, âges,
+  qualités et niveaux d'un club fondé en carrière, onze à 6,8), des noms et des visages propres à chaque club : des
+  clubs à égalité stricte, identiques chez chaque ami, rien à garder sur le serveur. Pas encore d'entraînement, de
+  mercato ni de finances ; pas de fatigue, de blessure ni de suspension d'une journée à l'autre.
+- Équipe de la journée : carte « Ton équipe » (adversaire, domicile ou extérieur), puis l'avant-match du jeu (`PreMatch`,
+  `ctx.comp` « friends » : sans classement de division ni billetterie, bouton « Valider mon équipe ») ; envoyée au
+  serveur (`POST sheet` : dispositif, onze, tactique), gardée sur l'appareil pour la journée suivante. Sans équipe à
+  l'heure, ou absent depuis 7 jours, ou club de l'ordinateur : le meilleur onze en 4-3-3, tactique équilibrée.
+- Match (`leagueMatch`) : le moteur du direct, joué d'un bloc sous la graine de la rencontre ; le club qui reçoit est
+  suivi joueur par joueur, le visiteur entre avec son vrai onze (`ctx.awayEleven`), son niveau, son dispositif et sa
+  tactique (`ctx.oppPlan`, en miroir dans `expectedGoals` et la possession). Sans plan adverse (carrière), rien ne
+  change. Saison simulée : 2,7 buts par match, 43 % de victoires à domicile, 29 % de nuls.
+- Journée due (tous ont validé, ou l'heure passée, quinze minutes au moins après son ouverture) : le premier jeu qui
+  ouvre le championnat la calcule (`refreshLeague`, `roundPayload`) et l'envoie ; elle tient en 1 Ko (scores, buts,
+  équipes jouées). À la dernière journée, le champion entre au palmarès ; la saison suivante a son propre calendrier.
+- Résultats : journée par journée, notre match en or, buts dépliables, « Revoir le match en 3D » (`replayOf`) :
+  le match est rejoué à l'identique depuis les équipes gardées, et l'écran du direct le montre en rejeu (`LiveMatch`
+  `replay` : ni changement ni consigne, aucune sauvegarde) avec ses temps forts dans le stade ; si le moteur ne retrouve
+  pas le score officiel (autre version du jeu), le résumé reste seul.
+- Reste à faire : le direct à l'heure de la journée, l'entraînement, le marché commun et les offres entre amis, les
+  finances et les bâtiments du club de ligue, la fatigue et les absences d'une journée à l'autre, le fil de la ligue,
+  la ligue qui grandit avec ses clubs.
 
 ## Centre médical
 

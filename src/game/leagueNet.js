@@ -1,4 +1,4 @@
-import { LEAGUE_ENGINE, MAX_MY_LEAGUES, isLeagueCode } from './league';
+import { LEAGUE_ENGINE, MAX_MY_LEAGUES, isLeagueCode, roundPayload } from './league';
 
 // Le serveur des ligues (site footoff.media, app/api/ligue) : même origine que le jeu en ligne
 // (www.footoff.media/footoffempire/), et en développement le relais de Vite (vite.config.js) vers le site lancé en
@@ -37,10 +37,33 @@ async function call(path, { method = 'GET', body, auth } = {}) {
 export const createLeague = (payload) => call('', { method: 'POST', body: { ...payload, engine: LEAGUE_ENGINE } });
 export const leagueInfo = (code) => call(`/${code}/info`);
 export const joinLeague = (code, payload) => call(`/${code}/join`, { method: 'POST', body: payload });
-export const leagueState = (m) => call(`/${m.code}/state`, { auth: m });
+// teams : avec, si la journée est due, les équipes à faire jouer (celles validées, sinon la dernière connue)
+export const leagueState = (m, { teams = false } = {}) => call(`/${m.code}/state${teams ? '?teams=1' : ''}`, { auth: m });
 export const startLeague = (m) => call(`/${m.code}/start`, { method: 'POST', body: {}, auth: m });
 export const kickMember = (m, member) => call(`/${m.code}/kick`, { method: 'POST', body: { member }, auth: m });
 export const leaveLeague = (m) => call(`/${m.code}/leave`, { method: 'POST', body: {}, auth: m });
+export const sendSheet = (m, season, round, sheet) => call(`/${m.code}/sheet`, { method: 'POST', body: { season, round, sheet }, auth: m });
+export const sendResult = (m, body) => call(`/${m.code}/result`, { method: 'POST', body: { ...body, engine: LEAGUE_ENGINE }, auth: m });
+
+// État d'un championnat, journée jouée au passage : si elle est due (tous ont validé, ou l'heure est passée), ce jeu la
+// calcule (roundPayload, à l'identique chez chacun) et l'envoie ; le premier envoi fait foi, les autres sont ignorés.
+// Une journée à la fois par championnat sur cet appareil.
+const playing = new Set();
+export async function refreshLeague(m) {
+  const d = await leagueState(m);
+  if (!d.due || playing.has(m.code)) return d;
+  playing.add(m.code);
+  try {
+    const full = await leagueState(m, { teams: true });
+    if (!full.due || !full.teams) return full;
+    await sendResult(m, { season: full.league.season, round: full.league.round, ...roundPayload(full) });
+  } catch {
+    return d; // journée prise par un autre ami au même instant, ou réseau : l'état d'avant, relu à la prochaine visite
+  } finally {
+    playing.delete(m.code);
+  }
+  return leagueState(m);
+}
 
 // ---- mes championnats, gardés sur cet appareil ----
 // { code, id, secret, pseudo, club: { name, crest }, name, at } : le secret ne quitte l'appareil que dans l'en-tête

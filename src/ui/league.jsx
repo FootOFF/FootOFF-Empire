@@ -1,20 +1,23 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Panel } from './panels';
+import { PreMatch } from './match';
 import { SectionHead } from './kit';
 import { ClubCrest, Crest, CrestArt } from './crest';
 import { CREST_ROWS } from './title';
-import { IconCheck, IconChevron, IconChevronLeft, IconClock, IconDice, IconPlus, IconUsers } from './icons';
+import { IconCheck, IconChevron, IconChevronLeft, IconClock, IconDice, IconPlay, IconPlus, IconUsers } from './icons';
 import { uiSound } from './uisound';
 import { capitalize, isPluralClub, randomClubName, withArticle } from '../game/names';
 import { CLUB_BLACK, clubInitials, defaultCrest, hexLum, normalizeCrest, randomCrest, withStyle } from '../game/crest';
 import {
-  AI_PSEUDO, LEAGUE_CLUBS, LEAGUE_COLORS, LEAGUE_MIN_HUMANS, MAX_MY_LEAGUES, cleanCode, deadlineText, deviceZone, hourText,
-  isLeagueCode, leagueClubs, leagueFixtures, leagueRounds, leagueTable,
+  AI_PSEUDO, LEAGUE_CLUBS, LEAGUE_COLORS, LEAGUE_MIN_HUMANS, MAX_MY_LEAGUES, autoSheet, cleanCode, cleanSheet, deadlineText,
+  deviceZone, hourText, isLeagueCode, leagueClubs, leagueFixtures, leagueRounds, leagueSquads, leagueTable, replayOf,
 } from '../game/league';
 import {
   createLeague, forgetLeague, inviteLink, joinLeague, kickMember, leagueInfo, leagueState, leaveLeague, myLeagues,
-  parseResumeCode, rememberLeague, resumeCodeOf, startLeague, updateLeague,
+  parseResumeCode, refreshLeague, rememberLeague, resumeCodeOf, sendSheet, startLeague, updateLeague,
 } from '../game/leagueNet';
+import { lineupRating } from '../game/tactics';
 
 // Siège de la Ligue : les championnats entre amis (league.js, leagueNet.js). Une fenêtre, cinq vues :
 //   home     mes championnats (trois au plus sur cet appareil), créer, rejoindre, reprendre
@@ -149,7 +152,7 @@ function Home({ mine, canBuild, onOpen, onCreate, onJoin, onResume }) {
   const [live, setLive] = useState({}); // code → réponse du serveur, ou { error }
   useEffect(() => {
     let alive = true;
-    mine.forEach((m) => leagueState(m).then(
+    mine.forEach((m) => refreshLeague(m).then(
       (d) => { if (alive) setLive((x) => ({ ...x, [m.code]: d })); updateLeague(m.code, { name: d.league.name, settings: d.league.settings }); },
       (error) => { if (alive) setLive((x) => ({ ...x, [m.code]: { error } })); },
     ));
@@ -172,7 +175,10 @@ function Home({ mine, canBuild, onOpen, onCreate, onJoin, onResume }) {
             let status = 'Mise à jour…';
             if (d?.error) status = d.error.status === 401 || d.error.status === 404 ? 'Introuvable : ce championnat a fermé' : 'Hors ligne pour l’instant';
             else if (league?.status === 'lobby') status = `Salle d’attente · ${plural(d.members.length, 'club')} sur ${LEAGUE_CLUBS}`;
-            else if (league) status = `Saison ${league.season} · journée ${Math.min(league.round + 1, leagueRounds(league))} / ${leagueRounds(league)}${league.deadline ? ` · ${deadlineText(league.deadline)}` : ''}`;
+            else if (league) {
+              const ready = d.members.find((x) => x.id === m.id)?.validated;
+              status = `Saison ${league.season} · journée ${Math.min(league.round + 1, leagueRounds(league))} / ${leagueRounds(league)} · ${ready ? 'équipe validée' : `équipe à valider${league.deadline ? ` avant ${deadlineText(league.deadline)}` : ''}`}`;
+            }
             return (
               <li key={m.code}>
                 <button type="button" className={`lig-card ${d?.error ? 'off' : ''}`} onClick={() => onOpen(m)}>
@@ -396,14 +402,15 @@ function ResumeForm({ mine, onDone }) {
 
 // ------------------------------------------------------------------------------------------------- un championnat
 
-function LeagueDetail({ m, ask, flash, onGone }) {
+// reload : relire tout de suite (équipe tout juste validée) ; onTeam : ouvrir l'avant-match pour valider son équipe.
+function LeagueDetail({ m, ask, flash, onGone, onTeam, onReplay, reload = 0 }) {
   const [data, setData] = useState(null);
   const [problem, setProblem] = useState(null);
   const [busy, setBusy] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; }, []);
-  const load = useCallback(() => leagueState(m).then(
+  const load = useCallback(() => refreshLeague(m).then(
     (d) => { if (!alive.current) return; setData(d); setProblem(null); updateLeague(m.code, { name: d.league.name, settings: d.league.settings }); },
     (x) => { if (alive.current) setProblem(x); },
   ), [m]);
@@ -412,7 +419,7 @@ function LeagueDetail({ m, ask, flash, onGone }) {
     // les amis qui arrivent, valident, la journée qui se joue : relu chaque minute tant que la fenêtre est à l'écran
     const t = setInterval(() => { if (document.visibilityState === 'visible') load(); }, 60000);
     return () => clearInterval(t);
-  }, [load]);
+  }, [load, reload]);
 
   const act = async (fn, after) => {
     setBusy(true);
@@ -526,7 +533,7 @@ function LeagueDetail({ m, ask, flash, onGone }) {
           <p className="dir-note">Une salle d’attente jamais lancée ferme d’elle-même au bout de 48 heures.</p>
         </>
       ) : (
-        <RunningLeague league={league} clubs={clubs} humans={humans} results={data.results} me={me} />
+        <RunningLeague league={league} clubs={clubs} humans={humans} results={data.results} me={me} onTeam={(t) => onTeam({ ...t, m })} onReplay={onReplay} flash={flash} />
       )}
 
       {!lobby && (
@@ -548,15 +555,37 @@ function LeagueDetail({ m, ask, flash, onGone }) {
 }
 
 // Saison en cours : la journée (échéance, qui a validé), ses matchs, le classement, le palmarès de la ligue.
-function RunningLeague({ league, clubs, humans, results, me }) {
+function RunningLeague({ league, clubs, humans, results, me, onTeam, onReplay, flash }) {
   const rounds = leagueRounds(league);
   const table = leagueTable(clubs, results);
   const fixtures = leagueFixtures(league)[league.round] || [];
   const bySlot = new Map(clubs.map((c) => [c.slot, c]));
   const mine = clubs.find((c) => c.member === me.id);
   const played = results.length;
+  const pair = mine && fixtures.find(([h, a]) => h === mine.slot || a === mine.slot);
+  const atHome = pair && pair[0] === mine.slot;
+  const opp = pair && bySlot.get(atHome ? pair[1] : pair[0]);
   return (
     <>
+      {mine && opp && (
+        <section className={`dir-card lig-team ${mine.validated ? 'ok' : ''}`}>
+          <SectionHead label="Ton équipe" aside={mine.validated ? 'validée' : 'à valider'} />
+          <div className="lig-vs">
+            <ClubMark club={mine} className="lig-vs-crest" />
+            <span><strong>{atHome ? 'À domicile' : 'À l’extérieur'}</strong><em>Adversaire · {opp.name}{opp.human ? ` · ${opp.pseudo}` : ''}</em></span>
+            <ClubMark club={opp} className="lig-vs-crest" />
+          </div>
+          <button type="button" className={`btn ${mine.validated ? 'ghost' : ''}`} onClick={() => onTeam({ league, slot: mine.slot, opp, atHome, validated: mine.validated })}>
+            {mine.validated ? 'Modifier mon équipe' : 'Préparer mon équipe'}
+          </button>
+          <p className="dir-note">
+            Onze, dispositif et tactique restent cachés à ton adversaire.
+            {mine.validated
+              ? ` Tu peux encore les modifier${league.deadline ? ` jusqu’à ${deadlineText(league.deadline)}` : ''}.`
+              : ' Sans validation à l’heure, ton équipe est composée d’office.'}
+          </p>
+        </section>
+      )}
       <section className="dir-card lig-round">
         <SectionHead label={`Journée ${Math.min(league.round + 1, rounds)} / ${rounds}`} aside={league.deadline ? `au plus tard ${deadlineText(league.deadline)}` : null} />
         <ul className="lig-ready">
@@ -583,6 +612,7 @@ function RunningLeague({ league, clubs, humans, results, me }) {
           })}
         </ul>
       </section>
+      {played > 0 && <Results league={league} clubs={clubs} results={results} bySlot={bySlot} mine={mine} onReplay={onReplay} flash={flash} />}
       <section className="lig-block">
         <SectionHead label="Classement" aside={played ? `après ${plural(played, 'journée')}` : 'avant la 1re journée'} />
         <table className="table standings lig-table">
@@ -620,11 +650,68 @@ function RunningLeague({ league, clubs, humans, results, me }) {
   );
 }
 
+// Résultats de la saison, journée par journée (la dernière d'abord) : les scores, notre match en or ; un match s'ouvre
+// sur ses buts, minute par minute, de chaque côté, et peut se revoir en 3D avec ses temps forts.
+function Results({ league, clubs, results, bySlot, mine, onReplay, flash }) {
+  const last = results[results.length - 1].round;
+  const [round, setRound] = useState(last);
+  const [open, setOpen] = useState(null);
+  useEffect(() => { setRound(last); setOpen(null); }, [last]);
+  const r = results.find((x) => x.round === round) || results[results.length - 1];
+  return (
+    <section className="lig-block lig-results">
+      <SectionHead label="Résultats" aside={`journée ${r.round + 1}`} />
+      {results.length > 1 && (
+        <div className="chips lig-rounds" role="tablist" aria-label="Journée">
+          {[...results].reverse().map((x) => (
+            <button key={x.round} type="button" role="tab" aria-selected={x.round === r.round} className={x.round === r.round ? 'active' : ''} onClick={() => { setRound(x.round); setOpen(null); uiSound('tab'); }}>J{x.round + 1}</button>
+          ))}
+        </div>
+      )}
+      <ul className="lig-scores">
+        {(r.matches || []).map((x) => {
+          const home = bySlot.get(x.h);
+          const away = bySlot.get(x.a);
+          if (!home || !away) return null;
+          const ours = mine && (x.h === mine.slot || x.a === mine.slot);
+          const key = `${x.h}-${x.a}`;
+          const goals = x.g || [];
+          return (
+            <li key={key} className={ours ? 'me' : ''}>
+              <button type="button" className="lig-score" aria-expanded={open === key} onClick={() => setOpen(open === key ? null : key)}>
+                <span className="lig-fx-team"><ClubMark club={home} className="lig-fx-crest" />{home.name}</span>
+                <b>{x.hg} – {x.ag}</b>
+                <span className="lig-fx-team away">{away.name}<ClubMark club={away} className="lig-fx-crest" /></span>
+              </button>
+              {open === key && (
+                <div className="lig-detail">
+                  {goals.length > 0 ? (
+                    <ul className="lig-goals">
+                      {goals.map((g, i) => <li key={i} className={g.s ? 'away' : 'home'}><em>{g.m}′</em>{g.p}{g.pen ? ' (penalty)' : ''}</li>)}
+                    </ul>
+                  ) : <p className="dir-note">Aucun but.</p>}
+                  {onReplay && x.sh && (
+                    <button type="button" className="btn btn-sm ghost" onClick={() => {
+                      const rp = replayOf(league, clubs, r.round, x);
+                      if (rp) { uiSound('select'); onReplay(rp); } else flash('Ce match ne peut plus être revu avec cette version du jeu. Son résumé reste disponible.', 'warn');
+                    }}><IconPlay className="fill" /> Revoir le match en 3D</button>
+                  )}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 // ------------------------------------------------------------------------------------------------------- la fenêtre
 
 // state : la partie en cours (peut manquer : invité arrivé par un lien) ; le Siège construit permet de créer.
 // invite : code d'un lien d'invitation, ouvert d'emblée sur « rejoindre ». overTitle : ouverte depuis l'écran titre.
-export function LeagueView({ state, ask, invite = null, overTitle = false, onClose }) {
+// onReplay : revoir un match en 3D (App, l'écran du direct en rejeu) ; replaying : un match est en train d'être revu.
+export function LeagueView({ state, ask, invite = null, overTitle = false, onClose, onReplay, replaying = false }) {
   const [mine, setMine] = useState(myLeagues);
   const [view, setView] = useState(() => (invite ? { id: 'join', code: invite } : { id: 'home' }));
   const [note, setNote] = useState(null); // retour dans la fenêtre : { text, tone }
@@ -647,6 +734,39 @@ export function LeagueView({ state, ask, invite = null, overTitle = false, onClo
     if (text) flash(text);
   };
   const back = () => { uiSound('back'); home(); };
+  // Son équipe de la journée : l'avant-match du jeu (onze, dispositif, tactique, pronostic), posé sur tout l'écran ;
+  // la dernière équipe choisie revient d'une journée à l'autre (draft, sur l'appareil).
+  const [team, setTeam] = useState(null); // { m, league, slot, opp, atHome, validated }
+  const [reload, setReload] = useState(0);
+  const teamScreen = team && (() => {
+    const squads = leagueSquads(team.league);
+    const draft = cleanSheet(team.m.draft, squads[team.slot]);
+    const rounds = leagueRounds(team.league);
+    return {
+      state: { clubName: team.m.club.name, crest: team.m.club.crest, players: squads[team.slot], lineup: draft.lineup, formation: draft.formation, tactic: draft.tactic, trophies: [], buildings: {} },
+      ctx: {
+        comp: 'friends', home: team.atHome, label: `${team.league.name} · journée ${team.league.round + 1} / ${rounds}`,
+        goLabel: team.validated ? 'Valider ces changements' : 'Valider mon équipe',
+        opp: { name: team.opp.name, crest: team.opp.crest, strength: lineupRating(squads[team.opp.slot], autoSheet(squads[team.opp.slot]).lineup, '433') },
+      },
+    };
+  })();
+  const validate = async (lineup, tactic, formation) => {
+    const { m, league } = team;
+    try {
+      await sendSheet(m, league.season, league.round, { formation, lineup, tactic });
+      updateLeague(m.code, { draft: { formation, lineup, tactic } });
+      setMine(myLeagues());
+      setTeam(null);
+      uiSound('select');
+      flash(`Équipe validée pour la journée ${league.round + 1}.`);
+      setReload((n) => n + 1);
+    } catch (x) {
+      setTeam(null);
+      flash(x.message, 'warn');
+      setReload((n) => n + 1);
+    }
+  };
   const current = view.id === 'league' ? (mine.find((x) => x.code === view.m.code) || view.m) : null;
   const eyebrow = view.id === 'league' ? `Ton club · ${current.club.name}` : `Championnats entre amis · ${mine.length} / ${MAX_MY_LEAGUES}`;
   return (
@@ -658,7 +778,7 @@ export function LeagueView({ state, ask, invite = null, overTitle = false, onClo
         eyebrow={eyebrow}
         className={`lig ${overTitle ? 'over-title' : ''}`}
         onClose={onClose}
-        onEscape={view.id !== 'home' ? back : undefined}
+        onEscape={team || replaying ? () => {} : view.id !== 'home' ? back : undefined}
         toolbar={note ? <p className={`lig-note ${note.tone}`} role="status" key={note.at}>{note.text}</p> : null}
       >
         {view.id !== 'home' && (
@@ -677,8 +797,12 @@ export function LeagueView({ state, ask, invite = null, overTitle = false, onClo
         {view.id === 'create' && <CreateForm onDone={open} />}
         {view.id === 'join' && <JoinForm initialCode={view.code} mine={mine} onDone={open} onOpen={(m) => open(m)} />}
         {view.id === 'resume' && <ResumeForm mine={mine} onDone={open} />}
-        {view.id === 'league' && <LeagueDetail key={current.code} m={current} ask={ask} flash={flash} onGone={home} />}
+        {view.id === 'league' && <LeagueDetail key={current.code} m={current} ask={ask} flash={flash} onGone={home} onTeam={setTeam} onReplay={onReplay} reload={reload} />}
       </Panel>
+      {teamScreen && createPortal(
+        <div className="lig-match team"><PreMatch state={teamScreen.state} ctx={teamScreen.ctx} onCancel={() => setTeam(null)} onKickoff={validate} /></div>,
+        document.querySelector('.game') || document.body,
+      )}
     </>
   );
 }
