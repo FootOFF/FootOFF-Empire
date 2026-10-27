@@ -308,6 +308,9 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
   la confirmation devient une feuille qui monte du bas.
 - Vibrations (`src/ui/haptics.js`) : but marqué, vente, dépense, construction ; désactivables dans les réglages
   (indisponibles sur iPhone, Safari ne les permet pas).
+- Plein écran (`src/ui/fullscreen.js`, 0.7.7) : réglage des PC seulement (écran à souris, API plein écran présente).
+  Le navigateur exige un geste : allumé, le réglage remet le jeu en plein écran au premier clic ou à la première
+  touche de la séance suivante ; en sortir (Échap, F11) l'éteint.
 - Défilement (`src/ui/scrollcue.js`) : aucune barre de défilement, nulle part (PC, téléphone, tablette ; choix de
   l'utilisateur, « plus esthétique sans »). Une zone qui défile s'estompe sur le bord où il reste du contenu
   (`data-fade`, liste des zones dans `scrollcue.js` : jamais une zone à pied collé, qui s'estomperait avec) ;

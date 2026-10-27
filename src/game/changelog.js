@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    version: '0.7.7', date: '2026-10-27', title: 'Plein écran sur PC',
+    items: [
+      'Nouveau réglage « Plein écran » sur PC (Réglages, à l’écran titre et dans le menu pause) : le jeu occupe tout l’écran, sans la barre du navigateur.',
+      'Échap pour en sortir. Laissé allumé, il revient à ton premier clic quand tu rouvres le jeu (le navigateur attend toujours un geste de ta part).',
+    ],
+  },
+  {
     version: '0.7.6', date: '2026-10-27', title: 'C’est toi qui vends',
     items: [
       'Quand un club accepte ta demande en négociation, la vente ne se fait plus toute seule : son offre passe à ton prix et c’est toi qui choisis, « Vendre » ou « Refuser ». L’accord vaut jusqu’à la prochaine journée.',

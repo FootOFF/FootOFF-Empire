@@ -7,6 +7,7 @@ import { installScrollCues } from './ui/scrollcue';
 import ErrorBoundary from './ui/crash';
 import { installErrorLog } from './ui/errlog';
 import { registerUpdates } from './ui/updates';
+import { installFullscreen } from './ui/fullscreen';
 
 // ?galerie : tous les écrans côte à côte · ?ecran=nom : un écran seul avec une partie fictive (jamais sauvegardée)
 const params = new URLSearchParams(window.location.search);
@@ -71,6 +72,7 @@ document.addEventListener('touchend', () => {
 document.addEventListener('touchcancel', () => { touch = null; lastTap = null; }, { capture: true });
 window.__foBoot.started = true; // le code du jeu tourne : index.html n'affichera pas « le jeu n'a pas pu démarrer »
 installErrorLog(); // dernières erreurs du navigateur, pour le rapport de l'écran d'erreur
+installFullscreen(); // réglage « Plein écran » resté allumé : le premier clic y remet le jeu (PC)
 const root = createRoot(document.getElementById('root'));
 if (window.__foMoving) { /* changement d'adresse en cours (index.html) : la page va être remplacée, le jeu ne démarre pas */ }
 else if (params.has('galerie')) root.render(<Suspense fallback={null}><Gallery /></Suspense>);

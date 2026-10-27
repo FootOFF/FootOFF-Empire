@@ -16,6 +16,7 @@ import { ordinal } from '../game/utils';
 import { uiSound } from './uisound';
 import { clubStars } from '../game/crest';
 import { errorReport } from './errlog';
+import { canFullscreen, setFullscreen, useFullscreen } from './fullscreen';
 
 export { setUiSound, uiSound } from './uisound';
 
@@ -123,7 +124,7 @@ function PadGlyph({ k }) {
   return <i className={`cm-pad ${k}`}>{k === 'select' ? 'A' : 'B'}</i>;
 }
 
-// Réglages partagés par l'écran titre et le menu pause : son, vibrations, fluidité, retour. Pas de qualité graphique :
+// Réglages partagés par l'écran titre et le menu pause : son, vibrations, fluidité, plein écran (PC), retour. Pas de qualité graphique :
 // un seul rendu, le plus net (render.js) ; « Fluidité sur appareil lent » ne fait que calculer moins de pixels quand
 // le jeu rame (adapt.js), et rien sur un appareil qui suit.
 // Réglages : son, vibrations, puis la sauvegarde (code à copier pour la retrouver sur un autre appareil, code à coller
@@ -136,7 +137,11 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
   const [mode, setMode] = useState('menu'); // menu | export (code affiché) | import (code à coller)
   const [code, setCode] = useState('');
   const [note, setNote] = useState(null);
-  const rows = [{ id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'fluid', disabled: !onToggleFluid }, { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'report' }, { id: 'back' }];
+  const [fsOk] = useState(canFullscreen); // PC seulement (fullscreen.js)
+  const fullscreen = useFullscreen();
+  const rows = [{ id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'fluid', disabled: !onToggleFluid }, ...(fsOk ? [{ id: 'fullscreen' }] : []),
+    { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'report' }, { id: 'back' }];
+  const at = (id) => rows.findIndex((r) => r.id === id); // rang d'une entrée (le plein écran n'existe que sur PC)
   const menu = useMenu(rows, { initial: Math.max(0, rows.findIndex((r) => r.id === focus)), onBack: () => (mode === 'menu' ? onBack() : setMode('menu')), active: active && mode === 'menu' });
   const { cur, setCur, refs, hover } = menu;
   const row = (i) => ({ ref: (el) => { refs.current[i] = el; }, onPointerEnter: hover(i), onFocus: () => setCur(i), style: { '--i': i } });
@@ -228,28 +233,38 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
         </span>
         <span className={`switch ${fluid ? 'on' : ''}`} aria-hidden="true"><i /></span>
       </button>
-      <button type="button" role="menuitem" disabled={!save || !onExport} className={`cm-row ${cur === 3 ? 'on' : ''}`} {...row(3)} onClick={doExport}>
+      {fsOk && (
+        <button type="button" role="menuitemcheckbox" aria-checked={fullscreen} className={`cm-row ${cur === at('fullscreen') ? 'on' : ''}`} {...row(at('fullscreen'))} onClick={() => { setFullscreen(!fullscreen); uiSound('select'); }}>
+          <span className="cm-bar" aria-hidden="true" />
+          <span className="cm-row-text">
+            <strong>Plein écran</strong>
+            <span>Le jeu occupe tout l’écran, sans la barre du navigateur. Échap pour en sortir ; allumé, il revient à ton premier clic quand tu rouvres le jeu.</span>
+          </span>
+          <span className={`switch ${fullscreen ? 'on' : ''}`} aria-hidden="true"><i /></span>
+        </button>
+      )}
+      <button type="button" role="menuitem" disabled={!save || !onExport} className={`cm-row ${cur === at('export') ? 'on' : ''}`} {...row(at('export'))} onClick={doExport}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">
           <strong>Copier le code de sauvegarde</strong>
           <span>{save ? `${save.clubName} · saison ${save.season}, ${save.division} · pour continuer sur un autre appareil.` : 'Aucune partie en cours.'}</span>
         </span>
       </button>
-      <button type="button" role="menuitem" disabled={!onImport} className={`cm-row ${cur === 4 ? 'on' : ''}`} {...row(4)} onClick={() => { uiSound('select'); setCode(''); setNote(null); setMode('import'); }}>
+      <button type="button" role="menuitem" disabled={!onImport} className={`cm-row ${cur === at('import') ? 'on' : ''}`} {...row(at('import'))} onClick={() => { uiSound('select'); setCode(''); setNote(null); setMode('import'); }}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">
           <strong>Restaurer un code de sauvegarde</strong>
           <span>{save ? 'La partie actuelle sera gardée en copie de secours.' : 'Reprends une partie copiée depuis un autre appareil.'}</span>
         </span>
       </button>
-      <button type="button" role="menuitem" className={`cm-row ${cur === 5 ? 'on' : ''}`} {...row(5)} onClick={() => { uiSound('select'); setMode('report'); setNote(null); }}>
+      <button type="button" role="menuitem" className={`cm-row ${cur === at('report') ? 'on' : ''}`} {...row(at('report'))} onClick={() => { uiSound('select'); setMode('report'); setNote(null); }}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">
           <strong>Signaler un problème</strong>
           <span>Un rapport à coller dans un message : version, erreurs, et ta partie si tu l’acceptes.</span>
         </span>
       </button>
-      <button type="button" className={`cm-row back ${cur === 6 ? 'on' : ''}`} {...row(6)} onClick={() => { uiSound('back'); onBack(); }}>
+      <button type="button" className={`cm-row back ${cur === at('back') ? 'on' : ''}`} {...row(at('back'))} onClick={() => { uiSound('back'); onBack(); }}>
         <span className="cm-bar" aria-hidden="true" />
         <IconChevronLeft className="cm-back-icon" />
         <span className="cm-row-text"><strong>Retour</strong></span>
