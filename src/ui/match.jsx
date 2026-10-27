@@ -815,8 +815,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
             </div>
             <div className="lv-sec stats">
               <LiveStats st={st} poss={poss} />
-              <Momentum shown={shown} upTo={slotOf(clockRef.current, half)} possHalf={m.stats.possHalf} names={[m.home, m.away]} codes={codes} />
               {prono}
+              <Momentum shown={shown} upTo={slotOf(clockRef.current, half)} possHalf={m.stats.possHalf} names={[m.home, m.away]} codes={codes} />
             </div>
             <div className="lv-sec feed">
               <ol className="feed-list">{shown.map((e) => <EventRow key={keyOf(e)} e={e} />)}</ol>

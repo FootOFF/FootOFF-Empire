@@ -945,8 +945,8 @@ dessine pas : c'est aussi un gain de fluidité sur la puce intégrée et l'iPhon
   notes des leurs ; sur téléphone, des onglets Stats, Notes (une équipe à la fois) et Le fil ;
 - statistiques en direct (`statsOf`) : possession (qui ondule minute après minute autour de la tendance de la
   mi-temps), tirs, tirs cadrés, grosses occasions, buts attendus, arrêts, poteaux, cartons, penalties (dès le
-  premier), en barres opposées ; puis les temps forts en colonnes et le pronostic final ; seulement ce que le direct a
-  déjà montré ;
+  premier), en barres opposées ; puis le pronostic final (toujours visible, juste sous les statistiques) et les temps
+  forts en colonnes ; seulement ce que le direct a déjà montré ;
 - notes du match des deux équipes (`ratingsAt`), qui évoluent au fil du match : numéro, poste, nom, faits (buts,
   passes décisives, cartons, blessure, entrée et sortie avec la minute), note au dixième ; chez nous, un filet de la
   couleur de la condition physique sous chaque joueur (`docs/JOUEURS.md` : la note finale est celle du coup de sifflet).

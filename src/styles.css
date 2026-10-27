@@ -1896,7 +1896,8 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .lv-cols .lv-sec { display: none; }
 .lv-cols.view-stats .lv-sec.stats, .lv-cols.view-feed .lv-sec.feed { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .lv-sec.stats { gap: 6px; overflow-y: auto; }
-.lv-srows { display: flex; flex-direction: column; gap: 11px; padding-bottom: 6px; }
+.lv-srows { display: flex; flex-direction: column; gap: 6px; padding-bottom: 4px; }
+.lv-sec.stats .lv-moment-plot { height: 52px; }
 .lv-srows .ui-vs { grid-template-columns: 56px minmax(0, 1fr) 56px; }
 .lv-srows .ui-vs > b { font-size: 21px; }
 .lv-srows .ui-vs-bars .a { background: #7d8aa3; }
