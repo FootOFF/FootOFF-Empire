@@ -4744,6 +4744,7 @@ html, body { overscroll-behavior: none; }
 /* ---- Épreuves en 3D (src/ui/drill.jsx) : plein écran, sans flou (la 3D bouge derrière) ---- */
 .drill { position: fixed; inset: 0; z-index: 60; background: #0b0d0c; outline: none; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; animation: fo-fade .35s var(--ease); }
 .drill-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.drill-canvas > canvas { display: block; width: 100%; height: 100%; }
 .drill-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(0, 0, 0, .42) 0%, rgba(0, 0, 0, 0) 20%, rgba(0, 0, 0, 0) 72%, rgba(0, 0, 0, .45) 100%); transition: background var(--dur-slow); }
 .drill.ph-intro .drill-shade, .drill.ph-result .drill-shade, .drill.ph-summary .drill-shade { background: linear-gradient(180deg, rgba(0, 0, 0, .25) 0%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, .55) 75%, rgba(0, 0, 0, .7) 100%); }
 .drill-loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-size: var(--t-sm); color: var(--text-2); }

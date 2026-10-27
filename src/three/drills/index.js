@@ -14,8 +14,9 @@ import { createCounter } from './contre';
 const DRILLS = { precision: createPrecision, arrets: createSaves, sprint: createSprint, lecture: createReading, coupsFrancs: createFreeKicks, penalties: createPenalties, centres: createCrosses, contre: createCounter };
 export const drillReady = (id) => !!DRILLS[id];
 
-export function createDrillEngine(canvas, { onHud, onPop, onEnd, onError, sfx }) {
-  const stage = createStage(canvas);
+// mount : l'élément plein écran où se pose la toile 3D des épreuves (stage.js)
+export function createDrillEngine(mount, { onHud, onPop, onEnd, onError, sfx }) {
+  const stage = createStage(mount);
   if (import.meta.env.DEV) window.__drillStage = stage; // mesures en développement (temps de rendu)
   let drill = null;
   let mode = 'idle'; // intro | play | done

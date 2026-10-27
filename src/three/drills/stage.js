@@ -136,6 +136,7 @@ float pLines(vec2 p) {
 function pitchMaterial(lawn) {
   const noise = noiseTexture();
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0 });
+  m.userData.noise = noise; // libérée avec le matériau (setGround, fin de séance)
   if (lawn?.map) {
     m.map = lawn.map;
     m.normalMap = lawn.normalMap || null;
@@ -261,11 +262,43 @@ export function beamMaterial(color = 0xdec17f, { dash = 0, opacity = 1 } = {}) {
 
 // --- Scène -----------------------------------------------------------------------------------------------------------
 
-export function createStage(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+// Une seule toile 3D pour toutes les séances, créée à la première et gardée ensuite. Un contexte 3D neuf à chaque
+// séance, même libéré à la fin (perte forcée du contexte), finit sur iPhone par faire recharger la page par Safari
+// (écran blanc, puis l'écran de chargement) au fil d'une longue partie. Entre deux séances, la toile quitte l'écran
+// et son image rendue est réduite à un pixel : il ne reste que le contexte, vide.
+let gl3d = null;
+function drillRenderer() {
+  if (gl3d?.getContext().isContextLost()) { gl3d.dispose(); gl3d = null; } // contexte repris par le système : un neuf
+  if (!gl3d) {
+    gl3d = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    gl3d.outputColorSpace = THREE.SRGBColorSpace;
+    gl3d.toneMapping = THREE.ACESFilmicToneMapping;
+  }
+  return gl3d;
+}
+
+// Fin de séance : tout ce que la scène garde encore est libéré (les épreuves libèrent aussi ce qu'elles ont créé,
+// keep), sauf les photos du gazon, prêtées par les modèles du complexe (lent). Un objet tiré des modèles du complexe
+// (géométries et matériaux partagés avec lui) doit avoir quitté la scène avant : la forêt retire les siens.
+function sweep(root, lent) {
+  root.traverse((o) => {
+    if (o.isInstancedMesh) o.dispose();
+    o.geometry?.dispose();
+    [].concat(o.material || []).forEach((m) => {
+      Object.values(m).forEach((v) => { if (v?.isTexture && !lent.has(v)) v.dispose(); });
+      Object.values(m.uniforms || {}).forEach((u) => { if (u?.value?.isTexture && !lent.has(u.value)) u.value.dispose(); });
+      m.userData?.noise?.dispose();
+      m.dispose();
+    });
+  });
+}
+
+// mount : l'élément qui accueille la toile (plein écran des épreuves)
+export function createStage(mount) {
+  const renderer = drillRenderer();
+  const canvas = renderer.domElement;
+  mount.appendChild(canvas);
   renderer.setPixelRatio(window.devicePixelRatio || 1); // pleine résolution de l'écran, comme le complexe
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const look = lookFor('day');
   renderer.toneMappingExposure = look.exposure;
 
@@ -298,9 +331,11 @@ export function createStage(canvas) {
   const ground = new THREE.Mesh(keep(new THREE.PlaneGeometry(140, 140, 1, 1).rotateX(-Math.PI / 2).translate(0, 0, PITCH.len / 2)), null);
   ground.renderOrder = 2; // dessinée après le reste : ses pixels cachés ne sont pas calculés
   scene.add(ground);
+  const lent = new Set(); // photos du gazon prêtées par le modèle du site (jamais libérées ici)
   const setGround = (lawn) => {
-    if (ground.material) ground.material.dispose();
+    if (ground.material) { ground.material.userData.noise?.dispose(); ground.material.dispose(); }
     ground.material = pitchMaterial(lawn);
+    [lawn?.map, lawn?.normalMap, lawn?.roughnessMap].forEach((x) => { if (x) lent.add(x); });
     if (lawn?.map) {
       // coordonnées de texture en tuiles de la photo : uv = mètres / taille de la tuile
       const g = ground.geometry;
@@ -699,10 +734,14 @@ export function createStage(canvas) {
       forest?.dispose();
       players.dispose();
       photo.dispose();
+      ground.material?.userData.noise?.dispose();
       ground.material?.dispose();
       disposables.forEach((d) => d.dispose?.());
-      renderer.dispose();
-      renderer.forceContextLoss?.();
+      sweep(scene, lent);
+      sweep(camera, lent);
+      renderer.renderLists.dispose();
+      canvas.remove();
+      renderer.setSize(1, 1, false); // la toile garde son contexte pour la séance suivante, sans image en mémoire
     },
   };
 }

@@ -600,6 +600,7 @@ export default function App({ preview = null }) {
               onSession={() => openPanel('training')}
               attract={!inGame}
               paused={menu || !!drills}
+              hidden={!!drills}
               onLoadProgress={setLoadProgress}
               onLoaded={() => setSceneLoaded(true)}
               onSelectPlot={pickPlot}

@@ -25,11 +25,59 @@ const poolMats = new Set(); // flaques de lumière au sol (lampadaires du site) 
 const POOL = 0.28; // intensité d'une flaque en pleine nuit (lumière linéaire ajoutée au sol)
 let isNight = 0; // niveau d'éclairage courant (0 à 1) : un modèle chargé après la bascule doit le respecter
 
+// Photos partagées d'un modèle à l'autre. Les niveaux d'un bâtiment et les bâtiments entre eux reprennent les mêmes
+// images (béton, brique, verre, gazon…), chaque GLB avec sa copie ; un modèle chargé reste en mémoire jusqu'à la
+// fermeture du jeu (améliorations, aperçus de la vitrine). Une image aux mêmes octets n'est plus décodée qu'une fois,
+// et ses textures partagent la même image sur le GPU (Texture.source) : tous les modèles chargés, 517 Mo de textures
+// avant, 134 Mo désormais ; le complexe complet de l'Elite, 178 -> 115 Mo. Sur iPhone, la mémoire qui montait au fil
+// d'une longue partie finissait par faire recharger la page par Safari (écran blanc, puis l'écran de chargement).
+const images = new Map(); // empreinte des octets -> Promise<THREE.Texture> (la première texture créée)
+const hex = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
+function digest(buf) {
+  if (globalThis.crypto?.subtle) return crypto.subtle.digest('SHA-1', buf).then(hex);
+  // hors contexte sécurisé (essai sur le réseau local, en http) : empreinte calculée ici
+  const a = new Uint8Array(buf);
+  let h1 = 0x811c9dc5;
+  let h2 = a.length;
+  for (let i = 0; i < a.length; i++) {
+    h1 = Math.imul(h1 ^ a[i], 0x01000193);
+    h2 = Math.imul(h2 ^ a[i], 0x5bd1e995) ^ (h2 >>> 13);
+  }
+  return Promise.resolve(`${(h1 >>> 0).toString(16)}${(h2 >>> 0).toString(16)}`);
+}
+// Extension du chargeur GLTF : la lecture d'une image passe d'abord par le registre commun. Une copie reprend les
+// réglages d'une texture neuve (le chargeur, puis ground.js, règlent les leurs selon l'usage dans ce modèle).
+function sharedImages(parser) {
+  const own = parser.loadImageSource.bind(parser);
+  parser.loadImageSource = (index, imageLoader) => {
+    const def = parser.json.images[index];
+    if (def.bufferView === undefined) return own(index, imageLoader);
+    return parser.getDependency('bufferView', def.bufferView).then(digest).then((print) => {
+      const key = `${def.mimeType}:${print}`;
+      const first = images.get(key);
+      if (!first) {
+        const p = own(index, imageLoader);
+        images.set(key, p);
+        p.catch(() => images.delete(key)); // image illisible : un autre modèle pourra réessayer
+        return p;
+      }
+      return first.then((t) => {
+        const copy = t.clone();
+        copy.colorSpace = THREE.NoColorSpace;
+        copy.anisotropy = 1;
+        return copy;
+      });
+    });
+  };
+  return { name: 'FO_shared_images' };
+}
+
 export function initAssets(renderer) {
   if (loader) return;
   draco = new DRACOLoader();
   ktx2 = new KTX2Loader().detectSupport(renderer);
   loader = new GLTFLoader().setDRACOLoader(draco).setKTX2Loader(ktx2).setMeshoptDecoder(MeshoptDecoder);
+  loader.register(sharedImages);
   setGroundAnisotropy(renderer);
 }
 
@@ -193,6 +241,7 @@ export async function disposeAssets() {
     });
   });
   templates.clear();
+  images.clear();
   nightMats.clear();
   poolMats.clear();
   draco?.dispose();

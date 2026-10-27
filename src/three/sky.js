@@ -200,6 +200,7 @@ export function createPhotoSky(renderer) {
   let envRT = null;
   let envStep = 0;
   const listeners = new Set();
+  let gone = false; // libéré (fin d'une séance d'épreuves) : un ciel qui arrive ensuite n'est plus envoyé au GPU
 
   const fileOf = (key) => `${BASE}sky/${key}.webp`; // pleine définition sur tout appareil, net aussi sur téléphone
   function load(key) {
@@ -211,6 +212,7 @@ export function createPhotoSky(renderer) {
       e.promise = new Promise((resolve, reject) => {
         loader.load(url, (t) => {
           job.done();
+          if (gone) { t.dispose(); resolve(null); return; } // le rendu sert encore ailleurs : rien n'y reste
           t.colorSpace = THREE.NoColorSpace; // radiance encodée, décodée par le shader
           t.wrapS = THREE.RepeatWrapping;
           t.wrapT = THREE.ClampToEdgeWrapping;
@@ -247,7 +249,7 @@ export function createPhotoSky(renderer) {
   // environnement : ciel sans le disque solaire (le soleil du jeu l'éclaire déjà) au-dessus d'un sol vert sombre
   const ALBEDO = new THREE.Color(0.08, 0.11, 0.055);
   function refreshEnv() {
-    if (!a) return;
+    if (!a || gone) return;
     const t = b ? mix : 0;
     const gE = THREE.MathUtils.lerp(a.look.groundE, b ? b.look.groundE : a.look.groundE, t);
     envMat.uniforms.uGround.value.copy(ALBEDO).multiplyScalar(gE / Math.PI);
@@ -286,7 +288,7 @@ export function createPhotoSky(renderer) {
     set(look) {
       wanted = look;
       load(look.key).then((tex) => {
-        if (wanted !== look) return; // une autre ambiance a été demandée entre-temps
+        if (gone || !tex || wanted !== look) return; // libéré, ou une autre ambiance demandée entre-temps
         if (!a) {
           a = { look, tex };
           dome.visible = true;
@@ -342,6 +344,7 @@ export function createPhotoSky(renderer) {
     },
 
     dispose() {
+      gone = true;
       cache.forEach((e) => e.tex?.dispose());
       cache.clear();
       envRT?.dispose();

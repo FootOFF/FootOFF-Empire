@@ -46,7 +46,7 @@ export default class DrillScreen extends React.Component {
 
 function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
   const wrapRef = useRef(null);
-  const canvasRef = useRef(null);
+  const canvasRef = useRef(null); // où se pose la toile 3D des épreuves (stage.js : une seule pour toute la partie)
   const engine = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -232,7 +232,7 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
       onPointerCancel={onPointerUp}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <canvas ref={canvasRef} className="drill-canvas" />
+      <div ref={canvasRef} className="drill-canvas" />
       <div className="drill-shade" aria-hidden="true" />
       {!loaded && !failed && <div className="drill-loading"><span className="drill-spinner" aria-hidden="true" />Préparation du terrain…</div>}
       {failed && (

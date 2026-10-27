@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { BUILDINGS, upgradeCost } from '../game/constants';
@@ -27,10 +27,13 @@ import {
 } from '../three/procedural';
 import { holdCharge } from './charge';
 
+// Le contexte d'essai est rendu tout de suite : sur iPhone, chaque contexte 3D laissé ouvert compte jusqu'au bout.
 function webglAvailable() {
   try {
     const c = document.createElement('canvas');
-    return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+    const gl = c.getContext('webgl2') || c.getContext('webgl');
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
+    return !!(window.WebGLRenderingContext && gl);
   } catch { return false; }
 }
 
@@ -188,7 +191,7 @@ function parvisInfo(s) {
 export default function Empire3D({
   state, onSelectPlot, onEmptyTap, onWebGLFail, timeMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
   live = false, matchFx = null, badges = [], onLoadProgress, onLoaded, matchInfo = null, onOpenTrophies,
-  attract = false, paused = false, holo = null, session = null, onSession,
+  attract = false, paused = false, hidden = false, holo = null, session = null, onSession,
 }) {
   const mountRef = useRef(null);
   const labelRef = useRef(null);
@@ -810,6 +813,7 @@ export default function Empire3D({
       renderer.setSize(w, h);
       ctx.frameOnce = true; // la toile redimensionnée est vide : en pause, une image pour la remplir
     };
+    ctx.refit = refit;
     const ro = new ResizeObserver(refit);
     ro.observe(mount);
     onDpr();
@@ -1020,6 +1024,20 @@ export default function Empire3D({
     modeRef.current.paused = paused;
     if (ctxRef.current) ctxRef.current.frameOnce = true;
   }, [paused]);
+
+  // Épreuves d'entraînement (plein écran, opaque) : le complexe ne se voit plus. Passé le fondu d'ouverture, son image
+  // rendue est réduite à un pixel (de l'ordre de 130 Mo de moins sur iPhone pendant la séance, qui a sa propre toile).
+  // Au retour, elle retrouve sa taille et elle est redessinée avant le premier affichage : jamais d'image vide.
+  useLayoutEffect(() => {
+    const ctx = ctxRef.current;
+    if (!ctx) return undefined;
+    if (hidden) {
+      const t = setTimeout(() => { ctx.shrunk = true; ctx.renderer.setSize(1, 1, false); }, 800);
+      return () => clearTimeout(t);
+    }
+    if (ctx.shrunk) { ctx.shrunk = false; ctx.refit(); ctx.draw(); }
+    return undefined;
+  }, [hidden]);
 
   // Écran titre : caméra en vitrine, sans interaction ; au retour au jeu, elle glisse vers la vue d'ensemble.
   useEffect(() => {

@@ -820,7 +820,11 @@ Règles :
 Calage : `tmp/calib-training.mjs` (carrières), contrôles : `tmp/check-training.mjs`, simulation : `tmp/ph3/simcheck.js`.
 
 Épreuves en 3D (`src/three/drills/`, écran `src/ui/drill.jsx`), plein écran, chargées à la première épreuve :
-- Scène en unités du jeu, avec son propre rendu à la pleine résolution de l'écran. Elle reprend le ciel photographié
+- Scène en unités du jeu, avec son propre rendu à la pleine résolution de l'écran : une seule toile 3D pour toute la
+  partie, créée à la première épreuve et gardée (0.7.1 ; un contexte 3D neuf à chaque séance finissait, sur iPhone,
+  par faire recharger la page). En fin de séance, tout ce qu'elle a chargé est libéré et son image réduite à un pixel ;
+  pendant la séance, l'image du complexe, cachée, l'est aussi (redessinée avant le premier affichage au retour).
+  Elle reprend le ciel photographié
   du plein jour, le gazon photo du site (bandes de tonte, marquages calculés au pixel), la forêt d'imposteurs, les
   buts avec filets animés, les filets pare-ballons, les mâts et un ballon à panneaux et coutures.
 - Toutes les caméras regardent vers le nord, soleil dans le dos. Les joueurs sont low-poly : jamais filmés de près ni
@@ -1151,6 +1155,21 @@ et sans scintillement à toute distance (à la chaux et usés au terrain municip
 une photo de gazon s'y fondait en aplat, elle n'a pas été gardée.
 La nuit : les quatre mâts de l'esplanade éclairent l'esplanade devant eux (ils visaient le stade, déjà éclairé par ses
 projecteurs, un peu adoucis).
+
+## Mémoire (longues parties)
+
+Sur iPhone, Safari recharge sans prévenir une page qui garde trop de mémoire : écran blanc, puis l'écran de
+chargement (aucune perte : la partie est enregistrée à chaque action, le direct reprend à la minute). Depuis la 0.7.1 :
+- photos des modèles partagées (`src/three/assets.js`) : chaque GLB embarque ses images (béton, brique, verre,
+  gazon…), les mêmes d'un niveau et d'un bâtiment à l'autre, et un modèle chargé reste en mémoire jusqu'à la fermeture
+  (améliorations, aperçus de la vitrine). Une image aux mêmes octets n'est décodée et envoyée au GPU qu'une fois.
+  Tous les modèles chargés : 270 images, 388 Mo décodés et 517 Mo de textures avant ; 76 images, 100 et 134 Mo après.
+  Complexe complet de l'Elite : 178 -> 115 Mo de textures ;
+- épreuves d'entraînement : une seule toile 3D pour la partie (voir Centre d'entraînement) ; le contexte d'essai du
+  démarrage est rendu tout de suite ;
+- vérifié sans tête (Chromium, rendu logiciel) : dix matchs avec les menus et un changement de saison, tas JS, nœuds
+  DOM et ressources three stables d'un tour à l'autre ; quatre séances d'épreuves enchaînées, un seul contexte 3D pour
+  elles, toile des épreuves vide entre deux séances.
 
 ## Fluidité
 
