@@ -142,7 +142,10 @@ function pickWeighted(list, weight) {
 // condition physique du onze à cette minute) et la transforme avec son taux de conversion (signes distinctifs
 // compris) ; au plus un but par équipe et par minute. On additionne toutes les suites de minutes possibles, temps
 // additionnel compris : « 70 % » veut dire 7 victoires sur 10. Seuls les expulsions et les blessures encore à venir
-// sont ignorées. Une issue n'a une probabilité nulle que si elle est réellement impossible.
+// sont ignorées ; un blessé est supposé remplacé (le direct le propose, et le staff le fait quand le match se joue sans
+// toi : staffSubs). Une issue n'a une probabilité nulle que si elle est réellement impossible. Vérifié sur 20 000
+// matchs du moteur (tools/sim/pronostic.mjs, 0.5.1) : les matchs annoncés à 70-80 % de victoire (74,7 % en moyenne)
+// sont gagnés 75,2 % du temps, et le pronostic du direct tombe aussi juste à chaque minute.
 const HALF1 = [46, 47, 48]; // 45 minutes + 1 à 3 de temps additionnel
 const HALF2 = [47, 48, 49, 50]; // 45 minutes + 2 à 5
 // « Flèche » : plus d'occasions, surtout en bloc bas (le jeu de contre). « Infatigable » : le joueur se fatigue bien
@@ -257,7 +260,33 @@ export function pairSubs(before, next) {
 // deux minutes plus tard, après tout ce que le direct a déjà montré.
 export const subMinute = (clock) => Math.ceil(clock + 0.9);
 
-export function createLiveMatch(s, ctx) {
+// --- Reprise après une fermeture de l'app ---------------------------------------------------------------------------
+// Tout l'état du direct en objet simple (les ensembles en tableaux), pour la sauvegarde du match en cours (save.js,
+// saveLive). La suite déjà simulée d'avance est gardée telle quelle : fermer l'app ne rejoue rien. Les instantanés sont
+// gardés à partir de la minute affichée : un changement peut encore revenir sur les minutes simulées d'avance.
+export const LIVE_VERSION = 1;
+const SNAP_SETS = ['sentH', 'sentA', 'bookedH', 'bookedA', 'out', 'gone', 'played', 'usedAmbience'];
+const packSnap = (x) => ({ ...x, ...Object.fromEntries(SNAP_SETS.map((k) => [k, [...x[k]]])) });
+const unpackSnap = (x) => ({ ...x, ...Object.fromEntries(SNAP_SETS.map((k) => [k, new Set(x[k])])) });
+const packLive = (m, from) => ({
+  ...m,
+  snaps: [...m.snaps].filter(([k]) => k >= from).map(([k, v]) => [k, packSnap(v)]),
+  sent: { home: [...m.sent.home], away: [...m.sent.away] },
+  booked: { home: [...m.booked.home], away: [...m.booked.away] },
+  out: [...m.out], gone: [...m.gone], played: [...m.played], usedAmbience: [...m.usedAmbience],
+});
+const unpackLive = (x) => ({
+  ...x,
+  snaps: new Map((x.snaps || []).map(([k, v]) => [k, unpackSnap(v)])),
+  sent: { home: new Set(x.sent.home), away: new Set(x.sent.away) },
+  booked: { home: new Set(x.booked.home), away: new Set(x.booked.away) },
+  out: new Set(x.out), gone: new Set(x.gone), played: new Set(x.played), usedAmbience: new Set(x.usedAmbience),
+});
+// Le match d'une sauvegarde : club, date du calendrier, compétition et adversaire (un autre match n'est jamais repris).
+export const liveKeyOf = (s, ctx) => `${s.clubName}|${s.seasonNumber}:${s.calIndex || 0}:${s.round}|${ctx.comp || 'league'}|${ctx.opp.name}`;
+
+// saved : un direct sauvegardé (save(), plus bas) à reprendre tel quel.
+export function createLiveMatch(s, ctx, saved = null) {
   const taken = new Set(s.lineup.map((id) => s.players.find((p) => p.id === id)?.name));
   const awayRoster = Array.from({ length: 11 }, (_, k) => { // noms uniques : la scène 3D retrouve le bon joueur
     const name = playerName(taken);
@@ -303,6 +332,7 @@ export function createLiveMatch(s, ctx) {
     lastAmbience: 0,
     usedAmbience: new Set(),
   };
+  if (saved) Object.assign(m, unpackLive(saved));
   const perf = (id) => (m.perf[id] ||= { goals: 0, assists: 0, yellow: 0, red: 0, shots: 0, onTarget: 0 });
   const has = (p, t) => p.traits?.includes(t);
   const since = (id) => m.perf[id]?.in ?? 0; // minute d'entrée en jeu (titulaires : 0)
@@ -527,11 +557,40 @@ export function createLiveMatch(s, ctx) {
   }
   const halfDone = () => m.simTo > halfEnd();
 
-  // Simule la mi-temps en cours jusqu'à la minute demandée (bornée par la fin de la mi-temps).
-  function advanceTo(minute) {
+  // Le staff remplace nos blessés encore sur le terrain, quand le match se joue sans toi (match joué d'un bloc, fin de
+  // mi-temps passée) : le meilleur remplaçant disponible à son poste, s'il reste un changement, à la minute suivante
+  // (à la pause si la mi-temps est finie). Sans changement ni remplaçant, l'équipe finit à dix.
+  function staffSubs() {
+    const hurt = m.lineup.filter((id) => m.out.has(id));
+    if (!hurt.length) return;
+    const slots = slotsOf(m.formation);
+    const next = [...m.lineup];
+    let ins = 0;
+    for (const id of hurt) {
+      if (m.subsUsed + ins >= SUBS_MAX) break;
+      const k = next.indexOf(id);
+      const bench = s.players.filter((p) => !next.includes(p.id) && !m.gone.has(p.id) && !m.out.has(p.id) && available(p));
+      if (!bench.length) break;
+      bench.sort((a, b) => ratingAt(b, slots[k]) - ratingAt(a, slots[k]) || (b.pos === slots[k]) - (a.pos === slots[k]));
+      next[k] = bench[0].id;
+      ins += 1;
+    }
+    if (!ins) return;
+    const minute = m.simTo + 1;
+    if (minute <= halfEnd()) change(minute, { lineup: next, staff: true });
+    else if (m.half === 1) change(45, { lineup: next, halftime: true, staff: true });
+  }
+
+  // Simule la mi-temps en cours jusqu'à la minute demandée (bornée par la fin de la mi-temps). staff : le match se joue
+  // sans toi, le staff fait entrer un remplaçant à la place d'un blessé (staffSubs).
+  function advanceTo(minute, { staff = false } = {}) {
     if (!m.half || halfDone()) return;
     const end = halfEnd();
-    while (m.simTo < Math.min(minute, end)) simMinute(m.simTo + 1);
+    if (staff) staffSubs();
+    while (m.simTo < Math.min(minute, end)) {
+      simMinute(m.simTo + 1);
+      if (staff) staffSubs();
+    }
     if (m.simTo >= end) endHalf();
   }
 
@@ -575,16 +634,59 @@ export function createLiveMatch(s, ctx) {
     return null;
   }
 
+  // Changement et tactique à une minute du match, ou à la pause (halftime : les événements ouvrent la seconde
+  // période). En cours de jeu, les minutes déjà simulées à partir de là sont reprises depuis l'instantané et
+  // rejouées ensuite avec le nouveau onze. staff : changement décidé par le staff (un blessé remplacé). Renvoie null
+  // si c'est accepté, sinon la raison.
+  function change(minute, { lineup = null, tactic = null, halftime = false, staff = false } = {}) {
+    const next = lineup || m.lineup;
+    const block = lineupBlock(next);
+    if (block) return block;
+    const atBreak = halftime || !m.half;
+    if (!atBreak) {
+      if (minute > halfEnd()) return 'Trop tard pour cette mi-temps : attends la pause.';
+      if (m.simTo >= minute) { const snap = m.snaps.get(minute); if (!snap) return 'Trop tard pour revenir à cette minute.'; restore(snap); }
+      if (m.simTo < minute - 1) advanceTo(minute - 1);
+    }
+    const half = atBreak ? 2 : m.half;
+    const target = atBreak ? m.halves[1] : events();
+    const at = atBreak ? 45 : minute - 0.89;
+    const before = m.lineup;
+    const nameOf = (id) => s.players.find((p) => p.id === id)?.name || '';
+    for (const [inId, outId] of pairSubs(before, next)) {
+      m.played.add(inId);
+      m.gone.add(outId);
+      perf(outId).out = m.out.has(outId) ? perf(outId).out : minute;
+      perf(inId).in = minute;
+      m.subsUsed++;
+      m.subsList.push({ in: inId, out: outId, minute });
+      const text = staff && m.out.has(outId)
+        ? `Changement pour ${m.home} : le staff fait entrer ${nameOf(inId)} à la place ${deName(nameOf(outId))}, blessé.`
+        : `Changement pour ${m.home} : ${nameOf(inId)} remplace ${nameOf(outId)}.`;
+      target.push({ ...make(at, 'sub', 'home', text), half });
+    }
+    const moved = next.filter((id, k) => before.includes(id) && before[k] !== id).length;
+    m.lineup = [...next];
+    if (moved) target.push({ ...make(at, 'info', 'home', `${m.home} réorganise son équipe.`), half });
+    if (tactic && TACTICS[tactic] && tactic !== m.tactic) {
+      m.tactic = tactic;
+      target.push({ ...make(at, 'info', 'home', `Changement tactique : ${m.home} passe en ${TACTICS[tactic].name.toLowerCase()}.`), half });
+    }
+    return null;
+  }
+
   return {
     state: m,
+    // état du direct à sauvegarder (reprise après une fermeture de l'app) ; from : minute affichée
+    save: (from = 0) => packLive(m, from),
     get halfEnd() { return halfEnd(); },
     get halfDone() { return halfDone(); },
     get simTo() { return m.simTo; },
     eventsOf: (half) => m.halves[half - 1],
     beginHalf,
     advanceTo,
-    // mi-temps entière d'un coup (match joué d'un bloc, essais)
-    playHalf(half) { beginHalf(half); advanceTo(Infinity); return m.halves[half - 1]; },
+    // mi-temps entière d'un coup (match joué d'un bloc, essais) : le staff remplace les blessés
+    playHalf(half) { beginHalf(half); advanceTo(Infinity, { staff: true }); return m.halves[half - 1]; },
     lineupBlock,
     // pronostic de fin de match depuis une minute de jeu (mi-temps : 45), avec le onze et la tactique envisagés ; les
     // entrants arrivent frais à cette minute
@@ -619,42 +721,7 @@ export function createLiveMatch(s, ctx) {
       const durations = [rest + (m.half === 1 ? m.halfLength[1] : 0)];
       return outcomeOdds(chancesAt, lead, durations, (k) => (k <= rest ? minute + k : 45 + k - rest));
     },
-    // Changement et tactique à une minute du match, ou à la pause (halftime : les événements ouvrent la seconde
-    // période). En cours de jeu, les minutes déjà simulées à partir de là sont reprises depuis l'instantané et
-    // rejouées ensuite avec le nouveau onze. Renvoie null si c'est accepté, sinon la raison.
-    change(minute, { lineup = null, tactic = null, halftime = false } = {}) {
-      const next = lineup || m.lineup;
-      const block = lineupBlock(next);
-      if (block) return block;
-      const atBreak = halftime || !m.half;
-      if (!atBreak) {
-        if (minute > halfEnd()) return 'Trop tard pour cette mi-temps : attends la pause.';
-        if (m.simTo >= minute) { const snap = m.snaps.get(minute); if (!snap) return 'Trop tard pour revenir à cette minute.'; restore(snap); }
-        if (m.simTo < minute - 1) advanceTo(minute - 1);
-      }
-      const half = atBreak ? 2 : m.half;
-      const target = atBreak ? m.halves[1] : events();
-      const at = atBreak ? 45 : minute - 0.89;
-      const before = m.lineup;
-      const nameOf = (id) => s.players.find((p) => p.id === id)?.name || '';
-      for (const [inId, outId] of pairSubs(before, next)) {
-        m.played.add(inId);
-        m.gone.add(outId);
-        perf(outId).out = m.out.has(outId) ? perf(outId).out : minute;
-        perf(inId).in = minute;
-        m.subsUsed++;
-        m.subsList.push({ in: inId, out: outId, minute });
-        target.push({ ...make(at, 'sub', 'home', `Changement pour ${m.home} : ${nameOf(inId)} remplace ${nameOf(outId)}.`), half });
-      }
-      const moved = next.filter((id, k) => before.includes(id) && before[k] !== id).length;
-      m.lineup = [...next];
-      if (moved) target.push({ ...make(at, 'info', 'home', `${m.home} réorganise son équipe.`), half });
-      if (tactic && TACTICS[tactic] && tactic !== m.tactic) {
-        m.tactic = tactic;
-        target.push({ ...make(at, 'info', 'home', `Changement tactique : ${m.home} passe en ${TACTICS[tactic].name.toLowerCase()}.`), half });
-      }
-      return null;
-    },
+    change,
     // compatibilité : composition et tactique de la mi-temps
     applyLineup(next) { return this.change(45, { lineup: next, halftime: true }) === null; },
     setTactic(t) { this.change(45, { tactic: t, halftime: true }); },

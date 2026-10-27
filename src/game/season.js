@@ -15,7 +15,7 @@ import { closeSeasonObjectives, drawObjectives } from './objectives';
 import { book, closeLedger, markTreasury } from './ledger';
 import { C1_ENTRY, COMPS, STAGES, buildCalendar, cupPrize, drawOpponent, fixtureLabel, fixtureShort, nextFixture, ofDiv } from './cups';
 import { addMatch, rebuildRecords } from './records';
-import { collectiveSession, tidyTraining, windowKey } from './training';
+import { collectiveSession, staffSession, tidyTraining, windowKey } from './training';
 
 export function roundRobin(n) {
   const rounds = [];
@@ -63,7 +63,7 @@ export function startSeason(s) {
       text: `Grand soir européen en vue : premier tour face ${clubAfter('à ', s.cups.c1.opp.name)}. Prime de participation : ${C1_ENTRY.toLocaleString('fr-FR')} €.`,
     });
   }
-  drawObjectives(s); // les trois objectifs du président pour la saison (objectives.js)
+  drawObjectives(s); // les trois objectifs du conseil d'administration pour la saison (objectives.js)
 }
 
 function applyResult(s, i, j, gi, gj) {
@@ -366,6 +366,7 @@ export function applyMatchResult(s, live) {
 export function playRound(s) {
   const ctx = matchContext(s);
   if (!ctx) return s;
+  staffSession(s); // séances confiées au staff : les épreuves pas faites, juste avant le match
   ensureLineup(s);
   return applyMatchResult(s, quickMatch(s, ctx));
 }
@@ -473,7 +474,7 @@ export function endSeason(s) {
     titleBonus, cups: cupsMoney, trophies, cupRuns, champion: position === 1, c1Next: !!s.c1Next,
   };
   closeSeasonGoals(s, events);
-  closeSeasonObjectives(s, events); // objectifs du président : primes et bonus de saison parfaite
+  closeSeasonObjectives(s, events); // objectifs du conseil : primes et bonus de saison parfaite
   reputationStatusEvent(s, repBefore);
   pushJournal(s, {
     season: s.seasonNumber,

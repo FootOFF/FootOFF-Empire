@@ -40,12 +40,14 @@ Code : `src/game/players.js` (condition, blessures, disponibilité), `src/game/l
 
 - **Condition** (`fit`, 0 à 100, 100 au repos) : un match complet coûte 25 points à un joueur très endurant, 36 à un joueur
   peu endurant (moitié pour un gardien ; « Infatigable » : ×0,6), au prorata du temps de jeu. Chaque date du calendrier
-  rend 28 points jusqu'à 27 ans, 24 jusqu'à 31, 20 ensuite, plus 2 par niveau du centre d'entraînement (son centre
-  médical). En match, elle baisse minute après minute et pèse sur le niveau du joueur (jusqu'à −15 % à zéro) : le
-  pronostic en tient compte, « Meilleur onze » aussi (un titulaire épuisé cède sa place à un remplaçant frais). L'été
-  remet tout le monde à 100.
-- **Blessures** : en match, chaque joueur de champ risque une blessure à chaque minute (environ une tous les quatre
-  matchs pour l'équipe, trois fois et demie plus pour un joueur à bout de forces). Il sort ; s'il reste un changement,
+  rend 24 points jusqu'à 27 ans, 21 jusqu'à 31, 18 ensuite, plus 1,5 par niveau du centre d'entraînement. Avant la
+  0.5.1 (28, 24, 20 et 2 par niveau), le onze restait à 96 % sans jamais tourner : ne pas faire tourner ne coûtait rien.
+  Désormais, environ 90 % au coup d'envoi et un titulaire et demi sous 70 % par match (`node tools/sim/career.mjs 20 24
+  --joueur`, et `--sans-rotation` pour ne jamais tenir compte de la condition). En match, elle baisse minute après
+  minute et pèse sur le niveau du joueur (jusqu'à −15 % à zéro) : le pronostic en tient compte, « Meilleur onze » aussi
+  (un titulaire épuisé cède sa place à un remplaçant frais). L'été remet tout le monde à 100.
+- **Blessures** : en match, chaque joueur de champ risque une blessure à chaque minute (environ une tous les quatre à
+  cinq matchs pour l'équipe, trois fois et demie plus pour un joueur à bout de forces). Il sort ; s'il reste un changement,
   le match s'arrête pour le faire. Durée tirée à la fin du match, en dates du calendrier : coup reçu (1), élongation (2),
   entorse (3), claquage (4), déchirure musculaire (6), fracture (9). Un blessé ne joue pas, ne s'entraîne pas et ne
   profite pas de la séance collective ; l'intersaison soigne tout.

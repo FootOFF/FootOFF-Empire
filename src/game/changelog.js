@@ -4,6 +4,17 @@
 
 export const CHANGELOG = [
   {
+    version: '0.5.1', date: '2026-10-27', title: 'Pronostic vérifié, match repris, entraînement délégué',
+    items: [
+      'Pronostic vérifié sur vingt mille matchs : un match annoncé à 70-80 % de victoire (74,7 % en moyenne) est gagné 75,2 % du temps, et le pronostic du direct tombe aussi juste à chaque minute.',
+      'Quand tu passes la fin d’une mi-temps, le staff remplace un blessé (s’il reste un changement) : l’équipe ne finit plus à dix, et le pronostic reste exact.',
+      'Si l’app se ferme pendant un match, il reprend à la minute près à la réouverture, avec le même score et la même suite (rien n’est rejoué). L’écran titre l’annonce sous « Continuer ».',
+      'Centre d’entraînement : nouveau réglage « Confier les séances au staff ». Avant chaque match, il simule les épreuves que tu n’as pas faites, avec les joueurs choisis (par défaut, les conseillés) ; plus de rappel de séance.',
+      'Fatigue : chaque date rend un peu moins de condition (18 à 24 points selon l’âge, +1,5 par niveau du centre d’entraînement). Un titulaire qui joue tout finit par s’user : fais tourner, « Meilleur onze » s’en charge.',
+      'Le président, c’est toi : les objectifs de la saison viennent désormais du conseil d’administration.',
+    ],
+  },
+  {
     version: '0.5.0', date: '2026-10-27', title: 'Une progression qui se mérite',
     items: [
       'Académie : un ou deux jeunes repérés par journée selon son niveau (jusqu’à six avant), aux potentiels réalistes. Au niveau 5, moins de deux jeunes par saison peuvent viser 18 ou plus, et un 20 est rare. Les fourchettes affichées (niveau à l’arrivée, potentiel) sont celles du tirage.',

@@ -1,7 +1,7 @@
 // Simulation de carrières sans interface : un président automatique (raisonnable) gère le club pendant N saisons.
 // Sert à vérifier l'équilibre du jeu : rythme des montées, premier titre d'Elite, trésorerie, part des salaires,
 // réputation, plafond du marché, blessures, âge du onze, jeunes, coupes. Lancer depuis la racine du dépôt :
-//   node tools/sim/career.mjs [saisons=25] [carrières=6] [--detail] [--joueur]
+//   node tools/sim/career.mjs [saisons=25] [carrières=6] [--detail] [--joueur] [--sans-rotation]
 // Le bot : meilleur onze (condition comprise), recrute quand une recrue renforce l'onze et que la caisse garde une
 // réserve d'une demi-saison de salaires, agrandit le stade quand la demande dépasse la capacité, construit le bâtiment
 // conseillé par le staff puis améliore, recrute les jeunes repérés, fait monter un jeune qui renforcerait l'onze,
@@ -10,6 +10,8 @@
 // (le joueur conseillé de chaque ligne, épreuve réussie à 85 %), la bonne tactique à chaque match (3-4-3 offensive
 // si l'onze vaut au moins l'adversaire, sinon 5-3-2 bloc bas), les meilleurs jeunes repérés (il libère le moins
 // prometteur pour un plus prometteur) et une place faite en équipe première au jeune qui la mérite.
+// --sans-rotation : le onze ne tient jamais compte de la condition physique (le meilleur onze au repos, à chaque match) :
+// ce que coûte de ne jamais faire tourner.
 import { createServer } from 'vite';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -35,13 +37,16 @@ const RUNS = Number(process.argv[3] || 6);
 const DETAIL = process.argv.includes('--detail');
 const HUMAN = process.argv.includes('--joueur');
 const SCORE = Number(process.env.SCORE || 0.85); // score d'un bon joueur aux épreuves en 3D
+const NO_ROTATION = process.argv.includes('--sans-rotation');
+// onze du match : le meilleur, condition comprise (« Meilleur onze »), ou sans jamais regarder la condition
+const xiOf = (s) => (NO_ROTATION ? autoLineup(s.players.map((p) => ({ ...p, fit: 100 })), s.formation) : autoLineup(s.players, s.formation));
 const fmt = (v) => Math.round(v).toLocaleString('fr-FR');
 const med = (a) => { const b = a.filter((x) => x != null).sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : null; };
 
 function manage(s) {
   const wages = s.players.reduce((a, p) => a + wageOf(p, s.divisionIndex), 0);
   const reserve = wages * 0.5;
-  s.lineup = autoLineup(s.players, s.formation);
+  s.lineup = xiOf(s);
   // académie : recruter les jeunes repérés, faire monter ceux qui renforceraient l'onze
   if (HUMAN) {
     // les plus prometteurs d'abord ; académie pleine : le moins prometteur laisse sa place (le potentiel se lit sur la fiche)
@@ -62,7 +67,7 @@ function manage(s) {
         engine.sellPlayer(s, out.id);
       }
       engine.promoteYouth(s, y.id);
-      s.lineup = autoLineup(s.players, s.formation);
+      s.lineup = xiOf(s);
     }
   } else {
     for (const y of s.scouting?.list || []) if ((s.youth || []).length < YOUTH_PLACES) engine.signYouth(s, y.id);
@@ -83,7 +88,7 @@ function manage(s) {
   const rec = recommendedBuilding(s);
   if (rec && s.money - upgradeCost(rec, 1) > reserve) for (const plot of ['t1', 't2', 't3', 't4', 't5', 't6', 't7']) if (engine.build(s, plot, rec)) break;
   for (const k of Object.keys(BUILDINGS)) if (k !== 'terrain' && s.buildings[k] > 0 && s.buildings[k] < BUILDINGS[k].max && s.money - upgradeCost(k, s.buildings[k] + 1) > reserve * 2) engine.upgrade(s, k);
-  s.lineup = autoLineup(s.players, s.formation);
+  s.lineup = xiOf(s);
   if (HUMAN) {
     // séance individuelle de la date : le joueur conseillé de chaque ligne, sa catégorie conseillée, l'épreuve la plus récente
     const lvl = s.buildings.training || 0;
@@ -100,13 +105,20 @@ function manage(s) {
       const strong = teamLevel(s) >= ctx.opp.strength;
       s.formation = strong ? '343' : '532';
       s.tactic = strong ? 'offensive' : 'low';
-      s.lineup = autoLineup(s.players, s.formation);
+      s.lineup = xiOf(s);
     }
   }
 }
 const ageOfXi = (s) => { const xi = s.players.filter((p) => s.lineup?.includes(p.id)); return xi.reduce((a, p) => a + p.age, 0) / Math.max(1, xi.length); };
 
-const agg = { promo: [], elite: [], title: [], euro: [], relegations: 0, red: 0, eliteTitles: 0, eliteSeasons: 0, money: {}, share: {}, rep: {}, team: {}, market: {}, age: {}, young: {}, gap: {}, injuries: 0, matches: 0, cups: 0, euros: 0, euroSeasons: 0 };
+const agg = { promo: [], elite: [], title: [], euro: [], relegations: 0, red: 0, eliteTitles: 0, eliteSeasons: 0, money: {}, share: {}, rep: {}, team: {}, market: {}, age: {}, young: {}, gap: {}, injuries: 0, matches: 0, cups: 0, euros: 0, euroSeasons: 0, kickFit: 0, tired: 0, spent: 0, out: 0, wins: 0 };
+// condition du onze au coup d'envoi (moyenne des titulaires, titulaires sous 70 % et sous 50 %), absences (dates)
+function kickoff(s) {
+  const xi = s.lineup.map((id) => s.players.find((p) => p.id === id)).filter(Boolean);
+  agg.kickFit += xi.reduce((a, p) => a + fitOf(p), 0) / Math.max(1, xi.length);
+  agg.tired += xi.filter((p) => fitOf(p) < 70).length;
+  agg.spent += xi.filter((p) => fitOf(p) < 50).length;
+}
 const band = (season) => (season <= 5 ? 'S1-5' : season <= 10 ? 'S6-10' : season <= 15 ? 'S11-15' : season <= 25 ? 'S16-25' : 'S26+');
 const push = (obj, k, v) => (obj[k] ||= []).push(v);
 for (let r = 0; r < RUNS; r++) {
@@ -114,10 +126,17 @@ for (let r = 0; r < RUNS; r++) {
   s.tutorial = { step: 'done' };
   let firstReg = null, firstElite = null, firstTitle = null, firstEuro = null;
   for (let season = 1; season <= N; season++) {
-    while (nextFixture(s)) { manage(s); engine.playRound(s); agg.matches++; agg.injuries += (s.lastMatch?.injuries || []).length; }
+    while (nextFixture(s)) {
+      manage(s);
+      kickoff(s);
+      engine.playRound(s);
+      agg.matches++;
+      if (s.lastMatch?.gf > s.lastMatch?.ga) agg.wins++;
+      for (const inj of s.lastMatch?.injuries || []) { agg.injuries++; agg.out += s.players.find((p) => p.id === inj.id)?.injury?.total || 0; }
+    }
     const wages = s.players.reduce((a, p) => a + wageOf(p, s.divisionIndex), 0);
     const share = seasonForecast(s, wages).wageShare;
-    s.lineup = autoLineup(s.players, s.formation);
+    s.lineup = xiOf(s);
     const age = ageOfXi(s);
     const young = s.players.filter((p) => s.lineup.includes(p.id) && p.age <= 21).length;
     const gap = teamLevel(s) - (DIVISIONS[s.divisionIndex].oppMin + DIVISIONS[s.divisionIndex].oppMax) / 2; // onze contre le milieu de la division
@@ -143,6 +162,7 @@ for (let r = 0; r < RUNS; r++) {
 console.log(`\n${RUNS} carrières de ${N} saisons${HUMAN ? ' · président « joueur »' : ''}`);
 console.log(`première montée (médiane) : S${med(agg.promo)} · Elite : S${med(agg.elite) ?? '—'} (${agg.elite.filter(Boolean).length}/${RUNS}) · premier titre d'Elite : S${med(agg.title) ?? '—'} (${agg.title.filter(Boolean).length}/${RUNS}) · première Coupe d'Europe : S${med(agg.euro) ?? '—'} (${agg.euro.filter(Boolean).length}/${RUNS})`);
 console.log(`saisons d'Elite gagnées : ${agg.eliteSeasons ? Math.round((100 * agg.eliteTitles) / agg.eliteSeasons) : 0} % · Coupes d'Europe gagnées : ${agg.euros}/${agg.euroSeasons} participations · Coupes nationales : ${agg.cups} · descentes : ${agg.relegations} · fins de saison dans le rouge : ${agg.red} · blessures par match : ${(agg.injuries / agg.matches).toFixed(2)}`);
+console.log(`condition du onze au coup d'envoi : ${(agg.kickFit / agg.matches).toFixed(1)} % en moyenne · titulaires sous 70 % : ${(agg.tired / agg.matches).toFixed(2)} par match, sous 50 % : ${(agg.spent / agg.matches).toFixed(2)} · blessures : ${(agg.injuries / agg.matches).toFixed(2)} par match, ${(agg.out / Math.max(1, agg.injuries)).toFixed(1)} dates d'absence en moyenne · matchs gagnés : ${Math.round((100 * agg.wins) / agg.matches)} %`);
 console.log('période   caisse (méd.)     salaires/revenus  réputation  onze (écart)   âge du onze  ≤21 ans  marché max');
 for (const b of ['S1-5', 'S6-10', 'S11-15', 'S16-25', 'S26+']) {
   if (!agg.money[b]) continue;

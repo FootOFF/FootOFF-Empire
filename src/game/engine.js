@@ -17,7 +17,7 @@ import { rnd } from './utils';
 import { book, ensureLedger } from './ledger';
 import { addSigning, emptyRecords, rebuildRecords } from './records';
 import { normalizeCrest } from './crest';
-import { PROGRAMS, programDesc, programLabel, setPick, startProgram, stopProgram, tidyTraining, trainLine } from './training';
+import { journalLearned, setPick, setStaff, staffSession, startProgram, stopProgram, tidyTraining, trainLine } from './training';
 
 export { playRound, endSeason };
 export { applyMatchResult, matchContext } from './season';
@@ -199,18 +199,12 @@ export function setYouthPlan(s, id, plan) {
 export function trainPlayer(s, pos, pick) {
   if (!trainLine(s, pos, pick)) return null;
   const r = s.training.done[pos];
-  if (r.learned) {
-    const removed = !!PROGRAMS[r.learned].remove;
-    pushJournal(s, {
-      season: s.seasonNumber, round: s.round, kind: 'entrainement',
-      title: removed ? `${r.name} apprend à se maîtriser` : `${r.name} gagne un signe distinctif : ${programLabel(r.learned)}`,
-      text: `Au bout de son programme au centre d’entraînement. ${programDesc(r.learned)}`,
-    });
-  }
+  if (r.learned) journalLearned(s, r);
   return s;
 }
 export const setTrainingPick = setPick;
-export { startProgram, stopProgram };
+export const setTrainingStaff = setStaff;
+export { staffSession, startProgram, stopProgram };
 
 // --- Mercato (voir mercato.js et transfers.js) ------------------------------------------------------------
 

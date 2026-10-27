@@ -50,6 +50,7 @@ export const SCREENS = [
   ['academie-batiment', 'Inspecteur · académie'],
   ['entrainement', 'Centre d’entraînement · séance (deux épreuves faites)'],
   ['entrainement-joueur', 'Centre d’entraînement · choix du joueur d’une ligne'],
+  ['entrainement-staff', 'Centre d’entraînement · séances confiées au staff'],
   ['entrainement-programmes', 'Centre d’entraînement · programmes de signes (niveau 3)'],
   ['entrainement-programme', 'Centre d’entraînement · programme d’un joueur'],
   ['entrainement-progres', 'Centre d’entraînement · progrès et niveaux'],
@@ -139,6 +140,7 @@ export function previewState(screen) {
   if (MERCATO.includes(screen)) mercatoPreview(s, screen);
   if (screen.startsWith('academie')) academyPreview(s, screen);
   if (screen.startsWith('entrainement')) trainingPreview(s);
+  if (screen === 'entrainement-staff') { s.training = { ...s.training, staff: true, done: {} }; } // le staff fera la séance avant le match
   if (screen.startsWith('medical')) { // centre médical niveau 2 : trois blessés, dont un soigné aujourd'hui avec succès
     s.money = 1e6; build(s, 't4', 'medical'); upgrade(s, 'medical'); s.money = 42000;
     const [a, b, c] = [...s.players].filter((p) => p.pos !== 'G').sort((x, y) => playerRating(y) - playerRating(x));
@@ -317,7 +319,7 @@ export function previewUi(screen, s) {
     case 'academie-jeune': return { panel: 'academy', academy: { sheet: s.youth[1].id } };
     case 'academie-repere': return { panel: 'academy', academyTab: 'scout', academy: { sheet: s.scouting.list[0].id, list: 'scout' } };
     case 'academie-batiment': return { sel: { plotId: 't2', sector: 'main' } };
-    case 'entrainement': return { panel: 'training' };
+    case 'entrainement': case 'entrainement-staff': return { panel: 'training' };
     case 'direction': return { panel: 'direction' };
     case 'direction-salaires': return { panel: 'direction', directionTab: 'wages' };
     case 'medical': return { panel: 'medical' };

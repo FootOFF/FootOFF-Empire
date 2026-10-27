@@ -10,7 +10,7 @@ import { rnd } from './utils';
 
 // Tutoriel des premières minutes, mené par la directrice sportive du club : bienvenue → centre d'entraînement →
 // première séance (une épreuve en 3D) → première recrue → premier match → effectif (condition physique, blessures,
-// suspensions, changements) → objectifs du président → cap sur le stade. Chaque étape dit ce qu'il faut faire et pourquoi ; une étape d'action réussie rapporte une prime au club
+// suspensions, changements) → objectifs du conseil d'administration → cap sur le stade. Chaque étape dit ce qu'il faut faire et pourquoi ; une étape d'action réussie rapporte une prime au club
 // (annoncée par une notification). Chaque étape se valide toute seule dès que son objectif est atteint ; l'étape
 // courante est sauvegardée avec la partie.
 
@@ -166,10 +166,10 @@ export function stepContent(step, s) {
       const list = obj ? obj.list.map((o) => o.title.toLowerCase()).join(', ') : '';
       return {
         ...base,
-        title: 'Les objectifs du président',
+        title: 'Les objectifs du conseil',
         text: obj
-          ? `Cette saison, il attend trois choses : ${list}. Chacun rapporte une prime ; leur avancée est en haut à gauche.`
-          : 'Chaque saison, le président te fixe trois objectifs, chacun avec sa prime ; leur avancée est en haut à gauche.',
+          ? `Cette saison, le conseil d’administration attend trois choses de toi : ${list}. Chacun rapporte une prime ; leur avancée est en haut à gauche.`
+          : 'Chaque saison, le conseil d’administration te fixe trois objectifs, chacun avec sa prime ; leur avancée est en haut à gauche.',
         why: obj ? `Les trois réussis valent un bonus de saison parfaite : +${eur(obj.perfect.money)}.` : 'Les trois réussis valent un bonus de saison parfaite.',
         cta: 'Compris',
       };

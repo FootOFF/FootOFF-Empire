@@ -69,8 +69,9 @@ export function TopHud({ state, onMenu, onFinances, onReputation, onTable }) {
   );
 }
 
-// Objectifs du président (objectives.js) : les trois défis de la saison, leur avancée en direct (barre, chiffre du
-// jour), leur prime ; le bonus de la saison parfaite ; puis la grande étape de réputation en cours (goals.js).
+// Objectifs du conseil d'administration (objectives.js ; le président, c'est le joueur) : les trois défis de la saison,
+// leur avancée en direct (barre, chiffre du jour), leur prime ; le bonus de la saison parfaite ; puis la grande étape
+// de réputation en cours (goals.js).
 // Replié : une seule ligne, « Objectifs 1/3 · jusqu'à +67 500 € » (ce qui peut encore être gagné cette saison).
 export function ObjectiveWidget({ state, collapsed, onToggle }) {
   const obj = seasonObjectives(state);
@@ -83,7 +84,7 @@ export function ObjectiveWidget({ state, collapsed, onToggle }) {
   const max = obj.list.reduce((a, o) => a + (o.state === 'failed' ? 0 : o.prize.money), 0) + (failed ? 0 : obj.perfect.money);
   const all = obj.done === n;
   return (
-    <aside className={`hud-goal glass ${collapsed ? 'collapsed' : ''} ${all ? 'achieved' : ''}`} aria-label="Objectifs du président">
+    <aside className={`hud-goal glass ${collapsed ? 'collapsed' : ''} ${all ? 'achieved' : ''}`} aria-label="Objectifs du conseil">
       <button className="hud-goal-head" onClick={onToggle} aria-expanded={!collapsed}>
         {collapsed ? (
           <>
@@ -92,7 +93,7 @@ export function ObjectiveWidget({ state, collapsed, onToggle }) {
           </>
         ) : (
           <>
-            <span className="hud-goal-k mark-head">Objectifs du président</span>
+            <span className="hud-goal-k mark-head">Objectifs du conseil</span>
             <span className="hud-goal-count">{obj.done} sur {n}</span>
           </>
         )}

@@ -1,6 +1,7 @@
 import { DRILLS, PROGRAM_STEPS, TRAINING_COLLECTIVE, TRAINING_MULT } from './constants';
 import { TRAITS, WEIGHTS, isInjured, playerRating } from './players';
 import { nextFixture } from './cups';
+import { pushJournal } from './journal';
 import { clamp } from './utils';
 
 // Centre d'entraînement. Entre deux matchs, une séance : quatre joueurs, un par ligne (gardien, défenseur, milieu,
@@ -142,15 +143,19 @@ export function suggestFor(s, pos) {
   return best?.p || null;
 }
 
-// Choix de la séance pour une ligne : le joueur, sa catégorie et son épreuve (gardés d'une séance à l'autre ; à
-// défaut, le joueur conseillé, sa catégorie conseillée et l'épreuve la plus récente).
+// Choix de la séance pour une ligne : le joueur, sa catégorie et son épreuve, gardés d'une séance à l'autre tant que le
+// joueur a encore de la marge ; à défaut, le joueur dont le programme de signe avance avec la séance (le plus près du
+// but), sinon le joueur conseillé, sur sa catégorie conseillée, avec l'épreuve la plus récente. Le staff fait les
+// séances avec ces mêmes choix (staffSession) : ce que montre l'écran est ce qu'il fera.
 export function pickOf(s, pos) {
   const lvl = Math.max(1, s.buildings.training || 0);
   const saved = s.training?.picks?.[pos];
-  const p = (saved && s.players.find((q) => q.id === saved.id && q.pos === pos && !isInjured(q))) || suggestFor(s, pos);
+  const p = (saved && s.players.find((q) => q.id === saved.id && q.pos === pos && !isInjured(q) && q.pot > playerRating(q) + 0.05))
+    || programPlayer(s, pos) || suggestFor(s, pos);
   if (!p) return null;
   const same = saved && saved.id === p.id;
-  const cat = same && catsFor(pos)[saved.cat] ? saved.cat : bestCat(s, p);
+  const prog = programOf(s, p.id);
+  const cat = same && catsFor(pos)[saved.cat] ? saved.cat : prog && catsFor(pos)[PROGRAMS[prog.id]?.cat] ? PROGRAMS[prog.id].cat : bestCat(s, p);
   const drills = drillsFor(lvl, pos, cat);
   const drill = same && saved.cat === cat && drills.includes(saved.drill) ? saved.drill : drills[drills.length - 1];
   return { id: p.id, cat, drill };
@@ -243,6 +248,46 @@ export function trainLine(s, pos, { id, cat, drill, score = null }) {
     log: [{ season: s.seasonNumber, key: session.key, pos, ...result }, ...(s.training?.log || [])].slice(0, 60),
   };
   return s;
+}
+
+// --- Séances confiées au staff (réglage du centre d'entraînement, 0.5.1) ------------------------------------------
+// Avant chaque match (avant-match, match joué d'un bloc), le staff simule les épreuves que tu n'as pas faites, avec les
+// choix de la séance (pickOf : tes choix, sinon le joueur en programme ou le conseillé) : gain moyen assuré, comme
+// « Tout simuler ». Renvoie les épreuves faites.
+export const staffOn = (s) => !!s.training?.staff;
+export function setStaff(s, on) {
+  s.training = { ...(s.training || {}), staff: !!on };
+  return s;
+}
+// joueur de la ligne dont un programme de signe est en cours (le plus près du but), ou null
+function programPlayer(s, pos) {
+  const progs = s.training?.programs || {};
+  return s.players
+    .filter((p) => p.pos === pos && !isInjured(p) && progs[p.id] && catsFor(pos)[PROGRAMS[progs[p.id].id]?.cat])
+    .sort((a, b) => (programNeed(s, progs[a.id]) - progs[a.id].steps) - (programNeed(s, progs[b.id]) - progs[b.id].steps))[0] || null;
+}
+export function staffSession(s) {
+  if (!staffOn(s) || !(s.buildings.training > 0)) return [];
+  const done = [];
+  for (const pos of LINES) {
+    if (sessionOf(s).done[pos]) continue;
+    const pick = pickOf(s, pos);
+    if (!pick || !trainLine(s, pos, { ...pick, score: null })) continue;
+    const r = s.training.done[pos];
+    if (r.learned) journalLearned(s, r);
+    done.push(r);
+  }
+  return done;
+}
+
+// Un signe distinctif appris au bout d'un programme entre au journal.
+export function journalLearned(s, r) {
+  const removed = !!PROGRAMS[r.learned].remove;
+  pushJournal(s, {
+    season: s.seasonNumber, round: s.round, kind: 'entrainement',
+    title: removed ? `${r.name} apprend à se maîtriser` : `${r.name} gagne un signe distinctif : ${programLabel(r.learned)}`,
+    text: `Au bout de son programme au centre d’entraînement. ${programDesc(r.learned)}`,
+  });
 }
 
 // Choix gardé pour la séance (sans s'entraîner) : joueur, catégorie, épreuve.

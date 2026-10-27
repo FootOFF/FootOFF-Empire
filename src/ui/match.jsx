@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { TACTICS, TACTIC_ORDER, fitWeight, formationOf, lineupRating, reshapeLineup } from '../game/tactics';
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
-import { SUBS_MAX, createLiveMatch, pairSubs, prematchOdds, prematchXg, subMinute } from '../game/live';
+import { LIVE_VERSION, SUBS_MAX, createLiveMatch, liveKeyOf, pairSubs, prematchOdds, prematchXg, subMinute } from '../game/live';
+import { saveLive } from '../game/save';
 import { available, fitAt } from '../game/players';
 import { Portrait } from './portrait';
 import { teamCodes } from './teamcode';
@@ -315,21 +316,42 @@ function HalftimeChanges({ state, m, plan, onReset }) {
   );
 }
 
-export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null }) {
-  const [live] = useState(() => createLiveMatch(state, ctx)); // un seul match par montage (jamais recréé)
-  const [half, setHalf] = useState(1);
-  const [clock, setClock] = useState(0);
-  const [speed, setSpeed] = useState(1);
-  const [phase, setPhase] = useState('playing'); // playing | subs (changement en cours de jeu) | halftime | fulltime
+// Reprise d'un direct interrompu (app fermée) : le fil tel qu'il était (la première période entière si la seconde est
+// entamée), avec une ligne qui le dit en tête.
+function resumedFeed(live, resume) {
+  if (!resume) return [];
+  const { half, revealed, clock, phase } = resume.ui;
+  const seen = [...(half === 2 ? live.eventsOf(1) : []), ...live.eventsOf(half).slice(0, revealed)];
+  const base = half === 1 ? 45 : 90;
+  const mm = Math.max(half === 1 ? 0 : 45, Math.ceil(clock));
+  const label = mm > base ? `${base}+${mm - base}` : `${mm}`;
+  const text = phase === 'halftime' ? 'Le match reprend à la mi-temps, là où tu l’avais laissé.' : `Le match reprend à la ${label}e minute, là où tu l’avais laissé.`;
+  return [{ at: clock, minute: label, type: 'info', side: null, text, half }, ...seen.reverse()];
+}
+
+// restore : direct sauvegardé à reprendre (App.jsx, après une fermeture de l'app) ; le direct se sauvegarde lui-même au
+// fil du match (saveLive) pour être repris à la minute près.
+export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, restore = null }) {
+  const [live] = useState(() => createLiveMatch(state, ctx, restore?.engine || null)); // un seul match par montage (jamais recréé)
+  const [half, setHalf] = useState(restore?.ui.half || 1);
+  const [clock, setClock] = useState(restore ? Math.ceil(restore.ui.clock) : 0);
+  const [speed, setSpeed] = useState(restore?.ui.speed || 1);
+  // playing | subs (changement en cours de jeu) | halftime | fulltime ; un changement en préparation n'est pas repris
+  const [phase, setPhase] = useState(['halftime', 'fulltime'].includes(restore?.ui.phase) ? restore.ui.phase : 'playing');
   // événements de la mi-temps en cours : un tableau que le moteur remplit au fil de l'horloge (advanceTo), avec
   // quelques minutes d'avance ; la scène 3D lit le même tableau
-  const [events, setEvents] = useState(() => { live.beginHalf(1); live.advanceTo(LOOKAHEAD); return live.eventsOf(1); });
-  const [shown, setShown] = useState([]);
+  const [events, setEvents] = useState(() => {
+    if (restore) return live.eventsOf(restore.ui.half);
+    live.beginHalf(1);
+    live.advanceTo(LOOKAHEAD);
+    return live.eventsOf(1);
+  });
+  const [shown, setShown] = useState(() => resumedFeed(live, restore));
   const [banner, setBanner] = useState(null);
   const [muted, setMuted] = useState(sound.muted);
-  const pause = useRef(0);
-  const clockRef = useRef(0);
-  const revealed = useRef(0);
+  const pause = useRef(restore ? 1.2 : 0); // reprise : un court temps pour se replonger dans le match
+  const clockRef = useRef(restore?.ui.clock || 0);
+  const revealed = useRef(restore?.ui.revealed || 0);
   // identifiant stable par événement : un nouveau commentaire en tête du fil ne recrée pas (ni ne refait
   // apparaître) tous les autres
   const evKeys = useRef({ map: new WeakMap(), n: 0 });
@@ -348,11 +370,34 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
 
   useEffect(() => { sound.start(); sound.whistle(1); return () => sound.stop(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Sauvegarde du direct, pour le reprendre à la minute près si l'app se ferme : à chaque étape (coup d'envoi,
+  // changement, mi-temps, fin), au plus toutes les deux secondes pendant le jeu, et quand l'app passe en arrière-plan.
+  const uiNow = useRef({ phase, half, speed });
+  uiNow.current = { phase, half, speed };
+  const savedAt = useRef(0);
+  const persist = () => {
+    if (preview) return;
+    savedAt.current = performance.now();
+    const { phase: ph, half: hf, speed: sp } = uiNow.current;
+    saveLive({
+      v: LIVE_VERSION, key: liveKeyOf(state, ctx), at: Date.now(), engine: live.save(Math.ceil(clockRef.current)),
+      ui: { half: hf, clock: clockRef.current, revealed: revealed.current, phase: ph, speed: sp },
+    });
+  };
+  useEffect(() => { persist(); }, [phase, half]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (preview) return undefined;
+    const hide = () => { if (document.visibilityState === 'hidden') persist(); };
+    document.addEventListener('visibilitychange', hide);
+    window.addEventListener('pagehide', persist);
+    return () => { document.removeEventListener('visibilitychange', hide); window.removeEventListener('pagehide', persist); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // scène 3D : elle lit l'horloge et les événements de la mi-temps dans le canal du direct
   const homeNames = () => live.state.lineup.map((id) => state.players.find((p) => p.id === id)?.name || '');
   useEffect(() => {
     Object.assign(matchFeed, {
-      active: !preview, ended: false, phase: 'playing', half: 1, clock: 0, speed: 1, pause: 0, events,
+      active: !preview, ended: false, phase, half, clock: clockRef.current, speed, pause: pause.current, events,
       formation: live.state.formation, homeNames: homeNames(), awayNames: live.state.awayRoster.map((p) => p.name),
       awayName: live.state.away, skipped: 0, rewound: 0,
     });
@@ -418,6 +463,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
         react(e);
         if (e.type === 'goal' || e.type === 'injury') break; // la suite attendra la fin de la célébration, ou le changement
       }
+      if (now - savedAt.current > 2000) persist();
       if (next >= end && live.halfDone && revealed.current >= events.length) {
         setPhase(half === 1 ? 'halftime' : 'fulltime');
       }
@@ -472,8 +518,9 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null })
     else if (e.type === 'fulltime') { sound.whistle(3); onFx({ type: 'fulltime' }); }
   }
 
-  const skip = () => { // fin de la mi-temps en cours, sans célébration
-    live.advanceTo(Infinity);
+  const skip = () => { // fin de la mi-temps en cours, sans célébration ; le staff remplace un blessé (s'il reste un changement)
+    live.advanceTo(Infinity, { staff: true });
+    setLineupKey((k) => k + 1);
     const end = live.halfEnd;
     pause.current = 0;
     const rest = events.slice(revealed.current);

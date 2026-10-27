@@ -1,10 +1,12 @@
 import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import {
-  applyMatchResult, applyOffline, build, createInitialState, dismissOffline, dismissReview, endSeason, matchContext, upgrade,
+  applyMatchResult, applyOffline, build, createInitialState, dismissOffline, dismissReview, endSeason, matchContext, staffSession, upgrade,
 } from './game/engine';
+import { staffOn } from './game/training';
 import { BUILDINGS, DIVISIONS, upgradeCost } from './game/constants';
 import { fmtMoney } from './ui/format';
-import { clearGame, decodeCode, exportCode, importSave, lastLoad, loadGame, saveGame } from './game/save';
+import { clearGame, clearLive, decodeCode, exportCode, importSave, lastLoad, loadGame, loadLive, saveGame } from './game/save';
+import { LIVE_VERSION, liveKeyOf } from './game/live';
 import { applyUpdate } from './ui/updates';
 import { CrashScreen } from './ui/crash';
 import { clone } from './game/utils';
@@ -59,11 +61,34 @@ function cycle(current, order, storageKey) {
 // Parcours, façon jeu de console : écran de chargement (progression réelle) → écran titre devant le complexe en 3D
 // (Continuer, Nouvelle partie, Réglages) → la caméra plonge vers la vue d'ensemble et le HUD apparaît. En jeu,
 // Échap (ou Start à la manette) ouvre le menu pause, qui fige la scène.
+// Direct interrompu par la fermeture de l'app (save.js, saveLive) : repris s'il s'agit bien du prochain match de cette
+// partie (même club, même date du calendrier, même adversaire) et de la même version du moteur ; sinon oublié.
+function pendingLive(st) {
+  const rec = loadLive();
+  if (!rec) return null;
+  const ctx = st && matchContext(st);
+  if (ctx && rec.v === LIVE_VERSION && rec.key === liveKeyOf(st, ctx) && rec.engine && rec.ui) return { ...rec, ctx };
+  clearLive();
+  return null;
+}
+
+// « Match en cours · 63e minute contre … » (écran titre, entrée Continuer).
+function liveNoteOf(rec) {
+  const { half, clock, phase } = rec.ui;
+  const base = half === 1 ? 45 : 90;
+  const mm = Math.max(half === 1 ? 1 : 46, Math.ceil(clock));
+  const when = phase === 'halftime' ? 'mi-temps' : `${mm > base ? `${base}+${mm - base}` : mm}e minute`;
+  return `Match en cours · ${when} contre ${rec.ctx.opp.name}`;
+}
+
 // preview : nom d'un écran à afficher d'emblée avec une partie fictive (galerie), sans sauvegarde ni 3D.
 export default function App({ preview = null }) {
   if (preview === 'erreur') return <CrashScreen error={new Error('TypeError: Cannot read properties of null (reading \'C\')')} summary="FootOFF FC · saison 3 · Régionale" preview />;
   const [boot] = useState(() => {
-    if (!preview) return { state: loadGame(), ui: {} };
+    if (!preview) {
+      const st = loadGame();
+      return { state: st, ui: {}, live: pendingLive(st) };
+    }
     const st = previewState(preview);
     return { state: st, ui: previewUi(preview, st) };
   });
@@ -79,7 +104,7 @@ export default function App({ preview = null }) {
   useEffect(() => { if (!sel) setBuildView(null); }, [sel]);
   // préférence de vue (confort, par navigateur) : heure réelle / jour / nuit ; toujours par temps clair
   const [timeMode, setTimeMode] = useState(() => { try { return localStorage.getItem('fo-time') || 'auto'; } catch { return 'auto'; } });
-  const [matchDay, setMatchDay] = useState(!!boot.ui.matchDay);
+  const [matchDay, setMatchDay] = useState(!!boot.ui.matchDay || !!boot.live);
   const [recenter, setRecenter] = useState(0);
   const [showResult, setShowResult] = useState(!!boot.ui.showResult);
   const [goalCollapsed, setGoalCollapsed] = useState(() => window.innerWidth < 760); // replié sur mobile
@@ -93,9 +118,12 @@ export default function App({ preview = null }) {
     return () => clearTimeout(t);
   }, [sceneLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
   const [webglOk, setWebglOk] = useState(true);
-  // match : null → 'prematch' (onze + tactique) → 'live' (direct) → résumé (showResult)
-  const [matchPhase, setMatchPhase] = useState(boot.ui.matchPhase || null);
-  const [matchCtx, setMatchCtx] = useState(boot.ui.matchCtx || null);
+  // match : null → 'prematch' (onze + tactique) → 'live' (direct) → résumé (showResult) ; un direct interrompu par la
+  // fermeture de l'app reprend à la minute près, dès « Continuer » (resumeLive : save.js, loadLive)
+  const [matchPhase, setMatchPhase] = useState(boot.ui.matchPhase || (boot.live ? 'live' : null));
+  const [matchCtx, setMatchCtx] = useState(boot.ui.matchCtx || boot.live?.ctx || null);
+  const [resumeLive, setResumeLive] = useState(boot.live || null);
+  const liveDone = useRef(false); // match terminé : son enregistrement s'efface une fois le résultat sauvegardé
   const [matchFx, setMatchFx] = useState(null); // effets 3D du direct : but, but encaissé, mi-temps…
   const [dismissedTips, setDismissedTips] = useState(() => new Set()); // conseils masqués (session)
   const [confirm, setConfirm] = useState(boot.ui.confirm || null); // fenêtre de confirmation du jeu (vente, nouvelle partie…)
@@ -132,7 +160,11 @@ export default function App({ preview = null }) {
   const uiSound = useCallback((kind) => sound.current.ui?.(kind), []);
   useEffect(() => { setUiSound(uiSound); }, [uiSound]);
 
-  useEffect(() => { if (state && !preview) saveGame(state); }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!state || preview) return;
+    saveGame(state);
+    if (liveDone.current) { liveDone.current = false; clearLive(); } // le résultat est sauvegardé : plus rien à reprendre
+  }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   // chaque gain ou dépense s'anime (pièces vers la trésorerie, « +1 252 € », tintement)
   const prevMoney = useRef(null);
   useEffect(() => {
@@ -317,6 +349,7 @@ export default function App({ preview = null }) {
   const play = () => { // ouvre l'avant-match, le stade passe en configuration jour de match
     const ctx = matchContext(state);
     if (!ctx) return;
+    if (staffOn(state)) run((s) => { staffSession(s); return s; }); // séances confiées au staff : faites avant le match
     setMatchCtx(ctx);
     setPanel(null); setSel(null); setMenu(false);
     setMatchDay(true);
@@ -324,9 +357,13 @@ export default function App({ preview = null }) {
   };
   const cancelMatch = () => { setMatchPhase(null); setMatchDay(false); };
   const kickoff = (lineup, tactic, formation) => {
-    if (run((s) => { s.lineup = lineup; s.tactic = tactic; s.formation = formation; return s; })) setMatchPhase('live');
+    setResumeLive(null);
+    clearLive();
+    if (run((s) => { staffSession(s); s.lineup = lineup; s.tactic = tactic; s.formation = formation; return s; })) setMatchPhase('live');
   };
   const finishMatch = (result) => {
+    setResumeLive(null);
+    liveDone.current = true;
     run((s) => applyMatchResult(s, result));
     setMatchPhase(null);
     setMatchFx(null);
@@ -434,7 +471,7 @@ export default function App({ preview = null }) {
         const next = importSave(raw);
         if (!next) return;
         setState(next);
-        setMenu(false); setSel(null); setPanel(null); setMatchDay(false); setShowResult(false); setMatchPhase(null);
+        setMenu(false); setSel(null); setPanel(null); setMatchDay(false); setShowResult(false); setMatchPhase(null); setResumeLive(null);
         setTitleView('menu');
         setScreen('game');
         notify({ kind: 'success', eyebrow: 'Sauvegarde', title: `${next.clubName} : partie restaurée`, text: `Saison ${next.seasonNumber}, ${DIVISIONS[next.divisionIndex].name}. L’ancienne partie est gardée en copie de secours.` });
@@ -468,7 +505,7 @@ export default function App({ preview = null }) {
       onConfirm: () => {
         clearGame();
         setState(null);
-        setMenu(false); setSel(null); setPanel(null); setMatchDay(false); setShowResult(false); setMatchPhase(null);
+        setMenu(false); setSel(null); setPanel(null); setMatchDay(false); setShowResult(false); setMatchPhase(null); setResumeLive(null);
         setTitleView('create');
         setScreen('title');
       },
@@ -741,6 +778,7 @@ export default function App({ preview = null }) {
           ctx={matchCtx}
           sound={sound.current}
           preview={boot.ui.live}
+          restore={resumeLive}
           onFx={(fx) => { if (fx.type === 'goal') haptic('goal'); setMatchFx({ ...fx, id: performance.now() }); }}
           onFinish={finishMatch}
         />
@@ -758,6 +796,7 @@ export default function App({ preview = null }) {
             settings={settings}
             blocked={!!confirm}
             onContinue={() => setScreen('game')}
+            liveNote={resumeLive && matchPhase === 'live' ? liveNoteOf(resumeLive) : null}
             onNewGame={askNewGame}
             onCreate={(name, crest) => { setState(createInitialState(name, crest)); setTitleView('menu'); setScreen('game'); }}
           />

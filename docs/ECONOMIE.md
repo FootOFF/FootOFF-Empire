@@ -177,6 +177,12 @@ Le président automatique, qui ne joue ni les séances ni la tactique, monte en 
 son premier titre vers la 19e (17 avant ; dans 17 carrières sur 40) et 16 % de ses Coupes d'Europe (32 % avant).
 Un joueur parfait (épreuves réussies à 100 %, `SCORE=1`) : Elite vers la saison 10, premier titre vers la 17e.
 
+0.5.1 : récupération de la condition réduite (`docs/JOUEURS.md`). Le simulateur mesure la condition du onze au coup
+d'envoi et, avec `--sans-rotation`, ce que coûte de ne jamais faire tourner : avant, 96 % de condition même sans
+rotation (la fatigue ne comptait pas) ; désormais 90 % avec « Meilleur onze » (1,3 titulaire sous 70 % par match), 88 %
+sans rotation (1,7), 0,21 blessure par match au lieu de 0,18 ; rythme inchangé (Elite vers la saison 10, premier titre
+vers la 17e, 40 carrières).
+
 Prochaines sources de dépense prévues (feuille de route) : marché des transferts, personnel du club,
 bâtiments des parcelles vides, compétitions continentales.
 

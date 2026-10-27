@@ -45,6 +45,8 @@ AMD intégrée, écran à 200 %) et sur iPhone, souvent à distance, depuis son 
   minimum avec `npx vite build`, et dire ce qui n'a pas pu être vérifié (3D, rendu sur téléphone).
 - Dans le dépôt : `node tools/sim/career.mjs 30 8` (carrières jouées par un président automatique : rythme des montées,
   titres, trésorerie, salaires, réputation, marché ; `--detail` pour la première carrière saison par saison). À lancer
-  après tout changement d'équilibre (économie, joueurs, adversaires). La galerie se capture sans tête avec Playwright
+  après tout changement d'équilibre (économie, joueurs, adversaires). `node tools/sim/pronostic.mjs 20000` vérifie que
+  les chances affichées (avant-match, direct, coupe) sont celles que donne le moteur : à lancer après tout changement
+  du moteur de match. La galerie se capture sans tête avec Playwright
   (`npx vite preview`, puis `chromium` sur `/?ecran=<nom>`).
 - Les modèles 3D des bâtiments viennent de scripts Blender (`tools/blender/models/`), que seul le PC peut lancer.

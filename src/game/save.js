@@ -23,6 +23,23 @@ import { normalizeCrest } from './crest';
 export const BACKUP_KEY = `${SAVE_KEY}.backup`;
 export const lastLoad = { source: null, corrupt: false }; // d'où vient la partie chargée : 'main' | 'backup' | null
 
+// Match en direct en cours (0.5.1) : un emplacement à part, écrit pendant le direct (match.jsx, LiveMatch) ; si l'app se
+// ferme, le match reprend à la minute près à la réouverture (App.jsx). key : le match concerné (live.js, liveKeyOf) ;
+// un enregistrement d'un autre match, ou d'une autre version du moteur, est ignoré.
+export const LIVE_KEY = `${SAVE_KEY}.live`;
+export function saveLive(rec) {
+  try { localStorage.setItem(LIVE_KEY, JSON.stringify(rec)); } catch { /* stockage plein ou indisponible : pas de reprise */ }
+}
+export function loadLive() {
+  try {
+    const raw = localStorage.getItem(LIVE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+export function clearLive() {
+  try { localStorage.removeItem(LIVE_KEY); } catch { /* rien à nettoyer */ }
+}
+
 export function saveGame(state) {
   try {
     state.version = 4;
@@ -99,6 +116,7 @@ export async function decodeCode(code) {
 export function importSave(raw) {
   if (!validSave(raw)) return null;
   backupSave();
+  clearLive(); // un match en cours de l'ancienne partie ne reprend pas dans celle-ci
   const s = repairSave(JSON.parse(JSON.stringify(raw)));
   saveGame(s);
   return s;
@@ -143,7 +161,7 @@ export function repairSave(s) {
       y.crest = normalizeCrest(y.crest); // écusson du club (ajouté après coup : écusson par défaut, noir et or)
       y.alumni ||= []; // anciens joueurs (archivés à partir de cette version)
       y.ticketPolicy ||= 'standard';
-      if (!y.objectives) drawObjectives(y); // objectifs du président (ajoutés après coup) : tirés pour la saison en cours
+      if (!y.objectives) drawObjectives(y); // objectifs du conseil (ajoutés après coup) : tirés pour la saison en cours
       y.records ||= rebuildRecords(y); // records du club : reconstitués depuis l'historique des matchs
       // trophées : les titres de champion déjà gagnés sont retrouvés dans l'historique des classements
       if (!y.trophies) y.trophies = (y.history || []).filter((h) => h.position === 1).map((h) => ({ comp: 'league', season: h.season, division: h.division }));
@@ -257,4 +275,5 @@ export function clearGame() {
   } catch {
     /* rien à nettoyer */
   }
+  clearLive();
 }

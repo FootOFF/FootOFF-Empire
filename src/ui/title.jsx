@@ -93,11 +93,12 @@ function SideCard({ id, state, settings }) {
   return null;
 }
 
-// Entrées du menu principal : Continuer (s'il y a une partie), Nouvelle partie, Réglages, FootOFF Media.
-function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews }) {
+// Entrées du menu principal : Continuer (s'il y a une partie ; liveNote : un match interrompu qui reprendra à la minute
+// près), Nouvelle partie, Réglages, FootOFF Media.
+function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews }, liveNote = null) {
   const div = state && DIVISIONS[state.divisionIndex];
   return [
-    ...(state ? [{ id: 'continue', label: 'Continuer', sub: `${state.clubName} · ${div.name} · Saison ${state.seasonNumber}`, onSelect: onContinue }] : []),
+    ...(state ? [{ id: 'continue', label: 'Continuer', sub: liveNote || `${state.clubName} · ${div.name} · Saison ${state.seasonNumber}`, onSelect: onContinue }] : []),
     { id: 'new', label: 'Nouvelle partie', sub: state ? 'Fonder un autre club' : 'Fonde ton club et bâtis ton empire', onSelect: onNew },
     { id: 'rules', label: 'Règles du jeu', sub: 'Matchs, joueurs, mercato, argent, réputation', onSelect: onRules },
     { id: 'news', label: 'Nouveautés', sub: `Version ${CURRENT}${unseenNews() ? ' · à lire' : ''}`, badge: unseenNews(), onSelect: onNews },
@@ -207,9 +208,9 @@ function CreateClub({ onCreate, onBack, active }) {
   );
 }
 
-export function TitleScreen({ state, view, onView, onContinue, onNewGame, onCreate, settings, blocked = false }) {
+export function TitleScreen({ state, view, onView, onContinue, onNewGame, onCreate, settings, blocked = false, liveNote = null }) {
   const active = !blocked;
-  const items = menuItems(state, { onContinue, onNew: () => (state ? onNewGame() : onView('create')), onSettings: () => onView('settings'), onRules: () => onView('rules'), onNews: () => onView('news') });
+  const items = menuItems(state, { onContinue, onNew: () => (state ? onNewGame() : onView('create')), onSettings: () => onView('settings'), onRules: () => onView('rules'), onNews: () => onView('news') }, liveNote);
   const menu = useMenu(items, { active: active && view === 'menu' }); // l'entrée active est gardée au retour des réglages
   const current = items[Math.min(menu.cur, items.length - 1)].id;
   const [entered, setEntered] = useState(false); // la première apparition joue l'animation d'entrée complète

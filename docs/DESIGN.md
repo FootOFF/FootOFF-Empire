@@ -99,7 +99,7 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 |---|---|---|
 | Haut gauche | bandeau du club comme un score télé : écusson, nom, division, saison et journée, classement | hauteur `--top-h` (60 px, 52 sur téléphone) ; le classement ouvre la Saison |
 | Haut droite | trésorerie (ouvre les Finances), réputation (ouvre la Notoriété), menu | même hauteur que le bandeau |
-| Colonne de gauche | objectifs du président (repliables sur une ligne) ou tutoriel, fiche d'une parcelle | largeur `--rail-w` (380 px, 340 de 761 à 1260 px) |
+| Colonne de gauche | objectifs du conseil d'administration (repliables sur une ligne) ou tutoriel, fiche d'une parcelle | largeur `--rail-w` (380 px, 340 de 761 à 1260 px) |
 | Droite | colonne d'outils : Bâtir, Staff, Vue (dépliée : heure, jour de match, recentrer) | boutons de `--tool` × `--tool-h` (66 × 64, 54 × 54 sur téléphone) |
 | Bas | menu du bas centré (le seul verre du jeu) et carte du prochain match à droite | même ligne de base (`--hud-bottom`) ; carte de 80 px (`--bar-h`) ; sous 1260 px le menu se cale à gauche |
 
@@ -555,7 +555,7 @@ Refait le 2026-10-24 (`src/game/tutorial.js`, carte `CoachCard` de `src/ui/guide
 didactique et donner envie de continuer. La directrice sportive du club mène huit étapes : bienvenue (le but du jeu),
 construire le centre d'entraînement, jouer une première épreuve en 3D, recruter la recrue recommandée, jouer le
 premier match, ménager son effectif (condition, blessures, suspensions, changements), découvrir les trois objectifs du
-président (tirés pour la saison), puis cap sur le stade. Chaque
+conseil d'administration (tirés pour la saison), puis cap sur le stade. Chaque
 carte dit quoi faire (texte), pourquoi (filet doré) et, pour les quatre étapes d'action, sa prime (1 000 €, 500 €,
 500 €, 1 000 €, versée une fois, notification « Étape réussie » une seule fois : la liste des primes à annoncer se
 vide au début de chaque action, `run` dans `App.jsx` ; elle restait sinon dans la sauvegarde quand le tutoriel se
@@ -565,7 +565,8 @@ l'étape pulse à l'écran (parcelle, bouton Jouer d'une ligne du centre, offre 
 
 ## Objectifs de la saison
 
-Refaits le 2026-10-24 (`src/game/objectives.js`) : à chaque début de saison, le président fixe trois objectifs,
+Refaits le 2026-10-24 (`src/game/objectives.js`) : à chaque début de saison, le conseil d'administration fixe trois
+objectifs (« du président » avant la 0.5.1 : le président, c'est le joueur, le jeu ne doit pas en inventer un autre),
 adaptés à l'écart entre le niveau du onze et la moyenne de la division :
 - un classement : être champion, monter (ou finir dans les deux premiers en Elite), finir dans la première moitié,
   se maintenir (finir 6e ou mieux en Départementale) ;
@@ -742,6 +743,14 @@ finie. Trois onglets :
   commencer un ; la fiche d'un joueur liste les signes possibles avec leur effet.
 - Progrès : épreuves de la saison, niveau gagné, score moyen joué, dernière séance collective, journal groupé par
   séance (« Avant : journée 3 / 7 »), tableau des niveaux du centre.
+- Séances confiées au staff (0.5.1, demande de l'utilisateur : les épreuves l'ennuient) : un interrupteur en tête de
+  l'onglet Séance (`training.js`, `staffOn` / `setStaff`, gardé dans la partie). Activé, le staff fait avant chaque
+  match les épreuves que tu n'as pas faites, avec les choix affichés sur les cartes (`pickOf` : tes choix tant que le
+  joueur a de la marge, sinon le joueur dont le programme de signe avance avec la séance, sinon le conseillé), en
+  simulé (gain moyen assuré, programmes poursuivis, signe appris au journal) : à l'ouverture de l'avant-match, au coup
+  d'envoi, et avant un match joué d'un bloc (`staffSession`). Plus de pastille, d'épingle ni de conseil « séance à
+  faire » (`advice.js`, `trainingTodo`) ; l'en-tête dit « le staff s'en charge », chaque carte « Par le staff », et tu
+  peux encore jouer une épreuve toi-même avant le match. Aperçu : `?ecran=entrainement-staff`.
 Règles :
 - Une séance par fenêtre entre deux matchs (ou avant la fin de saison), une épreuve par ligne.
 - Gain = marge vers le potentiel × 1,2 % × rythme (âge, et plus lent au sommet) × niveau (×1 à ×1,6) × épreuve × score
@@ -846,6 +855,13 @@ le pronostic donne la chance exacte de gagner une séance de tirs au but avec ce
 `src/game/cups.js` : finition des cinq meilleurs tireurs, réflexes du gardien, même tirage que le match) et la
 qualification exacte (victoire, ou nul puis séance gagnée ; le nul comptait pour une demi-qualification). Aperçus :
 `?ecran=avant-match`, `avant-match-coupe` (tour de Coupe nationale, trois titulaires fatigués).
+Exactitude vérifiée en 0.5.1 (`node tools/sim/pronostic.mjs 20000`, dans le dépôt) : vingt mille matchs du moteur du
+direct, effectifs, adversaires, dispositifs, tactiques et conditions tirés au hasard, comparés aux chances annoncées
+avant le match et pendant le direct (30e minute, mi-temps, 60e, 75e, 85e). Un match annoncé à 70-80 % de victoire
+(74,7 % en moyenne) est gagné 75,2 % du temps ; chaque tranche reste dans le bruit du tirage, la qualification en coupe
+aussi. Le pronostic suppose qu'un blessé est remplacé : le direct le propose, et le staff le fait quand la fin d'une
+mi-temps est passée ou que le match se joue d'un bloc (`staffSubs`, `live.js` ; avant la 0.5.1, l'équipe finissait à
+dix et perdait environ un point de victoire sur l'annonce). Finir volontairement à dix coûte ce point.
 
 Direct (`LiveMatch`, moteur `src/game/live.js`, refait le 2026-10-24) : le match se simule au fil de l'horloge, avec
 quatorze minutes d'avance pour que la scène 3D prépare chaque action. Le bouton « Changement » (avec le nombre de
@@ -855,7 +871,17 @@ tout au prochain arrêt de jeu, une à deux minutes plus tard (`subMinute`), apr
 minutes simulées d'avance sont reprises depuis un instantané et rejouées avec le nouveau onze (`change`), la scène 3D
 oublie les actions disparues (`matchFeed.rewound`). Une blessure (croix médicale dans le fil, le joueur quitte la
 pelouse en 3D) arrête le match d'elle-même s'il reste un changement et un remplaçant disponible ; sinon l'équipe joue à
-dix. Cinq changements par match, à la pause ou en jeu. Aperçu : `?ecran=changement`. La composition est dépliée d'office sur PC (le onze à
+dix. Passer la fin d'une mi-temps (« Mi-temps », « Fin du match ») laisse le staff remplacer un blessé
+(`advanceTo(…, { staff: true })`). Cinq changements par match, à la pause ou en jeu. Aperçu : `?ecran=changement`.
+Reprise après une fermeture de l'app (0.5.1, choix de l'utilisateur : « reprise à la minute ») : le direct se sauvegarde
+à part (`save.js`, `saveLive`, clé `….live`) au coup d'envoi, à chaque étape (changement, mi-temps, fin), au plus toutes
+les deux secondes pendant le jeu et quand l'app passe en arrière-plan : tout l'état du moteur (`live.save`, la suite
+déjà simulée d'avance comprise : fermer l'app ne rejoue rien), la minute, les événements montrés, la période, la
+vitesse. À la réouverture, l'écran titre annonce « Match en cours · 63e minute contre … » sous « Continuer », et le
+direct reprend à la minute près (une ligne « Le match reprend à la 63e minute… » en tête du fil, un court temps avant
+de repartir ; un changement en préparation n'est pas repris). L'enregistrement n'est repris que pour le même match
+(`liveKeyOf` : club, date, compétition, adversaire) et la même version du moteur ; il s'efface une fois le résultat
+sauvegardé, à un nouveau coup d'envoi, à une nouvelle partie ou à l'import d'une sauvegarde. La composition est dépliée d'office sur PC (le onze à
 gauche, les réglages à droite) et repliée sur téléphone dans la même carte qu'à la mi-temps (`CompoCard`), avec
 « Meilleur onze » dessous ; dépliée, elle cachait sur téléphone le pronostic et tout le reste de l'avant-match.
 

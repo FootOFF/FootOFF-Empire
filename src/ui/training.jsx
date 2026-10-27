@@ -3,10 +3,10 @@ import { BUILDINGS, POS_LABELS, PROGRAM_STEPS, TRAINING_COLLECTIVE, TRAINING_MUL
 import { ATTRS, GK_ATTRS, TRAITS, isInjured, playerRating, potentialRange } from '../game/players';
 import {
   DRILLS, GREAT, LINES, PLAY_MAX, PLAY_MIN, PROGRAMS, attrsAfter, bestCat, catsFor, drillsFor, pickOf, programDesc, programLabel, programNeed,
-  programOf, programsFor, sessionOf, sessionPreview, suggestFor,
+  programOf, programsFor, sessionOf, sessionPreview, staffOn, suggestFor,
 } from '../game/training';
 import { fixtureShort, nextFixture } from '../game/cups';
-import { setTrainingPick, startProgram, stopProgram, trainPlayer } from '../game/engine';
+import { setTrainingPick, setTrainingStaff, startProgram, stopProgram, trainPlayer } from '../game/engine';
 import { fmtMoney, fmtRating } from './format';
 import { IconArrowUp, IconCheck, IconChevron, IconClose, IconLock, IconPlay, IconStar, IconTraining } from './icons';
 import { Eyebrow, divRef } from './kit';
@@ -20,7 +20,8 @@ import { heat } from './mercato';
 // du staff. Trois onglets :
 //  - Séance : entre deux matchs, quatre joueurs, un par ligne, chacun sur la catégorie choisie ; une épreuve chacun,
 //    jouée en 3D (drill.jsx) ou simulée. Le gain attendu est affiché avant (simulée, et la fourchette d'une épreuve
-//    jouée), exactement celui que donnera la séance ;
+//    jouée), exactement celui que donnera la séance. Un réglage confie les séances au staff (0.5.1) : avant chaque
+//    match, il simule les épreuves que tu n'as pas faites, avec les choix affichés (training.js, staffSession) ;
 //  - Programmes (dès le niveau 3) : apprendre un signe distinctif en quelques séances ;
 //  - Progrès : les séances de la saison, la séance collective, ce que chaque niveau du centre apporte.
 
@@ -65,6 +66,8 @@ export function TrainingView({ state, run, ask, notify = () => {}, onClose, onBu
   const picks = useMemo(() => Object.fromEntries(LINES.map((pos) => [pos, pickOf(state, pos)])), [state]);
   const todo = LINES.filter((pos) => picks[pos] && !session.done[pos]);
   const programs = Object.keys(state.training?.programs || {}).filter((id) => state.players.some((p) => String(p.id) === id));
+  const staff = staffOn(state);
+  const toggleStaff = () => run((s) => setTrainingStaff(s, !staff));
 
   const setPick = (pos, next) => run((s) => setTrainingPick(s, pos, next));
   // simuler : les épreuves sont comptées tout de suite, au gain moyen
@@ -114,10 +117,10 @@ export function TrainingView({ state, run, ask, notify = () => {}, onClose, onBu
       onEscape={onEscape}
       toolbar={(
         <>
-          <SessionMeter state={state} todo={todo} />
+          <SessionMeter state={state} todo={todo} staff={staff} />
           <Tabs
             items={[
-              ['session', 'Séance', todo.length ? <em className="mc-count-badge ac-tab-n hot">{todo.length}</em> : null],
+              ['session', 'Séance', todo.length && !staff ? <em className="mc-count-badge ac-tab-n hot">{todo.length}</em> : null],
               ['programs', 'Programmes', programs.length ? <em className="mc-count-badge ac-tab-n">{programs.length}</em> : lvl < 3 ? <IconLock className="tr-tab-lock" aria-label="dès le niveau 3" /> : null],
               ['progress', 'Progrès'],
             ]}
@@ -154,6 +157,8 @@ export function TrainingView({ state, run, ask, notify = () => {}, onClose, onBu
           state={state}
           picks={picks}
           todo={todo}
+          staff={staff}
+          onStaff={toggleStaff}
           onPick={setPick}
           onChoose={setChooser}
           onPlay={play}
@@ -169,7 +174,7 @@ export function TrainingView({ state, run, ask, notify = () => {}, onClose, onBu
 }
 
 // Avancement de la séance : une case par ligne (or : faite), et le match qu'elle prépare.
-function SessionMeter({ state, todo }) {
+function SessionMeter({ state, todo, staff }) {
   const f = nextFixture(state);
   const lines = LINES.filter((pos) => state.players.some((p) => p.pos === pos));
   const done = lines.length - todo.length;
@@ -179,25 +184,37 @@ function SessionMeter({ state, todo }) {
       <span className="ac-slots tr-slots" aria-hidden="true">
         {lines.map((pos) => <i key={pos} className={sessionOf(state).done[pos] ? 'on' : ''} />)}
       </span>
-      <span className="sq-budget-sub">{f ? `Avant : ${fixtureShort(f, state.round + 1)}` : 'Avant la fin de la saison'}</span>
+      <span className="sq-budget-sub">{f ? `Avant : ${fixtureShort(f, state.round + 1)}${staff && todo.length ? ' · par le staff' : ''}` : 'Avant la fin de la saison'}</span>
     </div>
   );
 }
 
 // --- Séance ------------------------------------------------------------------------------------------------------
 
-function SessionTab({ state, picks, todo, onPick, onChoose, onPlay, onSimulate }) {
+function SessionTab({ state, picks, todo, staff, onStaff, onPick, onChoose, onPlay, onSimulate }) {
   const session = sessionOf(state);
   const lines = LINES.filter((pos) => picks[pos]);
   const total = lines.reduce((a, pos) => a + (session.done[pos]?.gain || 0), 0);
+  const left = todo.length === lines.length ? 'Quatre épreuves' : plural(todo.length, 'épreuve', 'épreuves');
   return (
     <>
+      <div className={`tr-staff ${staff ? 'on' : ''}`}>
+        <div className="tr-staff-text">
+          <strong>Confier les séances au staff</strong>
+          <span>
+            {staff
+              ? 'Avant chaque match, le staff fait les épreuves que tu n’as pas faites, avec les joueurs choisis ci-dessous (par défaut, les conseillés) : épreuves simulées, gain moyen assuré.'
+              : 'Le staff peut faire les séances à ta place avant chaque match, avec les joueurs conseillés. Jouer l’épreuve toi-même rapporte jusqu’à ×1,5.'}
+          </span>
+        </div>
+        <button type="button" className={`switch ${staff ? 'on' : ''}`} role="switch" aria-checked={staff} aria-label="Confier les séances au staff" onClick={onStaff}><i /></button>
+      </div>
       <div className={`tr-lead ${todo.length ? '' : 'done'}`}>
         <div className="tr-lead-text">
-          <strong>{todo.length ? (todo.length === lines.length ? 'Quatre épreuves avant le match' : `${plural(todo.length, 'épreuve', 'épreuves')} à faire`) : 'Séance terminée'}</strong>
+          <strong>{todo.length ? (staff ? `${left} : le staff s’en charge` : todo.length === lines.length ? 'Quatre épreuves avant le match' : `${left} à faire`) : 'Séance terminée'}</strong>
           <span>
             {todo.length
-              ? 'Une épreuve par ligne, en 3D, d’environ 25 secondes. Bien jouée, elle rapporte plus que simulée.'
+              ? (staff ? 'Il les simulera juste avant le match. Tu peux encore en jouer une toi-même : bien jouée, elle rapporte plus.' : 'Une épreuve par ligne, en 3D, d’environ 25 secondes. Bien jouée, elle rapporte plus que simulée.')
               : <>Tes joueurs ont gagné <b>{gainTxt(total)}</b> de niveau. Prochaine séance après le match.</>}
           </span>
         </div>
@@ -216,6 +233,7 @@ function SessionTab({ state, picks, todo, onPick, onChoose, onPlay, onSimulate }
             pos={pos}
             pick={picks[pos]}
             done={session.done[pos]}
+            staff={staff}
             onPick={(next) => onPick(pos, next)}
             onChoose={() => onChoose(pos)}
             onPlay={() => onPlay([pos])}
@@ -233,7 +251,7 @@ function SessionTab({ state, picks, todo, onPick, onChoose, onPlay, onSimulate }
   );
 }
 
-function LineCard({ state, pos, pick, done, onPick, onChoose, onPlay, onSimulate }) {
+function LineCard({ state, pos, pick, done, staff, onPick, onChoose, onPlay, onSimulate }) {
   const lvl = state.buildings.training || 0;
   const p = pick ? state.players.find((q) => q.id === pick.id) : null;
   if (!p) {
@@ -252,7 +270,7 @@ function LineCard({ state, pos, pick, done, onPick, onChoose, onPlay, onSimulate
       <span className={`pos-pill ${pos}`}>{pos}</span>
       <b>{POS_LABELS[pos]}</b>
       {done ? <em className="tr-state ok"><IconCheck /> {done.score === null ? 'Simulée' : `Jouée · ${Math.round(done.score * 100)} %`}</em>
-        : <em className="tr-state">À faire</em>}
+        : <em className="tr-state">{staff ? 'Par le staff' : 'À faire'}</em>}
     </header>
   );
   const who = (

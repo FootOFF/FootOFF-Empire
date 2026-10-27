@@ -256,9 +256,11 @@ export function progressPlayer(p) {
 // --- Condition physique, blessures, suspensions ---------------------------------------------------------------
 // Condition (fit, 0 à 100, 100 au repos) : un match en coûte selon l'endurance (25 points pour un joueur très
 // endurant, 36 pour un joueur peu endurant ; moitié pour un gardien ; « Infatigable » : ×0,6), et chaque date du
-// calendrier en rend (28 points jusqu'à 27 ans, 24 jusqu'à 31, 20 ensuite, +2 par niveau du centre d'entraînement,
-// son centre médical). En match, la condition baisse minute après minute et pèse sur le niveau du joueur
-// (fitFactor : −15 % à zéro). Un joueur fatigué se blesse plus souvent.
+// calendrier en rend (24 points jusqu'à 27 ans, 21 jusqu'à 31, 18 ensuite, +1,5 par niveau du centre d'entraînement).
+// En match, la condition baisse minute après minute et pèse sur le niveau du joueur (fitFactor : −15 % à zéro). Un
+// joueur fatigué se blesse plus souvent. Récupération réduite en 0.5.1 (28, 24, 20 et +2 par niveau avant) : le onze
+// restait à 96 % de condition sans jamais tourner, la fatigue ne comptait pas (tools/sim/career.mjs, --sans-rotation) ;
+// un titulaire joue désormais sa saison autour de 90 %, et les plus fatigués méritent un repos.
 export const fitOf = (p) => clamp(p.fit ?? 100, 0, 100);
 export const fitFactor = (fit) => 0.85 + (0.15 * clamp(fit, 0, 100)) / 100;
 export function matchCost(p) {
@@ -266,7 +268,7 @@ export function matchCost(p) {
   const base = 30 * (1.35 - end / 40) * (p.pos === 'G' ? 0.5 : 1) * (p.traits?.includes('infatigable') ? 0.6 : 1);
   return Math.round(base * 10) / 10;
 }
-export const recoveryOf = (p, trainingLvl = 0) => (p.age <= 27 ? 28 : p.age <= 31 ? 24 : 20) + 2 * trainingLvl;
+export const recoveryOf = (p, trainingLvl = 0) => (p.age <= 27 ? 24 : p.age <= 31 ? 21 : 18) + 1.5 * trainingLvl;
 // condition d'un joueur à une minute du match, entré à la minute `since`
 export const fitAt = (p, minute, since = 0) => Math.max(0, fitOf(p) - (matchCost(p) * Math.max(0, minute - since)) / 90);
 

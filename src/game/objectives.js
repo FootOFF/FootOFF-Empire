@@ -4,8 +4,9 @@ import { book } from './ledger';
 import { pushJournal } from './journal';
 import { standingsOf } from './season';
 
-// Objectifs de la saison : trois défis fixés par le président à chaque début de saison, adaptés au club (force de
-// l'onze face à sa division, bâtiments construits) : un classement, un défi sportif, un défi du club. Chacun a sa
+// Objectifs de la saison : trois défis fixés par le conseil d'administration à chaque début de saison (le président,
+// c'est le joueur ; « objectifs du président » avant la 0.5.1), adaptés au club (force de l'onze face à sa division,
+// bâtiments construits) : un classement, un défi sportif, un défi du club. Chacun a sa
 // prime (argent et réputation), connue d'avance ; les trois réussis valent un bonus « saison parfaite ». La
 // progression se lit en direct (HUD, menu pause), le verdict tombe au bilan de la saison (endSeason). Les grandes
 // étapes de réputation (goals.js) continuent à part.
@@ -22,7 +23,7 @@ const levelSum = (s) => Object.values(s.buildings || {}).reduce((a, b) => a + (b
 const leagueMatches = (s) => (s.matches || []).filter((m) => m.season === s.seasonNumber && (m.comp || 'league') === 'league');
 const positionOf = (s) => standingsOf(s).findIndex((t) => t.i === 0) + 1;
 
-// L'écart de niveau entre ton meilleur onze et la moyenne de ta division : il règle l'ambition du président. Le meilleur
+// L'écart de niveau entre ton meilleur onze et la moyenne de ta division : il règle l'ambition du conseil. Le meilleur
 // onze, pas l'onze enregistré : aligner un onze absurde juste avant le bilan donnait des objectifs faciles pour la même
 // prime (avant la 0.5.0).
 function ambition(s) {
@@ -157,7 +158,7 @@ export function closeSeasonObjectives(s, events) {
     s.money += prize.money;
     book(s, 'bonus', prize.money);
     s.reputation = r1(s.reputation + prize.rep);
-    events.push(`Saison parfaite : les trois objectifs du président sont atteints (+${prize.money.toLocaleString('fr-FR')} €).`);
+    events.push(`Saison parfaite : les trois objectifs du conseil sont atteints (+${prize.money.toLocaleString('fr-FR')} €).`);
   }
   pushJournal(s, {
     season: s.seasonNumber, kind: 'objectif',

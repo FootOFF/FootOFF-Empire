@@ -1,7 +1,7 @@
 import { nextFixture } from './cups';
 import { BUILDINGS, POS_LABELS, SQUAD_MAX, YOUTH_LEAVE_AGE, YOUTH_PLACES, upgradeCost } from './constants';
 import { leavingYouth } from './academy';
-import { LINES, sessionOf, windowKey } from './training';
+import { LINES, sessionOf, staffOn, windowKey } from './training';
 import { PLOTS, allowedBuildingsFor, plotBuilding, plotOf } from './map';
 import { treatFee, treatOpen } from './medical';
 import { autoLineup, fitWeight, lineupRating, slotsOf } from './tactics';
@@ -101,9 +101,10 @@ export function matchesToAfford(s, missing) {
   return per > 0 ? Math.ceil(missing / per) : null;
 }
 
-// Lignes (gardien, défense, milieu, attaque) dont l'épreuve d'entraînement reste à faire avant le prochain match.
+// Lignes (gardien, défense, milieu, attaque) dont l'épreuve d'entraînement reste à faire avant le prochain match ; rien
+// quand les séances sont confiées au staff (il les fera avant le match).
 export function trainingTodo(s) {
-  if (!s.buildings.training || !nextFixture(s)) return [];
+  if (!s.buildings.training || !nextFixture(s) || staffOn(s)) return [];
   return LINES.filter((pos) => !sessionOf(s).done[pos] && s.players.some((p) => p.pos === pos));
 }
 
@@ -192,7 +193,7 @@ export function staffTip(s) {
   if (todo.length) {
     return {
       id: `training-${windowKey(s)}`, title: todo.length === LINES.length ? 'Séance d’entraînement avant le match' : 'Séance d’entraînement à finir',
-      text: `${todo.length > 1 ? `${todo.length} joueurs peuvent` : 'Un joueur peut'} encore progresser avant le prochain match : une épreuve chacun, à jouer en 3D ou à simuler.`,
+      text: `${todo.length > 1 ? `${todo.length} joueurs peuvent` : 'Un joueur peut'} encore progresser avant le prochain match : une épreuve chacun, à jouer en 3D ou à simuler, ou à confier au staff (réglage du centre).`,
       action: { kind: 'panel', panel: 'training', label: 'Aller à l’entraînement' },
     };
   }

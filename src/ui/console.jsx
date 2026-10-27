@@ -260,7 +260,7 @@ export function ClubCard({ state, eyebrow, objective = false, head = true }) {
   const total = state.schedule?.length || 7;
   const ctx = matchContext(state);
   const form = (state.matches || []).filter((m) => m.season === state.seasonNumber).slice(-5);
-  const goals = objective ? seasonObjectives(state) : null; // objectifs du président (objectives.js)
+  const goals = objective ? seasonObjectives(state) : null; // objectifs du conseil d'administration (objectives.js)
   const rank = ordinal(pos); // « 4e », « 1er » : le chiffre en grand, le suffixe en petit
   const num = rank.match(/^\d+/)?.[0] || rank;
   return (
