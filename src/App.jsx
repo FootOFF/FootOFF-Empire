@@ -30,6 +30,9 @@ import { LiveMatch, PreMatch } from './ui/match';
 import { CoachCard, StaffTip } from './ui/guide';
 import { DirectionView } from './ui/direction';
 import { MedicalView } from './ui/medical';
+import { LeagueView } from './ui/league';
+import { leagueOpen } from './game/league';
+import { myLeagues, takeInvite } from './game/leagueNet';
 import ConfirmDialog from './ui/confirm';
 import { Presence } from './ui/presence';
 import { LoadingScreen } from './ui/loading';
@@ -133,6 +136,13 @@ export default function App({ preview = null }) {
   const [matchFx, setMatchFx] = useState(null); // effets 3D du direct : but, but encaissé, mi-temps…
   const [dismissedTips, setDismissedTips] = useState(() => new Set()); // conseils masqués (session)
   const [confirm, setConfirm] = useState(boot.ui.confirm || null); // fenêtre de confirmation du jeu (vente, nouvelle partie…)
+  // Siège de la Ligue ouvert sur l'écran titre (un invité n'a besoin ni du bâtiment ni d'une partie) : { invite } quand
+  // on arrive par un lien d'invitation (…/footoffempire/?ligue=CODE), la fenêtre s'ouvre alors sur « rejoindre »
+  const [leagueHub, setLeagueHub] = useState(() => {
+    if (preview || !leagueOpen()) return null;
+    const code = takeInvite();
+    return code ? { invite: code } : null;
+  });
   const [squadTab, setSquadTab] = useState(boot.ui.squadTab && boot.ui.squadTab !== 'market' ? boot.ui.squadTab : 'players'); // onglet de l'Effectif (joueurs, composition, anciens)
   const [seasonTab, setSeasonTab] = useState(boot.ui.seasonTab || 'calendar'); // onglet de la Saison (calendrier, classement)
   const [navSwitch, setNavSwitch] = useState(false); // ouvert depuis un onglet de la même section : sans glissement
@@ -338,6 +348,7 @@ export default function App({ preview = null }) {
     else if (k === 'training') openTraining();
     else if (k === 'direction') openPanel('direction'); // la Direction du club : ses négociations
     else if (k === 'medical') openPanel('medical'); // le centre médical : les blessés à soigner
+    else if (k === 'league' && leagueOpen()) openPanel('league'); // le Siège de la Ligue : les championnats entre amis
     else selectPlot(plotId, sector);
   };
   // une notification ouvre ce qu'elle annonce : le succès lui-même (salle des trophées, mis en évidence), les offres
@@ -764,6 +775,17 @@ export default function App({ preview = null }) {
       </Presence>
       {inGame && drills && <DrillRunner key={drillsKey} state={state} queue={drills} run={run} sound={sound.current} notify={notify} onClose={() => setDrills(null)} />}
       <Presence>{inGame && panel === 'season' && <SeasonPanel state={state} tab={seasonTab} initialSel={boot.ui.seasonSel} onClose={() => setPanel(null)} onPlay={play} onOpenMatch={(m) => { setStatsMatch(m); openPanel('stats'); }} onPlayerSheet={setPeek} sheet={peekSheet} sheetOpen={peek !== null} />}</Presence>
+      <Presence>
+        {((inGame && panel === 'league') || (screen === 'title' && booted && leagueHub)) && (
+          <LeagueView
+            state={state}
+            ask={setConfirm}
+            invite={screen === 'title' ? leagueHub?.invite : null}
+            overTitle={screen === 'title'}
+            onClose={() => { if (screen === 'title') setLeagueHub(null); else setPanel(null); }}
+          />
+        )}
+      </Presence>
       <Presence>{inGame && panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'reputation' && <ReputationPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'trophies' && <TrophyRoom key={navKey} state={state} initialTab={trophyTab} focus={trophyFocus} onClose={() => { setPanel(null); setTrophyTab('honours'); setTrophyFocus([]); }} />}</Presence>
@@ -787,6 +809,7 @@ export default function App({ preview = null }) {
             onTraining={() => openTraining()}
             onDirection={() => { setDirectionTab('tv'); openPanel('direction'); }}
             onMedical={() => openPanel('medical')}
+            onLeague={leagueOpen() ? () => openPanel('league') : null}
             onTickets={() => { setSel(null); setDirectionTab('tickets'); openPanel('direction'); }}
             onPreview={setBuildView}
             onSwitchPlot={(id) => selectPlot(id, 'main')}
@@ -821,11 +844,12 @@ export default function App({ preview = null }) {
             view={titleView}
             onView={setTitleView}
             settings={settings}
-            blocked={!!confirm}
-            onContinue={() => setScreen('game')}
+            blocked={!!confirm || !!leagueHub}
+            onContinue={() => { setLeagueHub(null); setScreen('game'); }}
             liveNote={resumeLive && matchPhase === 'live' ? liveNoteOf(resumeLive) : null}
             onNewGame={askNewGame}
-            onCreate={(name, crest) => { setState(createInitialState(name, crest)); setTitleView('menu'); setScreen('game'); }}
+            leagues={leagueOpen() ? { count: myLeagues().length, onOpen: () => setLeagueHub({}) } : null}
+            onCreate={(name, crest) => { setLeagueHub(null); setState(createInitialState(name, crest)); setTitleView('menu'); setScreen('game'); }}
           />
         )}
       </Presence>

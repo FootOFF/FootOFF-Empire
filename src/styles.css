@@ -1318,6 +1318,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 
 
 .table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: var(--t-sm); }
+.table .t-name { font-variant-numeric: normal; } /* chiffres alignés, mais un nom garde ses traits d'union étroits */
 .table th { font-family: var(--font-disp); font-weight: 600; font-size: var(--d-xs); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 0 8px 8px; }
 .table td { padding: 12px 8px; text-align: right; border-top: 1px solid var(--line); }
 .table th:nth-child(2), .table td.t-club { text-align: left; }
@@ -4975,3 +4976,120 @@ html, body { overscroll-behavior: none; }
 .chips.journal-seasons { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; margin: 0 0 14px; padding-bottom: 2px; }
 .chips.journal-seasons::-webkit-scrollbar { display: none; }
 .chips.journal-seasons button { flex-shrink: 0; min-width: 44px; }
+
+/* =========================================================== Siège de la Ligue (src/ui/league.jsx)
+   Championnats entre amis : mes championnats en cartes, formulaires (nom, logo, format, heure, son club), salle
+   d'attente (code en grand, clubs inscrits), saison (journée, qui a validé, matchs, classement). Ouverte depuis
+   l'écran titre, la fenêtre passe au-dessus de lui. */
+.panel.over-title { z-index: 35; }
+.lig-scrim { position: absolute; inset: 0; z-index: 34; background: rgba(4, 4, 5, .6); animation: fo-fade .25s; }
+.lig .panel-body { gap: var(--s-4); }
+.lig-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--muted); font-family: var(--font-disp); font-weight: 600; font-size: var(--d-xs); letter-spacing: .07em; text-transform: uppercase; }
+.lig-back svg { width: 15px; height: 15px; }
+@media (hover: hover) { .lig-back:hover { color: var(--gold-light); } }
+.lig-note { margin: 0; padding: 9px 14px; font-size: var(--t-sm); color: var(--text); background: rgba(122, 196, 140, .1); box-shadow: inset 3px 0 0 var(--green); clip-path: var(--cut-shape-sm); animation: fo-rise var(--dur) var(--ease); overflow-wrap: anywhere; }
+.lig-note.warn { background: rgba(224, 122, 111, .09); box-shadow: inset 3px 0 0 var(--red); }
+.lig-problem { margin: 0; padding: 9px 14px; font-size: var(--t-sm); color: #f0b3ab; background: rgba(224, 122, 111, .08); box-shadow: inset 3px 0 0 var(--red); clip-path: var(--cut-shape-sm); }
+.lig-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.lig-resume-link, .lig-leave { align-self: flex-start; }
+.lig-leave { margin-top: var(--s-2); }
+
+/* mes championnats */
+.lig-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.lig-card {
+  width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 12px 14px;
+  border: 0; border-radius: 0; background: var(--plate-2); clip-path: var(--cut-shape-sm); color: var(--text); text-align: left;
+  transition: background var(--dur-fast), box-shadow var(--dur-fast);
+}
+@media (hover: hover) { .lig-card:hover { background: linear-gradient(90deg, rgba(199, 161, 90, .14), rgba(199, 161, 90, .03)), var(--plate-2); box-shadow: inset 3px 0 0 var(--gold-light); } }
+.lig-card > svg:last-child { width: 18px; height: 18px; color: var(--gold-light); }
+.lig-card.off { opacity: .6; }
+.crest.lig-card-logo { width: 42px; height: 49px; }
+.lig-card-text { display: flex; flex-direction: column; min-width: 0; }
+.lig-card-text strong { font-family: var(--font-disp); font-weight: 700; font-size: var(--d-lg); line-height: 1.05; overflow-wrap: anywhere; }
+.lig-card-text em { font-style: normal; font-size: var(--t-sm); color: var(--text-2); overflow-wrap: anywhere; }
+.lig-card-text small { margin-top: 2px; font-size: var(--t-xs); color: var(--gold-light); }
+
+/* formulaires */
+.lig-form { display: flex; flex-direction: column; gap: var(--s-3); }
+.lig-form > .ui-section-head:not(:first-child) { margin-top: var(--s-3); }
+.lig-form > .btn-xl { margin-top: var(--s-2); }
+.lig-form > .btn:not(.btn-xl) { align-self: flex-start; }
+.lig-field { display: flex; flex-direction: column; gap: 6px; }
+.lig-input { display: flex; align-items: center; gap: var(--s-2); border-bottom: 2px solid rgba(255, 255, 255, .18); transition: border-color .2s; }
+.lig-input:focus-within { border-color: var(--gold); }
+.lig-input input { flex: 1; min-width: 0; background: none; border: 0; outline: none; padding: 8px 0; font-family: var(--font-disp); font-weight: 700; font-size: 24px; color: var(--text); }
+.lig-input input::placeholder { color: var(--muted); font-weight: 600; }
+.lig-input.mono input { font-family: var(--font-mono); font-weight: 500; font-size: 20px; letter-spacing: .12em; }
+.lig-hint { font-size: var(--t-xs); color: var(--muted); line-height: 1.5; }
+.lig-crest { align-items: flex-start; }
+.lig .ts-pick { background: var(--plate-2); }
+.lig .ts-pick:focus-visible { background: linear-gradient(90deg, rgba(199, 161, 90, .2), rgba(199, 161, 90, .06)), var(--plate-2); }
+.segmented.lig-seg { grid-template-columns: 1fr 1fr; }
+.lig-seg button { display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 52px; }
+.lig-seg button small { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.lig-time { display: flex; align-items: center; gap: var(--s-2); }
+.lig-time svg { width: 20px; height: 20px; color: var(--gold-light); }
+.lig-time select {
+  min-height: 42px; padding: 0 34px 0 12px; border: 0; border-radius: 0; background-color: var(--plate-2); clip-path: var(--cut-shape-sm); color: var(--text);
+  font-family: var(--font-disp); font-weight: 700; font-size: 20px; appearance: none; -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--gold-light) 50%), linear-gradient(135deg, var(--gold-light) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 18px, calc(100% - 12px) 18px; background-size: 5px 5px; background-repeat: no-repeat;
+}
+.lig-time select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.lig-time option { background: #15171a; color: var(--text); }
+
+/* en-tête d'une ligue : logo, nom, format, code */
+.lig-head { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.lig-head > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.lig-head strong { font-family: var(--font-disp); font-weight: 700; font-size: 26px; line-height: 1; text-transform: uppercase; overflow-wrap: anywhere; }
+.lig-head em { font-style: normal; font-size: var(--t-sm); color: var(--text-2); }
+.lig-head small { font-size: var(--t-xs); color: var(--muted); line-height: 1.45; }
+.lig-head small, .lig-head em { text-wrap: pretty; }
+.crest.lig-head-logo { width: 58px; height: 67px; flex-shrink: 0; filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .55)); }
+.lig-top .crest.lig-head-logo { width: 72px; height: 84px; }
+.lig-code-inline { font-family: var(--font-mono); font-weight: 600; letter-spacing: .1em; color: var(--gold-light); }
+.lig-mini { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.lig-mini li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: var(--t-sm); }
+.lig-mini li span { display: flex; flex-direction: column; min-width: 0; }
+.lig-mini li em { font-style: normal; font-size: var(--t-xs); color: var(--muted); }
+.crest.lig-mini-crest { width: 22px; height: 26px; flex-shrink: 0; }
+
+/* salle d'attente : le code en grand, les clubs inscrits et les places libres */
+.lig-bigcode { margin: 0; font-family: var(--font-mono); font-weight: 600; font-size: 44px; letter-spacing: .22em; line-height: 1; color: var(--gold-light); -webkit-user-select: all; user-select: all; }
+.lig-block { display: flex; flex-direction: column; gap: var(--s-2); }
+.lig-clubs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lig-clubs li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 14px; background: var(--plate-2); clip-path: var(--cut-shape-sm); }
+.lig-clubs li.me { background: linear-gradient(90deg, rgba(199, 161, 90, .16), rgba(199, 161, 90, .04)), var(--plate-2); box-shadow: inset 3px 0 0 var(--gold-light); }
+.lig-clubs li.open { background: none; box-shadow: inset 0 0 0 1px var(--line); clip-path: none; }
+.lig-clubs li.open strong { color: var(--muted); }
+.crest.lig-club-crest { width: 30px; height: 35px; }
+.lig-slot { width: 30px; height: 35px; clip-path: polygon(50% 0, 100% 14%, 100% 60%, 50% 100%, 0 60%, 0 14%); background: rgba(255, 255, 255, .06); }
+.lig-who { display: flex; flex-direction: column; min-width: 0; }
+.lig-who strong { font-weight: 600; overflow-wrap: anywhere; }
+.lig-who em { font-style: normal; font-size: var(--t-xs); color: var(--muted); }
+.lig-clubs li.me .lig-who strong { color: var(--gold-light); }
+
+/* saison : la journée, qui a validé, ses matchs, le classement */
+.lig-ready { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.lig-ready li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: var(--t-sm); }
+.lig-ready li svg { width: 16px; height: 16px; color: var(--green); }
+.lig-ready li i { width: 10px; height: 10px; margin-left: 3px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--muted); }
+.lig-ready li em { font-style: normal; font-size: var(--t-xs); color: var(--muted); text-align: right; }
+.lig-ready li.ok em { color: var(--green); }
+.lig-fixtures { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; }
+.lig-fixtures li { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: var(--t-sm); }
+.lig-fixtures li b { color: var(--muted); }
+.lig-fixtures li.me .lig-fx-team { color: var(--gold-light); font-weight: 600; }
+.lig-fx-team { display: flex; align-items: center; gap: 8px; min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
+.lig-fx-team.away { justify-content: flex-end; text-align: right; }
+.crest.lig-fx-crest { width: 20px; height: 23px; flex-shrink: 0; }
+.lig-table { width: 100%; }
+.lig-tclub { display: flex; align-items: center; min-width: 0; }
+.lig-tname { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.lig-tname em { font-style: normal; font-size: var(--t-xs); color: var(--muted); font-weight: 400; }
+.lig-secret { display: block; padding: 10px 12px; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--text); background: rgba(255, 255, 255, .04); box-shadow: inset 0 0 0 1px var(--line-strong); word-break: break-all; -webkit-user-select: all; user-select: all; }
+@media (max-width: 760px) {
+  .lig-bigcode { font-size: 36px; }
+  .lig-input input { font-size: 22px; }
+}

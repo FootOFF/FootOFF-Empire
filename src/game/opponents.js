@@ -10,7 +10,7 @@ import { slotsOf } from './tactics';
 // et les numéros de la 3D. Opposer deux effectifs réels (ligue entre amis) partira de là.
 
 // fn sous un hasard tiré de la graine (Math.random rendu ensuite tel quel, même en cas d'erreur)
-function seeded(seed, fn) {
+export function seeded(seed, fn) {
   const saved = Math.random;
   Math.random = rng(seed);
   try { return fn(); } finally { Math.random = saved; }

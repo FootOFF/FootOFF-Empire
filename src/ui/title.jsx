@@ -81,6 +81,15 @@ function SideCard({ id, state, settings }) {
       </section>
     );
   }
+  if (id === 'leagues') {
+    return (
+      <section className="cm-card">
+        <span className="eyebrow">Championnats entre amis</span>
+        <p className="cm-card-lead">Huit clubs. <em>Tes amis.</em></p>
+        <p className="cm-card-note">Rejoins le championnat d’un ami avec son code, ou crée le tien depuis le Siège de la Ligue. Un club neuf pour chacun, une journée par jour.</p>
+      </section>
+    );
+  }
   if (id === 'media') {
     return (
       <section className="cm-card">
@@ -94,12 +103,13 @@ function SideCard({ id, state, settings }) {
 }
 
 // Entrées du menu principal : Continuer (s'il y a une partie ; liveNote : un match interrompu qui reprendra à la minute
-// près), Nouvelle partie, Réglages, FootOFF Media.
-function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews }, liveNote = null) {
+// près), Nouvelle partie, Championnats entre amis (leagues, quand ils sont ouverts), Réglages, FootOFF Media.
+function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews }, liveNote = null, leagues = null) {
   const div = state && DIVISIONS[state.divisionIndex];
   return [
     ...(state ? [{ id: 'continue', label: 'Continuer', sub: liveNote || `${state.clubName} · ${div.name} · Saison ${state.seasonNumber}`, onSelect: onContinue }] : []),
     { id: 'new', label: 'Nouvelle partie', sub: state ? 'Fonder un autre club' : 'Fonde ton club et bâtis ton empire', onSelect: onNew },
+    ...(leagues ? [{ id: 'leagues', label: 'Championnats entre amis', sub: leagues.count ? `${leagues.count} championnat${leagues.count > 1 ? 's' : ''} en cours` : 'Rejoins tes amis avec leur code', onSelect: leagues.onOpen }] : []),
     { id: 'rules', label: 'Règles du jeu', sub: 'Matchs, joueurs, mercato, argent, réputation', onSelect: onRules },
     { id: 'news', label: 'Nouveautés', sub: `Version ${CURRENT}${unseenNews() ? ' · à lire' : ''}`, badge: unseenNews(), onSelect: onNews },
     { id: 'settings', label: 'Réglages', sub: 'Son, vibrations, fluidité, sauvegarde, signaler un problème', onSelect: onSettings },
@@ -111,7 +121,7 @@ function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews }, li
 // inscription du nom et de l'année de fondation, fond) avec son aperçu, puis « Fonder le club ». Les couleurs ne se choisissent pas : notre club est noir et or, la charte
 // FootOFF. Au doigt, le champ du nom n'est pas sélectionné d'office (le clavier du téléphone masquerait la moitié
 // de l'écran). Au clavier et à la manette : haut / bas pour choisir la ligne, gauche / droite pour changer.
-const CREST_ROWS = [ // [champ, libellé, choix possibles selon l'écusson en cours]
+export const CREST_ROWS = [ // [champ, libellé, choix possibles selon l'écusson en cours] (aussi pour les ligues : league.jsx)
   ['style', 'Style', () => CREST_STYLES],
   ['shape', 'Forme', (c) => CREST_SHAPES[c.style]],
   ['emblem', 'Symbole', () => CREST_EMBLEMS],
@@ -208,9 +218,9 @@ function CreateClub({ onCreate, onBack, active }) {
   );
 }
 
-export function TitleScreen({ state, view, onView, onContinue, onNewGame, onCreate, settings, blocked = false, liveNote = null }) {
+export function TitleScreen({ state, view, onView, onContinue, onNewGame, onCreate, settings, blocked = false, liveNote = null, leagues = null }) {
   const active = !blocked;
-  const items = menuItems(state, { onContinue, onNew: () => (state ? onNewGame() : onView('create')), onSettings: () => onView('settings'), onRules: () => onView('rules'), onNews: () => onView('news') }, liveNote);
+  const items = menuItems(state, { onContinue, onNew: () => (state ? onNewGame() : onView('create')), onSettings: () => onView('settings'), onRules: () => onView('rules'), onNews: () => onView('news') }, liveNote, leagues);
   const menu = useMenu(items, { active: active && view === 'menu' }); // l'entrée active est gardée au retour des réglages
   const current = items[Math.min(menu.cur, items.length - 1)].id;
   const [entered, setEntered] = useState(false); // la première apparition joue l'animation d'entrée complète

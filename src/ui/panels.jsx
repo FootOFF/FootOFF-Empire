@@ -59,7 +59,8 @@ function useTabsBelow(ref, on) {
   return below;
 }
 
-export function Panel({ id = null, title, eyebrow, size = 'md', money = null, toolbar = null, overlay = null, onClose, onEscape, children }) {
+// className : classe de plus (le Siège de la Ligue ouvert depuis l'écran titre passe au-dessus de lui).
+export function Panel({ id = null, title, eyebrow, size = 'md', money = null, toolbar = null, overlay = null, className = '', onClose, onEscape, children }) {
   const ref = useRef(null);
   const headRef = useRef(null);
   const nav = useNav();
@@ -79,7 +80,7 @@ export function Panel({ id = null, title, eyebrow, size = 'md', money = null, to
   });
   usePanelSound();
   return (
-    <section ref={ref} tabIndex={-1} className={`panel ${size} ${section ? `in-section s-${section}` : ''}`} role="dialog" aria-label={title}>
+    <section ref={ref} tabIndex={-1} className={`panel ${size} ${section ? `in-section s-${section}` : ''} ${className}`} role="dialog" aria-label={title}>
       <span className="grip" aria-hidden="true" />
       <header ref={headRef} className={`panel-head ${tabsBelow ? 'tabs-below' : ''}`}>
         <div className="panel-title">

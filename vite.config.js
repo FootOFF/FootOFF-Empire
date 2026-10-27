@@ -24,6 +24,9 @@ function serviceWorker() {
 export default defineConfig({
   plugins: [react(), serviceWorker()],
   base: './',
+  // championnats entre amis en développement : le serveur des ligues du site lancé en local (next dev -p 3130), servi
+  // sous la même origine que le jeu, comme en ligne (www.footoff.media/api/ligue)
+  server: { proxy: { '/api/ligue': 'http://localhost:3130' } },
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10)),

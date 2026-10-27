@@ -588,6 +588,29 @@ Fermé tant que le serveur des ligues n'est pas en service (`LEAGUE_OPEN` de `co
 - Créateur : nom, logo, couleurs, format (aller simple ou aller-retour), calendrier. Classement, palmarès, fil de la
   ligue ; marché commun et offres entre amis ; direct à l'heure de la journée, sinon résumé et temps forts en 3D.
 
+Fenêtre du Siège (2026-10-27, `src/ui/league.jsx`, panneau `league`) : un clic sur le bâtiment l'ouvre (et le bouton
+« Ouvrir le Siège de la Ligue » de sa fiche) ; l'écran titre a aussi l'entrée « Championnats entre amis », car un invité
+n'a besoin ni du bâtiment ni d'une partie (la fenêtre passe alors au-dessus de l'écran titre, sur un voile). Ouverte en
+développement (`npm run dev`, `leagueOpen()` de `league.js`), fermée en ligne tant que `LEAGUE_OPEN` est faux.
+- Vues : mes championnats (cartes : logo, club, état relu au serveur), créer (propriétaire du Siège : nom, logo et
+  couleurs `LEAGUE_COLORS`, format, heure ; puis pseudo, nom et écusson noir et or de son club), rejoindre (code ou lien
+  `…/footoffempire/?ligue=CODE`, lu une fois puis retiré de l'adresse : la ligue, ses clubs, puis son club), reprendre
+  (code de reprise), un championnat (salle d'attente : code en grand, copier le lien ou le code, partager, clubs et places
+  libres, lancer ou retirer pour le créateur ; saison : journée et échéance, qui a validé, matchs de la journée,
+  classement, code de reprise ; quitter). Relu chaque minute tant que la fenêtre est à l'écran.
+- Mes championnats sont gardés sur l'appareil (`fo-ligues`, `leagueNet.js`) : code, identifiant, secret, pseudo, club.
+  Code de reprise « CODE.identifiant.secret » pour un autre appareil. Le pseudo « Ordinateur » est réservé (un ami parti
+  rend son club à l'ordinateur sous ce pseudo).
+- Calculé à l'identique chez chaque ami (`league.js`) : les clubs de l'ordinateur aux places libres au coup d'envoi
+  (graine de la ligue), le calendrier (méthode du polygone, trois ou quatre réceptions par club à l'aller), le classement
+  tiré des résultats officiels `{ matches: [{ h, a, hg, ag }] }` (places des clubs).
+- Heure des journées : le fuseau du créateur part en décalage fixe (`Etc/GMT…`) quand il ne change pas d'heure dans
+  l'année (`deviceZone`) ; la base des fuseaux du serveur peut retarder sur un pays qui vient de changer d'heure légale
+  (une heure d'écart constatée le 2026-10-27). L'échéance s'affiche à l'heure de chaque appareil.
+- Serveur : même origine en ligne (`/api/ligue`), relais de Vite vers le site lancé en local sur le port 3130 en
+  développement (`vite.config.js`). Reste à faire : la gestion du club de ligue (sauvegarde à part par ligue), la
+  validation de l'équipe, le calcul des matchs et leur envoi, le fil de la ligue.
+
 ## Centre médical
 
 Nouveau bâtiment (2026-10-25, demande de l'utilisateur : « un bâtiment qui permet de soigner les joueurs blessés ») :

@@ -248,7 +248,7 @@ function FreePlot({ state, sel, onClose, onBuild, onPreview, onSwitchPlot }) {
 // Parcelle bâtie : le bâtiment tel qu'il est (vignette du niveau atteint), le niveau suivant chiffré avant / après,
 // l'amélioration sous le pouce. « Aperçu des niveaux » ouvre la fenêtre d'aperçu : sur PC, le niveau montré s'y
 // dessine en hologramme à la place du bâtiment.
-function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTransfers, onAcademy, onTraining, onDirection, onMedical, onTickets, onPreview }) {
+function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTransfers, onAcademy, onTraining, onDirection, onMedical, onLeague, onTickets, onPreview }) {
   const phone = useMedia(PHONE);
   const sec = SECTORS.find((s) => s.id === sel.sector) || SECTORS[0];
   const b = BUILDINGS[k];
@@ -333,6 +333,9 @@ function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTra
         {k === 'medical' && onMedical && (
           <button type="button" className="btn ghost wide" onClick={onMedical}><IconMedical /> Ouvrir le centre médical · {state.players.filter((p) => p.injury?.out > 0).length} blessé{state.players.filter((p) => p.injury?.out > 0).length > 1 ? 's' : ''}</button>
         )}
+        {k === 'league' && onLeague && (
+          <button type="button" className="btn ghost wide" onClick={onLeague}><IconLeague /> Ouvrir le Siège de la Ligue</button>
+        )}
         {k === 'terrain' && <TicketSummary state={state} onTickets={state.buildings.direction > 0 ? onTickets : null} />}
         {k === 'terrain' && onMatchDay && (
           <button type="button" className="btn ghost wide" onClick={onMatchDay}><IconStadium /> Voir le stade en jour de match</button>
@@ -357,7 +360,7 @@ function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTra
 
 // Fiche d'une parcelle, ouverte au clic dans la vue 3D (ou par le bouton Construire du HUD).
 // onPreview : ce que la scène doit montrer (hologramme du bâtiment et du niveau choisis, fenêtre d'aperçu ouverte).
-export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade, onMatchDay, onTransfers, onAcademy, onTraining, onDirection, onMedical, onTickets, onPreview = () => {}, onSwitchPlot = () => {} }) {
+export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade, onMatchDay, onTransfers, onAcademy, onTraining, onDirection, onMedical, onLeague = null, onTickets, onPreview = () => {}, onSwitchPlot = () => {} }) {
   usePanelSound();
   const k = plotBuilding(state, sel.plotId);
   const lvl = k ? state.buildings[k] : 0;
@@ -387,6 +390,7 @@ export default function PlotInspector({ state, sel, onClose, onBuild, onUpgrade,
       onTraining={onTraining}
       onDirection={onDirection}
       onMedical={onMedical}
+      onLeague={onLeague}
       onTickets={onTickets}
       onPreview={onPreview}
     />

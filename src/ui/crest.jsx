@@ -327,8 +327,9 @@ function Grad({ id, stops, x1 = 0, y1 = 0, x2 = 1, y2 = 1, user = false }) {
 
 // spec : { style, shape, pattern, emblem, base, second, metal ('or' | 'argent'), ink ('metal' | 'light' | 'dark'),
 // band?, year?, text ('nom' | 'annee' | 'les-deux' | 'aucune'), crown? } ; couleurs CSS, ou 'gold' (dégradé or de la
-// charte). full : nom, année et ruban écrits (grands écussons) ; stars : étoiles de titres au-dessus.
-export function CrestArt({ spec, initials = '', name = '', className = '', title = null, full = false, stars = 0 }) {
+// charte). full : nom, année et ruban écrits (grands écussons) ; stars : étoiles de titres au-dessus. short : le nom écrit
+// sur l'écusson (par défaut le nom court d'un club, shortName ; une ligue garde son nom entier).
+export function CrestArt({ spec, initials = '', name = '', className = '', title = null, full = false, stars = 0, short: written = null }) {
   const uid = useId().replace(/:/g, '');
   const ref = (k) => `${k}-${uid}`;
   const url = (k) => `url(#${ref(k)})`;
@@ -341,7 +342,7 @@ export function CrestArt({ spec, initials = '', name = '', className = '', title
   const ink = spec.ink === 'dark' ? url('ed') : spec.ink === 'light' ? url('el') : url('em');
   const edge = spec.ink === 'metal' ? metal.edge : 'rgba(0, 0, 0, .55)';
   const cut = spec.ink === 'dark' ? base : '#141414';
-  const short = shortName(name);
+  const short = written || shortName(name);
   const year = spec.year;
   const want = full ? spec.text || 'aucune' : 'aucune';
   const pattern = spec.pattern === 'bordure'

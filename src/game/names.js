@@ -297,7 +297,7 @@ export function renameRetired(p) {
 // Noms des clubs : un type (AS, FC, Stade, Entente…) et un lieu imaginaire, francophone.
 const CLUB_TYPES = [
   'AS', 'FC', 'US', 'SC', 'RC', 'Olympique', 'Sporting', 'Racing', 'Stade', 'Étoile', 'Union', 'Entente', 'Avenir',
-  'Jeunesse', 'Rapid', 'Atlas', 'Bleus', 'Jaunes', 'Verts',
+  'Jeunesse', 'Rapid', 'Bleus', 'Jaunes', 'Verts',
 ];
 
 const CLUB_PLACES = [
