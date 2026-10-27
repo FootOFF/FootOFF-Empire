@@ -34,11 +34,12 @@ const EURO_CITY = ['Valmora', 'Castellano', 'Lisvar', 'Kravets', 'Norrhavn', 'Me
   'Halmstrand', 'Corvina', 'Ostrava Nova', 'Belmira', 'Sankt Arlen', 'Varnacci', 'Tirelli', 'Doruva', 'Lindhaven'];
 const euroName = () => `${pick(EURO_PREFIX)} ${pick(EURO_CITY)}`;
 
-// Adversaire d'un tour : en Coupe nationale, un club d'une division voisine (plus fort à chaque tour) ; en Coupe d'Europe,
-// un cador européen.
+// Adversaire d'un tour : en Coupe d'Europe, un cador européen, au-dessus du milieu de l'Elite dès les huitièmes et au
+// niveau des meilleurs en finale (de 14,8 à 18,2 ; avant la 0.5.0, de 13,7 à 17,3 : une Coupe d'Europe sur deux gagnée) ;
+// en Coupe nationale, un club d'une division voisine, plus fort à chaque tour.
 export function drawOpponent(s, comp, stage) {
   if (comp === 'c1') {
-    return { name: euroName(), strength: Math.round(clamp(14.6 + stage * 0.6 + rnd(-0.9, 0.9), 13, 18.6) * 10) / 10, division: 'Europe' };
+    return { name: euroName(), strength: Math.round(clamp(15.6 + stage * 0.6 + rnd(-0.8, 0.8), 14, 19) * 10) / 10, division: 'Europe' };
   }
   const di = clamp(s.divisionIndex + pick([-1, 0, 0, 0, 1]) + (stage >= 2 && Math.random() < 0.4 ? 1 : 0), 0, 3);
   const d = DIVISIONS[di];
@@ -83,8 +84,32 @@ export function fixtureShort(f, round) {
 // « de Nationale », « d'Elite » : élision devant une voyelle
 export const ofDiv = (name) => (/^[AEIOUÉÈÊ]/i.test(name) ? `d’${name}` : `de ${name}`);
 
+// Réussite aux tirs au but : la nôtre selon la finition de nos cinq meilleurs tireurs (joueurs de champ sur le
+// terrain), celle de l'adversaire selon les réflexes de notre gardien (et son signe « Chat »).
+export function penaltySkills(onPitch) {
+  const fin = onPitch.filter((p) => p.pos !== 'G').map((p) => p.a.fin).sort((x, y) => y - x).slice(0, 5);
+  const home = clamp(0.62 + (fin.reduce((a, b) => a + b, 0) / Math.max(1, fin.length)) / 100, 0.66, 0.84);
+  const keeper = onPitch.find((p) => p.pos === 'G');
+  const away = 0.77 - (keeper ? (keeper.g?.ref || 10) / 400 : 0) - (keeper && keeper.traits?.includes('chat') ? 0.03 : 0);
+  return { home, away };
+}
+
+// Chance exacte de gagner la séance (même tirage que shootout) : plus de tirs réussis sur cinq, ou, à égalité, la
+// mort subite (premier à marquer quand l'autre manque).
+export function shootoutWinChance(homeSkill, awaySkill) {
+  const bin = (p) => [0, 1, 2, 3, 4, 5].map((k) => [1, 5, 10, 10, 5, 1][k] * p ** k * (1 - p) ** (5 - k));
+  const h = bin(homeSkill);
+  const a = bin(awaySkill);
+  let win = 0;
+  let tie = 0;
+  for (let i = 0; i <= 5; i++) for (let j = 0; j <= 5; j++) { if (i > j) win += h[i] * a[j]; else if (i === j) tie += h[i] * a[j]; }
+  const sw = homeSkill * (1 - awaySkill);
+  const sl = awaySkill * (1 - homeSkill);
+  return win + tie * (sw + sl > 0 ? sw / (sw + sl) : 0.5);
+}
+
 // Tirs au but : cinq tentatives chacun, puis mort subite. Notre réussite dépend un peu de la finition de nos
-// tireurs et de notre gardien.
+// tireurs et de notre gardien (penaltySkills).
 export function shootout(homeSkill = 0.76, awaySkill = 0.76) {
   let h = 0, a = 0;
   const kicks = [];

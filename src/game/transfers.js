@@ -19,12 +19,17 @@ import { clamp, pick, ri, rnd } from './utils';
 export const FREE_POOL = 5; // joueurs libres disponibles en même temps
 const roundKey = (s) => `${s.seasonNumber}:${s.round}`;
 
-// Les recruteurs vont plus haut avec le bureau des transferts, et la notoriété attire les grands noms (jusqu'à 19 pour
-// un grand club d'Elite au réseau complet) : le marché reste un cran au-dessus de ton onze, même au sommet.
+// Niveau du marché, calé sur le milieu de la division (makePlayer : note moyenne 5,3 + 2 × level) : `delta` points
+// au-dessus (ou au-dessous) du club moyen de la division. Avant la 0.5.0, le marché suivait l'indice de la division :
+// un cran au-dessus du club moyen en Départementale (on montait aussitôt), deux crans en dessous en Elite.
+const marketLevel = (s, delta) => { const d = DIVISIONS[s.divisionIndex]; return ((d.oppMin + d.oppMax) / 2 + delta - 5.3) / 2; };
+
+// Les recruteurs vont plus haut avec le bureau des transferts, et la notoriété attire les grands noms : le meilleur du
+// marché reste un cran au-dessus du club moyen de la division, plus haut avec un réseau complet et un grand nom.
 function scoutPlayer(s) {
   const lvl = s.buildings.transfers || 0;
   const fame = clamp((s.reputation || 0) / 100, 0, 0.6);
-  const p = makePlayer({ level: s.divisionIndex + 0.8 + rnd(-0.6, 0.4 + lvl * 0.3) + fame });
+  const p = makePlayer({ level: marketLevel(s, -0.3 + fame) + rnd(-0.3, 0.2 + lvl * 0.15) });
   if (Math.random() < 0.25) { // un espoir sur quatre : jeune, avec de la marge
     p.age = ri(18, 21);
     p.pot = clamp(p.pot + ri(1, 3), 8, 20);
@@ -35,8 +40,9 @@ function scoutPlayer(s) {
   return p;
 }
 
+// Joueur libre : un peu en dessous du club moyen de la division, parfois au-dessus.
 function freeAgent(s) {
-  const p = makePlayer({ level: s.divisionIndex + 1 + rnd(-0.3, 0.4) });
+  const p = makePlayer({ level: marketLevel(s, -0.4) + rnd(-0.2, 0.25) });
   p.id = s.nextId++;
   return p;
 }

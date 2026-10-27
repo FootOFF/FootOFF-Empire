@@ -1,4 +1,5 @@
 import { clamp, pick, ri, rnd } from './utils';
+import { YOUTH_GEN } from './constants';
 import { playerName } from './names';
 import { scoutingError, signingFor, wageFor } from './economy';
 
@@ -120,11 +121,16 @@ function rollTraits(p) {
   return out;
 }
 
-export function makePlayer({ level = 0, youth = false, academy = 0, pos = null } = {}) {
+// Jeune repéré par l'académie (0 à 5) : un niveau de 3 à 9 environ selon son âge (15 à 17 ans) et l'académie, et un
+// potentiel rarement très haut (YOUTH_GEN, constants.js ; fourchettes affichées : academyTalent, economy.js).
+const youthCenter = (academy, age) => YOUTH_GEN.base + YOUTH_GEN.perLevel * academy + rnd(0, YOUTH_GEN.spread) + YOUTH_GEN.perAge * (age - 15);
+const youthPot = (center, academy) => center + YOUTH_GEN.potBase + YOUTH_GEN.potPerLevel * academy + YOUTH_GEN.potTail * Math.random() ** 3;
+
+export function makePlayer({ level = 0, youth = false, academy = 0, pos = null, age: forceAge = null } = {}) {
   const p = pos || pick(['D', 'D', 'M', 'M', 'A', 'A', 'G']);
-  const age = youth ? ri(16, 18) : ri(19, 30);
-  const center = youth ? 3 + academy + rnd(0, 2) : 4 + level * 2 + rnd(-1, 2);
-  const pot = clamp(Math.round(center + (youth ? ri(5, 9) + academy : ri(2, 6))), 8, 20);
+  const age = forceAge ?? (youth ? ri(15, 17) : ri(19, 30));
+  const center = youth ? youthCenter(academy, age) : 4 + level * 2 + rnd(-1, 2);
+  const pot = clamp(Math.round(youth ? youthPot(center, academy) : center + ri(2, 6)), 8, 20);
   const player = {
     name: playerName(), // jamais deux fois le même nom dans la partie (names.js)
     pos: p,
@@ -154,16 +160,17 @@ export function assignNumber(players, p) {
 }
 
 // Salaire annuel (voir economy.js) : suit la note du joueur et la division du club ; un salaire renégocié à la
-// Direction du club (direction.js) garde sa baisse (wageCut). Prime de signature et valeur de revente partent du
-// salaire de référence, sans la baisse.
+// Direction du club (direction.js) garde sa baisse (wageCut). La valeur de revente part du salaire de référence, sans la
+// baisse ; la prime de signature d'un joueur libre, de sa valeur.
 const baseWage = (p, divisionIndex) => wageFor(playerRating(p), divisionIndex);
 export const wageOf = (p, divisionIndex = 0) => Math.round(baseWage(p, divisionIndex) * (1 - (p.wageCut || 0)));
-export const signingFee = (p, divisionIndex = 0) => signingFor(baseWage(p, divisionIndex));
+export const signingFee = (p, divisionIndex = 0) => signingFor(marketValue(p, divisionIndex));
 
 // Valeur de marché d'un joueur : deux saisons de salaire, plus pour un jeune (à potentiel), moins pour un trentenaire.
 // C'est la référence de tous les prix : un club vendeur en demande l'indemnité (selon le contrat, le cours du marché et
 // ton réseau de recruteurs), un club acheteur en paie 85 % de base (un grand club davantage, et la négociation fait le
-// reste). Acheter puis revendre aussitôt coûte donc 15 à 30 % ; faire progresser un joueur (ou un jeune) rapporte.
+// reste). Une recrue (ou un jeune monté de l'académie) ne se revend qu'après quatre journées de championnat au club
+// (mercato.js, saleBlock) : faire progresser un joueur rapporte, pas l'acheter pour le revendre aussitôt.
 const ageFactor = (age) => (age <= 21 ? 1.35 : age <= 24 ? 1.15 : age >= 31 ? 0.7 : age >= 29 ? 0.85 : 1);
 const roomFactor = (p) => clamp(1 + 0.07 * Math.max(0, p.pot - playerRating(p)), 1, 1.5);
 const roundValue = (v) => Math.max(50, Math.round(v / 50) * 50);
@@ -221,7 +228,8 @@ export function seasonGain(p) {
 
 // Le bond de l'été est réduit depuis que les joueurs progressent au fil de la saison, au centre d'entraînement
 // (séances entre les matchs et séance collective : training.js) : six dixièmes du bond, à tous les niveaux du centre.
-const SUMMER = 0.6;
+// Les jeunes de l'académie aussi (academy.js), depuis la 0.5.0 : ils avaient le bond entier.
+export const SUMMER = 0.6;
 
 // Intersaison : progression vers le potentiel, puis déclin physique après 32 ans. Les qualités clés du poste
 // progressent le plus.

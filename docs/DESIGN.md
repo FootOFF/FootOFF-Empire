@@ -661,9 +661,10 @@ certain à 0 % ou 100 % : refus, club qui se retire, accord assuré). Elle suit 
 défiler : sous les raccourcis, le bas de la fenêtre la cachait au téléphone (demande de l'utilisateur, 2026-10-24).
 Le corps garde « Ce qui joue » : les raisons, et pour la mise en vente la chance d'avoir deux clubs en lice.
 
-Ventes (une seule voie, la négociation ; plus de vente immédiate à sa valeur), en trois temps. Un joueur blessé, suspendu
-ou recruté depuis le dernier match (même date du calendrier, coupes comprises : `dateKey`) ne peut pas être vendu
-(`saleBlock`, `src/game/mercato.js`) : ni mise en vente (bouton grisé, la raison en ambre dans le pied de la fiche ;
+Ventes (une seule voie, la négociation ; plus de vente immédiate à sa valeur), en trois temps. Un joueur blessé, suspendu,
+recruté ou monté de l'académie depuis moins de quatre journées de championnat (`lockResale`, `RESALE_ROUNDS` ; « Arrivé
+récemment », « Monté récemment », avec les journées qui restent ; depuis la 0.5.0 : un joueur libre acheté puis revendu
+le lendemain rapportait 1,5 à 2 fois son prix) ne peut pas être vendu (`saleBlock`, `src/game/mercato.js`) : ni mise en vente (bouton grisé, la raison en ambre dans le pied de la fiche ;
 interrupteur grisé dans la vue Offres), ni offre acceptée ou négociée, et les clubs ne font aucune offre tant que dure
 le blocage (`transfers.js`). Déjà en vente, il le reste : les clubs reviennent à son retour.
 1. Mise en vente à son prix : « Mettre en vente » (fiche d'un joueur de l'effectif, ou interrupteur de la vue Offres)
@@ -706,11 +707,17 @@ détaillé sur PC (tri par colonne), liste compacte sur téléphone, fiche à dr
   un autre plan dit de combien le niveau progresse moins vite), qualités
   travaillées marquées dans les attributs ; « Faire monter » (confirmation : salaire, effectif) et « Libérer »
   (confirmation rouge, focus sur « Le garder »). Un joueur monté garde l'étiquette « Formé au club ».
-Règles : recrutement gratuit dans la limite des places, sans salaire ; nouveaux jeunes après chaque journée de
-championnat (2 à 6 selon le niveau de l'académie, plus doués et mieux cernés quand elle grandit) ; progrès après
-chaque journée puis bond de l'été, sans effet du centre d'entraînement (il fait progresser l'équipe première par ses
-séances ; choix du 2026-10-24, pour ne pas compter son effet deux fois) : niveau moyen à 18 ans de 10,8 avec
-l'académie 1, 13,8 au niveau 3 et 15,9 au niveau 5 (`tmp/calib-youth-options.mjs`, option « Sans le centre ») ; à
+Règles : recrutement gratuit dans la limite des places, sans salaire ; nouveaux jeunes au début de la saison et après
+chaque journée de championnat (un aux niveaux 1 et 2 de l'académie, deux ensuite ; six au plus avant la 0.5.0), plus
+doués et mieux cernés quand elle grandit (`YOUTH_GEN`, `src/game/constants.js` ; fourchettes affichées calculées sur la
+même formule, `academyTalent`) : niveau à l'arrivée de 4 à 6 au niveau 1, de 6 à 8 au niveau 5 ; potentiel de huit
+jeunes sur dix de 8 à 14 au niveau 1, de 12 à 18 au niveau 5, et un jeune sur cent à 16 ou plus au niveau 1, à 20 au
+niveau 5. Au niveau 5, une saison apporte environ 1,7 potentiel de 18 ou plus et un 20 toutes les cinq à six saisons (avant
+la 0.5.0 : 48 jeunes par saison, tous au potentiel de 18 ou plus). Progrès après chaque journée (1,2 % de la marge,
+freiné près du sommet comme en équipe première), puis six dixièmes du bond de l'été (comme l'équipe première), sans
+effet du centre d'entraînement (il fait progresser l'équipe première par ses séances ; choix du 2026-10-24, pour ne pas
+compter son effet deux fois) : un jeune recruté à 15 ans finit ses 18 ans à 7,5 en moyenne avec l'académie 1, 9,1 au
+niveau 3, 10,5 au niveau 5, et 12,7 pour un potentiel de 18 ou plus (10,2, 13,1 et 15,1 avant la 0.5.0) ; à
 19 ans, un jeune qui n'est pas monté quitte le club (conseil du staff à partir de la 4e journée, notification après le
 dernier match, ligne du bilan). Les points d'entraînement sont les mêmes quel que soit le plan : le conseillé fait
 monter le niveau le plus vite (×1,14 à ×1,28 selon le poste), un autre développe d'autres qualités (×0,7 à ×0,96) ;
@@ -737,10 +744,12 @@ finie. Trois onglets :
   séance (« Avant : journée 3 / 7 »), tableau des niveaux du centre.
 Règles :
 - Une séance par fenêtre entre deux matchs (ou avant la fin de saison), une épreuve par ligne.
-- Gain = marge vers le potentiel × 3 % × rythme (âge, et plus lent au sommet) × niveau (×1 à ×2) × épreuve × score
+- Gain = marge vers le potentiel × 1,2 % × rythme (âge, et plus lent au sommet) × niveau (×1 à ×1,6) × épreuve × score
   (×0,75 à ×1,5 ; un tiers des points vaut la simulation), réparti sur les qualités de la catégorie ; jamais au-delà
   du potentiel.
-- Après chaque match, les joueurs absents de la séance gagnent 1 à 2 % de leur marge (séance collective).
+- Après chaque match, les joueurs absents de la séance gagnent 0,4 à 0,8 % de leur marge (séance collective).
+- Rééquilibré en 0.5.0 (3 %, ×1 à ×2, 1 à 2 % et épreuves ×1,2 auparavant) : un jeune entraîné à chaque date touchait
+  son potentiel en une saison et demie, et l'équipe première rattrapait l'Elite en quelques saisons.
 - Le bond de l'été vaut six dixièmes de l'ancien bond sans centre.
 - Programmes : 6, 5 ou 4 séances dans la bonne catégorie selon le niveau ; une épreuve très réussie (deux tiers des
   points) compte double. Trois signes positifs au plus ; « Maîtrise de soi » retire « Sang chaud ». Un signe appris
@@ -772,7 +781,7 @@ Calage : `tmp/calib-training.mjs` (carrières), contrôles : `tmp/check-training
 - Sprint et haies : travelling latéral, départ au signal, dix haies, zone d'appel dorée, chrono.
 - Lecture du jeu : tablette de l'analyste vue d'en haut, cadrage automatique, trois partenaires numérotés, une seule
   bonne passe.
-- Épreuves débloquées (bonus ×1,2 sur le gain) :
+- Épreuves débloquées (bonus ×1,1 sur le gain) :
   - Coups francs (niveau 2) : la visée de Précision, un mur de mannequins jaunes sur ressort (ils vacillent quand le
     ballon les touche), un gardien ; viser au-dessus de 1,5 m passe le mur.
   - Penalties (niveau 3) : vue subjective. Pendant l'armé de la frappe, le corps du tireur s'ouvre vers son côté :
@@ -830,7 +839,13 @@ absents listés dessous), le plan de jeu (dispositif ; tactique avec son effet c
 subies », l'équilibrée étant « le plan de référence ») ; en bas, collés à l'écran et ensemble, le pronostic (victoire,
 nul, défaite en or, gris, rouge ; buts attendus) et le coup d'envoi : chaque réglage montre aussitôt son effet sur les
 chances, juste au-dessus du bouton qui lance le match. Le pronostic intègre la condition physique du onze, qui baisse
-au fil du match (`src/game/live.js`, `prematchOdds`).
+au fil du match (`src/game/live.js`, `prematchOdds`). Le niveau affiché du onze aussi (depuis la 0.5.0) : quand des
+titulaires ne sont pas frais, « fatigue −x » en ambre à côté du niveau (et dans la carte repliée) dit ce qu'il perd par
+rapport au repos, pour que l'écart entre le niveau et les chances ne paraisse plus aléatoire. En coupe, la ligne sous
+le pronostic donne la chance exacte de gagner une séance de tirs au but avec ce onze (`shootoutWinChance`,
+`src/game/cups.js` : finition des cinq meilleurs tireurs, réflexes du gardien, même tirage que le match) et la
+qualification exacte (victoire, ou nul puis séance gagnée ; le nul comptait pour une demi-qualification). Aperçus :
+`?ecran=avant-match`, `avant-match-coupe` (tour de Coupe nationale, trois titulaires fatigués).
 
 Direct (`LiveMatch`, moteur `src/game/live.js`, refait le 2026-10-24) : le match se simule au fil de l'horloge, avec
 quatorze minutes d'avance pour que la scène 3D prépare chaque action. Le bouton « Changement » (avec le nombre de

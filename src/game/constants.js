@@ -16,15 +16,22 @@ export const SQUAD_MAX = 25; // effectif professionnel : de quoi tourner sur le 
 export const SQUAD_MIN = 11;
 
 // Académie (academy.js) : six places dans l'équipe de jeunes, départ à 19 ans sans montée en équipe première,
-// jeunes repérés après chaque journée de championnat selon le niveau de l'académie (0 à 5).
+// jeunes repérés après chaque journée de championnat selon le niveau de l'académie (0 à 5). Rééquilibré en 0.5.0 :
+// 2 à 6 jeunes par journée, presque tous au potentiel de 18 à 20 au niveau 5, faisaient une équipe de prodiges.
 export const YOUTH_PLACES = 6;
 export const YOUTH_LEAVE_AGE = 19;
-export const SCOUTED = [0, 2, 3, 4, 5, 6];
+export const SCOUTED = [0, 1, 1, 2, 2, 2];
+// Tirage d'un jeune repéré (players.js, makePlayer) : centre = base + perLevel × académie + U(0, spread) + perAge × (âge
+// − 15), niveau à l'arrivée = centre + 0,8 (± 0,3) ; potentiel = centre + potBase + potPerLevel × académie + potTail × U³
+// (rarement très haut), arrondi, de 8 à 20. Au niveau 5, sur une saison (16 jeunes repérés : 2 au début de la saison et
+// après chacune des 7 journées) : environ 4 potentiels de 16 ou plus, 1,7 de 18 ou plus, 0,8 de 19 ou plus, et un 20
+// toutes les cinq à six saisons.
+export const YOUTH_GEN = { base: 2.2, perLevel: 0.55, spread: 1.6, perAge: 0.5, potBase: 4.2, potPerLevel: 0.4, potTail: 7 };
 
 // Centre d'entraînement (training.js), selon son niveau (0 à 5) : gains d'une séance, séance collective après chaque
 // match (part de la marge vers le potentiel), séances d'un programme de signe distinctif (dès le niveau 3).
-export const TRAINING_MULT = [0, 1, 1.25, 1.5, 1.75, 2];
-export const TRAINING_COLLECTIVE = [0, 0.01, 0.0125, 0.015, 0.0175, 0.02];
+export const TRAINING_MULT = [0, 1, 1.15, 1.3, 1.45, 1.6];
+export const TRAINING_COLLECTIVE = [0, 0.004, 0.005, 0.006, 0.007, 0.008];
 export const PROGRAM_STEPS = [0, 0, 0, 6, 5, 4];
 // Épreuves : quatre de base, une par famille (gk : gardiens), puis une nouvelle à chaque niveau du centre (2 à 5),
 // plus exigeante et plus payante (bonus sur le gain).
@@ -33,10 +40,10 @@ export const DRILLS = {
   sprint: { family: 'phys', level: 1, bonus: 1, label: 'Sprint et haies' },
   lecture: { family: 'tac', level: 1, bonus: 1, label: 'Lecture du jeu' },
   arrets: { family: 'gk', level: 1, bonus: 1, label: 'Arrêts réflexes' },
-  coupsFrancs: { family: 'tech', level: 2, bonus: 1.2, label: 'Coups francs' },
-  penalties: { family: 'gk', level: 3, bonus: 1.2, label: 'Penalties' },
-  centres: { family: 'phys', level: 4, bonus: 1.2, label: 'Centres' },
-  contre: { family: 'tac', level: 5, bonus: 1.2, label: 'Contre-attaque' },
+  coupsFrancs: { family: 'tech', level: 2, bonus: 1.1, label: 'Coups francs' },
+  penalties: { family: 'gk', level: 3, bonus: 1.1, label: 'Penalties' },
+  centres: { family: 'phys', level: 4, bonus: 1.1, label: 'Centres' },
+  contre: { family: 'tac', level: 5, bonus: 1.1, label: 'Contre-attaque' },
 };
 
 // Coût du niveau N = baseCost × mult^(N − first) ; le stade est livré au niveau 1. `costs` fixe le prix de

@@ -60,6 +60,7 @@ export const SCREENS = [
   ['medical-batiment', 'Inspecteur · centre médical'],
   ['comparateur', 'Comparateur radar'],
   ['avant-match', 'Avant-match'],
+  ['avant-match-coupe', 'Avant-match · tour de coupe (titulaires fatigués, tirs au but)'],
   ['direct', 'Match en direct'],
   ['direct-but', 'Match en direct · bandeau du but'],
   ['mi-temps', 'Mi-temps (composition repliée)'],
@@ -120,6 +121,10 @@ export function previewState(screen) {
     for (let k = 0; k < 3; k++) playRound(s); // statistiques, forme, dernier match
     s.money = 42000;
   }
+  if (screen === 'avant-match-coupe') { // prochain tour de la Coupe nationale, trois titulaires pas frais
+    for (let k = 0; k < 6 && matchContext(s)?.comp === 'league'; k++) playRound(s);
+    s.lineup.slice(1, 4).forEach((id, k) => { s.players.find((p) => p.id === id).fit = [52, 61, 70][k]; });
+  }
   if (screen === 'vitrine-fonds') s.money = 4200; // un seul bâtiment payable : les autres disent ce qui manque
   if (screen === 'saison-fin') while (matchContext(s)) playRound(s); // toutes les dates jouées, avant le bilan
   // classement de l'après-match : il suit une journée de championnat (pas un match de coupe)
@@ -154,25 +159,34 @@ export function previewState(screen) {
       s.trophies = [...r.trophies];
     }
   }
-  if (screen === 'fiche-recrue') { s.money += 50000; signPlayer(s, s.market[0].id); } // signé aujourd'hui : pas de revente avant le match
+  if (screen === 'fiche-recrue') { s.money += 50000; signPlayer(s, s.market[0].id); } // signé aujourd'hui : pas de revente avant quatre journées
   s.offline = null;
   return s;
 }
 
-// Académie en aperçu (niveau 2, parcelle 2) : trois jeunes recrutés puis deux journées d'entraînement, dont un dans
-// sa dernière saison (18 ans) et un au plan changé ; équipe vide pour « academie-vide ».
+// Académie en aperçu (niveau 3, parcelle 2) : trois jeunes recrutés (deux repérés à l'ouverture, un après la première
+// journée) puis deux journées d'entraînement, dont un dans sa dernière saison (18 ans) et un au plan changé ; équipe
+// vide pour « academie-vide ».
 function academyPreview(s, screen) {
   s.money = 1e6;
   build(s, 't2', 'academy');
   upgrade(s, 'academy');
+  upgrade(s, 'academy');
   s.money = 42000;
   if (screen === 'academie-vide') return;
+  const leagueRounds = (n) => { // journées de championnat (les matchs de coupe ne comptent pas)
+    const from = s.round;
+    for (let k = 0; k < 4 * n && s.round < from + n; k++) playRound(s);
+  };
   for (const p of s.scouting.list.slice(0, 3)) signYouth(s, p.id);
+  for (let k = 0; k < 3 && s.youth.length < 3; k++) {
+    leagueRounds(1);
+    for (const p of s.scouting.list.slice(0, 3 - s.youth.length)) signYouth(s, p.id);
+  }
   s.youth[0].age = 18;
   const other = Object.keys({ tech: 1, phys: 1, mental: 1 }).find((k) => k !== advisedPlan(s.youth[1]));
   setYouthPlan(s, s.youth[1].id, other);
-  const from = s.round; // deux journées de championnat (les matchs de coupe ne comptent pas)
-  for (let k = 0; k < 8 && s.round < from + 2; k++) playRound(s);
+  leagueRounds(2);
 }
 
 // Centre d'entraînement en aperçu (niveau 3) : deux séances complètes et leurs matchs, puis, avant le match suivant,
@@ -325,7 +339,7 @@ export function previewUi(screen, s) {
     case 'stats-pass': return { panel: 'stats', statsMatch: 'last' };
     case 'stats-detail': return { panel: 'stats', statsMatch: 'last' };
     case 'trophees': return { panel: 'trophies' };
-    case 'avant-match': return { matchPhase: 'prematch', matchCtx: matchContext(s), matchDay: true };
+    case 'avant-match': case 'avant-match-coupe': return { matchPhase: 'prematch', matchCtx: matchContext(s), matchDay: true };
     case 'direct': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34 } };
     case 'direct-but': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34, goal: true } };
     case 'mi-temps': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime' } };

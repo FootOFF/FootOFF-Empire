@@ -3,7 +3,7 @@ import { OFFLINE_CAP, offlinePerHour } from './economy';
 import { assignNumber, costOf, makePlayer, saleValue, wageOf } from './players';
 import {
   SALE_TRIES, TRIES, acceptChance, auctionDone, counterFor, dateKey, demandChance, findOnMarket, isSerious, lastWordOf,
-  logMove, offersFor, outbidAmount, outbidChance, roundKey, roundTo, saleBlock, valueOf,
+  lockResale, logMove, offersFor, outbidAmount, outbidChance, roundKey, roundTo, saleBlock, valueOf,
 } from './mercato';
 import { listingOffers, refreshTransfers } from './transfers';
 import { PLANS, YOUTH_PLACES, advisedPlan, refreshScouting } from './academy';
@@ -165,6 +165,7 @@ export function promoteYouth(s, id) {
   delete p.plan;
   delete p.gain;
   p.joined = s.seasonNumber;
+  lockResale(s, p); // pas de vente avant quatre journées de championnat en équipe première
   assignNumber(s.players, p);
   s.players.push(p);
   pushJournal(s, {
@@ -248,8 +249,10 @@ function completeSigning(s, p, fee) {
   book(s, 'signings', fee);
   addSigning(s.records ||= rebuildRecords(s), p, fee, s); // record : plus gros achat
   p.joined = s.seasonNumber;
-  // montant, club d'origine et moment de la signature (fiche du joueur) ; date : pas de revente avant le match suivant
+  // montant, club d'origine et moment de la signature (fiche du joueur) ; pas de revente avant quatre journées de
+  // championnat au club (mercato.js, saleBlock)
   p.signed = { fee, from: from || null, season: s.seasonNumber, round: s.round, date: dateKey(s) };
+  lockResale(s, p);
   assignNumber(s.players, p);
   s.players.push(p);
   s.signings = (s.signings || 0) + 1;

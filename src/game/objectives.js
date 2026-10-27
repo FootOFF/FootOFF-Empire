@@ -1,5 +1,5 @@
 import { DIVISIONS } from './constants';
-import { teamLevel } from './match';
+import { autoLineup, lineupRating } from './tactics';
 import { book } from './ledger';
 import { pushJournal } from './journal';
 import { standingsOf } from './season';
@@ -22,10 +22,13 @@ const levelSum = (s) => Object.values(s.buildings || {}).reduce((a, b) => a + (b
 const leagueMatches = (s) => (s.matches || []).filter((m) => m.season === s.seasonNumber && (m.comp || 'league') === 'league');
 const positionOf = (s) => standingsOf(s).findIndex((t) => t.i === 0) + 1;
 
-// L'écart de niveau entre ton onze et la moyenne de ta division : il règle l'ambition du président.
+// L'écart de niveau entre ton meilleur onze et la moyenne de ta division : il règle l'ambition du président. Le meilleur
+// onze, pas l'onze enregistré : aligner un onze absurde juste avant le bilan donnait des objectifs faciles pour la même
+// prime (avant la 0.5.0).
 function ambition(s) {
   const d = DIVISIONS[s.divisionIndex];
-  return teamLevel(s) - (d.oppMin + d.oppMax) / 2;
+  const f = s.formation || '433';
+  return lineupRating(s.players, autoLineup(s.players, f), f) - (d.oppMin + d.oppMax) / 2;
 }
 
 export function prizeOf(s, kind) {

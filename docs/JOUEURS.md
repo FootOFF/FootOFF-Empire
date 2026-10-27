@@ -58,11 +58,17 @@ Code : `src/game/players.js` (condition, blessures, disponibilité), `src/game/l
 
 - Intersaison : vers le potentiel caché, selon l'âge, plus lente au sommet ;
   déclin dès 32 ans (le physique d'abord). Rythme calé par la simulation de carrières (`tools/sim/career.mjs`,
-  `docs/ECONOMIE.md`) : Elite vers la saison 9, premier titre vers la 19e, masse salariale à 80 % des revenus en Elite.
+  `docs/ECONOMIE.md`) : pour un bon joueur, Elite vers la saison 10, premier titre vers la 17e, onze de 24 à 26 ans en
+  moyenne ; masse salariale à 75-90 % des revenus en Elite.
 - Valeur de marché (`marketValue`) : deux saisons de salaire, plus pour un jeune à potentiel, moins pour un trentenaire ;
   c'est la référence des indemnités et des offres (`docs/ECONOMIE.md`).
 - Au fil de la saison : séances du centre d'entraînement pour l'équipe première (`docs/DESIGN.md`) ; à l'académie,
-  un petit progrès après chaque journée, sans effet du centre.
+  un petit progrès après chaque journée (1,2 % de la marge, freiné près du sommet), sans effet du centre, et six
+  dixièmes du bond de l'été, comme l'équipe première (depuis la 0.5.0 : un jeune doué touchait son potentiel avant 19 ans).
+- Jeunes repérés (`YOUTH_GEN`, `src/game/constants.js`) : 15 à 17 ans, niveau à l'arrivée de 4 à 6 (académie 1) à 6 à 8
+  (académie 5) ; potentiel de huit jeunes sur dix de 8 à 14 (académie 1) à 12 à 18 (académie 5), un sur cent à 16 ou
+  plus (académie 1), à 20 (académie 5). Recruté à 15 ans, un jeune finit ses 18 ans à 7,5 en moyenne (académie 1),
+  10,5 (académie 5), 12,7 pour un potentiel de 18 ou plus : il éclot ensuite, en équipe première.
 - Potentiel affiché en fourchette : elle se resserre avec l'académie et les saisons passées au club.
 - Vie du joueur : forme (5 derniers matchs), statistiques de saison, historique des 10 dernières saisons,
   évolution du dernier été.

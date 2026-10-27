@@ -30,7 +30,9 @@ const familyOf = (pos, cat) => (pos === 'G' ? 'gk' : cat);
 // épreuves ouvertes au niveau `lvl` pour une catégorie (la plus récente en dernier)
 export const drillsFor = (lvl, pos, cat) => Object.keys(DRILLS).filter((id) => DRILLS[id].level <= lvl && DRILLS[id].family === familyOf(pos, cat));
 
-const SESSION = 0.03; // part de la marge vers le potentiel gagnée par une séance simulée (niveau 1, jeune joueur)
+// part de la marge vers le potentiel gagnée par une séance simulée (niveau 1, jeune joueur) ; 0,03 avant la 0.5.0 :
+// un jeune entraîné à chaque date touchait son potentiel en une saison et demie
+const SESSION = 0.012;
 export const PLAY_MIN = 0.75; // épreuve jouée : facteur du gain pour un score nul…
 export const PLAY_MAX = 1.5; // …et pour un score parfait ; un tiers des points vaut la simulation
 export const factorOf = (score) => PLAY_MIN + (PLAY_MAX - PLAY_MIN) * clamp(score, 0, 1);

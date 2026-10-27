@@ -1,5 +1,5 @@
 import { SCOUTED, YOUTH_LEAVE_AGE, YOUTH_PLACES } from './constants';
-import { ATTRS, WEIGHTS, makePlayer, playerRating, seasonGain } from './players';
+import { ATTRS, SUMMER, WEIGHTS, makePlayer, playerRating, seasonGain } from './players';
 import { clamp, ri, rnd } from './utils';
 
 // Académie : l'équipe de jeunes du club, six places. On recrute quand on veut, gratuitement, parmi les jeunes repérés
@@ -19,7 +19,10 @@ export const PLANS = {
 };
 const FOCUS = 2.4; // part d'entraînement des qualités travaillées par le plan : quatre fois celle des autres
 const REST = 0.6;
-const ROUND_PACE = 0.03; // part de la marge vers le potentiel gagnée à chaque journée
+// part de la marge vers le potentiel gagnée à chaque journée, freinée près du sommet comme en équipe première
+// (0,03 sans frein avant la 0.5.0 : un jeune doué touchait son potentiel avant 19 ans)
+const ROUND_PACE = 0.012;
+const levelBrake = (p) => clamp(1.4 - playerRating(p) / 20, 0.45, 1);
 
 const r1 = (v) => Math.round(v * 10) / 10;
 const roundKey = (s) => `${s.seasonNumber}:${s.round}`;
@@ -96,17 +99,17 @@ function grow(p, gain) {
 export function trainYouth(s) {
   for (const p of s.youth || []) {
     const room = Math.max(0, p.pot - playerRating(p));
-    const g = grow(p, room * ROUND_PACE * rnd(0.7, 1.3));
+    const g = grow(p, room * ROUND_PACE * levelBrake(p) * rnd(0.7, 1.3));
     p.gain = { ...(p.gain || {}), round: g, season: r1((p.gain?.season || 0) + g) };
   }
 }
 
-// Intersaison : le bond de l'été (comme l'équipe première, seasonGain), puis un an de plus ; à 19 ans, un jeune qui
-// n'est pas monté quitte le club. Renvoie les jeunes partis.
+// Intersaison : le bond de l'été (comme l'équipe première, seasonGain × SUMMER), puis un an de plus ; à 19 ans, un
+// jeune qui n'est pas monté quitte le club. Renvoie les jeunes partis.
 export function youthSeasonEnd(s) {
   const gone = [];
   for (const p of s.youth || []) {
-    const g = grow(p, seasonGain(p));
+    const g = grow(p, seasonGain(p) * SUMMER);
     p.gain = { round: 0, season: 0, summer: g };
     p.age += 1;
     if (p.age >= YOUTH_LEAVE_AGE) gone.push(p);
@@ -122,8 +125,7 @@ export function refreshScouting(s) {
   const key = roundKey(s);
   if (!s.scouting || s.scouting.key !== key) s.scouting = { key, list: [], drawn: 0 };
   while (s.scouting.drawn < (SCOUTED[lvl] || 0)) {
-    const p = makePlayer({ youth: true, academy: lvl });
-    p.age = ri(15, 17);
+    const p = makePlayer({ youth: true, academy: lvl, age: ri(15, 17) });
     p.id = s.nextId++;
     s.scouting.list.push(p);
     s.scouting.drawn += 1;

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { TACTICS, TACTIC_ORDER, formationOf, lineupRating, reshapeLineup } from '../game/tactics';
+import { TACTICS, TACTIC_ORDER, fitWeight, formationOf, lineupRating, reshapeLineup } from '../game/tactics';
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
 import { SUBS_MAX, createLiveMatch, pairSubs, prematchOdds, prematchXg, subMinute } from '../game/live';
 import { available, fitAt } from '../game/players';
@@ -14,6 +14,8 @@ import { SEC_PER_MIN, matchFeed } from '../game/matchFeed';
 import { ClubCrest, Crest } from './crest';
 import { clubStars } from '../game/crest';
 import { DIVISIONS } from '../game/constants';
+import { penaltySkills, shootoutWinChance } from '../game/cups';
+import { pctOf } from '../game/mercato';
 import { standingsOf } from '../game/season';
 import { useFitText } from './fittext';
 
@@ -85,9 +87,17 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const [tactic, setTactic] = useState(state.tactic || 'balanced');
   const [formation, setFormation] = useState(formationOf(state.formation).id);
   const [board, setBoard] = useState(() => !narrowScreen()); // composition dépliée sur PC, repliée sur téléphone
-  const rating = lineupRating(state.players, lineup, formation);
+  // niveau de l'onze au coup d'envoi, condition physique comprise (comme le pronostic et le meilleur onze) ; au repos,
+  // il vaudrait `rested` : la fatigue se lit à côté du niveau, les pourcentages ne la cachent plus
+  const rating = lineupRating(state.players, lineup, formation, fitWeight);
+  const rested = lineupRating(state.players, lineup, formation);
+  const tired = rested - rating >= 0.05 ? rested - rating : 0;
   const xg = prematchXg(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength }); // même moteur que le pronostic
   const odds = prematchOdds(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength }); // calculé sur le moteur
+  // coupe : qualifié en gagnant, ou en gagnant la séance de tirs au but après un nul (chance exacte, tireurs et gardien de
+  // ce onze) ; le nul ne compte plus pour une demi-qualification
+  const pens = ctx.knockout ? penaltySkills(lineup.map((id) => state.players.find((p) => p.id === id)).filter(Boolean)) : null;
+  const qualify = pens ? odds.win + odds.draw * shootoutWinChance(pens.home, pens.away) : null;
   const reshape = (f) => { setFormation(f); setLineup(reshapeLineup(state.players, lineup, f)); };
   const form = formationOf(formation);
   // classement des deux clubs (championnat), dès la première journée jouée
@@ -110,7 +120,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           <div className="pm-matchup">
             <div className="pm-team home">
               <ClubCrest crest={state.crest} name={state.clubName} className="pm-crest" stars={clubStars(state)} />
-              <div className="pm-tname"><b ref={homeRef}>{state.clubName}</b><small>{standing(me)}niveau <strong>{fmtRating(rating)}</strong></small></div>
+              <div className="pm-tname"><b ref={homeRef}>{state.clubName}</b><small title={tired ? `${fmtRating(rested)} au repos, ${fmtRating(tired)} de moins avec la fatigue` : undefined}>{standing(me)}niveau <strong>{fmtRating(rating)}</strong></small></div>
             </div>
             <span className="pm-vs" aria-label="contre">VS</span>
             <div className="pm-team away">
@@ -133,7 +143,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           <section className="pm-xi glass" aria-label="Onze de départ">
             <div className="pm-xi-head">
               <h3 className="pm-sh mark-head">Onze de départ · <span className="nowrap">{form.name}</span></h3>
-              <span className="pm-level">Niveau <b>{fmtRating(rating)}</b></span>
+              <span className="pm-level">Niveau <b>{fmtRating(rating)}</b>{tired > 0 && <em className="pm-tired" title={`${fmtRating(rested)} au repos`}>fatigue −{fmtRating(tired)}</em>}</span>
               <BestEleven players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
               <button type="button" className="pm-fold" onClick={() => setBoard(false)}>Replier</button>
             </div>
@@ -141,7 +151,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           </section>
         ) : (
           <div className="pm-compo">
-            <CompoCard title="Composition" detail={`Onze en ${form.name} · niveau ${fmtRating(rating)}`} onOpen={() => setBoard(true)} />
+            <CompoCard title="Composition" detail={`Onze en ${form.name} · niveau ${fmtRating(rating)}${tired ? ` (fatigue −${fmtRating(tired)})` : ''}`} onOpen={() => setBoard(true)} />
             <BestEleven players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
           </div>
         )}
@@ -159,7 +169,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
               <span className="pm-xg">Buts attendus <b>{fmtRating(xg.for)}</b> – <b>{fmtRating(xg.against)}</b></span>
             </div>
             <OddsBar odds={odds} />
-            {ctx.knockout && <p className="pm-xg pm-ko">Élimination directe : tirs au but en cas d’égalité · qualification ≈ <b>{Math.round((odds.win + odds.draw * 0.5) * 100)} %</b></p>}
+            {ctx.knockout && <p className="pm-xg pm-ko">Élimination directe, tirs au but en cas d’égalité ({pctOf(shootoutWinChance(pens.home, pens.away))} % pour toi) · qualification <b>{pctOf(qualify)} %</b></p>}
             <button className="btn btn-xl" onClick={() => onKickoff(lineup, tactic, formation)}><IconPlay className="fill" /> Coup d’envoi</button>
           </section>
         </div>

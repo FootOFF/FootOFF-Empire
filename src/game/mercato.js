@@ -17,6 +17,13 @@ export const TRIES = 3; // offres possibles par joueur et par journée
 const SPREAD = 0.07; // largeur de la zone d'hésitation du vendeur (en part du prix demandé)
 
 export const roundKey = (s) => `${s.seasonNumber}:${s.round}`;
+// Journées de championnat jouées depuis la fondation (sept par saison) : compte du blocage de revente.
+export const leagueRounds = (s) => (s.seasonNumber - 1) * 7 + (s.round || 0);
+// Une recrue, ou un jeune monté de l'académie, reste au moins quatre journées de championnat avant de pouvoir être vendu :
+// plus de joueur libre acheté puis revendu le lendemain, ni d'achat avant une montée revendu à la reprise (sa valeur suit
+// la division), ni de jeune vendu le jour de sa montée.
+export const RESALE_ROUNDS = 4;
+export const lockResale = (s, p) => { p.sellFrom = leagueRounds(s) + RESALE_ROUNDS; };
 // Date du calendrier : la période entre deux matchs, coupes comprises (roundKey ne change qu'aux journées de
 // championnat). Une recrue ne se revend pas avant le match suivant sa signature.
 export const dateKey = (s) => `${s.seasonNumber}:${s.calIndex || 0}:${s.round}`;
@@ -24,12 +31,20 @@ export const dateKey = (s) => `${s.seasonNumber}:${s.calIndex || 0}:${s.round}`;
 export const moveWhen = (season, round) => `Saison ${season}${round ? `, après la journée ${round}` : ', avant la 1re journée'}`;
 
 // Pourquoi un joueur de l'effectif ne peut pas être vendu maintenant (null : il peut l'être). Blessé ou suspendu, il
-// attend son retour ; recruté depuis le dernier match, il attend le suivant. Ni mise en vente, ni offre acceptée ou
-// négociée, ni offre des clubs (transfers.js) tant que dure le blocage.
+// attend son retour ; arrivé depuis moins de quatre journées de championnat (recrue, jeune monté de l'académie), il
+// attend la fin du délai. Ni mise en vente, ni offre acceptée ou négociée, ni offre des clubs (transfers.js) tant que
+// dure le blocage.
 export function saleBlock(s, p) {
   const a = absenceOf(p);
   if (a?.kind === 'injury') return { short: 'Blessé', text: 'Blessé : il ne peut pas être vendu avant son retour.' };
   if (a) return { short: 'Suspendu', text: 'Suspendu : il ne peut pas être vendu avant d’avoir purgé sa suspension.' };
+  const left = (p.sellFrom || 0) - leagueRounds(s);
+  if (left > 0) {
+    const wait = `${left} journée${left > 1 ? 's' : ''} de championnat`;
+    return p.signed
+      ? { short: 'Arrivé récemment', text: `Recrue : il pourra être vendu dans ${wait}.` }
+      : { short: 'Monté récemment', text: `Monté de l’académie : il pourra être vendu dans ${wait}.` };
+  }
   if (p.signed?.date === dateKey(s)) return { short: 'Recruté aujourd’hui', text: 'Recruté aujourd’hui : il ne peut pas être revendu avant le prochain match.' };
   return null;
 }

@@ -20,6 +20,8 @@ européens fictifs). Les tours s'intercalent entre les journées ; tous les matc
 public en hausse (×1,15 en Coupe nationale, ×1,55 en Coupe d'Europe, billets ×1,5) et 1,5 M€ de droits TV par match
 européen. Primes de la Coupe nationale : 6 %, 12 %, 25 % puis 75 % de la prime du champion de la division pour
 chaque tour gagné. Coupe d'Europe : 4 M€ de participation, puis 2,5 M€, 4 M€, 6,5 M€ et 15 M€ par tour gagné.
+Avant un match de coupe, la chance de gagner la séance de tirs au but (finition des tireurs, réflexes du gardien) et la
+qualification affichées sont exactes (`shootoutWinChance`, `src/game/cups.js`).
 
 **Trophées et titre** : champion de sa division → trophée, prime de titre (la moitié de la prime du champion et
 30 % des sponsors), +3 de réputation. Coupe gagnée → trophée et +3 de réputation (+6 pour la Coupe d'Europe). Chaque trophée
@@ -59,13 +61,17 @@ Elite, un effectif de stars monte à 80 % et plus (les coupes font la différenc
 **Valeur de marché et transferts** (`marketValue`, `src/game/players.js`) : la valeur d'un joueur vaut deux saisons de
 salaire × âge (×1,35 jusqu'à 21 ans, ×1,15 jusqu'à 24, ×0,85 à 29-30, ×0,7 dès 31) × marge de progression (+7 % par
 point de potentiel, ×1,5 au plus). C'est la référence de tous les prix, la même sur la fiche et au mercato :
-- un joueur libre demande une prime de signature d'une saison de salaire ;
+- un joueur libre demande une prime de signature de 70 % de sa valeur (`FREE_AGENT_SHARE`, `src/game/economy.js` ; une
+  saison de salaire avant la 0.5.0, soit 0,38 fois sa valeur : racheté puis revendu, il rapportait 1,5 à 2 fois son prix) ;
 - un club vendeur demande sa valeur × contrat (0,9 à 1,2 selon 1 à 4 ans restants) × cours du marché (0,8 à 1,3) ×
   réseau du bureau des transferts (−3 % par niveau), puis se négocie (seuils ci-dessous) ;
 - un club acheteur a un plafond secret en part de la valeur : petit club 0,84, club ambitieux 0,97, grand club 1,12
   (±6 % de caractère, +6 % pour un joueur en forme ou jeune, +5 % à fort potentiel, −8 % dès 31 ans), et la
-  négociation ou les enchères le font monter ; une vente immédiate (conseil, plan de redressement) rapporte 85 %.
-Acheter puis revendre aussitôt coûte donc 15 à 30 % ; faire progresser un joueur, ou un jeune de l'académie, rapporte.
+  négociation ou les enchères le font monter ; une vente forcée (plan de redressement du conseil) rapporte 85 %.
+Une recrue, ou un jeune monté de l'académie, ne se revend qu'après quatre journées de championnat au club
+(`RESALE_ROUNDS`, `saleBlock`, `src/game/mercato.js`, depuis la 0.5.0) : faire progresser un joueur rapporte, l'acheter
+pour le revendre aussitôt n'est plus possible (ni l'achat juste avant une montée, revendu à la reprise au prix de la
+division supérieure).
 Un joueur en grande forme (moyenne ≥ 7,3, niveau ≥ 6) peut recevoir une offre spontanée (5 % par journée, plafond +20 %).
 
 **Cours du marché** : le prix demandé suit un cours (×0,8 à ×1,3) qui bouge à chaque journée (±5 %), monte quand
@@ -82,12 +88,17 @@ seuil appelle une contre-offre (signature assurée à ce prix, plafonnée à 125
 joueur et par journée.
 
 **Bureau des transferts** (4,5 k€ au niveau 1, ×6,2 par niveau, sur n'importe quelle parcelle) : sans lui, seuls 4 joueurs sous contrat sont listés publiquement ; son réseau de recruteurs en suit
-12 au niveau 1 puis 4 de plus par niveau (28 au niveau 5), avec des profils de plus en plus forts (jusqu'à environ 2,5 niveaux de
-division au-dessus du club). Un joueur sur quatre est un espoir (18 à 21 ans, potentiel relevé).
-Les recruteurs vont plus haut avec le bureau (+0,3 niveau de division par niveau) et la notoriété attire les grands
-noms (+0,6 au plus, à 60 de réputation) : jusqu'à 19 pour un grand club d'Elite au réseau complet, le marché reste un
-cran au-dessus de ton onze. Ordres de grandeur d'une indemnité (médiane) : 2 à 8 k€ en Départementale, 40 k€ en
-Régionale, 250 k€ en Nationale, 1,5 à 3 M€ en Elite, 8 à 12 M€ pour une star à 18. Le mercato (5 joueurs libres et les joueurs sous contrat) est renouvelé chaque saison ; après chaque
+12 au niveau 1 puis 4 de plus par niveau (28 au niveau 5), avec des profils de plus en plus forts. Un joueur sur quatre
+est un espoir (18 à 21 ans, potentiel relevé).
+**Niveau du marché** (`marketLevel`, `src/game/transfers.js`, depuis la 0.5.0) : calé sur le club moyen de la division
+(milieu de `oppMin` à `oppMax`). Joueurs libres : 0,4 point sous le club moyen en médiane, le meilleur des cinq environ
+0,8 au-dessus. Joueurs sous contrat : au niveau du club moyen sans bureau ; les recruteurs vont plus haut avec le bureau
+(+0,15 de haut de fourchette par niveau) et la notoriété attire les grands noms (+0,6 au plus, à 60 de réputation) :
+médiane un point au-dessus du club moyen, le meilleur environ trois points au-dessus avec un réseau complet et un grand
+nom (18,3 en Elite, 19 au plus). Avant la 0.5.0, le marché suivait le rang de la division : un cran au-dessus du club
+moyen en Départementale (la montée était acquise d'emblée), deux crans en dessous en Elite. Ordres de grandeur d'une
+indemnité (médiane, sans puis avec un réseau complet) : 2 à 4 k€ en Départementale, 25 à 40 k€ en Régionale, 240 à
+390 k€ en Nationale, 2,3 à 3,3 M€ en Elite, 8 à 12 M€ pour une star à 18. Le mercato (5 joueurs libres et les joueurs sous contrat) est renouvelé chaque saison ; après chaque
 journée, des joueurs signent ailleurs et de nouveaux arrivent (marqués « Nouveau »). Les rapports des recruteurs
 resserrent aussi la fourchette de potentiel affichée et rendent les vendeurs plus conciliants.
 
@@ -119,7 +130,8 @@ attire (`src/game/reputation.js`), à rendement décroissant, comparée à la fo
 ## Divisions et difficulté
 
 Niveau des adversaires (`DIVISIONS`, répartis de `oppMin` à `oppMax`) : Départementale 5,0 à 7,4, Régionale 7,6 à 10,0,
-Nationale 10,2 à 12,8, Elite 13,4 à 17,0 ; Coupe d'Europe 13,7 à 18,6. L'effectif de départ vaut environ 6,2 (milieu de
+Nationale 10,2 à 12,8, Elite 13,4 à 17,0 ; Coupe d'Europe 14,8 à 18,2, plus fort à chaque tour (15,6 de moyenne en
+huitièmes, 17,4 en finale ; 13,7 à 17,3 avant la 0.5.0, quand une Coupe d'Europe sur deux était gagnée). L'effectif de départ vaut environ 6,2 (milieu de
 Départementale) : la première montée se gagne en deux ou trois saisons, pas d'emblée. Au sommet, le haut de l'Elite
 (17) reste un défi pour un onze arrivé à 17,5-18 : le titre se dispute, saison après saison, sans jamais être acquis.
 
@@ -143,6 +155,27 @@ salaires pèsent trop). Rééquilibrage du 2026-10-24 :
 
 Avant : montée offerte, légende en Régionale, plus aucun renfort à acheter au sommet, titre chaque année, argent sans
 usage. Après : chaque étape se mérite, le marché garde un cran d'avance, les stars coûtent, le titre se dispute.
+
+Rééquilibrage 0.5.0 (2026-10-27 ; « super cheaté » : prodiges de l'académie, onze de 19-21 ans, Coupe d'Europe facile,
+argent qui déborde). Mesuré par `node tools/sim/career.mjs 20 40 --joueur` : quarante carrières de vingt saisons par un
+président qui joue comme un bon joueur humain (séance individuelle à chaque date avec des épreuves réussies à 85 %,
+tactique adaptée à l'adversaire, meilleurs jeunes repérés, revente seulement quand `saleBlock` l'autorise) :
+
+| | Avant (0.4.3) | Après (0.5.0) |
+|---|---|---|
+| Elite (médiane) | saison 6 | saison 10 |
+| Premier titre en Elite | saison 12 (38 carrières sur 40) | saison 17 (35 sur 40) |
+| Saisons en Elite gagnées | 51 % | 25 % |
+| Coupe d'Europe gagnée | 62 % des participations | 22 % |
+| Âge moyen du onze, saisons 1-5 / 6-10 / 11-15 / 16-20 | 20,9 / 21,1 / 23,3 / 25,1 | 24,1 / 22,5 / 24,2 / 26,1 |
+| Joueurs de 21 ans ou moins dans le onze (mêmes périodes) | 7 / 7 / 4 / 1 | 3 / 5 / 3 / 1 |
+| Onze en fin de partie (écart au club moyen de la division) | 19,0 (+3,8) | 16,9 (+1,8) |
+| Trésorerie médiane, saisons 11-15 / 16-20 | 38 M€ / 91 M€ | 15 M€ / 24 M€ |
+| Descentes (sur 40 carrières) | 55 | 79 |
+
+Le président automatique, qui ne joue ni les séances ni la tactique, monte en Elite vers la saison 12 (9 avant), gagne
+son premier titre vers la 19e (17 avant ; dans 17 carrières sur 40) et 16 % de ses Coupes d'Europe (32 % avant).
+Un joueur parfait (épreuves réussies à 100 %, `SCORE=1`) : Elite vers la saison 10, premier titre vers la 17e.
 
 Prochaines sources de dépense prévues (feuille de route) : marché des transferts, personnel du club,
 bâtiments des parcelles vides, compétitions continentales.

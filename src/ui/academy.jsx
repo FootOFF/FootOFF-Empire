@@ -456,7 +456,7 @@ function LevelCard({ state, onBuilding }) {
   const max = BUILDINGS.academy.max;
   const line = (l) => {
     const t = academyTalent(l);
-    return `${plural(SCOUTED[l], 'jeune repéré', 'jeunes repérés')} après chaque journée · potentiel ${t.pot[0]} à ${t.pot[1]} · fourchette de ${dec(2 * scoutingError(l))} points`;
+    return `${plural(SCOUTED[l], 'jeune repéré', 'jeunes repérés')} après chaque journée · potentiel ${t.pot[0]} à ${t.pot[1]}, rarement ${t.top} · fourchette de ${dec(2 * scoutingError(l))} points`;
   };
   return (
     <section className="ac-level">

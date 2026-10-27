@@ -4,6 +4,21 @@
 
 export const CHANGELOG = [
   {
+    version: '0.5.0', date: '2026-10-27', title: 'Une progression qui se mérite',
+    items: [
+      'Académie : un ou deux jeunes repérés par journée selon son niveau (jusqu’à six avant), aux potentiels réalistes. Au niveau 5, moins de deux jeunes par saison peuvent viser 18 ou plus, et un 20 est rare. Les fourchettes affichées (niveau à l’arrivée, potentiel) sont celles du tirage.',
+      'Les jeunes progressent plus lentement, à l’académie comme en équipe première : un grand espoir a besoin de plusieurs saisons pour éclore. Fini l’équipe de prodiges de 19 ans.',
+      'Centre d’entraînement : les séances et la séance collective font progresser environ deux fois et demie moins vite. Jouer l’épreuve reste plus payant que la simuler.',
+      'Mercato : le marché suit le niveau de ta division (il était trop fort en Départementale, trop faible en Elite). Un joueur libre demande une prime de 70 % de sa valeur.',
+      'Une recrue, comme un jeune monté de l’académie, ne peut être vendue qu’après quatre journées de championnat au club : fini l’achat-revente qui rapportait des millions.',
+      'Coupe d’Europe : des adversaires au niveau des meilleurs clubs d’Elite, plus forts à chaque tour. La gagner devient un exploit.',
+      'Avant-match : le niveau de ton onze tient compte de la fatigue, comme les chances affichées (« fatigue −0,4 » à côté quand des titulaires ne sont pas frais).',
+      'Coupes : la qualification affichée est exacte, avec ta chance de gagner une séance de tirs au but (finition de tes tireurs, réflexes de ton gardien).',
+      'Objectifs du président : ils se fixent sur ton meilleur onze, pas sur l’onze du moment.',
+      'Ta partie en cours garde ses joueurs et ses jeunes ; les nouvelles règles valent pour tout ce qui arrive désormais (jeunes repérés, marché, entraînement, coupes).',
+    ],
+  },
+  {
     version: '0.4.3', date: '2026-10-25', title: 'Condition en pourcentage sur le terrain',
     items: [
       'Composition, avant-match, mi-temps et changement en direct : le pourcentage de condition s’affiche sous chaque joueur, même quand il est au vert.',

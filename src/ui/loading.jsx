@@ -16,7 +16,7 @@ import { FOMonogram } from './brand';
 
 const TIPS = [
   'Un stade plus grand accueille plus de spectateurs : billetterie, buvette et boutique en profitent.',
-  'Former un jeune puis le revendre une fois progressé rapporte ; acheter et revendre aussitôt fait perdre de l’argent.',
+  'Former un jeune puis le revendre une fois progressé rapporte ; une recrue ne se revend qu’après quatre journées de championnat.',
   'Les deux premiers montent, les deux derniers descendent : chaque point compte.',
   'À la mi-temps, change de tactique ou fais entrer un remplaçant pour renverser le match.',
   'L’espace supporters remplit mieux le stade et augmente la réputation gagnée à chaque match.',

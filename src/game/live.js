@@ -1,6 +1,6 @@
 import { clamp, pick, ri } from './utils';
 import { capitalize, clubAfter, deName, isPluralClub, playerName } from './names';
-import { shootout } from './cups';
+import { penaltySkills, shootout } from './cups';
 import { SLOTS, TACTICS, expectedGoals, formationOf, lineupRating, slotsOf } from './tactics';
 import { available, fitAt, fitFactor, ratingAt } from './players';
 import { injuryCut } from './medical';
@@ -513,11 +513,7 @@ export function createLiveMatch(s, ctx) {
     const half = m.half;
     const end = halfEnd();
     if (half === 2 && m.knockout && m.score.home === m.score.away) { // égalité en coupe : séance de tirs au but
-      const on = playersOn();
-      const fin = on.filter((p) => p.pos !== 'G').map((p) => p.a.fin).sort((x, y) => y - x).slice(0, 5);
-      const homeSkill = clamp(0.62 + (fin.reduce((a, b) => a + b, 0) / Math.max(1, fin.length)) / 100, 0.66, 0.84);
-      const keeper = on.find((p) => p.pos === 'G');
-      const awaySkill = 0.77 - (keeper ? (keeper.g?.ref || 10) / 400 : 0) - (keeper && has(keeper, 'chat') ? 0.03 : 0);
+      const { home: homeSkill, away: awaySkill } = penaltySkills(playersOn());
       const so = shootout(homeSkill, awaySkill);
       m.pens = [so.home, so.away];
       push(end - 0.02, 'info', null, `Égalité au bout du temps réglementaire : place aux tirs au but !`);

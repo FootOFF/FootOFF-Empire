@@ -1,5 +1,6 @@
 import {
-  BUILDINGS, DIVISIONS, DRILLS, PAY_SPLIT, PROGRAM_STEPS, SCOUTED, TRAINING_COLLECTIVE, TRAINING_MULT, YOUTH_PLACES, upgradeCost,
+  BUILDINGS, DIVISIONS, DRILLS, PAY_SPLIT, PROGRAM_STEPS, SCOUTED, TRAINING_COLLECTIVE, TRAINING_MULT, YOUTH_GEN, YOUTH_PLACES,
+  upgradeCost,
 } from './constants';
 import { clamp, rnd } from './utils';
 import { REP_START, mercatoRep, sponsorRep } from './reputation';
@@ -116,8 +117,10 @@ export function wageFor(rating, divIndex) {
   return Math.round(WAGE_BASE * curve * WAGE_DIVISION[divIndex]);
 }
 
-// Prime à la signature d'un joueur libre : une saison de salaire (pas d'indemnité : c'est l'affaire du mercato).
-export const signingFor = (wage) => Math.round(wage * 1.0);
+// Prime à la signature d'un joueur libre : 70 % de sa valeur de marché (pas d'indemnité : il n'a pas de club). Une
+// saison de salaire avant la 0.5.0, soit 0,38 fois sa valeur : racheté puis revendu, il rapportait 1,5 à 2 fois son prix.
+export const FREE_AGENT_SHARE = 0.7;
+export const signingFor = (value) => Math.round(value * FREE_AGENT_SHARE);
 
 // Entretien des installations : 4 % de ce qui a été investi dans les bâtiments, chaque saison.
 export function investedIn(key, lvl) {
@@ -175,11 +178,34 @@ export function investmentPreview(s, key, target = (s.buildings[key] || 0) + 1) 
 // de recruteurs du Bureau des transferts.
 export const officeSize = (lvl) => (lvl > 0 ? 8 + lvl * 4 : 4);
 
-// Jeune repéré par l'académie de niveau a (refreshScouting, academy.js ; makePlayer, players.js) : niveau 3 + a +
-// [0 ; 2] (+ 0,8 une fois ses qualités réparties), potentiel = départ + [5 ; 9] + a, plafonné à 20. Fourchettes
-// arrondies, pour l'affichage.
+// Jeune repéré par l'académie de niveau a (refreshScouting, academy.js ; makePlayer, players.js ; YOUTH_GEN,
+// constants.js). Fourchettes affichées, calculées sur une grille régulière de tirages de la même formule : le niveau à
+// l'arrivée de neuf jeunes sur dix (level), le potentiel de huit sur dix (pot) et celui qu'environ un jeune sur cent
+// atteint ou dépasse (top).
+const talentCache = new Map();
 export function academyTalent(a) {
-  return { level: [Math.round(3.8 + a), Math.round(5.8 + a)], pot: [Math.min(20, 8 + 2 * a), Math.min(20, 14 + 2 * a)] };
+  if (talentCache.has(a)) return talentCache.get(a);
+  const g = YOUTH_GEN;
+  const grid = (n) => Array.from({ length: n }, (_, i) => (i + 0.5) / n);
+  const level = [];
+  const pot = [];
+  for (const u of grid(40)) {
+    for (const years of [0, 1, 2]) {
+      const center = g.base + g.perLevel * a + g.spread * u + g.perAge * years;
+      for (const j of grid(5)) level.push(center + 0.8 + 0.6 * (j - 0.5));
+      for (const t of grid(40)) pot.push(clamp(Math.round(center + g.potBase + g.potPerLevel * a + g.potTail * t ** 3), 8, 20));
+    }
+  }
+  level.sort((x, y) => x - y);
+  pot.sort((x, y) => x - y);
+  const at = (arr, f) => arr[Math.floor(f * (arr.length - 1))];
+  const t = {
+    level: [Math.round(at(level, 0.05)), Math.round(at(level, 0.95))],
+    pot: [at(pot, 0.1), at(pot, 0.9)],
+    top: at(pot, 0.99),
+  };
+  talentCache.set(a, t);
+  return t;
 }
 
 // Incertitude sur le potentiel d'un joueur qu'on découvre (demi-largeur de la fourchette affichée, en points de
@@ -219,7 +245,7 @@ export function buildingStats(key, lvl, s) {
     case 'academy': {
       const t = academyTalent(lvl);
       return [
-        { label: 'Potentiel des jeunes', value: `${t.pot[0]} à ${t.pot[1]}`, short: `Potentiel ${t.pot[0]} à ${t.pot[1]}` },
+        { label: 'Potentiel des jeunes', value: `${t.pot[0]} à ${t.pot[1]}`, short: `Potentiel ${t.pot[0]} à ${t.pot[1]}`, sub: `huit sur dix · rarement ${t.top}` },
         { label: 'Jeunes repérés', value: fmt(SCOUTED[lvl]), sub: 'après chaque journée' },
         { label: 'Niveau à leur arrivée', value: `${t.level[0]} à ${t.level[1]}` },
         { label: 'Fourchette du potentiel', value: `${dec(2 * scoutingError(lvl))} points`, sub: 'plus étroite, mieux cernée' },
@@ -278,7 +304,7 @@ export function buildingEffect(key, lvl, divIndex, rep = REP_START) {
     case 'academy': {
       if (lvl <= 0) return 'Pas d’équipe de jeunes tant que l’académie n’est pas construite.';
       const t = academyTalent(lvl);
-      return `Équipe de jeunes de ${YOUTH_PLACES} places · ${SCOUTED[lvl]} jeunes repérés après chaque journée : niveau ${t.level[0]} à ${t.level[1]}, potentiel ${t.pot[0]} à ${t.pot[1]}, cerné à ${dec(2 * scoutingError(lvl))} points près.`;
+      return `Équipe de jeunes de ${YOUTH_PLACES} places · ${SCOUTED[lvl]} jeunes repérés après chaque journée : niveau ${t.level[0]} à ${t.level[1]}, potentiel ${t.pot[0]} à ${t.pot[1]} (rarement ${t.top}), cerné à ${dec(2 * scoutingError(lvl))} points près.`;
     }
     case 'fans':
       return `Public attiré : +${lvl * 7} % · Buvette +${lvl * 10} %, boutique +${lvl * 12} % · Réputation par match : +${lvl * 10} %.`;
