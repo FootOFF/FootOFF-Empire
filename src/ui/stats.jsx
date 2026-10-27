@@ -146,6 +146,65 @@ function ClubTab({ state, matches, season, onOpen, onCareer }) {
   );
 }
 
+// Fiabilité du pronostic (0.6.1) : sur tes propres matchs, les chances annoncées au coup d'envoi (gardées avec chaque
+// match depuis la 0.6.1 : m.odds, live.js) face aux résultats, par tranche de victoire annoncée. Un écart sous deux
+// erreurs types tient du hasard du tirage (« dans le bruit ») ; au-delà, il est signalé.
+const PRONO_BANDS = [[0, 0.2], [0.2, 0.4], [0.4, 0.6], [0.6, 0.8], [0.8, 1.01]];
+const pc = (v) => `${Math.round(v * 100)} %`;
+function PronoTab({ matches }) {
+  const rows = matches.filter((m) => m.odds);
+  if (!rows.length) {
+    return <p className="st-muted st-prono-empty">Les chances annoncées avant chaque match sont gardées depuis la version 0.6.1 : joue quelques matchs, et tu verras ici si le pronostic tombe juste sur tes propres résultats.</p>;
+  }
+  const n = rows.length;
+  const mean = (f) => rows.reduce((a, m) => a + f(m), 0) / n;
+  const said = { w: mean((m) => m.odds.w), d: mean((m) => m.odds.d), l: mean((m) => m.odds.l) };
+  const got = { w: mean((m) => (m.gf > m.ga ? 1 : 0)), d: mean((m) => (m.gf === m.ga ? 1 : 0)), l: mean((m) => (m.gf < m.ga ? 1 : 0)) };
+  const bands = PRONO_BANDS.map(([a, b]) => {
+    const r = rows.filter((m) => m.odds.w >= a && m.odds.w < b);
+    const s = r.length ? r.reduce((t, m) => t + m.odds.w, 0) / r.length : 0;
+    const g = r.length ? r.filter((m) => m.gf > m.ga).length / r.length : 0;
+    const se = r.length ? Math.sqrt(Math.max(s * (1 - s), 0.01) / r.length) : 0;
+    return { a, b, n: r.length, said: s, got: g, noise: 2 * se };
+  }).filter((x) => x.n > 0);
+  const ko = rows.filter((m) => m.odds.q != null);
+  const koSaid = ko.length ? ko.reduce((t, m) => t + m.odds.q, 0) / ko.length : 0;
+  const koGot = ko.length ? ko.filter((m) => outcome(m) === 'win').length / ko.length : 0;
+  return (
+    <>
+      <SectionHead label="Pronostic et résultats" aside={plural(n, 'match comparé', 'matchs comparés')} />
+      <div className="st-tiles">
+        <Stat label="Victoires" value={pc(got.w)} sub={`annoncées ${pc(said.w)}`} />
+        <Stat label="Nuls" value={pc(got.d)} sub={`annoncés ${pc(said.d)}`} />
+        <Stat label="Défaites" value={pc(got.l)} sub={`annoncées ${pc(said.l)}`} />
+        {ko.length > 0 && <Stat label="Qualifications" value={pc(koGot)} sub={`annoncées ${pc(koSaid)} · ${plural(ko.length, 'tour', 'tours')}`} />}
+      </div>
+      <SectionHead label="Par chance annoncée" aside="victoires obtenues" />
+      <ul className="st-prono">
+        {bands.map((x) => {
+          const off = Math.abs(x.got - x.said) > x.noise;
+          return (
+            <li key={x.a}>
+              <span className="st-prono-band">{Math.round(x.a * 100)} à {Math.min(100, Math.round(x.b * 100))} %<em>{plural(x.n, 'match', 'matchs')}</em></span>
+              <span className="st-prono-bar" aria-hidden="true">
+                <i className="said" style={{ left: `${x.said * 100}%` }} />
+                <b style={{ width: `${x.got * 100}%` }} />
+              </span>
+              <span className="st-prono-val"><b>{pc(x.got)}</b><em>annoncé {pc(x.said)}</em></span>
+              <span className={`st-prono-tag ${off ? 'off' : ''}`}>{off ? 'écart' : 'dans le bruit'}</span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="st-muted st-prono-note">
+        La barre dorée montre les victoires obtenues, le trait blanc la chance annoncée. Avec peu de matchs, le hasard du tirage écarte
+        souvent les deux : un écart reste « dans le bruit » tant qu’il ne dépasse pas deux erreurs types (environ
+        {` ${Math.round((bands[0]?.noise || 0) * 100)}`} points pour la première tranche). Le moteur, lui, est vérifié sur vingt mille matchs simulés : un match annoncé à 75 % y est gagné trois fois sur quatre.
+      </p>
+    </>
+  );
+}
+
 // Légendes du club : records individuels de toute l'histoire, chacun ouvre la fiche carrière du joueur.
 function Legends({ state, matches, onCareer }) {
   const careers = allCareers(state);
@@ -667,9 +726,9 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
 
 // sheet : la fiche joueur posée par-dessus (App), au-dessus de la fiche carrière qui l'a ouverte ; sheetOpen : elle a
 // la main sur Échap
-export function StatsPanel({ state, onClose, initialMatch = null, onPlayerSheet, sheet = null, sheetOpen = false }) {
+export function StatsPanel({ state, onClose, initialMatch = null, initialTab = null, onPlayerSheet, sheet = null, sheetOpen = false }) {
   const matches = state.matches || [];
-  const [tab, setTab] = useState(initialMatch ? 'matches' : 'club');
+  const [tab, setTab] = useState(initialMatch ? 'matches' : initialTab || 'club');
   const seasons = [...new Set([state.seasonNumber, ...matches.map((m) => m.season)])].sort((a, b) => b - a);
   const [season, setSeason] = useState(state.seasonNumber);
   // initialMatch : 'last' (dernier match) ou la fiche d'un match (ouverte depuis le calendrier)
@@ -694,7 +753,7 @@ export function StatsPanel({ state, onClose, initialMatch = null, onPlayerSheet,
       onClose={onClose}
       onEscape={sheetOpen ? () => {} : onEscape}
       toolbar={(
-        <Tabs items={[['club', 'Le club'], ['matches', 'Matchs'], ['players', 'Joueurs']]} value={tab} onChange={pick} />
+        <Tabs items={[['club', 'Le club'], ['matches', 'Matchs'], ['players', 'Joueurs'], ['prono', 'Pronostic']]} value={tab} onChange={pick} />
       )}
       overlay={(
         <>
@@ -714,6 +773,7 @@ export function StatsPanel({ state, onClose, initialMatch = null, onPlayerSheet,
       )}
       {tab === 'matches' && <MatchesTab matches={matches} onOpen={setOpen} />}
       {tab === 'players' && <PlayersTab state={state} onCareer={setCareer} />}
+      {tab === 'prono' && <PronoTab matches={matches} />}
     </Panel>
   );
 }

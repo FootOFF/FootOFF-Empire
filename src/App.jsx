@@ -39,10 +39,11 @@ import { setUiSound } from './ui/console';
 import './ui/input'; // manette : traduite en touches du clavier pour tous les menus
 import { moneyBurst } from './ui/moneyfx';
 import { previewState, previewUi, silentSound } from './ui/preview';
+import { FacesSheet } from './ui/facesheet';
 import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics';
 import { actionablePlots, dockSignals, seasonEndForecast, sessionPin, staffTip } from './game/advice';
 import { allowedBuildingsFor, plotBuilding, plotOf } from './game/map';
-import { leavingYouth } from './game/academy';
+import { leavingYouth, missionTarget } from './game/academy';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { roundKey } from './game/mercato';
 import { createStadiumSound } from './ui/sound';
@@ -84,6 +85,7 @@ function liveNoteOf(rec) {
 // preview : nom d'un écran à afficher d'emblée avec une partie fictive (galerie), sans sauvegarde ni 3D.
 export default function App({ preview = null }) {
   if (preview === 'erreur') return <CrashScreen error={new Error('TypeError: Cannot read properties of null (reading \'C\')')} summary="FootOFF FC · saison 3 · Régionale" preview />;
+  if (preview === 'visages') return <FacesSheet />; // planche de visages (galerie)
   const [boot] = useState(() => {
     if (!preview) {
       const st = loadGame();
@@ -381,6 +383,15 @@ export default function App({ preview = null }) {
         title: many ? `${leaving.length} jeunes vont quitter le club` : `${leaving[0].name} va quitter le club`,
         text: `Fais-${many ? 'les' : 'le'} monter en équipe première avant de terminer la saison, sinon ${many ? 'ils partiront' : 'il partira'}.`,
         action: { panel: 'academy', tab: 'youth', ids: leaving.map((p) => p.id) },
+      });
+    }
+    // retour de mission des recruteurs, après cette journée : la liste ramenée est à voir à l'académie
+    const back = state.scouting?.mission;
+    if (back && state.lastMatch?.comp === 'league' && back.season === state.seasonNumber && back.round === state.round) {
+      notify({
+        kind: 'academy', eyebrow: 'Académie · retour de mission', title: back.back > 1 ? `${back.back} jeunes à voir` : 'Un jeune à voir',
+        text: `${back.back > 1 ? 'Les plus prometteurs' : 'Le plus prometteur'} des ${back.seen} jeunes vus par tes recruteurs (${missionTarget(back)}).`,
+        action: { panel: 'academy', tab: 'scout' },
       });
     }
     // blessés et suspendus du match : ils manqueront les prochaines dates
@@ -740,7 +751,7 @@ export default function App({ preview = null }) {
       <Presence>{inGame && panel === 'journal' && <JournalPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'reputation' && <ReputationPanel state={state} onClose={() => setPanel(null)} />}</Presence>
       <Presence>{inGame && panel === 'trophies' && <TrophyRoom key={navKey} state={state} initialTab={trophyTab} focus={trophyFocus} onClose={() => { setPanel(null); setTrophyTab('honours'); setTrophyFocus([]); }} />}</Presence>
-      <Presence>{inGame && panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} onClose={() => { setPanel(null); setStatsMatch(null); }} onPlayerSheet={setPeek} sheet={peekSheet} sheetOpen={peek !== null} />}</Presence>
+      <Presence>{inGame && panel === 'stats' && <StatsPanel state={state} initialMatch={statsMatch} initialTab={boot.ui.statsTab || null} onClose={() => { setPanel(null); setStatsMatch(null); }} onPlayerSheet={setPeek} sheet={peekSheet} sheetOpen={peek !== null} />}</Presence>
       <Presence>
         {inGame && panel === 'finances' && (
           <FinancesPanel state={state} onClose={() => setPanel(null)} onOpenSquad={() => { setSquadTab('players'); setPanel('squad'); }} />

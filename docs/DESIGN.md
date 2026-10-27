@@ -219,6 +219,13 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
     un nom ouvre la fiche du joueur) ; le dernier match ; la vitrine ; les classements passés.
   - Aperçus : `?ecran=saison`, `saison-joue`, `saison-coupe`, `saison-fin`, `calendrier-europe` (Elite : quatorze
     journées et la Coupe d'Europe), `classement`, `europe`.
+  - Statistiques (`src/ui/stats.jsx`) : onglets Le club, Matchs, Joueurs et, depuis la 0.6.1, Pronostic : sur tes
+    propres matchs, les chances annoncées au coup d'envoi (gardées avec chaque match, `m.odds` : victoire, nul,
+    défaite, et qualification en coupe) face aux résultats. En tête, victoires, nuls, défaites et qualifications
+    obtenues, chacune avec sa part annoncée en moyenne ; puis, par tranche de chance de victoire annoncée (0-20, 20-40,
+    40-60, 60-80, 80-100 %), le nombre de matchs, une barre dorée des victoires obtenues avec un trait blanc à la chance
+    annoncée, et une pastille « dans le bruit » (écart sous deux erreurs types) ou « écart ». Les matchs d'avant la
+    0.6.1 n'ont pas de pronostic gardé. Aperçu : `?ecran=stats-pronostic`.
 - Réglages (écran titre et menu pause, voir plus bas) : Son et Vibrations en interrupteurs. Plus de qualité graphique
   depuis le 2026-10-23 : un seul rendu pour tous, celui de l'ancienne qualité Économie, jugée la plus belle et la plus
   nette (voir Fluidité) ; l'image est calculée à la pleine résolution de l'écran (un pixel calculé par pixel physique),
@@ -244,11 +251,25 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
   de l'élément (dessous près du haut de l'écran), toujours dans l'écran ; jamais l'infobulle du navigateur. Les
   en-têtes du tableau de l'effectif donnent le nom complet de la caractéristique (« Finition · trier ») ; le tri
   se montre par une flèche dessinée.
-- Portraits des joueurs (`src/ui/portrait.jsx`) : dessinés, toujours les mêmes pour un même joueur (teint, visage,
-  coiffure, cheveux qui grisonnent avec l'âge, barbe), buste au maillot de son club (notre or, l'anthracite de nos
-  gardiens, les couleurs du club adverse, un haut d'entraînement pour un joueur libre), liseré doré pour nos
-  joueurs. Tableau et cartes de l'effectif (poste en pastille sur le portrait au téléphone), fiche joueur, cartes du
-  mercato (médaille de niveau posée sur le portrait), homme du match, classements des Stats.
+- Portraits des joueurs (`src/ui/portrait.jsx`, traits dans `src/game/faces.js`, refaits en 0.6.1 pour qu'on
+  retienne ses joueurs) : dessinés, dans le même style sobre, et toujours les mêmes pour un même joueur, son visage
+  étant tiré une fois et gardé sur lui (`p.face`). Forme du visage (ovale, ronde, carrée, longue), yeux (cinq formes,
+  leur couleur et un reflet dès 64 px), nez (cinq formes), bouche (cinq), sourcils (épaisseur et forme), oreilles ;
+  une vingtaine de coiffures (court, raie, frange, houppe, dégradé, plaqué, en bataille, boucles, afro, afro court,
+  dreadlocks, tresses, crête, high-top, longs, chignon, queue de cheval, mulet, front dégarni, crâne rasé) ; barbe de
+  trois jours, courte, fournie, bouc, moustache, collier, bouc et moustache. Avec l'âge, les cheveux grisonnent (poivre
+  et sel d'abord), le front se dégarnit, la barbe d'un jeune vient vers 20-26 ans. Un joueur sur cinq a un signe
+  particulier : taches de rousseur, grain de beauté, cicatrice au sourcil, nez cassé, bandeau, oreilles décollées.
+  L'origine de son nom de famille oriente un peu son teint, donc ses cheveux (un joueur sur quatre fait mélange, comme
+  dans la vie). Aucun sosie dans l'effectif : à son arrivée, un joueur qui aurait la même silhouette qu'un coéquipier
+  (teint, cheveux, coiffure, barbe, bandeau) prend une coupe ou une barbe voisine (`distinctFace`) ; l'été aussi (le
+  dernier arrivé). Les joueurs d'avant la 0.6.1 gardent la base de leur ancien portrait (teint, cheveux, coiffure,
+  barbe, mêmes changements avec l'âge), avec les nouveaux traits (`legacyFace`, vérifié sur 3 000 joueurs). En petit
+  (moins de 40 px), seule la silhouette compte ; les traits fins viennent ensuite ; dès 52 px, le numéro du joueur
+  sur son maillot. Buste au maillot de son club (notre or, l'anthracite de nos gardiens, les couleurs du club adverse,
+  un haut d'entraînement pour un joueur libre), liseré doré pour nos joueurs. Tableau et cartes de l'effectif (poste
+  en pastille sur le portrait au téléphone), fiche joueur, cartes du mercato (médaille de niveau posée sur le
+  portrait), homme du match, bandeau du but, classements des Stats. Planche de contrôle : `?ecran=visages`.
 - Raccourcis clavier (PC) : 1 à 5 ouvrent les sections du menu du bas (une seconde fois : retour à l'Empire), J lance
   le match (ou le bilan) ; touches physiques (AZERTY compris), jamais pendant une saisie, un menu ou un match. La
   touche s'affiche au survol du menu ou du bouton Jouer.
@@ -710,6 +731,20 @@ détaillé sur PC (tri par colonne), liste compacte sur téléphone, fiche à dr
   (texte doré s'il est fort pour la division), progrès de la saison (journée et dernier été en infobulle), trois
   points forts, plan ; étiquettes « Niveau titulaire » (il renforcerait l'onze) et « Dernière saison ». Bandeau de
   rappel pour les jeunes qui auront 19 ans à l'intersaison, règles en bas de liste.
+- Mission des recruteurs (0.6.1, sous la liste de la Détection ; `academy.js`) : une cible, poste (gardien,
+  défenseur, milieu, attaquant), profil (technique, physique, mental : la famille de qualités où le jeune est le plus
+  fort) ou région imaginaire (Val d'Ambre, Monts d'Arvel, Côte des Brumes, Plaine d'Orbel, Pays des Sept Lacs), et une
+  durée de un à trois repérages (une à trois journées, deux à six en Elite). Pendant la mission, pas de jeunes repérés.
+  Au retour, les recruteurs ont vu autant de jeunes (de la cible) que les repérages manqués et ramènent les plus
+  prometteurs, d'après leur vrai potentiel (autant qu'un repérage, plus un par repérage en plus). La carte dit combien
+  ils en verront, combien ils en ramèneront, quand, et la chance exacte qu'il y ait parmi eux un potentiel de 16 ou
+  plus, de 18 ou plus (`youthChance`, intégrée sur le tirage même des jeunes ; vérifiée sur 200 000 tirages et 4 000
+  missions) : les mêmes que sur autant de repérages ordinaires, la mission trie et cible sans faire naître de pépite
+  (l'équilibre de la 0.5.0 tient). Une région n'impose ni poste ni profil, mais ses jeunes, observés sur place, ont un
+  potentiel deux fois mieux cerné. En cours : sa cible, son retour, « Rappeler les recruteurs » (fenêtre du jeu ; les
+  repérages reprennent aussitôt). Au retour : une notification après la journée, la liste ramenée en tête de la
+  Détection, l'étiquette « Repéré dans le Val d'Ambre » sur la fiche. Aperçus : `academie-detection`, `academie-mission`,
+  `academie-retour`.
 - Détection : les jeunes repérés de la journée, le plus prometteur d'abord, « Signer » (gratuit) ; carte du niveau
   de l'académie et du suivant (jeunes repérés, potentiel, fourchette) avec « Améliorer ».
 - Fiche : même modèle que la fiche joueur (niveau en grand, poste, âge et pied, nom en capitales, portrait,
@@ -882,6 +917,10 @@ aussi. Revérifié en 0.6.0 avec un match de championnat sur trois à l'extérie
 l'extérieur, constatée 33,3 % ; défaite 41,0 %, constatée 41,6 % (dans le bruit du tirage). Le pronostic suppose qu'un blessé est remplacé : le direct le propose, et le staff le fait quand la fin d'une
 mi-temps est passée ou que le match se joue d'un bloc (`staffSubs`, `live.js` ; avant la 0.5.1, l'équipe finissait à
 dix et perdait environ un point de victoire sur l'annonce). Finir volontairement à dix coûte ce point.
+Matchs très déséquilibrés, vérifiés en 0.6.1 (70 000 matchs, 4,5 à 7 points d'écart de niveau) : le calcul est exact
+dans les deux matchs sur trois sans expulsion ni blessure (gros favori : victoire annoncée 87,40 %, constatée 87,40 %) ;
+les expulsions et blessures encore à venir, qu'il ignore, retirent au gros favori environ 0,4 point de victoire
+(87,4 % annoncés, 87,0 % constatés). L'écart ne se voit pas dans les matchs ordinaires.
 
 Direct (`LiveMatch`, moteur `src/game/live.js`, refait le 2026-10-24) : le match se simule au fil de l'horloge, avec
 quatorze minutes d'avance pour que la scène 3D prépare chaque action. Le bouton « Changement » (avec le nombre de

@@ -1,5 +1,6 @@
-import { SCOUTED, YOUTH_LEAVE_AGE, YOUTH_PLACES } from './constants';
+import { POS_LABELS, SCOUTED, YOUTH_GEN, YOUTH_LEAVE_AGE, YOUTH_PLACES } from './constants';
 import { leagueLength } from './cups';
+import { pushJournal } from './journal';
 import { ATTRS, SUMMER, WEIGHTS, makePlayer, playerRating, seasonGain } from './players';
 import { clamp, ri, rnd } from './utils';
 
@@ -135,11 +136,21 @@ export function youthSeasonEnd(s) {
 }
 
 // Jeunes repérés de la journée : tirés une fois par journée de championnat, toutes les deux en Elite (recruter ne les
-// renouvelle pas ; une amélioration de l'académie en ajoute aussitôt), âgés de 15 à 17 ans.
+// renouvelle pas ; une amélioration de l'académie en ajoute aussitôt), âgés de 15 à 17 ans. Recruteurs en mission :
+// pas de jeunes repérés, jusqu'à leur retour (missions, plus bas).
 export function refreshScouting(s) {
   const lvl = s.buildings.academy || 0;
   const key = roundKey(s);
-  if (!s.scouting || s.scouting.key !== key) s.scouting = { key, list: [], drawn: 0 };
+  if (!s.scouting || s.scouting.key !== key) {
+    s.scouting = { key, list: [], drawn: 0 };
+    const m = s.mission;
+    if (m && lvl > 0) {
+      m.left -= 1;
+      if (m.left > 0) s.scouting.away = true;
+      else missionBack(s, m);
+    }
+  }
+  if (s.scouting.away) return s;
   while (s.scouting.drawn < (SCOUTED[lvl] || 0)) {
     const p = makePlayer({ youth: true, academy: lvl, age: ri(15, 17) });
     p.id = s.nextId++;
@@ -147,6 +158,140 @@ export function refreshScouting(s) {
     s.scouting.drawn += 1;
   }
   return s;
+}
+
+// --- Missions des recruteurs (0.6.1) -----------------------------------------------------------------------------
+// Tu envoies tes recruteurs sur un poste, un profil (technique, physique, mental) ou une région imaginaire, pour un à
+// trois repérages (une à trois journées ; deux à six en Elite, qui repère toutes les deux journées). Pendant la mission,
+// pas de jeunes repérés. Au retour, ils ont vu autant de jeunes (de la cible) que les repérages manqués et te ramènent
+// les plus prometteurs, d'après leur vrai potentiel : plus la mission est longue, plus ils en ont vu, plus il y a de
+// chances d'y trouver une pépite. Ils ne la font pas naître pour autant : les chances (exactes, missionPlan) sont celles
+// d'autant de repérages ordinaires, toujours dans les potentiels réalistes de la 0.5.0. Une région n'impose ni poste
+// ni profil, mais ses jeunes y ont été bien observés : leur potentiel est deux fois mieux cerné.
+export const MISSION_KINDS = { pos: 'Poste', plan: 'Profil', region: 'Région' };
+export const MISSION_REGIONS = ['Val d’Ambre', 'Monts d’Arvel', 'Côte des Brumes', 'Plaine d’Orbel', 'Pays des Sept Lacs'];
+export const PROFILES = { tech: 'technique', phys: 'physique', mental: 'mental' };
+export const MISSION_STEPS = [1, 2, 3];
+// « dans le Val d'Ambre », « dans les Monts d'Arvel », « sur la Côte des Brumes »…
+export const inRegion = (r) => (r.startsWith('Monts') ? `dans les ${r}` : r.startsWith('Côte') || r.startsWith('Plaine') ? `sur la ${r}` : `dans le ${r}`);
+// Ce qu'une mission cherche, en clair : « des gardiens », « un profil technique », « dans le Val d'Ambre ».
+export function missionTarget(m) {
+  if (m.kind === 'pos') return `des ${POS_LABELS[m.value].toLowerCase()}s`;
+  if (m.kind === 'plan') return `un profil ${PROFILES[m.value]}`;
+  return inRegion(m.value);
+}
+
+// Profil d'un jeune : la famille de qualités où il est le plus fort (celle d'un plan d'entraînement : technique,
+// physique, mental ; pour un gardien, ses deux qualités de chaque plan).
+export function profileOf(p) {
+  let best = 'tech';
+  let top = -Infinity;
+  for (const plan of Object.keys(PLANS)) {
+    const keys = planAttrs(p, plan);
+    const pool = p.pos === 'G' ? p.g : p.a;
+    const v = keys.reduce((a, k) => a + (pool[k] || 0), 0) / keys.length;
+    if (v > top) { top = v; best = plan; }
+  }
+  return best;
+}
+
+// Chance exacte qu'un jeune repéré par une académie au niveau lvl ait un potentiel d'au moins t : même tirage que
+// makePlayer (players.js : âge de 15 à 17 ans, centre et potentiel de YOUTH_GEN), intégré pas à pas.
+const chanceCache = new Map();
+export function youthChance(lvl, t) {
+  if (t <= 8) return 1;
+  if (t > 20) return 0;
+  const id = `${lvl}:${t}`;
+  if (chanceCache.has(id)) return chanceCache.get(id);
+  const g = YOUTH_GEN;
+  const N = 4000;
+  let sum = 0;
+  for (const years of [0, 1, 2]) {
+    for (let i = 0; i < N; i++) {
+      const c = g.base + g.perLevel * lvl + g.spread * ((i + 0.5) / N) + g.perAge * years + g.potBase + g.potPerLevel * lvl;
+      const z = (t - 0.5 - c) / g.potTail; // potentiel arrondi ≥ t ⇔ potTail × U³ ≥ t − 0,5 − centre
+      sum += z <= 0 ? 1 : z >= 1 ? 0 : 1 - Math.cbrt(z);
+    }
+  }
+  const p = sum / (3 * N);
+  chanceCache.set(id, p);
+  return p;
+}
+
+// Repérage où reviendrait une mission partie maintenant : { season, round } (round 0 : au début de la saison).
+export function missionReturn(s, steps) {
+  const len = leagueLength(s);
+  let season = s.seasonNumber;
+  let round = s.round;
+  for (let k = 0; k < steps; k++) {
+    const step = scoutStep(s, round);
+    if (round >= len) { season += 1; round = 0; continue; }
+    let r = round + 1;
+    while (r <= len && scoutStep(s, r) === step) r += 1;
+    round = r;
+  }
+  return { season, round };
+}
+
+// Ce que donnera une mission de `steps` repérages : jeunes vus, jeunes ramenés, chances exactes qu'il y ait parmi eux
+// un potentiel de 16 ou plus, de 18 ou plus (les mêmes que sur autant de repérages ordinaires), retour.
+export function missionPlan(s, steps) {
+  const lvl = s.buildings.academy || 0;
+  const per = SCOUTED[lvl] || 0;
+  const seen = steps * per;
+  const at = (t) => (seen ? 1 - (1 - youthChance(lvl, t)) ** seen : 0);
+  return { seen, back: Math.min(seen, per + steps - 1), p16: at(16), p18: at(18), ret: missionReturn(s, steps) };
+}
+
+export function startMission(s, { kind, value, steps }) {
+  const lvl = s.buildings.academy || 0;
+  const ok = kind === 'pos' ? !!POS_LABELS[value] : kind === 'plan' ? !!PROFILES[value] : kind === 'region' ? MISSION_REGIONS.includes(value) : false;
+  if (!lvl || s.mission || !ok || !MISSION_STEPS.includes(steps)) return null;
+  s.mission = { kind, value, steps, left: steps, per: SCOUTED[lvl] || 0, season: s.seasonNumber, round: s.round };
+  pushJournal(s, {
+    season: s.seasonNumber, round: s.round, kind: 'academie', title: 'Les recruteurs partent en mission',
+    text: `Ils cherchent ${missionTarget(s.mission)}, ${steps > 1 ? `pendant ${steps} repérages` : 'le temps d’un repérage'}.`,
+  });
+  return s;
+}
+
+// Rappeler les recruteurs : la mission s'arrête, sans jeunes ; les repérages reprennent aussitôt.
+export function cancelMission(s) {
+  if (!s.mission) return null;
+  s.mission = null;
+  if (s.scouting?.away) { delete s.scouting.away; refreshScouting(s); }
+  return s;
+}
+
+// Retour de mission : les candidats vus (de la cible), les plus prometteurs ramenés.
+function missionBack(s, m) {
+  const lvl = s.buildings.academy || 0;
+  const seen = m.steps * m.per;
+  const back = Math.min(seen, m.per + m.steps - 1);
+  const cands = [];
+  for (let k = 0; k < seen; k++) {
+    let p = null;
+    for (let tries = 0; tries < 60; tries++) {
+      p = makePlayer({ youth: true, academy: lvl, age: ri(15, 17), pos: m.kind === 'pos' ? m.value : null });
+      if (m.kind !== 'plan' || profileOf(p) === m.value) break;
+    }
+    cands.push(p);
+  }
+  cands.sort((a, b) => b.pot - a.pot || playerRating(b) - playerRating(a));
+  const list = cands.slice(0, back);
+  for (const p of list) {
+    p.id = s.nextId++;
+    p.scoutNote = m.kind === 'region' ? `Repéré ${inRegion(m.value)}` : `Mission des recruteurs : ${missionTarget(m)}`;
+    if (m.kind === 'region') p.sharp = true; // potentiel deux fois mieux cerné (players.js, potentialRange)
+  }
+  s.scouting.list = list;
+  s.scouting.drawn = SCOUTED[lvl] || 0; // ce repérage-là, c'est la mission
+  s.scouting.mission = { kind: m.kind, value: m.value, steps: m.steps, seen, back: list.length, season: s.seasonNumber, round: s.round };
+  s.mission = null;
+  pushJournal(s, {
+    season: s.seasonNumber, round: s.round, kind: 'academie', title: 'Retour de mission des recruteurs',
+    text: `Ils ont vu ${seen} jeune${seen > 1 ? 's' : ''} (${missionTarget(m)}) et ramènent ${list.length > 1 ? `les ${list.length} plus prometteurs` : 'le plus prometteur'} : ${list.map((p) => p.name).join(', ')}.`,
+  });
 }
 
 // Jeunes qui auront 19 ans à l'intersaison : à faire monter avant, sinon ils partent.

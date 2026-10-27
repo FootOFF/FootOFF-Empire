@@ -98,6 +98,20 @@ export const BLOCK = new Set([
 const inUse = new Set();
 const lastInUse = new Set();
 const lastOf = (full) => full.split(' ').slice(1).join(' ');
+
+// Origine d'un nom, d'après la liste de son nom de famille (à défaut, de son prénom) : 'fr' (régions de France,
+// Belgique, Suisse, Québec), 'ant' (Antilles, Réunion), 'itpt' (familles italiennes et portugaises), 'mag' (Maghreb),
+// 'afr' (Afrique de l'Ouest et centrale). Les portraits s'en servent pour un visage qui va avec le nom (faces.js).
+const ORIGIN_OF = new Map([
+  ...LAST_FR.map((x) => [x, 'fr']), ...LAST_ANT.map((x) => [x, 'ant']), ...LAST_ITPT.map((x) => [x, 'itpt']),
+  ...LAST_MAG.map((x) => [x, 'mag']), ...LAST_AFR.map((x) => [x, 'afr']),
+]);
+export function originOf(full = '') {
+  const o = ORIGIN_OF.get(lastOf(full));
+  if (o) return o;
+  const first = full.split(' ')[0];
+  return FIRST_MAG.includes(first) ? 'mag' : FIRST_AFR.includes(first) ? 'afr' : FIRST_ITPT.includes(first) ? 'itpt' : 'fr';
+}
 export function registerNames(names) {
   inUse.clear();
   lastInUse.clear();

@@ -1,6 +1,6 @@
 import { clamp, pick, ri } from './utils';
 import { capitalize, clubAfter, deName, isPluralClub, playerName } from './names';
-import { penaltySkills, shootout } from './cups';
+import { penaltySkills, shootout, shootoutWinChance } from './cups';
 import { SLOTS, TACTICS, expectedGoals, formationOf, lineupRating, slotsOf } from './tactics';
 import { available, fitAt, fitFactor, ratingAt } from './players';
 import { injuryCut } from './medical';
@@ -362,8 +362,18 @@ export function createLiveMatch(s, ctx, saved = null) {
     perf: {}, // par joueur : buts, passes décisives, cartons, entrée et sortie
     lastAmbience: 0,
     usedAmbience: new Set(),
+    preOdds: null, // chances annoncées au coup d'envoi (gardées avec le match : fiabilité du pronostic, Stats)
   };
   if (saved) Object.assign(m, unpackLive(saved));
+  if (!m.preOdds) {
+    const o = prematchOdds(s, { oppStrength: ctx.opp.strength, home: ctx.home !== false });
+    const r4 = (v) => Math.round(v * 1e4) / 1e4;
+    m.preOdds = { w: r4(o.win), d: r4(o.draw), l: r4(o.loss) };
+    if (ctx.knockout) { // qualification : victoire, ou nul puis séance de tirs au but gagnée
+      const pens = penaltySkills(s.lineup.map((id) => s.players.find((p) => p.id === id)).filter(Boolean));
+      m.preOdds.q = r4(o.win + o.draw * shootoutWinChance(pens.home, pens.away));
+    }
+  }
   const perf = (id) => (m.perf[id] ||= { goals: 0, assists: 0, yellow: 0, red: 0, shots: 0, onTarget: 0 });
   const has = (p, t) => p.traits?.includes(t);
   const since = (id) => m.perf[id]?.in ?? 0; // minute d'entrée en jeu (titulaires : 0)
@@ -779,6 +789,7 @@ export function createLiveMatch(s, ctx, saved = null) {
         stats: m.stats,
         shots: m.shots,
         highlights: all.filter((e) => ['goal', 'red', 'yellow'].includes(e.type)).map(({ minute, type, side, player }) => ({ minute, type, side, player })),
+        preOdds: m.preOdds,
       };
     },
   };

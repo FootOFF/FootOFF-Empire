@@ -15,6 +15,7 @@ import { closeSeasonObjectives, drawObjectives } from './objectives';
 import { book, closeLedger, markTreasury } from './ledger';
 import { C1_ENTRY, COMPS, STAGES, buildCalendar, cupPrize, drawOpponent, fixtureLabel, fixtureShort, isAwayRound, leagueLength, nextFixture, ofDiv } from './cups';
 import { addMatch, rebuildRecords } from './records';
+import { distinctFace, distinctSquad } from './faces';
 import { collectiveSession, staffSession, tidyTraining, windowKey } from './training';
 
 export function roundRobin(n) {
@@ -141,7 +142,7 @@ export function archivePlayer(s, p, { reason, fee = null, club = null }) {
   if (st && st.apps > 0 && !hist.some((h) => h.season === s.seasonNumber)) hist.push(seasonLine(s, p, st));
   const peak = Math.max(Math.round(playerRating(p) * 10) / 10, ...hist.map((h) => h.rating || 0));
   s.alumni = [...(s.alumni || []).filter((a) => a.id !== p.id), {
-    id: p.id, name: p.name, pos: p.pos, num: p.num, foot: p.foot, traits: p.traits || [],
+    id: p.id, name: p.name, pos: p.pos, num: p.num, foot: p.foot, traits: p.traits || [], face: p.face || null,
     joined: p.joined ?? 1, left: s.seasonNumber, leftRound: s.round, reason, fee, club, academy: !!p.academy,
     age: p.age, ageSeason: reason === 'retraite' ? s.seasonNumber + 1 : s.seasonNumber,
     rating: Math.round(playerRating(p) * 10) / 10, peak, hist,
@@ -161,6 +162,7 @@ function recordMatch(s, res) {
     season: s.seasonNumber, round: s.round, division: DIVISIONS[s.divisionIndex].name,
     comp: res.comp || 'league', stage: res.stage ?? null, label: res.label || null, pens: res.pens || null,
     opp: res.oppName, oppStrength: Math.round((res.oppStrength || 0) * 10) / 10, myRating: res.myRating, ...(res.away ? { away: true } : {}),
+    ...(res.preOdds ? { odds: res.preOdds } : {}), // chances annoncées au coup d'envoi (Stats : fiabilité du pronostic)
     tactic: res.tactic || s.tactic, formation: res.formation || s.formation || '433', gf: res.gf, ga: res.ga,
     stats: st ? {
       possession: st.possession, shots: [...st.shots], onTarget: [...st.onTarget], yellow: [...st.yellow], red: [...st.red],
@@ -490,6 +492,7 @@ export function endSeason(s) {
     } else staying.push(p);
   }
   s.players = staying;
+  distinctSquad(s.players); // un an de plus (cheveux gris, front dégarni) : pas de sosie pour autant, le dernier arrivé change de coupe
   tidyTraining(s); // programmes d'entraînement des retraités effacés
 
   // académie : le bond de l'été, puis les jeunes de 19 ans qui ne sont pas montés quittent le club
@@ -499,6 +502,7 @@ export function endSeason(s) {
     p.id = s.nextId++;
     p.joined = s.seasonNumber + 1;
     assignNumber(s.players, p);
+    distinctFace(s.players, p); // aucun sosie dans l'effectif
     s.players.push(p);
     events.push(`Amateur de secours : ${p.name} (${p.age} ans) complète l’effectif.`);
   }

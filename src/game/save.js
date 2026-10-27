@@ -14,6 +14,7 @@ import { drawObjectives } from './objectives';
 import { refreshTransfers } from './transfers';
 import { rebuildRecords } from './records';
 import { normalizeCrest } from './crest';
+import { distinctSquad, legacyFace } from './faces';
 
 // Sauvegarde : un emplacement principal (SAVE_KEY) et une copie de secours (BACKUP_KEY), prise au chargement de chaque
 // session (la partie telle qu'elle était quand on a ouvert le jeu). Au chargement, une sauvegarde illisible ou
@@ -244,6 +245,12 @@ export function repairSave(s) {
       if (!y.scouting) refreshScouting(y); // jeunes repérés de la journée, tout de suite (noms déjà tous connus)
       fixLeagueNames(y); // un club adverse en double (même nom ou même lieu) dans la division est renommé
       scaleElite(y); // Elite à l'échelle d'un grand championnat (0.6.0)
+      // visages (0.6.1) : un joueur d'avant garde la base de son portrait (teint, cheveux, coiffure, barbe), avec les
+      // nouveaux traits ; puis aucun sosie dans l'effectif (de deux sosies, le dernier arrivé change de coupe)
+      for (const p of [...y.players, ...y.youth, ...(y.scouting?.list || []), ...y.market, ...y.transfers, ...y.alumni]) {
+        if (!p.face) p.face = legacyFace(p);
+      }
+      distinctSquad(y.players);
       return y;
     };
     if (s.version === 4) return fix(s);

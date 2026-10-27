@@ -2,7 +2,7 @@ import {
   answerOffer, build, createInitialState, endSeason, playRound, sellPlayer, setYouthPlan, signPlayer, signYouth, startProgram, toggleShortlist, trainPlayer, upgrade,
 } from '../game/engine';
 import { LINES, pickOf, programsFor } from '../game/training';
-import { advisedPlan } from '../game/academy';
+import { advisedPlan, startMission } from '../game/academy';
 import { seasonFixtures } from '../game/fixtures';
 import { euroName, leagueLength } from '../game/cups';
 import { matchContext, startSeason } from '../game/season';
@@ -29,6 +29,7 @@ export const SCREENS = [
   ['effectif', 'Effectif · joueurs'],
   ['fiche', 'Fiche joueur'],
   ['fiche-recrue', 'Fiche joueur · recrue du jour (arrivée, vente bloquée)'],
+  ['visages', 'Planche de visages (variété, effectif sans sosie)'],
   ['composition', 'Effectif · composition'],
   ['anciens', 'Effectif · anciens joueurs'],
   ['marche', 'Mercato · recruter'],
@@ -45,7 +46,9 @@ export const SCREENS = [
   ['bilan-mercato', 'Mercato · bilan des transferts'],
   ['bureau', 'Inspecteur · bureau des transferts'],
   ['academie', 'Académie · mes jeunes'],
-  ['academie-detection', 'Académie · détection'],
+  ['academie-detection', 'Académie · détection (mission des recruteurs à lancer)'],
+  ['academie-mission', 'Académie · mission des recruteurs en cours'],
+  ['academie-retour', 'Académie · retour de mission (défenseurs)'],
   ['academie-jeune', 'Académie · fiche d’un jeune (plan d’entraînement)'],
   ['academie-repere', 'Académie · fiche d’un jeune repéré'],
   ['academie-vide', 'Académie · équipe de jeunes vide'],
@@ -87,6 +90,7 @@ export const SCREENS = [
   ['stats', 'Statistiques'],
   ['stats-pass', 'Stats Pass d’un match'],
   ['stats-detail', 'Stats Pass · statistiques détaillées'],
+  ['stats-pronostic', 'Statistiques · fiabilité du pronostic sur tes matchs'],
   ['journal', 'Journal du club'],
   ['trophees', 'Salle des trophées (palmarès, succès, records)'],
   ['confirmation', 'Fenêtre de confirmation'],
@@ -99,7 +103,7 @@ export function previewState(screen) {
   if (screen === 'accueil' || screen === 'creation' || screen === 'erreur') return null;
   const s = createInitialState('FootOFF FC');
   s.tutorial = { step: screen === 'tutoriel' ? 'build' : screen === 'tutoriel-effectif' ? 'squad' : 'done' };
-  if (screen === 'finances' || screen === 'stats' || screen === 'stats-pass' || screen === 'stats-detail' || screen === 'anciens' || screen === 'trophees') { // deux saisons bouclées, puis trois matchs : courbe et comptes remplis
+  if (screen === 'finances' || screen === 'stats' || screen === 'stats-pass' || screen === 'stats-detail' || screen === 'stats-pronostic' || screen === 'anciens' || screen === 'trophees') { // deux saisons bouclées, puis trois matchs : courbe et comptes remplis
     build(s, 'main', 'training');
     for (let k = 0; k < 2; k++) { while (s.round < leagueLength(s)) playRound(s); endSeason(s); s.seasonReview = null; }
     for (let k = 0; k < 3; k++) playRound(s);
@@ -198,6 +202,8 @@ function academyPreview(s, screen) {
   const other = Object.keys({ tech: 1, phys: 1, mental: 1 }).find((k) => k !== advisedPlan(s.youth[1]));
   setYouthPlan(s, s.youth[1].id, other);
   leagueRounds(2);
+  if (screen === 'academie-mission') { startMission(s, { kind: 'plan', value: 'tech', steps: 3 }); leagueRounds(1); } // en route
+  if (screen === 'academie-retour') { startMission(s, { kind: 'pos', value: 'D', steps: 2 }); leagueRounds(2); } // de retour
 }
 
 // Centre d'entraînement en aperçu (niveau 3) : deux séances complètes et leurs matchs, puis, avant le match suivant,
@@ -333,7 +339,7 @@ export function previewUi(screen, s) {
     case 'bilan-mercato': return { panel: 'mercato', squad: { mercato: 'log' } };
     case 'bureau': return { sel: { plotId: 't3', sector: 'main' } };
     case 'academie': case 'academie-vide': return { panel: 'academy' };
-    case 'academie-detection': return { panel: 'academy', academyTab: 'scout' };
+    case 'academie-detection': case 'academie-mission': case 'academie-retour': return { panel: 'academy', academyTab: 'scout' };
     case 'academie-jeune': return { panel: 'academy', academy: { sheet: s.youth[1].id } };
     case 'academie-repere': return { panel: 'academy', academyTab: 'scout', academy: { sheet: s.scouting.list[0].id, list: 'scout' } };
     case 'academie-batiment': return { sel: { plotId: 't2', sector: 'main' } };
@@ -358,6 +364,7 @@ export function previewUi(screen, s) {
     case 'stats': return { panel: 'stats' };
     case 'stats-pass': return { panel: 'stats', statsMatch: 'last' };
     case 'stats-detail': return { panel: 'stats', statsMatch: 'last' };
+    case 'stats-pronostic': return { panel: 'stats', statsTab: 'prono' };
     case 'trophees': return { panel: 'trophies' };
     case 'avant-match': case 'avant-match-coupe': case 'avant-match-exterieur': case 'avant-match-europe': return { matchPhase: 'prematch', matchCtx: matchContext(s), matchDay: true };
     case 'direct': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34 } };

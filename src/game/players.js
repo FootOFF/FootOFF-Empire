@@ -1,6 +1,7 @@
 import { clamp, pick, ri, rnd } from './utils';
 import { YOUTH_GEN } from './constants';
 import { playerName } from './names';
+import { drawFace } from './faces';
 import { scoutingError, signingFor, wageFor } from './economy';
 
 // Joueurs : 9 caractéristiques (1 à 20) pour tous, 6 de plus pour les gardiens, un profil (pied fort,
@@ -146,6 +147,7 @@ export function makePlayer({ level = 0, youth = false, academy = 0, pos = null, 
   // même niveau moyen que l'ancien modèle (attaque, défense, mental) : l'équilibre du jeu est conservé
   tuneTo(player, center + 0.8 + rnd(-0.3, 0.3));
   player.traits = rollTraits(player);
+  player.face = drawFace(player, Math.floor(Math.random() * 4294967296)); // son visage, tiré une fois (faces.js)
   return player;
 }
 
@@ -201,7 +203,8 @@ export function potentialRange(p, s) {
   const seasons = since ? Math.max(0, s.seasonNumber - since) : 0;
   const known = s.players.includes(p) || (s.youth || []).includes(p);
   const scouts = p.club ? 0.25 * (s.buildings.transfers || 0) : 0; // rapports des recruteurs sur les joueurs sous contrat
-  const u = clamp(scoutingError(s.buildings.academy || 0) - scouts - (known ? 0.5 * seasons : 0), known ? 0.5 : 0.75, 3);
+  const u0 = clamp(scoutingError(s.buildings.academy || 0) - scouts - (known ? 0.5 * seasons : 0), known ? 0.5 : 0.75, 3);
+  const u = p.sharp ? Math.max(0.5, u0 / 2) : u0; // repéré lors d'une mission dans une région : deux fois mieux cerné
   const shift = ((((p.id || 1) * 7919) % 100) / 100 - 0.5) * u; // la fourchette n'est pas centrée sur la vérité
   const half = (v) => Math.round(v * 2) / 2;
   const lo = half(clamp(p.pot + shift - u, now, 20));

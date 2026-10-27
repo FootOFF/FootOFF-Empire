@@ -1,6 +1,7 @@
 import { BUILDINGS, DIVISIONS, ELITE_SCALE, POS_LABELS, SQUAD_MAX, SQUAD_MIN, START_MONEY, upgradeCost } from './constants';
 import { OFFLINE_CAP, offlinePerHour } from './economy';
 import { assignNumber, costOf, makePlayer, saleValue, wageOf } from './players';
+import { distinctFace } from './faces';
 import {
   SALE_TRIES, TRIES, acceptChance, auctionDone, counterFor, dateKey, demandChance, findOnMarket, isSerious, lastWordOf,
   lockResale, logMove, offersFor, outbidAmount, outbidChance, roundKey, roundTo, saleBlock, valueOf,
@@ -65,6 +66,7 @@ export function createInitialState(clubName, crest = null) {
     p.id = s.nextId++;
     p.joined = 1;
     assignNumber(s.players, p);
+    distinctFace(s.players, p); // aucun sosie dans l'effectif
     s.players.push(p);
   }
   addReserves(s);
@@ -94,6 +96,7 @@ export function addReserves(s) {
     p.id = s.nextId++;
     p.joined = s.seasonNumber || 1;
     assignNumber(s.players, p);
+    distinctFace(s.players, p); // aucun sosie dans l'effectif
     s.players.push(p);
   }
   return s;
@@ -168,6 +171,7 @@ export function promoteYouth(s, id) {
   p.joined = s.seasonNumber;
   lockResale(s, p); // pas de vente avant quatre journées de championnat en équipe première
   assignNumber(s.players, p);
+  distinctFace(s.players, p); // aucun sosie dans l'effectif
   s.players.push(p);
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'academie', title: `${p.name} monte en équipe première`,
@@ -249,6 +253,7 @@ function completeSigning(s, p, fee) {
   p.signed = { fee, from: from || null, season: s.seasonNumber, round: s.round, date: dateKey(s) };
   lockResale(s, p);
   assignNumber(s.players, p);
+  distinctFace(s.players, p); // aucun sosie dans l'effectif
   s.players.push(p);
   s.signings = (s.signings || 0) + 1;
   logMove(s, 'in', p, fee, from);

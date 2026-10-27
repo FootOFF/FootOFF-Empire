@@ -1,14 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BUILDINGS, DIVISIONS, POS_LABELS, SQUAD_MAX, upgradeCost } from '../game/constants';
 import { ATTRS, FAMILIES, GK_ATTRS, TRAITS, playerRating, potentialRange, ratingAt, wageOf } from '../game/players';
-import { PLANS, SCOUTED, YOUTH_LEAVE_AGE, YOUTH_PLACES, advisedPlan, planAttrs, planPace, scoutingWhen } from '../game/academy';
+import {
+  MISSION_KINDS, MISSION_REGIONS, MISSION_STEPS, PLANS, PROFILES, SCOUTED, YOUTH_LEAVE_AGE, YOUTH_PLACES, advisedPlan, cancelMission,
+  missionPlan, missionReturn, missionTarget, planAttrs, planPace, scoutingWhen, startMission,
+} from '../game/academy';
 import { academyTalent, scoutingError } from '../game/economy';
 import { leagueLength } from '../game/cups';
 import { promoteYouth, releaseYouth, setYouthPlan, signYouth } from '../game/engine';
 import { fitGain } from '../game/mercato';
 import { deName } from '../game/names';
 import { fmtMoney, fmtRating } from './format';
-import { IconAcademy, IconArrowUp, IconChevron, IconChevronLeft, IconClock, IconClose } from './icons';
+import { IconAcademy, IconArrowUp, IconChevron, IconChevronLeft, IconClock, IconClose, IconTarget } from './icons';
 import { Eyebrow, divRef, tierOf } from './kit';
 import { Panel } from './panels';
 import { Tabs } from './glass';
@@ -163,7 +166,7 @@ export function AcademyView({ state, run, ask, notify = () => {}, onClose, onBui
       {tab === 'youth' ? (
         <YouthTab state={state} youth={youth} scouted={scouted} refLvl={ref} focus={focus} onOpen={(p) => open(p, 'youth')} onScout={() => setTab('scout')} />
       ) : (
-        <ScoutTab state={state} scouted={scouted} full={full} refLvl={ref} onOpen={(p) => open(p, 'scout')} onSign={sign} onBuilding={onBuilding} />
+        <ScoutTab state={state} scouted={scouted} full={full} refLvl={ref} onOpen={(p) => open(p, 'scout')} onSign={sign} onBuilding={onBuilding} run={run} ask={ask} notify={notify} />
       )}
     </Panel>
   );
@@ -192,6 +195,7 @@ function Places({ state, youth, upgradable, onBuilding }) {
 // Prochain repérage : après la prochaine journée de championnat, dans deux journées (Elite : une liste toutes les deux
 // journées), ou au début de la saison prochaine.
 function nextScouting(state) {
+  if (state.mission) return `au retour de tes recruteurs, ${whenText(state, missionReturn(state, state.mission.left))}`;
   const { next } = scoutingWhen(state);
   return next == null ? 'au début de la saison prochaine' : next > 1 ? 'dans deux journées de championnat' : 'après la prochaine journée de championnat';
 }
@@ -356,14 +360,17 @@ function YouthRow({ p, state, refLvl, focus, onOpen }) {
 
 // --- Détection : les jeunes repérés de la journée -----------------------------------------------------------------
 
-function ScoutTab({ state, scouted, full, refLvl, onOpen, onSign, onBuilding }) {
+function ScoutTab({ state, scouted, full, refLvl, onOpen, onSign, onBuilding, run, ask, notify }) {
   const lvl = state.buildings.academy || 0;
   const { since } = scoutingWhen(state); // en Elite (quatorze journées), une liste toutes les deux journées
   const when = nextScouting(state);
+  const back = state.scouting?.mission; // liste ramenée par une mission
   return (
     <>
       <p className="sq-hint ac-intro">
-        {since > 0 ? `Repérés après la journée ${since}` : 'Repérés pour le début de saison'} · d’autres jeunes {when} · recrutement gratuit
+        {state.scouting?.away ? 'Recruteurs en mission : pas de jeunes repérés avant leur retour'
+          : `${back ? `Retour de mission (${missionTarget(back)}) : ${back.back > 1 ? `les ${back.back} plus prometteurs` : 'le plus prometteur'} des ${back.seen} jeunes vus`
+            : since > 0 ? `Repérés après la journée ${since}` : 'Repérés pour le début de saison'} · d’autres jeunes ${when} · recrutement gratuit`}
       </p>
       {full && (
         <div className="ac-alert" role="note">
@@ -371,13 +378,12 @@ function ScoutTab({ state, scouted, full, refLvl, onOpen, onSign, onBuilding }) 
           <p>Ton équipe de jeunes est complète ({YOUTH_PLACES} / {YOUTH_PLACES}) : fais monter ou libère un jeune pour en recruter un autre.</p>
         </div>
       )}
-      {scouted.length === 0 ? (
+      {scouted.length === 0 ? (!state.scouting?.away && (
         <p className="ac-none">
-          {lvl > 0
-            ? `Tu as recruté tous les jeunes repérés. Tes éducateurs en proposeront ${SCOUTED[lvl]} autres ${when}.`
-            : 'Construis l’académie pour que tes éducateurs repèrent des jeunes.'}
+          {lvl === 0 ? 'Construis l’académie pour que tes éducateurs repèrent des jeunes.'
+            : `Tu as recruté tous les jeunes repérés. Tes éducateurs en proposeront ${SCOUTED[lvl]} autres ${when}.`}
         </p>
-      ) : (
+      )) : (
         <>
           <div className="sq-tables">
             <ScoutTable state={state} rows={scouted} refLvl={refLvl} full={full} onOpen={onOpen} onSign={onSign} />
@@ -387,6 +393,7 @@ function ScoutTab({ state, scouted, full, refLvl, onOpen, onSign, onBuilding }) 
           </ul>
         </>
       )}
+      {lvl > 0 && <MissionCard state={state} run={run} ask={ask} notify={notify} />}
       {lvl > 0 && <LevelCard state={state} onBuilding={onBuilding} />}
     </>
   );
@@ -456,6 +463,92 @@ function ScoutRow({ p, state, refLvl, onOpen }) {
         </span>
       </button>
     </li>
+  );
+}
+
+// Retour d'une mission : « après la journée 9 », « au début de la saison prochaine »…
+function whenText(state, ret) {
+  if (ret.season > state.seasonNumber) return ret.round ? `après la journée ${ret.round} de la saison prochaine` : 'au début de la saison prochaine';
+  return `après la journée ${ret.round}`;
+}
+// chance d'au moins un grand potentiel, jamais 0 % ni 100 % quand ce n'est pas certain
+const pctOf = (p) => (p <= 0 ? '0 %' : p >= 1 ? '100 %' : `${Math.min(99, Math.max(1, Math.round(p * 100)))} %`);
+
+// Mission des recruteurs (0.6.1, academy.js) : une cible (poste, profil ou région), une durée, puis ce qu'ils verront
+// et ramèneront, avec les chances exactes d'y trouver un grand potentiel ; en cours, leur retour et « Rappeler ».
+function MissionCard({ state, run, ask, notify }) {
+  const [kind, setKind] = useState('pos');
+  const [picks, setPicks] = useState({ pos: 'A', plan: 'tech', region: MISSION_REGIONS[0] });
+  const [steps, setSteps] = useState(2);
+  const elite = leagueLength(state) > 7; // un repérage toutes les deux journées
+  const span = (n) => (elite ? `${2 * n} journées` : n > 1 ? `${n} journées` : '1 journée');
+  const m = state.mission;
+  if (m) {
+    const back = Math.min(m.steps * m.per, m.per + m.steps - 1);
+    const recall = () => ask({
+      tone: 'danger',
+      title: 'Rappeler les recruteurs ?',
+      text: 'La mission s’arrête sans ramener de jeunes ; les repérages reprennent aussitôt.',
+      confirmLabel: 'Rappeler',
+      cancelLabel: 'Les laisser chercher',
+      onConfirm: () => run((s) => cancelMission(s)),
+    });
+    return (
+      <section className="ac-level ac-mission on">
+        <div className="ac-level-head">
+          <span className="ac-level-ico"><IconTarget /></span>
+          <div className="panel-title">
+            <Eyebrow>Mission en cours</Eyebrow>
+            <strong>Tes recruteurs cherchent {missionTarget(m)}. Retour {whenText(state, missionReturn(state, m.left))}, avec {back > 1 ? `les ${back} plus prometteurs` : 'le plus prometteur'} des {m.steps * m.per} jeunes vus.</strong>
+          </div>
+        </div>
+        <div className="ac-level-next">
+          <span>Pendant la mission, pas de nouveaux jeunes repérés.</span>
+          <button type="button" className="btn ghost btn-sm" onClick={recall}>Rappeler les recruteurs</button>
+        </div>
+      </section>
+    );
+  }
+  const target = { kind, value: picks[kind], steps };
+  const plan = missionPlan(state, steps);
+  const options = kind === 'pos' ? ['G', 'D', 'M', 'A'].map((k) => [k, POS_LABELS[k]])
+    : kind === 'plan' ? Object.entries(PROFILES).map(([k, v]) => [k, v[0].toUpperCase() + v.slice(1)])
+      : MISSION_REGIONS.map((r) => [r, r]);
+  const launch = () => {
+    if (!run((s) => startMission(s, target), 'Mission impossible.')) return;
+    notify({ kind: 'academy', eyebrow: 'Académie', title: 'Les recruteurs partent en mission', text: `Ils cherchent ${missionTarget(target)} : retour ${whenText(state, plan.ret)}.` });
+  };
+  return (
+    <section className="ac-level ac-mission">
+      <div className="ac-level-head">
+        <span className="ac-level-ico"><IconTarget /></span>
+        <div className="panel-title">
+          <Eyebrow>Mission des recruteurs</Eyebrow>
+          <strong>Envoie-les chercher un poste, un profil ou dans une région. Pendant la mission, pas de jeunes repérés ; au retour, les plus prometteurs de tous ceux qu’ils ont vus.</strong>
+        </div>
+      </div>
+      <div className="chips ac-mission-row" role="group" aria-label="Cible de la mission">
+        {Object.entries(MISSION_KINDS).map(([k, label]) => <button key={k} type="button" className={kind === k ? 'active' : ''} onClick={() => setKind(k)}>{label}</button>)}
+      </div>
+      <div className="chips ac-mission-row" role="group" aria-label={MISSION_KINDS[kind]}>
+        {options.map(([v, label]) => <button key={v} type="button" className={picks[kind] === v ? 'active' : ''} onClick={() => setPicks({ ...picks, [kind]: v })}>{label}</button>)}
+      </div>
+      <div className="chips ac-mission-row" role="group" aria-label="Durée de la mission">
+        {MISSION_STEPS.map((n) => <button key={n} type="button" className={steps === n ? 'active' : ''} onClick={() => setSteps(n)}>{span(n)}</button>)}
+      </div>
+      <p className="ac-plan-text">
+        Ils verront <b>{plan.seen} jeune{plan.seen > 1 ? 's' : ''}</b> ({missionTarget(target)}) et ramèneront <b>{plan.back > 1 ? `les ${plan.back} plus prometteurs` : 'le plus prometteur'}</b> {whenText(state, plan.ret)}.
+        {kind === 'region' ? ' Observés sur place, leur potentiel sera deux fois mieux cerné.' : ''}
+      </p>
+      <div className="ac-mission-odds" aria-label="Chances exactes">
+        <span>Un potentiel de 16 ou plus parmi eux <b>{pctOf(plan.p16)}</b></span>
+        <span>De 18 ou plus <b>{pctOf(plan.p18)}</b></span>
+      </div>
+      <div className="ac-level-next">
+        <span>Les mêmes chances que {steps > 1 ? `${steps} repérages ordinaires` : 'un repérage ordinaire'} : la mission trie et cible, elle ne fait pas naître de pépite.</span>
+        <button type="button" className="btn btn-sm" onClick={launch}>Lancer la mission</button>
+      </div>
+    </section>
   );
 }
 
@@ -546,7 +639,7 @@ function AcademySheet({ p, scout, state, refLvl, full, place, onClose, onPrev, o
           </div>
           <Portrait p={p} size={136} className="sh-face" />
           <div className="sh-tags">
-            <span className="sh-tag on">{scout ? 'Repéré par tes éducateurs' : `Académie depuis la saison ${p.youthSince ?? state.seasonNumber}`}</span>
+            <span className="sh-tag on">{scout ? (p.scoutNote || 'Repéré par tes éducateurs') : `Académie depuis la saison ${p.youthSince ?? state.seasonNumber}`}</span>
             {leaving && <span className="sh-tag warn">{YOUTH_LEAVE_AGE} ans à l’intersaison</span>}
             {gain >= 0.3 && <span className="sh-tag sale">Niveau titulaire</span>}
             {p.alt && <span className="sh-tag">Dépanne : {POS_LABELS[p.alt].toLowerCase()} {fmtRating(ratingAt(p, p.alt))}</span>}

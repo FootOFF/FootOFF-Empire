@@ -74,7 +74,13 @@ Code : `src/game/players.js` (condition, blessures, disponibilité), `src/game/l
   (académie 5) ; potentiel de huit jeunes sur dix de 8 à 14 (académie 1) à 12 à 18 (académie 5), un sur cent à 16 ou
   plus (académie 1), à 20 (académie 5). Recruté à 15 ans, un jeune finit ses 18 ans à 7,5 en moyenne (académie 1),
   10,5 (académie 5), 12,7 pour un potentiel de 18 ou plus : il éclot ensuite, en équipe première.
-- Potentiel affiché en fourchette : elle se resserre avec l'académie et les saisons passées au club.
+- Potentiel affiché en fourchette : elle se resserre avec l'académie et les saisons passées au club ; deux fois plus
+  étroite pour un jeune ramené d'une mission des recruteurs dans une région (0.6.1, `p.sharp`).
+- Missions des recruteurs (0.6.1, `academy.js`) : poste, profil (la famille de qualités où le jeune est le plus fort,
+  `profileOf`) ou région, un à trois repérages ; au retour, les plus prometteurs des jeunes vus, sans changer la chance
+  qu'il y ait une pépite parmi eux (`youthChance` : chance exacte d'un potentiel donné pour un jeune repéré).
+- Visage (0.6.1, `src/game/faces.js`) : tiré une fois à la création du joueur (`p.face`) et gardé ; l'origine de son nom
+  de famille oriente un peu le teint ; il vieillit (cheveux gris, front dégarni, barbe d'adulte vers 20-26 ans).
 - Vie du joueur : forme (5 derniers matchs), statistiques de saison, historique des 10 dernières saisons,
   évolution du dernier été.
 

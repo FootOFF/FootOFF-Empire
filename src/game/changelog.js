@@ -4,6 +4,19 @@
 
 export const CHANGELOG = [
   {
+    version: '0.6.1', date: '2026-10-27', title: 'Des visages qu’on retient, des recruteurs en mission',
+    items: [
+      'Nouveaux visages, toujours dessinés : forme du visage, yeux et leur couleur, nez, bouche, sourcils, oreilles, une vingtaine de coiffures (afro, tresses, dreadlocks, crête, dégradé, mulet…) et toutes sortes de barbes. Les cheveux grisonnent et le front se dégarnit avec l’âge ; la barbe d’un jeune vient avec les années.',
+      'Un joueur sur cinq a un signe particulier : taches de rousseur, grain de beauté, cicatrice au sourcil, nez cassé, bandeau ou oreilles décollées.',
+      'Le numéro de chaque joueur sur son maillot, dans le portrait (cartes, fiche, homme du match, bandeau du but).',
+      'Un nom et un visage qui vont ensemble : l’origine du nom oriente un peu le visage, avec des mélanges comme dans la vie.',
+      'Aucun sosie dans ton effectif : un joueur qui ressemblerait trop à un coéquipier arrive avec une coupe ou une barbe différente.',
+      'Tes joueurs actuels gardent leur visage (teint, cheveux, coiffure, barbe), avec les nouveaux traits en plus.',
+      'Académie : envoie tes recruteurs en mission sur un poste, un profil (technique, physique, mental) ou une région imaginaire, pour une à trois journées. Au retour, les plus prometteurs de tous les jeunes vus ; les chances affichées d’y trouver un grand potentiel sont exactes.',
+      'Stats : nouvel onglet Pronostic. Sur tes propres matchs, les chances annoncées avant le coup d’envoi face aux résultats obtenus, tranche par tranche.',
+    ],
+  },
+  {
     version: '0.6.0', date: '2026-10-27', title: 'L’Elite pro : aller-retour et vrais millions',
     items: [
       'Elite en aller-retour : quatorze journées, chaque adversaire reçu une fois et visité une fois. À l’extérieur, l’avantage du terrain passe chez l’adversaire (pronostic compris, vérifié sur vingt mille matchs) et seuls les droits TV reviennent au club.',
