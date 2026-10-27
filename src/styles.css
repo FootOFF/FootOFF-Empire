@@ -501,6 +501,8 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .panel-head .panel-actions { align-self: flex-start; }
 .panel-head .section-tabs { order: 3; flex: 1 0 100%; overflow-x: auto; overflow-y: hidden; margin: 0 calc(-1 * var(--s-2)); padding: 0 var(--s-2); }
 .panel.lg .panel-head .section-tabs { order: 0; flex: 1 1 auto; margin: 0 var(--s-4) 2px var(--s-6); padding: 0; }
+/* onglets trop larges pour la ligne du titre (panels.jsx, useTabsBelow) : leur propre ligne, la trésorerie reste en haut */
+.panel.lg .panel-head.tabs-below .section-tabs { order: 3; flex: 1 0 100%; margin: 0 calc(-1 * var(--s-2)); padding: 0 var(--s-2); }
 .section-tabs button { flex: none; }
 .section-tabs button.locked { color: #6f6c66; }
 .section-tabs button.locked svg { width: 14px; height: 14px; margin-top: -2px; }
@@ -2336,6 +2338,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 @media (max-width: 760px) {
   .grip { display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--line-strong); margin: var(--s-2) auto 0; flex-shrink: 0; }
   .panel > .grip { margin-bottom: calc(-1 * var(--s-2)); }
+  .prematch > .grip { margin: -8px auto -8px; }
   .ins-foot { padding: var(--s-3) var(--s-4) var(--s-4); }
 
   /* fiche joueur : pied collé en bas, au-dessus du contenu qui défile */

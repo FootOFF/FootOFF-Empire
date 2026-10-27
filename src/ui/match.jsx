@@ -10,6 +10,7 @@ import { BestEleven, FormationPicker, LineupBoard, displayNames, formationEffect
 import { IconChevron, IconClose, IconMute, IconPlay, IconSound, IconUsers } from './icons';
 import { IconAssist, IconBall, IconMedic, IconSwap, IconWhistle, RatingBadge, VersusBar } from './kit';
 import { useKeydown } from './presence';
+import { PHONE, useSwipe } from './gestures';
 import { SEC_PER_MIN, matchFeed } from '../game/matchFeed';
 import { ClubCrest, Crest } from './crest';
 import { clubStars } from '../game/crest';
@@ -113,9 +114,14 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const awayRef = useFitText(ctx.opp.name, 22);
 
   useKeydown((e) => { if (e.key === 'Escape') onCancel(); });
+  // téléphone : glisser vers le bas (contenu tout en haut) ramène au complexe, comme pour les autres fenêtres ; la
+  // composition dépliée garde son propre geste (data-noswipe, lineup.jsx)
+  const ref = useRef(null);
+  useSwipe(ref, { onDown: onCancel, downMedia: PHONE });
 
   return (
-    <div className={`matchscreen prematch ${board ? 'board-open' : 'board-closed'}`}>
+    <div ref={ref} className={`matchscreen prematch ${board ? 'board-open' : 'board-closed'}`}>
+      <span className="grip" aria-hidden="true" />
       <header className="pm-head">
         <p className={`pm-eyebrow comp-${ctx.comp || 'league'}`}>{league ? `${DIVISIONS[state.divisionIndex].name} · ` : ''}{ctx.label || `Journée ${state.round + 1} / ${state.schedule.length}`} · {home ? 'À domicile' : 'À l’extérieur'}</p>
         <div className="pm-top">

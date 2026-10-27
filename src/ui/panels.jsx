@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { DIVISIONS } from '../game/constants';
 import { standingsOf } from '../game/season';
 import { ordinal } from '../game/utils';
@@ -31,12 +31,42 @@ export function usePanelSound() {
 // porte alors le nom de la section et ses onglets. Glisse depuis la droite sur PC, plein écran sur mobile.
 // Téléphone : glisser le panneau vers la gauche ou la droite ouvre la section voisine (nav.jsx SectionPager), sauf
 // sous une fiche ouverte et dans les zones qui ont leur propre geste (data-noswipe : la composition).
+// PC, grand panneau d'une section : les onglets se rangent entre le titre et la trésorerie quand ils y tiennent, sinon
+// sur leur propre ligne sous le titre (tabs-below) ; la trésorerie et le bouton Fermer restent toujours en haut à droite
+// (ils passaient sous le titre quand les onglets ne tenaient pas sur la ligne).
+function useTabsBelow(ref, on) {
+  const [below, setBelow] = useState(false);
+  useLayoutEffect(() => {
+    const head = ref.current;
+    if (!on || !head) { setBelow(false); return undefined; }
+    const px = (el, prop) => parseFloat(getComputedStyle(el).getPropertyValue(prop)) || 0;
+    const fit = () => {
+      const tabs = head.querySelector('.section-tabs');
+      const title = head.querySelector('.panel-title');
+      const acts = head.querySelector('.panel-actions');
+      if (!tabs || !title || !acts) return;
+      const kids = [...tabs.children];
+      const need = kids.reduce((w, k) => w + k.getBoundingClientRect().width, 0) + px(tabs, 'column-gap') * Math.max(0, kids.length - 1);
+      const room = head.clientWidth - px(head, 'padding-left') - px(head, 'padding-right') - 2 * px(head, 'column-gap')
+        - title.getBoundingClientRect().width - acts.getBoundingClientRect().width - px(head, '--s-4') - px(head, '--s-6');
+      setBelow(need > room);
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(head);
+    return () => ro.disconnect();
+  }, [ref, on]);
+  return below;
+}
+
 export function Panel({ id = null, title, eyebrow, size = 'md', money = null, toolbar = null, overlay = null, onClose, onEscape, children }) {
   const ref = useRef(null);
+  const headRef = useRef(null);
   const nav = useNav();
   const phone = useMedia(PHONE);
   const section = sectionOf(id);
   const pages = phone && !!nav?.step && !!section;
+  const tabsBelow = useTabsBelow(headRef, !!section && size === 'lg' && !phone);
   useDialogFocus(ref);
   useKeydown((e) => { if (e.key === 'Escape') (onEscape || onClose)(); });
   useSwipe(ref, {
@@ -51,7 +81,7 @@ export function Panel({ id = null, title, eyebrow, size = 'md', money = null, to
   return (
     <section ref={ref} tabIndex={-1} className={`panel ${size} ${section ? `in-section s-${section}` : ''}`} role="dialog" aria-label={title}>
       <span className="grip" aria-hidden="true" />
-      <header className="panel-head">
+      <header ref={headRef} className={`panel-head ${tabsBelow ? 'tabs-below' : ''}`}>
         <div className="panel-title">
           {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
           <h2>{section ? SECTIONS[section].title : title}</h2>

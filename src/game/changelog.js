@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    version: '0.7.4', date: '2026-10-27', title: 'Petites finitions',
+    items: [
+      'Sur PC, dans l’Équipe, la trésorerie et le bouton Fermer restent en haut à droite, à côté du titre ; les onglets passent sur leur propre ligne quand ils n’y tiennent pas.',
+      'Sur téléphone, l’avant-match se referme en le glissant vers le bas, comme les autres fenêtres : retour au complexe.',
+    ],
+  },
+  {
     version: '0.7.3', date: '2026-10-27', title: 'Des noms plus variés',
     items: [
       'Trois fois plus de prénoms et de noms pour les joueurs : environ 450 prénoms et 700 noms, toujours francophones, simples à retenir, de toutes les origines du football français.',

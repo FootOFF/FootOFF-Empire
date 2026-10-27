@@ -175,6 +175,11 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
 - `Panel` : un seul modèle pour l'Effectif (`size="lg"`), la Saison et le Journal. En-tête (sur-titre sur une
   ligne, titre, trésorerie seulement quand on y dépense, fermeture), barre d'outils fixe, corps qui défile.
   Glisse depuis la droite sur PC, plein écran sur téléphone. Fond opaque (pas de flou imbriqué).
+  Grand panneau d'une section sur PC : les onglets se rangent entre le titre et la trésorerie quand ils y tiennent,
+  sinon sur leur propre ligne sous le titre (`useTabsBelow`, classe `tabs-below`) ; la trésorerie et la fermeture
+  restent toujours en haut à droite (0.7.4 : elles passaient sous le titre dans l'Équipe).
+- Avant-match sur téléphone : poignée et glisser vers le bas (contenu tout en haut) pour revenir au complexe, comme
+  les autres fenêtres (0.7.4) ; la composition dépliée garde son propre geste.
 - Puces de filtre : toujours sur une ligne ; sur téléphone elles se resserrent et défilent en secours.
 - Inspecteur de parcelle : même famille (en-tête séparé, corps), largeur de la colonne de gauche sur PC,
   feuille basse opaque avec poignée sur téléphone.
