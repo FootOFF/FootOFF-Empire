@@ -81,7 +81,7 @@ export function actionablePlots(s) {
 // l'équipe progresse), puis l'académie, puis celui qui rembourse le plus vite son prix et son entretien, sinon le
 // premier proposé.
 export function recommendedBuilding(s) {
-  const options = allowedBuildingsFor(s);
+  const options = allowedBuildingsFor(s).filter((k) => k !== 'league'); // le Siège : un choix, jamais un conseil
   if (!options.length) return null;
   // l'académie avant les bâtiments qui rapportent : des jeunes gratuits à fort potentiel, qui font monter le club et
   // se revendent (classée sur la seule rentabilité, elle passait après tous les autres)

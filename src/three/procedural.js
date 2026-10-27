@@ -557,7 +557,66 @@ function medicalMesh(lvl) {
   return g;
 }
 
-const BUILDERS = { training: trainingMesh, academy: academyMesh, fans: fansMesh, sponsor: sponsorMesh, transfers: transfersMesh, direction: directionMesh, medical: medicalMesh };
+// ---------- Siège de la Ligue (0.8.0, un seul niveau) ----------
+// Tour de verre fumé aux arêtes dorées, couronne d'or au sommet, écran géant du classement en façade (huit clubs, le
+// premier en or : un classement type, sans noms), pavillon d'accueil vitré sous un auvent doré, mâts du club.
+const leagueTex = () => canvasTexture('leagueBoard', 512, 640, (g2, w, h) => {
+  g2.fillStyle = '#0b0b0c'; g2.fillRect(0, 0, w, h);
+  drawMonogram(g2, 66, 66, 88);
+  g2.fillStyle = goldGrad(g2, 0, 0, w, 0);
+  g2.font = '700 54px Inter, Arial, sans-serif';
+  g2.fillText('LIGUE', 124, 84);
+  g2.fillRect(28, 118, w - 56, 4);
+  [21, 19, 16, 15, 12, 10, 7, 4].forEach((pts, i) => {
+    const y = 142 + i * 60;
+    if (i === 0) { g2.fillStyle = 'rgba(199,161,90,.22)'; g2.fillRect(28, y, w - 56, 50); }
+    g2.fillStyle = i === 0 ? '#DEC17F' : 'rgba(243,242,238,.85)';
+    g2.font = '700 34px Inter, Arial, sans-serif';
+    g2.textAlign = 'left'; g2.fillText(String(i + 1), 44, y + 37);
+    g2.textAlign = 'right'; g2.fillText(String(pts), w - 44, y + 37);
+    g2.fillStyle = i === 0 ? '#C7A15A' : 'rgba(243,242,238,.32)';
+    g2.fillRect(98, y + 18, 236 - i * 15, 14); // le nom du club, en barre
+  });
+  g2.textAlign = 'left';
+  g2.fillStyle = '#C7A15A'; g2.fillRect(0, h - 12, w, 12);
+});
+const leagueMat = () => {
+  const t = leagueTex();
+  return mat('leagueBoard', t ? { map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0.35, roughness: 0.35 } : { color: 0x1c1c1e }, 1.5);
+};
+function leagueMesh() {
+  const g = new THREE.Group();
+  plaza(g, S * 0.98, S * 0.5, S * 0.22);
+  const w = S * 0.46, d = S * 0.4, x = -S * 0.12, z = -S * 0.17;
+  g.add(mesh(box(w + 0.18, 0.12, d + 0.18), M.concreteDark(), x, 0.06, z)); // socle
+  const h = 0.12 + tower(at(g, 0, 0.12), { x, z, w, d, floors: 7, fh: 0.44 });
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    g.add(mesh(box(0.07, h - 0.12, 0.07), M.gold(), x + sx * (w / 2 + 0.03), 0.12 + (h - 0.12) / 2, z + sz * (d / 2 + 0.03)));
+  }
+  // couronne : anneau d'or ouvert sur douze fines colonnes
+  const crown = mesh(geo('leagueCrown', () => new THREE.TorusGeometry(w * 0.33, 0.035, 8, 48)), M.gold(), x, h + 0.42, z);
+  crown.rotation.x = Math.PI / 2; g.add(crown);
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    g.add(mesh(box(0.035, 0.36, 0.035), M.gold(), x + Math.cos(a) * w * 0.33, h + 0.22, z + Math.sin(a) * w * 0.33));
+  }
+  // écran géant du classement, en façade
+  const front = z + d / 2;
+  const sw = w * 0.72, sh = sw * 1.25, sy = 0.12 + 0.36 + sh / 2;
+  g.add(mesh(box(sw + 0.14, sh + 0.14, 0.07), M.canvas(), x, sy, front + 0.06));
+  panel(g, leagueMat(), sw, sh, x, sy, front + 0.1);
+  g.add(mesh(box(sw + 0.18, 0.05, 0.1), M.gold(), x, sy - sh / 2 - 0.09, front + 0.07));
+  // pavillon d'accueil vitré et auvent doré, à droite de la tour
+  g.add(mesh(box(S * 0.26, 0.5, S * 0.3), darkGlass(), S * 0.27, 0.25, -S * 0.12));
+  g.add(mesh(box(S * 0.28, 0.035, S * 0.34), M.concreteDark(), S * 0.27, 0.52, -S * 0.11));
+  g.add(mesh(box(S * 0.28, 0.05, 0.04), M.gold(), S * 0.27, 0.52, -S * 0.11 + S * 0.17)); // liseré doré de l'auvent
+  panel(g, logoMat(), 0.36, 0.36, S * 0.27, 0.27, -S * 0.12 + S * 0.15 + 0.01);
+  flagPole(g, S * 0.18, S * 0.2);
+  flagPole(g, S * 0.36, S * 0.2);
+  return g;
+}
+
+const BUILDERS = { training: trainingMesh, academy: academyMesh, fans: fansMesh, sponsor: sponsorMesh, transfers: transfersMesh, direction: directionMesh, medical: medicalMesh, league: leagueMesh };
 
 export function buildingMesh(key, lvl) {
   return (BUILDERS[key] || trainingMesh)(Math.max(1, lvl));

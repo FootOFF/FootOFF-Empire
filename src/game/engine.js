@@ -38,8 +38,8 @@ export function createInitialState(clubName, crest = null) {
     divisionIndex: 0,
     seasonNumber: 1,
     round: 0,
-    buildings: { terrain: 1, training: 0, academy: 0, fans: 0, sponsor: 0, transfers: 0, direction: 0, medical: 0 },
-    slots: Array(8).fill(null),
+    buildings: { terrain: 1, training: 0, academy: 0, fans: 0, sponsor: 0, transfers: 0, direction: 0, medical: 0, league: 0 },
+    slots: Array(PLOTS.length).fill(null),
     players: [],
     youth: [], // équipe de jeunes de l'académie (academy.js)
     scouting: null, // jeunes repérés de la journée
@@ -102,7 +102,7 @@ export function addReserves(s) {
   return s;
 }
 
-// where : la parcelle choisie (t1…t7), où que ce soit ; à défaut (ancien appel par secteur), la première libre.
+// where : la parcelle choisie (t1…t8), où que ce soit ; à défaut (ancien appel par secteur), la première libre.
 export function build(s, where, key) {
   const free = (p) => !p.building && s.slots[plotIndexOf(p.id)] === null; // jamais sur le stade (t0)
   const plot = PLOTS.some((p) => p.id === where) ? PLOTS.find((p) => p.id === where && free(p)) : PLOTS.find(free);

@@ -88,7 +88,7 @@ export const ACHIEVEMENTS = [
   { id: 'stadium_max', cat: 'stadium', title: 'Le stade ultime', desc: 'Porter le stade à son niveau maximum.',
     test: (s) => s.buildings.terrain >= BUILDINGS.terrain.max },
   { id: 'complex', cat: 'stadium', title: 'Complexe complet', desc: 'Construire tous les bâtiments du complexe.',
-    test: (s) => Object.keys(BUILDINGS).every((k) => (s.buildings[k] || 0) >= 1) },
+    test: (s) => Object.keys(BUILDINGS).filter((k) => k !== 'league').every((k) => (s.buildings[k] || 0) >= 1) }, // le Siège à part
   // effectif et mercato
   { id: 'academy', cat: 'squad', title: 'Fait maison', desc: 'Faire jouer en match officiel un jeune formé au club.',
     test: (s) => s.players.some((p) => p.academy && p.season?.apps > 0) || (s.alumni || []).some((a) => a.academy && a.hist?.some((h) => h.apps > 0)) },

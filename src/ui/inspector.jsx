@@ -5,10 +5,7 @@ import { fmtMoney, fmtNum } from './format';
 import { BUILDING_KIND, TICKET_ORDER, TICKET_POLICIES, buildingStats, expectedGate } from '../game/economy';
 import { Tabs } from './glass';
 import { recommendedBuilding } from '../game/advice';
-import {
-  IconAcademy, IconArrowUp, IconChevron, IconChevronLeft, IconClose, IconCrane, IconExpand, IconEye, IconFans, IconSponsor, IconStadium,
-  IconTraining, IconTransfer, IconDirection, IconMedical,
-} from './icons';
+import { IconAcademy, IconArrowUp, IconChevron, IconChevronLeft, IconClose, IconCrane, IconDirection, IconExpand, IconEye, IconFans, IconLeague, IconMedical, IconSponsor, IconStadium, IconTraining, IconTransfer } from './icons';
 import { Eyebrow } from './kit';
 import { Presence, useKeydown } from './presence';
 import { PHONE, useMedia, useSwipe } from './gestures';
@@ -17,7 +14,7 @@ import { uiSound } from './uisound';
 import { haptic } from './haptics';
 import { BuildCard, BuildWindow, HoldButton, Payoff, StatRows, imgOf, spendHint } from './build';
 
-const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor, transfers: IconTransfer, direction: IconDirection, medical: IconMedical };
+const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor, transfers: IconTransfer, direction: IconDirection, medical: IconMedical, league: IconLeague };
 const KINDS = ['Sport', 'Revenus', 'Mercato'];
 
 // Tarifs des billets (Direction du club, onglet Billetterie : seul endroit où ils se règlent) : le joueur voit tout de

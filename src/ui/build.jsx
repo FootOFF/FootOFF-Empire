@@ -27,6 +27,7 @@ export const BLURB = {
   transfers: 'Des recruteurs qui t’ouvrent le marché des joueurs sous contrat.',
   direction: 'Le bureau du président : tu y négocies les droits TV, les salaires et la billetterie.',
   medical: 'Tes kinés soignent les blessés pour les faire revenir plus vite, et la prévention en évite.',
+  league: 'Crée tes championnats entre amis : invite-les par un lien, chacun avec son club, journée chaque soir.',
 };
 
 // Ce que rapporte un niveau, avant de cliquer : recettes en plus par saison, entretien, rentabilité.

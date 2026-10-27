@@ -46,6 +46,8 @@ export const IconGear = I(<><circle cx="12" cy="12" r="3" /><path d="M12 3.5v2.2
 export const IconCrane = I(<><path d="M7.5 21V3.5M3.5 7.5h17M3.5 7.5l4-4 13 4" /><path d="M16.5 7.5v4.5" /><path d="M16.5 12a1.6 1.6 0 1 1-1.6 1.6" /><path d="M4.5 21h6" /></>);
 // croix médicale dans un carré arrondi (Centre médical)
 export const IconMedical = I(<><rect x="4" y="4" width="16" height="16" rx="4" /><path d="M12 8.5v7M8.5 12h7" /></>);
+// tour à couronne (Siège de la Ligue)
+export const IconLeague = I(<><path d="M7 21V9h10v12M4.5 21h15" /><path d="M9.5 12.5h5M9.5 15.5h5M9.5 18.5h5" /><path d="M8 6.5 9.5 3.5 12 5.5l2.5-2 1.5 3" /></>);
 // porte-documents (Direction du club)
 export const IconDirection = I(<><rect x="3.5" y="7.5" width="17" height="12" rx="2" /><path d="M9 7.5V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 6v1.5M3.5 12.5h17M11 12.5v1.6h2v-1.6" /></>);
 // loupe (recherche)

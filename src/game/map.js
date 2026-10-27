@@ -1,9 +1,10 @@
-import { BUILDINGS } from './constants';
+import { BUILDINGS, DIVISIONS, LEAGUE_OPEN } from './constants';
 
 export { buildingEffect } from './economy';
 
-// Plan de l'Empire : 8 parcelles (t0..t7), toutes ouvertes dès la fondation. Le stade occupe t0 ; sur les sept
+// Plan de l'Empire : 9 parcelles (t0..t8), toutes ouvertes dès la fondation. Le stade occupe t0 ; sur les huit
 // autres, chaque bâtiment se pose où l'on veut (il n'y a plus de quartiers réservés ni de parcelles verrouillées).
+// La 8e parcelle (t8, 0.8.0) accueille le Siège de la Ligue ; les parties plus anciennes la reçoivent vide.
 // La réputation n'ouvre plus rien : elle attire le public, les sponsors et les joueurs (reputation.js).
 // Un seul « secteur » reste dans les données (sector: 'main'), pour les sauvegardes et les appels existants.
 export const SECTORS = [
@@ -25,6 +26,7 @@ export const PLOTS = [
   { id: 't5', sector: 'main', building: null },
   { id: 't6', sector: 'main', building: null },
   { id: 't7', sector: 'main', building: null },
+  { id: 't8', sector: 'main', building: null },
 ];
 
 export const PLOT_LABELS = {
@@ -36,6 +38,7 @@ export const PLOT_LABELS = {
   t5: 'Parcelle 5',
   t6: 'Parcelle 6',
   t7: 'Parcelle 7',
+  t8: 'Parcelle 8',
 };
 
 export const plotIndexOf = (plotId) => PLOTS.findIndex((p) => p.id === plotId);
@@ -53,6 +56,7 @@ export const plotOf = (s, key) => PLOTS.find((p) => plotBuilding(s, p.id) === ke
 // bâtiment construit avait pris la place du stade : il est déplacé sur la première parcelle libre de son
 // secteur (son niveau est conservé, il vit dans s.buildings).
 export function ensureFixedPlots(s) {
+  while (s.slots.length < PLOTS.length) s.slots.push(null); // parcelles ajoutées depuis (t8) : vides
   PLOTS.forEach((p, i) => {
     if (!p.building || s.slots[i] === p.building) return;
     const displaced = s.slots[i];
@@ -65,9 +69,12 @@ export function ensureFixedPlots(s) {
 }
 
 // Quel bâtiment peut-on poser sur une parcelle vide ? N'importe lequel, s'il n'est pas déjà construit : chaque
-// bâtiment se construit une seule fois (le stade a sa parcelle).
+// bâtiment se construit une seule fois (le stade a sa parcelle). Le Siège de la Ligue, seulement en Elite.
+export const ELITE_ONLY = ['league'];
 export function allowedBuildingsFor(s) {
   const built = new Set(Object.keys(s.buildings).filter((k) => s.buildings[k] > 0));
-  return ['training', 'academy', 'fans', 'sponsor', 'transfers', 'direction', 'medical'].filter((k) => BUILDINGS[k] && !built.has(k));
+  const elite = s.divisionIndex === DIVISIONS.length - 1;
+  return ['training', 'academy', 'fans', 'sponsor', 'transfers', 'direction', 'medical', ...(LEAGUE_OPEN && elite ? ['league'] : [])]
+    .filter((k) => BUILDINGS[k] && !built.has(k));
 }
 

@@ -142,7 +142,8 @@ export function investedIn(key, lvl) {
   for (let l = key === 'terrain' ? 2 : 1; l <= lvl; l++) sum += upgradeCost(key, l);
   return sum;
 }
-export const upkeepOf = (s) => Math.round(Object.keys(BUILDINGS).reduce((a, k) => a + investedIn(k, s.buildings[k] || 0), 0) * 0.04);
+// Entretien : 4 % de l'investissement par saison ; le Siège de la Ligue n'en coûte pas (monde à part de la carrière).
+export const upkeepOf = (s) => Math.round(Object.keys(BUILDINGS).filter((k) => k !== 'league').reduce((a, k) => a + investedIn(k, s.buildings[k] || 0), 0) * 0.04);
 
 // Recettes de championnat d'une saison : billetterie, buvette, boutique et loges des matchs à domicile (sept, en Elite
 // comme ailleurs), droits TV de toutes les journées.
@@ -201,7 +202,7 @@ export function investmentPreview(s, key, target = (s.buildings[key] || 0) + 1) 
   const next = { ...s, buildings: { ...s.buildings, [key]: target } };
   const seasonIncome = (x) => leagueSeasonGate(x) + sponsorIncome(x.buildings.sponsor, x.divisionIndex, x.reputation);
   const gain = seasonIncome(next) - seasonIncome(from);
-  const upkeep = Math.round(cost * 0.04);
+  const upkeep = key === 'league' ? 0 : Math.round(cost * 0.04);
   const net = gain - upkeep;
   return { cost, gain, upkeep, net, payback: net > 0 ? cost / net : null, sporting: gain <= 0 };
 }
@@ -252,7 +253,7 @@ const drillsAt = (lvl) => Object.values(DRILLS).filter((d) => d.level <= lvl);
 const newDrill = (lvl) => Object.values(DRILLS).find((d) => d.level === lvl && lvl > 1);
 
 // Famille d'un bâtiment (vitrine de construction) : ce qu'il apporte d'abord.
-export const BUILDING_KIND = { terrain: 'Revenus', training: 'Sport', academy: 'Sport', fans: 'Revenus', sponsor: 'Revenus', transfers: 'Mercato', direction: 'Revenus', medical: 'Sport' };
+export const BUILDING_KIND = { terrain: 'Revenus', training: 'Sport', academy: 'Sport', fans: 'Revenus', sponsor: 'Revenus', transfers: 'Mercato', direction: 'Revenus', medical: 'Sport', league: 'Prestige' };
 
 // Effets d'un bâtiment à un niveau, en chiffres (vitrine et fenêtre d'aperçu) : le premier est l'effet phare, celui
 // que montre la carte ; les suivants détaillent. Mêmes formules que buildingEffect.
@@ -313,6 +314,13 @@ export function buildingStats(key, lvl, s) {
         { label: 'Risque de blessure', value: `−${lvl * 8} %`, sub: 'en match, grâce à la prévention' },
         { label: 'Coût d’un soin', value: '15 % du salaire', sub: 'annuel du joueur soigné' },
       ];
+    case 'league':
+      return [
+        { label: 'Championnats entre amis', value: '3 à la fois', short: 'Ligues entre amis', sub: 'créés ou rejoints' },
+        { label: 'Clubs par championnat', value: '8', sub: 'tes amis, complétés par l’ordinateur' },
+        { label: 'Invitation', value: 'lien ou code', sub: 'tes amis entrent gratuitement' },
+        { label: 'Entretien', value: 'aucun', sub: 'un monde à part de ta carrière' },
+      ];
     case 'transfers':
       return [
         { label: 'Joueurs sous contrat', value: fmt(officeSize(lvl)), short: `${officeSize(lvl)} joueurs suivis`, sub: 'sur ton mercato' },
@@ -349,6 +357,10 @@ export function buildingEffect(key, lvl, divIndex, rep = REP_START) {
       return lvl > 0
         ? `Soins des blessés : un par joueur et par date, réussis à ${treatPct(lvl, 1)} % pour une blessure légère, ${treatPct(lvl, 9)} % pour une fracture · risque de blessure en match −${lvl * 8} %.`
         : 'Pas de soins tant que le centre médical n’est pas construit : un blessé attend sa guérison.';
+    case 'league':
+      return lvl > 0
+        ? 'Championnats entre amis : jusqu’à 3 à la fois, 8 clubs chacun, tes amis invités par un lien ou un code. Un monde à part de ta carrière, sans entretien.'
+        : 'Pas de championnat entre amis tant que le Siège de la Ligue n’est pas construit.';
     case 'transfers':
       return lvl > 0
         ? `Réseau de recruteurs : ${officeSize(lvl)} joueurs sous contrat sur ton mercato · indemnités −${lvl * 3} % · vendeurs plus conciliants · potentiel mieux cerné.`

@@ -9,7 +9,8 @@ Collections exportees (models/props/<nom>.glb) :
   prop_plot_locked  : parcelle verrouillee : chantier palissade, cabanes, grue
 
 Plan (metres, Blender : x vers l'est, y vers le nord ; jeu : z = -y) calque sur src/three/layout.js :
-stade au centre (arene jusqu'a 187 x 140 m), parcelles 60 x 60 en t1..t7, ecartees du stade.
+stade au centre (arene jusqu'a 187 x 140 m), parcelles 60 x 60 en t1..t8, ecartees du stade (trois a l'ouest,
+trois a l'est, symetriques depuis l'arrivee du Siege de la Ligue, deux au nord).
 
 Sols, routes et mobilier (phase 3) : matieres photo CC0 preparees par tools/grounds/prepare.py
 (assets-src/grounds-baked/, materiaux ground_* que le jeu nuance dalle par dalle : src/three/ground.js), bordures
@@ -63,7 +64,7 @@ def hedge(x0, y0, x1, y1, h=0.9, w=0.8, z=0.0):
 PLOTS = {
     "t1": (-45, 155), "t2": (45, 155),
     "t3": (-175, 75), "t4": (-175, 0), "t5": (-175, -75),
-    "t6": (175, 40), "t7": (175, -40),
+    "t6": (175, 75), "t7": (175, 0), "t8": (175, -75),
 }
 SITE = (-300.0, -230.0, 300.0, 280.0)  # x0, y0, x1, y1 : complexe + bande de terrain autour (la ville viendra ici)
 STADIUM = (-80.0, -65.0, 80.0, 65.0)
@@ -106,7 +107,8 @@ FORECOURT = (-80, -142.5, 80, -100)  # parvis jusqu'au boulevard ; l'axe d'honne
 FORECOURT_SIDES = [(-80, -142.5, -36, -100), (36, -142.5, 80, -100)]
 ALLEYS = [
     (-142, -105, -136, 113), (136, -105, 142, 113), (-142, 113, 142, 119),          # tour de l'esplanade
-    (-220.5, 34.5, -142, 40.5), (-220.5, -40.5, -142, -34.5), (142, -3, 220.5, 3),  # entre les parcelles
+    (-220.5, 34.5, -142, 40.5), (-220.5, -40.5, -142, -34.5),  # entre les parcelles, a l'ouest
+    (142, 34.5, 220.5, 40.5), (142, -40.5, 220.5, -34.5),        # et a l'est
 ]
 PROMENADE = (-13, 119, 13, 210.5)
 PARKINGS = [(-214, -138, -142, -112), (142, -138, 214, -112)]

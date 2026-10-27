@@ -8,14 +8,15 @@ export const STADIUM_FOOTPRINT = { w: 16, d: 13 }; // emprise réservée au stad
 export const ARENA_FOOTPRINT = { w: 19, d: 15 };
 
 // [x, z] du centre de chaque parcelle.
-// Secteur principal : stade au centre sur son esplanade, A/B au nord. Supporters à l'ouest, partenaires à l'est.
+// Secteur principal : stade au centre sur son esplanade, deux parcelles au nord, trois à l'ouest, trois à l'est
+// (symétriques depuis la 8e parcelle, 0.8.0 : le Siège de la Ligue).
 // Les parcelles sont écartées du stade : allées et jardins entre elles, boulevard périphérique autour
 // (voir tools/blender/models/build_site.py, même plan en mètres).
 export const PLOT_POS = {
   t0: [0, 0],
   t1: [-4.5, -15.5], t2: [4.5, -15.5],
   t3: [-17.5, -7.5], t4: [-17.5, 0], t5: [-17.5, 7.5],
-  t6: [17.5, -4], t7: [17.5, 4],
+  t6: [17.5, -7.5], t7: [17.5, 0], t8: [17.5, 7.5],
 };
 
 export function footprintOf(plotId, lvl = 0) {

@@ -60,7 +60,12 @@ export const BUILDINGS = {
   transfers: { name: 'Bureau des transferts', max: 5, baseCost: 4500, mult: 6.2, first: 1 },
   direction: { name: 'Direction du club', max: 5, baseCost: 5500, mult: 6.2, first: 1 },
   medical: { name: 'Centre médical', max: 5, baseCost: 4500, mult: 6.2, first: 1 },
+  // Siège de la Ligue (0.8.0) : un seul niveau, 60 M€, en Elite seulement (map.js) ; il ouvre les championnats entre
+  // amis (league.js), un monde à part de la carrière : il ne rapporte rien et ne coûte aucun entretien (economy.js).
+  league: { name: 'Siège de la Ligue', max: 1, baseCost: 60000000, mult: 1, first: 1 },
 };
+// Championnats entre amis : fermés tant que le serveur des ligues n'est pas en service (le bâtiment ne se propose pas).
+export const LEAGUE_OPEN = false;
 
 export const START_MONEY = 8000;
 // Échelle de l'argent en Elite depuis la 0.6.0 (×4 : salaires, valeurs, recettes) : les parties commencées avant
