@@ -11,7 +11,9 @@ AMD intégrée, écran à 200 %) et sur iPhone, souvent à distance, depuis son 
 
 ## Publication
 - Chaque changement terminé et vérifié est publié sans redemander : commit sur `main` puis push. GitHub Actions déploie
-  sur https://footoff.github.io/FootOFF-Empire/ (version finale prévue sur footoff.media).
+  sur https://footoff.github.io/FootOFF-Empire/ (version finale prévue sur https://footoff.media/footoffempire).
+- Mentions légales et politique de confidentialité : celles de footoff.agency, déjà en ligne (décision de l'utilisateur,
+  2026-10-27) ; le jeu y renverra, sans pages à lui.
 - Vérifier `git diff --cached --stat` avant chaque commit. Messages de commit en français, terminés par la ligne
   d'attribution de Claude.
 - Après un déploiement, le jeu propose lui-même « Nouvelle version » (service worker) ; si le bandeau ne vient pas,
