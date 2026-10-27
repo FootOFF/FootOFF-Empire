@@ -102,7 +102,7 @@ function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews }, li
     { id: 'new', label: 'Nouvelle partie', sub: state ? 'Fonder un autre club' : 'Fonde ton club et bâtis ton empire', onSelect: onNew },
     { id: 'rules', label: 'Règles du jeu', sub: 'Matchs, joueurs, mercato, argent, réputation', onSelect: onRules },
     { id: 'news', label: 'Nouveautés', sub: `Version ${CURRENT}${unseenNews() ? ' · à lire' : ''}`, badge: unseenNews(), onSelect: onNews },
-    { id: 'settings', label: 'Réglages', sub: 'Son, vibrations, sauvegarde, signaler un problème', onSelect: onSettings },
+    { id: 'settings', label: 'Réglages', sub: 'Son, vibrations, fluidité, sauvegarde, signaler un problème', onSelect: onSettings },
     { id: 'media', label: 'FootOFF Media', sub: 'footoff.media', href: 'https://footoff.media' },
   ];
 }

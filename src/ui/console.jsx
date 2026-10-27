@@ -123,19 +123,21 @@ function PadGlyph({ k }) {
   return <i className={`cm-pad ${k}`}>{k === 'select' ? 'A' : 'B'}</i>;
 }
 
-// Réglages partagés par l'écran titre et le menu pause : son, vibrations, retour. Pas de qualité graphique : un seul
-// rendu, le plus net (render.js).
+// Réglages partagés par l'écran titre et le menu pause : son, vibrations, fluidité, retour. Pas de qualité graphique :
+// un seul rendu, le plus net (render.js) ; « Fluidité sur appareil lent » ne fait que calculer moins de pixels quand
+// le jeu rame (adapt.js), et rien sur un appareil qui suit.
 // Réglages : son, vibrations, puis la sauvegarde (code à copier pour la retrouver sur un autre appareil, code à coller
 // pour restaurer une partie). Le code est copié dans le presse-papiers ; s'il ne peut pas l'être, il s'affiche dans un
 // champ à copier soi-même. Coller un code mène à une confirmation du jeu (App) avant de remplacer la partie.
 const sizeOf = (code) => `${Math.max(1, Math.round(code.length / 1024))} Ko`;
-export function SettingsView({ settings, onBack, active = true }) {
-  const { muted, onToggleSound, vibration, canVibrate, onToggleVibration, save = null, onExport = null, onImport = null } = settings;
+// focus : l'entrée choisie à l'ouverture (« fluid » : la notification « Le jeu rame » mène au réglage lui-même)
+export function SettingsView({ settings, onBack, active = true, focus = null }) {
+  const { muted, onToggleSound, vibration, canVibrate, onToggleVibration, fluid = false, onToggleFluid = null, save = null, onExport = null, onImport = null } = settings;
   const [mode, setMode] = useState('menu'); // menu | export (code affiché) | import (code à coller)
   const [code, setCode] = useState('');
   const [note, setNote] = useState(null);
-  const rows = [{ id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'report' }, { id: 'back' }];
-  const menu = useMenu(rows, { onBack: () => (mode === 'menu' ? onBack() : setMode('menu')), active: active && mode === 'menu' });
+  const rows = [{ id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'fluid', disabled: !onToggleFluid }, { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'report' }, { id: 'back' }];
+  const menu = useMenu(rows, { initial: Math.max(0, rows.findIndex((r) => r.id === focus)), onBack: () => (mode === 'menu' ? onBack() : setMode('menu')), active: active && mode === 'menu' });
   const { cur, setCur, refs, hover } = menu;
   const row = (i) => ({ ref: (el) => { refs.current[i] = el; }, onPointerEnter: hover(i), onFocus: () => setCur(i), style: { '--i': i } });
   const vibOn = vibration && canVibrate;
@@ -218,28 +220,36 @@ export function SettingsView({ settings, onBack, active = true }) {
         </span>
         <span className={`switch ${vibOn ? 'on' : ''}`} aria-hidden="true"><i /></span>
       </button>
-      <button type="button" role="menuitem" disabled={!save || !onExport} className={`cm-row ${cur === 2 ? 'on' : ''}`} {...row(2)} onClick={doExport}>
+      <button type="button" role="menuitemcheckbox" aria-checked={fluid} disabled={!onToggleFluid} className={`cm-row ${cur === 2 ? 'on' : ''}`} {...row(2)} onClick={() => { onToggleFluid(); uiSound('select'); }}>
+        <span className="cm-bar" aria-hidden="true" />
+        <span className="cm-row-text">
+          <strong>Fluidité sur appareil lent</strong>
+          <span>Si le jeu rame, la 3D est calculée avec moins de pixels (un peu moins nette) pour redevenir fluide. Sans effet sur un appareil qui suit.</span>
+        </span>
+        <span className={`switch ${fluid ? 'on' : ''}`} aria-hidden="true"><i /></span>
+      </button>
+      <button type="button" role="menuitem" disabled={!save || !onExport} className={`cm-row ${cur === 3 ? 'on' : ''}`} {...row(3)} onClick={doExport}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">
           <strong>Copier le code de sauvegarde</strong>
           <span>{save ? `${save.clubName} · saison ${save.season}, ${save.division} · pour continuer sur un autre appareil.` : 'Aucune partie en cours.'}</span>
         </span>
       </button>
-      <button type="button" role="menuitem" disabled={!onImport} className={`cm-row ${cur === 3 ? 'on' : ''}`} {...row(3)} onClick={() => { uiSound('select'); setCode(''); setNote(null); setMode('import'); }}>
+      <button type="button" role="menuitem" disabled={!onImport} className={`cm-row ${cur === 4 ? 'on' : ''}`} {...row(4)} onClick={() => { uiSound('select'); setCode(''); setNote(null); setMode('import'); }}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">
           <strong>Restaurer un code de sauvegarde</strong>
           <span>{save ? 'La partie actuelle sera gardée en copie de secours.' : 'Reprends une partie copiée depuis un autre appareil.'}</span>
         </span>
       </button>
-      <button type="button" role="menuitem" className={`cm-row ${cur === 4 ? 'on' : ''}`} {...row(4)} onClick={() => { uiSound('select'); setMode('report'); setNote(null); }}>
+      <button type="button" role="menuitem" className={`cm-row ${cur === 5 ? 'on' : ''}`} {...row(5)} onClick={() => { uiSound('select'); setMode('report'); setNote(null); }}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">
           <strong>Signaler un problème</strong>
           <span>Un rapport à coller dans un message : version, erreurs, et ta partie si tu l’acceptes.</span>
         </span>
       </button>
-      <button type="button" className={`cm-row back ${cur === 5 ? 'on' : ''}`} {...row(5)} onClick={() => { uiSound('back'); onBack(); }}>
+      <button type="button" className={`cm-row back ${cur === 6 ? 'on' : ''}`} {...row(6)} onClick={() => { uiSound('back'); onBack(); }}>
         <span className="cm-bar" aria-hidden="true" />
         <IconChevronLeft className="cm-back-icon" />
         <span className="cm-row-text"><strong>Retour</strong></span>

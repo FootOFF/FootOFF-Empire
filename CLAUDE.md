@@ -26,7 +26,8 @@ AMD intégrée, écran à 200 %) et sur iPhone, souvent à distance, depuis son 
 - Une rangée qui défile en largeur ne défile jamais en hauteur.
 - Verre liquide seulement dans le menu du bas.
 - La fluidité d'abord, sur la puce intégrée comme sur l'iPhone : rendu unique, sans réglage de qualité, pleine
-  résolution de l'écran.
+  résolution de l'écran. Seule exception, voulue par l'utilisateur (2026-10-27) : le réglage « Fluidité sur appareil
+  lent », coupé par défaut, qui calcule moins de pixels quand le jeu rame (`src/three/adapt.js`).
 - Les joueurs 3D sont simples (low-poly) : ne jamais les filmer de près ni de dos.
 - Ne jamais toucher au logo FootOFF Empire d'origine (`FootOFFLockup` de `src/ui/brand.jsx` et sa copie dans
   `index.html`) : c'est lui, tel quel, sur l'écran de chargement et l'écran titre.

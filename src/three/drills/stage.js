@@ -4,6 +4,7 @@ import { createPlayers } from '../players';
 import { initAssets, instantiateModel } from '../assets';
 import { resolveProp } from '../manifest';
 import { createForest, setForestTime } from '../forest';
+import { createFluidity } from '../adapt';
 import { TREES } from '../trees.generated';
 
 // Terrain d'entraînement des épreuves (centre d'entraînement) : une scène à part, avec son propre rendu, en unités du
@@ -298,7 +299,9 @@ export function createStage(mount) {
   const renderer = drillRenderer();
   const canvas = renderer.domElement;
   mount.appendChild(canvas);
-  renderer.setPixelRatio(window.devicePixelRatio || 1); // pleine résolution de l'écran, comme le complexe
+  // pleine résolution de l'écran, comme le complexe ; moins de pixels si ça rame avec le réglage de fluidité (adapt.js)
+  const fluid = createFluidity({ apply: (s) => renderer.setPixelRatio((window.devicePixelRatio || 1) * s) });
+  renderer.setPixelRatio((window.devicePixelRatio || 1) * fluid.scale);
   const look = lookFor('day');
   renderer.toneMappingExposure = look.exposure;
 
@@ -667,6 +670,7 @@ export function createStage(mount) {
   function frame(now) {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
+    const gap = last ? now - last : null; // écart réel entre deux images (fluidité)
     const dt = Math.min(0.05, last ? (now - last) / 1000 : 0.016);
     last = now;
     clock += dt;
@@ -683,13 +687,14 @@ export function createStage(mount) {
     if (photo.horizon(Math.atan2(view.x, -view.z), fogCol)) { scene.fog.color.copy(fogCol.multiplyScalar(look.haze)); scene.background.copy(fogCol); }
     forest?.update({ position: camera.position });
     renderer.render(scene, camera);
+    fluid.frame(clock > 2 ? gap : null, now); // pas les premières secondes (ciel, arbres et modèles qui arrivent)
   }
 
   function resize() {
     const p = canvas.parentElement;
     const w = p.clientWidth, h = p.clientHeight;
     if (!w || !h) return;
-    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    renderer.setPixelRatio((window.devicePixelRatio || 1) * fluid.scale);
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();

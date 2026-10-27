@@ -1156,6 +1156,23 @@ une photo de gazon s'y fondait en aplat, elle n'a pas été gardée.
 La nuit : les quatre mâts de l'esplanade éclairent l'esplanade devant eux (ils visaient le stade, déjà éclairé par ses
 projecteurs, un peu adoucis).
 
+## Fluidité sur appareil lent (0.7.2)
+
+Réglage voulu par l'utilisateur après une tablette Android d'entrée de gamme à 3 images par seconde : sa carte
+graphique est 30 à 80 fois moins puissante que la puce intégrée d'un PC, et aucune optimisation invisible ne rattrape
+cet écart en pleine résolution. Réglages (écran titre et menu pause), par appareil, coupé par défaut
+(`src/three/adapt.js`) :
+- coupé : pleine résolution de l'écran, toujours ;
+- actif : mesure de l'image moyenne sur 1,5 s d'images dessinées (pas pendant le chargement, ni les premières secondes
+  d'une épreuve). Sous 24 images par seconde, un palier de densité de moins (1 ; 0,85 ; 0,72 ; 0,6 ; 0,5 ; 0,42 ;
+  0,35 de la densité de l'écran, jamais moins d'un pixel calculé pour deux pixels de la page) ; au-dessus de 50 deux
+  mesures de suite, un palier de plus, mais pas dans les 20 s qui suivent une baisse (pas de va-et-vient). Le palier
+  trouvé est retenu par l'appareil : la partie suivante repart de là. Complexe, temps forts du match et épreuves ;
+- coupé, un appareil qui reste sous 15 images par seconde (trois mesures de suite) reçoit une fois la notification
+  « Le jeu rame sur cet appareil », qui ouvre le menu pause sur le réglage lui-même.
+Vérifié sans tête (rendu logiciel, très lent) : notification au bout de 5 s, réglage ouvert et choisi, densité
+1 → 0,85 → 0,72 → 0,6 → 0,5 en une trentaine de secondes, retour immédiat à la pleine densité une fois coupé.
+
 ## Mémoire (longues parties)
 
 Sur iPhone, Safari recharge sans prévenir une page qui garde trop de mémoire : écran blanc, puis l'écran de
@@ -1190,10 +1207,11 @@ mêmes conditions) : 12 à 17,5 ms par image, contre 17 à 24 ms pour l'ancienne
   ombre complète) n'est pas calculée (en plein jour, 18,4 → 18,0 ms par image) ;
 - ciel peint en dernier, là où il se voit ;
 - net en permanence : la toile a exactement la densité de l'écran et la scène est toujours calculée à cette densité,
-  sur ordinateur comme sur téléphone, au repos comme pendant les déplacements et le zoom, sans résolution adaptative
-  ni agrandisseur (sur une puce intégrée, agrandir une image calculée plus petite coûtait presque autant que la pleine
-  résolution : FXAA, EASU, RCAS, 5 à 7 ms en 2880 × 1620) ; ciel photo et images des arbres lointains en pleine
-  définition partout. Densité de l'écran relue au zoom du navigateur et au changement d'écran ;
+  sur ordinateur comme sur téléphone, au repos comme pendant les déplacements et le zoom, sans agrandisseur (sur une
+  puce intégrée, agrandir une image calculée plus petite coûtait presque autant que la pleine résolution : FXAA, EASU,
+  RCAS, 5 à 7 ms en 2880 × 1620) ; ciel photo et images des arbres lointains en pleine définition partout. Densité de
+  l'écran relue au zoom du navigateur et au changement d'écran. Seule exception, le réglage « Fluidité sur appareil
+  lent » (ci-dessous), coupé par défaut ;
 - feuillage des arbres : profondeur écrite d'abord par une passe qui ne lit que l'image des feuilles (même vent, même
   découpe), puis feuillage éclairé sans écrire la profondeur : chaque pixel n'est éclairé que pour la feuille visible
   (vue rapprochée, 2880 × 1620 : scène 22,1 → 18,4 ms) ;

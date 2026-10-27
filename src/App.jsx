@@ -41,6 +41,7 @@ import { moneyBurst } from './ui/moneyfx';
 import { previewState, previewUi, silentSound } from './ui/preview';
 import { FacesSheet } from './ui/facesheet';
 import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics';
+import { fluidEnabled, setFluid } from './three/adapt';
 import { actionablePlots, dockSignals, seasonEndForecast, sessionPin, staffTip } from './game/advice';
 import { allowedBuildingsFor, plotBuilding, plotOf } from './game/map';
 import { leavingYouth, missionTarget } from './game/academy';
@@ -111,7 +112,10 @@ export default function App({ preview = null }) {
   const [showResult, setShowResult] = useState(!!boot.ui.showResult);
   const [goalCollapsed, setGoalCollapsed] = useState(() => window.innerWidth < 760); // replié sur mobile
   const [menu, setMenu] = useState(!!boot.ui.menu);
+  const [menuFocus, setMenuFocus] = useState(null); // menu pause ouvert sur une entrée des réglages (notification)
+  useEffect(() => { if (!menu) setMenuFocus(null); }, [menu]);
   const [vibration, setVibrationState] = useState(vibrationEnabled);
+  const [fluid, setFluidState] = useState(fluidEnabled); // réglage « Fluidité sur appareil lent » (three/adapt.js)
   const [sceneLoaded, setSceneLoaded] = useState(false); // écran de chargement jusqu'à ce que la scène 3D soit prête
   const [loadProgress, setLoadProgress] = useState(null);
   useEffect(() => { // filet de sécurité : l'écran de chargement ne reste jamais plus de 20 s
@@ -340,6 +344,7 @@ export default function App({ preview = null }) {
   // reçues ou les joueurs suivis du mercato
   const onNoteAction = (a) => {
     if (a.kind === 'update') { applyUpdate(); return; }
+    if (a.kind === 'settings') { setMenuFocus(a.row || null); setMenu(true); return; }
     if (a.panel === 'trophies') { setTrophyTab(a.tab || 'honours'); setTrophyFocus(a.ids || []); }
     if ((a.panel === 'squad' && a.tab === 'market') || a.panel === 'mercato') { openMercato(a.view || null); return; }
     if (a.panel === 'squad') { setSquadTab(a.tab || 'players'); setSquadSheet(a.sheet ?? null); }
@@ -465,6 +470,13 @@ export default function App({ preview = null }) {
     }
   });
 
+  // Le jeu rame fort sur cet appareil (sous 15 images par seconde), réglage de fluidité coupé : il est proposé une seule
+  // fois, la notification mène au réglage lui-même (menu pause, Réglages).
+  const onLag = () => {
+    try { if (localStorage.getItem('fo-fluid-hint')) return; localStorage.setItem('fo-fluid-hint', '1'); } catch { return; }
+    notify({ kind: 'info', eyebrow: 'Fluidité', title: 'Le jeu rame sur cet appareil', text: 'Active « Fluidité sur appareil lent » dans les réglages : la 3D sera un peu moins nette, mais fluide.', action: { kind: 'settings', row: 'fluid' } });
+  };
+
   // Réglages partagés par l'écran titre et le menu pause ; code de sauvegarde à copier (d'un appareil à l'autre) ou à
   // coller (la partie importée remplace l'actuelle après confirmation, l'ancienne devient la copie de secours).
   const settings = {
@@ -473,6 +485,8 @@ export default function App({ preview = null }) {
     vibration,
     canVibrate: canVibrate(),
     onToggleVibration: () => { setVibration(!vibration); setVibrationState(!vibration); },
+    fluid,
+    onToggleFluid: () => { setFluid(!fluid); setFluidState(!fluid); },
     save: state ? { clubName: state.clubName, season: state.seasonNumber, division: DIVISIONS[state.divisionIndex].name } : null,
     onExport: state ? () => exportCode(state) : null,
     onImport: async (code) => {
@@ -601,6 +615,7 @@ export default function App({ preview = null }) {
               attract={!inGame}
               paused={menu || !!drills}
               hidden={!!drills}
+              onLag={onLag}
               onLoadProgress={setLoadProgress}
               onLoaded={() => setSceneLoaded(true)}
               onSelectPlot={pickPlot}
@@ -820,6 +835,7 @@ export default function App({ preview = null }) {
           settings={settings}
           inMatch={!!matchPhase}
           blocked={!!confirm}
+          focus={menuFocus}
           onResume={() => setMenu(false)}
           onTitle={toTitle}
           onNewGame={askNewGame}

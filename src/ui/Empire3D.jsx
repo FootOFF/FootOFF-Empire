@@ -7,6 +7,7 @@ import { fmtMoney } from './format';
 import { IconArrowUp, IconTraining } from './icons';
 import { PLOT_POS, PLAZA_CENTER, footprintOf, layoutOverlaps } from '../three/layout';
 import { createRenderer, createEnvironment, outputRatioFor } from '../three/environment';
+import { createFluidity } from '../three/adapt';
 import { assetsProgress, initAssets, instantiateModel, preloadModel, setAssetsBoost, setAssetsNight } from '../three/assets';
 import { resolveModel, resolveProp } from '../three/manifest';
 import { plotLights } from '../three/lights';
@@ -191,7 +192,7 @@ function parvisInfo(s) {
 export default function Empire3D({
   state, onSelectPlot, onEmptyTap, onWebGLFail, timeMode = 'auto', matchDay = false, recenter = 0, selectedPlot = null,
   live = false, matchFx = null, badges = [], onLoadProgress, onLoaded, matchInfo = null, onOpenTrophies,
-  attract = false, paused = false, hidden = false, holo = null, session = null, onSession,
+  attract = false, paused = false, hidden = false, holo = null, session = null, onSession, onLag,
 }) {
   const mountRef = useRef(null);
   const labelRef = useRef(null);
@@ -207,8 +208,8 @@ export default function Empire3D({
   emptyRef.current = onEmptyTap;
   const trophiesRef = useRef(onOpenTrophies);
   trophiesRef.current = onOpenTrophies;
-  const loadRef = useRef({ onLoadProgress, onLoaded });
-  loadRef.current = { onLoadProgress, onLoaded };
+  const loadRef = useRef({ onLoadProgress, onLoaded, onLag });
+  loadRef.current = { onLoadProgress, onLoaded, onLag };
   // attract : écran titre (caméra en vitrine, sans interaction) ; paused : menu pause (la dernière image reste figée)
   const modeRef = useRef({ timeMode: 'auto', matchDay: false, live: false, attract, paused });
 
@@ -275,6 +276,12 @@ export default function Empire3D({
     };
     ctx.life = life;
     ctx.landscape = landscape;
+    // réglage « Fluidité sur appareil lent » (adapt.js) : densité de la toile ajustée par paliers quand ça rame
+    ctx.fluid = createFluidity({
+      apply: (s) => { renderer.setPixelRatio(outputRatioFor() * s); ctx.frameOnce = true; },
+      onLag: () => loadRef.current.onLag?.(),
+    });
+    renderer.setPixelRatio(outputRatioFor() * ctx.fluid.scale);
     ctx.trophies = createTrophies(scene, renderer); // allée d'honneur du parvis (trophées gagnés)
     const draw = createFrameRenderer(renderer, scene, camera); // une image : la scène dans la toile, sans post-traitement
     ctx.draw = draw;
@@ -661,6 +668,7 @@ export default function Empire3D({
         loaded = true;
         const ready = () => {
           if (!ctx.alive) return;
+          ctx.measuring = true; // fluidité mesurée seulement une fois tout chargé et compilé (pas les à-coups du départ)
           loadRef.current.onLoadProgress?.({ phase: 'done', download: 1 });
           loadRef.current.onLoaded?.();
         };
@@ -808,7 +816,7 @@ export default function Empire3D({
       controls.maxDistance = Math.max(80, ctx.home.dist * 1.25);
       // densité de l'écran relue à chaque redimensionnement : zoom du navigateur, fenêtre passée sur un autre écran ;
       // la scène est toujours calculée à cette densité (un pixel calculé par pixel de l'écran, rien d'agrandi)
-      const out = outputRatioFor();
+      const out = outputRatioFor() * ctx.fluid.scale;
       if (Math.abs(renderer.getPixelRatio() - out) > 0.01) renderer.setPixelRatio(out);
       renderer.setSize(w, h);
       ctx.frameOnce = true; // la toile redimensionnée est vide : en pause, une image pour la remplir
@@ -849,10 +857,13 @@ export default function Empire3D({
         t.z + Math.cos(o.az) * Math.cos(o.el) * o.r,
       );
     };
+    let drewLast = false; // l'appel précédent a dessiné une image : l'écart entre les deux mesure la fluidité
     renderer.setAnimationLoop(() => {
       timer.update();
       const raw = timer.getDelta();
       const dt = Math.min(raw, 0.05);
+      const measured = drewLast;
+      drewLast = false;
       if (!onScreen || document.hidden) return;
       // menu pause : plus rien ne bouge ni ne se dessine, la dernière image reste à l'écran (floutée derrière le
       // menu) ; une image de plus seulement si la toile change de taille ou de qualité
@@ -967,6 +978,8 @@ export default function Empire3D({
       // que les suivants se téléchargent (sans cela, tout se compilait d'un bloc à la fin : 8 s au lieu de 3,5 s)
       draw();
       camera.position.x -= shakeX; camera.position.y -= shakeY;
+      drewLast = true;
+      if (ctx.measuring) ctx.fluid.frame(measured ? raw * 1000 : null);
     });
 
     return () => {

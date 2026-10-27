@@ -4,6 +4,15 @@
 
 export const CHANGELOG = [
   {
+    version: '0.7.2', date: '2026-10-27', title: 'Fluidité sur appareil lent',
+    items: [
+      'Nouveau réglage « Fluidité sur appareil lent » (Réglages, à l’écran titre et dans le menu pause), coupé par défaut : si le jeu rame, la 3D est calculée avec moins de pixels, par paliers, juste assez pour redevenir fluide. L’image est un peu moins nette ; elle remonte dès que l’appareil suit de nouveau.',
+      'Rien ne change sur un appareil qui suit, ni quand le réglage est coupé : pleine résolution de l’écran.',
+      'Le complexe, les temps forts du match et les épreuves d’entraînement en profitent ; l’appareil retient son réglage d’une partie à l’autre.',
+      'Sur un appareil qui rame fort (moins de 15 images par seconde), le jeu propose une fois le réglage : la notification mène droit à lui.',
+    ],
+  },
+  {
     version: '0.7.1', date: '2026-10-27', title: 'Plus de rechargement surprise',
     items: [
       'Sur iPhone, après une longue partie, l’écran pouvait devenir blanc et le jeu se relancer sur l’écran de chargement : Safari ferme une page qui garde trop de mémoire. Le jeu en garde désormais bien moins.',
