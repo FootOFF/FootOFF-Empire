@@ -3,7 +3,7 @@ import { distinctFace, drawFace, hash } from './faces';
 import { createLiveMatch } from './live';
 import { distinctClubName, squadName } from './names';
 import { seeded } from './opponents';
-import { compactPlayer, incomeOf, initialWorld, paceOfLeague, summer, trainClub, worldSquads } from './leagueWorld';
+import { compactPlayer, incomeOf, initialWorld, paceOfLeague, refill, runMarket, summer, trainClub, worldSquads } from './leagueWorld';
 import { assignNumber, makePlayer } from './players';
 import { FORMATIONS, TACTICS, autoLineup, lineupRating } from './tactics';
 import { clone } from './utils';
@@ -158,11 +158,19 @@ export function leagueMatch(league, season, round, home, away) {
   });
 }
 
-// Effectifs d'un état de la ligue (leagueWorld.js) ; sans état (avant la première journée) : ceux de départ.
-export function squadsOf(league, world) {
-  const squads = leagueSquads(league);
-  return worldSquads(squads, world || initialWorld(squads));
+// État de départ de la ligue : les effectifs tirés de la graine, le même budget pour tous, le premier marché commun.
+const startMemo = new Map();
+export function startWorld(league) {
+  const key = `${league.code}|${league.seed}`;
+  if (!startMemo.has(key)) {
+    const squads = leagueSquads(league);
+    startMemo.set(key, seeded(hash(`${key}|depart`), () => ({ ...initialWorld(squads), ...refill([], squads.flat(), 1000, 100) })));
+  }
+  return startMemo.get(key);
 }
+
+// Effectifs d'un état de la ligue (leagueWorld.js) ; sans état (avant la première journée) : ceux de départ.
+export const squadsOf = (league, world) => worldSquads(leagueSquads(league), world || startWorld(league));
 
 // Ordres d'un club pour la journée (équipe, séance) : ceux d'un ami présent, sinon rien (choix automatiques).
 const ordersOf = (clubs, teams, slot) => (clubs[slot].human && clubs[slot].active ? teams?.[clubs[slot].member] || null : null);
@@ -181,7 +189,7 @@ export const unpackSheet = (x) => ({ formation: x.f, tactic: x.t, lineup: x.l, a
 export function playLeagueRound(league, members, teams, world) {
   const clubs = leagueClubs(league, members);
   const squads = squadsOf(league, world);
-  const before = world || initialWorld(leagueSquads(league));
+  const before = world || startWorld(league);
   const matches = (leagueFixtures(league)[league.round] || []).map(([h, a]) => {
     const home = matchSide(clubs, squads, teams, h);
     const away = matchSide(clubs, squads, teams, a);
@@ -192,18 +200,20 @@ export function playLeagueRound(league, members, teams, world) {
   });
   const last = league.round + 1 >= leagueRounds(league);
   const scale = paceOfLeague(league);
-  const train = seeded(hash(`${league.code}|${league.seed}|${league.season}|${league.round}|semaine`), () => {
-    const done = squads.map((players, slot) => trainClub(players, ordersOf(clubs, teams, slot)?.train, scale));
-    if (last) squads.forEach(summer);
-    return done;
-  });
   const money = before.clubs.map((c) => c.money);
   for (const x of matches) {
     money[x.h] += incomeOf(x.hg, x.ag);
     money[x.a] += incomeOf(x.ag, x.hg);
   }
-  const next = { v: 1, clubs: squads.map((players, slot) => ({ money: money[slot], players: players.map(compactPlayer) })) };
-  return { v: 2, matches, train, world: next };
+  // la semaine qui suit : séances, intersaison après la dernière journée, puis le marché commun
+  const week = seeded(hash(`${league.code}|${league.seed}|${league.season}|${league.round}|semaine`), () => {
+    const train = squads.map((players, slot) => trainClub(players, ordersOf(clubs, teams, slot)?.train, scale));
+    if (last) squads.forEach(summer);
+    const market = runMarket({ squads, money, orders: (slot) => ordersOf(clubs, teams, slot), world: before, round: league.season * 100 + league.round, season: league.season, humans: clubs.filter((c) => c.human && c.active).map((c) => c.slot) });
+    return { train, ...market };
+  });
+  const next = { v: 1, clubs: squads.map((players, slot) => ({ money: money[slot], players: players.map(compactPlayer) })), market: week.market, nextId: week.nextId, offers: week.offers };
+  return { v: 2, matches, train: week.train, moves: week.moves, world: next };
 }
 
 // Un match joué, à revoir en 3D (l'écran du direct, en rejeu) : rejoué à l'identique depuis les équipes gardées avec le

@@ -614,8 +614,8 @@ Journée entre amis, première version (2026-10-27, choix de l'utilisateur : « 
 temps forts en 3D ») :
 - Effectifs (`leagueSquads`) : quinze joueurs par club sur un même gabarit tiré de la graine de la ligue (postes, âges,
   qualités et niveaux d'un club fondé en carrière, onze à 6,8), des noms et des visages propres à chaque club : des
-  clubs à égalité stricte, identiques chez chaque ami, rien à garder sur le serveur. Pas encore d'entraînement, de
-  mercato ni de finances ; pas de fatigue, de blessure ni de suspension d'une journée à l'autre.
+  clubs à égalité stricte au départ, identiques chez chaque ami. Ils évoluent ensuite (entraînement, marché : plus
+  bas) ; pas de fatigue, de blessure ni de suspension d'une journée à l'autre.
 - Équipe de la journée : carte « Ton équipe » (adversaire, domicile ou extérieur), puis l'avant-match du jeu (`PreMatch`,
   `ctx.comp` « friends » : sans classement de division ni billetterie, bouton « Valider mon équipe ») ; envoyée au
   serveur (`POST sheet` : dispositif, onze, tactique), gardée sur l'appareil pour la journée suivante. Sans équipe à
@@ -631,9 +631,34 @@ temps forts en 3D ») :
   le match est rejoué à l'identique depuis les équipes gardées, et l'écran du direct le montre en rejeu (`LiveMatch`
   `replay` : ni changement ni consigne, aucune sauvegarde) avec ses temps forts dans le stade ; si le moteur ne retrouve
   pas le score officiel (autre version du jeu), le résumé reste seul.
-- Reste à faire : le direct à l'heure de la journée, l'entraînement, le marché commun et les offres entre amis, les
-  finances et les bâtiments du club de ligue, la fatigue et les absences d'une journée à l'autre, le fil de la ligue,
-  la ligue qui grandit avec ses clubs.
+
+Entraînement, marché commun et offres entre amis (2026-10-27, à la suite, demande de l'utilisateur « continue ») :
+- État de la ligue (`leagueWorld.js`) : après chaque journée, chaque club (budget, joueurs : identifiant de ligue, âge,
+  potentiel, qualités au centième, signes ; un joueur venu du marché garde aussi nom, poste, pied et visage), la place
+  du marché et les offres en attente. Calculé avec les matchs par le jeu qui joue la journée, gardé avec le résultat
+  (une dizaine de Ko, 22 Ko au plus en simulation ; le serveur en accepte 96). Identifiants : place × 100 + rang au
+  départ, 1000 et plus pour le marché. Départ (`startWorld`) : les effectifs tirés de la graine, 20 000 € chacun.
+- L'appareil garde les résultats de la saison et le dernier état de la précédente (`fo-ligue-res-CODE`, leagueNet.js) ;
+  le serveur n'envoie que les nouveaux (`since`). L'état d'avant chaque journée sert au rejeu 3D.
+- Ordres de la semaine, envoyés avec l'équipe (`POST sheet`) : séance (`train`), offres au marché (`bids`), ventes
+  (`sell`), offres à un ami (`offers`), réponses (`accept`, `refuse`). Gardés sur l'appareil tant que l'équipe n'est
+  pas validée, renvoyés aussitôt si elle l'est déjà depuis cet appareil (« Enregistrer mes choix »).
+- Séance (`trainClub`) : la séance du centre d'entraînement de la carrière au niveau 2 pour tous, simulée au gain moyen
+  (`sessionGain`, sans épreuve jouée : rien qu'un ami ne puisse refaire à l'identique), un joueur par ligne sur sa
+  catégorie (choix de l'ami, sinon le conseillé), puis la séance collective (`collectiveGain`) ; deux tiers par séance
+  en aller-retour. Intersaison après la dernière journée : un an de plus, bond ou déclin comme en carrière
+  (`progressPlayer`). Simulation : environ +0,4 de note moyenne par saison.
+- Recettes : 1 500 € par journée, plus 1 000 € la victoire ou 400 € le nul (`incomeOf`).
+- Marché commun (`runMarket`) : six joueurs libres de tous niveaux, deux semaines chacun, au prix de leur valeur de
+  marché (Départementale). Offres sous pli fermé (trois au plus, au moins le prix) : la plus haute l'emporte, si le club
+  a les moyens et la place (22 joueurs au plus). Les clubs de l'ordinateur font une offre au prix une semaine sur trois
+  environ, pour un joueur qui renforcerait leur onze. Vente au-dehors à 85 % de la valeur (13 joueurs au moins).
+- Offres entre amis : trois au plus par semaine, pour un joueur d'un ami présent ; l'ami accepte ou refuse la semaine
+  suivante (onglet Offres) ; le transfert se fait au calcul de la journée si chacun en a encore les moyens et la place,
+  sinon l'offre tombe. Le fil « Semaine passée » (onglet Marché) raconte achats, ventes et transferts de toute la ligue.
+- Carte « Ton club » : onglets Séance, Effectif, Marché, Offres ; budget et somme engagée en tête.
+- Reste à faire : le direct à l'heure de la journée, les finances complètes (salaires) et les bâtiments du club de
+  ligue, la fatigue et les absences d'une journée à l'autre, le fil de la ligue, la ligue qui grandit avec ses clubs.
 
 ## Centre médical
 

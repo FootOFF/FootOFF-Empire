@@ -7,13 +7,13 @@ import { ClubCrest, Crest, CrestArt } from './crest';
 import { CREST_ROWS } from './title';
 import { IconCheck, IconChevron, IconChevronLeft, IconClock, IconDice, IconPlay, IconPlus, IconUsers } from './icons';
 import { uiSound } from './uisound';
-import { capitalize, isPluralClub, randomClubName, withArticle } from '../game/names';
+import { capitalize, clubAfter, isPluralClub, randomClubName, withArticle } from '../game/names';
 import { CLUB_BLACK, clubInitials, defaultCrest, hexLum, normalizeCrest, randomCrest, withStyle } from '../game/crest';
 import {
   AI_PSEUDO, LEAGUE_CLUBS, LEAGUE_COLORS, LEAGUE_MIN_HUMANS, MAX_MY_LEAGUES, autoSheet, cleanCode, cleanSheet, deadlineText,
-  deviceZone, hourText, isLeagueCode, leagueClubs, leagueFixtures, leagueRounds, leagueTable, replayOf, squadsOf,
+  deviceZone, hourText, isLeagueCode, leagueClubs, leagueFixtures, leagueRounds, leagueTable, replayOf, squadsOf, startWorld as startWorldOf,
 } from '../game/league';
-import { LINES, START_BUDGET, paceOfLeague, sessionPreview, trainingPlan } from '../game/leagueWorld';
+import { LINES, MAX_BIDS, SQUAD_CAP, SQUAD_FLOOR, START_BUDGET, marketPlayers, paceOfLeague, priceOf, resaleOf, sessionPreview, trainingPlan } from '../game/leagueWorld';
 import { catsFor } from '../game/training';
 import { playerRating } from '../game/players';
 import { fmtMoney, fmtRating } from './format';
@@ -407,7 +407,8 @@ function ResumeForm({ mine, onDone }) {
 // ------------------------------------------------------------------------------------------------- un championnat
 
 // reload : relire tout de suite (équipe tout juste validée) ; onTeam : ouvrir l'avant-match pour valider son équipe.
-function LeagueDetail({ m, ask, flash, onGone, onTeam, onReplay, reload = 0 }) {
+// onMine : les choix de la semaine viennent d'être gardés sur l'appareil (la fenêtre relit mes championnats).
+function LeagueDetail({ m, ask, flash, onGone, onTeam, onReplay, onMine, reload = 0 }) {
   const [data, setData] = useState(null);
   const [problem, setProblem] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -537,7 +538,7 @@ function LeagueDetail({ m, ask, flash, onGone, onTeam, onReplay, reload = 0 }) {
           <p className="dir-note">Une salle d’attente jamais lancée ferme d’elle-même au bout de 48 heures.</p>
         </>
       ) : (
-        <RunningLeague league={league} clubs={clubs} humans={humans} results={data.results} world={data.world} worldBefore={data.worldBefore} me={me} m={m} onTeam={(t) => onTeam({ ...t, m, world: data.world })} onReplay={onReplay} flash={flash} onSaved={load} />
+        <RunningLeague league={league} clubs={clubs} humans={humans} results={data.results} world={data.world} worldBefore={data.worldBefore} me={me} m={m} onTeam={(t) => onTeam({ ...t, m, world: data.world })} onReplay={onReplay} flash={flash} onSaved={() => { onMine(); load(); }} />
       )}
 
       {!lobby && (
@@ -616,7 +617,7 @@ function RunningLeague({ league, clubs, humans, results, world, worldBefore, me,
           })}
         </ul>
       </section>
-      {mine && <MyClub league={league} world={world} startWorld={worldBefore(0)} slot={mine.slot} m={m} validated={mine.validated} lastTrain={results[results.length - 1]?.train?.[mine.slot]} flash={flash} onSaved={onSaved} />}
+      {mine && <MyClub key={`${league.season}:${league.round}`} league={league} clubs={clubs} world={world} startWorld={worldBefore(0)} slot={mine.slot} m={m} validated={mine.validated} lastResult={results[results.length - 1]} flash={flash} onSaved={onSaved} />}
       {played > 0 && <Results league={league} clubs={clubs} results={results} worldBefore={worldBefore} bySlot={bySlot} mine={mine} onReplay={onReplay} flash={flash} />}
       <section className="lig-block">
         <SectionHead label="Classement" aside={played ? `après ${plural(played, 'journée')}` : 'avant la 1re journée'} />
@@ -655,92 +656,270 @@ function RunningLeague({ league, clubs, humans, results, world, worldBefore, me,
   );
 }
 
-// Ton club : la séance de la semaine (un joueur par ligne, sur la catégorie choisie ; simulée au gain moyen, la même
-// chez chaque ami, faite après le match), puis l'effectif (note, âge, progrès depuis le début de la saison) et le
-// budget. La séance part avec l'équipe validée ; si l'équipe est déjà validée depuis cet appareil, elle est renvoyée.
+// Ton club, en quatre onglets : la séance de la semaine (un joueur par ligne, sur la catégorie choisie ; simulée au gain
+// moyen, la même chez chaque ami, faite après le match), l'effectif (note, progrès de la saison, vente au-dehors), le
+// marché commun (offres sous pli fermé) et les offres entre amis (faites, reçues). Tous ces choix partent avec l'équipe
+// validée ; si elle l'est déjà depuis cet appareil, ils sont renvoyés aussitôt. Ils jouent au calcul de la journée.
 const LINE_NAMES = { G: 'Gardien', D: 'Défense', M: 'Milieu', A: 'Attaque' };
+const CLUB_TABS = [['train', 'Séance'], ['squad', 'Effectif'], ['market', 'Marché'], ['offers', 'Offres']];
 const signed2 = (v) => `${v < 0 ? '−' : '+'}${Math.abs(v).toFixed(2).replace('.', ',')}`;
-function MyClub({ league, world, startWorld, slot, m, validated, lastTrain, flash, onSaved }) {
+const sum = (list) => list.reduce((a, b) => a + (b.x || 0), 0);
+const stepMoney = (v, d) => Math.max(250, Math.round((v + d * 250) / 250) * 250);
+
+// Les choix de la semaine encore valables (joueurs toujours là, offres toujours en attente).
+function weekOrders(draft, players, squads, market, pending, slot) {
+  const mineIds = new Set(players.map((p) => p.id));
+  const onMarket = new Set(market.map((p) => p.id));
+  const elsewhere = new Set(squads.flatMap((list, s) => (s === slot ? [] : list.map((p) => p.id))));
+  const toMe = new Set(pending.filter((o) => o.s === slot).map((o) => o.id));
+  return {
+    train: trainingPlan(players, draft?.train),
+    bids: (draft?.bids || []).filter((b) => onMarket.has(b.i)).slice(0, MAX_BIDS),
+    sell: (draft?.sell || []).filter((i) => mineIds.has(i)),
+    offers: (draft?.offers || []).filter((b) => elsewhere.has(b.i)).slice(0, MAX_BIDS),
+    accept: (draft?.accept || []).filter((id) => toMe.has(id)),
+    refuse: (draft?.refuse || []).filter((id) => toMe.has(id)),
+  };
+}
+
+function Money({ value, onChange, min = 250 }) {
+  return (
+    <span className="lig-money">
+      <button type="button" aria-label="Moins 250 €" disabled={value - 250 < min} onClick={() => onChange(stepMoney(value, -1))}>−</button>
+      <b>{fmtMoney(value)}</b>
+      <button type="button" aria-label="Plus 250 €" onClick={() => onChange(stepMoney(value, 1))}>+</button>
+    </span>
+  );
+}
+
+// Un club en sujet de phrase, avec son article (« L’Olympique Clairval », « Les Jaunes du Lac ») ; son verbe accordé.
+const subject = (n) => capitalize(withArticle(n));
+const agree = (n, one, many) => (isPluralClub(n) ? many : one);
+const MOVE_TEXT = {
+  buy: (x, name) => `${subject(name(x.s))} ${agree(name(x.s), 'recrute', 'recrutent')} ${x.n} sur le marché pour ${fmtMoney(x.x)}`,
+  sale: (x, name) => `${subject(name(x.s))} ${agree(name(x.s), 'vend', 'vendent')} ${x.n} hors de la ligue pour ${fmtMoney(x.x)}`,
+  deal: (x, name) => `${x.n} passe ${clubAfter('de ', name(x.s))} ${clubAfter('à ', name(x.b))} pour ${fmtMoney(x.x)}`,
+  fail: (x) => `Offre acceptée pour ${x.n}, mais le transfert n’a pas pu se faire (budget ou effectif) : rien n’a été payé`,
+  refused: (x, name) => `${subject(name(x.s))} ${agree(name(x.s), 'refuse', 'refusent')} l’offre ${clubAfter('de ', name(x.b))} pour ${x.n}`,
+  expired: (x, name) => `L’offre ${clubAfter('de ', name(x.b))} pour ${x.n} est restée sans réponse`,
+};
+
+function MyClub({ league, clubs, world, startWorld, slot, m, validated, lastResult, flash, onSaved }) {
   const squads = useMemo(() => squadsOf(league, world), [league, world]);
   const start = useMemo(() => squadsOf(league, startWorld), [league, startWorld]);
+  const market = useMemo(() => marketPlayers(world || startWorldOf(league)), [league, world]);
+  const pending = world?.offers || [];
   const players = squads[slot];
-  const byId = new Map(players.map((p) => [p.id, p]));
+  const byId = new Map(squads.flat().concat(market).map((p) => [p.id, p]));
+  const clubOf = (id) => squads.findIndex((list) => list.some((p) => p.id === id));
   const was = new Map(start[slot].map((p) => [p.id, playerRating(p)]));
   const money = world?.clubs?.[slot]?.money ?? START_BUDGET;
   const scale = paceOfLeague(league);
-  const saved = trainingPlan(players, m.draft?.train);
-  const [plan, setPlan] = useState(saved);
+  const name = (s) => clubs[s]?.name || '?';
+  const saved = weekOrders(m.draft, players, squads, market, pending, slot);
+  const [orders, setOrders] = useState(saved);
+  const [tab, setTab] = useState('train');
   const [busy, setBusy] = useState(false);
-  const dirty = JSON.stringify(plan) !== JSON.stringify(saved);
+  const [target, setTarget] = useState(null); // offre à un ami en préparation : { slot, id, x }
+  const dirty = JSON.stringify(orders) !== JSON.stringify(saved);
+  const committed = sum(orders.bids) + sum(orders.offers);
   const sentHere = validated && m.draft?.sent === `${league.season}:${league.round}`;
-  const choose = (pos, patch) => { setPlan((x) => ({ ...x, [pos]: { ...x[pos], ...patch } })); uiSound('move'); };
+  const set = (patch) => setOrders((o) => ({ ...o, ...patch }));
+  const choose = (pos, patch) => { set({ train: { ...orders.train, [pos]: { ...orders.train[pos], ...patch } } }); uiSound('move'); };
+  const friends = clubs.filter((c) => c.human && c.active && c.slot !== slot);
   const save = async () => {
+    if (committed > money) { flash(`Tes offres engagent ${fmtMoney(committed)} pour un budget de ${fmtMoney(money)} : retire-en une.`, 'warn'); return; }
     setBusy(true);
-    const draft = { ...(m.draft || {}), train: plan };
+    const draft = { ...(m.draft || {}), ...orders };
     try {
       if (sentHere) {
         const sheet = cleanSheet(m.draft, players);
-        await sendSheet(m, league.season, league.round, { formation: sheet.formation, lineup: sheet.lineup, tactic: sheet.tactic, train: plan });
+        await sendSheet(m, league.season, league.round, { formation: sheet.formation, lineup: sheet.lineup, tactic: sheet.tactic, ...orders });
       }
       updateLeague(m.code, { draft });
-      flash(sentHere ? 'Séance enregistrée avec ton équipe.' : 'Séance enregistrée : elle partira avec ton équipe.');
+      flash(sentHere ? 'Choix de la semaine enregistrés avec ton équipe.' : 'Choix enregistrés : ils partiront avec ton équipe.');
       onSaved();
     } catch (x) {
       flash(x.message, 'warn');
     }
     setBusy(false);
   };
+  const toggle = (key, value) => set({ [key]: orders[key].includes(value) ? orders[key].filter((v) => v !== value) : [...orders[key], value] });
+  const forSale = new Set(orders.sell);
+  const received = pending.filter((o) => o.s === slot);
+  const sent = pending.filter((o) => o.b === slot);
+  const changes = [
+    orders.bids.length && `${plural(orders.bids.length, 'offre')} au marché`,
+    orders.sell.length && `${plural(orders.sell.length, 'vente')}`,
+    orders.offers.length && `${plural(orders.offers.length, 'offre')} à un ami`,
+    (orders.accept.length + orders.refuse.length) && `${plural(orders.accept.length + orders.refuse.length, 'réponse')}`,
+  ].filter(Boolean);
   return (
-    <>
-      <section className="dir-card lig-train">
-        <SectionHead label="Séance de la semaine" aside="après le match" />
-        <ul className="lig-train-rows">
-          {LINES.map((pos) => {
-            const pick = plan[pos];
-            const p = pick && byId.get(pick.id);
-            if (!p) return null;
-            const gain = sessionPreview(p, pick.cat, scale);
-            return (
-              <li key={pos}>
-                <span className="lig-train-line">{LINE_NAMES[pos]}</span>
-                <select value={pick.id} aria-label={`${LINE_NAMES[pos]} : joueur`} onChange={(e) => choose(pos, { id: Number(e.target.value) })}>
-                  {players.filter((q) => q.pos === pos).map((q) => <option key={q.id} value={q.id}>{q.name} · {fmtRating(playerRating(q))}</option>)}
-                </select>
-                <em className={gain > 0.0005 ? 'up' : ''}>{gain > 0.0005 ? signed2(gain) : 'au plafond'}</em>
-                <div className="segmented lig-cats" role="radiogroup" aria-label={`${LINE_NAMES[pos]} : catégorie`}>
-                  {Object.entries(catsFor(pos)).map(([id, c]) => (
-                    <button key={id} type="button" role="radio" aria-checked={pick.cat === id} className={pick.cat === id ? 'on' : ''} onClick={() => choose(pos, { cat: id })}>{c.short}</button>
-                  ))}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-        {lastTrain?.length > 0 && (
-          <p className="dir-note">Dernière séance · {lastTrain.map(([id, , g]) => `${byId.get(id)?.name || '?'} ${signed2(g / 1000)}`).join(' · ')}</p>
-        )}
-        <div className="lig-actions">
-          <button type="button" className="btn btn-sm" disabled={busy || !dirty} onClick={save}>Enregistrer la séance</button>
-          {!sentHere && <small className="lig-hint">Elle partira avec ton équipe : valide-la avant l’heure.</small>}
-        </div>
-      </section>
-      <section className="lig-block">
-        <SectionHead label="Ton effectif" aside={`${players.length} joueurs · budget ${fmtMoney(money)}`} />
+    <section className="dir-card lig-club">
+      <SectionHead label="Ton club" aside={`budget ${fmtMoney(money)}${committed ? ` · engagé ${fmtMoney(committed)}` : ''}`} />
+      <div className="segmented lig-tabs" role="tablist" aria-label="Ton club">
+        {CLUB_TABS.map(([id, label]) => (
+          <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => { setTab(id); uiSound('tab'); }}>
+            {label}{id === 'offers' && received.length ? <em className="lig-dot" role="img" aria-label={`${received.length} offre${received.length > 1 ? 's' : ''} reçue${received.length > 1 ? 's' : ''}`} /> : null}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'train' && (
+        <>
+          <ul className="lig-train-rows">
+            {LINES.map((pos) => {
+              const pick = orders.train[pos];
+              const p = pick && byId.get(pick.id);
+              if (!p) return null;
+              const gain = sessionPreview(p, pick.cat, scale);
+              return (
+                <li key={pos}>
+                  <span className="lig-train-line">{LINE_NAMES[pos]}</span>
+                  <select value={pick.id} aria-label={`${LINE_NAMES[pos]} : joueur`} onChange={(e) => choose(pos, { id: Number(e.target.value) })}>
+                    {players.filter((q) => q.pos === pos).map((q) => <option key={q.id} value={q.id}>{q.name} · {fmtRating(playerRating(q))}</option>)}
+                  </select>
+                  <em className={gain > 0.0005 ? 'up' : ''}>{gain > 0.0005 ? signed2(gain) : 'au plafond'}</em>
+                  <div className="segmented lig-cats" role="radiogroup" aria-label={`${LINE_NAMES[pos]} : catégorie`}>
+                    {Object.entries(catsFor(pos)).map(([id, c]) => (
+                      <button key={id} type="button" role="radio" aria-checked={pick.cat === id} className={pick.cat === id ? 'on' : ''} onClick={() => choose(pos, { cat: id })}>{c.short}</button>
+                    ))}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {lastResult?.train?.[slot]?.length > 0 && (
+            <p className="dir-note">Dernière séance · {lastResult.train[slot].map(([id, , g]) => `${byId.get(id)?.name || '?'} ${signed2(g / 1000)}`).join(' · ')}</p>
+          )}
+        </>
+      )}
+
+      {tab === 'squad' && (
+        <>
+        <p className="dir-note">Vendre : hors de la ligue, à 85 % de sa valeur, au calcul de la journée ({SQUAD_FLOOR} joueurs au moins).</p>
         <ul className="lig-squad">
           {LINES.flatMap((pos) => players.filter((p) => p.pos === pos)).map((p) => {
             const r = playerRating(p);
             const d = r - (was.get(p.id) ?? r);
+            const selling = forSale.has(p.id);
+            const room = players.length - forSale.size > SQUAD_FLOOR;
             return (
-              <li key={p.id}>
+              <li key={p.id} className={selling ? 'selling' : ''}>
                 <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
                 <span className="lig-who"><strong>{p.name}</strong><em>{p.age} ans · potentiel {fmtRating(p.pot)}</em></span>
                 <span className="lig-rate"><b>{fmtRating(r)}</b>{d >= 0.005 && <em>{signed2(d)}</em>}</span>
+                <button type="button" className="linkbtn lig-sell" disabled={!selling && !room} onClick={() => toggle('sell', p.id)}>
+                  {selling ? `Garder (vente ${fmtMoney(resaleOf(p))})` : `Vendre ${fmtMoney(resaleOf(p))}`}
+                </button>
               </li>
             );
           })}
         </ul>
-      </section>
-    </>
+        </>
+      )}
+
+      {tab === 'market' && (
+        <>
+          <p className="dir-note">Six joueurs libres pour toute la ligue, chacun deux semaines sur le marché. Offre sous pli fermé, au moins au prix affiché : la plus haute l’emporte au calcul de la journée. Trois offres au plus, effectif limité à {SQUAD_CAP} joueurs.</p>
+          <ul className="lig-market">
+            {market.map((p) => {
+              const bid = orders.bids.find((b) => b.i === p.id);
+              return (
+                <li key={p.id} className={bid ? 'on' : ''}>
+                  <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
+                  <span className="lig-who"><strong>{p.name}</strong><em>{p.age} ans · potentiel {fmtRating(p.pot)} · prix {fmtMoney(p.price)}</em></span>
+                  <span className="lig-rate"><b>{fmtRating(playerRating(p))}</b></span>
+                  {bid ? (
+                    <span className="lig-bid">
+                      <Money value={bid.x} min={p.price} onChange={(x) => set({ bids: orders.bids.map((b) => (b.i === p.id ? { ...b, x } : b)) })} />
+                      <button type="button" className="linkbtn" onClick={() => set({ bids: orders.bids.filter((b) => b.i !== p.id) })}>Retirer</button>
+                    </span>
+                  ) : (
+                    <button type="button" className="btn btn-sm ghost" disabled={orders.bids.length >= MAX_BIDS || players.length >= SQUAD_CAP} onClick={() => set({ bids: [...orders.bids, { i: p.id, x: p.price }] })}>Offrir</button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {lastResult?.moves?.length > 0 && (
+            <>
+              <SectionHead label="Semaine passée" />
+              <ul className="lig-moves">{lastResult.moves.map((x, k) => <li key={k} className={x.s === slot || x.b === slot ? 'me' : ''}>{MOVE_TEXT[x.k]?.(x, name)}</li>)}</ul>
+            </>
+          )}
+        </>
+      )}
+
+      {tab === 'offers' && (
+        <>
+          <SectionHead label="Offres reçues" aside={received.length ? 'à toi de répondre' : null} />
+          {received.length === 0 ? <p className="dir-note">Aucune offre d’un ami cette semaine.</p> : (
+            <ul className="lig-market">
+              {received.map((o) => (
+                <li key={o.id}>
+                  <span className="lig-who"><strong>{o.n}</strong><em>{subject(name(o.b))} {agree(name(o.b), 'offre', 'offrent')} {fmtMoney(o.x)}</em></span>
+                  <div className="segmented lig-answer" role="radiogroup" aria-label={`Réponse pour ${o.n}`}>
+                    <button type="button" role="radio" aria-checked={orders.accept.includes(o.id)} className={orders.accept.includes(o.id) ? 'on' : ''} onClick={() => set({ accept: [...orders.accept.filter((v) => v !== o.id), o.id], refuse: orders.refuse.filter((v) => v !== o.id) })}>Accepter</button>
+                    <button type="button" role="radio" aria-checked={orders.refuse.includes(o.id)} className={orders.refuse.includes(o.id) ? 'on' : ''} onClick={() => set({ refuse: [...orders.refuse.filter((v) => v !== o.id), o.id], accept: orders.accept.filter((v) => v !== o.id) })}>Refuser</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {sent.length > 0 && <p className="dir-note">En attente de réponse · {sent.map((o) => `${o.n} (${name(o.s)}), ${fmtMoney(o.x)}`).join(' · ')}</p>}
+          <SectionHead label="Faire une offre à un ami" aside={`${orders.offers.length} / ${MAX_BIDS}`} />
+          {orders.offers.length > 0 && (
+            <ul className="lig-market">
+              {orders.offers.map((b) => {
+                const p = byId.get(b.i);
+                return (
+                  <li key={b.i} className="on">
+                    <span className="lig-who"><strong>{p?.name || '?'}</strong><em>{name(clubOf(b.i))} · niveau {p ? fmtRating(playerRating(p)) : '?'}</em></span>
+                    <span className="lig-bid">
+                      <Money value={b.x} onChange={(x) => set({ offers: orders.offers.map((o) => (o.i === b.i ? { ...o, x } : o)) })} />
+                      <button type="button" className="linkbtn" onClick={() => set({ offers: orders.offers.filter((o) => o.i !== b.i) })}>Retirer</button>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {friends.length === 0 ? <p className="dir-note">Aucun ami actif dans ce championnat pour l’instant.</p> : orders.offers.length < MAX_BIDS && (
+            <div className="lig-offer">
+              <select value={target?.slot ?? ''} aria-label="Club de l’ami" onChange={(e) => setTarget(e.target.value === '' ? null : { slot: Number(e.target.value), id: null })}>
+                <option value="">Choisir un club</option>
+                {friends.map((c) => <option key={c.slot} value={c.slot}>{c.name} · {c.pseudo}</option>)}
+              </select>
+              {target && (
+                <select value={target.id ?? ''} aria-label="Joueur" onChange={(e) => {
+                  const p = byId.get(Number(e.target.value));
+                  setTarget({ ...target, id: p?.id ?? null, x: p ? priceOf(p) : 0 });
+                }}>
+                  <option value="">Choisir un joueur</option>
+                  {squads[target.slot].filter((p) => !orders.offers.some((o) => o.i === p.id)).map((p) => <option key={p.id} value={p.id}>{p.pos} · {p.name} · {fmtRating(playerRating(p))}</option>)}
+                </select>
+              )}
+              {target?.id && (
+                <span className="lig-bid">
+                  <Money value={target.x} onChange={(x) => setTarget({ ...target, x })} />
+                  <button type="button" className="btn btn-sm" onClick={() => { set({ offers: [...orders.offers, { i: target.id, x: target.x }] }); setTarget(null); uiSound('select'); }}>Ajouter l’offre</button>
+                </span>
+              )}
+            </div>
+          )}
+          <p className="dir-note">Ton ami répond la semaine suivante ; le joueur arrive au calcul de la journée, si chacun en a encore les moyens et la place.</p>
+        </>
+      )}
+
+      <div className="lig-actions lig-save">
+        <button type="button" className="btn btn-sm" disabled={busy || !dirty} onClick={save}>Enregistrer mes choix</button>
+        <small className="lig-hint">
+          {dirty ? 'Choix modifiés, pas encore enregistrés' : sentHere ? 'Choix de la semaine enregistrés avec ton équipe' : 'Tes choix partiront avec ton équipe : valide-la avant l’heure'}
+          {changes.length > 0 && ` · ${changes.join(' · ')}`}
+        </small>
+      </div>
+    </section>
   );
 }
 
@@ -849,10 +1028,11 @@ export function LeagueView({ state, ask, invite = null, overTitle = false, onClo
   const validate = async (lineup, tactic, formation) => {
     const { league } = team;
     const m = myLeagues().find((x) => x.code === team.m.code) || team.m;
-    const train = m.draft?.train || null; // la séance de la semaine part avec l'équipe
+    const { train = null, bids = [], sell = [], offers = [], accept = [], refuse = [] } = m.draft || {}; // les choix de la semaine partent avec l'équipe
+    const week = { ...(train ? { train } : {}), bids, sell, offers, accept, refuse };
     try {
-      await sendSheet(m, league.season, league.round, { formation, lineup, tactic, ...(train ? { train } : {}) });
-      updateLeague(m.code, { draft: { formation, lineup, tactic, train, sent: `${league.season}:${league.round}` } });
+      await sendSheet(m, league.season, league.round, { formation, lineup, tactic, ...week });
+      updateLeague(m.code, { draft: { ...(m.draft || {}), formation, lineup, tactic, sent: `${league.season}:${league.round}` } });
       setMine(myLeagues());
       setTeam(null);
       uiSound('select');
@@ -894,7 +1074,7 @@ export function LeagueView({ state, ask, invite = null, overTitle = false, onClo
         {view.id === 'create' && <CreateForm onDone={open} />}
         {view.id === 'join' && <JoinForm initialCode={view.code} mine={mine} onDone={open} onOpen={(m) => open(m)} />}
         {view.id === 'resume' && <ResumeForm mine={mine} onDone={open} />}
-        {view.id === 'league' && <LeagueDetail key={current.code} m={current} ask={ask} flash={flash} onGone={home} onTeam={setTeam} onReplay={onReplay} reload={reload} />}
+        {view.id === 'league' && <LeagueDetail key={current.code} m={current} ask={ask} flash={flash} onGone={home} onTeam={setTeam} onReplay={onReplay} onMine={() => setMine(myLeagues())} reload={reload} />}
       </Panel>
       {teamScreen && createPortal(
         <div className="lig-match team"><PreMatch state={teamScreen.state} ctx={teamScreen.ctx} onCancel={() => setTeam(null)} onKickoff={validate} /></div>,
