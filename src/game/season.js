@@ -10,7 +10,7 @@ import { clubAfter, leagueClubNames, randomClubName } from './names';
 import { drawInjury, fitOf, freshSeason, matchCost, playerRating, progressPlayer, recoveryOf, saleValue, wageOf, wantsRetirement } from './players';
 import { quickMatch } from './live';
 import { ensureLineup } from './tactics';
-import { closeSeasonGoals, reputationStatusEvent, resetSeasonStats } from './goals';
+import { reputationStatusEvent, resetSeasonStats } from './goals';
 import { closeSeasonObjectives, drawObjectives } from './objectives';
 import { book, closeLedger, markTreasury } from './ledger';
 import { C1_ENTRY, COMPS, STAGES, buildCalendar, cupPrize, drawOpponent, fixtureLabel, fixtureShort, isAwayRound, leagueLength, nextFixture, ofDiv } from './cups';
@@ -565,7 +565,6 @@ export function endSeason(s) {
     position, division: div.name, matchday, prize, sponsors, sponsorsUpfront: upfront, wages, upkeep, promoted, relegated, events, nextDivision: nextDivName,
     titleBonus, cups: cupsMoney, trophies, cupRuns, champion: position === 1, c1Next: !!s.c1Next, league: !!s.league,
   };
-  closeSeasonGoals(s, events);
   closeSeasonObjectives(s, events); // objectifs du conseil : primes et bonus de saison parfaite
   reputationStatusEvent(s, repBefore);
   pushJournal(s, {

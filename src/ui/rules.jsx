@@ -13,6 +13,7 @@ export const RULES = [
       'Tu es le président d’un club fondé en Départementale, avec onze joueurs, un terrain municipal et 8 000 €. Le but : monter de division en division jusqu’à l’Élite, puis gagner le championnat, la Coupe nationale et la Coupe d’Europe des clubs, en bâtissant le complexe le plus prestigieux du pays.',
       'Quatre divisions de huit clubs : Départementale, Régionale, Nationale, Élite. Une saison compte sept journées de championnat, toutes à domicile, et les tours de coupe se glissent entre elles. En Élite, quatorze journées en aller-retour : chaque adversaire reçu une fois et visité une fois, une journée sur deux à l’extérieur, où l’avantage du terrain passe chez l’adversaire. Les deux premiers montent, les deux derniers descendent. En Élite, les deux premiers jouent la Coupe d’Europe la saison suivante, face aux meilleurs clubs du continent, plus forts à chaque tour.',
       'Chaque début de saison, le conseil d’administration du club te fixe trois objectifs (un classement, un défi sportif, un défi du club) avec leur prime. Les trois réussis valent un bonus de saison parfaite.',
+      'Au-delà de la saison, le parcours de carrière suit les grands chapitres de la vie du club (notoriété, stade à guichets fermés, académie, Europe ; en ligue entre amis, derbys et titres) : un chapitre à la fois, sa prime versée dès qu’il est accompli. Il ne répète jamais un objectif du conseil. Les succès, eux, gardent la date de chaque exploit, dans la salle des trophées.',
     ],
   },
   {
@@ -71,7 +72,7 @@ export const RULES = [
     body: [
       'Chaque victoire fait grandir ta réputation, davantage dans les divisions hautes, en coupe et avec un espace supporters développé ; une défaite la fait baisser un peu. Un titre, une coupe, une montée la font bondir. Chaque été en efface 12 % : il faut gagner encore pour rester grand.',
       'Elle attire : plus de public et de ventes à la boutique, de meilleurs contrats de sponsoring, des vendeurs plus conciliants au mercato, et des recruteurs qui te proposent de plus grands noms.',
-      'Statuts : Club de quartier, Club qui monte (6), Club régional (12), Club national (25), Grand club (45), Club de légende (80). Les grandes étapes du jeu (primes de palier) suivent la même échelle.',
+      'Statuts : Club de quartier, Club qui monte (6), Club régional (12), Club national (25), Grand club (45), Club de légende (80). Quatre chapitres du parcours de carrière en dépendent.',
     ],
   },
 ];

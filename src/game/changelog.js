@@ -4,6 +4,24 @@
 
 export const CHANGELOG = [
   {
+    version: '0.8.12', date: '2026-10-29', title: 'Recruteurs en mission, nouvelles à chaque repérage',
+    items: [
+      'Les missions des recruteurs n’ont plus de régions : ils cherchent un poste ou un profil (technique, physique, mental), pendant deux, trois ou quatre repérages.',
+      'Une mission voit deux fois plus de jeunes qu’autant de repérages ordinaires et en ramène davantage : jusqu’à six des seize jeunes vus, sur quatre repérages. Les chances affichées d’y trouver un grand potentiel restent exactes.',
+      'Mission en cours visible : à chaque repérage, une notification et une ligne à l’académie disent combien de jeunes ils ont observés et ce que vaut le plus prometteur (un bon élément, un beau potentiel, un talent rare), sans dévoiler son potentiel.',
+      'Corrections : « des milieux » s’écrit correctement, et une mission lancée avant cette version revient normalement.',
+    ],
+  },
+  {
+    version: '0.8.11', date: '2026-10-28', title: 'Objectifs et succès repensés',
+    items: [
+      'Le parcours de carrière remplace la « Grande étape » : sept chapitres de la vie du club, sur plusieurs saisons (notoriété, stade à guichets fermés, académie, Europe), chacun avec sa prime versée dès qu’il est accompli. Il ne répète jamais un objectif du conseil. En ligue entre amis, un parcours à part : derbys, notoriété, titres.',
+      'Les objectifs du conseil restent trois par saison, sans doublon avec le parcours.',
+      'Vingt-sept nouveaux succès, rangés en familles : matchs et exploits, joueurs et académie, complexe et finances, ligue entre amis. Une ligue entre amis n’affiche que les succès qu’elle peut gagner.',
+      'Dans la salle des trophées, le nouvel onglet Carrière montre chaque chapitre : accompli, en cours avec son avancée, ou à venir.',
+    ],
+  },
+  {
     version: '0.8.10', date: '2026-10-28', title: 'Match sans détour',
     items: [
       'En plein match et à l’avant-match, glisser le doigt depuis le bord de l’écran ne ramène plus en arrière ; les boutons du bord répondent toujours.',

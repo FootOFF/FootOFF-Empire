@@ -53,11 +53,12 @@ import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics
 import { fluidEnabled, setFluid } from './three/adapt';
 import { actionablePlots, dismissTip, dockSignals, seasonEndForecast, sessionPin, staffTip } from './game/advice';
 import { allowedBuildingsFor, plotBuilding, plotOf } from './game/map';
-import { leavingYouth, missionTarget } from './game/academy';
+import { leavingYouth, missionCount } from './game/academy';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { roundKey } from './game/mercato';
 import { createStadiumSound } from './ui/sound';
 import { achievementById, newAchievements } from './game/achievements';
+import { advanceJourney, journeyDue } from './game/journey';
 import { LOCKS, NavContext, SECTION_ENTRY, sectionNear, sectionOf } from './ui/nav';
 
 // three.js et la scène vivent dans un chunk séparé, chargé dès le démarrage (derrière l'écran de chargement).
@@ -243,6 +244,21 @@ export default function App({ preview = null }) {
       text: list.length > 1 ? `Et aussi : ${list.slice(1).map((a) => a.title).join(' · ')}` : list[0].desc,
       action: { panel: 'trophies', tab: 'achievements', ids: fresh.map(([id]) => id) },
     });
+  }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Parcours de carrière (journey.js, 0.8.11) : un chapitre accompli verse sa prime aussitôt et s'annonce. La première
+  // fois, une partie déjà avancée retrouve sans prime les chapitres déjà accomplis. Mise à jour fonctionnelle : elle
+  // s'ajoute à celle des succès, juste au-dessus, sans l'écraser.
+  useEffect(() => {
+    if (!state || preview || !journeyDue(state)) return;
+    const done = advanceJourney(clone(state));
+    setState((s) => { if (!s) return s; const n = clone(s); advanceJourney(n); return n; });
+    if (done) {
+      notify({
+        kind: 'achievement', eyebrow: 'Carrière · chapitre accompli', title: done.title, text: `${done.goal} Récompense : ${done.reward.label}.`,
+        action: { panel: 'trophies', tab: 'career' },
+      });
+    }
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // En jeu, Échap (ou Start à la manette) ouvre le menu pause, quand aucune fenêtre n'est ouverte (sinon Échap la
@@ -453,12 +469,17 @@ export default function App({ preview = null }) {
         action: { panel: 'academy', tab: 'youth', ids: leaving.map((p) => p.id) },
       });
     }
+    // mission en cours (0.8.12) : la nouvelle du repérage de cette journée
+    const news = state.mission?.news?.at(-1);
+    if (news && state.lastMatch?.comp === 'league' && news.season === state.seasonNumber && news.round === state.round) {
+      notify({ kind: 'academy', eyebrow: `Académie · mission en cours, repérage ${news.step} sur ${state.mission.steps}`, title: news.up && news.best === 'rare' ? 'Un talent rare repéré' : 'Nouvelles des recruteurs', text: news.up && news.best === 'rare' ? news.text.replace(/ : un talent rare\.$/, '.') : news.text, action: { panel: 'academy', tab: 'scout' } });
+    }
     // retour de mission des recruteurs, après cette journée : la liste ramenée est à voir à l'académie
     const back = state.scouting?.mission;
     if (back && state.lastMatch?.comp === 'league' && back.season === state.seasonNumber && back.round === state.round) {
       notify({
         kind: 'academy', eyebrow: 'Académie · retour de mission', title: back.back > 1 ? `${back.back} jeunes à voir` : 'Un jeune à voir',
-        text: `${back.back > 1 ? 'Les plus prometteurs' : 'Le plus prometteur'} des ${back.seen} jeunes vus par tes recruteurs (${missionTarget(back)}).`,
+        text: `${back.back > 1 ? 'Les plus prometteurs' : 'Le plus prometteur'} parmi les ${missionCount(back, back.seen)} vus par tes recruteurs.`,
         action: { panel: 'academy', tab: 'scout' },
       });
     }

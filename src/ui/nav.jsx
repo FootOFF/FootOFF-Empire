@@ -34,7 +34,7 @@ export const SECTIONS = {
       ['season:calendar', 'Calendrier'],
       ['season:table', 'Classement'],
       ['stats', 'Statistiques'],
-      ['trophies', 'Palmarès'],
+      ['trophies', 'Trophées'],
     ],
   },
   club: {

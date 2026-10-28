@@ -293,7 +293,7 @@ export function staffTips(s) {
   if (s.buildings.academy > 0 && !s.mission && free > 0) {
     out.push({
       id: `mission-${s.seasonNumber}`, title: 'Envoie tes recruteurs en mission',
-      text: `Ils ciblent un poste, un profil ou une région, et reviennent avec les jeunes les plus prometteurs qu’ils ont vus : de quoi remplir ${free > 1 ? `les ${free} places libres` : 'la place libre'} de ton équipe de jeunes.`,
+      text: `Ils ciblent un poste ou un profil, donnent des nouvelles à chaque repérage et reviennent avec les jeunes les plus prometteurs qu’ils ont vus : de quoi remplir ${free > 1 ? `les ${free} places libres` : 'la place libre'} de ton équipe de jeunes.`,
       action: { kind: 'panel', panel: 'academy', tab: 'scout', label: 'Préparer une mission' },
     });
   }

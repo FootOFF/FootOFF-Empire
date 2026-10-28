@@ -1,16 +1,17 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { STAGES } from '../game/cups';
 import { HONOURS, honoursOf, plural } from '../game/honours';
-import { ACHIEVEMENTS, ACH_CATS } from '../game/achievements';
+import { ACH_CATS, achievementsFor } from '../game/achievements';
 import { rebuildRecords } from '../game/records';
 import { allCareers } from '../game/career';
+import { activeChapter, chaptersOf, rewardOf } from '../game/journey';
 import { fmtMoney, fmtNum } from './format';
 import { SectionHead, Stat } from './kit';
 import { Panel } from './panels';
 import { Tabs } from './glass';
 
-// Salle des trophées et succès (clic sur le parvis) : le palmarès (un trophée par compétition, ses victoires), les
-// succès datés de la vie du club, et les records de toujours.
+// Salle des trophées et succès (clic sur le parvis) : le palmarès (un trophée par compétition, ses victoires), le
+// parcours de carrière (journey.js), les succès datés de la vie du club, et les records de toujours.
 
 const IMG = (id) => `${import.meta.env.BASE_URL}ui/trophies/${id}.webp`;
 const when = (d) => (d ? `Saison ${d.season}${d.round ? ` · journée ${d.round}` : ''}` : '');
@@ -53,10 +54,70 @@ function Honours({ state }) {
   );
 }
 
+// Parcours de carrière (0.8.11, « frise dorée » choisie par le PDG) : le chapitre en cours en grande carte (objectif,
+// avancée en chiffres nets, prime en médaille), puis la frise des chapitres reliés par un fil d'or : accomplis pleins et
+// datés, à venir éteints avec leur prime.
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+function Prize({ reward, className = '' }) {
+  return (
+    <span className={`jr-prize ${className}`}>
+      <b>{reward.short}</b>
+      {reward.extra && <em>{reward.extra}</em>}
+    </span>
+  );
+}
+function Career({ state }) {
+  const list = chaptersOf(state);
+  const done = state.journey?.done || {};
+  const cur = activeChapter(state);
+  const n = list.filter((c) => done[c.id]).length;
+  return (
+    <>
+      <SectionHead label="Parcours de carrière" aside={`${n} / ${list.length} chapitres`} />
+      {cur ? (
+        <section className="jr-hero" aria-label={`Chapitre en cours : ${cur.chapter.title}`}>
+          <span className="jr-kicker">Chapitre {ROMAN[cur.index]} · en cours</span>
+          <h4>{cur.chapter.title}</h4>
+          <p>{cur.chapter.goal}</p>
+          <div className="jr-meter">
+            <span className="jr-track" aria-hidden="true"><i style={{ width: `${Math.round(cur.progress.ratio * 100)}%` }} /></span>
+            <span className="jr-count"><b>{cur.progress.cur}</b><span>/ {cur.progress.max}</span><em>{cur.progress.unit}</em></span>
+          </div>
+          <Prize reward={cur.reward} className="hero" />
+        </section>
+      ) : (
+        <section className="jr-hero done">
+          <span className="jr-kicker">Parcours accompli</span>
+          <h4>Tous les chapitres sont écrits</h4>
+          <p>Le club a gravi chaque marche de sa carrière.</p>
+        </section>
+      )}
+      <ol className="jr-line">
+        {list.map((c, i) => {
+          const d = done[c.id];
+          const live = cur?.chapter.id === c.id;
+          return (
+            <li key={c.id} className={d ? 'on' : live ? 'live' : 'next'}>
+              <span className="jr-node" aria-hidden="true">{ROMAN[i]}</span>
+              <div className="jr-text">
+                <b>{c.title}</b>
+                <span>{c.goal}</span>
+              </div>
+              {d ? <span className="jr-when">{d.season ? `Saison ${d.season}` : 'Acquis'}</span> : <Prize reward={rewardOf(state, c)} />}
+            </li>
+          );
+        })}
+      </ol>
+      <p className="jr-lead">Chaque chapitre verse sa prime dès qu’il est accompli. Les objectifs du conseil, eux, se jouent saison par saison.</p>
+    </>
+  );
+}
+
 // focus : succès tout juste débloqués (notification touchée) : la liste s'ouvre sur eux, mis en évidence.
 function Achievements({ state, focus = [] }) {
   const have = state.achievements || {};
-  const n = ACHIEVEMENTS.filter((a) => have[a.id]).length;
+  const all = achievementsFor(state); // une ligue entre amis n'affiche que ce qu'elle peut gagner
+  const n = all.filter((a) => have[a.id]).length;
   const root = useRef(null);
   useLayoutEffect(() => {
     // le panneau arrive déjà positionné : le premier succès mis en évidence au milieu de la liste (on ne fait défiler
@@ -70,12 +131,13 @@ function Achievements({ state, focus = [] }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
-      <SectionHead label="Succès" aside={`${n} / ${ACHIEVEMENTS.length}`} />
-      <div ref={root} className="ach-progress" role="progressbar" aria-valuemin={0} aria-valuemax={ACHIEVEMENTS.length} aria-valuenow={n}>
-        <i style={{ width: `${(n / ACHIEVEMENTS.length) * 100}%` }} />
+      <SectionHead label="Succès" aside={`${n} / ${all.length}`} />
+      <div ref={root} className="ach-progress" role="progressbar" aria-valuemin={0} aria-valuemax={all.length} aria-valuenow={n}>
+        <i style={{ width: `${(n / all.length) * 100}%` }} />
       </div>
       {ACH_CATS.map(([cat, label]) => {
-        const list = ACHIEVEMENTS.filter((a) => a.cat === cat);
+        const list = all.filter((a) => a.cat === cat);
+        if (!list.length) return null;
         return (
           <section key={cat} className="ach-cat">
             <h5>{label}<em>{list.filter((a) => have[a.id]).length} / {list.length}</em></h5>
@@ -159,9 +221,10 @@ export function TrophyRoom({ state, initialTab = 'honours', focus = [], onClose 
       title="Salle des trophées"
       eyebrow={won ? `Allée d’honneur · ${plural(won, 'trophée')}` : 'Allée d’honneur'}
       onClose={onClose}
-      toolbar={<Tabs items={[['honours', 'Palmarès'], ['achievements', 'Succès'], ['records', 'Records']]} value={tab} onChange={pick} />}
+      toolbar={<Tabs items={[['honours', 'Palmarès'], ['career', 'Carrière'], ['achievements', 'Succès'], ['records', 'Records']]} value={tab} onChange={pick} />}
     >
       {tab === 'honours' && <Honours state={state} />}
+      {tab === 'career' && <Career state={state} />}
       {tab === 'achievements' && <Achievements state={state} focus={focus} />}
       {tab === 'records' && <Records state={state} />}
     </Panel>

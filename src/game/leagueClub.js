@@ -378,6 +378,7 @@ export function applyLeagueMoves(s, d) {
     if (x.status !== 'done' || done.has(x.id) || !x.data) continue;
     // un mouvement illisible (envoyé piégé par un autre appareil) est passé, jamais il ne bloque la relecture de la ligue
     try {
+      if (x.kind === 'f' && Array.isArray(x.data.h) && x.data.h.length > 1) s.feats = { ...(s.feats || {}), haggle: true }; // succès « Négociateur »
       if (x.buyer === L.me && x.kind === 'f' && x.data.pl?.l === x.pid && Number.isSafeInteger(x.fee)) {
         const p = unsnapPlayer(x.data.pl);
         arrive(s, p, x.fee, name(x.seller));
@@ -487,6 +488,7 @@ export function settleLeague(s, item, res) {
   // answer : la négociation telle que le serveur l'a écrite (conclue, relancée par une contre-offre, rompue)
   const buyer = item.role === 'b';
   const list = buyer ? 'offersOut' : 'offersIn';
+  const talks = (L[list] || []).find((o) => o.id === item.id)?.h || []; // prix successifs avant cette réponse
   const fee = Number.isSafeInteger(res?.fee) ? res.fee : item.fee;
   if (res?.status === 'open') {
     L[list] = (L[list] || []).map((o) => (o.id === item.id ? { ...o, x: fee, w: buyer ? 's' : 'b', c: (o.c || 0) + 1, h: [...(o.h || [o.x]), fee].slice(-5) } : o));
@@ -496,6 +498,7 @@ export function settleLeague(s, item, res) {
     L.offersIn = (L.offersIn || []).filter((x) => x.id !== item.id);
   }
   if (res?.status === 'done' && !(L.done || []).includes(item.id)) {
+    if (talks.length > 1) s.feats = { ...(s.feats || {}), haggle: true }; // conclu après une contre-offre : succès « Négociateur »
     const club = (slot) => L.clubs.find((c) => c.slot === slot)?.name || 'un club';
     if (buyer) {
       // l'acheteur conclut : le joueur arrive avec ce que le vendeur a envoyé de lui (sa dernière contre-offre)

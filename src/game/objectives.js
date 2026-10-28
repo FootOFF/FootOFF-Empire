@@ -7,10 +7,11 @@ import { standingsOf } from './season';
 
 // Objectifs de la saison : trois défis fixés par le conseil d'administration à chaque début de saison (le président,
 // c'est le joueur ; « objectifs du président » avant la 0.5.1), adaptés au club (force de l'onze face à sa division,
-// bâtiments construits) : un classement, un défi sportif, un défi du club. Chacun a sa
+// bâtiments construits) : un classement, un défi sportif, un défi du club, d'une seule saison ; les grands chapitres de
+// la vie du club, sur plusieurs saisons, sont au parcours de carrière (journey.js, 0.8.11), sans aucun défi en commun.
+// Chacun a sa
 // prime (argent et réputation), connue d'avance ; les trois réussis valent un bonus « saison parfaite ». La
-// progression se lit en direct (HUD, menu pause), le verdict tombe au bilan de la saison (endSeason). Les grandes
-// étapes de réputation (goals.js) continuent à part.
+// progression se lit en direct (HUD, menu pause), le verdict tombe au bilan de la saison (endSeason).
 //
 // État : s.objectives = { season, startMoney, startBuildings, list: [{ id, kind, target }] }
 
@@ -113,13 +114,6 @@ export function progressOf(s, o) {
       return {
         title: 'Finir la saison dans le vert', text: 'Avoir au bilan au moins autant d’argent qu’au début de la saison.', ratio: ok ? 1 : 0,
         state: over ? (ok ? 'done' : 'failed') : 'live', now: ok ? 'dans le vert' : 'dans le rouge',
-      };
-    }
-    case 'crowd': {
-      const best = ms.reduce((b, m) => (m.capacity && m.attendance ? Math.max(b, m.attendance / m.capacity) : b), 0);
-      return {
-        title: 'Remplir le stade à 80 %', text: 'Sur un match de championnat à domicile.', ratio: clamp(best / o.target, 0, 1),
-        state: best >= o.target ? 'done' : over ? 'failed' : 'live', now: `meilleur : ${Math.round(best * 100)} %`,
       };
     }
     case 'build': {

@@ -1024,6 +1024,38 @@ ouverte depuis la Direction (panneau étroit) est posée sur tout l'écran. Dur�
 « saison N ». Fiche : bloc Contrat (salaire, fin, clause) et « Prolonger son contrat ». Effectif : fin du contrat sous
 le salaire dans le tableau (PC), « Dernière année de contrat » sur la carte des seuls joueurs concernés.
 
+## Missions des recruteurs repensées (0.8.12)
+
+Demande du PDG (2026-10-29) : plus de zones géographiques, un système plus prenant. Réponses : poste et profil seuls,
+missions longues au gros butin, un service anonyme (pas de recruteur nommé), mission en cours visible.
+- Durées de deux à quatre repérages ; deux fois plus de jeunes vus par repérage ; au retour, un jeune de plus par
+  repérage (jusqu'à six sur seize à l'académie de niveau 3 et plus).
+- Nouvelles à chaque repérage (`s.mission.news`, six au plus) : combien de jeunes observés et l'impression des recruteurs
+  sur le plus prometteur jusqu'ici (« un bon élément », « un beau potentiel », « un talent rare », d'après son vrai
+  potentiel, sans le chiffrer). Notification après la journée (« Académie · mission en cours, repérage 1 sur 3 ») ;
+  « Un talent rare repéré » seulement quand il vient d'apparaître. Seuls les plus prometteurs sont gardés dans la
+  sauvegarde (`s.mission.seen`, autant qu'il en reviendra ; `observed` compte les jeunes vus).
+- Textes : jeunes comptés et accordés (`missionCount` : « 12 attaquants », « 12 jeunes au profil technique ») ; « des
+  milieux » (au lieu de « des milieus », corrigé aussi dans les notes et le journal des parties en cours) ; nouvelles
+  sans chiffre en tête (« Quatre jeunes observés. »). Pied de carte : la liste des jeunes repérés ne se renouvelle pas
+  pendant la mission.
+- Reprise : une mission d'avant la 0.8.12 partie dans une région revient normalement (« des jeunes ») ; les jeunes
+  « Repéré dans … » prennent la note « Mission des recruteurs » et gardent leur potentiel mieux cerné.
+
+## Objectifs et succès repensés (0.8.11)
+
+Demande du PDG (2026-10-28) : rendre cohérents les objectifs et les succès, et en créer davantage. Réponses : conseil et
+carrière, quatre familles de succès, honneur simple.
+- Objectifs du conseil (objectives.js) : trois par saison (classement, défi sportif, défi du club), inchangés à l'écran.
+- Parcours de carrière (journey.js) à la place de la « Grande étape » : chapitres sur plusieurs saisons, un à la fois, prime
+  versée dès qu'il est accompli (annonce dorée « Carrière · chapitre accompli »). Aucun ne répète un objectif du conseil ni
+  un succès. Bandeau des objectifs : « Carrière · titre » et l'avancée en mots dessous. Salle des trophées : onglet
+  Carrière, un chapitre par ligne (numéro en rond, or plein une fois accompli, liseré d'or pour le chapitre en cours,
+  barre d'avancée).
+- Succès (achievements.js) : cinq familles (Palmarès, Matchs et exploits, Joueurs et académie, Complexe et finances, Ligue
+  entre amis) ; une partie n'affiche que ceux qu'elle peut gagner (mode solo ou ligue). Honneur simple : la date, sans
+  prime ni rareté.
+
 ## Match sans détour (0.8.10)
 
 Demandes du PDG (2026-10-28) : plus de retour arrière au doigt en plein match, et plus de signes adverses à l'avant-match.
@@ -1189,20 +1221,19 @@ détaillé sur PC (tri par colonne), liste compacte sur téléphone, fiche à dr
   (texte doré s'il est fort pour la division), progrès de la saison (journée et dernier été en infobulle), trois
   points forts, plan ; étiquettes « Niveau titulaire » (il renforcerait l'onze) et « Dernière saison ». Bandeau de
   rappel pour les jeunes qui auront 19 ans à l'intersaison, règles en bas de liste.
-- Mission des recruteurs (0.6.1, sous la liste de la Détection ; `academy.js`) : une cible, poste (gardien,
-  défenseur, milieu, attaquant), profil (technique, physique, mental : la famille de qualités où le jeune est le plus
-  fort) ou région imaginaire (Val d'Ambre, Monts d'Arvel, Côte des Brumes, Plaine d'Orbel, Pays des Sept Lacs), et une
-  durée de un à trois repérages (une à trois journées, deux à six en Élite). Pendant la mission, pas de jeunes repérés.
-  Au retour, les recruteurs ont vu autant de jeunes (de la cible) que les repérages manqués et ramènent les plus
-  prometteurs, d'après leur vrai potentiel (autant qu'un repérage, plus un par repérage en plus). La carte dit combien
-  ils en verront, combien ils en ramèneront, quand, et la chance exacte qu'il y ait parmi eux un potentiel de 16 ou
-  plus, de 18 ou plus (`youthChance`, intégrée sur le tirage même des jeunes ; vérifiée sur 200 000 tirages et 4 000
-  missions) : les mêmes que sur autant de repérages ordinaires, la mission trie et cible sans faire naître de pépite
-  (l'équilibre de la 0.5.0 tient). Une région n'impose ni poste ni profil, mais ses jeunes, observés sur place, ont un
-  potentiel deux fois mieux cerné. En cours : sa cible, son retour, « Rappeler les recruteurs » (fenêtre du jeu ; les
+- Mission des recruteurs (0.6.1, repensée en 0.8.12, sous la liste de la Détection ; `academy.js`) : une cible, poste
+  (gardien, défenseur, milieu, attaquant) ou profil (technique, physique, mental : la famille de qualités où le jeune
+  est le plus fort), et une durée de deux à quatre repérages (deux à quatre journées, quatre à huit en Élite). Pendant
+  la mission, pas de jeunes repérés. À chaque repérage, les recruteurs observent deux fois plus de jeunes (de la cible)
+  qu'un repérage ordinaire (`MISSION_BOOST`) ; au retour, ils ramènent les plus prometteurs de tous, d'après leur vrai
+  potentiel (autant qu'un repérage, plus un par repérage de la mission). La carte dit combien ils en verront, combien ils
+  en ramèneront, quand, et la chance exacte qu'il y ait parmi eux un potentiel de 16 ou plus, de 18 ou plus
+  (`youthChance`, intégrée sur le tirage même des jeunes) : la mission voit davantage de jeunes sans en faire naître de
+  meilleurs (l'équilibre de la 0.5.0 tient). En cours : sa cible, son retour, l'avancée « 1 / 3 » en segments d'or, les
+  nouvelles de chaque repérage (la dernière en tête, liseré d'or) et « Rappeler les recruteurs » (fenêtre du jeu ; les
   repérages reprennent aussitôt). Au retour : une notification après la journée, la liste ramenée en tête de la
-  Détection, l'étiquette « Repéré dans le Val d'Ambre » sur la fiche. Aperçus : `academie-detection`, `academie-mission`,
-  `academie-retour`.
+  Détection, l'étiquette « Mission des recruteurs : … » sur la fiche. Aperçus : `academie-detection`,
+  `academie-mission`, `academie-retour`.
 - Détection : les jeunes repérés de la journée, le plus prometteur d'abord, « Signer » (gratuit) ; carte du niveau
   de l'académie et du suivant (jeunes repérés, potentiel, fourchette) avec « Améliorer ».
 - Fiche : même modèle que la fiche joueur (niveau en grand, poste, âge et pied, nom en capitales, portrait,

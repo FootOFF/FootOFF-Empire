@@ -146,7 +146,7 @@ export function refreshScouting(s) {
     const m = s.mission;
     if (m && lvl > 0) {
       m.left -= 1;
-      if (m.left > 0) s.scouting.away = true;
+      if (m.left > 0) { s.scouting.away = true; missionStep(s, m); } // les nouvelles du repérage (0.8.12)
       else missionBack(s, m);
     }
   }
@@ -160,26 +160,34 @@ export function refreshScouting(s) {
   return s;
 }
 
-// --- Missions des recruteurs (0.6.1) -----------------------------------------------------------------------------
-// Tu envoies tes recruteurs sur un poste, un profil (technique, physique, mental) ou une région imaginaire, pour un à
-// trois repérages (une à trois journées ; deux à six en Élite, qui repère toutes les deux journées). Pendant la mission,
-// pas de jeunes repérés. Au retour, ils ont vu autant de jeunes (de la cible) que les repérages manqués et te ramènent
-// les plus prometteurs, d'après leur vrai potentiel : plus la mission est longue, plus ils en ont vu, plus il y a de
-// chances d'y trouver une pépite. Ils ne la font pas naître pour autant : les chances (exactes, missionPlan) sont celles
-// d'autant de repérages ordinaires, toujours dans les potentiels réalistes de la 0.5.0. Une région n'impose ni poste
-// ni profil, mais ses jeunes y ont été bien observés : leur potentiel est deux fois mieux cerné.
-export const MISSION_KINDS = { pos: 'Poste', plan: 'Profil', region: 'Région' };
-export const MISSION_REGIONS = ['Val d’Ambre', 'Monts d’Arvel', 'Côte des Brumes', 'Plaine d’Orbel', 'Pays des Sept Lacs'];
+// --- Missions des recruteurs (0.6.1, repensées en 0.8.12) ----------------------------------------------------------
+// Tu envoies tes recruteurs chercher un poste ou un profil (technique, physique, mental), pour deux à quatre repérages
+// (deux à quatre journées ; quatre à huit en Élite, qui repère toutes les deux journées). Pendant la mission, pas de
+// jeunes repérés. Demande du PDG (2026-10-29) : plus de zones géographiques, des missions longues au gros butin, et une
+// mission qu'on suit : à chaque repérage, ils observent deux fois plus de jeunes qu'un repérage ordinaire (BOOST) et
+// donnent des nouvelles (s.mission.news) ; au retour, les plus prometteurs de tous ceux qu'ils ont vus, d'après leur
+// vrai potentiel. Les chances (exactes, missionPlan) restent celles des potentiels réalistes de la 0.5.0 : la mission
+// voit davantage de jeunes, elle n'en fait pas naître de meilleurs.
+export const MISSION_KINDS = { pos: 'Poste', plan: 'Profil' };
 export const PROFILES = { tech: 'technique', phys: 'physique', mental: 'mental' };
-export const MISSION_STEPS = [1, 2, 3];
-// « dans le Val d'Ambre », « dans les Monts d'Arvel », « sur la Côte des Brumes »…
-export const inRegion = (r) => (r.startsWith('Monts') ? `dans les ${r}` : r.startsWith('Côte') || r.startsWith('Plaine') ? `sur la ${r}` : `dans le ${r}`);
-// Ce qu'une mission cherche, en clair : « des gardiens », « un profil technique », « dans le Val d'Ambre ».
+export const MISSION_STEPS = [2, 3, 4];
+export const MISSION_BOOST = 2;
+const POS_NOUNS = { G: ['gardien', 'gardiens'], D: ['défenseur', 'défenseurs'], M: ['milieu', 'milieux'], A: ['attaquant', 'attaquants'] };
+// Ce qu'une mission cherche, en clair : « des gardiens », « des milieux », « un profil technique » ; « des jeunes » pour
+// une mission d'avant la 0.8.12 partie dans une région.
 export function missionTarget(m) {
-  if (m.kind === 'pos') return `des ${POS_LABELS[m.value].toLowerCase()}s`;
+  if (m.kind === 'pos') return `des ${POS_NOUNS[m.value][1]}`;
   if (m.kind === 'plan') return `un profil ${PROFILES[m.value]}`;
-  return inRegion(m.value);
+  return 'des jeunes';
 }
+// Les jeunes d'une mission, comptés et accordés : « 12 attaquants », « 12 jeunes au profil technique », « 1 gardien ».
+export function missionCount(m, n) {
+  if (m.kind === 'pos') return `${n} ${POS_NOUNS[m.value][n > 1 ? 1 : 0]}`;
+  const y = `${n} jeune${n > 1 ? 's' : ''}`;
+  return m.kind === 'plan' ? `${y} au profil ${PROFILES[m.value]}` : y;
+}
+// Jeunes ramenés d'une mission : autant que de repérages, plus ceux d'un repérage ordinaire.
+const missionBackCount = (per, steps) => per + steps;
 
 // Profil d'un jeune : la famille de qualités où il est le plus fort (celle d'un plan d'entraînement : technique,
 // physique, mental ; pour un gardien, ses deux qualités de chaque plan).
@@ -238,16 +246,16 @@ export function missionReturn(s, steps) {
 export function missionPlan(s, steps) {
   const lvl = s.buildings.academy || 0;
   const per = SCOUTED[lvl] || 0;
-  const seen = steps * per;
+  const seen = steps * per * MISSION_BOOST;
   const at = (t) => (seen ? 1 - (1 - youthChance(lvl, t)) ** seen : 0);
-  return { seen, back: Math.min(seen, per + steps - 1), p16: at(16), p18: at(18), ret: missionReturn(s, steps) };
+  return { seen, back: Math.min(seen, missionBackCount(per, steps)), p16: at(16), p18: at(18), ret: missionReturn(s, steps) };
 }
 
 export function startMission(s, { kind, value, steps }) {
   const lvl = s.buildings.academy || 0;
-  const ok = kind === 'pos' ? !!POS_LABELS[value] : kind === 'plan' ? !!PROFILES[value] : kind === 'region' ? MISSION_REGIONS.includes(value) : false;
+  const ok = kind === 'pos' ? !!POS_LABELS[value] : kind === 'plan' ? !!PROFILES[value] : false;
   if (!lvl || s.mission || !ok || !MISSION_STEPS.includes(steps)) return null;
-  s.mission = { kind, value, steps, left: steps, per: SCOUTED[lvl] || 0, season: s.seasonNumber, round: s.round };
+  s.mission = { kind, value, steps, left: steps, per: SCOUTED[lvl] || 0, season: s.seasonNumber, round: s.round, seen: [], news: [] };
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'academie', title: 'Les recruteurs partent en mission',
     text: `Ils cherchent ${missionTarget(s.mission)}, ${steps > 1 ? `pendant ${steps} repérages` : 'le temps d’un repérage'}.`,
@@ -263,26 +271,55 @@ export function cancelMission(s) {
   return s;
 }
 
+// Un jeune observé en mission, de la cible (le poste, ou le profil : jusqu'à soixante essais).
+function missionCandidate(s, m) {
+  const lvl = s.buildings.academy || 0;
+  let p = null;
+  for (let tries = 0; tries < 60; tries++) {
+    p = makePlayer({ youth: true, academy: lvl, age: ri(15, 17), pos: m.kind === 'pos' ? m.value : null });
+    if (m.kind !== 'plan' || profileOf(p) === m.value) break;
+  }
+  return p;
+}
+const byPromise = (a, b) => b.pot - a.pot || playerRating(b) - playerRating(a);
+// Ce que disent les recruteurs d'un jeune, sans dévoiler son potentiel : leur impression, d'après lui.
+export const promiseWord = (p) => (p.pot >= 16 ? 'un talent rare' : p.pot >= 13.5 ? 'un beau potentiel' : 'un bon élément');
+const youthWord = (p) => `un ${POS_NOUNS[p.pos][0]} de ${p.age} ans`;
+const NUM_WORDS = ['Aucun', 'Un', 'Deux', 'Trois', 'Quatre', 'Cinq', 'Six', 'Sept', 'Huit'];
+
+const tierOf = (p) => (p.pot >= 16 ? 'rare' : p.pot >= 13.5 ? 'fine' : 'solid');
+
+// Un repérage de la mission (0.8.12) : les jeunes observés (seuls les plus prometteurs sont gardés, autant qu'il en
+// reviendra : la sauvegarde reste légère), et la nouvelle du jour. up : le plus prometteur vient d'apparaître.
+function missionStep(s, m) {
+  const fresh = Array.from({ length: m.per * MISSION_BOOST }, () => missionCandidate(s, m));
+  const before = m.seen?.[0];
+  m.seen = [...(m.seen || []), ...fresh].sort(byPromise).slice(0, missionBackCount(m.per, m.steps));
+  m.observed = (m.observed || 0) + fresh.length;
+  const best = m.seen[0];
+  const who = youthWord(best);
+  const up = best !== before;
+  const lead = !up ? `Le plus prometteur reste ${who}, ${promiseWord(best)}.`
+    : tierOf(best) === 'solid' ? `Le plus prometteur pour l’instant : ${who}, ${promiseWord(best)}.`
+      : `${who[0].toUpperCase()}${who.slice(1)} sort du lot : ${promiseWord(best)}.`;
+  const k = m.steps - m.left;
+  const n = fresh.length;
+  m.news = [...(m.news || []), { step: k, season: s.seasonNumber, round: s.round, n, best: tierOf(best), up, text: `${NUM_WORDS[n] || n} jeune${n > 1 ? 's' : ''} observé${n > 1 ? 's' : ''}. ${lead}` }].slice(-6);
+}
+
 // Retour de mission : les candidats vus (de la cible), les plus prometteurs ramenés.
 function missionBack(s, m) {
   const lvl = s.buildings.academy || 0;
-  const seen = m.steps * m.per;
-  const back = Math.min(seen, m.per + m.steps - 1);
-  const cands = [];
-  for (let k = 0; k < seen; k++) {
-    let p = null;
-    for (let tries = 0; tries < 60; tries++) {
-      p = makePlayer({ youth: true, academy: lvl, age: ri(15, 17), pos: m.kind === 'pos' ? m.value : null });
-      if (m.kind !== 'plan' || profileOf(p) === m.value) break;
-    }
-    cands.push(p);
-  }
-  cands.sort((a, b) => b.pot - a.pot || playerRating(b) - playerRating(a));
+  // le dernier repérage (tout ce qu'une mission d'avant la 0.8.12 n'avait pas encore vu)
+  const seen = m.steps * m.per * MISSION_BOOST;
+  const cands = [...(m.seen || [])];
+  for (let k = m.observed || 0; k < seen; k++) cands.push(missionCandidate(s, m));
+  const back = Math.min(seen, missionBackCount(m.per, m.steps));
+  cands.sort(byPromise);
   const list = cands.slice(0, back);
   for (const p of list) {
     p.id = s.nextId++;
-    p.scoutNote = m.kind === 'region' ? `Repéré ${inRegion(m.value)}` : `Mission des recruteurs : ${missionTarget(m)}`;
-    if (m.kind === 'region') p.sharp = true; // potentiel deux fois mieux cerné (players.js, potentialRange)
+    p.scoutNote = `Mission des recruteurs : ${missionTarget(m)}`;
   }
   s.scouting.list = list;
   s.scouting.drawn = SCOUTED[lvl] || 0; // ce repérage-là, c'est la mission
@@ -290,7 +327,7 @@ function missionBack(s, m) {
   s.mission = null;
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'academie', title: 'Retour de mission des recruteurs',
-    text: `Ils ont vu ${seen} jeune${seen > 1 ? 's' : ''} (${missionTarget(m)}) et ramènent ${list.length > 1 ? `les ${list.length} plus prometteurs` : 'le plus prometteur'} : ${list.map((p) => p.name).join(', ')}.`,
+    text: `Ils ont vu ${missionCount(m, seen)} et ramènent ${list.length > 1 ? `les ${list.length} plus prometteurs` : 'le plus prometteur'} : ${list.map((p) => p.name).join(', ')}.`,
   });
 }
 

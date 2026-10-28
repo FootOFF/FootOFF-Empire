@@ -209,7 +209,7 @@ export function potentialRange(p, s) {
   const known = s.players.includes(p) || (s.youth || []).includes(p);
   const scouts = p.club ? 0.25 * (s.buildings.transfers || 0) : 0; // rapports des recruteurs sur les joueurs sous contrat
   const u0 = clamp(scoutingError(s.buildings.academy || 0) - scouts - (known ? 0.5 * seasons : 0), known ? 0.5 : 0.75, 3);
-  const u = p.sharp ? Math.max(0.5, u0 / 2) : u0; // repéré lors d'une mission dans une région : deux fois mieux cerné
+  const u = p.sharp ? Math.max(0.5, u0 / 2) : u0; // repéré lors d'une mission dans une région (avant la 0.8.12) : deux fois mieux cerné
   const shift = ((((p.id || 1) * 7919) % 100) / 100 - 0.5) * u; // la fourchette n'est pas centrée sur la vérité
   const half = (v) => Math.round(v * 2) / 2;
   const lo = half(clamp(p.pot + shift - u, now, 20));

@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BUILDINGS, DIVISIONS, POS_LABELS, SQUAD_MAX, upgradeCost, divisionOf } from '../game/constants';
 import { ATTRS, FAMILIES, GK_ATTRS, TRAITS, playerRating, potentialRange, ratingAt, wageOf } from '../game/players';
 import {
-  MISSION_KINDS, MISSION_REGIONS, MISSION_STEPS, PLANS, PROFILES, SCOUTED, YOUTH_LEAVE_AGE, YOUTH_PLACES, advisedPlan, cancelMission,
-  missionPlan, missionReturn, missionTarget, planAttrs, planPace, scoutingWhen, startMission, markScoutingSeen,
+  MISSION_BOOST, MISSION_KINDS, MISSION_STEPS, PLANS, PROFILES, SCOUTED, YOUTH_LEAVE_AGE, YOUTH_PLACES, advisedPlan, cancelMission,
+  missionCount, missionPlan, missionReturn, missionTarget, planAttrs, planPace, scoutingWhen, startMission, markScoutingSeen,
 } from '../game/academy';
 import { academyTalent, scoutingError } from '../game/economy';
 import { leagueLength } from '../game/cups';
@@ -371,8 +371,8 @@ function ScoutTab({ state, scouted, full, refLvl, onOpen, onSign, onBuilding, ru
   return (
     <>
       <p className="sq-hint ac-intro">
-        {state.scouting?.away ? 'Recruteurs en mission : pas de jeunes repérés avant leur retour'
-          : `${back ? `Retour de mission (${missionTarget(back)}) : ${back.back > 1 ? `les ${back.back} plus prometteurs` : 'le plus prometteur'} des ${back.seen} jeunes vus`
+        {state.scouting?.away ? 'Recruteurs en mission : la liste se renouvelle à leur retour'
+          : `${back ? `Retour de mission : ${back.back > 1 ? `les ${back.back} plus prometteurs` : 'le plus prometteur'} parmi ${missionCount(back, back.seen)}`
             : since > 0 ? `Repérés après la journée ${since}` : 'Repérés pour le début de saison'} · d’autres jeunes ${when} · recrutement gratuit`}
       </p>
       {full && (
@@ -477,17 +477,20 @@ function whenText(state, ret) {
 // chance d'au moins un grand potentiel, jamais 0 % ni 100 % quand ce n'est pas certain
 const pctOf = (p) => (p <= 0 ? '0 %' : p >= 1 ? '100 %' : `${Math.min(99, Math.max(1, Math.round(p * 100)))} %`);
 
-// Mission des recruteurs (0.6.1, academy.js) : une cible (poste, profil ou région), une durée, puis ce qu'ils verront
-// et ramèneront, avec les chances exactes d'y trouver un grand potentiel ; en cours, leur retour et « Rappeler ».
+// Mission des recruteurs (0.6.1, repensée en 0.8.12, academy.js) : une cible (poste ou profil), une durée de deux à
+// quatre repérages, puis ce qu'ils verront et ramèneront, avec les chances exactes d'y trouver un grand potentiel. En
+// cours : le repérage où ils en sont, leurs nouvelles (la dernière en tête), leur retour et « Rappeler ».
 function MissionCard({ state, run, ask, notify }) {
   const [kind, setKind] = useState('pos');
-  const [picks, setPicks] = useState({ pos: 'A', plan: 'tech', region: MISSION_REGIONS[0] });
-  const [steps, setSteps] = useState(2);
+  const [picks, setPicks] = useState({ pos: 'A', plan: 'tech' });
+  const [steps, setSteps] = useState(3);
   const elite = leagueLength(state) > 7; // un repérage toutes les deux journées
-  const span = (n) => (elite ? `${2 * n} journées` : n > 1 ? `${n} journées` : '1 journée');
+  const span = (n) => (elite ? `${2 * n} journées` : `${n} journées`);
   const m = state.mission;
   if (m) {
-    const back = Math.min(m.steps * m.per, m.per + m.steps - 1);
+    const back = Math.min(m.steps * m.per * MISSION_BOOST, m.per + m.steps);
+    const done = m.steps - m.left;
+    const news = [...(m.news || [])].reverse();
     const recall = () => ask({
       tone: 'danger',
       title: 'Rappeler les recruteurs ?',
@@ -501,12 +504,23 @@ function MissionCard({ state, run, ask, notify }) {
         <div className="ac-level-head">
           <span className="ac-level-ico"><IconTarget /></span>
           <div className="panel-title">
-            <Eyebrow>Mission en cours</Eyebrow>
-            <strong>Tes recruteurs cherchent {missionTarget(m)}. Retour {whenText(state, missionReturn(state, m.left))}, avec {back > 1 ? `les ${back} plus prometteurs` : 'le plus prometteur'} des {m.steps * m.per} jeunes vus.</strong>
+            <Eyebrow>Mission en cours · {missionTarget(m)}</Eyebrow>
+            <strong>Retour {whenText(state, missionReturn(state, m.left))}, avec {back > 1 ? `les ${back} plus prometteurs` : 'le plus prometteur'} des {m.steps * m.per * MISSION_BOOST} jeunes vus.</strong>
           </div>
         </div>
+        <div className="ac-mission-track" aria-label={`Repérage ${done} sur ${m.steps}`}>
+          <span aria-hidden="true">{Array.from({ length: m.steps }, (_, k) => <i key={k} className={k < done ? 'on' : ''} />)}</span>
+          <b>{done} / {m.steps}</b>
+        </div>
+        {news.length > 0 ? (
+          <ul className="ac-mission-news" aria-label="Nouvelles des recruteurs">
+            {news.map((n) => (
+              <li key={n.step} className={n.best === 'rare' ? 'rare' : ''}><b>Repérage {n.step}</b>{' '}{n.text}</li>
+            ))}
+          </ul>
+        ) : <p className="ac-plan-text">Premières nouvelles après le prochain repérage.</p>}
         <div className="ac-level-next">
-          <span>Pendant la mission, pas de nouveaux jeunes repérés.</span>
+          <span>Pendant la mission, la liste des jeunes repérés ne se renouvelle pas.</span>
           <button type="button" className="btn ghost btn-sm" onClick={recall}>Rappeler les recruteurs</button>
         </div>
       </section>
@@ -515,11 +529,10 @@ function MissionCard({ state, run, ask, notify }) {
   const target = { kind, value: picks[kind], steps };
   const plan = missionPlan(state, steps);
   const options = kind === 'pos' ? ['G', 'D', 'M', 'A'].map((k) => [k, POS_LABELS[k]])
-    : kind === 'plan' ? Object.entries(PROFILES).map(([k, v]) => [k, v[0].toUpperCase() + v.slice(1)])
-      : MISSION_REGIONS.map((r) => [r, r]);
+    : Object.entries(PROFILES).map(([k, v]) => [k, v[0].toUpperCase() + v.slice(1)]);
   const launch = () => {
     if (!run((s) => startMission(s, target), 'Mission impossible.')) return;
-    notify({ kind: 'academy', eyebrow: 'Académie', title: 'Les recruteurs partent en mission', text: `Ils cherchent ${missionTarget(target)} : retour ${whenText(state, plan.ret)}.` });
+    notify({ kind: 'academy', eyebrow: 'Académie', title: 'Les recruteurs partent en mission', text: `Ils cherchent ${missionTarget(target)} : des nouvelles à chaque repérage, retour ${whenText(state, plan.ret)}.` });
   };
   return (
     <section className="ac-level ac-mission">
@@ -527,7 +540,7 @@ function MissionCard({ state, run, ask, notify }) {
         <span className="ac-level-ico"><IconTarget /></span>
         <div className="panel-title">
           <Eyebrow>Mission des recruteurs</Eyebrow>
-          <strong>Envoie-les chercher un poste, un profil ou dans une région. Pendant la mission, pas de jeunes repérés ; au retour, les plus prometteurs de tous ceux qu’ils ont vus.</strong>
+          <strong>Envoie-les en mission sur un poste ou un profil. Ils donnent des nouvelles à chaque repérage.</strong>
         </div>
       </div>
       <div className="chips ac-mission-row" role="group" aria-label="Cible de la mission">
@@ -540,15 +553,14 @@ function MissionCard({ state, run, ask, notify }) {
         {MISSION_STEPS.map((n) => <button key={n} type="button" className={steps === n ? 'active' : ''} onClick={() => setSteps(n)}>{span(n)}</button>)}
       </div>
       <p className="ac-plan-text">
-        Ils verront <b>{plan.seen} jeune{plan.seen > 1 ? 's' : ''}</b> ({missionTarget(target)}) et ramèneront <b>{plan.back > 1 ? `les ${plan.back} plus prometteurs` : 'le plus prometteur'}</b> {whenText(state, plan.ret)}.
-        {kind === 'region' ? ' Observés sur place, leur potentiel sera deux fois mieux cerné.' : ''}
+        Ils verront <b>{missionCount(target, plan.seen)}</b> et ramèneront <b>{plan.back > 1 ? `les ${plan.back} plus prometteurs` : 'le plus prometteur'}</b> {whenText(state, plan.ret)}.
       </p>
       <div className="ac-mission-odds" aria-label="Chances exactes">
         <span>Un potentiel de 16 ou plus parmi eux <b>{pctOf(plan.p16)}</b></span>
         <span>De 18 ou plus <b>{pctOf(plan.p18)}</b></span>
       </div>
       <div className="ac-level-next">
-        <span>Les mêmes chances que {steps > 1 ? `${steps} repérages ordinaires` : 'un repérage ordinaire'} : la mission trie et cible, elle ne fait pas naître de pépite.</span>
+        <span>Pendant la mission, la liste des jeunes repérés ne se renouvelle pas ; en échange, tes recruteurs en observent deux fois plus.</span>
         <button type="button" className="btn btn-sm" onClick={launch}>Lancer la mission</button>
       </div>
     </section>

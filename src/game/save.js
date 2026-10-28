@@ -185,6 +185,13 @@ export function repairSave(s) {
       y.ticketPolicy ||= 'standard';
       if (!y.objectives) drawObjectives(y); // objectifs du conseil (ajoutés après coup) : tirés pour la saison en cours
       y.records ||= rebuildRecords(y); // records du club : reconstitués depuis l'historique des matchs
+      // missions sans régions (0.8.12) : les jeunes repérés dans une région gardent une note de mission ordinaire
+      // et « des milieus » s'écrit « des milieux » (notes de mission et journal)
+      for (const p of [...(y.youth || []), ...(y.scouting?.list || [])]) {
+        if (p.scoutNote?.startsWith('Repéré ')) p.scoutNote = 'Mission des recruteurs';
+        else if (p.scoutNote?.includes('des milieus')) p.scoutNote = p.scoutNote.replace('des milieus', 'des milieux');
+      }
+      for (const j of y.journal || []) if (j.text?.includes('des milieus')) j.text = j.text.replace(/des milieus/g, 'des milieux');
       // trophées : les titres de champion déjà gagnés sont retrouvés dans l'historique des classements
       if (!y.trophies) y.trophies = (y.history || []).filter((h) => h.position === 1).map((h) => ({ comp: 'league', season: h.season, division: h.division }));
       // calendrier avec coupes : la saison en cours reprend à la bonne journée, la coupe au prochain tour au calendrier

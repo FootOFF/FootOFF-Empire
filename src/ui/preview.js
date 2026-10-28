@@ -9,6 +9,7 @@ import { matchContext, startSeason } from '../game/season';
 import { assignNumber, costOf, makePlayer, playerRating } from '../game/players';
 import { BUYERS, counterFor, dateKey, lastWordOf, outbidChance, poolOf, roundKey, roundTo, valueOf } from '../game/mercato';
 import { distinctClubName } from '../game/names';
+import { advanceJourney } from '../game/journey';
 import { counterTerms, demandOf } from '../game/contracts';
 
 // Mode aperçu (galerie d'écrans) : une partie fictive, jamais sauvegardée, et l'écran demandé déjà ouvert.
@@ -130,6 +131,9 @@ export function previewState(screen) {
         { comp: 'league', season: 6, division: 'Élite' }, { comp: 'c1', season: 7, division: 'Élite', opp: 'Real Valdemoro' },
       ];
       delete s.achievements; // retrouvés d'un coup, sans notification (comme une partie déjà commencée)
+      delete s.journey;
+      advanceJourney(s); // parcours de carrière : les chapitres déjà accomplis retrouvés (0.8.11)
+      if (s.journey.done.momentum) s.journey.done.momentum = { season: 2, round: 4 };
     }
     s.offline = null;
     return s;

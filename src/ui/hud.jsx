@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGlass } from './glass';
 import { divisionOf } from '../game/constants';
 import { repLevel } from '../game/reputation';
-import { activeGoal } from '../game/goals';
+import { activeChapter } from '../game/journey';
 import { seasonObjectives } from '../game/objectives';
 import { awayElevenOf, prematchOdds } from '../game/live';
 import { matchContext, standingsOf } from '../game/season';
@@ -78,15 +78,13 @@ export function TopHud({ state, onMenu, onFinances, onReputation, onTable }) {
 }
 
 // Objectifs du conseil d'administration (objectives.js ; le président, c'est le joueur) : les trois défis de la saison,
-// leur avancée en direct (barre, chiffre du jour), leur prime ; le bonus de la saison parfaite ; puis la grande étape
-// de réputation en cours (goals.js).
+// leur avancée en direct (barre, chiffre du jour), leur prime ; le bonus de la saison parfaite ; puis le chapitre en cours
+// du parcours de carrière (journey.js, 0.8.11), sur plusieurs saisons, avec sa prime versée dès qu'il est accompli.
 // Replié : une seule ligne, « Objectifs 1/3 · jusqu'à +67 500 € » (ce qui peut encore être gagné cette saison).
 export function ObjectiveWidget({ state, collapsed, onToggle }) {
   const obj = seasonObjectives(state);
   if (!obj) return null;
-  const g = state.goals ? activeGoal(state) : null;
-  // grande étape atteinte en cours de saison : la prime n'arrive qu'au bilan, on le dit
-  const step = g && !state.goals.completed[g.tier] && g.active.done(state);
+  const ch = state.journey ? activeChapter(state) : null;
   const n = obj.list.length;
   const failed = obj.list.some((o) => o.state === 'failed');
   const max = obj.list.reduce((a, o) => a + (o.state === 'failed' ? 0 : o.prize.money), 0) + (failed ? 0 : obj.perfect.money);
@@ -123,7 +121,7 @@ export function ObjectiveWidget({ state, collapsed, onToggle }) {
             ))}
           </ul>
           <p className="hud-goal-foot"><span>Les trois réussis : bonus</span><b>+{euros(obj.perfect.money)}</b></p>
-          {g && <p className="hud-goal-foot step"><span>Grande étape · {g.active.name}{step ? ' (atteinte)' : ''}</span><b>{g.goal.reward.short || g.goal.reward.label}</b></p>}
+          {ch && <p className="hud-goal-foot step"><span title={ch.chapter.goal}>Carrière · {ch.chapter.title} <em>{ch.progress.now}</em></span><b>{ch.reward.short}</b></p>}
         </div>
       )}
     </aside>
