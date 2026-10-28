@@ -6,21 +6,24 @@ import { LEAGUE_ENGINE, MAX_MY_LEAGUES, isLeagueCode, roundPayload } from './lea
 // Les messages d'erreur du serveur sont écrits pour le joueur : on les montre tels quels.
 const API = '/api/ligue';
 
+// data : la réponse du serveur (une sauvegarde refusée y porte la fiche de la copie du serveur, conflict)
 export class LeagueError extends Error {
-  constructor(message, status) {
+  constructor(message, status, data = null) {
     super(message);
     this.status = status;
+    this.data = data;
   }
 }
 
-async function call(path, { method = 'GET', body, auth } = {}) {
+// keepalive : la demande part même si l'onglet se ferme (64 Ko au plus, règle des navigateurs)
+async function call(path, { method = 'GET', body, auth, keepalive = false } = {}) {
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (auth) headers['x-ligue-auth'] = `${auth.id}.${auth.secret}`;
   let res;
   try {
     res = await fetch(`${API}${path}`, {
-      method, headers, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'omit', cache: 'no-store',
+      method, headers, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'omit', cache: 'no-store', keepalive,
     });
   } catch {
     throw new LeagueError('Serveur des ligues injoignable : vérifie ta connexion.', 0);
@@ -29,7 +32,7 @@ async function call(path, { method = 'GET', body, auth } = {}) {
   try { data = await res.json(); } catch { /* réponse vide ou qui n'est pas du JSON */ }
   if (!res.ok) {
     const fallback = res.status === 429 ? 'Trop de demandes : réessaie dans un moment.' : 'Le serveur des ligues ne répond pas comme prévu. Réessaie.';
-    throw new LeagueError(data?.error || fallback, res.status);
+    throw new LeagueError(data?.error || fallback, res.status, data);
   }
   return data;
 }
@@ -49,6 +52,9 @@ export const kickMember = (m, member) => call(`/${m.code}/kick`, { method: 'POST
 export const leaveLeague = (m) => call(`/${m.code}/leave`, { method: 'POST', body: {}, auth: m });
 export const sendSheet = (m, season, round, sheet) => call(`/${m.code}/sheet`, { method: 'POST', body: { season, round, sheet }, auth: m });
 export const sendResult = (m, body) => call(`/${m.code}/result`, { method: 'POST', body: { ...body, engine: LEAGUE_ENGINE }, auth: m });
+// Sauvegarde du club (leagueCloud.js) : la copie du serveur ; l'envoi d'une copie partie de la version base
+export const fetchSave = (m) => call(`/${m.code}/save`, { auth: m });
+export const sendSave = (m, body, { keepalive = false } = {}) => call(`/${m.code}/save`, { method: 'POST', body, auth: m, keepalive });
 
 // Résultats gardés sur l'appareil, avec l'état de la ligue après chaque journée (leagueWorld.js, une dizaine de Ko) :
 // le serveur n'envoie que les nouveaux. { season, results, prev } ; prev : le dernier état de la saison d'avant (il sert

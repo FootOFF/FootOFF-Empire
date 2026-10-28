@@ -132,11 +132,13 @@ export function leagueSquads(league) {
 // L'équipe automatique (club de l'ordinateur, ami absent ou sans équipe) : le meilleur onze en 4-3-3, tactique équilibrée.
 export const autoSheet = (players) => ({ formation: '433', tactic: 'balanced', lineup: autoLineup(players, '433'), auto: true });
 // Équipe relue du serveur (envoyée par un autre ami) : gardée seulement si tout y est valable, sinon l'équipe automatique.
+// Un poste vide (null) est valable, comme en solo : effectif trop court, blessés et suspendus compris (tactics.js).
 export function cleanSheet(sheet, players) {
   const ids = new Set(players.map((p) => p.id));
   const lineup = Array.isArray(sheet?.lineup) ? sheet.lineup : [];
+  const named = lineup.filter((id) => id !== null);
   const ok = sheet && FORMATIONS[sheet.formation] && TACTICS[sheet.tactic] && lineup.length === 11
-    && new Set(lineup).size === 11 && lineup.every((id) => ids.has(id));
+    && new Set(named).size === named.length && named.every((id) => ids.has(id));
   return ok ? { formation: sheet.formation, tactic: sheet.tactic, lineup: [...lineup], auto: !!sheet.auto } : autoSheet(players);
 }
 
@@ -150,7 +152,7 @@ export function leagueMatch(league, season, round, home, away) {
       comp: 'friends',
       home: true,
       opp: { name: away.name, crest: away.crest, strength: lineupRating(away.players, away.sheet.lineup, away.sheet.formation) },
-      awayEleven: { formation: away.sheet.formation, players: away.sheet.lineup.map((id) => away.players.find((p) => p.id === id)) },
+      awayEleven: { formation: away.sheet.formation, players: away.sheet.lineup.map((id) => away.players.find((p) => p.id === id)).filter(Boolean) }, // poste vide : rien
       oppPlan: { tactic: away.sheet.tactic, formation: away.sheet.formation },
     };
     const live = createLiveMatch(s, ctx);

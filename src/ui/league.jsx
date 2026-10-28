@@ -15,6 +15,8 @@ import {
   createLeague, forgetLeague, inviteLink, joinLeague, kickMember, leagueInfo, leagueState, leaveLeague, myLeagues,
   parseResumeCode, refreshLeague, rememberLeague, resumeCodeOf, startLeague, updateLeague,
 } from '../game/leagueNet';
+import { dropLeagueClub, leagueClubProgress } from '../game/leagueClub';
+import { cloudNote, dropSync, syncOf } from '../game/leagueCloud';
 
 // Siège de la Ligue : les championnats entre amis (league.js, leagueNet.js). Une fenêtre, cinq vues :
 //   home     mes championnats (trois au plus sur cet appareil), créer, rejoindre, reprendre
@@ -439,7 +441,7 @@ function LeagueDetail({ m, ask, flash, onGone, onReplay, onPlayClub, reload = 0 
       <section className="dir-card">
         <h3>{m.name || m.code}</h3>
         <p className="dir-note">{!problem ? 'Chargement du championnat…' : gone ? 'Ce championnat a fermé, ou ton club n’en fait plus partie.' : problem.message}</p>
-        {gone && <button type="button" className="btn ghost" onClick={() => { forgetLeague(m.code); onGone(); }}>Retirer de mes championnats</button>}
+        {gone && <button type="button" className="btn ghost" onClick={() => { forgetLeague(m.code); dropLeagueClub(m.code); dropSync(m.code); onGone(); }}>Retirer de mes championnats</button>}
         {problem && !gone && <button type="button" className="btn ghost" onClick={load}>Réessayer</button>}
       </section>
     );
@@ -461,7 +463,7 @@ function LeagueDetail({ m, ask, flash, onGone, onReplay, onPlayClub, reload = 0 
       : `L’ordinateur reprend ${withArticle(me.club.name)} jusqu’au bout. Ton accès est effacé : tu ne pourras pas revenir dans ce championnat.`,
     confirmLabel: lobby && creator ? 'Fermer la salle' : 'Quitter',
     cancelLabel: 'Rester',
-    onConfirm: () => act(() => leaveLeague(m), () => { forgetLeague(m.code); onGone(lobby && creator ? `Le championnat ${league.name} est fermé.` : `Tu as quitté le championnat ${league.name}.`); }),
+    onConfirm: () => act(() => leaveLeague(m), () => { forgetLeague(m.code); dropLeagueClub(m.code); dropSync(m.code); onGone(lobby && creator ? `Le championnat ${league.name} est fermé.` : `Tu as quitté le championnat ${league.name}.`); }),
   });
   const start = () => {
     const free = LEAGUE_CLUBS - members.length;
@@ -575,6 +577,7 @@ function RunningLeague({ league, clubs, humans, results, worldBefore, me, onPlay
           </div>
           <button type="button" className="btn" onClick={onPlayClub}><IconPlay className="fill" /> Jouer mon club</button>
           <p className="dir-note">Ton club se gère comme une partie solo : complexe, effectif, entraînement, mercato. « Jouer » valide ton équipe avant l’heure ; une fois la journée jouée, tu regardes ton match.</p>
+          {(syncOf(league.code).at || leagueClubProgress(league.code)) && <p className="lig-cloud">{cloudNote(league.code).text}</p>}
         </section>
       )}
       <section className="dir-card lig-round">

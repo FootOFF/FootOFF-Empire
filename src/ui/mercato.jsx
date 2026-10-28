@@ -1267,7 +1267,7 @@ export function LeagueOffer({ state, p, run, refLvl, onClose, onSheet }) {
           <span className="eyebrow">Comment ça se joue</span>
           <ul className="ng-reasons">
             {market
-              ? <li>La plus haute offre de la ligue l’emporte au calcul de la journée, si son club a encore les moyens et une place dans l’effectif. Les autres ne paient rien.</li>
+              ? <li>L’offre la plus élevée de la ligue l’emporte au calcul de la journée ; si son club n’a plus les moyens ou la place, la suivante prend le relais, et à égalité, un tirage au sort départage. Les autres clubs ne paient rien.</li>
               : <li>{capitalize(withArticle(p.club))} répond à la journée suivante ; s’il accepte, le transfert se fait à son calcul.</li>}
             <li>Ton offre part avec ton équipe validée ; si ton équipe est déjà validée, l’offre part aussitôt. Trois offres au plus par journée, sur le marché comme auprès de tes amis.</li>
             {engaged > 0 && <li>Déjà engagé pour cette journée : {fmtMoney(engaged)}.</li>}

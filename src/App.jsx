@@ -32,8 +32,9 @@ import { DirectionView } from './ui/direction';
 import { MedicalView } from './ui/medical';
 import { LeagueView } from './ui/league';
 import { deadlineText, leagueOpen } from './game/league';
-import { leagueResults, myLeagues, refreshLeague, sendSheet, takeInvite } from './game/leagueNet';
-import { applyLeagueRound, createLeagueClub, leagueClubProgress, loadLeagueClub, myReplay, saveLeagueClub, syncLeagueClub, teamSheet } from './game/leagueClub';
+import { LeagueError, leagueResults, myLeagues, refreshLeague, sendSheet, takeInvite } from './game/leagueNet';
+import { applyLeagueRound, createLeagueClub, leagueClubProgress, loadLeagueClub, myReplay, readLeagueClub, saveLeagueClub, syncLeagueClub, teamSheet } from './game/leagueClub';
+import { adoptPulled, cloudNote, cloudPlan, isPushing, markUnreadable, playedPrint, pullClub, pushClub, savedWhen, stageOf, syncOf } from './game/leagueCloud';
 import ConfirmDialog from './ui/confirm';
 import { Presence } from './ui/presence';
 import { LoadingScreen } from './ui/loading';
@@ -536,39 +537,155 @@ export default function App({ preview = null }) {
   // Retour à l'écran titre (la partie reste sauvegardée) : la caméra repart en vitrine autour du complexe.
   const toTitle = () => {
     setMenu(false); setSel(null); setPanel(null); setMatchDay(false);
-    if (state?.league) { prevMoney.current = null; setState(loadGame()); setLeagueLive(null); } // la carrière reprend sa place
+    if (state?.league) { // la carrière reprend sa place ; le club de ligue part d'abord en ligne (un choix éventuel attendra l'entrée suivante)
+      cloudSave({ quiet: true });
+      prevMoney.current = null; setState(loadGame()); setLeagueLive(null);
+    }
     setTitleView('menu');
     setScreen('title');
   };
 
   // --- Partie de championnat entre amis (leagueClub.js) -----------------------------------------------------------------
-  // Entrer dans son club de ligue : la partie de l'appareil (créée à la première visite, comme une nouvelle partie solo),
-  // relue avec la ligue ; tout le jeu passe à ce club (complexe, HUD, écrans), la carrière reste sauvegardée à côté.
+  // Entrer dans son club de ligue : la partie de l'appareil, ou sa copie en ligne (nouvel appareil, partie avancée sur un
+  // autre : leagueCloud.js), ou une nouvelle (première visite, comme une nouvelle partie solo) ; relue avec la ligue. Tout le
+  // jeu passe à ce club (complexe, HUD, écrans), la carrière reste sauvegardée à côté.
   const enterLeague = async (m) => {
     try {
       const d = await refreshLeague(m);
       if (d.league.status !== 'running') { notify({ kind: 'info', eyebrow: d.league.name, title: 'La saison n’a pas commencé', text: 'Le créateur lancera la saison depuis le Siège de la Ligue.' }); return; }
-      const s = syncLeagueClub(loadLeagueClub(m.code) || createLeagueClub(d, m), d);
-      const prev = d.league.season > s.league.season ? (await leagueResults(m, s.league.season)).results : null;
-      prevMoney.current = null;
-      setState(s);
-      setLeagueLive({ d, m, prev });
-      setLeagueHub(null); setPanel(null); setSel(null); setMenu(false); setMatchDay(false); setShowResult(false); setMatchPhase(null);
-      setTitleView('menu');
-      setScreen('game');
+      const local = loadLeagueClub(m.code);
+      const plan = cloudPlan(m.code, local, d.save);
+      if (plan === 'blocked') {
+        notify({ kind: 'warn', eyebrow: d.league.name, title: 'Navigateur trop ancien', text: 'Ton club est sauvegardé en ligne, mais ce navigateur ne peut pas l’ouvrir : mets-le à jour ou joue sur ton autre appareil.' });
+      } else if (plan === 'conflict') askCloudChoice(m, d, local, d.save, true);
+      else if (plan === 'pull') await openPulled(m, d, local);
+      else await openLeagueClub(m, d, local);
     } catch (x) {
-      notify({ kind: 'warn', eyebrow: 'Championnat entre amis', title: 'Serveur des ligues injoignable', text: x.message });
+      notify(x instanceof LeagueError
+        ? { kind: 'warn', eyebrow: 'Championnat entre amis', title: 'Serveur des ligues injoignable', text: x.message }
+        : { kind: 'warn', eyebrow: 'Championnat entre amis', title: 'Club non repris', text: 'Réessaie dans un moment.' });
     }
   };
-  // la ligue relue chaque minute (amis qui valident, journée jouée), et au retour sur le jeu
+  // La partie choisie (celle de l'appareil, la copie en ligne, ou une nouvelle), relue avec la ligue, à l'écran. restored :
+  // la fiche de la copie en ligne reprise (son empreinte est prise sur la partie relue : rien à renvoyer ensuite) ;
+  // replaced : la partie de l'appareil qu'elle remplace, gardée à côté.
+  const openLeagueClub = async (m, d, base, restored = null, replaced = null) => {
+    const s = syncLeagueClub(base || createLeagueClub(d, m), d);
+    if (restored) adoptPulled(m, restored, playedPrint(s), replaced);
+    const prev = d.league.season > s.league.season ? (await leagueResults(m, s.league.season)).results : null;
+    prevMoney.current = null;
+    setState(s);
+    setLeagueLive({ d, m, prev });
+    setLeagueHub(null); setPanel(null); setSel(null); setMenu(false); setMatchDay(false); setShowResult(false); setMatchPhase(null); setReplay(null);
+    setTitleView('menu');
+    setScreen('game');
+    if (restored) notify({ kind: 'success', eyebrow: d.league.name, title: 'Club repris', text: `Tu reprends ta partie sauvegardée en ligne ${savedWhen(restored.at)} : ${stageOf(restored.season, restored.round)}.` });
+  };
+  // La copie en ligne devient la partie de l'appareil (l'ancienne est gardée à côté, au cas où). Illisible ici : retenue
+  // comme telle (plus redemandée), la partie de l'appareil continue.
+  const openPulled = async (m, d, local) => {
+    let got;
+    try {
+      got = await pullClub(m);
+    } catch (x) {
+      if (x instanceof LeagueError) throw x; // réseau, serveur : réessayé plus tard
+      got = { s: null, card: d.save }; // copie qui ne se décompresse pas
+    }
+    if (!got) { await openLeagueClub(m, d, local); return; } // la copie a disparu entre-temps : la partie de l'appareil (ou une nouvelle)
+    const s = got.s && readLeagueClub(got.s, m.code);
+    if (!s) {
+      markUnreadable(m.code, got.card?.version);
+      notify(local
+        ? { kind: 'warn', eyebrow: d.league.name, title: 'Sauvegarde en ligne illisible', text: 'Tu continues avec la partie de cet appareil.' }
+        : { kind: 'warn', eyebrow: d.league.name, title: 'Club non repris', text: 'Ta sauvegarde en ligne n’a pas pu être lue.' });
+      if (local) await openLeagueClub(m, d, local);
+      return;
+    }
+    await openLeagueClub(m, d, s, got.card, local);
+  };
+  // Les deux versions ont changé (club joué sur deux appareils) : le joueur choisit celle à garder, l'autre est remplacée.
+  // entering : en entrant dans le club (la partie de l'appareil n'est pas encore à l'écran) ; sinon pendant la partie, où
+  // la partie gardée est celle du moment. Fermée sans choisir : plus redemandé pour cette copie avant la prochaine entrée.
+  const conflictSeen = useRef(null);
+  // La plus avancée des deux est le choix conseillé (en or, prend le focus) ; à égalité, aucun bouton n'est mis en avant.
+  const askCloudChoice = (m, d, local, card, entering = false) => {
+    if (!entering && conflictSeen.current === card.version) return;
+    const here = entering ? local : latest.current;
+    const ahead = (card.season - here.seasonNumber) || (card.round - (here.round || 0)); // > 0 : la version en ligne est plus avancée
+    const online = {
+      label: 'Reprendre la version en ligne',
+      run: () => openPulled(m, d, entering ? local : latest.current).catch((x) => notify({ kind: 'warn', eyebrow: d.league.name, title: 'Club non repris', text: x instanceof LeagueError ? x.message : 'Réessaie dans un moment.' })),
+    };
+    const device = {
+      label: 'Garder la version de cet appareil',
+      run: () => {
+        pushClub(m, entering ? local : latest.current, { force: true }).then(() => setCloudTick((n) => n + 1)).catch(() => { /* renvoyée à la prochaine occasion */ });
+        if (entering) openLeagueClub(m, d, local).catch(() => {});
+      },
+    };
+    const [main, alt] = ahead < 0 ? [device, online] : [online, device];
+    const row = (label, season, round, when, best) => [best ? `${label} · la plus avancée` : label, <>{cap(stageOf(season, round))}<small>{when}</small></>, best ? 'up' : ''];
+    setConfirm({
+      eyebrow: 'Deux appareils',
+      title: 'Quelle version de ton club garder ?',
+      text: 'Ton club a aussi été joué sur un autre appareil depuis ta dernière partie ici. La version que tu ne gardes pas sera remplacée.',
+      rows: [
+        row('En ligne', card.season, card.round, `sauvegardée ${savedWhen(card.at)}`, ahead > 0),
+        row('Sur cet appareil', here.seasonNumber, here.round || 0, `jouée ici ${savedWhen(entering ? local.lastSeen : Date.now())}`, ahead < 0),
+      ],
+      confirmLabel: main.label,
+      cancelLabel: alt.label,
+      autoFocus: ahead !== 0,
+      onConfirm: main.run,
+      onAlt: alt.run,
+      onDismiss: () => { conflictSeen.current = card.version; },
+    });
+  };
+  const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+  // Sauvegarde en ligne du club de ligue (leagueCloud.js) : après chaque journée appliquée et chaque saison, toutes les
+  // quinze minutes de jeu si la partie a changé, quand le joueur revient à l'écran titre ou quitte l'onglet. Lue dans des refs :
+  // les minuteries gardent la partie et la ligue du moment.
+  const latest = useRef(null);
+  latest.current = state;
+  const leagueRef = useRef(null);
+  leagueRef.current = leagueLive;
+  const uiBusy = useRef(false);
+  uiBusy.current = !!(matchPhase || replay || showResult || confirm || state?.seasonReview);
+  const [, setCloudTick] = useState(0); // la mention « sauvegardé il y a… » suit les envois
+  const cloudSave = (opts = {}) => {
+    const s = latest.current;
+    const live = leagueRef.current;
+    if (!s?.league || !live?.m || live.m.code !== s.league.code) return;
+    pushClub(live.m, s, opts).then((r) => { if (r?.version) setCloudTick((n) => n + 1); }).catch((x) => {
+      // un autre appareil a sauvegardé entre-temps : le joueur choisit, hors match et hors fenêtre ouverte (sinon plus tard)
+      if (x?.status === 409 && x.data?.conflict && !uiBusy.current && !opts.keepalive && !opts.quiet) askCloudChoice(live.m, live.d, s, x.data.conflict);
+    });
+  };
+  const stageKey = state?.league ? `${state.league.code}|${state.seasonNumber}|${state.round}|${state.seasonReview ? 1 : 0}` : null;
+  useEffect(() => {
+    if (!stageKey || !leagueLive?.m) return undefined;
+    const t = setTimeout(() => cloudSave(), 1500);
+    return () => clearTimeout(t);
+  }, [stageKey, leagueLive?.m]); // eslint-disable-line react-hooks/exhaustive-deps
+  // la ligue relue chaque minute (amis qui valident, journée jouée), et au retour sur le jeu ; le club joué entre-temps sur
+  // un autre appareil est repris (ou, s'il a changé ici aussi, le joueur choisit)
   const leagueCode = state?.league?.code || null;
   useEffect(() => {
     if (!leagueCode || !leagueLive?.m) return undefined;
     const m = leagueLive.m;
+    const save = () => cloudSave();
+    const away = () => { if (document.visibilityState === 'hidden') cloudSave({ keepalive: true }); };
+    const t2 = setInterval(save, 15 * 60000);
+    document.addEventListener('visibilitychange', away);
     const tick = async () => {
       if (document.visibilityState !== 'visible') return;
       try {
         const d = await refreshLeague(m);
+        if ((d.save?.version || 0) > syncOf(m.code).base && !isPushing(m.code) && !uiBusy.current && latest.current?.league?.code === m.code) {
+          const plan = cloudPlan(m.code, latest.current, d.save);
+          if (plan === 'pull') { await openPulled(m, d, latest.current); return; }
+          if (plan === 'conflict') { askCloudChoice(m, d, latest.current, d.save); return; }
+        }
         let prev = null;
         const local = state?.league?.season;
         if (local && d.league.season > local) prev = (await leagueResults(m, local)).results;
@@ -578,7 +695,10 @@ export default function App({ preview = null }) {
     };
     const t = setInterval(tick, 60000);
     document.addEventListener('visibilitychange', tick);
-    return () => { clearInterval(t); document.removeEventListener('visibilitychange', tick); };
+    return () => {
+      clearInterval(t); clearInterval(t2);
+      document.removeEventListener('visibilitychange', tick); document.removeEventListener('visibilitychange', away);
+    };
   }, [leagueCode, leagueLive?.m]); // eslint-disable-line react-hooks/exhaustive-deps
   // Ordres de la semaine (offres au marché commun, aux amis, réponses : leagueClub.js) : équipe déjà validée, ils
   // repartent aussitôt avec elle ; sinon, ils partiront avec elle.
@@ -986,14 +1106,16 @@ export default function App({ preview = null }) {
           onResume={() => setMenu(false)}
           onTitle={toTitle}
           onNewGame={state.league ? null : askNewGame}
+          saveNote={state.league ? cloudNote(state.league.code) : null}
         />
       )}</Presence>
       <Presence>
         {confirm && (
           <ConfirmDialog
             {...confirm}
-            onCancel={() => setConfirm(null)}
+            onCancel={() => { setConfirm(null); confirm.onDismiss?.(); }}
             onConfirm={() => { setConfirm(null); confirm.onConfirm(); }}
+            onAlt={confirm.onAlt ? () => { setConfirm(null); confirm.onAlt(); } : null}
           />
         )}
       </Presence>

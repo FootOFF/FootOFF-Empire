@@ -12,7 +12,9 @@ import { clubStars } from '../game/crest';
 // la saison en cours à droite. Échap, B ou Start (manette) reprennent la partie.
 
 // focus : ouvert directement sur une entrée des réglages (notification « Le jeu rame » : la fluidité)
-export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMatch = false, blocked = false, focus = null }) {
+// saveNote : où en est la sauvegarde en ligne d'un club de ligue ({ ok, text }, leagueCloud.js), à la place de la
+// sauvegarde automatique ; la coche seulement pour une sauvegarde faite
+export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMatch = false, blocked = false, focus = null, saveNote = null }) {
   const [view, setView] = useState(focus ? 'settings' : 'menu');
   const div = divisionOf(state);
   const total = state.schedule?.length || 7;
@@ -56,7 +58,7 @@ export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMat
       )}
       <footer className="pz-bottom">
         <Hints items={view === 'menu' ? [['nav', 'Choisir'], ['select', 'Valider'], ['back', 'Reprendre']] : [['nav', 'Choisir'], ['select', 'Valider'], ['back', 'Retour']]} />
-        <span className="pz-save"><IconCheck /> Sauvegarde automatique</span>
+        <span className={`pz-save ${saveNote && !saveNote.ok ? 'wait' : ''}`}>{(!saveNote || saveNote.ok) && <IconCheck />} {saveNote ? saveNote.text : 'Sauvegarde automatique'}</span>
       </footer>
     </div>
   );

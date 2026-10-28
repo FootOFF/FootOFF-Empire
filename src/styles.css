@@ -5199,3 +5199,11 @@ html, body { overscroll-behavior: none; }
 
 /* bouton du HUD d'une partie de ligue : équipe validée */
 .hud-match.sent .btn.ghost { color: var(--green); }
+
+/* Sauvegarde en ligne d'un club de ligue (leagueCloud.js) : mention du Siège en métadonnée, détail des deux versions dans
+   la fenêtre « Deux appareils », mention du menu pause sur plusieurs lignes au téléphone (sans coche tant qu'elle attend) */
+.lig-cloud { margin: 0; font-size: var(--t-xs); color: var(--muted); }
+.confirm-rows dd { text-align: right; }
+.confirm-rows dd small { display: block; margin-top: 2px; font-family: 'Inter', system-ui, sans-serif; font-weight: 400; font-size: var(--t-xs); letter-spacing: 0; color: var(--muted); }
+.pz-save.wait { color: var(--muted); }
+@media (max-width: 760px) { .pz-save { white-space: normal; } }

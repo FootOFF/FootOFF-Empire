@@ -32,7 +32,14 @@ export function leagueClubProgress(code) {
 
 export function loadLeagueClub(code) {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY(code)) || 'null');
+    return readLeagueClub(JSON.parse(localStorage.getItem(KEY(code)) || 'null'), code);
+  } catch {
+    return null;
+  }
+}
+// Une partie de ligue lue ailleurs (appareil, copie du serveur : leagueCloud.js) : valable et de ce championnat, réparée.
+export function readLeagueClub(raw, code) {
+  try {
     return raw && validSave(raw) && raw.league?.code === code ? repairSave(raw) : null;
   } catch {
     return null;

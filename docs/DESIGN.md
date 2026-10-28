@@ -689,8 +689,33 @@ partie). Remplace la carte « Ton club » à onglets et l'avant-match du Siège 
   journée (`applyMoves`).
 - Vérifié (2026-10-28) : saison simulée de deux appareils (classements identiques), puis dans le navigateur une saison
   entière (sept journées, bilan, saison 2, retour à la carrière intacte) et une recrue du marché commun.
-- Reste à faire : sauvegarde du club de ligue sur le serveur (un autre appareil ne reprend que l'adhésion), direct à
-  l'heure de la journée, bureau des transferts sans usage en ligue, clubs de l'ordinateur sans bâtiments.
+- Reste à faire : direct à l'heure de la journée, bureau des transferts sans usage en ligue, clubs de l'ordinateur sans
+  bâtiments.
+
+Sauvegarde en ligne du club de ligue (2026-10-28, accord de l'utilisateur sur la solution du « casier ») : sans elle, un
+club de ligue ne vivait que dans le navigateur (changement d'appareil, données effacées, Safari qui efface un site non
+ouvert depuis sept jours : le club perdu en pleine saison).
+- Serveur (site, `ligue_saves`) : une copie par membre, remplacée à chaque envoi, avec un numéro (version) qui augmente.
+  `POST save` { base, season, round, data, force } : refusé (409, avec la fiche de la copie du serveur) si la copie est
+  partie d'une autre version que celle du serveur, sauf choix du joueur (force) ; `GET save` : la copie ; la fiche
+  (version, saison, journée, date) vient avec l'état de la ligue. Format `gz1:` + gzip en base64url, 384 Ko au plus
+  (mesuré : 4 Ko au départ, 6 Ko de plus par saison d'aller-retour) ; 20 envois et 6 lectures par heure ; octets comptés
+  dans les budgets du serveur ; copie effacée quand le joueur quitte, et à la purge.
+- Jeu (`leagueCloud.js`) : la partie compressée par le navigateur (CompressionStream), envoyée après chaque journée et
+  chaque saison, toutes les quinze minutes de jeu si elle a changé, au retour à l'écran titre et quand l'onglet se cache
+  (keepalive, 64 Ko au plus). L'appareil retient la version dont sa partie est partie et l'empreinte de ce qui a été
+  joué (`playedPrint` : sans ce que la ligue réécrit à chaque visite, ni les listes vides ajoutées à la relecture, ni la
+  date d'écriture) ; une partie inchangée ne repart pas.
+- Entrée dans le club (`cloudPlan`) : rien en ligne, la partie de l'appareil (ou une nouvelle) ; copie en ligne plus
+  récente et partie de l'appareil inchangée, reprise sans rien demander (bandeau « Club repris ») ; les deux ont changé,
+  fenêtre « Deux appareils » (garder cet appareil, ou reprendre la version en ligne ; l'autre est remplacée, la partie
+  de l'appareil remplacée reste à côté, `fo-ligue-club-CODE.remplacee`). Pendant la partie, la ligue relue chaque minute
+  fait de même ; une fenêtre fermée sans choisir n'est plus redemandée pour cette copie avant l'entrée suivante.
+- Mention dans le menu pause (« Club sauvegardé en ligne il y a 3 min ») et sur la carte « Ton club » du Siège.
+- Vérifié (2026-10-28) : 15 contrôles de l'API, puis deux navigateurs séparés (première copie, reprise sur un appareil
+  neuf, reprise silencieuse, conflit et choix, serveur en panne puis revenu, données de l'appareil effacées).
+- Au passage : un poste vide dans l'équipe d'un ami (effectif trop court, comme en solo) ne bloque plus le calcul de la
+  journée (`cleanSheet`, onze du visiteur).
 
 ## Centre médical
 
