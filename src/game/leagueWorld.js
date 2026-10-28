@@ -1,7 +1,7 @@
-import { SQUAD_MAX, SQUAD_MIN } from './constants';
-import { ATTRS, GK_ATTRS, assignNumber, freshSeason, makePlayer, marketValue, progressPlayer } from './players';
+import { upgradeCost } from './constants';
+import { ATTRS, GK_ATTRS, assignNumber, freshSeason, makePlayer, marketValue, playerRating, progressPlayer, ratingAt } from './players';
 import { squadName } from './names';
-import { autoLineup, lineupRating } from './tactics';
+import { FORMATION_ORDER, autoLineup, lineupRating, slotsOf } from './tactics';
 import { ELITE_PACE, bestCat, catsFor, collectiveGain, sessionGain, suggestFor } from './training';
 import { pick, rnd } from './utils';
 
@@ -11,14 +11,14 @@ import { pick, rnd } from './utils';
 // ses qualités au centième et ses signes ; son nom, son visage, son pied et son poste se retrouvent d'après son
 // identifiant (effectifs de départ tirés de la graine, league.js). Identifiants : place du club × 100 + rang (1 à 15).
 
-export const LEAGUE_TRAINING = 2; // centre d'entraînement de chaque club de ligue : le même pour tous (niveau 2)
+export const LEAGUE_TRAINING = 2; // centre d'entraînement d'un club de l'ordinateur au départ (niveau 2)
 export const START_BUDGET = 20000; // budget de départ de chaque club
 export const LINES = ['G', 'D', 'M', 'A'];
 
 const FIELD = ATTRS.map((x) => x.key);
 const KEEPER = GK_ATTRS.map((x) => x.key);
 const pack = (o, keys) => keys.map((k) => Math.round((o[k] ?? 1) * 100));
-const unpack = (arr, keys) => Object.fromEntries(keys.map((k, i) => [k, (arr?.[i] ?? 100) / 100]));
+const unpack = (arr, keys) => Object.fromEntries(keys.map((k, i) => [k, (Array.isArray(arr) && Number.isFinite(arr[i]) ? arr[i] : 100) / 100]));
 
 // Un joueur venu du marché commun (identifiant 1000 et plus) garde avec lui ce qui le décrit (b : nom, poste, pied,
 // poste de dépannage, visage) : il n'est pas dans les effectifs de départ.
@@ -53,10 +53,18 @@ export const snapPlayer = (p) => ({
   a: pack(p.a, FIELD), ...(p.g ? { k: pack(p.g, KEEPER) } : {}), ...(p.traits?.length ? { t: [...p.traits] } : {}),
   num: p.num, f: p.face || null, fit: Math.round(p.fit ?? 100), ...(p.injury?.out > 0 || p.ban > 0 ? { x: 1 } : {}),
 });
+// Relu d'un autre appareil (équipe envoyée, joueur cédé) : chaque champ vérifié, une valeur piégée ne fait jamais tomber
+// le jeu (audit cyber-auditor du 2026-10-28) ; un joueur bien formé reste exactement le même.
+const POS = ['G', 'D', 'M', 'A'];
+const FEET = ['droit', 'gauche', 'les deux'];
+const int = (v, d) => (Number.isSafeInteger(v) ? v : d);
+const fin = (v, d) => (Number.isFinite(v) ? v : d);
 export const unsnapPlayer = (x) => ({
-  id: x.i, lid: x.l, name: x.n, pos: x.pos, alt: x.alt || null, foot: x.ft, age: x.g, pot: x.p, a: unpack(x.a, FIELD),
-  ...(x.k ? { g: unpack(x.k, KEEPER) } : {}), traits: x.t ? [...x.t] : [], num: x.num, face: x.f || null, fit: x.fit ?? 100,
-  ...(x.x ? { injury: { out: 1, total: 1, label: 'Indisponible' } } : {}), form: [], season: freshSeason(), hist: [],
+  id: int(x?.i, 0), lid: int(x?.l, null), name: typeof x?.n === 'string' ? x.n : '?', pos: POS.includes(x?.pos) ? x.pos : 'M',
+  alt: POS.includes(x?.alt) ? x.alt : null, foot: FEET.includes(x?.ft) ? x.ft : 'droit', age: fin(x?.g, 25), pot: fin(x?.p, 0), a: unpack(x?.a, FIELD),
+  ...(x?.k ? { g: unpack(x.k, KEEPER) } : {}), traits: Array.isArray(x?.t) ? x.t.filter((t) => typeof t === 'string') : [],
+  num: int(x?.num, null), face: x?.f && typeof x.f === 'object' && !Array.isArray(x.f) ? x.f : null, fit: fin(x?.fit, 100),
+  ...(x?.x ? { injury: { out: 1, total: 1, label: 'Indisponible' } } : {}), form: [], season: freshSeason(), hist: [],
 });
 // Un joueur de l'état de la ligue (club de l'ordinateur, marché) devenu joueur d'une partie : son identifiant de ligue.
 export const toSnap = (p) => snapPlayer({ ...p, lid: p.lid ?? p.id });
@@ -89,9 +97,10 @@ export const paceOfLeague = (league) => (league.settings?.format === 'single' ? 
 
 // Séance de la semaine, une par ligne : le joueur et la catégorie choisis (orders : { G: { id, cat }, … }), sinon le
 // joueur et la catégorie conseillés (ceux qui progresseraient le plus) ; puis la séance collective pour tous les autres.
-// Simulée, au gain moyen : le même chez chaque ami. Renvoie ce qui a été travaillé ([identifiant, catégorie, gain]).
-export function trainClub(players, orders, scale) {
-  const s = { players, buildings: { training: LEAGUE_TRAINING } };
+// Simulée, au gain moyen : le même chez chaque ami. level : le centre d'entraînement du club. Renvoie ce qui a été
+// travaillé ([identifiant, catégorie, gain]).
+export function trainClub(players, orders, scale, level = LEAGUE_TRAINING) {
+  const s = { players, buildings: { training: level } };
   const done = [];
   for (const pos of LINES) {
     const o = orders?.[pos];
@@ -100,17 +109,85 @@ export function trainClub(players, orders, scale) {
     if (!p) p = suggestFor(s, pos);
     if (!p) continue;
     if (!cat) cat = bestCat(s, p);
-    const gain = sessionGain(LEAGUE_TRAINING, p, cat, scale);
+    const gain = sessionGain(level, p, cat, scale);
     done.push([p.id, cat, Math.round(gain * 1000)]);
   }
   const trained = new Set(done.map(([id]) => id));
-  for (const p of players) if (!trained.has(p.id)) collectiveGain(LEAGUE_TRAINING, p, scale);
+  for (const p of players) if (!trained.has(p.id)) collectiveGain(level, p, scale);
   return done;
 }
 
-// Recettes d'une journée : une somme fixe, plus une prime de victoire ou de match nul.
+// Recettes d'une journée : une somme fixe (plus grande à domicile avec un stade agrandi), plus une prime de victoire ou de
+// match nul.
 export const INCOME = { base: 1500, win: 1000, draw: 400 };
-export const incomeOf = (gf, ga) => INCOME.base + (gf > ga ? INCOME.win : gf === ga ? INCOME.draw : 0);
+const STADIUM_GATE = [1, 1, 1.6, 2.4, 3.6, 5, 7]; // recette de base selon le niveau du stade (match à domicile)
+export const incomeOf = (gf, ga, stadium = 1) => Math.round(INCOME.base * (STADIUM_GATE[stadium] ?? 1)) + (gf > ga ? INCOME.win : gf === ga ? INCOME.draw : 0);
+
+// --- Clubs de l'ordinateur : un joueur appliqué (0.8.3) ----------------------------------------------------------------
+// Ses bâtiments (b : [stade, centre d'entraînement, centre médical], aux prix du solo) : un chantier au plus par journée,
+// quand il lui reste de quoi recruter ensuite (BUILD_RESERVE) ; d'abord le centre médical (moins de blessés à domicile),
+// puis le stade (recettes), puis le centre d'entraînement (progression), puis le reste, niveau par niveau.
+export const AI_BUILDINGS = ['terrain', 'training', 'medical'];
+export const START_BUILDINGS = [1, LEAGUE_TRAINING, 0];
+const BUILD_ORDER = [['medical', 1], ['terrain', 2], ['medical', 2], ['training', 3], ['terrain', 3], ['medical', 3], ['training', 4], ['terrain', 4]];
+const BUILD_RESERVE = 8000;
+export const buildingsOf = (club) => (Array.isArray(club?.b) ? club.b : START_BUILDINGS);
+export function aiBuild(club) {
+  const b = [...buildingsOf(club)];
+  for (const [key, level] of BUILD_ORDER) {
+    const k = AI_BUILDINGS.indexOf(key);
+    if (b[k] >= level) continue;
+    const cost = upgradeCost(key, b[k] + 1);
+    if (club.money < cost + BUILD_RESERVE) return null; // il économise pour le chantier suivant
+    club.money -= cost;
+    b[k] += 1;
+    club.b = b;
+    return { key, level: b[k], cost };
+  }
+  return null;
+}
+
+// Son équipe du jour : le dispositif qui met le mieux en valeur son effectif, une tactique selon l'écart de niveau avec
+// l'adversaire (plus fort : il attaque ; plus faible : il se replie), et ses plans de mi-temps : mené, il attaque et fait
+// entrer des forces fraîches ; devant, il gère ; à égalité, il pousse s'il est le plus fort. Les mêmes règles font jouer
+// le club d'un ami absent.
+const AI_GAP = 0.35;
+export function appliedSheet(players, oppStrength = null) {
+  let best = null;
+  for (const f of FORMATION_ORDER) {
+    const lineup = autoLineup(players, f);
+    const r = lineupRating(players, lineup, f);
+    if (!best || r > best.r + 1e-9) best = { f, lineup, r };
+  }
+  const gap = oppStrength == null ? 0 : best.r - oppStrength;
+  const tactic = gap > AI_GAP ? 'offensive' : gap < -AI_GAP ? 'low' : 'balanced';
+  const fresh = (n) => freshLegs(players, best.lineup, best.f, n);
+  const ht = {
+    lead: { t: tactic === 'offensive' ? 'balanced' : 'low', ...(fresh(1).length ? { s: fresh(1) } : {}) },
+    draw: { t: gap > 0 ? 'offensive' : tactic, ...(fresh(1).length ? { s: fresh(1) } : {}) },
+    trail: { t: 'offensive', ...(fresh(2).length ? { s: fresh(2) } : {}) },
+  };
+  return { formation: best.f, tactic, lineup: best.lineup, auto: true, ht };
+}
+// Remplaçants frais : les titulaires de champ les plus faibles à leur poste, chacun remplacé par le meilleur remplaçant
+// disponible à ce poste s'il n'y perd pas plus de 0,3 (les jambes fraîches compensent) ; n au plus. [[sortant, entrant]…]
+function freshLegs(players, lineup, formation, n) {
+  const slots = slotsOf(formation);
+  const bench = players.filter((p) => !lineup.includes(p.id) && !p.injury && !(p.ban > 0));
+  const starters = lineup.map((id, k) => ({ p: players.find((q) => q.id === id), k })).filter((x) => x.p && slots[x.k] !== 'G')
+    .sort((a, b) => ratingAt(a.p, slots[a.k]) - ratingAt(b.p, slots[b.k]) || a.k - b.k);
+  const out = [];
+  const used = new Set();
+  for (const { p, k } of starters) {
+    if (out.length >= n) break;
+    const pos = slots[k];
+    const sub = bench.filter((q) => !used.has(q.id) && q.pos !== 'G').sort((a, b) => ratingAt(b, pos) - ratingAt(a, pos) || a.id - b.id)[0];
+    if (!sub || ratingAt(sub, pos) < ratingAt(p, pos) - 0.3) continue;
+    used.add(sub.id);
+    out.push([p.id, sub.id]);
+  }
+  return out;
+}
 
 // Intersaison (dernière journée) : chacun prend un an, progresse vers son potentiel ou décline après 32 ans (comme en
 // carrière, players.js). Sous une graine : le même chez chaque ami.
@@ -121,18 +198,16 @@ export function summer(players) {
   }
 }
 
-// --- Marché commun et offres entre amis ---------------------------------------------------------------------------------------------------
+// --- Marché commun ----------------------------------------------------------------------------------------------------
 // Chaque semaine, six joueurs libres pour toute la ligue (tirés sous la graine de la journée, de tous niveaux : du
-// remplaçant au titulaire de premier plan). Chacun fait ses offres sous pli fermé (au moins le prix affiché) ; au calcul
-// de la journée, la plus haute l'emporte, si le club en a encore les moyens et la place (22 joueurs au plus). Un joueur
-// reste deux semaines sur le marché. On peut aussi vendre un joueur au-dehors, à 85 % de sa valeur (13 joueurs au moins).
-// Les clubs de l'ordinateur font parfois une offre au prix, pour un joueur qui renforcerait leur onze. Entre amis :
-// une offre pour un joueur d'un autre ami (trois au plus par semaine) ; il l'accepte ou la refuse la semaine suivante,
-// et le transfert se fait au calcul de la journée, si chacun en a encore les moyens et la place.
+// remplaçant au titulaire de premier plan). Entre deux journées, les amis les signent comme en solo (négociation, puis
+// signature au premier club qui conclut : serveur des ligues, 0.8.3) ; les clubs de l'ordinateur font leurs achats au
+// calcul de la journée. Un joueur reste deux semaines sur le marché.
 export const MARKET_SIZE = 6;
 export const MARKET_WEEKS = 2;
 export const SQUAD_CAP = 22;
-export const MAX_BIDS = 3;
+const AI_SQUAD = 20; // l'ordinateur n'achète plus au-delà
+const AI_KEEP = 18; // ni ne garde plus de joueurs que cela
 const MARKET_POS = ['G', 'D', 'D', 'D', 'M', 'M', 'M', 'A', 'A', 'A'];
 const roundPrice = (v) => Math.max(500, Math.round(v / 250) * 250);
 export const priceOf = (p) => roundPrice(marketValue(p, 0));
@@ -140,50 +215,26 @@ export const priceOf = (p) => roundPrice(marketValue(p, 0));
 // La place du marché, joueurs complets avec leur prix (x) et la journée de leur arrivée (r).
 export const marketPlayers = (world) => (world?.market || []).map((m) => ({ ...expandPlayer([], m), price: m.x, since: m.r }));
 
-// Offres d'amis de la semaine passée, offres sur le marché, puis la place renouvelée. Les clubs des amis vivent dans leur
-// partie (leagueClub.js) : ici, seulement ce qu'ils ont envoyé avec leur équipe (effectif, budget déclaré, ordres). Ce
-// qu'ils gagnent (recrue, transfert conclu) part dans les mouvements de la semaine, avec le joueur ; chaque ami
-// l'applique à sa partie en lisant la journée. Les clubs de l'ordinateur, eux, sont modifiés ici (état de la ligue).
-// squads : effectifs (ordinateur : ceux de l'état, modifiés ; amis : ceux envoyés) ; money : budgets (ordinateur : ceux
-// de l'état, modifiés ; amis : déclarés, décomptés au fil des achats de la journée) ; orders(slot) : les ordres d'un ami
-// présent (null sinon) ; humans : places des amis présents. round : la semaine de la ligue (saison × 100 + journée),
-// qui ne revient jamais en arrière d'une saison à l'autre.
-export function runMarket({ squads, money, orders, world, round, humans = [] }) {
+// Achats des clubs de l'ordinateur sur le marché, puis la place renouvelée. Les clubs des amis vivent dans leur partie
+// (leagueClub.js) et signent entre deux journées ; les clubs de l'ordinateur sont modifiés ici (état de la ligue).
+// squads : effectifs (ordinateur : ceux de l'état, modifiés) ; money : budgets (ordinateur : ceux de l'état, modifiés) ;
+// humans : places des amis présents. round : la semaine de la ligue (saison × 100 + journée), qui ne revient jamais en
+// arrière d'une saison à l'autre.
+export function runMarket({ squads, money, world, round, humans = [] }) {
   const moves = [];
   const isHuman = (slot) => humans.includes(slot);
-  // offres entre amis de la semaine passée : acceptées, refusées ou restées sans réponse
-  for (const o of world?.offers || []) {
-    const seller = orders(o.s);
-    const verdict = seller?.accept?.includes(o.id) ? 'yes' : seller?.refuse?.includes(o.id) ? 'no' : 'none';
-    const p = squads[o.s]?.find((q) => q.lid === o.l);
-    const ok = verdict === 'yes' && !!p && isHuman(o.b) && money[o.b] >= o.x
-      && squads[o.b].length < SQUAD_MAX && squads[o.s].length > SQUAD_MIN;
-    if (ok) {
-      money[o.b] -= o.x;
-      money[o.s] += o.x;
-      squads[o.s] = squads[o.s].filter((q) => q !== p);
-    }
-    moves.push({ k: ok ? 'deal' : verdict === 'yes' ? 'fail' : verdict === 'no' ? 'refused' : 'expired', s: o.s, b: o.b, l: o.l, n: o.n, x: o.x, ...(ok ? { pl: snapPlayer(p) } : {}) });
-  }
-  // offres sur le marché
   const market = marketPlayers(world);
   const bids = new Map(market.map((p) => [p.id, []]));
   squads.forEach((players, slot) => {
-    const o = orders(slot);
-    if (o) {
-      for (const b of (o.bids || []).slice(0, MAX_BIDS)) {
-        const p = market.find((q) => q.id === b?.i);
-        if (p && Number.isFinite(b.x) && b.x >= p.price) bids.get(p.id).push({ slot, x: Math.round(b.x), tie: Math.random() });
-      }
-    } else if (!isHuman(slot) && world?.clubs?.[slot] && Math.random() < 0.35) {
-      // l'ordinateur : le joueur qui renforcerait le plus son onze, au prix
+    if (!isHuman(slot) && world?.clubs?.[slot] && players.length < AI_SQUAD && Math.random() < 0.6) {
+      // l'ordinateur : le joueur qui renforcerait le plus son onze, au prix, s'il en vaut la peine
       const eleven = autoLineup(players, '433');
       const now = lineupRating(players, eleven, '433');
       let best = null;
       for (const p of market) {
         if (p.price > money[slot] - 3000) continue;
         const gain = lineupRating([...players, p], autoLineup([...players, p], '433'), '433') - now;
-        if (gain > 0.04 && (!best || gain > best.gain)) best = { p, gain };
+        if (gain > 0.06 && (!best || gain > best.gain)) best = { p, gain };
       }
       if (best) bids.get(best.p.id).push({ slot, x: best.p.price, tie: Math.random() });
     }
@@ -191,29 +242,30 @@ export function runMarket({ squads, money, orders, world, round, humans = [] }) 
   const sold = new Set();
   for (const p of market) {
     const list = bids.get(p.id).sort((a, b) => b.x - a.x || a.tie - b.tie);
-    const cap = (slot) => (isHuman(slot) ? SQUAD_MAX : SQUAD_CAP);
-    const win = list.find((b) => money[b.slot] >= b.x && squads[b.slot].length < cap(b.slot));
+    const win = list.find((b) => money[b.slot] >= b.x && squads[b.slot].length < SQUAD_CAP);
     if (!win) continue;
     money[win.slot] -= win.x;
     const { price, since, ...player } = p;
     squads[win.slot].push(player);
     sold.add(p.id);
-    moves.push({ k: 'buy', s: win.slot, i: p.id, n: p.name, x: win.x, o: list.length, ...(isHuman(win.slot) ? { pl: compactPlayer(player) } : {}) });
+    moves.push({ k: 'buy', s: win.slot, i: p.id, n: p.name, x: win.x, o: list.length });
   }
-  // nouvelles offres entre amis (trois au plus par club) : le club vendeur répondra la semaine prochaine
-  const offers = [];
-  squads.forEach((_, slot) => {
-    if (!isHuman(slot)) return;
-    for (const b of (orders(slot)?.offers || []).slice(0, MAX_BIDS)) {
-      const seller = squads.findIndex((players, s) => s !== slot && isHuman(s) && players.some((p) => p.lid === b?.l));
-      if (seller < 0 || !Number.isFinite(b.x) || b.x < 250 || b.x > money[slot]) continue;
-      const p = squads[seller].find((q) => q.lid === b.l);
-      offers.push({ id: `${round}-${slot}-${b.l}`, b: slot, s: seller, l: b.l, n: p.name, x: Math.round(b.x / 50) * 50 });
-    }
+  // l'ordinateur libère son surplus (au-delà de AI_KEEP joueurs) : le moins utile de ses remplaçants rejoint le marché
+  // commun, au prix de sa valeur, où les amis peuvent le signer
+  const released = [];
+  squads.forEach((players, slot) => {
+    if (isHuman(slot) || !world?.clubs?.[slot] || players.length <= AI_KEEP) return;
+    const eleven = new Set(autoLineup(players, '433'));
+    const spare = players.filter((p) => !eleven.has(p.id)).sort((a, b) => playerRating(a) - playerRating(b) || a.age - b.age || a.id - b.id)[0];
+    if (!spare) return;
+    squads[slot] = players.filter((p) => p !== spare);
+    released.push({ ...compactPlayer(spare), b: { n: spare.name, pos: spare.pos, foot: spare.foot, alt: spare.alt || null, face: spare.face }, x: priceOf(spare), r: round + 1 });
+    moves.push({ k: 'free', s: slot, i: spare.id, n: spare.name });
   });
-  // la place renouvelée : les invendus de moins de deux semaines restent, de nouveaux joueurs complètent
-  const keep = (world?.market || []).filter((m) => !sold.has(m.i) && round - m.r < MARKET_WEEKS - 1);
-  return { ...refill(keep, [...squads.flat(), ...market], world?.nextId || 1000, round + 1), offers, moves };
+  // la place renouvelée : les invendus de moins de deux semaines restent, les joueurs libérés arrivent, de nouveaux
+  // joueurs complètent
+  const keep = [...(world?.market || []).filter((m) => !sold.has(m.i) && round - m.r < MARKET_WEEKS - 1), ...released];
+  return { ...refill(keep, [...squads.flat(), ...market], world?.nextId || 1000, round + 1), moves };
 }
 
 // Complète la place à six joueurs (arrivés pour la journée `round`) ; others : les joueurs déjà dans la ligue (noms pris).

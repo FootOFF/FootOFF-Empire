@@ -5298,3 +5298,74 @@ html, body { overscroll-behavior: none; }
 .confirm-rows dd small { display: block; margin-top: 2px; font-family: 'Inter', system-ui, sans-serif; font-weight: 400; font-size: var(--t-xs); letter-spacing: 0; color: var(--muted); }
 .pz-save.wait { color: var(--muted); }
 @media (max-width: 760px) { .pz-save { white-space: normal; } }
+
+/* Plans de mi-temps (0.8.3, match.jsx HalftimePlans) : dans l'avant-match de la ligue, une ligne par score à la pause ;
+   la fenêtre des plans montre les trois situations en onglets, l'équipe de la seconde période sur le terrain à gauche,
+   le dispositif, la tactique et les changements à droite (sur téléphone : la feuille plein écran, dans le même ordre). */
+.htp-sum { display: flex; flex-direction: column; gap: 6px; }
+.htp-row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 44px; padding: 10px 14px;
+  border: 0; background: var(--plate-2); color: var(--text-2); text-align: left; box-shadow: inset 3px 0 0 transparent; transition: background .2s, transform .15s;
+}
+.htp-row b { font-family: var(--font-disp); font-weight: 700; font-size: var(--d-md); line-height: 1; letter-spacing: .02em; text-transform: uppercase; color: var(--text); white-space: nowrap; }
+.htp-row em { font-style: normal; font-size: var(--t-sm); color: var(--muted); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.htp-row.set { box-shadow: inset 3px 0 0 var(--gold-light); }
+.htp-row.set em { color: var(--gold-light); }
+.htp-go { width: 16px; height: 16px; color: var(--muted); }
+@media (hover: hover) { .htp-row:hover { background: #1b1e22; } }
+.htp-row:active, .htp-tabs button:active { transform: scale(.98); }
+
+.sq-overlay.htp-overlay { position: fixed; z-index: 30; }
+.sq-sheet.htp { gap: var(--s-4); }
+.htp-intro { margin: 0; font-size: var(--t-sm); color: var(--text-2); }
+.htp-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.htp-tabs button {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; min-height: 54px; padding: 10px 12px;
+  border: 0; background: var(--plate-2); color: var(--text-2); text-align: left; box-shadow: inset 3px 0 0 transparent; transition: background .2s, transform .15s;
+}
+.htp-tabs b { font-family: var(--font-disp); font-weight: 700; font-size: var(--d-md); line-height: 1; letter-spacing: .02em; text-transform: uppercase; color: var(--text); }
+.htp-tabs em { font-style: normal; font-size: var(--t-xs); line-height: 1.3; color: var(--muted); }
+.htp-tabs button.set em { color: var(--gold-light); }
+.htp-tabs button.active { background: linear-gradient(90deg, rgba(222, 193, 127, .16), rgba(222, 193, 127, .04)); box-shadow: inset 3px 0 0 var(--gold-light); }
+.htp-tabs button.active b { color: var(--gold-light); }
+@media (hover: hover) { .htp-tabs button:hover:not(.active) { background: #1b1e22; } }
+.htp-off { font-family: 'Inter', system-ui, sans-serif; font-style: normal; font-weight: 400; font-size: var(--t-xs); color: var(--red); }
+.ht-swap .htp-off { grid-column: 1 / -1; }
+.htp-col { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
+.htp-set .pm-sh:not(:first-child) { margin-top: var(--s-2); }
+.htp-set .pm-sh small { margin-left: 6px; font-family: 'Inter', system-ui, sans-serif; font-weight: 400; font-size: var(--t-xs); letter-spacing: 0; text-transform: none; color: var(--muted); }
+.htp-board .lu-pitch { --lu-h: 52vh; --lu-hh: clamp(300px, 50vh, 480px); }
+.htp-foot { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-4); padding: var(--s-3) 0 var(--s-4); }
+.htp-foot .btn { min-width: 160px; }
+@container (min-width: 900px) {
+  .sq-sheet.htp {
+    width: min(1180px, 100%); height: auto; max-height: calc(100% - 40px); display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    column-gap: 30px; row-gap: 12px; align-content: start; padding: 16px 26px 0; clip-path: var(--cut-shape);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .6); animation: fo-up .3s var(--ease);
+  }
+  .sq-sheet.htp > :not(.htp-col) { grid-column: 1 / -1; }
+  .sq-sheet.htp > .sh-bar { position: sticky; top: -16px; z-index: 3; margin: -16px -26px 0; padding: 16px 26px 8px; background: var(--plate-solid); }
+  .htp-set { position: sticky; top: 40px; align-self: start; }
+}
+/* fenêtre centrée (PC) : terrain et banc à l'écran sur 820 px de haut ; plus bas, la fenêtre défile, la barre reste en
+   haut. En requête d'écran : le terrain (.lu) est lui-même un conteneur, une requête de conteneur y lirait sa largeur */
+@media (min-width: 980px) {
+  .htp-board .lu-pitch { --lu-h: 42vh; --lu-hh: clamp(280px, 42vh, 420px); }
+  .htp-board .lu-bench-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .htp-board .lu-bchip { gap: 6px; padding-left: 10px; padding-right: 10px; }
+  .htp-board .lu-bchip .pf { display: none; } /* quatre colonnes : la place va au nom, le portrait reste sur le terrain */
+}
+@media (max-width: 760px) {
+  .htp-tabs button { padding: 8px; }
+  .htp-tabs b { font-size: var(--d-sm); }
+  /* le résumé d'un plan passe sous la situation : jamais tronqué sur un téléphone étroit */
+  .htp-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
+  .htp-row em { grid-row: 2; white-space: normal; text-align: left; }
+  .htp-row .htp-go { grid-column: 2; grid-row: 1 / span 2; }
+  .htp-foot { position: sticky; bottom: 0; z-index: 2; margin: 0 -16px; padding: var(--s-3) 16px calc(var(--s-4) + var(--hb)); background: var(--plate-solid); box-shadow: 0 -16px 24px rgba(0, 0, 0, .5); }
+  .htp-foot .btn { flex: 1; }
+}
+
+/* Mercato d'une ligue (0.8.3) : l'accord trouvé attend la confirmation de la ligue (le premier club qui signe l'emporte) */
+.ng-win-ico.wait { background: var(--gold-soft); color: var(--gold-light); box-shadow: inset 0 0 0 1px var(--gold-line); }
+.ng-win-ico.lost { background: rgba(238, 142, 131, .1); color: var(--red); box-shadow: inset 0 0 0 1px rgba(224, 122, 111, .4); }

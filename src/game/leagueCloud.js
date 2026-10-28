@@ -40,7 +40,7 @@ export const cloudReady = () => typeof CompressionStream === 'function' && typeo
 const noEmpty = (k, v) => ((Array.isArray(v) ? !v.length : v && typeof v === 'object' && !Object.keys(v).length) ? undefined : v);
 const played = (s) => JSON.stringify({
   ...s, market: null, transfers: null, rivals: null, lastSeen: null, version: null,
-  league: { season: s.league?.season, round: s.league?.round, results: s.league?.results, sent: s.league?.sent, orders: s.league?.orders },
+  league: { season: s.league?.season, round: s.league?.round, results: s.league?.results, sent: s.league?.sent, plans: s.league?.plans, outbox: s.league?.outbox, done: s.league?.done },
 }, noEmpty);
 export const playedPrint = (s) => fingerprint(played(s));
 function fingerprint(text) {

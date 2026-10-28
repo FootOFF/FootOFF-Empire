@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { TACTICS, TACTIC_ORDER, fitWeight, formationOf, lineupRating, reshapeLineup } from '../game/tactics';
+import { TACTICS, TACTIC_ORDER, fitWeight, formationOf, lineupRating, reshapeLineup, slotsOf } from '../game/tactics';
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
 import { LIVE_VERSION, SUBS_MAX, createLiveMatch, highlightOf, liveKeyOf, pairSubs, prematchOdds, prematchXg, statsOf, subMinute } from '../game/live';
 import { saveLive } from '../game/save';
@@ -19,6 +19,8 @@ import { penaltySkills, shootoutWinChance } from '../game/cups';
 import { pctOf } from '../game/mercato';
 import { standingsOf } from '../game/season';
 import { useFitText } from './fittext';
+import { HT_CASES } from '../game/league';
+import { arrangeFor, planView } from '../game/leagueClub';
 
 // Avant-match (onze + tactique + pronostic) et match en direct (score, chrono, fil de commentaires,
 // vitesse, mi-temps avec changements sur le terrain). La 3D derrière est en mode « jour de match ».
@@ -76,6 +78,114 @@ function CompoCard({ title, detail, onOpen }) {
 
 const narrowScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches;
 
+// --- Plans de mi-temps (championnat entre amis, 0.8.3) ---------------------------------------------------------------
+// Le match d'une ligue se joue sans que personne soit connecté : pour chaque score possible à la pause (tu mènes,
+// égalité, tu es mené), un plan règle le dispositif, la tactique et jusqu'à cinq changements de la seconde période.
+// Le staff applique celui du score (league.js) ; les blessés restent remplacés par le staff, à la minute. Le plan se
+// relit sur le onze de l'avant-match (planView) : changer un titulaire ne casse que les changements qui le concernaient.
+const HT_LABELS = { lead: 'Je mène', draw: 'Égalité', trail: 'Je suis mené' };
+const movedOnly = (v, formation, lineup) => {
+  if (v.f !== formation) return false;
+  const plain = [...lineup];
+  for (const [o, i] of v.s) plain[plain.indexOf(o)] = i;
+  return v.l.some((id, k) => id !== plain[k]);
+};
+const planText = (v, formation, tactic, lineup) => {
+  const bits = [];
+  if (v.f !== formation) bits.push(formationOf(v.f).name);
+  if (v.t !== tactic) bits.push(TACTICS[v.t].name);
+  if (v.s.length) bits.push(`${v.s.length} changement${v.s.length > 1 ? 's' : ''}`);
+  if (movedOnly(v, formation, lineup)) bits.push('postes modifiés');
+  return bits.length ? bits.map((b) => b.replace(/ /g, '\u00a0')).join(' · ').replace(/^p/, 'P') : 'Rien ne change';
+};
+const planSet = (v, formation, tactic, lineup) => v.f !== formation || v.t !== tactic || v.s.length > 0 || v.l.some((id, k) => id !== lineup[k]);
+
+// Résumé dans l'avant-match : une ligne par situation, un toucher ouvre son plan.
+function PlansSummary({ players, lineup, formation, tactic, plans, onOpen }) {
+  return (
+    <div className="htp-sum">
+      {HT_CASES.map((k) => {
+        const v = planView(players, lineup, formation, tactic, plans[k]);
+        const set = planSet(v, formation, tactic, lineup);
+        return (
+          <button key={k} type="button" className={`htp-row ${set ? 'set' : ''}`} onClick={() => onOpen(k)}>
+            <b>{HT_LABELS[k]}</b>
+            <em>{planText(v, formation, tactic, lineup)}</em>
+            <IconChevron className="htp-go" />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// La fenêtre des plans : les trois situations en onglets ; pour chacune, l'équipe de la seconde période sur le terrain
+// (changements depuis le banc, cinq au plus ; condition estimée à la pause), le dispositif et la tactique.
+function HalftimePlans({ players, lineup, formation, tactic, plans, onChange, start, onClose }) {
+  const [k, setK] = useState(start || 'trail');
+  const v = planView(players, lineup, formation, tactic, plans[k]);
+  const names = useMemo(() => displayNames(players), [players]);
+  const set = (patch) => onChange({ ...plans, [k]: { f: v.f, t: v.t, s: v.s, l: v.l, ...patch } });
+  const onBoard = (next) => set({ l: next, s: pairSubs(lineup, next).map(([i, o]) => [o, i]) });
+  const reshape = (f) => set({ f, l: arrangeFor(players, v.l, f) });
+  const clear = () => { const next = { ...plans }; delete next[k]; onChange(next); };
+  const fitness = (p) => fitAt(p, 45, lineup.includes(p.id) ? 0 : 45); // titulaires : condition à la pause ; banc : frais
+  const ref = useRef(null);
+  useKeydown((e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } });
+  useSwipe(ref, { onDown: onClose, downMedia: PHONE });
+  const isSet = planSet(v, formation, tactic, lineup);
+  return (
+    <div className="sq-overlay ng-overlay htp-overlay" onClick={onClose}>
+      <article ref={ref} className="sq-sheet glass htp" onClick={(e) => e.stopPropagation()} aria-label="Plans de mi-temps">
+        <span className="grip" aria-hidden="true" />
+        <header className="sh-bar"><span className="eyebrow">Plans de mi-temps</span><button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button></header>
+        <p className="htp-intro">Le match se joue sans toi. À la pause, ton staff applique le plan qui correspond au score. Tes plans partent avec ton équipe validée.</p>
+        <div className="htp-tabs" role="tablist" aria-label="Score à la pause">
+          {HT_CASES.map((c) => {
+            const cv = planView(players, lineup, formation, tactic, plans[c]);
+            return (
+              <button key={c} role="tab" aria-selected={k === c} className={`${k === c ? 'active' : ''} ${planSet(cv, formation, tactic, lineup) ? 'set' : ''}`} onClick={() => setK(c)}>
+                <b>{HT_LABELS[c]}</b><em>{planText(cv, formation, tactic, lineup)}</em>
+              </button>
+            );
+          })}
+        </div>
+        <section className="htp-col htp-board" aria-label="Équipe de la seconde période">
+          <span className="ht-label">Seconde période · condition estimée à la pause</span>
+          <LineupBoard players={players} lineup={v.l} formation={v.f} onChange={onBoard} original={lineup} maxIn={SUBS_MAX} fitness={fitness} />
+        </section>
+        <section className="htp-col htp-set" aria-label="Réglages du plan">
+          <h3 className="pm-sh mark-head">Dispositif</h3>
+          <FormationPicker value={v.f} onChange={reshape} />
+          <h3 className="pm-sh mark-head">Tactique</h3>
+          <TacticPicker value={v.t} onChange={(t) => set({ t })} compact />
+          <h3 className="pm-sh mark-head">Changements <small>{v.s.length} sur {SUBS_MAX}</small></h3>
+          {v.s.length ? (
+            <div className="ht-changes">
+              {v.s.map(([out, id]) => {
+                const p = players.find((q) => q.id === id);
+                const pos = slotsOf(v.f)[v.l.indexOf(id)];
+                const off = p && pos && p.pos !== pos;
+                return (
+                  <div key={id} className="ht-swap">
+                    <span className="sub-way in">Entre</span><b>{names[id]}</b>
+                    <span className="sub-way out">Sort</span><b>{names[out]}</b>
+                    {off && <em className="htp-off">{names[id]} jouera hors de son poste</em>}
+                  </div>
+                );
+              })}
+            </div>
+          ) : <p className="ht-none">Aucun changement : fais entrer un remplaçant sur le terrain.</p>}
+          <div className="htp-foot">
+            {isSet && <button type="button" className="linkbtn" onClick={clear}>Effacer ce plan</button>}
+            <button type="button" className="btn" onClick={onClose}><IconCheck /> Terminé</button>
+          </div>
+        </section>
+      </article>
+    </div>
+  );
+}
+
 // --- Avant-match -------------------------------------------------------------------------------------
 // En haut, l'affiche (les deux clubs, leur classement et leur niveau), la billetterie du jour et le retour ; puis le
 // onze sur le terrain et le banc, le dispositif et la tactique (chacun avec son effet exact sur les occasions) ; en
@@ -90,6 +200,9 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const [tactic, setTactic] = useState(state.tactic || 'balanced');
   const [formation, setFormation] = useState(formationOf(state.formation).id);
   const [board, setBoard] = useState(() => !narrowScreen()); // composition dépliée sur PC, repliée sur téléphone
+  const friends = !!state.league; // partie de championnat entre amis : son match se joue sans elle (plans de mi-temps)
+  const [plans, setPlans] = useState(() => ({ ...(state.league?.plans || {}) })); // plans de mi-temps (ligue)
+  const [plansOpen, setPlansOpen] = useState(null); // situation ouverte dans la fenêtre des plans
   // niveau de l'onze au coup d'envoi, condition physique et forme comprises (comme le pronostic et le meilleur onze) ;
   // au repos, il vaudrait `rested` : la fatigue et la forme se lisent à côté du niveau, les pourcentages ne les cachent plus
   const rating = lineupRating(state.players, lineup, formation, fitWeight);
@@ -117,11 +230,11 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const homeRef = useFitText(state.clubName, 22);
   const awayRef = useFitText(ctx.opp.name, 22);
 
-  useKeydown((e) => { if (e.key === 'Escape') onCancel(); });
+  useKeydown((e) => { if (e.key === 'Escape' && !plansOpen) onCancel(); });
   // téléphone : glisser vers le bas (contenu tout en haut) ramène au complexe, comme pour les autres fenêtres ; la
   // composition dépliée garde son propre geste (data-noswipe, lineup.jsx)
   const ref = useRef(null);
-  useSwipe(ref, { onDown: onCancel, downMedia: PHONE });
+  useSwipe(ref, { onDown: () => { if (!plansOpen) onCancel(); }, downMedia: PHONE });
 
   // les deux équipes, l'équipe qui reçoit à gauche (0.8.1) : à l'extérieur, l'adversaire passe à gauche
   const usTeam = {
@@ -196,6 +309,10 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           <p className="pm-blurb">{form.blurb} <span className="pm-effect">{formationEffect(formation)}</span></p>
           <h3 className="pm-sh mark-head">Tactique</h3>
           <TacticPicker value={tactic} onChange={setTactic} />
+          {friends && <>
+            <h3 className="pm-sh mark-head">Plans de mi-temps</h3>
+            <PlansSummary players={state.players} lineup={lineup} formation={formation} tactic={tactic} plans={plans} onOpen={setPlansOpen} />
+          </>}
         </section>
         <div className="pm-go">
           <section className="pm-odds glass" aria-label="Pronostic">
@@ -205,10 +322,13 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
             </div>
             <OddsBar odds={odds} />
             {ctx.knockout && <p className="pm-xg pm-ko">Élimination directe, tirs au but en cas d’égalité ({pctOf(shootoutWinChance(pens.home, pens.away))} % pour toi) · qualification <b>{pctOf(qualify)} %</b></p>}
-            <button className="btn btn-xl" onClick={() => onKickoff(lineup, tactic, formation)}>{ctx.goLabel ? <><IconCheck /> {ctx.goLabel}</> : <><IconPlay className="fill" /> Coup d’envoi</>}</button>
+            <button className="btn btn-xl" onClick={() => onKickoff(lineup, tactic, formation, friends ? plans : undefined)}>{ctx.goLabel ? <><IconCheck /> {ctx.goLabel}</> : <><IconPlay className="fill" /> Coup d’envoi</>}</button>
           </section>
         </div>
       </div>
+      {plansOpen && (
+        <HalftimePlans players={state.players} lineup={lineup} formation={formation} tactic={tactic} plans={plans} onChange={setPlans} start={plansOpen} onClose={() => setPlansOpen(null)} />
+      )}
     </div>
   );
 }
@@ -377,6 +497,7 @@ function TeamNotes({ rows, shown, side, fitOf = null, names }) {
       else if (e.type === 'red') at(key).red++;
       else if (e.type === 'injury') at(key).hurt = true;
       else if (e.type === 'sub' && e.inId != null) { at(e.inId).inAt = e.minute; at(e.outId).outAt = e.minute; }
+      else if (e.type === 'sub' && e.inName) { at(e.inName).inAt = e.minute; at(e.outName).outAt = e.minute; } // visiteur (plan de mi-temps)
     }
     return f;
   }, [shown, side, names]);
@@ -533,19 +654,24 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     return () => { document.removeEventListener('visibilitychange', hide); window.removeEventListener('pagehide', persist); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // scène 3D : elle lit les onze, l'horloge et les temps forts dans le canal du direct (matchFeed)
-  const homeNames = () => live.state.lineup.map((id) => state.players.find((p) => p.id === id)?.name || '');
+  // scène 3D : elle lit les onze, l'horloge et les temps forts dans le canal du direct (matchFeed). Un match revu est
+  // déjà joué en entier : en première période, les onze et les dispositifs du coup d'envoi (avant les plans de mi-temps)
+  const kickoffView = () => !!replay && half === 1;
+  const homeNames = () => (kickoffView() ? live.state.startLineup : live.state.lineup).map((id) => state.players.find((p) => p.id === id)?.name || '');
+  const awayNames = () => ((kickoffView() && live.state.awayStart) || live.state.awayRoster).map((p) => p.name);
+  const formationNow = () => (kickoffView() ? live.state.startFormation || live.state.formation : live.state.formation);
+  const awayFormationNow = () => (kickoffView() ? live.state.awayStartFormation || live.state.awayFormation : live.state.awayFormation);
   useEffect(() => {
     Object.assign(matchFeed, {
       active: !preview, ended: false, phase, half, clock: clockRef.current, speed,
-      formation: live.state.formation, homeNames: homeNames(), awayNames: live.state.awayRoster.map((p) => p.name),
-      awayFormation: live.state.awayFormation, awayName: live.state.away,
+      formation: formationNow(), homeNames: homeNames(), awayNames: awayNames(),
+      awayFormation: awayFormationNow(), awayName: live.state.away,
       hl: null, hlAck: 0, hlReveal: 0, hlDone: 0, hlClock: 0, hlPhase: '', show3D: false,
     });
     return () => { Object.assign(matchFeed, { active: false, hl: null, show3D: false }); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    Object.assign(matchFeed, { phase: phase === 'subs' ? 'playing' : phase, half, speed, homeNames: homeNames() });
+    Object.assign(matchFeed, { phase: phase === 'subs' ? 'playing' : phase, half, speed, homeNames: homeNames(), awayNames: awayNames(), formation: formationNow(), awayFormation: awayFormationNow() });
     if (phase === 'fulltime') matchFeed.ended = true;
   }, [phase, half, events, speed, lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -603,7 +729,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     hlRef.current = { id, e, type, started: performance.now(), revealed: false };
     setHl({ id, type, e, replay: false });
     Object.assign(matchFeed, {
-      hl: { id, e, type, half, replay: speed === 1, homeNames: homeNames(), awayNames: live.state.awayRoster.map((p) => p.name), awayFormation: live.state.awayFormation, formation: live.state.formation },
+      hl: { id, e, type, half, replay: speed === 1, homeNames: homeNames(), awayNames: awayNames(), awayFormation: awayFormationNow(), formation: formationNow() },
       hlAck: 0, hlReveal: 0, hlDone: 0, hlClock: clockRef.current, hlPhase: '', show3D: true,
     });
   };

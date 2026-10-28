@@ -21,7 +21,7 @@ import { capitalize, clubAfter, isPluralClub, withArticle } from '../game/names'
 import { Crest } from './crest';
 import { fmtMoney, fmtRating } from './format';
 import { Tabs } from './glass';
-import { answerLeagueOffer, leagueOfferOf, setLeagueOffer } from '../game/leagueClub';
+import { answerFriend, canSell, offerFriend, queuedFor } from '../game/leagueClub';
 import { IconCheck, IconChevron, IconClose, IconRadar, IconSearch, IconStar, IconTransfer, IconTrend } from './icons';
 import { useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
@@ -249,14 +249,14 @@ function News({ state }) {
 }
 
 // Mode d'emploi en trois temps, à la première visite (jusqu'à « Compris »).
-// Championnat entre amis : marché commun sous pli fermé, offres aux amis (LeagueOffer).
+// Championnat entre amis : marché commun et clubs de l'ordinateur négociés comme en solo, offres aux amis (LeagueOffer).
 function HowTo({ run, league = false }) {
   return (
     <section className="mc-howto" aria-label="Comment marche le mercato">
       {league ? (
         <ol>
-          <li><b>Repère</b><span>Le marché commun est le même pour toute la ligue ; de nouveaux joueurs y arrivent à chaque journée.</span></li>
-          <li><b>Offre</b><span>Sur le marché, la plus haute offre l’emporte au calcul de la journée. Pour le joueur d’un ami, c’est ton ami qui répond, à la journée suivante.</span></li>
+          <li><b>Repère</b><span>Le marché commun et les clubs de l’ordinateur sont les mêmes pour toute la ligue ; de nouveaux joueurs libres arrivent à chaque journée.</span></li>
+          <li><b>Négocie</b><span>Comme en solo : l’indemnité avec le club du joueur, puis son contrat. Le premier club de la ligue à conclure l’emporte. Pour le joueur d’un ami, c’est ton ami qui répond à ton offre.</span></li>
           <li><b>Vends</b><span>Mets des joueurs en vente : des clubs font aussitôt leurs offres, d’autres après chaque journée. Tes amis peuvent aussi t’en faire.</span></li>
         </ol>
       ) : (
@@ -389,7 +389,7 @@ function BuyView({ state, run, refLvl, recommended, followed, onOpen, onCompare,
           <MarketCard key={p.id} p={p} state={state} refLvl={refLvl} followed={followed.has(p.id)} recommended={p.id === recommended}
             onOpen={(q) => onOpen(q, list)} onCompare={onCompare} onFollow={onFollow} onOffer={onOffer} />
         ))}
-        <Network state={state} />
+        {!state.league && <Network state={state} />}
       </ul>
     </>
   );
@@ -716,7 +716,7 @@ export function Mercato({ state, run, ask, refLvl, recommended, initialView = 'b
       />}
       {view === 'buy' && <BuyView {...common} run={run} followed={followed} />}
       {view === 'watch' && <WatchView {...common} run={run} />}
-      {view === 'offers' && state.league && <LeagueOffersBlock state={state} run={run} refLvl={refLvl} onOffer={onOffer} />}
+      {view === 'offers' && state.league && <LeagueOffersBlock state={state} run={run} ask={ask} refLvl={refLvl} onOffer={onOffer} />}
       {view === 'offers' && <OffersView state={state} refLvl={refLvl} run={run} ask={ask} onOffer={onOffer} onSale={onSale} onList={onList} />}
       {view === 'log' && <LogView state={state} />}
     </div>
@@ -732,6 +732,17 @@ const vsDemand = (x, d) => {
   return `${k} % ${x < d ? 'sous' : 'au-dessus de'} sa demande`;
 };
 const yearsOf = (n) => plural(n, 'an', 'ans'); // durée d'un contrat (une saison = un an)
+// Championnat entre amis : la raison d'un refus du serveur des ligues, dite par le jeu (jamais le texte brut du serveur) ;
+// aussi pour les notifications (App.jsx). kind : sign, offer ou answer.
+export function leagueNote(note, kind) {
+  if (/journée se joue/.test(note || '')) return 'Le mercato est fermé le temps de jouer la journée. Réessaie après le match.';
+  if (/au plus/.test(note || '')) return kind === 'sign' ? 'Six signatures au plus par journée : réessaie après le prochain match.' : 'Trois offres en attente au plus : retire-en une, ou attends une réponse.';
+  if (/transféré|retirée|répondue|quitté/.test(note || '')) return 'Ce joueur vient de changer de situation : rouvre le mercato pour voir où il en est.';
+  if (kind === 'answer') return 'Ta réponse n’est pas partie. Réessaie dans un moment.';
+  return kind === 'sign' ? 'La ligue n’a pas pu confirmer la signature. Réessaie dans un moment.' : 'Ton offre n’est pas partie. Réessaie dans un moment.';
+}
+// La négociation à l'écran (son joueur) : une réponse de la ligue qu'elle affiche déjà ne repart pas en notification.
+export const dealOnScreen = { id: null };
 const NICE = [50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1e6];
 const niceStep = (v) => NICE.find((x) => x >= v) || 1e6; // pas rond de la prime (dix pas environ jusqu'à ce qu'il attend)
 // Négociation en cours, à conclure avant la prochaine journée (vue Offres) : contre-proposition de l'agent, indemnité
@@ -763,6 +774,10 @@ export function Negotiation({ state, p, run, refLvl, onClose, onSheet, onLineup 
   const done = fresh(state.lastContract)?.result === 'accepted' ? state.lastContract : null;
   useEffect(() => { if (done) haptic('build'); }, [done?.at]); // eslint-disable-line react-hooks/exhaustive-deps
   const onMarket = !!findOnMarket(state, p.id);
+  // championnat entre amis : l'accord trouvé attend la confirmation de la ligue (le premier club qui signe l'emporte)
+  const waiting = state.league ? queuedFor(state, (x) => x.k === 'sign' && x.id === p.id) : null;
+  const lost = ['taken', 'blocked'].includes(fresh(state.lastContract)?.result) ? state.lastContract : null;
+  useEffect(() => { dealOnScreen.id = p.id; return () => { if (dealOnScreen.id === p.id) dealOnScreen.id = null; }; }, [p.id]);
   const shell = (cls, label, body) => (
     <div className="sq-overlay ng-overlay" onClick={onClose}>
       <article ref={ref} className={`sq-sheet glass ng ng-deal ${cls}`} onClick={(e) => e.stopPropagation()} aria-label={label}>
@@ -772,6 +787,32 @@ export function Negotiation({ state, p, run, refLvl, onClose, onSheet, onLineup 
     </div>
   );
   const bar = (eyebrow) => <header className="sh-bar"><span className="eyebrow">{eyebrow}</span><button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button></header>;
+
+  if (!done && (waiting || lost)) {
+    return shell('ng-done', waiting ? 'Signature en cours' : 'Signature manquée', (
+      <>
+        {bar('Mercato')}
+        <section className="ng-win">
+          {waiting ? (
+            <>
+              <span className="ng-win-ico wait"><IconTransfer /></span>
+              <h3>Accord trouvé</h3>
+              <p>La ligue doit encore confirmer la signature de <b>{p.name}</b> : si un autre club a conclu avant toi, il l’emporte.</p>
+              {waiting.fee > 0 && <p className="ng-terms-line">Indemnité convenue {clubAfter('avec ', p.club)} : {fmtMoney(waiting.fee)}.</p>}
+              {termsLine(waiting.terms, false) && <p className="ng-terms-line">{termsLine(waiting.terms, false)}</p>}
+            </>
+          ) : (
+            <>
+              <span className="ng-win-ico lost"><IconClose /></span>
+              <h3>{lost.result === 'taken' ? 'Trop tard' : 'Signature non confirmée'}</h3>
+              <p>{lost.result === 'taken' ? <>Un autre club de la ligue a signé <b>{p.name}</b> juste avant toi.</> : leagueNote(lost.note, 'sign')}</p>
+            </>
+          )}
+          <div className="ng-actions"><button className="btn ghost" onClick={onClose}>Retour au mercato</button></div>
+        </section>
+      </>
+    ));
+  }
 
   if (done || (mode === 'sign' && !onMarket)) {
     const signed = done && state.players.find((q) => q.id === p.id);
@@ -973,7 +1014,7 @@ function ContractStep({ state, p, run, opened, renew, feeAgreed }) {
         {feeAgreed && !result && (
           <section className="ng-answer agreed">
             <b>{club} {agree(p.club, 'accepte', 'acceptent')} : {fmtMoney(feeAgreed.amount)}</b>
-            <span>Place au contrat : l’indemnité est réservée jusqu’à la prochaine journée.</span>
+            <span>{state.league ? 'Place au contrat : l’indemnité tient jusqu’à la prochaine journée, mais le premier club de la ligue qui conclut signe le joueur.' : 'Place au contrat : l’indemnité est réservée jusqu’à la prochaine journée.'}</span>
           </section>
         )}
         {result && (
@@ -1057,7 +1098,7 @@ function ContractStep({ state, p, run, opened, renew, feeAgreed }) {
             <>
               <LiveChance label="Chances d’accord" shown={shown} note={shown === 0 ? 'Proposition trop basse : refus assuré' : shown === 100 ? 'Signature assurée à ces conditions' : null} />
               <button className="btn btn-xl" disabled={!!block} onClick={send} title={block || ''}>{renew ? 'Prolonger' : 'Proposer le contrat'} · {fmtMoney(wage)}</button>
-              {block ? <span className="ng-block">{block}</span> : <span className="ng-tries">{plural(left, 'tentative', 'tentatives')} aujourd’hui{fee ? ' · indemnité réservée jusqu’à la prochaine journée' : ''}</span>}
+              {block ? <span className="ng-block">{block}</span> : <span className="ng-tries">{plural(left, 'tentative', 'tentatives')} aujourd’hui{state.league ? ' · le premier club qui conclut l’emporte' : fee ? ' · indemnité réservée jusqu’à la prochaine journée' : ''}</span>}
             </>
           )}
         </footer>
@@ -1405,51 +1446,65 @@ export function SaleToggle({ state, p, run, onList }) {
   );
 }
 
-// --- Championnat entre amis : les offres d'une journée --------------------------------------------------------------
-// Dans une partie de ligue (leagueClub.js), le mercato est commun : un joueur du marché commun se recrute sous pli
-// fermé (au moins le prix affiché, la plus haute offre l'emporte au calcul de la journée), un joueur d'ami par une offre
-// à laquelle il répond à la journée suivante. Pas de négociation : l'offre devient un ordre de la journée, envoyé avec
-// l'équipe validée (renvoyé aussitôt si elle l'est déjà). Même fenêtre que la négociation du solo.
+// --- Championnat entre amis : les joueurs des amis (0.8.3) -----------------------------------------------------------
+// Une offre pour le joueur d'un ami part aussitôt au serveur des ligues ; ton ami l'accepte ou la refuse depuis son
+// mercato, et acceptée, le transfert est conclu sur-le-champ (le joueur arrive à la relecture suivante de la ligue, dans
+// la minute). Trois offres en attente au plus ; une offre sans réponse tombe à la fin de la journée. Les joueurs libres
+// et ceux des clubs de l'ordinateur se négocient comme en solo (Negotiation), et le premier club qui signe l'emporte.
 const sumOf = (list) => list.reduce((a, b) => a + (b.x || 0), 0);
 export function LeagueOffer({ state, p, run, refLvl, onClose, onSheet }) {
   const ref = useRef(null);
   useSwipe(ref, { onDown: onClose, downMedia: PHONE });
   useKeydown((e) => { if (e.key === 'Escape') onClose(); });
-  const market = p.leagueKind === 'market';
+  const L = state.league;
   const ask = costOf(p, state);
   const step = stepFor(ask);
-  const current = leagueOfferOf(state, p);
-  const lo = market ? ask : roundTo(ask * 0.5, step);
+  const mine = (L.offersOut || []).find((o) => o.l === p.lid) || null;
+  const open = mine?.status === 'open' ? mine : null;
+  const queued = queuedFor(state, (x) => (x.k === 'offer' || x.k === 'withdraw') && x.lid === p.lid);
+  const lo = roundTo(ask * 0.5, step);
   const hi = Math.max(lo + step, roundTo(ask * 2, step));
-  const [offer, setOffer] = useState(current ?? ask);
+  const [offer, setOffer] = useState(open?.x ?? ask);
   const set = (v) => setOffer(Math.min(hi, Math.max(lo, roundTo(v, step))));
-  const orders = state.league.orders || {};
-  const others = market ? (orders.bids || []).filter((b) => b.i !== p.lid) : (orders.offers || []).filter((b) => b.l !== p.lid);
-  const engaged = sumOf((orders.bids || []).filter((b) => b.i !== p.lid)) + sumOf((orders.offers || []).filter((b) => b.l !== p.lid));
+  const others = (L.offersOut || []).filter((o) => o.status === 'open' && o.l !== p.lid);
+  const engaged = sumOf(others);
   const tooMuch = engaged + offer > state.money;
-  const full = others.length >= 3 && current == null;
+  const full = others.length >= 3 && !open;
   const squadFull = state.players.length >= SQUAD_MAX;
+  const failed = state.lastLeague?.k === 'offer' && state.lastLeague.lid === p.lid && !state.lastLeague.ok ? state.lastLeague : null;
   const r = playerRating(p);
-  const send = () => { run((s) => setLeagueOffer(s, p, offer)); haptic('build'); onClose(); };
-  const remove = () => { run((s) => setLeagueOffer(s, p, null)); onClose(); };
+  const send = () => { run((s) => offerFriend(s, p, offer)); haptic('build'); };
+  const remove = () => run((s) => offerFriend(s, p, null));
+  const plural2 = isPluralClub(p.club);
+  // état de l'offre : la file d'envoi d'abord, puis la réponse du serveur, puis celle de l'ami
+  const state2 = queued ? (queued.k === 'withdraw' ? ['Retrait en cours', 'Retrait de ton offre…', 'countered'] : ['Envoi en cours', 'Envoi de ton offre…', 'countered'])
+    : failed ? ['Offre non envoyée', leagueNote(failed.note, 'offer'), '']
+      : open ? ['En attente de la réponse de ton ami', `Offre de ${fmtMoney(open.x)} envoyée : ${withArticle(p.club)} ${plural2 ? 'n’ont' : 'n’a'} pas encore répondu.`, 'countered']
+        : mine?.status === 'no' ? ['Offre refusée', `${capitalize(withArticle(p.club))} ${plural2 ? 'ont' : 'a'} refusé ton offre de ${fmtMoney(mine.x)}.`, ''] : null;
   return (
     <div className="sq-overlay" onClick={onClose}>
       <article ref={ref} className="sq-sheet glass ng" onClick={(e) => e.stopPropagation()} aria-label={`Offre pour ${p.name}`}>
         <span className="grip" aria-hidden="true" />
         <header className="sh-bar">
-          <span className="eyebrow">{market ? 'Marché commun · offre sous pli fermé' : `Offre ${clubAfter('à ', p.club)}`}</span>
+          <span className="eyebrow">Offre {clubAfter('à ', p.club)}</span>
           <button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button>
         </header>
         <section className="ng-player">
           <span className={`mc-medal ${heat(r, refLvl)}`}><b>{fmtRating(r)}</b><span>{p.pos}</span></span>
           <div>
             <h3>{p.name}</h3>
-            <span className="ng-club">{p.club ? <><Crest name={p.club} className="mc-crest" />{p.club}</> : 'Joueur libre'} · {p.age} ans</span>
+            <span className="ng-club"><Crest name={p.club} className="mc-crest" />{p.club} · {p.age} ans</span>
           </div>
           <button className="linkbtn ng-sheet" onClick={() => onSheet(p.id)}>Sa fiche</button>
         </section>
+        {state2 && (
+          <section className={`ng-answer ${state2[2]}`}>
+            <b>{state2[0]}</b>
+            <span>{state2[1]}</span>
+          </section>
+        )}
         <section className="ng-offer">
-          <div className="ng-ask"><span>{market ? 'Prix affiché' : 'Sa valeur'}</span><b>{fmtMoney(ask)}</b></div>
+          <div className="ng-ask"><span>Sa valeur</span><b>{fmtMoney(ask)}</b></div>
           <span className="eyebrow">Ton offre</span>
           <div className="ng-amount">
             <button className="hud-icon" onClick={() => set(offer - step)} aria-label="Baisser l’offre" disabled={offer <= lo}>−</button>
@@ -1461,42 +1516,53 @@ export function LeagueOffer({ state, p, run, refLvl, onClose, onSheet }) {
         <section className="ng-chance">
           <span className="eyebrow">Comment ça se joue</span>
           <ul className="ng-reasons">
-            {market
-              ? <li>L’offre la plus élevée de la ligue l’emporte au calcul de la journée ; si son club n’a plus les moyens ou la place, la suivante prend le relais, et à égalité, un tirage au sort départage. Les autres clubs ne paient rien.</li>
-              : <li>{capitalize(withArticle(p.club))} répond à la journée suivante ; s’il accepte, le transfert se fait à son calcul.</li>}
-            <li>Ton offre part avec ton équipe validée ; si ton équipe est déjà validée, l’offre part aussitôt. Trois offres au plus par journée, sur le marché comme auprès de tes amis.</li>
-            {engaged > 0 && <li>Déjà engagé pour cette journée : {fmtMoney(engaged)}.</li>}
+            <li>Ton offre part aussitôt : ton ami l’accepte ou la refuse depuis son mercato.</li>
+            <li>Acceptée, le transfert est conclu sur-le-champ : le joueur rejoint ton effectif, l’indemnité part de ton compte.</li>
+            <li>Trois offres en attente au plus ; une offre restée sans réponse tombe à la fin de la journée.</li>
+            {engaged > 0 && <li>Déjà promis dans tes autres offres : {fmtMoney(engaged)}.</li>}
           </ul>
         </section>
         <footer className="ng-foot">
-          <button className="btn btn-xl" disabled={tooMuch || full || squadFull} onClick={send}>
-            {squadFull ? `Effectif complet (${SQUAD_MAX})` : full ? 'Trois offres déjà faites' : tooMuch ? `Il te manque ${fmtMoney(engaged + offer - state.money)}` : current != null ? `Changer mon offre · ${fmtMoney(offer)}` : `Faire cette offre · ${fmtMoney(offer)}`}
+          <button className="btn btn-xl" disabled={tooMuch || full || squadFull || !!queued || (!!open && offer === open.x)} onClick={send}>
+            {squadFull ? `Effectif complet (${SQUAD_MAX})` : full ? 'Trois offres déjà en attente' : tooMuch ? `Il te manque ${fmtMoney(engaged + offer - state.money)}` : open ? `Changer mon offre · ${fmtMoney(offer)}` : `Faire cette offre · ${fmtMoney(offer)}`}
           </button>
-          {current != null
-            ? <button className="btn ghost" onClick={remove}>Retirer mon offre</button>
-            : !full && <span className="ng-tries">{plural(3 - others.length, 'offre possible', 'offres possibles')} pour cette journée</span>}
+          {open
+            ? <button className="btn ghost" disabled={!!queued} onClick={remove}>Retirer mon offre</button>
+            : !full && <span className="ng-tries">Encore {plural(3 - others.length, 'offre possible', 'offres possibles')}</span>}
         </footer>
       </article>
     </div>
   );
 }
 
-// Offres de tes amis (réponse avant la journée) et tes offres de la journée, en tête de l'onglet Offres du mercato,
-// avec les rangées des offres reçues du solo.
-function LeagueOffersBlock({ state, run, refLvl, onOffer }) {
+// Offres de tes amis (à accepter ou refuser : acceptée, la vente est conclue aussitôt) et tes offres en cours (réponse
+// de tes amis, signatures qui attendent la ligue), en tête de l'onglet Offres du mercato, avec les rangées du solo.
+function LeagueOffersBlock({ state, run, ask, refLvl, onOffer }) {
   const L = state.league;
-  const orders = L.orders || {};
   const name = (slot) => L.clubs.find((c) => c.slot === slot)?.name || '?';
   const pool = poolOf(state);
-  const target = (kind, lid) => pool.find((p) => p.lid === lid && p.leagueKind === kind);
-  const mine = [
-    ...(orders.bids || []).map((b) => ({ key: `m-${b.i}`, p: target('market', b.i), x: b.x, note: 'Marché commun · sous pli fermé' })),
-    ...(orders.offers || []).map((b) => {
-      const p = target('friend', b.l);
-      return { key: `f-${b.l}`, p, x: b.x, note: `${p?.club || 'Ami'} · réponse à la journée suivante` };
-    }),
-  ];
-  const waiting = (L.offersOut || []).map((o) => ({ key: o.id, p: target('friend', o.l), name: o.n, x: o.x, note: `${name(o.s)} · réponse avant la prochaine journée` }));
+  const target = (lid) => pool.find((p) => p.lid === lid && p.leagueKind === 'friend');
+  const busy = (id) => queuedFor(state, (x) => x.k === 'answer' && x.id === id);
+  // vendre à un ami se confirme, comme une vente du solo (rien ne revient en arrière)
+  const sell = (o, p, club) => {
+    const imp = impactOf(state, -wageOf(p, state.divisionIndex), -o.x);
+    ask({
+      title: `Vendre ${p.name} ${clubAfter('à ', club)} ?`,
+      text: `${p.name} (${p.age} ans, ${POS_LABELS[p.pos].toLowerCase()}, note ${fmtRating(playerRating(p))}) rejoindra ${withArticle(club)}, le club de ton ami. La vente est conclue aussitôt.${state.lineup?.includes(p.id) ? ' C’est un titulaire : ton onze sera recomposé.' : ''}`,
+      rows: [
+        ['Montant du transfert', `+${fmtMoney(o.x)}`, 'up'],
+        ['Salaire économisé', `${fmtMoney(wageOf(p, state.divisionIndex))} / saison`, 'up'],
+        ['Fin de saison prévue', `${fmtMoney(imp.endNow)} → ${fmtMoney(imp.endAfter)}`],
+      ],
+      confirmLabel: `Vendre · ${fmtMoney(o.x)}`,
+      onConfirm: () => run((s) => answerFriend(s, o, true)),
+    });
+  };
+  const signing = (L.outbox || []).filter((x) => x.k === 'sign');
+  const out = (L.offersOut || []).map((o) => ({
+    key: o.id, p: target(o.l), name: o.n, x: o.x,
+    note: o.status === 'open' ? `${name(o.s)} · en attente de sa réponse` : `${name(o.s)} · refusée`, refused: o.status === 'no',
+  }));
   const medal = (p) => (p
     ? <span className={`mc-medal sm ${heat(playerRating(p), refLvl)}`}><b>{fmtRating(playerRating(p))}</b><span>{p.pos}</span></span>
     : <span className="mc-medal sm" aria-hidden="true"><b>–</b></span>);
@@ -1505,22 +1571,22 @@ function LeagueOffersBlock({ state, run, refLvl, onOffer }) {
       <section className="mc-sec">
         <span className="eyebrow">Offres de tes amis</span>
         {(L.offersIn || []).length === 0 ? (
-          <p className="mc-hint">Aucune offre d’un ami pour l’instant. Ta réponse part avec ton équipe validée ; le transfert se fait au calcul de la journée.</p>
+          <p className="mc-hint">Aucune offre d’un ami pour l’instant. Accepter conclut le transfert aussitôt : le joueur part, l’indemnité arrive.</p>
         ) : (
           <ul className="mc-rows">
             {L.offersIn.map((o) => {
               const p = state.players.find((q) => q.lid === o.l);
-              const yes = (orders.accept || []).includes(o.id);
-              const no = (orders.refuse || []).includes(o.id);
               const club = name(o.b);
+              const sending = busy(o.id);
+              const sellable = canSell(state, o.l);
               return (
                 <li key={o.id} className="mc-row offer">
                   {medal(p)}
-                  <span className="mc-row-main"><b>{o.n}</b><em>{capitalize(withArticle(club))} {isPluralClub(club) ? 'offrent' : 'offre'} {fmtMoney(o.x)}</em></span>
-                  <span className="mc-amount"><b>{fmtMoney(o.x)}</b><em className={yes ? 'up' : ''}>{yes ? 'acceptée' : no ? 'refusée' : 'à ta réponse'}</em></span>
+                  <span className="mc-row-main"><b>{o.n}</b><em>{capitalize(withArticle(club))} {isPluralClub(club) ? 'veulent' : 'veut'} le recruter{sellable ? '' : ` · effectif trop court : ${SQUAD_MIN + 3} joueurs au moins pour vendre`}</em></span>
+                  <span className="mc-amount"><b>{fmtMoney(o.x)}</b><em>{sending ? 'envoi…' : 'attend ta réponse'}</em></span>
                   <div className="mc-row-actions">
-                    <button className={`btn btn-sm ${yes ? '' : 'ghost'}`} aria-pressed={yes} onClick={() => run((s) => answerLeagueOffer(s, o.id, yes ? null : true))}>Accepter</button>
-                    <button className={`btn btn-sm refuse ${no ? '' : 'ghost'}`} aria-pressed={no} onClick={() => run((s) => answerLeagueOffer(s, o.id, no ? null : false))}>Refuser</button>
+                    <button className="btn btn-sm" disabled={!!sending || !sellable || !p} onClick={() => sell(o, p, club)}>Accepter</button>
+                    <button className="btn btn-sm refuse ghost" disabled={!!sending} onClick={() => run((s) => answerFriend(s, o, false))}>Refuser</button>
                   </div>
                 </li>
               );
@@ -1529,17 +1595,24 @@ function LeagueOffersBlock({ state, run, refLvl, onOffer }) {
         )}
       </section>
       <section className="mc-sec">
-        <span className="eyebrow">Mes offres de la journée</span>
-        {mine.length === 0 && waiting.length === 0 ? (
-          <p className="mc-hint">Aucune offre en cours. Recrute sur le marché commun, ou fais une offre pour le joueur d’un ami.</p>
+        <span className="eyebrow">Mes offres en cours</span>
+        {out.length === 0 && signing.length === 0 ? (
+          <p className="mc-hint">Aucune offre en cours. Négocie sur le marché commun ou avec un club de l’ordinateur, ou fais une offre pour le joueur d’un ami.</p>
         ) : (
           <ul className="mc-rows">
-            {[...mine, ...waiting].map((r) => (
+            {signing.map((x) => (
+              <li key={`s-${x.pid}`} className="mc-row counter">
+                {medal(pool.find((p) => p.id === x.id))}
+                <span className="mc-row-main"><b>{x.n}</b><em>Accord trouvé · en attente de la ligue</em></span>
+                <span className="mc-amount"><b>{fmtMoney(x.fee || x.terms?.bonus || 0)}</b><em>{x.fee ? (x.terms?.bonus ? 'indemnité, hors prime' : 'indemnité') : 'prime à la signature'}</em></span>
+              </li>
+            ))}
+            {out.map((r) => (
               <li key={r.key} className="mc-row">
                 {medal(r.p)}
-                <span className="mc-row-main"><b>{r.p?.name || r.name || '?'}</b><em>{r.note}</em></span>
+                <span className="mc-row-main"><b>{r.p?.name || r.name || '?'}</b><em className={r.refused ? 'down' : ''}>{r.note}</em></span>
                 <span className="mc-amount"><b>{fmtMoney(r.x)}</b></span>
-                {r.p && !r.name && <button className="btn btn-sm" onClick={() => onOffer(r.p)}>Voir</button>}
+                {r.p && <button className="btn btn-sm" onClick={() => onOffer(r.p)}>Voir</button>}
               </li>
             ))}
           </ul>

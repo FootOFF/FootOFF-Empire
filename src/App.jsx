@@ -5,6 +5,8 @@ import {
 import { staffOn } from './game/training';
 import { BUILDINGS, DIVISIONS, upgradeCost } from './game/constants';
 import { fmtMoney } from './ui/format';
+import { withArticle } from './game/names';
+import { dealOnScreen, leagueNote } from './ui/mercato';
 import { clearGame, clearLive, decodeCode, exportCode, importSave, lastLoad, loadGame, loadLive, saveGame } from './game/save';
 import { LIVE_VERSION, liveKeyOf } from './game/live';
 import { applyUpdate } from './ui/updates';
@@ -32,8 +34,8 @@ import { DirectionView } from './ui/direction';
 import { MedicalView } from './ui/medical';
 import { LeagueView } from './ui/league';
 import { deadlineText, leagueOpen } from './game/league';
-import { LeagueError, leagueResults, myLeagues, refreshLeague, sendSheet, takeInvite } from './game/leagueNet';
-import { applyLeagueRound, createLeagueClub, leagueClubProgress, loadLeagueClub, myReplay, readLeagueClub, saveLeagueClub, syncLeagueClub, teamSheet } from './game/leagueClub';
+import { LeagueError, leagueResults, myLeagues, refreshLeague, sendMove, sendSheet, takeInvite } from './game/leagueNet';
+import { applyLeagueRound, createLeagueClub, leagueClubProgress, leagueRequest, loadLeagueClub, myReplay, readLeagueClub, saveLeagueClub, settleLeague, syncLeagueClub, teamSheet } from './game/leagueClub';
 import { adoptPulled, cloudNote, cloudPlan, isPushing, markUnreadable, playedPrint, pullClub, pushClub, savedWhen, stageOf, syncOf } from './game/leagueCloud';
 import ConfirmDialog from './ui/confirm';
 import { Presence } from './ui/presence';
@@ -382,8 +384,8 @@ export default function App({ preview = null }) {
     setMatchPhase('prematch');
   };
   const cancelMatch = () => { setMatchPhase(null); setMatchDay(false); };
-  const kickoff = (lineup, tactic, formation) => {
-    if (state.league) { sendLeagueTeam(lineup, tactic, formation); return; }
+  const kickoff = (lineup, tactic, formation, plans) => {
+    if (state.league) { sendLeagueTeam(lineup, tactic, formation, plans); return; }
     setResumeLive(null);
     clearLive();
     if (run((s) => { staffSession(s); s.lineup = lineup; s.tactic = tactic; s.formation = formation; return s; })) setMatchPhase('live');
@@ -699,22 +701,39 @@ export default function App({ preview = null }) {
       document.removeEventListener('visibilitychange', tick); document.removeEventListener('visibilitychange', away);
     };
   }, [leagueCode, leagueLive?.m]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Ordres de la semaine (offres au marché commun, aux amis, réponses : leagueClub.js) : équipe déjà validée, ils
-  // repartent aussitôt avec elle ; sinon, ils partiront avec elle.
-  const ordersKey = state?.league ? JSON.stringify(state.league.orders || {}) : null;
-  const ordersSent = useRef(ordersKey);
+  // File des demandes au serveur des ligues (leagueClub.js : signature d'une recrue négociée, offre pour le joueur d'un
+  // ami, réponse à une offre reçue) : une à la fois, dans l'ordre, et la réponse s'applique à la partie. Serveur
+  // injoignable : la demande attend la relecture suivante de la ligue (toutes les minutes).
+  const outbox = state?.league?.outbox || [];
+  const outboxKey = outbox.length ? `${outbox[0].k}:${outbox[0].at}` : null;
+  const outboxBusy = useRef(false);
   useEffect(() => {
-    if (!ordersKey || !leagueLive || ordersKey === ordersSent.current) return undefined;
-    const { d, m } = leagueLive;
-    if (state.league.sent !== `${d.league.season}:${d.league.round}`) { ordersSent.current = ordersKey; return undefined; }
-    const t = setTimeout(() => {
-      ordersSent.current = ordersKey;
-      sendSheet(m, d.league.season, d.league.round, teamSheet(clone(state)))
-        .then(() => notify({ kind: 'success', eyebrow: state.league.name, title: 'Choix de la journée envoyés', text: 'Ils partent avec ton équipe validée.', key: 'league-orders' }))
-        .catch((x) => notify({ kind: 'warn', eyebrow: state.league.name, title: 'Choix non envoyés', text: x.message }));
-    }, 900);
-    return () => clearTimeout(t);
-  }, [ordersKey]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!outboxKey || !leagueLive?.m || outboxBusy.current) return;
+    const item = outbox[0];
+    const { m } = leagueLive;
+    outboxBusy.current = true;
+    sendMove(m, leagueRequest(state, item)).then((res) => {
+      outboxBusy.current = false;
+      setState((s) => (s?.league?.code === m.code ? settleLeague(clone(s), item, res) : s));
+      if (item.k === 'sign' && dealOnScreen.id !== item.id) { // la fenêtre de négociation ouverte le dit déjà
+        notify(res?.id
+          ? { kind: 'success', eyebrow: state.league.name, title: 'Accord conclu', text: `${item.n} rejoint ton effectif.`, key: 'league-sign' }
+          : { kind: 'warn', eyebrow: state.league.name, title: res?.taken ? 'Trop tard' : 'Signature non confirmée', text: res?.taken ? `Un autre club de la ligue a signé ${item.n} juste avant toi.` : leagueNote(res?.error, 'sign'), key: 'league-sign' });
+      }
+      if (item.k === 'answer' && res?.status === 'done') {
+        const who = state.players.find((p) => p.lid === item.lid)?.name || 'Le joueur';
+        const to = state.league.clubs.find((c) => c.slot === item.b)?.name;
+        notify({ kind: 'success', eyebrow: state.league.name, title: 'Transfert conclu', text: `${who} rejoint ${to ? withArticle(to) : 'le club de ton ami'} : ${fmtMoney(item.fee)} arrivent sur ton compte.`, key: 'league-sale' });
+      }
+      if (item.k !== 'sign' && res?.error) {
+        notify({
+          kind: 'warn', eyebrow: state.league.name, key: 'league-move',
+          title: item.k === 'answer' ? 'Réponse non prise en compte' : item.k === 'withdraw' ? 'Retrait non pris en compte' : 'Offre non envoyée',
+          text: item.k === 'withdraw' ? 'Ton offre n’a pas pu être retirée : elle reste en attente. Réessaie dans un moment.' : leagueNote(res.error, item.k === 'answer' ? 'answer' : 'offer'),
+        });
+      }
+    }, () => { outboxBusy.current = false; });
+  }, [outboxKey, leagueLive]); // eslint-disable-line react-hooks/exhaustive-deps
   // La journée à appliquer : celle de notre prochaine journée, une fois jouée par la ligue (saison d'avant comprise).
   const leaguePending = (() => {
     if (!state?.league || !leagueLive) return null;
@@ -723,13 +742,13 @@ export default function App({ preview = null }) {
     return list.find((r) => r.round === state.round) || null;
   })();
   // « Valider mon équipe » : l'équipe et l'effectif partent au serveur (teamSheet), pour la journée ouverte.
-  const sendLeagueTeam = async (lineup, tactic, formation) => {
+  const sendLeagueTeam = async (lineup, tactic, formation, plans = state.league.plans) => {
     const { d, m } = leagueLive;
     const key = `${d.league.season}:${d.league.round}`;
     try {
       if (d.league.season !== state.league.season || d.league.round !== state.round) throw new Error('La journée a changé : regarde d’abord le match de la journée précédente.');
-      await sendSheet(m, d.league.season, d.league.round, teamSheet(clone(state), { lineup, tactic, formation }));
-      run((s) => { s.lineup = lineup; s.tactic = tactic; s.formation = formation; s.league.sent = key; return s; });
+      await sendSheet(m, d.league.season, d.league.round, teamSheet(clone(state), { lineup, tactic, formation, plans }));
+      run((s) => { s.lineup = lineup; s.tactic = tactic; s.formation = formation; s.league.plans = plans || {}; s.league.sent = key; return s; });
       notify({ kind: 'success', eyebrow: state.league.name, title: 'Équipe validée', text: `Journée ${d.league.round + 1} : le match se joue dès que tous ont validé, au plus tard ${deadlineText(d.league.deadline)}.`, key: 'league-sent' });
     } catch (x) {
       notify({ kind: 'warn', eyebrow: state.league.name, title: 'Équipe non envoyée', text: x.message });

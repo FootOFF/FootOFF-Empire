@@ -4,6 +4,16 @@
 
 export const CHANGELOG = [
   {
+    version: '0.8.3', date: '2026-10-28', title: 'Championnats entre amis',
+    items: [
+      'Le Siège de la Ligue ouvre ses portes : crée un championnat entre amis (bâtiment de l’Élite), ou rejoins celui d’un ami par son lien d’invitation. Ni compte ni e-mail : un pseudo et ton club suffisent.',
+      'Huit clubs, une journée par jour à l’heure choisie par le créateur. Les places libres reviennent à des clubs de l’ordinateur qui construisent, recrutent et adaptent leur tactique à l’adversaire.',
+      'Plans de mi-temps : le match se joue sans toi. Prépare ce que fait ton staff à la pause selon le score (tu mènes, égalité, tu es mené) : dispositif, tactique et jusqu’à cinq changements.',
+      'Mercato de la ligue : les joueurs libres et ceux des clubs de l’ordinateur se négocient comme en solo, et le premier club qui conclut signe le joueur. Une offre à un ami part aussitôt ; acceptée, le transfert est immédiat.',
+      'Ton club de ligue est sauvegardé en ligne : tu le retrouves sur un autre appareil.',
+    ],
+  },
+  {
     version: '0.8.2', date: '2026-10-28', title: 'Un staff plus juste',
     items: [
       'Un conseil du staff que tu masques reste masqué, même quand tu recharges le jeu, jusqu’à ce que la situation change. Quand il n’a rien d’utile à dire, le staff se tait.',

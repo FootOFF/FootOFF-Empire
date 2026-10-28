@@ -69,12 +69,14 @@ export function ensureFixedPlots(s) {
 }
 
 // Quel bâtiment peut-on poser sur une parcelle vide ? N'importe lequel, s'il n'est pas déjà construit : chaque
-// bâtiment se construit une seule fois (le stade a sa parcelle). Le Siège de la Ligue, seulement en Élite.
+// bâtiment se construit une seule fois (le stade a sa parcelle). Le Siège de la Ligue, seulement en Élite. Dans un club
+// de championnat entre amis, ni Bureau des transferts (le mercato y est celui de la ligue : marché commun, clubs de la
+// ligue, amis ; 0.8.3) ni Siège.
 export const ELITE_ONLY = ['league'];
 export function allowedBuildingsFor(s) {
   const built = new Set(Object.keys(s.buildings).filter((k) => s.buildings[k] > 0));
   const elite = s.divisionIndex === DIVISIONS.length - 1;
-  return ['training', 'academy', 'fans', 'sponsor', 'transfers', 'direction', 'medical', ...(LEAGUE_OPEN && elite ? ['league'] : [])]
+  return ['training', 'academy', 'fans', 'sponsor', ...(s.league ? [] : ['transfers']), 'direction', 'medical', ...(LEAGUE_OPEN && elite && !s.league ? ['league'] : [])]
     .filter((k) => BUILDINGS[k] && !built.has(k));
 }
 

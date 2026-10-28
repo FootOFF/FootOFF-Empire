@@ -1,7 +1,7 @@
 import { clamp, pick, ri } from './utils';
 import { capitalize, clubAfter, deName, isPluralClub } from './names';
 import { penaltySkills, shootout, shootoutWinChance } from './cups';
-import { TACTICS, expectedGoals, formationOf, lineupRating, slotsOf } from './tactics';
+import { FORMATIONS, TACTICS, expectedGoals, formationOf, lineupRating, slotsOf } from './tactics';
 import { available, fitAt, fitFactor, formFactor, ratingAt } from './players';
 import { injuryCut } from './medical';
 import { opponentEleven } from './opponents';
@@ -502,6 +502,7 @@ export function createLiveMatch(s, ctx, saved = null) {
     startLineup: [...s.lineup], // onze de départ (historique du match : composition sur le terrain)
     subsList: [], // changements faits : entrant, sortant, minute
     formation: formationOf(s.formation).id,
+    startFormation: formationOf(s.formation).id, // dispositif du coup d'envoi (un plan de mi-temps peut le changer)
     comp: ctx.comp || 'league',
     atHome: ctx.home !== false, // à l'extérieur (Élite) : l'avantage du terrain passe à l'adversaire
     knockout: !!ctx.knockout, // coupe : pas de match nul, tirs au but
@@ -611,7 +612,7 @@ export function createLiveMatch(s, ctx, saved = null) {
       shots: [...m.shots], scorers: [...m.scorers], len: events().length,
       sentH: new Set(m.sent.home), sentA: new Set(m.sent.away), bookedH: new Set(m.booked.home), bookedA: new Set(m.booked.away),
       out: new Set(m.out), gone: new Set(m.gone), injuries: [...m.injuries], played: new Set(m.played),
-      perf: JSON.parse(JSON.stringify(m.perf)), lineup: [...m.lineup], tactic: m.tactic, subsUsed: m.subsUsed, subsList: [...m.subsList],
+      perf: JSON.parse(JSON.stringify(m.perf)), lineup: [...m.lineup], tactic: m.tactic, formation: m.formation, subsUsed: m.subsUsed, subsList: [...m.subsList],
       lastAmbience: m.lastAmbience, usedAmbience: new Set(m.usedAmbience), simTo: m.simTo,
     };
   }
@@ -619,7 +620,7 @@ export function createLiveMatch(s, ctx, saved = null) {
     Object.assign(m, {
       score: { ...x.score }, pens: x.pens, stats: { ...x.stats, shots: [...x.stats.shots], onTarget: [...x.stats.onTarget], yellow: [...x.stats.yellow], red: [...x.stats.red], xg: [...x.stats.xg], saves: [...x.stats.saves], post: [...x.stats.post], wide: [...x.stats.wide], big: [...x.stats.big], pens: [...x.stats.pens], possHalf: [...x.stats.possHalf] },
       shots: [...x.shots], scorers: [...x.scorers], out: new Set(x.out), gone: new Set(x.gone), injuries: [...x.injuries], played: new Set(x.played),
-      perf: JSON.parse(JSON.stringify(x.perf)), lineup: [...x.lineup], tactic: x.tactic, subsUsed: x.subsUsed, subsList: [...x.subsList],
+      perf: JSON.parse(JSON.stringify(x.perf)), lineup: [...x.lineup], tactic: x.tactic, formation: x.formation ?? m.formation, subsUsed: x.subsUsed, subsList: [...x.subsList],
       lastAmbience: x.lastAmbience, usedAmbience: new Set(x.usedAmbience), simTo: x.simTo,
     });
     m.sent = { home: new Set(x.sentH), away: new Set(x.sentA) };
@@ -861,9 +862,11 @@ export function createLiveMatch(s, ctx, saved = null) {
     const res = (gf > ga ? 0.5 : gf < ga ? -0.5 : 0) * f;
     // qui a joué, à quel poste et combien de temps : onze de départ, puis changements montrés
     const lineup = [...m.startLineup];
-    const slots = slotsOf(m.formation);
+    let slots = slotsOf(m.startFormation || m.formation);
     const home = new Map(lineup.map((id, k) => [id, { id, pos: slots[k], in: 0, out: null }]));
-    const away = new Map(awayRoster.map((p) => [p.name, { p, pos: p.pos, in: 0, out: null }]));
+    // visiteur : son onze de départ (awayStart, gardé quand un plan de mi-temps le change), puis ses entrants
+    const away = new Map((m.awayStart || awayRoster).map((p) => [p.name, { p, pos: p.pos, in: 0, out: null }]));
+    const awayNow = new Map(awayRoster.map((p) => [p.name, p]));
     const homeByName = new Map(s.players.map((p) => [p.name, p.id]));
     const add = (rec, k, v) => { if (rec) rec[k] = (rec[k] || 0) + v; };
     for (const e of shown) {
@@ -875,6 +878,18 @@ export function createLiveMatch(s, ctx, saved = null) {
         if (rec && rec.out == null) rec.out = at;
         if (k >= 0) lineup[k] = e.inId;
         if (!home.has(e.inId)) home.set(e.inId, { id: e.inId, pos: k >= 0 ? slots[k] : null, in: at, out: null });
+        continue;
+      }
+      if (e.type === 'sub' && e.inName) {
+        const rec = away.get(e.outName);
+        if (rec && rec.out == null) rec.out = at;
+        const p = awayNow.get(e.inName);
+        if (p && !away.has(e.inName)) away.set(e.inName, { p, pos: p.pos, in: at, out: null });
+        continue;
+      }
+      if (e.type === 'info' && e.side === 'home' && e.formation) { // nouveau dispositif : les postes des entrants suivants
+        slots = slotsOf(e.formation);
+        if (e.lineup) lineup.splice(0, lineup.length, ...e.lineup);
         continue;
       }
       const recOf = (name, id) => (mine ? home.get(id ?? homeByName.get(name)) : away.get(name));
@@ -911,6 +926,7 @@ export function createLiveMatch(s, ctx, saved = null) {
     }).filter(Boolean);
     const theirs = [...away.values()].map((rec) => ({
       name: rec.p.name, num: rec.p.num, pos: rec.pos, p: rec.p, on: rec.out == null,
+      minutes: Math.max(0, Math.min(minute, rec.out ?? minute) - rec.in),
       rating: noteOf({ ...rec, side: 'away', form: m.form[`o:${rec.p.name}`] }, ratingAt(rec.p, rec.pos) - m.myRating, gf),
     }));
     return { home: ours, away: theirs };
@@ -920,9 +936,10 @@ export function createLiveMatch(s, ctx, saved = null) {
   // expulsés à leur place, au plus SUBS_MAX entrants dans le match, aucun entrant blessé, suspendu ou déjà sorti.
   function lineupBlock(next) {
     const before = m.lineup;
-    if (!Array.isArray(next) || next.length !== before.length || new Set(next).size !== next.length) return 'Onze incomplet.';
+    const named = Array.isArray(next) ? next.filter((id) => id !== null) : [];
+    if (!Array.isArray(next) || next.length !== before.length || new Set(named).size !== named.length) return 'Onze incomplet.';
     if (before.some((id, k) => m.sent.home.has(id) && next[k] !== id)) return 'Un expulsé ne peut pas être remplacé.';
-    const ins = next.filter((id) => !before.includes(id));
+    const ins = named.filter((id) => !before.includes(id));
     if (ins.length > SUBS_MAX - m.subsUsed) return 'Plus de changement disponible.';
     for (const id of ins) {
       const p = s.players.find((q) => q.id === id);
@@ -935,9 +952,10 @@ export function createLiveMatch(s, ctx, saved = null) {
 
   // Changement et tactique à une minute du match, ou à la pause (halftime : les événements ouvrent la seconde
   // période). En cours de jeu, les minutes déjà simulées à partir de là sont reprises depuis l'instantané et
-  // rejouées ensuite avec le nouveau onze. staff : changement décidé par le staff (un blessé remplacé). Renvoie null
-  // si c'est accepté, sinon la raison.
-  function change(minute, { lineup = null, tactic = null, halftime = false, staff = false } = {}) {
+  // rejouées ensuite avec le nouveau onze. staff : changement décidé par le staff (un blessé remplacé). formation : un
+  // nouveau dispositif (plan de mi-temps, league.js), le onze donné déjà replacé dans ses postes. Renvoie null si c'est
+  // accepté, sinon la raison.
+  function change(minute, { lineup = null, tactic = null, formation = null, halftime = false, staff = false } = {}) {
     const next = lineup || m.lineup;
     const block = lineupBlock(next);
     if (block) return block;
@@ -966,12 +984,41 @@ export function createLiveMatch(s, ctx, saved = null) {
     }
     const moved = next.filter((id, k) => before.includes(id) && before[k] !== id).length;
     m.lineup = [...next];
-    if (moved) target.push({ ...make(at, 'info', 'home', `${m.home} réorganise son équipe.`), half });
+    if (FORMATIONS[formation] && formation !== m.formation) {
+      m.formation = formation;
+      target.push({ ...make(at, 'info', 'home', `Changement de dispositif : ${m.home} passe en ${formationOf(formation).name}.`), half, formation, lineup: [...next] });
+    } else if (moved) target.push({ ...make(at, 'info', 'home', `${m.home} réorganise son équipe.`), half });
     if (tactic && TACTICS[tactic] && tactic !== m.tactic) {
       m.tactic = tactic;
       target.push({ ...make(at, 'info', 'home', `Changement tactique : ${m.home} passe en ${TACTICS[tactic].name.toLowerCase()}.`), half });
     }
     return null;
+  }
+
+  // Plan de mi-temps du visiteur (championnats entre amis, league.js), à la pause : ses changements ([sortant, entrant],
+  // des joueurs), le onze qui en sort dans l'ordre des postes, son dispositif, sa tactique et le niveau de ce onze. Les
+  // notes du match suivent ses entrants par leur nom ; awayStart garde son onze de départ.
+  function awayChange({ subs = [], eleven = null, formation = null, tactic = null, strength = null } = {}) {
+    const target = m.halves[1];
+    m.awayStart ||= [...awayRoster];
+    m.awayStartFormation ||= m.oppPlan?.formation || m.awayFormation;
+    for (const [out, inn] of subs) {
+      m.form[`o:${inn.name}`] ??= Math.round((Math.random() - 0.5) * 120) / 100;
+      target.push({ ...make(45, 'sub', 'away', `Changement pour ${m.away} : ${inn.name} remplace ${out.name}.`), half: 2, inName: inn.name, outName: out.name });
+    }
+    if (eleven) awayRoster.splice(0, awayRoster.length, ...eleven);
+    const plan = { tactic: m.oppPlan?.tactic || 'balanced', formation: m.oppPlan?.formation || m.awayFormation };
+    if (FORMATIONS[formation] && formation !== plan.formation) {
+      plan.formation = formation;
+      m.awayFormation = formation;
+      target.push({ ...make(45, 'info', 'away', `Changement de dispositif : ${m.away} passe en ${formationOf(formation).name}.`), half: 2, formation });
+    }
+    if (TACTICS[tactic] && tactic !== plan.tactic) {
+      plan.tactic = tactic;
+      target.push({ ...make(45, 'info', 'away', `Changement tactique : ${m.away} passe en ${TACTICS[tactic].name.toLowerCase()}.`), half: 2 });
+    }
+    m.oppPlan = plan;
+    if (Number.isFinite(strength)) m.oppStrength = strength;
   }
 
   return {
@@ -1026,6 +1073,7 @@ export function createLiveMatch(s, ctx, saved = null) {
       return outcomeOdds(chancesAt, lead, durations, (k) => (k <= rest ? minute + k : 45 + k - rest), short);
     },
     change,
+    awayChange,
     // compatibilité : composition et tactique de la mi-temps
     applyLineup(next) { return this.change(45, { lineup: next, halftime: true }) === null; },
     setTactic(t) { this.change(45, { tactic: t, halftime: true }); },
@@ -1048,7 +1096,7 @@ export function createLiveMatch(s, ctx, saved = null) {
         ga: m.score.away,
         scorers: m.scorers,
         myRating: Math.round(lineupRating(s.players, m.lineup, m.formation) * 10) / 10,
-        formation: m.formation,
+        formation: m.startFormation || m.formation, // avec le onze de départ
         lineup: [...m.startLineup],
         subs: m.subsList.map((x) => ({ ...x })),
         injuries: m.injuries.map((x) => ({ ...x })),

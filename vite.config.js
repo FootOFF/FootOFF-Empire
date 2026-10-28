@@ -21,14 +21,15 @@ function serviceWorker() {
 }
 
 // base './' : le build peut être servi depuis n'importe quel chemin (footoff.media/footoffempire/, GitHub Pages)
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react(), serviceWorker()],
   base: './',
   // championnats entre amis en développement : le serveur des ligues du site lancé en local (next dev -p 3130), servi
-  // sous la même origine que le jeu, comme en ligne (www.footoff.media/api/ligue)
-  server: { proxy: { '/api/ligue': 'http://localhost:3130' } },
+  // sous la même origine que le jeu, comme en ligne (www.footoff.media/api/ligue) ; en mode « serveur-reel » (npm run
+  // dev -- --mode serveur-reel), le vrai serveur en ligne, pour une répétition générale avec des ligues d'essai
+  server: { proxy: { '/api/ligue': { target: mode === 'serveur-reel' ? 'https://www.footoff.media' : 'http://localhost:3130', changeOrigin: true } } },
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10)),
   },
-});
+}));

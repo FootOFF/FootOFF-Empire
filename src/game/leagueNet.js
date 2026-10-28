@@ -52,6 +52,17 @@ export const kickMember = (m, member) => call(`/${m.code}/kick`, { method: 'POST
 export const leaveLeague = (m) => call(`/${m.code}/leave`, { method: 'POST', body: {}, auth: m });
 export const sendSheet = (m, season, round, sheet) => call(`/${m.code}/sheet`, { method: 'POST', body: { season, round, sheet }, auth: m });
 export const sendResult = (m, body) => call(`/${m.code}/result`, { method: 'POST', body: { ...body, engine: LEAGUE_ENGINE }, auth: m });
+// Mercato immédiat (0.8.3) : une demande de la file de la partie (leagueClub.js, leagueRequest) : sign, offer, withdraw,
+// answer. Refusée par le serveur (signature prise par un autre club, mercato fermé le temps de la journée, offre déjà
+// répondue) : sa réponse, avec la raison ; injoignable : l'erreur remonte (la demande repartira plus tard).
+export async function sendMove(m, { action, body }) {
+  try {
+    return await call(`/${m.code}/${action}`, { method: 'POST', body, auth: m });
+  } catch (x) {
+    if (x instanceof LeagueError && x.status >= 400 && x.status < 500 && x.status !== 429) return { error: x.message, taken: !!x.data?.taken };
+    throw x;
+  }
+}
 // Sauvegarde du club (leagueCloud.js) : la copie du serveur ; l'envoi d'une copie partie de la version base
 export const fetchSave = (m) => call(`/${m.code}/save`, { auth: m });
 export const sendSave = (m, body, { keepalive = false } = {}) => call(`/${m.code}/save`, { method: 'POST', body, auth: m, keepalive });
@@ -110,9 +121,15 @@ export async function refreshLeague(m) {
   if (!d.due || playing.has(m.code)) return d;
   playing.add(m.code);
   try {
-    const full = await syncedState(m, { teams: true });
-    if (!full.due || !full.teams) return full;
-    await sendResult(m, { season: full.league.season, round: full.league.round, ...roundPayload(full, full.world) });
+    for (let k = 0; k < 2; k++) { // une signature tombée au même instant : la journée se recalcule une fois avec elle
+      const full = await syncedState(m, { teams: true });
+      if (!full.due || !full.teams) return full;
+      const sent = await sendResult(m, { season: full.league.season, round: full.league.round, ...roundPayload(full, full.world) }).catch((x) => {
+        if (x instanceof LeagueError && x.data?.retry) return null;
+        throw x;
+      });
+      if (sent) break;
+    }
   } catch {
     return d; // journée prise par un autre ami au même instant, ou réseau : l'état d'avant, relu à la prochaine visite
   } finally {

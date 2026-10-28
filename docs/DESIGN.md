@@ -689,8 +689,7 @@ partie). Remplace la carte « Ton club » à onglets et l'avant-match du Siège 
   journée (`applyMoves`).
 - Vérifié (2026-10-28) : saison simulée de deux appareils (classements identiques), puis dans le navigateur une saison
   entière (sept journées, bilan, saison 2, retour à la carrière intacte) et une recrue du marché commun.
-- Reste à faire : direct à l'heure de la journée, bureau des transferts sans usage en ligue, clubs de l'ordinateur sans
-  bâtiments.
+- Reste à faire : direct à l'heure de la journée (bureau des transferts et bâtiments de l'ordinateur : faits, plus bas).
 
 Sauvegarde en ligne du club de ligue (2026-10-28, accord de l'utilisateur sur la solution du « casier ») : sans elle, un
 club de ligue ne vivait que dans le navigateur (changement d'appareil, données effacées, Safari qui efface un site non
@@ -716,6 +715,63 @@ ouvert depuis sept jours : le club perdu en pleine saison).
   neuf, reprise silencieuse, conflit et choix, serveur en panne puis revenu, données de l'appareil effacées).
 - Au passage : un poste vide dans l'équipe d'un ami (effectif trop court, comme en solo) ne bloque plus le calcul de la
   journée (`cleanSheet`, onze du visiteur).
+
+Plans de mi-temps, mercato immédiat, ordinateur appliqué (2026-10-28, cahier des charges de l'utilisateur : « trois
+situations », « tactique, dispositif et jusqu'à cinq changements », « tout le mercato », « réponse du propriétaire, puis
+lance », « joueur appliqué ») ; moteur des matchs entre amis en version 2 (`LEAGUE_ENGINE`, `ENGINE_CURRENT` du site) :
+- Sans Bureau des transferts dans un club de ligue (`map.js`, ni bâtiment ni encart du réseau de recruteurs) : le
+  mercato y est celui de la ligue.
+- Plans de mi-temps : personne n'est connecté au calcul de la journée, chaque club prépare donc la pause pour trois
+  scores (il mène, égalité, il est mené), vus de son camp. Un plan (`{ f, t, s, l }` sur la feuille, `cleanPlans`) :
+  dispositif, tactique, cinq changements au plus ([sortant, entrant]) et le onze voulu dans l'ordre des postes. À la
+  pause (`halftimePlans`, `league.js`), le club qui reçoit passe par le direct (`change` : changements au même poste, puis
+  dispositif et tactique), le visiteur par `awayChange` (`live.js` : entrants suivis par leur nom, `awayStart` garde le
+  onze de départ pour les notes et le rejeu) ; le onze voulu est respecté s'il reste possible (blessure, expulsion,
+  changement de trop : le meilleur placement dans le dispositif du plan). Les blessés restent remplacés par le staff, à
+  la minute. Un match sans plan se joue exactement comme avant (70 matchs comparés à la 0.8.2). Le rejeu garde les
+  entrants du visiteur avec le résultat (`sq`), la première période revue montre les onze du coup d'envoi.
+- Écran : dans l'avant-match d'un club de ligue, une ligne par score (« Je mène », « Égalité », « Je suis mené », avec
+  ce qui change) ; un toucher ouvre la fenêtre des plans (`HalftimePlans`, `match.jsx` : onglets des trois situations,
+  l'équipe de la seconde période sur le terrain de la composition, condition estimée à la pause, dispositif, tactique,
+  changements, « Effacer ce plan », « Terminé »), grande fenêtre centrée sur PC, feuille plein écran sur téléphone. Les
+  plans sont gardés dans la partie (`s.league.plans`) et relus sur le onze de l'avant-match (`planView` : changer un
+  titulaire ne casse que les changements qui le concernaient).
+- Mercato immédiat (serveur : table `ligue_moves`, actions `sign`, `offer`, `withdraw`, `answer`) : les joueurs libres
+  du marché commun et ceux des clubs de l'ordinateur se négocient comme en solo (indemnité, puis contrat) ; l'accord
+  trouvé, la signature part au serveur, qui la donne au premier club (une signature par joueur, index unique) ; la
+  recrue arrive à sa réponse (« Accord trouvé », puis « Accord conclu », ou « Trop tard » si un autre club l'a signé
+  juste avant). Les joueurs des amis : une offre qui part aussitôt (trois en attente au plus), à laquelle l'ami répond
+  depuis son mercato ; acceptée, le transfert est conclu sur-le-champ et les autres offres pour ce joueur refusées
+  d'office. La partie garde ses demandes dans une file (`s.league.outbox`, envoyée une à une par `App.jsx`, reprise
+  après une coupure) et les mouvements déjà appliqués (`s.league.done`). Le mercato ferme pendant qu'une journée est due ;
+  le calcul de la journée rejoue ses mouvements (`withMoves` : joueur libre retiré du marché, joueur de l'ordinateur
+  retiré de son club avec l'indemnité versée, joueur vendu retiré de l'équipe envoyée par son ancien club) et les
+  compte (`mv`) : le serveur refuse une journée qui en oublie un, le jeu la recalcule une fois. Chaque mouvement est
+  vérifié contre l'état de la ligue (un joueur absent du marché ou du club de l'ordinateur : sans effet, sans indemnité)
+  mais compte quand même. Bornes du serveur (audit cyber-auditor du 2026-10-28) : une signature par joueur et par journée,
+  six signatures et huit offres (trois en attente) par ami et par journée, 1,5 Ko par mouvement, plafonds et journée
+  vérifiés dans l'écriture même, offres d'un ami parti fermées, le joueur cédé pris de la seule réponse du vendeur (et
+  forcément celui de l'offre), historique des transferts lu par index et borné à 50 lignes par sens. Côté jeu : un joueur
+  relu d'un autre appareil (équipe envoyée, joueur cédé) est vérifié champ par champ (`unsnapPlayer`), un mouvement
+  illisible est passé sans bloquer la relecture de la ligue, et un joueur de l'ordinateur signé pour moins de la moitié
+  de sa valeur reste à son club (`MIN_FEE_SHARE`, la négociation ne descend jamais sous 60 % du prix).
+  Vendre à un ami se confirme comme une vente du solo (montant, salaire économisé, fin de saison prévue). Un titulaire d'un club de
+  l'ordinateur coûte un quart de plus ; un club de l'ordinateur ne vend plus personne à treize joueurs.
+- Ordinateur appliqué (`leagueWorld.js`) : son équipe du jour (`appliedSheet`) prend le dispositif qui met le mieux en
+  valeur son effectif et une tactique selon l'écart avec l'adversaire (plus fort de 0,35 : offensive ; plus faible :
+  bloc bas), avec ses plans de mi-temps (mené : offensive et deux remplaçants frais ; devant : il gère ; à égalité, il
+  pousse s'il est le plus fort) ; les mêmes règles font jouer le club d'un ami absent. Il construit aux prix du solo
+  (`aiBuild` : un chantier par journée au plus, 8 000 € gardés pour recruter ; centre médical, puis stade, puis centre
+  d'entraînement) : le stade augmente ses recettes à domicile, le centre médical réduit ses blessures à domicile, le
+  centre d'entraînement fait mieux progresser ses joueurs. Il achète sur le marché quand un joueur renforce vraiment
+  son onze (vingt joueurs au plus) et libère son remplaçant le moins utile au-delà de dix-huit : il arrive au marché
+  commun. Pas de salaires pour l'ordinateur (son économie reste celle de la ligue).
+- Ouverture au public (0.8.3, 2026-10-28, demande du PDG : « rends ça public pour que je puisse tester avec mon frère »)
+  : `LEAGUE_OPEN` vrai, après le dépôt du correctif du site et un essai de fumée sur le vrai serveur (8 contrôles).
+- Vérifié (2026-10-28) : plans (11 contrôles), mercato (26), ordinateur sur trois saisons (11), 20 contrôles de l'API
+  (course à la signature, mercato fermé, journée qui oublie un mouvement), puis dans le navigateur les plans sur PC et
+  téléphone appliqués dans le vrai match, et un mercato complet à deux clubs (joueur libre, joueur de l'ordinateur,
+  journée, offre acceptée entre amis).
 
 ## Centre médical
 

@@ -18,6 +18,7 @@ import { PLOTS, ensureFixedPlots, plotIndexOf } from './map';
 import { ensureLineup } from './tactics';
 import { prepareFirstSeason } from './tutorial';
 import { rnd } from './utils';
+import { snapPlayer, unsnapPlayer } from './leagueWorld';
 import { book, ensureLedger } from './ledger';
 import { addSigning, emptyRecords, rebuildRecords } from './records';
 import { normalizeCrest } from './crest';
@@ -252,6 +253,7 @@ function completeSigning(s, p, fee, terms) {
   const from = p.club;
   const paid = from ? fee : terms.bonus;
   for (const k of ['club', 'contract', 'listedAt', 'priceMod', 'trend', 'interest', 'listedRounds', 'talks', 'ctalks']) delete p[k];
+  for (const k of ['leagueKind', 'leaguePrice', 'leagueSlot', 'leagueMember', 'price', 'since']) delete p[k]; // championnat entre amis
   s.money -= fee + terms.bonus;
   book(s, 'signings', fee + terms.bonus);
   addSigning(s.records ||= rebuildRecords(s), p, paid, s); // record : plus gros achat
@@ -276,6 +278,18 @@ function completeSigning(s, p, fee, terms) {
       : `À ${p.age} ans, il s’engage pour ${years} à ${eur(terms.wage)} par saison${terms.bonus ? `, avec une prime de ${eur(terms.bonus)}` : ''}.`,
   });
   return s;
+}
+
+// Championnat entre amis (0.8.3) : la recrue dont le serveur des ligues a confirmé la signature (leagueClub.js,
+// settleLeague) ; item : la demande gardée dans la file (le joueur tel qu'il était sur le marché, l'indemnité, le contrat).
+// Si la place a été relue entre-temps (il n'y est plus : c'est lui qu'on vient de signer), il est refait d'après la demande.
+export function signLeagueRecruit(s, item) {
+  let p = findOnMarket(s, item.id);
+  if (!p) {
+    p = { ...unsnapPlayer(item.pl), id: item.id, club: item.kind === 'a' ? item.club || 'Club de la ligue' : null };
+    s.transfers = [...(s.transfers || []), p];
+  }
+  return completeSigning(s, p, item.kind === 'a' ? item.fee : 0, item.terms);
 }
 
 // Achat au prix demandé et aux conditions demandées par le joueur, sans négociation (aperçus de la galerie).
@@ -331,6 +345,7 @@ export function acceptCounter(s, id) {
 // et prime), discussions closes pour la journée, prolongation impossible.
 export function contractBlock(s, p, terms) {
   if (ctalksOf(s, p).closed) return 'Il ne discutera plus avant la prochaine journée.';
+  if (!s.players.includes(p) && s.league?.outbox?.some((x) => x.k === 'sign')) return 'Une signature attend la réponse de la ligue.';
   if (s.players.includes(p)) {
     if (!renewOpen(s, p)) return 'Son contrat court déjà sur cinq ans : impossible de le prolonger.';
     if (terms.bonus > s.money) return 'Trésorerie insuffisante pour cette prime.';
@@ -347,6 +362,14 @@ export function contractBlock(s, p, terms) {
 function sealContract(s, p, terms, renew) {
   if (!renew) {
     const fee = p.club ? p.talks.fee : 0;
+    if (s.league && (p.leagueKind === 'market' || p.leagueKind === 'ai')) {
+      // championnat entre amis (0.8.3) : la signature part au serveur des ligues, le premier club qui conclut l'emporte ;
+      // la recrue arrive à sa réponse (leagueClub.js, settleLeague)
+      const item = { k: 'sign', id: p.id, kind: p.leagueKind === 'ai' ? 'a' : 'm', pid: p.lid, slot: p.leagueSlot ?? null, club: p.club || null, fee, terms, n: p.name, pl: snapPlayer(p), at: Date.now() };
+      s.league.outbox = [...(s.league.outbox || []).filter((x) => !(x.k === 'sign' && x.pid === p.lid)), item];
+      s.lastContract = { id: p.id, name: p.name, result: 'pending', renew, terms, fee, at: Date.now() };
+      return s;
+    }
     completeSigning(s, p, fee, terms);
     s.lastContract = { id: p.id, name: p.name, result: 'accepted', renew, terms, fee, at: Date.now() };
     return s;

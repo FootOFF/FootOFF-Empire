@@ -140,7 +140,12 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
 
   const sheetPlayer = sheet && find(sheet.id);
   const list = sheet?.order ? sheet.order.map(find).filter(Boolean) : sheet?.market ? poolOf(state) : squad;
-  const dealPlayer = deal !== null ? find(deal) : null;
+  // la négociation garde son joueur quand il quitte le marché pendant qu'elle est ouverte (signé par un autre club de la
+  // ligue, marché renouvelé) : la fenêtre dit alors ce qui s'est passé au lieu de disparaître
+  const lastDeal = useRef(null);
+  const found = deal !== null ? find(deal) : null;
+  if (found) lastDeal.current = found;
+  const dealPlayer = deal === null ? null : found || (lastDeal.current?.id === deal ? lastDeal.current : null);
   const listingPlayer = listing !== null ? state.players.find((p) => p.id === listing) : null;
   const step = (d) => {
     const i = list.findIndex((p) => p.id === sheet.id);
@@ -186,7 +191,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
         />
       )}</Presence>
       <Presence>{career !== null && <PlayerCareer state={state} id={career} onClose={() => setCareer(null)} onSheet={(pid) => { setCareer(null); setSheet({ id: pid }); }} />}</Presence>
-      <Presence>{dealPlayer && dealPlayer.leagueKind && state.league && (
+      <Presence>{dealPlayer && dealPlayer.leagueKind === 'friend' && state.league && (
         <LeagueOffer
           key={dealPlayer.id}
           state={state}
@@ -197,7 +202,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
           onSheet={(id) => { setDeal(null); setCompare(null); setSheet({ id }); }}
         />
       )}</Presence>
-      <Presence>{dealPlayer && !(dealPlayer.leagueKind && state.league) && (
+      <Presence>{dealPlayer && !(dealPlayer.leagueKind === 'friend' && state.league) && (
         <Negotiation
           key={dealPlayer.id}
           state={state}

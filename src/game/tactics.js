@@ -8,7 +8,9 @@ import { available, fitFactor, fitOf, formFactor, ratingAt } from './players';
 // Dispositifs : nombre de défenseurs, milieux, attaquants ; effet sur les occasions (for = les nôtres, against =
 // celles de l'adversaire, appliqués ensemble : un dispositif ouvert rend le match plus fou des deux côtés, un
 // dispositif fermé le resserre) ; position de chaque poste sur le schéma (en %, attaque vers le haut).
-export const FORMATIONS = {
+// tables sans prototype : un nom reçu d'un autre appareil (« constructor », « __proto__ », « toString ») n'y trouve rien
+// (audit cyber-auditor du 2026-10-28 : sinon une équipe piégée faisait planter le calcul d'une journée entre amis)
+export const FORMATIONS = Object.assign(Object.create(null), {
   '433': {
     id: '433', name: '4-3-3', lines: [4, 3, 3], for: 1, against: 1,
     blurb: 'Trois attaquants, trois milieux : le dispositif de référence, équilibré.',
@@ -39,7 +41,7 @@ export const FORMATIONS = {
     blurb: 'Cinq défenseurs et des contres : match fermé, très difficile à battre.',
     pitch: [[50, 90], [8, 57], [28, 70], [50, 68], [72, 70], [92, 57], [28, 44], [50, 48], [72, 44], [36, 20], [64, 20]],
   },
-};
+});
 export const FORMATION_ORDER = ['433', '442', '4231', '352', '343', '532'];
 export const formationOf = (f) => FORMATIONS[f] || FORMATIONS['433'];
 export const slotsOf = (f) => {
@@ -48,7 +50,7 @@ export const slotsOf = (f) => {
 };
 export const SLOTS = slotsOf('433'); // dispositif par défaut (adversaires, anciennes parties)
 
-export const TACTICS = {
+export const TACTICS = Object.assign(Object.create(null), {
   offensive: {
     id: 'offensive', name: 'Offensive', for: 1.28, against: 1.22,
     blurb: 'Pressing haut, latéraux projetés : plus d’occasions des deux côtés.',
@@ -61,7 +63,7 @@ export const TACTICS = {
     id: 'low', name: 'Bloc bas', for: 0.72, against: 0.68,
     blurb: 'Défense regroupée et contres : match fermé, peu d’occasions.',
   },
-};
+});
 export const TACTIC_ORDER = ['offensive', 'balanced', 'low'];
 
 const HOME_BONUS = 1.06;

@@ -67,8 +67,9 @@ export const BUILDINGS = {
 // Division d'une partie pour l'écran : une partie de championnat entre amis (leagueClub.js) porte le nom de sa ligue,
 // avec l'échelle économique de son niveau.
 export const divisionOf = (s) => (s.league ? { ...DIVISIONS[s.divisionIndex], name: s.league.name } : DIVISIONS[s.divisionIndex]);
-// Championnats entre amis : fermés tant que le serveur des ligues n'est pas en service (le bâtiment ne se propose pas).
-export const LEAGUE_OPEN = false;
+// Championnats entre amis : ouverts au public depuis la 0.8.3 (2026-10-28, demande du PDG ; serveur des ligues en service,
+// mercato immédiat déposé). Faux : le Siège ne se propose plus et seuls les essais en développement y accèdent.
+export const LEAGUE_OPEN = true;
 
 export const START_MONEY = 8000;
 // Échelle de l'argent en Élite depuis la 0.6.0 (×4 : salaires, valeurs, recettes) : les parties commencées avant

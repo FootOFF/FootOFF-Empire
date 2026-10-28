@@ -86,12 +86,15 @@ export function perspectiveResult(live, side, players) {
       if (f) f[e.type]++;
     }
   }
-  const lineup = m.awayRoster.map((p) => p.id);
+  const lineup = (m.awayStart || m.awayRoster).map((p) => p.id); // onze de départ (un plan de mi-temps a pu le changer)
+  const subs = all.filter((e) => e.type === 'sub' && e.inName)
+    .map((e) => ({ in: byName.get(e.inName)?.id, out: byName.get(e.outName)?.id, minute: Number.parseInt(e.minute, 10) || 45 }))
+    .filter((x) => x.in != null && x.out != null);
   const rated = notes.map((n) => {
     const p = byName.get(n.name) || players.find((q) => q.id === n.id);
     if (!p) return null;
     const f = perf.get(p.id) || { goals: 0, assists: 0, yellow: 0, red: 0, shots: 0, onTarget: 0 };
-    return { id: p.id, name: p.name, num: p.num, pos: n.pos || p.pos, rating: n.rating, minutes: 90, ...f };
+    return { id: p.id, name: p.name, num: p.num, pos: n.pos || p.pos, rating: n.rating, minutes: n.minutes ?? 90, ...f };
   }).filter(Boolean);
   const st = m.stats;
   const stats = {
@@ -108,9 +111,9 @@ export function perspectiveResult(live, side, players) {
     ga: m.score.home,
     scorers,
     myRating: Math.round(m.oppStrength * 10) / 10,
-    formation: m.oppPlan?.formation || res.formation,
+    formation: m.awayStartFormation || m.oppPlan?.formation || res.formation, // avec le onze de départ
     lineup,
-    subs: [],
+    subs,
     injuries: [],
     oppStrength: res.myRating,
     oppName: m.home,

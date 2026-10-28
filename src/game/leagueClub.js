@@ -1,13 +1,15 @@
-import { createInitialState } from './engine';
+import { createInitialState, signLeagueRecruit } from './engine';
 import { applyMatchResult, archivePlayer, startSeason } from './season';
-import { logMove } from './mercato';
+import { logMove, poolOf } from './mercato';
+import { SQUAD_MIN } from './constants';
 import { repairSave, validSave } from './save';
-import { autoLineup, ensureLineup } from './tactics';
-import { assignNumber, freshSeason, refWage } from './players';
+import { FORMATIONS, TACTICS, autoLineup, ensureLineup } from './tactics';
+import { assignNumber, available, freshSeason, refWage } from './players';
 import { distinctFace } from './faces';
 import { book, markTreasury } from './ledger';
 import { pushJournal } from './journal';
-import { leagueClubs, leagueSquads, replayOf, startWorld } from './league';
+import { HT_CASES, leagueClubs, leagueSquads, replayOf, squadsOf, startWorld } from './league';
+import { SUBS_MAX } from './live';
 import { expandPlayer, marketPlayers, priceOf, snapPlayer, unsnapPlayer } from './leagueWorld';
 import { officialTable, perspectiveResult, refreshRivals } from './leagueSeason';
 import { clone } from './utils';
@@ -62,8 +64,9 @@ function leagueInfoOf(d, slot) {
   return {
     code: d.league.code, seed: d.league.seed, format: d.league.settings.format, name: d.league.name, slot,
     level: d.league.level || 0, deadline: d.league.deadline, server: { season: d.league.season, round: d.league.round, status: d.league.status },
+    me: d.me?.id || null,
     clubs: clubs.filter((c) => !c.open).map((c) => ({
-      slot: c.slot, name: c.name, crest: c.crest || null, human: !!c.human, pseudo: c.pseudo || null, strength: last?.str?.[c.slot] ?? 6.8,
+      slot: c.slot, name: c.name, crest: c.crest || null, human: !!c.human, pseudo: c.pseudo || null, member: c.member || null, strength: last?.str?.[c.slot] ?? 6.8,
     })),
   };
 }
@@ -85,7 +88,7 @@ export function createLeagueClub(d, m) {
   s.market = [];
   s.transfers = [];
   s.tutorial = { step: 'done' };
-  s.league = { ...leagueInfoOf(d, slot), season: d.league.season, round: 0, results: [], sent: null, orders: {} };
+  s.league = { ...leagueInfoOf(d, slot), season: d.league.season, round: 0, results: [], sent: null, plans: {}, outbox: [], done: [] };
   s.formation = '433';
   s.tactic = 'balanced';
   s.lineup = autoLineup(s.players, '433');
@@ -95,11 +98,14 @@ export function createLeagueClub(d, m) {
   return s;
 }
 
-// La partie relit la ligue (clubs, nom, niveau, échéance, journée du serveur) : à chaque visite.
+// La partie relit la ligue (clubs, nom, niveau, échéance, journée du serveur) : à chaque visite. Elle applique au passage
+// les transferts conclus avec un ami (applyLeagueMoves), puis relit le mercato.
 export function syncLeagueClub(s, d) {
-  const keep = { season: s.league.season, round: s.league.round, results: s.league.results, sent: s.league.sent, orders: s.league.orders || {} };
-  s.league = { ...leagueInfoOf(d, s.league.slot), ...keep };
+  const L = s.league;
+  const keep = { season: L.season, round: L.round, results: L.results, sent: L.sent, plans: L.plans || {}, outbox: L.outbox || [], done: L.done || [] };
+  s.league = { ...leagueInfoOf(d, L.slot), ...keep };
   refreshRivals(s);
+  applyLeagueMoves(s, d);
   leagueMercato(s, d);
   return s;
 }
@@ -111,16 +117,57 @@ export function ensureLids(s) {
   return s;
 }
 
-// L'équipe et l'effectif envoyés pour la journée (POST sheet) : dispositif, onze, tactique, tout l'effectif tel qu'il est
-// (qualités, condition, indisponibles), le centre médical, le budget, et les ordres de la semaine (marché commun, offres
-// entre amis, réponses).
-export function teamSheet(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation } = {}) {
+// L'équipe et l'effectif envoyés pour la journée (POST sheet) : dispositif, onze, tactique, plans de mi-temps, tout
+// l'effectif tel qu'il est (qualités, condition, indisponibles), le centre médical et le budget.
+export function teamSheet(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, plans = s.league.plans } = {}) {
   ensureLids(s);
-  const o = s.league.orders || {};
+  const ht = packPlans(s.players, lineup, formation, tactic, plans);
   return {
-    formation, lineup: [...lineup], tactic, squad: s.players.map(snapPlayer), med: s.buildings.medical || 0, money: Math.round(s.money),
-    bids: o.bids || [], offers: o.offers || [], accept: o.accept || [], refuse: o.refuse || [],
+    formation, lineup: [...lineup], tactic, ...(ht ? { ht } : {}), squad: s.players.map(snapPlayer), med: s.buildings.medical || 0, money: Math.round(s.money),
   };
+}
+
+// --- Plans de mi-temps (0.8.3) ---------------------------------------------------------------------------------------
+// Gardés dans la partie (s.league.plans : { lead, draw, trail }, chacun { f, t, s: [[sortant, entrant]…], l }), réglés
+// à l'avant-match et envoyés avec l'équipe (league.js les applique à la pause). Un plan se relit toujours sur le onze du
+// moment : ses changements encore possibles (sortant titulaire, entrant disponible sur le banc, cinq au plus), puis sa
+// composition si elle part bien de ces joueurs, sinon les mêmes joueurs placés au mieux dans son dispositif.
+const sameSet = (a, b) => { const key = (x) => x.map((id) => (id === null ? '-' : id)).sort().join(); return key(a) === key(b); };
+export function arrangeFor(players, lineup, formation) {
+  const eleven = lineup.map((id) => players.find((p) => p.id === id)).filter(Boolean);
+  const next = autoLineup(eleven, formation);
+  return sameSet(next, lineup) ? next : [...lineup];
+}
+export function planView(players, lineup, formation, tactic, plan = null) {
+  const f = FORMATIONS[plan?.f] ? plan.f : formation;
+  const t = TACTICS[plan?.t] ? plan.t : tactic;
+  const next = [...lineup];
+  const s = [];
+  for (const [o, i] of Array.isArray(plan?.s) ? plan.s : []) {
+    const p = players.find((q) => q.id === i);
+    const k = next.indexOf(o);
+    if (s.length >= SUBS_MAX || k < 0 || !p || !available(p) || next.includes(i) || s.some(([a]) => a === i)) continue;
+    next[k] = i;
+    s.push([o, i]);
+  }
+  const l = Array.isArray(plan?.l) && plan.l.length === next.length && sameSet(plan.l, next) ? [...plan.l] : f === formation ? next : arrangeFor(players, next, f);
+  return { f, t, s, l };
+}
+// Ce qui part avec l'équipe : seulement ce qui change à la pause (null : aucun plan).
+export function packPlans(players, lineup, formation, tactic, plans) {
+  const out = {};
+  for (const k of HT_CASES) {
+    const v = planView(players, lineup, formation, tactic, plans?.[k]);
+    const x = {};
+    if (v.f !== formation) x.f = v.f;
+    if (v.t !== tactic) x.t = v.t;
+    if (v.s.length) x.s = v.s;
+    const plain = [...lineup];
+    for (const [o, i] of v.s) plain[plain.indexOf(o)] = i;
+    if (x.f || v.l.some((id, n) => id !== plain[n])) x.l = v.l;
+    if (Object.keys(x).length) out[k] = x;
+  }
+  return Object.keys(out).length ? out : null;
 }
 
 // --- Une journée appliquée à la partie -------------------------------------------------------------------------------
@@ -173,70 +220,110 @@ export function applyLeagueRound(s, result, live = null) {
   applyMoves(s, result.moves || []);
   L.round = s.round;
   L.sent = null; // l'équipe de la journée suivante reste à envoyer
-  L.orders = {};
   refreshRivals(s);
   ensureLineup(s);
   return s;
 }
 
-// Recrue du marché commun, transfert conclu avec un ami (dans un sens ou dans l'autre).
+// Un joueur qui arrive d'un autre club de la ligue (transfert conclu avec un ami ; recrue des journées d'avant la 0.8.3) :
+// il signe trois saisons au salaire de son niveau.
+function arrive(s, p, fee, from) {
+  p.id = s.nextId++;
+  p.joined = s.seasonNumber;
+  p.season = freshSeason();
+  p.hist ||= [];
+  p.form = [];
+  p.sellFrom = 0;
+  delete p.injury;
+  p.ban = 0;
+  delete p.ctalks;
+  setDeal(s, p, { wage: refWage(p, s.divisionIndex), years: 3 });
+  if (s.players.some((q) => q.num === p.num) || p.num == null) assignNumber(s.players, p);
+  distinctFace(s.players, p);
+  s.players.push(p);
+  s.money -= fee;
+  book(s, 'signings', fee);
+  logMove(s, 'in', p, fee, from);
+}
+// Un joueur vendu à un ami : il quitte la partie, l'indemnité arrive.
+function depart(s, p, fee, to) {
+  archivePlayer(s, p, { reason: 'vente', fee, club: to });
+  s.players = s.players.filter((q) => q !== p);
+  s.money += fee;
+  book(s, 'sales', fee);
+  logMove(s, 'out', p, fee, to);
+  pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: `${p.name} quitte le club`, text: `Transfert conclu avec ${to} pour ${fee.toLocaleString('fr-FR')} €.` });
+  ensureLineup(s);
+}
+
+// Mouvements gardés avec une journée (avant la 0.8.3 : recrue du marché commun, transfert conclu avec un ami).
 function applyMoves(s, moves) {
   const L = s.league;
   const name = (slot) => L.clubs.find((c) => c.slot === slot)?.name || 'un club';
-  const arrive = (p, fee, from) => {
-    p.id = s.nextId++;
-    p.joined = s.seasonNumber;
-    p.season = freshSeason();
-    p.hist ||= [];
-    p.form = [];
-    p.sellFrom = 0;
-    delete p.injury;
-    p.ban = 0;
-    delete p.ctalks;
-    setDeal(s, p, { wage: refWage(p, s.divisionIndex), years: 3 }); // entre amis, la meilleure offre l'emporte : il signe trois saisons au salaire de son niveau
-    if (s.players.some((q) => q.num === p.num) || p.num == null) assignNumber(s.players, p);
-    distinctFace(s.players, p);
-    s.players.push(p);
-    s.money -= fee;
-    book(s, 'signings', fee);
-    logMove(s, 'in', p, fee, from);
-  };
   for (const mv of moves) {
     if (mv.k === 'buy' && mv.s === L.slot && mv.pl) {
       const p = expandPlayer([], mv.pl);
       if (!p) continue;
       p.lid = mv.i;
-      arrive(p, mv.x, 'Marché commun');
+      arrive(s, p, mv.x, 'Marché commun');
       pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: `${p.name} signe au club`, text: `Remporté sur le marché commun de la ligue pour ${mv.x.toLocaleString('fr-FR')} €.` });
     } else if (mv.k === 'deal' && mv.b === L.slot && mv.pl) {
       const p = unsnapPlayer(mv.pl);
-      arrive(p, mv.x, name(mv.s));
+      arrive(s, p, mv.x, name(mv.s));
       pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: `${p.name} signe au club`, text: `Transfert conclu avec ${name(mv.s)} pour ${mv.x.toLocaleString('fr-FR')} €.` });
     } else if (mv.k === 'deal' && mv.s === L.slot) {
       const p = s.players.find((q) => q.lid === mv.l);
-      if (!p) continue;
-      archivePlayer(s, p, { reason: 'vente', fee: mv.x, club: name(mv.b) });
-      s.players = s.players.filter((q) => q !== p);
-      s.money += mv.x;
-      book(s, 'sales', mv.x);
-      logMove(s, 'out', p, mv.x, name(mv.b));
-      pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: `${p.name} quitte le club`, text: `Transfert conclu avec ${name(mv.b)} pour ${mv.x.toLocaleString('fr-FR')} €.` });
+      if (p) depart(s, p, mv.x, name(mv.b));
     }
   }
   markTreasury(s);
 }
 
-// --- Mercato d'une partie de ligue (l'écran Mercato du solo) ---------------------------------------------------------
-// Le marché commun dans state.market (joueurs libres, au prix affiché : leaguePrice), les joueurs des amis dans
-// state.transfers (leur club, un prix indicatif : leur valeur), d'après la dernière journée connue : l'effectif complet
-// d'un ami se lit dans son dernier match à domicile, son onze dans un match à l'extérieur. Une offre est un ordre de la
-// semaine (s.league.orders : bids au marché, offers aux amis ; accept, refuse pour les offres reçues), envoyé avec
-// l'équipe validée. Identifiants : ceux du marché (1000 et plus), 2 000 000 + identifiant de ligue pour un joueur d'ami.
+// --- Mercato d'une partie de ligue (l'écran Mercato du solo, 0.8.3) ---------------------------------------------------
+// Entre deux journées, comme en solo : les joueurs libres du marché commun (state.market) et ceux des clubs de
+// l'ordinateur (state.transfers, avec leur club) se négocient (l'indemnité avec le club, puis le contrat du joueur) ;
+// l'accord conclu, le serveur des ligues confirme la signature au premier club qui l'obtient (file des demandes,
+// s.league.outbox, envoyée par App.jsx). Les joueurs des amis (state.transfers aussi) : une offre, à laquelle l'ami
+// répond ; acceptée, le transfert est conclu aussitôt. D'après le dernier état connu de la ligue et les mouvements de la
+// journée en cours (serveur) : un joueur déjà signé n'y est plus. Un joueur d'ami se lit dans les journées jouées
+// (l'effectif complet d'un ami dans son dernier match à domicile, son onze dans un match à l'extérieur). Identifiants :
+// AI_ID, FRIEND_ID ou MARKET_ID + son identifiant de ligue (aucun ne croise ceux de la partie).
+export const AI_ID = 1000000;
 export const FRIEND_ID = 2000000;
+export const MARKET_ID = 3000000;
+const AI_STARTER = 1.25; // un titulaire d'un club de l'ordinateur coûte un quart de plus
+const priceStep = (v) => Math.max(500, Math.round(v / 250) * 250);
+const roundMoves = (d) => (d.moves || []).filter((x) => x.season === d.league.season && x.round === d.league.round);
+const slotOfMember = (L, id) => L.clubs.find((c) => c.member === id)?.slot ?? null;
+
 export function leagueMercato(s, d) {
   const L = s.league;
   const world = d.world || startWorld(d.league); // avant la première journée : le marché de départ
-  s.market = marketPlayers(world || null).map((p) => ({ ...p, lid: p.id, leaguePrice: p.price, leagueKind: 'market', club: null, priceMod: 1 }));
+  const moves = roundMoves(d);
+  const signed = new Set(moves.filter((x) => x.status === 'done').map((x) => `${x.kind}:${x.pid}`));
+  // négociations en cours (indemnité convenue, tentatives du jour) : gardées d'une relecture à l'autre
+  const prev = new Map(poolOf(s).map((p) => [p.id, p]));
+  const keep = (p) => {
+    const o = prev.get(p.id);
+    return o ? { ...p, ...(o.talks ? { talks: o.talks } : {}), ...(o.ctalks ? { ctalks: o.ctalks } : {}) } : p;
+  };
+  s.market = marketPlayers(world).filter((p) => !signed.has(`m:${p.id}`))
+    .map((p) => keep({ ...p, id: MARKET_ID + p.id, lid: p.id, leaguePrice: p.price, leagueKind: 'market', club: null, priceMod: 1 }));
+  s.transfers = [];
+  // clubs de l'ordinateur : tout l'effectif, sauf sous le minimum (un titulaire coûte plus cher)
+  const squads = squadsOf(d.league, world);
+  for (const c of L.clubs) {
+    if (c.human || c.slot === L.slot || !world.clubs?.[c.slot]) continue;
+    const players = squads[c.slot];
+    if (players.length <= SQUAD_MIN + 2) continue;
+    const eleven = new Set(autoLineup(players, '433'));
+    for (const p of players) {
+      if (signed.has(`a:${p.id}`)) continue;
+      const price = priceStep(priceOf(p) * (eleven.has(p.id) ? AI_STARTER : 1));
+      s.transfers.push(keep({ ...p, id: AI_ID + p.id, lid: p.id, leaguePrice: price, leagueKind: 'ai', leagueSlot: c.slot, club: c.name, contract: 2, priceMod: 1 }));
+    }
+  }
+  // joueurs des amis
   const seen = new Map(); // ami → ses joueurs connus (le plus récent d'abord)
   for (const r of [...(d.results || [])].reverse()) {
     for (const x of r.matches || []) {
@@ -249,43 +336,130 @@ export function leagueMercato(s, d) {
       }
     }
   }
-  s.transfers = [];
   for (const [slot, known] of seen) {
     const club = L.clubs.find((q) => q.slot === slot);
     for (const snap of known.values()) {
+      if (signed.has(`f:${snap.l}`) || s.players.some((q) => q.lid === snap.l)) continue;
       const p = unsnapPlayer(snap);
-      s.transfers.push({ ...p, id: FRIEND_ID + p.lid, leaguePrice: priceOf(p), leagueKind: 'friend', leagueSlot: slot, club: club.name, priceMod: 1, contract: 2 });
+      s.transfers.push({ ...p, id: FRIEND_ID + p.lid, leaguePrice: priceOf(p), leagueKind: 'friend', leagueSlot: slot, leagueMember: club.member, club: club.name, priceMod: 1, contract: 2 });
     }
   }
-  L.offersIn = (world?.offers || []).filter((o) => o.s === L.slot);
-  L.offersOut = (world?.offers || []).filter((o) => o.b === L.slot);
+  // offres entre amis de la journée : reçues (en attente de ta réponse), faites (en attente, refusées)
+  const mine = moves.filter((x) => x.kind === 'f');
+  L.offersIn = mine.filter((x) => x.seller === L.me && x.status === 'open').map((x) => ({ id: x.id, l: x.pid, n: x.data?.n || '?', x: x.fee, b: slotOfMember(L, x.buyer) }));
+  L.offersOut = mine.filter((x) => x.buyer === L.me && x.status !== 'done').map((x) => ({ id: x.id, l: x.pid, n: x.data?.n || '?', x: x.fee, s: slotOfMember(L, x.seller), status: x.status }));
   return s;
 }
 
-// Offre de la semaine pour un joueur du marché commun ou d'un ami (amount null : l'offre est retirée).
-export function setLeagueOffer(s, p, amount) {
-  const o = { ...(s.league.orders || {}) };
-  if (p.leagueKind === 'market') {
-    o.bids = (o.bids || []).filter((b) => b.i !== p.lid);
-    if (amount) o.bids = [...o.bids, { i: p.lid, x: amount }].slice(-3);
-  } else {
-    o.offers = (o.offers || []).filter((b) => b.l !== p.lid);
-    if (amount) o.offers = [...o.offers, { l: p.lid, x: amount }].slice(-3);
+// Mouvements conclus qui concernent la partie et qu'elle n'a pas encore appliqués (L.done : ceux qu'elle a appliqués) :
+// un joueur acheté à un ami (il arrive, avec ce que l'ami a envoyé de lui), un joueur vendu à un ami (sur un autre
+// appareil), une recrue signée dont la réponse du serveur s'est perdue (coupure au mauvais moment).
+export function applyLeagueMoves(s, d) {
+  const L = s.league;
+  if (!L.me) return s;
+  const done = new Set(L.done || []);
+  const name = (id) => L.clubs.find((c) => c.member === id)?.name || 'un club';
+  for (const x of d.moves || []) {
+    if (x.status !== 'done' || done.has(x.id) || !x.data) continue;
+    // un mouvement illisible (envoyé piégé par un autre appareil) est passé, jamais il ne bloque la relecture de la ligue
+    try {
+      if (x.buyer === L.me && x.kind === 'f' && x.data.pl?.l === x.pid && Number.isSafeInteger(x.fee)) {
+        const p = unsnapPlayer(x.data.pl);
+        arrive(s, p, x.fee, name(x.seller));
+        pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: `${p.name} signe au club`, text: `Transfert conclu avec ${name(x.seller)} pour ${x.fee.toLocaleString('fr-FR')} €.` });
+      } else if (x.buyer === L.me && x.kind !== 'f' && x.data.pl && x.data.t) {
+        if (!s.players.some((q) => q.lid === x.pid)) {
+          const item = (L.outbox || []).find((o) => o.k === 'sign' && o.pid === x.pid) || { id: x.data.pl.i, kind: x.kind, pid: x.pid, fee: x.fee, terms: x.data.t, pl: x.data.pl, club: x.data.c || null };
+          signLeagueRecruit(s, item);
+        }
+        L.outbox = (L.outbox || []).filter((o) => !(o.k === 'sign' && o.pid === x.pid));
+      } else if (x.seller === L.me && x.kind === 'f') {
+        const p = s.players.find((q) => q.lid === x.pid);
+        if (p) depart(s, p, x.fee, name(x.buyer));
+      }
+    } catch { /* mouvement illisible : sans effet */ }
+    done.add(x.id);
   }
-  s.league.orders = o;
+  L.done = [...done].slice(-200);
+  markTreasury(s);
   return s;
 }
-export const leagueOfferOf = (s, p) => (p.leagueKind === 'market'
-  ? (s.league.orders?.bids || []).find((b) => b.i === p.lid)?.x
-  : (s.league.orders?.offers || []).find((b) => b.l === p.lid)?.x) ?? null;
 
-// Réponse à une offre reçue d'un ami (yes : accepter, false : refuser, null : sans réponse).
-export function answerLeagueOffer(s, id, yes) {
-  const o = { ...(s.league.orders || {}) };
-  o.accept = (o.accept || []).filter((x) => x !== id);
-  o.refuse = (o.refuse || []).filter((x) => x !== id);
-  if (yes === true) o.accept.push(id);
-  if (yes === false) o.refuse.push(id);
-  s.league.orders = o;
+// --- File des demandes au serveur des ligues ---------------------------------------------------------------------------
+// Gardée dans la partie (s.league.outbox), envoyée une à une dans l'ordre (App.jsx) : une demande coupée par le réseau
+// repart à la visite suivante. sign : une recrue négociée (engine.js, sealContract) ; offer, withdraw : une offre pour le
+// joueur d'un ami, la retirer ; answer : la réponse à une offre reçue.
+const sameItem = (a, b) => a.k === b.k && (a.k === 'offer' ? a.lid === b.lid : a.k === 'sign' ? a.pid === b.pid : a.id === b.id);
+export function queueLeague(s, item) {
+  const L = s.league;
+  L.outbox = [...(L.outbox || []).filter((x) => !sameItem(x, item)), { ...item, at: Date.now() }];
+  return s;
+}
+export const queuedFor = (s, test) => (s.league?.outbox || []).find(test) || null;
+
+// Offre pour le joueur d'un ami (fee null : l'offre en attente est retirée).
+export function offerFriend(s, p, fee) {
+  const open = (s.league.offersOut || []).find((o) => o.l === p.lid && o.status === 'open');
+  if (fee == null) return open ? queueLeague(s, { k: 'withdraw', id: open.id, lid: p.lid }) : s;
+  return queueLeague(s, { k: 'offer', lid: p.lid, fee, to: p.leagueMember, n: p.name, slot: p.leagueSlot });
+}
+// Réponse à une offre reçue : acceptée, le joueur part aussitôt (il doit encore être là, et l'effectif garder son minimum).
+export const answerFriend = (s, o, yes) => queueLeague(s, { k: 'answer', id: o.id, lid: o.l, yes, fee: o.x, b: o.b });
+export const canSell = (s, lid) => s.players.some((q) => q.lid === lid) && s.players.length > SQUAD_MIN + 2;
+
+// La demande telle qu'elle part au serveur (leagueNet.js, moveRequest).
+export function leagueRequest(s, item) {
+  const L = s.league;
+  const at = { season: L.server?.season, round: L.server?.round };
+  if (item.k === 'sign') return { action: 'sign', body: { ...at, kind: item.kind, pid: item.pid, fee: item.fee, ...(item.kind === 'a' ? { slot: item.slot } : {}), data: { pl: item.pl, t: item.terms, ...(item.club ? { c: item.club } : {}) } } };
+  if (item.k === 'offer') return { action: 'offer', body: { ...at, pid: item.lid, fee: item.fee, to: item.to, data: { n: item.n } } };
+  if (item.k === 'withdraw') return { action: 'withdraw', body: { id: item.id } };
+  const p = s.players.find((q) => q.lid === item.lid);
+  const yes = !!item.yes && canSell(s, item.lid);
+  return { action: 'answer', body: { ...at, id: item.id, yes, data: yes ? { pl: snapPlayer(p) } : {} } };
+}
+
+// La réponse du serveur appliquée à la partie (res : sa réponse, ou { error, taken } quand il a refusé). La demande sort
+// de la file ; s.lastLeague garde la dernière réponse (écrans du mercato).
+export function settleLeague(s, item, res) {
+  const L = s.league;
+  L.outbox = (L.outbox || []).filter((x) => !(x.k === item.k && x.at === item.at));
+  const at = Date.now();
+  if (item.k === 'sign') {
+    if (res?.id) {
+      if (!(L.done || []).includes(res.id)) {
+        signLeagueRecruit(s, item);
+        L.done = [...(L.done || []), res.id].slice(-200);
+      }
+      s.lastContract = { id: item.id, name: item.n, result: 'accepted', renew: false, terms: item.terms, fee: item.fee, at };
+    } else {
+      // un autre club l'a signé le premier (il quitte la liste), ou le mercato est fermé le temps de la journée
+      if (res?.taken) {
+        s.market = (s.market || []).filter((p) => p.id !== item.id);
+        s.transfers = (s.transfers || []).filter((p) => p.id !== item.id);
+      }
+      s.lastContract = { id: item.id, name: item.n, result: res?.taken ? 'taken' : 'blocked', renew: false, terms: item.terms, fee: item.fee, note: res?.error || '', at };
+    }
+    return s;
+  }
+  if (item.k === 'offer') {
+    if (res?.id) L.offersOut = [...(L.offersOut || []).filter((o) => o.l !== item.lid), { id: res.id, l: item.lid, n: item.n, x: item.fee, s: item.slot, status: 'open' }];
+    s.lastLeague = { k: 'offer', lid: item.lid, ok: !!res?.id, note: res?.error || '', at };
+    return s;
+  }
+  if (item.k === 'withdraw') {
+    if (!res?.error) L.offersOut = (L.offersOut || []).filter((o) => o.id !== item.id); // refusé : l'offre reste en attente
+    return s;
+  }
+  // answer
+  L.offersIn = (L.offersIn || []).filter((x) => x.id !== item.id);
+  if (res?.status === 'done' && !(L.done || []).includes(item.id)) {
+    const p = s.players.find((q) => q.lid === item.lid);
+    const buyer = L.clubs.find((c) => c.slot === item.b)?.name || 'un club';
+    if (p) depart(s, p, item.fee, buyer);
+    L.done = [...(L.done || []), item.id].slice(-200);
+    markTreasury(s);
+  }
+  s.lastLeague = { k: 'answer', id: item.id, ok: !!res?.status, sold: res?.status === 'done', note: res?.error || '', at };
   return s;
 }
