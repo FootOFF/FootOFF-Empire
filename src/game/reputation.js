@@ -12,7 +12,7 @@ import { clamp } from './utils';
 export const REP_START = 5;
 
 // Une victoire rapporte selon la division (REP_DIVISION), et chaque intersaison efface une part de la notoriété
-// (REP_DECAY) : un club de Départementale plafonne autour de 25, la légende (80) se bâtit par des titres en Elite.
+// (REP_DECAY) : un club de Départementale plafonne autour de 25, la légende (80) se bâtit par des titres en Élite.
 export const REP_LEVELS = [
   { min: 0, name: 'Club de quartier' },
   { min: 6, name: 'Club qui monte' },

@@ -29,7 +29,7 @@ let isNight = 0; // niveau d'éclairage courant (0 à 1) : un modèle chargé ap
 // images (béton, brique, verre, gazon…), chaque GLB avec sa copie ; un modèle chargé reste en mémoire jusqu'à la
 // fermeture du jeu (améliorations, aperçus de la vitrine). Une image aux mêmes octets n'est plus décodée qu'une fois,
 // et ses textures partagent la même image sur le GPU (Texture.source) : tous les modèles chargés, 517 Mo de textures
-// avant, 134 Mo désormais ; le complexe complet de l'Elite, 178 -> 115 Mo. Sur iPhone, la mémoire qui montait au fil
+// avant, 134 Mo désormais ; le complexe complet de l'Élite, 178 -> 115 Mo. Sur iPhone, la mémoire qui montait au fil
 // d'une longue partie finissait par faire recharger la page par Safari (écran blanc, puis l'écran de chargement).
 const images = new Map(); // empreinte des octets -> Promise<THREE.Texture> (la première texture créée)
 const hex = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');

@@ -112,7 +112,7 @@ export function TrainingView({ state, run, ask, notify = () => {}, onClose, onBu
       id="training"
       size="lg"
       title="Centre d’entraînement"
-      eyebrow={<>Niveau {lvl} / {BUILDINGS.training.max}<span className="hide-sm"> · progrès ×{dec((TRAINING_MULT[lvl] || 0) * sessionScale(state))} par séance{sessionScale(state) < 1 ? ' (calendrier chargé de l’Elite)' : ''}</span></>}
+      eyebrow={<>Niveau {lvl} / {BUILDINGS.training.max}<span className="hide-sm"> · progrès ×{dec((TRAINING_MULT[lvl] || 0) * sessionScale(state))} par séance{sessionScale(state) < 1 ? ' (calendrier chargé de l’Élite)' : ''}</span></>}
       onClose={onClose}
       onEscape={onEscape}
       toolbar={(
@@ -573,7 +573,7 @@ function LevelCard({ state, onBuilding }) {
         <span className="ac-level-ico"><IconTraining /></span>
         <div className="panel-title">
           <Eyebrow>Niveau {lvl} / {max}</Eyebrow>
-          <strong>Chaque niveau rend les séances plus fortes ; les programmes de signes s’ouvrent au niveau 3.{sessionScale(state) < 1 ? ' En Elite, deux fois plus de journées : chaque séance y compte pour deux tiers.' : ''}</strong>
+          <strong>Chaque niveau rend les séances plus fortes ; les programmes de signes s’ouvrent au niveau 3.{sessionScale(state) < 1 ? ' En Élite, deux fois plus de journées : chaque séance y compte pour deux tiers.' : ''}</strong>
         </div>
       </div>
       <table className="tr-level-table">

@@ -104,7 +104,7 @@ Seuls les chiffres « d'affichage » des écrans cinématiques (classement de fi
 | Bas | menu du bas centré (le seul verre du jeu) et carte du prochain match à droite | même ligne de base (`--hud-bottom`) ; carte de 80 px (`--bar-h`) ; sous 1260 px le menu se cale à gauche |
 
 - Marge d'écran `--gap` : 20 px dès 1240 px, 16 px sinon, 12 px sur téléphone.
-- Carte du prochain match (`MatchCta`) : journée (« J3/14 » en Elite), domicile ou extérieur, adversaire (taille ajustée à la longueur du nom),
+- Carte du prochain match (`MatchCta`) : journée (« J3/14 » en Élite), domicile ou extérieur, adversaire (taille ajustée à la longueur du nom),
   chances exactes de victoire, nul et défaite en barre (`prematchOdds`, les mêmes que l'avant-match), bouton Jouer.
 - Étiquettes des parcelles en 3D : flèche dorée pour améliorer, plaque sombre « Séance » avec le nombre de joueurs
   qui peuvent encore s'entraîner (`sessionPin`, ouvre l'entraînement).
@@ -193,7 +193,7 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
   sur une ligne et sans leur précision au téléphone.
   - Calendrier (`src/ui/calendar.jsx`, dates calculées par `seasonFixtures` dans `src/game/fixtures.js`), en trois
     parties. Championnat en or, Coupe nationale en argent, Coupe d'Europe en bleu, partout.
-    1. La frise : toutes les dates dans l'ordre où elles se jouent (15 au plus, 22 en Elite depuis l'aller-retour de
+    1. La frise : toutes les dates dans l'ordre où elles se jouent (15 au plus, 22 en Élite depuis l'aller-retour de
        la 0.6.0), une plaque par date : la journée (« J3 ») ou le
        tour de coupe à la couleur de sa compétition (trophée ou étoile), l'écusson et le nom de l'adversaire, puis
        le résultat en pastille penchée (V 1–0 vert, N 0–0 gris, D 0–1 rouge), « À suivre » en or pour le prochain
@@ -212,14 +212,14 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
        et les droits TV attendus, pas de billetterie), billets, prime de coupe, « Jouer le match ». Match joué : buteurs, homme du match, affluence, recette,
        dispositif, billets, « Voir le Stats Pass ». Un geste vers la gauche ou la droite change de date (téléphone).
     3. Le bilan (colonne de droite sur PC, dessous au téléphone), en plaques : victoires, nuls, défaites et leur
-       barre, buts ; forme des cinq derniers matchs et les journées (sept, quatorze en Elite) en pastilles penchées (teintées, pleines
+       barre, buts ; forme des cinq derniers matchs et les journées (sept, quatorze en Élite) en pastilles penchées (teintées, pleines
        pour la date choisie) ; le parcours de chaque coupe tour par tour. Chaque élément choisit sa date.
   - Classement (`StandingsTable`, `src/ui/panels.jsx`) : le tableau dans sa plaque, bord à bord ; rang et points en
     grands chiffres condensés, colonnes J, G, N, P, Diff, Pts (G, N, P comptés depuis le 2026-10-24 : une saison
     commencée avant n'affiche que J, Diff, Pts jusqu'à la suivante ; jamais de G, N, P au téléphone, faute de
-    place). Zone de chaque place en liseré à gauche : montée (2 premiers, or) hors Elite, Coupe d'Europe des clubs
-    (2 premiers de l'Elite, bleu), descente (2 derniers, rouge) ; légende en carrés de couleur dessous (hors Elite,
-    elle rappelle que l'Europe se gagne en Elite). Notre ligne teintée d'or, notre nom en or. Le même tableau suit
+    place). Zone de chaque place en liseré à gauche : montée (2 premiers, or) hors Élite, Coupe d'Europe des clubs
+    (2 premiers de l'Élite, bleu), descente (2 derniers, rouge) ; légende en carrés de couleur dessous (hors Élite,
+    elle rappelle que l'Europe se gagne en Élite). Notre ligne teintée d'or, notre nom en or. Le même tableau suit
     chaque journée de championnat dans l'après-match, avec les places gagnées ou perdues.
   - À droite du classement, des plaques : la course de la saison (« Monter en fin de saison », « Jouer l'Europe »
     ou « Sauver sa place » : la règle, la place, l'écart en points avec le club à rattraper ou à tenir derrière, les
@@ -227,7 +227,7 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
     tour (après une élimination, seulement les tours joués et une phrase) ; les meilleurs du club cette saison
     (meilleure note moyenne sur 3 matchs au moins, meilleur buteur, gardien ou défenseur aux matchs sans encaisser :
     un nom ouvre la fiche du joueur) ; le dernier match ; la vitrine ; les classements passés.
-  - Aperçus : `?ecran=saison`, `saison-joue`, `saison-coupe`, `saison-fin`, `calendrier-europe` (Elite : quatorze
+  - Aperçus : `?ecran=saison`, `saison-joue`, `saison-coupe`, `saison-fin`, `calendrier-europe` (Élite : quatorze
     journées et la Coupe d'Europe), `classement`, `europe`.
   - Statistiques (`src/ui/stats.jsx`) : onglets Le club, Matchs, Joueurs et, depuis la 0.6.1, Pronostic : sur tes
     propres matchs, les chances annoncées au coup d'envoi (gardées avec chaque match, `m.odds` : victoire, nul,
@@ -445,8 +445,8 @@ illustrées d'un coup d'œil, sans rien faire défiler (vignette rendue avec les
 recommandation du staff (`recommendedBuilding`) est choisie d'emblée et marquée « Conseillé » : le centre
 d'entraînement, puis l'académie (des jeunes gratuits à fort potentiel ; classée sur la seule rentabilité, elle passait
 après tous les bâtiments qui rapportent), puis le bâtiment le plus vite rentabilisé. Comparé sur 24 carrières de 15
-saisons (`tools/sim/career.mjs 15 24`) : Elite atteinte une saison plus tôt en médiane, moins de descentes (46 contre 53),
-plus de trésorerie en début de partie ; moins de titres d'Elite en 15 saisons (6 carrières sur 24 contre 11). Le bâtiment choisi
+saisons (`tools/sim/career.mjs 15 24`) : Élite atteinte une saison plus tôt en médiane, moins de descentes (46 contre 53),
+plus de trésorerie en début de partie ; moins de titres d'Élite en 15 saisons (6 carrières sur 24 contre 11). Le bâtiment choisi
 se dessine en hologramme doré sur la parcelle (`holo` d'Empire3D : corps translucide, arêtes, sortie de terre),
 la caméra le cadre dans la zone libre puis oscille lentement autour, comme en vitrine.
 
@@ -479,7 +479,7 @@ classement de la division mis à jour (`StandingsTable` de `src/ui/panels.jsx`, 
 colonne d'évolution montre les places gagnées (▲ vert) ou perdues (▼ rouge) sur la journée, et une pastille dit où
 en est le club (« Tu grimpes à la 2e place », « Tu restes en tête »). L'ordre d'avant la journée est gardé dans
 `lastMatch.before`. Après un match de coupe, le résultat suffit. Aperçu : `?ecran=apres-match-classement`.
-À l'extérieur (Elite), le bandeau dit « Journée 4 / 14 · Extérieur » et la plaque des recettes devient « Recettes du
+À l'extérieur (Élite), le bandeau dit « Journée 4 / 14 · Extérieur » et la plaque des recettes devient « Recettes du
 match · à l'extérieur » : seulement les droits TV, avec la phrase « Pas de billetterie chez l'adversaire ».
 
 ## Journal du club
@@ -576,7 +576,7 @@ Les chances affichées sont celles du tirage (vérifié sur 3 000 négociations)
 ## Siège de la Ligue
 
 Bâtiment des championnats entre amis (cahier des charges du 2026-10-27, réponses de l'utilisateur) : `league` dans
-`BUILDINGS`, un seul niveau, 60 M€, constructible en Elite seulement (`allowedBuildingsFor`), famille Prestige, sans
+`BUILDINGS`, un seul niveau, 60 M€, constructible en Élite seulement (`allowedBuildingsFor`), famille Prestige, sans
 entretien, hors des conseils de construction et du succès « tous les bâtiments ». Modèle procédural `leagueMesh` :
 tour de verre fumé aux arêtes dorées, couronne d'or ouverte, écran géant du classement en façade, pavillon d'accueil.
 Fermé tant que le serveur des ligues n'est pas en service (`LEAGUE_OPEN` de `constants.js`).
@@ -759,7 +759,7 @@ l'étape pulse à l'écran (parcelle, bouton Jouer d'une ligne du centre, offre 
 Refaits le 2026-10-24 (`src/game/objectives.js`) : à chaque début de saison, le conseil d'administration fixe trois
 objectifs (« du président » avant la 0.5.1 : le président, c'est le joueur, le jeu ne doit pas en inventer un autre),
 adaptés à l'écart entre le niveau du onze et la moyenne de la division :
-- un classement : être champion, monter (ou finir dans les deux premiers en Elite), finir dans la première moitié,
+- un classement : être champion, monter (ou finir dans les deux premiers en Élite), finir dans la première moitié,
   se maintenir (finir 6e ou mieux en Départementale) ;
 - un défi sportif en championnat : gagner N matchs, marquer N buts, encaisser N buts au plus, garder sa cage
   inviolée N fois ;
@@ -872,7 +872,7 @@ le blocage (`transfers.js`). Déjà en vente, il le reste : les clubs reviennent
    pas), d'autres après chaque journée. Petit club (division inférieure), club ambitieux (la nôtre) ou grand club
    (division supérieure), avec écusson. Chaque club a un plafond secret : il paie le prix demandé s'il le paie à coup
    sûr, sinon il offre un peu moins. Les grands clubs paient plus mais négocient dur ; les petits acceptent vite.
-   Depuis la 0.6.0, une star d'un club d'Elite (1,5 point au-dessus du club moyen de la division) attire aussi les
+   Depuis la 0.6.0, une star d'un club d'Élite (1,5 point au-dessus du club moyen de la division) attire aussi les
    géants européens (« Géant européen », sans division, nom de club européen imaginaire) : plafond à 1,3 fois la valeur,
    négociation très dure ; un sur six des clubs intéressés, un sur trois quand le club joue la Coupe d'Europe, et plus
    d'une offre spontanée sur trois pour une star (jusqu'à une fois et demie sa valeur : « +42 % sur sa valeur »).
@@ -889,6 +889,25 @@ leur article et accordent le verbe (« l'AS … accepte », « les Bleus … acc
 Aperçus : `?ecran=marche`, `transferts`, `negociation`, `contre-offre`, `suivis`, `offres`, `offres-europe` (offre
 folle d'un géant européen pour une star de 21 ans), `encheres`, `vente`, `vente-negociation`, `vente-conclue`,
 `bilan-mercato`. Contrôle des chances de la vente : `tmp/ph3/salecheck.js`.
+
+### Conseils du staff (0.8.2)
+
+Demande de l'utilisateur (2026-10-28 : « les conseils du staff sont horribles ») ; choix faits sur propositions.
+- `staffTips` (advice.js) : la liste des conseils du moment, par importance (argent, ce qui se perd si on attend :
+  contrats, jeunes qui partent, droits TV, soins du jour ; le match ; puis ce qui fait grandir le club). `staffTip` rend
+  le premier que le joueur n'a pas écarté. « Masquer » (`dismissTip`) est gardé dans la partie (`s.staffSeen`, les 80
+  derniers) : chaque identifiant change avec la situation (saison, journée, niveau du stade, joueur visé, signes
+  appris), le conseil ne revient que si elle change. Plus de conseil de remplissage (« Prochain match »).
+- Stade : conseil et pastille seulement quand l'agrandissement est payable, une fois par niveau.
+- Académie : détection regardée (`markScoutingSeen`, à l'ouverture de l'onglet) = pastille et conseil éteints jusqu'au
+  prochain repérage ; les jeunes qui partiront à l'intersaison ne sont signalés (pastille de l'Équipe,
+  conseil) qu'en seconde moitié de saison.
+- Rappels des bâtiments : droits TV (`tv-saison`, tant que la hausse n'est pas demandée), soins (`care-date`), programmes
+  de signes (aucun en cours, des joueurs éligibles ; revient après chaque signe appris, `s.training.learned`), mission de
+  l'académie (une fois par saison, recruteurs à la maison et places libres).
+- L'onglet « Pronostic » (fiabilité) des Statistiques est retiré ; les chances gardées avec chaque match (`odds`) restent
+  dans la sauvegarde. Le panneau Pronostic de l'avant-match est plein (`--plate-solid`). « Élite » prend son accent
+  (noms gardés dans les parties repris au chargement).
 
 ### Forme, rotation, matchs à l'extérieur, saison en cours (0.8.1)
 
@@ -918,7 +937,7 @@ Règles dans `src/game/contracts.js` (calculs) et `src/game/engine.js` (actions)
   de référence (`refWage` : niveau du joueur et division) sert aux demandes, à la valeur et aux joueurs sans contrat.
 - Le salaire ne suit plus le niveau ni la division. Montée : la clause relève le salaire. Descente : un salaire
   au-dessus de la référence de la nouvelle division y est ramené (clause de descente, la même pour tous, pour que la
-  descente d'Elite ne coule pas le club). Sans prolongation, le joueur part libre à la fin de sa dernière saison
+  descente d'Élite ne coule pas le club). Sans prolongation, le joueur part libre à la fin de sa dernière saison
   (`archivePlayer`, raison « libre » ; bilan du mercato « Libre »), annoncé au journal à la reprise et par le staff en
   seconde moitié de saison.
 - Recrue sous contrat : l'indemnité d'abord (`makeOffer` ; acceptée, elle est réservée dans `p.talks.fee` jusqu'à la
@@ -959,7 +978,7 @@ détaillé sur PC (tri par colonne), liste compacte sur téléphone, fiche à dr
 - Mission des recruteurs (0.6.1, sous la liste de la Détection ; `academy.js`) : une cible, poste (gardien,
   défenseur, milieu, attaquant), profil (technique, physique, mental : la famille de qualités où le jeune est le plus
   fort) ou région imaginaire (Val d'Ambre, Monts d'Arvel, Côte des Brumes, Plaine d'Orbel, Pays des Sept Lacs), et une
-  durée de un à trois repérages (une à trois journées, deux à six en Elite). Pendant la mission, pas de jeunes repérés.
+  durée de un à trois repérages (une à trois journées, deux à six en Élite). Pendant la mission, pas de jeunes repérés.
   Au retour, les recruteurs ont vu autant de jeunes (de la cible) que les repérages manqués et ramènent les plus
   prometteurs, d'après leur vrai potentiel (autant qu'un repérage, plus un par repérage en plus). La carte dit combien
   ils en verront, combien ils en ramèneront, quand, et la chance exacte qu'il y ait parmi eux un potentiel de 16 ou
@@ -979,7 +998,7 @@ détaillé sur PC (tri par colonne), liste compacte sur téléphone, fiche à dr
   travaillées marquées dans les attributs ; « Faire monter » (confirmation : salaire, effectif) et « Libérer »
   (confirmation rouge, focus sur « Le garder »). Un joueur monté garde l'étiquette « Formé au club ».
 Règles : recrutement gratuit dans la limite des places, sans salaire ; nouveaux jeunes au début de la saison et après
-chaque journée de championnat, toutes les deux en Elite (quatorze journées depuis la 0.6.0 : autant de jeunes par
+chaque journée de championnat, toutes les deux en Élite (quatorze journées depuis la 0.6.0 : autant de jeunes par
 saison qu'ailleurs, « dans deux journées de championnat » à la détection ; `scoutingWhen`) (un aux niveaux 1 et 2 de
 l'académie, deux ensuite ; six au plus avant la 0.5.0), plus
 doués et mieux cernés quand elle grandit (`YOUTH_GEN`, `src/game/constants.js` ; fourchettes affichées calculées sur la
@@ -987,7 +1006,7 @@ même formule, `academyTalent`) : niveau à l'arrivée de 4 à 6 au niveau 1, de
 jeunes sur dix de 8 à 14 au niveau 1, de 12 à 18 au niveau 5, et un jeune sur cent à 16 ou plus au niveau 1, à 20 au
 niveau 5. Au niveau 5, une saison apporte environ 1,7 potentiel de 18 ou plus et un 20 toutes les cinq à six saisons (avant
 la 0.5.0 : 48 jeunes par saison, tous au potentiel de 18 ou plus). Progrès après chaque journée (1,2 % de la marge,
-la moitié en Elite, freiné près du sommet comme en équipe première), puis six dixièmes du bond de l'été (comme l'équipe première), sans
+la moitié en Élite, freiné près du sommet comme en équipe première), puis six dixièmes du bond de l'été (comme l'équipe première), sans
 effet du centre d'entraînement (il fait progresser l'équipe première par ses séances ; choix du 2026-10-24, pour ne pas
 compter son effet deux fois) : un jeune recruté à 15 ans finit ses 18 ans à 7,5 en moyenne avec l'académie 1, 9,1 au
 niveau 3, 10,5 au niveau 5, et 12,7 pour un potentiel de 18 ou plus (10,2, 13,1 et 15,1 avant la 0.5.0) ; à
@@ -1014,9 +1033,9 @@ finie. Trois onglets :
 - Programmes (dès le niveau 3) : en cours (barre, catégorie, arrêt confirmé en rouge), puis les joueurs qui peuvent en
   commencer un ; la fiche d'un joueur liste les signes possibles avec leur effet.
 - Progrès : épreuves de la saison, niveau gagné, score moyen joué, dernière séance collective, journal groupé par
-  séance (« Avant : journée 3 / 7 », « / 14 » en Elite), tableau des niveaux du centre. En Elite (quatorze journées,
+  séance (« Avant : journée 3 / 7 », « / 14 » en Élite), tableau des niveaux du centre. En Élite (quatorze journées,
   jusqu'à vingt-deux dates), chaque séance compte pour deux tiers (`sessionScale`, `ELITE_PACE`) : autant de progrès
-  par saison qu'ailleurs ; l'en-tête le dit (« progrès ×0,97 par séance (calendrier chargé de l'Elite) »).
+  par saison qu'ailleurs ; l'en-tête le dit (« progrès ×0,97 par séance (calendrier chargé de l'Élite) »).
 - Séances confiées au staff (0.5.1, demande de l'utilisateur : les épreuves l'ennuient) : un interrupteur en tête de
   l'onglet Séance (`training.js`, `staffOn` / `setStaff`, gardé dans la partie). Activé, le staff fait avant chaque
   match les épreuves que tu n'as pas faites, avec les choix affichés sur les cartes (`pickOf` : tes choix tant que le
@@ -1032,7 +1051,7 @@ Règles :
   du potentiel.
 - Après chaque match, les joueurs absents de la séance gagnent 0,4 à 0,8 % de leur marge (séance collective).
 - Rééquilibré en 0.5.0 (3 %, ×1 à ×2, 1 à 2 % et épreuves ×1,2 auparavant) : un jeune entraîné à chaque date touchait
-  son potentiel en une saison et demie, et l'équipe première rattrapait l'Elite en quelques saisons.
+  son potentiel en une saison et demie, et l'équipe première rattrapait l'Élite en quelques saisons.
 - Le bond de l'été vaut six dixièmes de l'ancien bond sans centre.
 - Programmes : 6, 5 ou 4 séances dans la bonne catégorie selon le niveau ; une épreuve très réussie (deux tiers des
   points) compte double. Trois signes positifs au plus ; « Maîtrise de soi » retire « Sang chaud ». Un signe appris
@@ -1131,7 +1150,7 @@ titulaires ne sont pas frais, « fatigue −x » en ambre à côté du niveau (e
 rapport au repos, pour que l'écart entre le niveau et les chances ne paraisse plus aléatoire. En coupe, la ligne sous
 le pronostic donne la chance exacte de gagner une séance de tirs au but avec ce onze (`shootoutWinChance`,
 `src/game/cups.js` : finition des cinq meilleurs tireurs, réflexes du gardien, même tirage que le match) et la
-qualification exacte (victoire, ou nul puis séance gagnée ; le nul comptait pour une demi-qualification). En Elite
+qualification exacte (victoire, ou nul puis séance gagnée ; le nul comptait pour une demi-qualification). En Élite
 (aller-retour depuis la 0.6.0), une journée sur deux se joue chez l'adversaire : « À l'extérieur » en tête, l'avantage
 du terrain passe dans son camp (pronostic et buts attendus compris, `prematchOdds(…, { home: false })`), et la plaque
 de billetterie devient « Stade adverse · Extérieur » avec les droits TV attendus, seule recette du jour. En Coupe
@@ -1305,7 +1324,7 @@ une réplique monumentale par compétition, posée sur son socle de granit à la
 bronze (compétition, nombre de victoires, saisons) écrite par le jeu. Les trophées s'alignent de part et d'autre de
 l'axe dans l'ordre des premières victoires ; la Coupe d'Europe trône au centre de la place. Six dessins originaux
 modélisés dans `tools/blender/models/build_trophies.py` (coupe du District, trophée de la Ligue, plateau national,
-trophée Elite, Coupe nationale, Coupe d'Europe) ; leurs vignettes de la salle sont rendues sous un vrai ciel par
+trophée Élite, Coupe nationale, Coupe d'Europe) ; leurs vignettes de la salle sont rendues sous un vrai ciel par
 `render_trophies.py`. Un nouveau trophée sort de terre sous l'œil de la caméra (après le match). La nuit, l'or et
 l'argent reflètent un studio retourné, comme éclairés par des projecteurs au sol. Un clic sur le parvis ouvre la
 salle des trophées (`src/ui/trophyroom.jsx`) : palmarès, succès datés (`src/game/achievements.js`) et records de
@@ -1407,7 +1426,7 @@ chargement (aucune perte : la partie est enregistrée à chaque action, le direc
   gazon…), les mêmes d'un niveau et d'un bâtiment à l'autre, et un modèle chargé reste en mémoire jusqu'à la fermeture
   (améliorations, aperçus de la vitrine). Une image aux mêmes octets n'est décodée et envoyée au GPU qu'une fois.
   Tous les modèles chargés : 270 images, 388 Mo décodés et 517 Mo de textures avant ; 76 images, 100 et 134 Mo après.
-  Complexe complet de l'Elite : 178 -> 115 Mo de textures ;
+  Complexe complet de l'Élite : 178 -> 115 Mo de textures ;
 - épreuves d'entraînement : une seule toile 3D pour la partie (voir Centre d'entraînement) ; le contexte d'essai du
   démarrage est rendu tout de suite ;
 - vérifié sans tête (Chromium, rendu logiciel) : dix matchs avec les menus et un changement de saison, tas JS, nœuds

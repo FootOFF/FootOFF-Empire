@@ -1567,7 +1567,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .pm-plan .pm-sh:not(:first-child) { margin-top: 12px; }
 .pm-blurb { font-size: 13px; line-height: 1.5; color: var(--text-2); }
 .pm-effect { color: var(--gold-light); }
-.pm-odds { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 16px; }
+.pm-odds { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 16px; background: var(--plate-solid); } /* collé en bas au-dessus de la tactique quand l'avant-match défile : plein, rien ne transparaît (0.8.2) */
 .pm-odds-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .pm-xg { font-size: 13px; color: var(--muted); }
 .pm-xg b { font-family: var(--font-disp); font-weight: 700; font-size: 16px; color: var(--text); }
@@ -2490,23 +2490,6 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 
 /* =========================================================== statistiques */
 .st-muted { font-size: var(--t-sm); color: var(--muted); }
-/* fiabilité du pronostic (Stats, 0.6.1) : par tranche, victoires obtenues (barre dorée) et chance annoncée (trait) */
-.st-prono { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.st-prono li { display: grid; grid-template-columns: 104px minmax(0, 1fr) 96px 92px; align-items: center; gap: var(--s-3); padding: var(--s-2) 0; border-top: 1px solid var(--line); font-size: var(--t-sm); color: var(--text-2); }
-.st-prono em { display: block; font-style: normal; font-size: var(--t-xs); color: var(--muted); white-space: nowrap; }
-.st-prono-band { font-variant-numeric: tabular-nums; color: var(--text); }
-.st-prono-bar { position: relative; height: 10px; background: var(--plate-3); }
-.st-prono-bar b { position: absolute; inset: 0 auto 0 0; background: var(--gold-grad); }
-.st-prono-bar i { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--text); z-index: 1; }
-.st-prono-val { text-align: right; font-variant-numeric: tabular-nums; }
-.st-prono-val b { font-family: var(--font-disp); font-weight: 700; font-size: 18px; color: var(--text); }
-.st-prono-tag { justify-self: end; padding: 2px 8px; font-size: var(--t-xs); color: var(--good, #8fd19e); background: rgba(143, 209, 158, .1); }
-.st-prono-tag.off { color: var(--warn, #f0c27b); background: rgba(240, 194, 123, .12); }
-.st-prono-note { margin-top: var(--s-3); line-height: 1.55; }
-@media (max-width: 760px) {
-  .st-prono li { grid-template-columns: 74px minmax(0, 1fr) 84px; gap: var(--s-2) var(--s-3); }
-  .st-prono-tag { grid-column: 2 / -1; justify-self: start; }
-}
 .st-cap { font-size: var(--t-sm); color: var(--muted); }
 .st-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); }
 .st-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-2) 0; border-top: 1px solid var(--line); font-size: var(--t-sm); color: var(--text-2); }

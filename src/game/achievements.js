@@ -52,7 +52,7 @@ export const ACHIEVEMENTS = [
     test: (s, X) => X.honours.some((h) => h.comp === 'league'), date: (s, X) => firstHonour(X, (h) => h.comp === 'league') },
   { id: 'cup', cat: 'honours', title: 'La Coupe !', desc: 'Remporter la Coupe nationale.',
     test: (s, X) => X.honours.some((h) => h.comp === 'cup'), date: (s, X) => firstHonour(X, (h) => h.comp === 'cup') },
-  { id: 'champion_elite', cat: 'honours', title: `Champion ${LAST === 'Elite' ? 'd’' : 'de '}${LAST}`, desc: 'Gagner le championnat de la plus haute division.',
+  { id: 'champion_elite', cat: 'honours', title: `Champion ${LAST === 'Élite' ? 'd’' : 'de '}${LAST}`, desc: 'Gagner le championnat de la plus haute division.',
     test: (s, X) => X.honours.some((h) => h.id === `league${DIVISIONS.length}`), date: (s, X) => firstHonour(X, (h) => h.id === `league${DIVISIONS.length}`) },
   { id: 'europe_win', cat: 'honours', title: 'Roi d’Europe', desc: 'Remporter la Coupe d’Europe des clubs.',
     test: (s, X) => X.honours.some((h) => h.comp === 'c1'), date: (s, X) => firstHonour(X, (h) => h.comp === 'c1') },

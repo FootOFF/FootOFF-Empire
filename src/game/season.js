@@ -71,7 +71,7 @@ export function startSeason(s) {
     const j = Math.floor(Math.random() * (i + 1));
     [s.rivals[i], s.rivals[j]] = [s.rivals[j], s.rivals[i]];
   }
-  // Elite (0.6.0) : aller-retour, quatorze journées ; la seconde moitié reprend les mêmes affiches, lieux inversés. Notre
+  // Élite (0.6.0) : aller-retour, quatorze journées ; la seconde moitié reprend les mêmes affiches, lieux inversés. Notre
   // lieu alterne : domicile, extérieur… (sept de chaque) ; ailleurs, toutes nos journées se jouent à domicile.
   const first = roundRobin(8);
   const elite = s.divisionIndex === DIVISIONS.length - 1;
@@ -82,7 +82,7 @@ export function startSeason(s) {
   refreshTransfers(s, 'full'); // mercato neuf : joueurs libres et joueurs sous contrat (transfers.js)
   refreshScouting(s); // académie : premiers jeunes repérés de la saison
   resetSeasonStats(s);
-  // Coupe d'Europe : qualifié par le classement de l'Elite la saison passée ; la participation est payée d'avance
+  // Coupe d'Europe : qualifié par le classement de l'Élite la saison passée ; la participation est payée d'avance
   s.c1 = !!s.c1Next;
   s.c1Next = false;
   buildCalendar(s);
@@ -252,7 +252,7 @@ function reportText(s, res) {
     ? `Buts : ${res.scorers.map((x) => `${x.name} ${ordinal(x.minute, true)}`).join(', ')}.`
     : `${s.clubName} n’a pas trouvé la faille.`;
   const money = new Intl.NumberFormat('fr-FR').format(res.revenue);
-  if (res.away) { // à l'extérieur (Elite) : ni public à nous, ni billetterie, seulement les droits TV
+  if (res.away) { // à l'extérieur (Élite) : ni public à nous, ni billetterie, seulement les droits TV
     const intro = res.gf > res.ga
       ? pick([`Victoire à l’extérieur : ${s.clubName} fait taire le stade ${opp('de ')}.`, `${s.clubName} s’impose chez ${clubAfter('', res.oppName)} : trois points précieux loin de ses bases.`])
       : res.gf === res.ga
@@ -283,7 +283,7 @@ function reportText(s, res) {
 }
 
 // Contexte du prochain match : adversaire, lieu (home : à domicile ; les coupes se jouent toujours à domicile, le
-// championnat aussi hors de l'Elite) et affluence attendue.
+// championnat aussi hors de l'Élite) et affluence attendue.
 export function matchContext(s) {
   const f = nextFixture(s);
   if (!f) return null;
@@ -380,7 +380,7 @@ export function applyMatchResult(s, live) {
   for (const p of s.players) p.fit = Math.min(100, Math.round((fitOf(p) + recoveryOf(p, s.buildings.training || 0)) * 10) / 10);
   s.money += res.revenue;
   for (const [k, v] of Object.entries(res.breakdown)) book(s, k, v);
-  if (league) { // paie de la journée : un septième des salaires et de l'entretien (un quatorzième en Elite)
+  if (league) { // paie de la journée : un septième des salaires et de l'entretien (un quatorzième en Élite)
     const len = leagueLength(s);
     const wagePart = Math.round(s.players.reduce((sum, p) => sum + wageOf(p, s.divisionIndex), 0) / len);
     const upkeepPart = Math.round(upkeepOf(s) / len);
@@ -455,7 +455,7 @@ export function nextOpponent(s) {
 const n = (v) => new Intl.NumberFormat('fr-FR').format(v);
 
 export function endSeason(s) {
-  if (!s.league) for (let guard = 0; nextFixture(s) && guard < 40; guard++) playRound(s); // dates restantes jouées d'un bloc (22 en Elite)
+  if (!s.league) for (let guard = 0; nextFixture(s) && guard < 40; guard++) playRound(s); // dates restantes jouées d'un bloc (22 en Élite)
   const standings = standingsOf(s);
   const position = standings.findIndex((t) => t.i === 0) + 1;
   // ligue entre amis : son nom tient lieu de division (trophée, historique, bilan), l'économie garde son échelle
@@ -483,7 +483,7 @@ export function endSeason(s) {
     s.trophies = [...(s.trophies || []), { comp: 'league', season: s.seasonNumber, division: div.name }];
     events.unshift(`Champion ${ofDiv(div.name)} ! Le trophée rejoint la vitrine et rapporte ${n(titleBonus)} € de primes de titre.`);
   }
-  // Coupe d'Europe : les deux premiers de l'Elite la disputent la saison suivante
+  // Coupe d'Europe : les deux premiers de l'Élite la disputent la saison suivante
   if (!s.league && s.divisionIndex === DIVISIONS.length - 1 && position <= 2) {
     s.c1Next = true;
     events.push(`Qualifié pour la Coupe d’Europe des clubs : ${n(C1_ENTRY)} € de prime de participation dès la reprise.`);

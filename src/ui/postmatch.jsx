@@ -178,7 +178,7 @@ export default function PostMatch({ state, onClose, onStats, initialStep = 'resu
               </div>
             )}
 
-            {/* à l'extérieur (Elite) : la billetterie est celle de l'adversaire, seuls les droits TV reviennent au club */}
+            {/* à l'extérieur (Élite) : la billetterie est celle de l'adversaire, seuls les droits TV reviennent au club */}
             <SectionHead label={lm.away ? 'Recettes du match' : 'Billetterie et recettes'} aside={lm.away ? 'à l’extérieur' : lm.capacity ? `${fmtNum(lm.attendance)} / ${fmtNum(lm.capacity)} places` : null} />
             <div className="post-money">
               <b className="post-money-total"><AnimatedMoney value={lm.revenue} from={0} delay={500} duration={1200} prefix="+" /></b>

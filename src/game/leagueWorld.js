@@ -84,7 +84,7 @@ export function worldSquads(squads, world) {
   });
 }
 
-// Rythme de la saison : quatorze journées en aller-retour, chaque séance y compte pour deux tiers (comme l'Elite).
+// Rythme de la saison : quatorze journées en aller-retour, chaque séance y compte pour deux tiers (comme l'Élite).
 export const paceOfLeague = (league) => (league.settings?.format === 'single' ? 1 : ELITE_PACE);
 
 // Séance de la semaine, une par ligne : le joueur et la catégorie choisis (orders : { G: { id, cat }, … }), sinon le

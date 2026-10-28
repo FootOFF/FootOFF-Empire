@@ -47,7 +47,7 @@ import { previewState, previewUi, silentSound } from './ui/preview';
 import { FacesSheet } from './ui/facesheet';
 import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics';
 import { fluidEnabled, setFluid } from './three/adapt';
-import { actionablePlots, dockSignals, seasonEndForecast, sessionPin, staffTip } from './game/advice';
+import { actionablePlots, dismissTip, dockSignals, seasonEndForecast, sessionPin, staffTip } from './game/advice';
 import { allowedBuildingsFor, plotBuilding, plotOf } from './game/map';
 import { leavingYouth, missionTarget } from './game/academy';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
@@ -136,7 +136,6 @@ export default function App({ preview = null }) {
   const [resumeLive, setResumeLive] = useState(boot.live || null);
   const liveDone = useRef(false); // match terminé : son enregistrement s'efface une fois le résultat sauvegardé
   const [matchFx, setMatchFx] = useState(null); // effets 3D du direct : but, but encaissé, mi-temps…
-  const [dismissedTips, setDismissedTips] = useState(() => new Set()); // conseils masqués (session)
   const [confirm, setConfirm] = useState(boot.ui.confirm || null); // fenêtre de confirmation du jeu (vente, nouvelle partie…)
   // Siège de la Ligue ouvert sur l'écran titre (un invité n'a besoin ni du bâtiment ni d'une partie) : { invite } quand
   // on arrive par un lien d'invitation (…/footoffempire/?ligue=CODE), la fenêtre s'ouvre alors sur « rejoindre »
@@ -780,7 +779,7 @@ export default function App({ preview = null }) {
     else if (a.kind === 'panel' && a.panel === 'training') openTraining(a.tab);
     else if (a.kind === 'panel' && (a.panel === 'mercato' || (a.panel === 'squad' && a.tab === 'market'))) openMercato(a.view || null);
     else if (a.kind === 'panel') {
-      if (a.panel === 'squad') setSquadTab(a.tab || 'players');
+      if (a.panel === 'squad') { setSquadTab(a.tab || 'players'); setSquadSheet(a.sheet ?? null); }
       if (a.panel === 'direction') setDirectionTab(a.tab || 'tv');
       openPanel(a.panel);
     }
@@ -795,7 +794,7 @@ export default function App({ preview = null }) {
     else doAction(tuto.action);
   };
   const tip = state && !tuto && !sel && !panel ? staffTip(state) : null;
-  const shownTip = tip && !dismissedTips.has(tip.id) ? tip : null;
+  const shownTip = tip; // les conseils écartés sont gardés dans la partie (advice.js, dismissTip)
   const signals = state ? dockSignals(state) : {};
   const navPage = navDir && navDir.panel === panel ? navDir.dir : null; // sens du passage à la section voisine
   // navigation par sections (nav.jsx) : l'en-tête de chaque panneau y lit l'onglet actif et ses pastilles
@@ -882,7 +881,7 @@ export default function App({ preview = null }) {
               <StaffTip
                 tip={shownTip}
                 onAction={() => doAction(shownTip.action)}
-                onDismiss={() => setDismissedTips((d) => new Set(d).add(shownTip.id))}
+                onDismiss={() => run((s) => dismissTip(s, shownTip.id))}
               />
             )}
           </Presence>
@@ -899,7 +898,7 @@ export default function App({ preview = null }) {
               keys={hudKeys && !panel}
               tip={shownTip}
               onTipAction={() => doAction(shownTip.action)}
-              onTipDismiss={() => setDismissedTips((d) => new Set(d).add(shownTip.id))}
+              onTipDismiss={() => run((s) => dismissTip(s, shownTip.id))}
             />
           )}
           <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} keys={hudKeys && !panel && !sel}

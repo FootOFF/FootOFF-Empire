@@ -142,10 +142,10 @@ function migratePlayers(s) {
   return s;
 }
 
-// 0.6.0 : l'Elite passe à l'échelle d'un grand championnat (salaires, valeurs, droits TV, sponsors et primes ×4 environ).
-// Une partie déjà en Elite garde sa situation : sa trésorerie, les offres reçues, les prix demandés, les contre-
+// 0.6.0 : l'Élite passe à l'échelle d'un grand championnat (salaires, valeurs, droits TV, sponsors et primes ×4 environ).
+// Une partie déjà en Élite garde sa situation : sa trésorerie, les offres reçues, les prix demandés, les contre-
 // propositions en cours et la référence de l'objectif « dans le vert » suivent la même échelle (les comptes des saisons
-// passées et le bilan du mercato restent tels qu'ils ont été). Ailleurs, rien ne change avant la montée en Elite.
+// passées et le bilan du mercato restent tels qu'ils ont été). Ailleurs, rien ne change avant la montée en Élite.
 function scaleElite(y) {
   if (y.eliteScale === ELITE_SCALE) return y;
   if (y.divisionIndex === DIVISIONS.length - 1) {
@@ -246,7 +246,7 @@ export function repairSave(s) {
       registerNames([...y.players, ...y.youth, ...(y.scouting?.list || []), ...y.market, ...y.transfers, ...y.alumni].map((p) => p.name));
       if (!y.scouting) refreshScouting(y); // jeunes repérés de la journée, tout de suite (noms déjà tous connus)
       if (!y.league) fixLeagueNames(y); // un club adverse en double (même nom ou même lieu) dans la division est renommé
-      scaleElite(y); // Elite à l'échelle d'un grand championnat (0.6.0)
+      scaleElite(y); // Élite à l'échelle d'un grand championnat (0.6.0)
       // visages (0.6.1) : un joueur d'avant garde la base de son portrait (teint, cheveux, coiffure, barbe), avec les
       // nouveaux traits ; puis aucun sosie dans l'effectif (de deux sosies, le dernier arrivé change de coupe)
       for (const p of [...y.players, ...y.youth, ...(y.scouting?.list || []), ...y.market, ...y.transfers, ...y.alumni]) {
@@ -254,6 +254,14 @@ export function repairSave(s) {
       }
       distinctSquad(y.players);
       ensureDeals(y); // contrats (0.8.0) : chaque joueur reçoit un contrat au salaire du jour, de deux à quatre saisons
+      // « Elite » s'écrit « Élite » (0.8.2) : les noms de division gardés dans la partie suivent
+      const accent = (o) => {
+        if (!o) return;
+        if (o.division === 'Elite') o.division = 'Élite';
+        if (o.nextDivision === 'Elite') o.nextDivision = 'Élite';
+      };
+      for (const x of [...(y.history || []), ...(y.trophies || []), ...(y.matches || []), ...(y.ledger?.past || []), y.seasonReview]) accent(x);
+      for (const p of [...y.players, ...y.alumni]) for (const h of p.hist || []) accent(h);
       return y;
     };
     if (s.version === 4) return fix(s);

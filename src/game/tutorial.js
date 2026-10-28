@@ -110,7 +110,7 @@ export function stepContent(step, s) {
         ...base,
         title: 'Bienvenue, président',
         text: `${s.clubName} démarre en ${DIVISIONS[s.divisionIndex].name} : un terrain municipal, ${eur(START_MONEY)} en caisse et tout à construire. Je suis ta directrice sportive : je te montre l’essentiel en quelques minutes.`,
-        why: 'Ton but : monter de division en division jusqu’à l’Elite, et bâtir le complexe le plus prestigieux du pays.',
+        why: 'Ton but : monter de division en division jusqu’à l’Élite, et bâtir le complexe le plus prestigieux du pays.',
         cta: 'C’est parti',
       };
     case 'build':

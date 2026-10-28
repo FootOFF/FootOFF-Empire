@@ -151,7 +151,7 @@ const T = {
   ],
 };
 
-// À l'extérieur (Elite, 0.6.0) : le public est celui de l'adversaire. Le coup d'envoi, l'ambiance et les buts se
+// À l'extérieur (Élite, 0.6.0) : le public est celui de l'adversaire. Le coup d'envoi, l'ambiance et les buts se
 // commentent depuis son stade (le reste des gabarits ne change pas).
 const T_AWAY = {
   ...T,
@@ -385,7 +385,7 @@ const memoChances = (fn) => { const cache = new Map(); return (minute) => { if (
 
 // avant le coup d'envoi : 90 minutes plus le temps additionnel des deux mi-temps (chaque durée de la première
 // mi-temps à part : la seconde commence à la 46e minute de jeu, quel que soit le temps additionnel), le onze de
-// départ jusqu'au bout, sa condition qui baisse au fil du match ; home : false pour un match à l'extérieur (Elite)
+// départ jusqu'au bout, sa condition qui baisse au fil du match ; home : false pour un match à l'extérieur (Élite)
 export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true, oppPlan = null }) {
   const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0), home, oppPlan));
   const parts = HALF1.map((h1) => outcomeOdds(chancesAt, 0, HALF2.map((h2) => h1 + h2), (k) => (k <= h1 ? k : 45 + k - h1)));
@@ -503,7 +503,7 @@ export function createLiveMatch(s, ctx, saved = null) {
     subsList: [], // changements faits : entrant, sortant, minute
     formation: formationOf(s.formation).id,
     comp: ctx.comp || 'league',
-    atHome: ctx.home !== false, // à l'extérieur (Elite) : l'avantage du terrain passe à l'adversaire
+    atHome: ctx.home !== false, // à l'extérieur (Élite) : l'avantage du terrain passe à l'adversaire
     knockout: !!ctx.knockout, // coupe : pas de match nul, tirs au but
     pens: null,
     awayRoster: opp?.players || [], // onze adverse : de vrais joueurs (opponents.js), dans l'ordre des postes de son dispositif

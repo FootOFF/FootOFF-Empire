@@ -5,7 +5,7 @@ import { ATTRS, SUMMER, WEIGHTS, makePlayer, playerRating, seasonGain } from './
 import { clamp, ri, rnd } from './utils';
 
 // Académie : l'équipe de jeunes du club, six places. On recrute quand on veut, gratuitement, parmi les jeunes repérés
-// (renouvelés après chaque journée de championnat, toutes les deux en Elite ; plus nombreux et plus doués quand
+// (renouvelés après chaque journée de championnat, toutes les deux en Élite ; plus nombreux et plus doués quand
 // l'académie grandit, leur potentiel mieux cerné : players.js, potentialRange). Chaque jeune suit un plan d'entraînement
 // (technique, physique ou mental) : il progresse un peu après chaque journée et fait un bond à l'intersaison, selon
 // son potentiel (le centre
@@ -28,7 +28,7 @@ const ROUND_PACE = 0.012;
 const levelBrake = (p) => clamp(1.4 - playerRating(p) / 20, 0.45, 1);
 
 const r1 = (v) => Math.round(v * 10) / 10;
-// L'Elite joue quatorze journées (aller-retour) : l'académie y garde le rythme d'une saison de sept (repérage toutes
+// L'Élite joue quatorze journées (aller-retour) : l'académie y garde le rythme d'une saison de sept (repérage toutes
 // les deux journées, progrès de moitié à chaque journée), autant de jeunes et de progrès par saison qu'ailleurs.
 const perRound = (s) => 7 / leagueLength(s);
 const scoutStep = (s, round = s.round) => Math.floor(round * perRound(s));
@@ -112,7 +112,7 @@ function grow(p, gain) {
 }
 
 // Après chaque journée de championnat : un petit progrès pour chaque jeune, d'autant plus grand qu'il est loin de son
-// potentiel (de moitié en Elite, qui joue deux fois plus de journées).
+// potentiel (de moitié en Élite, qui joue deux fois plus de journées).
 export function trainYouth(s) {
   for (const p of s.youth || []) {
     const room = Math.max(0, p.pot - playerRating(p));
@@ -135,7 +135,7 @@ export function youthSeasonEnd(s) {
   return gone;
 }
 
-// Jeunes repérés de la journée : tirés une fois par journée de championnat, toutes les deux en Elite (recruter ne les
+// Jeunes repérés de la journée : tirés une fois par journée de championnat, toutes les deux en Élite (recruter ne les
 // renouvelle pas ; une amélioration de l'académie en ajoute aussitôt), âgés de 15 à 17 ans. Recruteurs en mission :
 // pas de jeunes repérés, jusqu'à leur retour (missions, plus bas).
 export function refreshScouting(s) {
@@ -162,7 +162,7 @@ export function refreshScouting(s) {
 
 // --- Missions des recruteurs (0.6.1) -----------------------------------------------------------------------------
 // Tu envoies tes recruteurs sur un poste, un profil (technique, physique, mental) ou une région imaginaire, pour un à
-// trois repérages (une à trois journées ; deux à six en Elite, qui repère toutes les deux journées). Pendant la mission,
+// trois repérages (une à trois journées ; deux à six en Élite, qui repère toutes les deux journées). Pendant la mission,
 // pas de jeunes repérés. Au retour, ils ont vu autant de jeunes (de la cible) que les repérages manqués et te ramènent
 // les plus prometteurs, d'après leur vrai potentiel : plus la mission est longue, plus ils en ont vu, plus il y a de
 // chances d'y trouver une pépite. Ils ne la font pas naître pour autant : les chances (exactes, missionPlan) sont celles
@@ -295,4 +295,11 @@ function missionBack(s, m) {
 }
 
 // Jeunes qui auront 19 ans à l'intersaison : à faire monter avant, sinon ils partent.
+// Détection regardée : la pastille et le conseil du staff s'éteignent jusqu'à la liste de la journée suivante (0.8.2).
+export function markScoutingSeen(s) {
+  if (!s.scouting || s.scouting.seen) return null;
+  s.scouting.seen = true;
+  return s;
+}
+
 export const leavingYouth = (s) => (s.youth || []).filter((p) => p.age + 1 >= YOUTH_LEAVE_AGE);

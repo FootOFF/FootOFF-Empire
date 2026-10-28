@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { ofDiv } from '../game/cups';
 import { POS_LABELS } from '../game/constants';
 import { ATTRS, GK_ATTRS } from '../game/players';
 import { allCareers, careerOf, topScorers } from '../game/career';
@@ -39,7 +40,7 @@ export function PlayerCareer({ state, id, onClose, onSheet }) {
   const scorers = topScorers(allCareers(state));
   const bestSeasons = Object.entries(scorers).filter(([, v]) => v.ids.includes(id)).map(([season, v]) => ({ season: Number(season), goals: v.goals }));
   const awards = [
-    ...c.titles.map((h) => `Champion de ${h.division} (saison ${h.season})`),
+    ...c.titles.map((h) => `Champion ${ofDiv(h.division)} (saison ${h.season})`),
     ...c.promotions.filter((h) => h.position !== 1).map((h) => `Montée depuis la ${h.division} (saison ${h.season})`),
     ...bestSeasons.map((b) => `Meilleur buteur du club en saison ${b.season} (${plural(b.goals, 'but', 'buts')})`),
     ...(t.motm ? [`Homme du match ${t.motm} fois`] : []),

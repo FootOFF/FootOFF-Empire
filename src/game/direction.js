@@ -16,7 +16,7 @@ export const tvBoost = (lvl) => 0.08 * lvl;
 export const localTv = (lvl) => 250 * lvl; // télé locale par match à domicile (Départementale)
 import { pushJournal } from './journal';
 
-// Droits TV d'un match de championnat (à domicile comme à l'extérieur en Elite) : base de la division (ou télé locale),
+// Droits TV d'un match de championnat (à domicile comme à l'extérieur en Élite) : base de la division (ou télé locale),
 // bonus de la Direction et hausse négociée pour la saison.
 export function tvPerMatch(s, deal = s.tvDeal) {
   const lvl = s.buildings.direction || 0;

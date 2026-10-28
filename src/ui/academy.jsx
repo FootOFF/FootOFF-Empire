@@ -3,7 +3,7 @@ import { BUILDINGS, DIVISIONS, POS_LABELS, SQUAD_MAX, upgradeCost, divisionOf } 
 import { ATTRS, FAMILIES, GK_ATTRS, TRAITS, playerRating, potentialRange, ratingAt, wageOf } from '../game/players';
 import {
   MISSION_KINDS, MISSION_REGIONS, MISSION_STEPS, PLANS, PROFILES, SCOUTED, YOUTH_LEAVE_AGE, YOUTH_PLACES, advisedPlan, cancelMission,
-  missionPlan, missionReturn, missionTarget, planAttrs, planPace, scoutingWhen, startMission,
+  missionPlan, missionReturn, missionTarget, planAttrs, planPace, scoutingWhen, startMission, markScoutingSeen,
 } from '../game/academy';
 import { academyTalent, scoutingError } from '../game/economy';
 import { leagueLength } from '../game/cups';
@@ -55,6 +55,9 @@ export function AcademyView({ state, run, ask, notify = () => {}, onClose, onBui
     [state], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const full = youth.length >= YOUTH_PLACES;
+  // détection regardée : sa pastille s'éteint jusqu'à la liste de la journée suivante (0.8.2)
+  const scoutSeen = !!state.scouting?.seen;
+  useEffect(() => { if (tab === 'scout' && state.scouting && !scoutSeen && !preview) run(markScoutingSeen); }, [tab, state.scouting?.key, scoutSeen]); // eslint-disable-line react-hooks/exhaustive-deps
   const upgradable = lvl < BUILDINGS.academy.max && state.money >= upgradeCost('academy', lvl + 1);
 
   // une notification mène au jeune annoncé : sa ligne s'éclaire et vient au centre
@@ -136,7 +139,7 @@ export function AcademyView({ state, run, ask, notify = () => {}, onClose, onBui
           <Tabs
             items={[
               ['youth', 'Mes jeunes', youth.length ? <em className="mc-count-badge ac-tab-n">{youth.length}</em> : null],
-              ['scout', 'Détection', scouted.length ? <em className={`mc-count-badge ac-tab-n ${full ? '' : 'hot'}`}>{scouted.length}</em> : null],
+              ['scout', 'Détection', scouted.length && !scoutSeen ? <em className={`mc-count-badge ac-tab-n ${full ? '' : 'hot'}`}>{scouted.length}</em> : null],
             ]}
             value={tab}
             onChange={setTab}
@@ -192,7 +195,7 @@ function Places({ state, youth, upgradable, onBuilding }) {
 
 // --- Mes jeunes -----------------------------------------------------------------------------------------------
 
-// Prochain repérage : après la prochaine journée de championnat, dans deux journées (Elite : une liste toutes les deux
+// Prochain repérage : après la prochaine journée de championnat, dans deux journées (Élite : une liste toutes les deux
 // journées), ou au début de la saison prochaine.
 function nextScouting(state) {
   if (state.mission) return `au retour de tes recruteurs, ${whenText(state, missionReturn(state, state.mission.left))}`;
@@ -218,7 +221,7 @@ function YouthTab({ state, youth, scouted, refLvl, focus, onOpen, onScout }) {
           <p>
             {YOUTH_PLACES} places, sans frais :{' '}
             {scouted.length
-              ? `recrute parmi les ${plural(scouted.length, 'jeune repéré', 'jeunes repérés')} par tes éducateurs.`
+              ? (scouted.length > 1 ? `recrute parmi les ${scouted.length} jeunes repérés par tes éducateurs.` : 'recrute le jeune repéré par tes éducateurs.')
               : `de nouveaux jeunes seront repérés ${nextScouting(state)}.`}
           </p>
           {scouted.length > 0 && <button className="btn" onClick={onScout}>Voir la détection</button>}
@@ -362,7 +365,7 @@ function YouthRow({ p, state, refLvl, focus, onOpen }) {
 
 function ScoutTab({ state, scouted, full, refLvl, onOpen, onSign, onBuilding, run, ask, notify }) {
   const lvl = state.buildings.academy || 0;
-  const { since } = scoutingWhen(state); // en Elite (quatorze journées), une liste toutes les deux journées
+  const { since } = scoutingWhen(state); // en Élite (quatorze journées), une liste toutes les deux journées
   const when = nextScouting(state);
   const back = state.scouting?.mission; // liste ramenée par une mission
   return (

@@ -105,8 +105,8 @@ export function Panel({ id = null, title, eyebrow, size = 'md', money = null, to
 
 // --- Saison : calendrier, classement, dernier match, palmarès ---------------------------------------------
 
-// Zone d'une place au classement : montée (2 premiers, hors Elite), Coupe d'Europe des clubs (2 premiers de
-// l'Elite, qualifiés pour la saison suivante), descente (2 derniers, hors Départementale).
+// Zone d'une place au classement : montée (2 premiers, hors Élite), Coupe d'Europe des clubs (2 premiers de
+// l'Élite, qualifiés pour la saison suivante), descente (2 derniers, hors Départementale).
 export function zoneOf(divisionIndex, i) {
   const elite = divisionIndex === DIVISIONS.length - 1;
   if (i < 2) return elite ? 'europe' : 'promo';
@@ -174,7 +174,7 @@ export function ZoneLegend({ state }) {
         <li className="europe"><i aria-hidden="true" />Coupe d’Europe des clubs la saison prochaine</li>
       )}
       {rel && <li className="releg"><i aria-hidden="true" />Descente en {DIVISIONS[state.divisionIndex - 1].name}</li>}
-      {promo && <li className="note">La Coupe d’Europe des clubs se joue depuis l’Elite : ses deux premiers s’y qualifient.</li>}
+      {promo && <li className="note">La Coupe d’Europe des clubs se joue depuis l’Élite : ses deux premiers s’y qualifient.</li>}
     </ul>
   );
 }
@@ -200,7 +200,7 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
   if (promo && pos > 2) goal = behind('de la montée');
   else if (promo) goal = 'En zone de montée';
   else if (state.league) goal = pos === 1 ? 'En tête de la ligue' : `${standings[0].pts - me.pts} pt${standings[0].pts - me.pts > 1 ? 's' : ''} du premier`;
-  else goal = pos === 1 ? 'En tête de l’Elite' : pos === 2 ? 'Place européenne' : behind('de l’Europe');
+  else goal = pos === 1 ? 'En tête de l’Élite' : pos === 2 ? 'Place européenne' : behind('de l’Europe');
   if (rel && pos >= 7) goal = 'En zone de descente';
   const motm = lm?.players?.length ? [...lm.players].sort((a, b) => b.rating - a.rating)[0] : null;
 
@@ -228,8 +228,8 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
       {tab === 'calendar' && <SeasonCalendar state={state} initialSel={initialSel} onOpenMatch={onOpenMatch} onPlay={onPlay} />}
       {tab === 'table' && (
         <div className="season-cols">
-          <section className="season-plate season-table" aria-label={`Classement de ${div.name}`}>
-            <SectionHead label={`Classement · ${div.name}`} aside={me.played ? `après ${me.played} journée${me.played > 1 ? 's' : ''} sur 7` : 'avant la 1re journée'} />
+          <section className="season-plate season-table" aria-label={`Classement ${ofDiv(div.name)}`}>
+            <SectionHead label={`Classement · ${div.name}`} aside={me.played ? `après ${me.played} journée${me.played > 1 ? 's' : ''} sur ${leagueLength(state)}` : 'avant la 1re journée'} />
             <StandingsTable state={state} />
             <ZoneLegend state={state} />
           </section>

@@ -19,7 +19,7 @@ const matchCtx = (d) => `${d.opp ? `contre ${d.opp} · ` : ''}${d.comp && d.comp
 
 const HINTS = {
   league1: 'Finir premier de Départementale.', league2: 'Finir premier de Régionale.', league3: 'Finir premier de Nationale.',
-  league4: 'Finir premier de l’Elite.', cup: 'Aller au bout de la Coupe nationale.', c1: 'Gagner la Coupe d’Europe des clubs.',
+  league4: 'Finir premier de l’Élite.', cup: 'Aller au bout de la Coupe nationale.', c1: 'Gagner la Coupe d’Europe des clubs.',
 };
 
 function Honours({ state }) {

@@ -196,7 +196,7 @@ export function lineupRating(players, lineup, formation = '433', factorOf = null
 }
 
 // Buts attendus (sur 90 minutes) selon l'écart de niveau, la tactique et l'avantage du terrain (home : à domicile ; à
-// l'extérieur, en Elite, l'avantage passe à l'adversaire). opp : le plan de jeu de l'adversaire quand il est connu
+// l'extérieur, en Élite, l'avantage passe à l'adversaire). opp : le plan de jeu de l'adversaire quand il est connu
 // (championnat entre amis : { tactic, formation }) ; il joue en miroir (sa prise de risque ouvre aussi le match).
 export function expectedGoals(rating, oppStrength, tacticId, formationId = '433', home = true, opp = null) {
   const t = TACTICS[tacticId] || TACTICS.balanced;

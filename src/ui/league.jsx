@@ -164,7 +164,7 @@ function Home({ mine, canBuild, onOpen, onCreate, onJoin, onResume }) {
       {mine.length === 0 ? (
         <section className="dir-card lig-empty">
           <h3>Aucun championnat pour l’instant</h3>
-          <p className="dir-note">{canBuild ? 'Crée le tien et envoie le lien à tes amis, ou rejoins le leur avec leur code.' : 'Un ami t’a donné un code ? Rejoins son championnat. Pour créer le tien, construis le Siège de la Ligue en Elite.'}</p>
+          <p className="dir-note">{canBuild ? 'Crée le tien et envoie le lien à tes amis, ou rejoins le leur avec leur code.' : 'Un ami t’a donné un code ? Rejoins son championnat. Pour créer le tien, construis le Siège de la Ligue en Élite.'}</p>
         </section>
       ) : (
         <ul className="lig-list">

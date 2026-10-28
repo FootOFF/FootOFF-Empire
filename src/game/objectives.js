@@ -14,7 +14,7 @@ import { standingsOf } from './season';
 //
 // État : s.objectives = { season, startMoney, startBuildings, list: [{ id, kind, target }] }
 
-const SCALE = [1, 2.6, 6, 40]; // primes selon la division (comme les salaires : l'Elite ×4 depuis la 0.6.0)
+const SCALE = [1, 2.6, 6, 40]; // primes selon la division (comme les salaires : l'Élite ×4 depuis la 0.6.0)
 const PRIZE = { rank: 10000, sport: 5000, club: 5000, perfect: 6000 };
 const REP = { rank: 0.5, sport: 0.3, club: 0.3, perfect: 0.5 };
 const r1 = (v) => Math.round(v * 10) / 10;
@@ -43,7 +43,7 @@ export function drawObjectives(s) {
   const top = s.divisionIndex >= DIVISIONS.length - 1;
   const rank = a >= 1.2 ? 1 : a >= 0.4 ? 2 : a >= -0.4 ? 4 : 6;
   // cibles calées sur des saisons simulées : chaque défi se réussit environ deux fois sur trois à niveau attendu ; en
-  // Elite, deux fois plus de journées (aller-retour), deux fois plus de victoires, de buts et de cages inviolées
+  // Élite, deux fois plus de journées (aller-retour), deux fois plus de victoires, de buts et de cages inviolées
   const k = leagueLength(s) / 7;
   const aim = (v, lo, hi) => clamp(Math.round(v * k), Math.round(lo * k), Math.round(hi * k));
   const sport = pick([

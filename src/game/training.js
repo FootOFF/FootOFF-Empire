@@ -49,7 +49,7 @@ const share = (p, k) => 0.5 + 4.5 * (WEIGHTS[p.pos][k] || 0);
 const agePace = (age) => (age <= 19 ? 1 : age <= 23 ? 0.75 : age <= 27 ? 0.5 : age <= 30 ? 0.3 : 0.15);
 export const paceOf = (p) => agePace(p.age) * clamp(1.4 - playerRating(p) / 20, 0.45, 1);
 
-// Elite (0.6.0) : quatorze journées au lieu de sept, de dix-huit à vingt-deux dates avec les coupes au lieu de onze à
+// Élite (0.6.0) : quatorze journées au lieu de sept, de dix-huit à vingt-deux dates avec les coupes au lieu de onze à
 // quinze ; chaque séance (individuelle ou collective) y fait progresser des deux tiers, pour garder à peu près les
 // progrès d'une saison des autres divisions.
 export const ELITE_PACE = 2 / 3;
@@ -298,6 +298,7 @@ export function staffSession(s) {
 // Un signe distinctif appris au bout d'un programme entre au journal.
 export function journalLearned(s, r) {
   const removed = !!PROGRAMS[r.learned].remove;
+  s.training = { ...(s.training || {}), learned: (s.training?.learned || 0) + 1 }; // compte des signes appris (rappel des programmes, advice.js)
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'entrainement',
     title: removed ? `${r.name} apprend à se maîtriser` : `${r.name} gagne un signe distinctif : ${programLabel(r.learned)}`,

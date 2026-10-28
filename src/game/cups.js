@@ -3,7 +3,7 @@ import { distinctClubName } from './names';
 import { clamp, pick, rnd } from './utils';
 
 // Coupes : la Coupe nationale (tous les clubs du pays, à élimination directe) et la Coupe d'Europe des clubs
-// (réservée aux deux premiers de l'Elite la saison précédente ; identifiant interne « c1 »). Quatre tours chacune, matchs à
+// (réservée aux deux premiers de l'Élite la saison précédente ; identifiant interne « c1 »). Quatre tours chacune, matchs à
 // élimination directe : en cas d'égalité après 90 minutes, tirs au but. Les tours s'intercalent entre les journées
 // du championnat ; un club éliminé saute simplement les dates restantes.
 
@@ -15,7 +15,7 @@ export const COMPS = {
 export const STAGES = ['Huitièmes de finale', 'Quarts de finale', 'Demi-finale', 'Finale'];
 export const STAGES_SHORT = ['8es', 'Quarts', 'Demies', 'Finale'];
 
-// ordre de la saison : championnat, puis les tours de coupe glissés entre les journées ; en Elite, quatorze journées
+// ordre de la saison : championnat, puis les tours de coupe glissés entre les journées ; en Élite, quatorze journées
 // (aller-retour), deux journées entre deux tours de coupe
 const ORDER = [
   ['league'], ['league'], ['cup', 0], ['league'], ['c1', 0], ['league'], ['cup', 1], ['c1', 1],
@@ -27,10 +27,10 @@ const ORDER_ELITE = [
   ['league'], ['league'],
 ];
 
-// Journées de championnat de la saison : 7 (une rencontre contre chacun, toutes à domicile), 14 en Elite depuis la
+// Journées de championnat de la saison : 7 (une rencontre contre chacun, toutes à domicile), 14 en Élite depuis la
 // 0.6.0 (aller-retour : chaque adversaire reçu une fois, visité une fois, une journée sur deux à l'extérieur).
 export const leagueLength = (s) => s.schedule?.length || 7;
-// Journée `round` (0 = la première) jouée à l'extérieur (s.away, tiré au début de la saison ; jamais hors de l'Elite).
+// Journée `round` (0 = la première) jouée à l'extérieur (s.away, tiré au début de la saison ; jamais hors de l'Élite).
 export const isAwayRound = (s, round = s.round) => !!s.away?.[round];
 
 // Primes : Coupe nationale à l'échelle de la division (part de la prime du champion), Coupe d'Europe en montants européens.
@@ -53,7 +53,7 @@ export const euroName = (taken = []) => {
   return name;
 };
 
-// Adversaire d'un tour : en Coupe d'Europe, un cador européen, au-dessus du milieu de l'Elite dès les huitièmes et au
+// Adversaire d'un tour : en Coupe d'Europe, un cador européen, au-dessus du milieu de l'Élite dès les huitièmes et au
 // niveau des meilleurs en finale (de 15,1 à 18,5 ; de 14,8 à 18,2 en 0.5.x ; avant la 0.5.0, de 13,7 à 17,3 : une Coupe
 // d'Europe sur deux gagnée),
 // avec son budget de saison (de 150 à 800 M€, à la mesure de son niveau : rien qu'une indication, le match se joue sur
@@ -94,7 +94,7 @@ export function nextFixture(s) {
   return null;
 }
 
-// Libellé d'un match : « Journée 3 / 7 » (« / 14 » en Elite), « Coupe nationale · Quarts de finale », « Coupe d'Europe ·
+// Libellé d'un match : « Journée 3 / 7 » (« / 14 » en Élite), « Coupe nationale · Quarts de finale », « Coupe d'Europe ·
 // Finale ».
 export function fixtureLabel(f, round, total = 7) {
   if (!f || f.comp === 'league') return `Journée ${round} / ${total}`;
@@ -106,7 +106,7 @@ export function fixtureShort(f, round, total = 7) {
   if (!f || f.comp === 'league') return `Journée ${round} / ${total}`;
   return `${f.comp === 'c1' ? 'Europe' : 'Coupe'} · ${STAGES_MID[f.stage]}`;
 }
-// « de Nationale », « d'Elite » : élision devant une voyelle ; le nom d'une ligue entre amis prend son article (« de la
+// « de Nationale », « d'Élite » : élision devant une voyelle ; le nom d'une ligue entre amis prend son article (« de la
 // Ligue du Soir », « du Trophée du Dimanche »)
 export const ofDiv = (name) => (/^(Ligue|Coupe)/.test(name) ? `de la ${name}` : /^(Championnat|Trophée|Tournoi)/.test(name) ? `du ${name}`
   : /^[AEIOUÉÈÊ]/i.test(name) ? `d’${name}` : `de ${name}`);

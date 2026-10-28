@@ -25,7 +25,7 @@ export function Wordmark() {
 const PILLARS = [
   ['Construis', 'Ton complexe grandit parcelle après parcelle, dans l’ordre que tu veux : entraînement, académie, supporters, partenaires.'],
   ['Développe', 'Forme tes talents, déniche les futurs cracks, accomplis l’objectif de saison.'],
-  ['Gravis', 'De la Départementale jusqu’à l’Elite : ta réputation attire le public, les sponsors et les joueurs.'],
+  ['Gravis', 'De la Départementale jusqu’à l’Élite : ta réputation attire le public, les sponsors et les joueurs.'],
 ];
 
 function Pillars() {

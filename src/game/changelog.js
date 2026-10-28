@@ -4,6 +4,16 @@
 
 export const CHANGELOG = [
   {
+    version: '0.8.2', date: '2026-10-28', title: 'Un staff plus juste',
+    items: [
+      'Un conseil du staff que tu masques reste masqué, même quand tu recharges le jeu, jusqu’à ce que la situation change. Quand il n’a rien d’utile à dire, le staff se tait.',
+      'Le stade : le staff n’en parle plus que lorsque l’agrandissement est dans tes moyens, une fois par niveau ; la pastille du stade ne s’allume plus que dans ce cas.',
+      'L’académie : la pastille de la détection s’éteint dès que tu l’as regardée, jusqu’au prochain repérage. Les jeunes qui partiront à l’intersaison ne sont signalés qu’en seconde moitié de saison.',
+      'Nouveaux rappels : les droits TV de la saison à négocier (Direction), les blessés à soigner (centre médical), les programmes de signes à lancer (centre d’entraînement), les recruteurs à envoyer en mission (académie).',
+      'L’onglet « Pronostic » des Statistiques disparaît. Le panneau Pronostic de l’avant-match devient opaque, le classement compte les quatorze journées de l’Élite, et le nom de la division prend son accent.',
+    ],
+  },
+  {
     version: '0.8.1', date: '2026-10-28', title: 'Forme, rotation et matchs à l’extérieur',
     items: [
       'La forme compte désormais en match : un joueur en grande forme joue un peu mieux, un joueur en méforme un peu moins bien. « Meilleur onze » en tient compte, avec la condition physique.',
@@ -25,7 +35,7 @@ export const CHANGELOG = [
     version: '0.7.8', date: '2026-10-27', title: 'Une huitième parcelle',
     items: [
       'Le complexe compte maintenant huit parcelles : trois à l’est, comme à l’ouest. Tes bâtiments de l’est se décalent un peu, rien d’autre ne change.',
-      'La nouvelle parcelle est libre : elle accueillera bientôt un bâtiment de prestige, réservé à l’Elite.',
+      'La nouvelle parcelle est libre : elle accueillera bientôt un bâtiment de prestige, réservé à l’Élite.',
     ],
   },
   {
@@ -113,18 +123,18 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.6.0', date: '2026-10-27', title: 'L’Elite pro : aller-retour et vrais millions',
+    version: '0.6.0', date: '2026-10-27', title: 'L’Élite pro : aller-retour et vrais millions',
     items: [
-      'Elite en aller-retour : quatorze journées, chaque adversaire reçu une fois et visité une fois. À l’extérieur, l’avantage du terrain passe chez l’adversaire (pronostic compris, vérifié sur vingt mille matchs) et seuls les droits TV reviennent au club.',
+      'Élite en aller-retour : quatorze journées, chaque adversaire reçu une fois et visité une fois. À l’extérieur, l’avantage du terrain passe chez l’adversaire (pronostic compris, vérifié sur vingt mille matchs) et seuls les droits TV reviennent au club.',
       'Calendrier, avant-match, après-match et Finances le disent : « Journée 4 / 14 · À l’extérieur », droits TV attendus, matchs restants à domicile et à l’extérieur.',
-      'L’Elite change d’échelle, comme un grand championnat européen : droits TV et sponsors de plusieurs dizaines de millions, titulaires à plusieurs millions par an, stars à plus de dix millions, transferts à plusieurs dizaines de millions. Les petites divisions gardent leurs budgets modestes.',
+      'L’Élite change d’échelle, comme un grand championnat européen : droits TV et sponsors de plusieurs dizaines de millions, titulaires à plusieurs millions par an, stars à plus de dix millions, transferts à plusieurs dizaines de millions. Les petites divisions gardent leurs budgets modestes.',
       'Coupe d’Europe à vraie échelle : 15 M€ de participation, des primes de tour jusqu’à 30 M€ et 5 M€ de droits TV par match, plus de cent millions pour le vainqueur. Les clubs européens affichent leur budget (de 150 à 800 M€), et ils sont un peu plus forts.',
-      'Mercato : les géants européens suivent tes stars d’Elite, surtout quand tu joues la Coupe d’Europe. Leurs offres dépassent largement la valeur, et une offre spontanée peut la dépasser de moitié.',
+      'Mercato : les géants européens suivent tes stars d’Élite, surtout quand tu joues la Coupe d’Europe. Leurs offres dépassent largement la valeur, et une offre spontanée peut la dépasser de moitié.',
       'Sponsors versés à la reprise, dès la deuxième saison : un club promu touche tout de suite ceux de sa nouvelle division, de quoi se renforcer avant d’affronter des salaires bien plus lourds.',
-      'En Elite, le calendrier est chargé : chaque séance d’entraînement compte pour deux tiers, l’académie repère ses jeunes toutes les deux journées et ils progressent moitié moins par journée. Autant de progrès par saison qu’ailleurs.',
-      'Objectifs du conseil à l’échelle de la saison d’Elite (deux fois plus de victoires, de buts ou de cages inviolées) ; l’arène fermée coûte désormais 55 M€, puis 140 M€ pour la version agrandie.',
+      'En Élite, le calendrier est chargé : chaque séance d’entraînement compte pour deux tiers, l’académie repère ses jeunes toutes les deux journées et ils progressent moitié moins par journée. Autant de progrès par saison qu’ailleurs.',
+      'Objectifs du conseil à l’échelle de la saison d’Élite (deux fois plus de victoires, de buts ou de cages inviolées) ; l’arène fermée coûte désormais 55 M€, puis 140 M€ pour la version agrandie.',
       'Calendrier : la qualification affichée en coupe est exacte, comme à l’avant-match (un nul y comptait pour une demi-qualification).',
-      'Ta partie en cours : déjà en Elite, ta trésorerie et tes offres en cours passent à la nouvelle échelle, comme les salaires. La saison en cours garde ses sept journées ; l’aller-retour commence à la suivante.',
+      'Ta partie en cours : déjà en Élite, ta trésorerie et tes offres en cours passent à la nouvelle échelle, comme les salaires. La saison en cours garde ses sept journées ; l’aller-retour commence à la suivante.',
     ],
   },
   {
@@ -144,9 +154,9 @@ export const CHANGELOG = [
       'Académie : un ou deux jeunes repérés par journée selon son niveau (jusqu’à six avant), aux potentiels réalistes. Au niveau 5, moins de deux jeunes par saison peuvent viser 18 ou plus, et un 20 est rare. Les fourchettes affichées (niveau à l’arrivée, potentiel) sont celles du tirage.',
       'Les jeunes progressent plus lentement, à l’académie comme en équipe première : un grand espoir a besoin de plusieurs saisons pour éclore. Fini l’équipe de prodiges de 19 ans.',
       'Centre d’entraînement : les séances et la séance collective font progresser environ deux fois et demie moins vite. Jouer l’épreuve reste plus payant que la simuler.',
-      'Mercato : le marché suit le niveau de ta division (il était trop fort en Départementale, trop faible en Elite). Un joueur libre demande une prime de 70 % de sa valeur.',
+      'Mercato : le marché suit le niveau de ta division (il était trop fort en Départementale, trop faible en Élite). Un joueur libre demande une prime de 70 % de sa valeur.',
       'Une recrue, comme un jeune monté de l’académie, ne peut être vendue qu’après quatre journées de championnat au club : fini l’achat-revente qui rapportait des millions.',
-      'Coupe d’Europe : des adversaires au niveau des meilleurs clubs d’Elite, plus forts à chaque tour. La gagner devient un exploit.',
+      'Coupe d’Europe : des adversaires au niveau des meilleurs clubs d’Élite, plus forts à chaque tour. La gagner devient un exploit.',
       'Avant-match : le niveau de ton onze tient compte de la fatigue, comme les chances affichées (« fatigue −0,4 » à côté quand des titulaires ne sont pas frais).',
       'Coupes : la qualification affichée est exacte, avec ta chance de gagner une séance de tirs au but (finition de tes tireurs, réflexes de ton gardien).',
       'Objectifs du président : ils se fixent sur ton meilleur onze, pas sur l’onze du moment.',
@@ -334,9 +344,9 @@ export const CHANGELOG = [
     version: '0.1.3', date: '2026-10-24', title: 'Équilibre et cohérence',
     items: [
       'Une seule valeur de marché par joueur, référence des primes, des indemnités et des offres reçues.',
-      'Les stars de l’Elite coûtent vraiment cher ; salaires et entretien se paient à chaque journée.',
+      'Les stars de l’Élite coûtent vraiment cher ; salaires et entretien se paient à chaque journée.',
       'La réputation se gagne selon la division et s’oublie un peu chaque été ; nouveaux statuts jusqu’à « Club de légende » à 80.',
-      'Effectif de départ au milieu de la Départementale, haut de l’Elite relevé, recruteurs et notoriété qui attirent des joueurs jusqu’à 19.',
+      'Effectif de départ au milieu de la Départementale, haut de l’Élite relevé, recruteurs et notoriété qui attirent des joueurs jusqu’à 19.',
     ],
   },
   {

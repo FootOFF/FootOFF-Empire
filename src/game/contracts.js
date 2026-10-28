@@ -30,7 +30,7 @@ export const wageStep = (v) => Math.max(10, stepFor(v) / 5);
 // Saisons de contrat restantes, celle en cours comprise (1 : dernière année).
 export const yearsLeft = (s, p) => (p.deal ? p.deal.until - s.seasonNumber + 1 : 0);
 export const lastYear = (s, p) => !!p.deal && p.deal.until <= s.seasonNumber;
-// La clause de montée n'a de sens que là où l'on peut monter (pas en Elite, pas dans une ligue entre amis).
+// La clause de montée n'a de sens que là où l'on peut monter (pas en Élite, pas dans une ligue entre amis).
 export const clauseOpen = (s) => !s.league && s.divisionIndex < DIVISIONS.length - 1;
 const isOwn = (s, p) => s.players.includes(p);
 

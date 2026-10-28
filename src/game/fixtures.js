@@ -4,7 +4,7 @@ import { isAwayRound, leagueLength, nextFixture } from './cups';
 // coupe glissés entre elles. Pour chaque date : compétition, adversaire (connu pour le championnat ; en coupe,
 // seulement pour le prochain tour, les suivants restent à tirer au sort), et l'état :
 // played (joué : la fiche du match), next (prochain match), upcoming (à venir), tbd (adversaire à tirer au sort),
-// out (tour de coupe qui ne sera pas joué : éliminé avant). En Elite, `away` marque les journées jouées chez l'adversaire.
+// out (tour de coupe qui ne sera pas joué : éliminé avant). En Élite, `away` marque les journées jouées chez l'adversaire.
 export function seasonFixtures(s) {
   const cal = s.calendar || Array.from({ length: leagueLength(s) }, () => ({ comp: 'league', stage: null })); // anciennes parties
   const played = (s.matches || []).filter((m) => m.season === s.seasonNumber);

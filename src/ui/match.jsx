@@ -97,7 +97,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const fitOnly = lineupRating(state.players, lineup, formation, (p) => fitFactor(fitOf(p)));
   const tired = rested - fitOnly >= 0.05 ? rested - fitOnly : 0;
   const formGap = Math.abs(rating - fitOnly) >= 0.05 ? rating - fitOnly : 0;
-  const home = ctx.home !== false; // à l'extérieur (Elite) : l'avantage du terrain est à l'adversaire, pronostic compris
+  const home = ctx.home !== false; // à l'extérieur (Élite) : l'avantage du terrain est à l'adversaire, pronostic compris
   // même moteur que le pronostic (calcul exact, expulsions à venir comprises : gardé tant que rien ne change)
   const xg = useMemo(() => prematchXg(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength, home }), [state, lineup, tactic, formation, ctx.opp.strength, home]);
   const odds = useMemo(() => prematchOdds(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength, home }), [state, lineup, tactic, formation, ctx.opp.strength, home]);

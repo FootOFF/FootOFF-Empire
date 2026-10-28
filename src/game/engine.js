@@ -31,7 +31,7 @@ export function createInitialState(clubName, crest = null) {
   registerNames([]); // nouvelle partie : aucun nom de joueur encore porté
   const s = {
     version: 4,
-    eliteScale: ELITE_SCALE, // économie de l'Elite à l'échelle d'un grand championnat (0.6.0, save.js)
+    eliteScale: ELITE_SCALE, // économie de l'Élite à l'échelle d'un grand championnat (0.6.0, save.js)
     clubName,
     crest: normalizeCrest(crest), // écusson composé à la fondation, toujours noir et or (crest.js)
     createdAt: Date.now(),

@@ -68,11 +68,11 @@ export function spendPerHead(s) {
 // Prix moyen d'un billet : tarif de la division × formule choisie (inspecteur du stade) × affiche de la compétition.
 export const ticketPrice = (s, comp = 'league') => DIVISIONS[s.divisionIndex].ticket * policyOf(s).price * (COMP_GATE[comp] || COMP_GATE.league).ticket;
 
-// Droits TV d'un match : base de la division (par match de championnat ; en Elite, à domicile comme à l'extérieur),
+// Droits TV d'un match : base de la division (par match de championnat ; en Élite, à domicile comme à l'extérieur),
 // Direction du club et hausse négociée (direction.js), plus en coupe.
 export const tvOfMatch = (s, comp = 'league') => (comp === 'c1' ? C1_TV : Math.round(tvPerMatch(s) * (COMP_GATE[comp] || COMP_GATE.league).tv));
 
-// Match à l'extérieur (Elite) : pas de billetterie, de buvette ni de boutique, seulement les droits TV.
+// Match à l'extérieur (Élite) : pas de billetterie, de buvette ni de boutique, seulement les droits TV.
 export function awayGate(s) {
   const tv = tvOfMatch(s, 'league');
   return { capacity: 0, demand: 0, attendance: 0, away: true, breakdown: { billetterie: 0, buvette: 0, boutique: 0, loges: 0, tv }, revenue: tv };
@@ -118,13 +118,13 @@ export function repEffects(rep) {
 export const prizeFor = (position, divIndex) => Math.round(DIVISIONS[divIndex].prize * (0.1 + (0.9 * (8 - position)) / 7));
 
 // Revenus hors ligne (siège & partenaires) : par niveau du siège et par heure d'absence, selon la division (le centième
-// des sponsors de base d'avant la 0.6.0 : l'Elite en reçoit quatre fois plus, comme le reste de ses comptes).
+// des sponsors de base d'avant la 0.6.0 : l'Élite en reçoit quatre fois plus, comme le reste de ses comptes).
 export const OFFLINE_CAP = 12; // heures comptées au maximum
 const OFFLINE_BASE = [50, 350, 2200, 40000];
 export const offlinePerHour = (lvl, divIndex) => Math.round(OFFLINE_BASE[divIndex] * lvl);
 
 // Salaire annuel : il suit la note du joueur (×1,7 par point jusqu'à 13, puis ×1,55) et la division du club (contrats
-// de plus en plus professionnels). En Elite, à l'échelle d'un grand championnat depuis la 0.6.0 (×4) : 1,3 M€ à 13,
+// de plus en plus professionnels). En Élite, à l'échelle d'un grand championnat depuis la 0.6.0 (×4) : 1,3 M€ à 13,
 // 4,9 M€ à 16, 11,8 M€ à 18, 28 M€ à 20 ; en Nationale, 200 000 € à 13.
 export const WAGE_BASE = 800;
 export const WAGE_DIVISION = [1, 2.7, 6.2, 40];
@@ -148,7 +148,7 @@ export function investedIn(key, lvl) {
 // Entretien : 4 % de l'investissement par saison ; le Siège de la Ligue n'en coûte pas (monde à part de la carrière).
 export const upkeepOf = (s) => Math.round(Object.keys(BUILDINGS).filter((k) => k !== 'league').reduce((a, k) => a + investedIn(k, s.buildings[k] || 0), 0) * 0.04);
 
-// Recettes de championnat d'une saison : billetterie, buvette, boutique et loges des matchs à domicile (sept, en Elite
+// Recettes de championnat d'une saison : billetterie, buvette, boutique et loges des matchs à domicile (sept, en Élite
 // comme ailleurs), droits TV de toutes les journées.
 export function leagueSeasonGate(s) {
   const gate = expectedGate(s, null);
@@ -170,7 +170,7 @@ export function seasonForecast(s, wages) {
 // Prévision de fin de saison (écran Finances) : trésorerie actuelle, plus les matchs restants, les sponsors (s'ils ne
 // sont pas déjà payés : depuis la 0.6.0, ils le sont à la reprise, season.js) et la prime au classement actuel, moins
 // les salaires et l'entretien qui restent à payer.
-// Les salaires et l'entretien se paient à chaque journée de championnat (un septième, un quatorzième en Elite) : il ne
+// Les salaires et l'entretien se paient à chaque journée de championnat (un septième, un quatorzième en Élite) : il ne
 // reste à payer que la part des journées restantes. Un match à l'extérieur ne rapporte que ses droits TV.
 export function endOfSeasonForecast(s, position, wages) {
   const len = leagueLength(s);

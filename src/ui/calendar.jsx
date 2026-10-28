@@ -31,7 +31,7 @@ const NEXT_STAGE = ['les quarts', 'la demi-finale', 'la finale']; // après un t
 const AFTER = ['', 'les huitièmes de finale', 'les quarts de finale', 'la demi-finale']; // tirage du tour suivant
 const plural = (n, one, many) => `${fmtNum(n)} ${n > 1 ? many : one}`;
 const rgbOf = (hex) => [(hex >> 16) & 255, (hex >> 8) & 255, hex & 255].join(', ');
-// « J4 », « J4 ext » chez l'adversaire (Elite), « Quarts »
+// « J4 », « J4 ext » chez l'adversaire (Élite), « Quarts »
 const tagOf = (f) => (f.comp === 'league' ? <>J{f.round}{f.away && <small className="sc-away">ext</small>}</> : STAGES_SHORT[f.stage]);
 const roundOf = (f, total) => (f.comp === 'league' ? `Journée ${f.round} / ${total}` : STAGES[f.stage]);
 const nameOf = (f, r) => `${COMP[f.comp]} · ${f.comp === 'league' ? `journée ${f.round}` : STAGES[f.stage].toLowerCase()}`
@@ -243,7 +243,7 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
   const Icon = COMP_ICON[f.comp];
   const state0 = v ? v.text : { next: 'Prochain match', upcoming: 'À venir', tbd: 'Tirage au sort', out: 'Non disputé' }[f.status] || 'Joué';
   const prize = f.comp !== 'league' ? cupPrize(f.comp, f.stage, state.divisionIndex) : 0;
-  // en Elite, une journée sur deux se joue chez l'adversaire : pas de billetterie, les droits TV seulement, et
+  // en Élite, une journée sur deux se joue chez l'adversaire : pas de billetterie, les droits TV seulement, et
   // l'avantage du terrain passe de l'autre côté (pronostic compris)
   const gate = future && opp ? (f.away ? awayGate(state) : expectedGate(state, opp, f.comp)) : null;
   const policy = TICKET_POLICIES[state.ticketPolicy || 'standard'];

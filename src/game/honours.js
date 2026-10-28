@@ -4,7 +4,7 @@ import { ofDiv } from './cups';
 // Palmarès : un trophée par compétition (le titre de chaque division, la Coupe nationale, la Coupe d'Europe des
 // clubs), avec toutes ses victoires. Sert à l'allée d'honneur du parvis (3D) et à la salle des trophées.
 
-const LEAGUE_TROPHIES = ['Coupe du District', 'Trophée de la Ligue', 'Plateau national', 'Trophée Elite'];
+const LEAGUE_TROPHIES = ['Coupe du District', 'Trophée de la Ligue', 'Plateau national', 'Trophée Élite'];
 
 export const HONOURS = [
   ...DIVISIONS.map((d, i) => ({
