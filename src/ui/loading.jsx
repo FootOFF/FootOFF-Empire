@@ -23,7 +23,7 @@ const TIPS = [
   'Le siège des partenaires rapporte même quand tu n’es pas là.',
   'L’académie révèle un jeune talent à fort potentiel à chaque fin de saison.',
   'Surveille la part des salaires dans tes revenus : c’est elle qui fait basculer une saison dans le rouge.',
-  'Avant le match, « Meilleur onze » aligne d’un geste ta meilleure équipe.',
+  'Avant le match, « Onze en forme » aligne d’un geste ton équipe la plus forte et la plus fraîche.',
   'Le bureau des transferts ouvre un marché de joueurs sous contrat, avec des indemnités négociées.',
   'Échap (ou Start à la manette) met le jeu en pause à tout moment.',
 ];

@@ -5,7 +5,7 @@ import { STAGES, STAGES_SHORT, cupPrize, leagueLength, penaltySkills, shootoutWi
 import { TICKET_POLICIES, awayGate, expectedGate, ticketPrice } from '../game/economy';
 import { TACTICS, formationOf, lineupRating } from '../game/tactics';
 import { standingsOf } from '../game/season';
-import { prematchOdds } from '../game/live';
+import { awayElevenOf, prematchOdds } from '../game/live';
 import { kitOf } from '../game/kits';
 import { ordinal } from '../game/utils';
 import { ClubCrest, Crest } from './crest';
@@ -247,7 +247,7 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
   // l'avantage du terrain passe de l'autre côté (pronostic compris)
   const gate = future && opp ? (f.away ? awayGate(state) : expectedGate(state, opp, f.comp)) : null;
   const policy = TICKET_POLICIES[state.ticketPolicy || 'standard'];
-  const odds = f.status === 'next' && opp ? prematchOdds(state, { oppStrength: opp.strength, home: !f.away }) : null;
+  const odds = f.status === 'next' && opp ? prematchOdds(state, { oppStrength: opp.strength, home: !f.away, away: awayElevenOf(state, { opp }) }) : null;
   // coupe : qualifié en gagnant, ou aux tirs au but après un nul (chance exacte, comme à l'avant-match)
   const pens = odds && f.comp !== 'league' ? penaltySkills(state.lineup.map((id) => state.players.find((p) => p.id === id)).filter(Boolean)) : null;
   const qualify = pens ? odds.win + odds.draw * shootoutWinChance(pens.home, pens.away) : null;

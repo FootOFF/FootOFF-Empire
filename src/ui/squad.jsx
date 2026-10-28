@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN, divisionOf } from '../game/constants';
 import {
-  ATTRS, FAMILIES, GK_ATTRS, TRAITS, WEIGHTS, costOf, playerRating, potentialRange, ratingAt, marketValue, wageOf, absenceOf, fitOf, matchCost, recoveryOf } from '../game/players';
+  ATTRS, FAMILIES, GK_ATTRS, TRAITS, WEIGHTS, costOf, playerRating, potentialRange, ratingAt, marketValue, wageOf, absenceOf, fitOf, matchCost, recoveryRate } from '../game/players';
 import { seasonForecast } from '../game/economy';
 import { teamLevel } from '../game/match';
 import { clubAfter, deName } from '../game/names';
@@ -9,7 +9,7 @@ import { bestSigning } from '../game/advice';
 import { arrivalOf, findOnMarket, moveWhen, offersFor, poolOf, saleBlock, valueOf } from '../game/mercato';
 import { askedWage, clauseOpen, lastYear, renewOpen, yearsLeft } from '../game/contracts';
 import { slotsOf } from '../game/tactics';
-import { fmtMoney, fmtNum, fmtRating } from './format';
+import { fmtMoney, fmtRating } from './format';
 import { IconChevron, IconChevronLeft, IconClose, IconRadar } from './icons';
 import { Panel } from './panels';
 import { PlayerCareer, departureText, reasonTag } from './career';
@@ -750,7 +750,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
               <span className="sh-pot"><b className={fitTone(fitOf(p))}>{Math.round(fitOf(p))} %</b></span>
             </div>
             <div className="sh-scale sh-fit" aria-hidden="true"><i className={`now ${fitTone(fitOf(p))}`} style={{ width: `${fitOf(p)}%` }} /></div>
-            <p className="sh-empty">Un match complet coûte environ {Math.round(matchCost(p))} points ; chaque date en rend {fmtNum(recoveryOf(p, state.buildings.training || 0))}. Fatigué, il joue moins bien et se blesse plus souvent.</p>
+            <p className="sh-empty">Un match complet lui coûte environ {Math.round(matchCost(p))} points ; d’ici le match suivant, il récupère {Math.round(recoveryRate(p, state.buildings.training || 0) * 100)} % de sa fatigue. Titulaire à chaque match, il se stabilise vers {Math.round(100 + matchCost(p) - matchCost(p) / recoveryRate(p, state.buildings.training || 0))} % : fatigué, il joue moins bien et se blesse plus souvent.</p>
           </section>
         )}
 

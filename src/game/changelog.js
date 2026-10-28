@@ -4,6 +4,15 @@
 
 export const CHANGELOG = [
   {
+    version: '0.8.5', date: '2026-10-28', title: 'Signes distinctifs et fatigue',
+    items: [
+      'Les signes distinctifs pèsent vraiment : un Finisseur transforme 50 % d’occasions de plus, face à un Chat l’adversaire en transforme 12 % de moins, et face à un Roc il s’en crée 10 % de moins. Chaque signe est chiffré sur la fiche du joueur.',
+      'Les adversaires ont leurs signes, eux aussi : tu les vois à l’avant-match, et le pronostic en tient compte.',
+      'Trois boutons, toujours visibles, pour composer ton onze : « Meilleur onze » (les meilleures notes), « Onze en forme » (notes, condition et forme réunies) et « Faire tourner » (les remplaçants du dernier match jouent).',
+      'La fatigue se voit et se gère : l’après-match montre la condition de chacun au coup de sifflet, puis au prochain match. Un titulaire qui enchaîne descend autour de 75 %, entre 50 et 90 % selon son âge, son endurance et ton centre d’entraînement.',
+    ],
+  },
+  {
     version: '0.8.4', date: '2026-10-28', title: 'Tactique et effectif',
     items: [
       'Change de dispositif à la mi-temps, ou à n’importe quel arrêt de jeu : tes joueurs se replacent au mieux et le pronostic suit. Le bouton « Changement » reste utile même sans changement restant (dispositif, tactique, postes).',

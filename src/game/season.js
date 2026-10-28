@@ -347,6 +347,7 @@ export function applyMatchResult(s, live) {
     if (p.injury?.out > 0) { p.injury.out -= 1; if (p.injury.out <= 0) delete p.injury; }
   }
   const absences = []; // blessés et suspendus du match, pour l'après-match et le journal
+  const fitness = {}; // par joueur entré en jeu : condition au coup de sifflet, puis au prochain match
   // vie des joueurs : matchs, buts, passes, cartons, note du match et forme (5 derniers matchs)
   for (const st of live.players || []) {
     const p = s.players.find((q) => q.id === st.id);
@@ -369,6 +370,7 @@ export function applyMatchResult(s, live) {
     else if (st.yellow && p.season.yellow % 3 === 0) { p.ban = (p.ban || 0) + 1; absences.push({ id: p.id, name: p.name, kind: 'ban', matches: p.ban, why: 'trois cartons jaunes' }); }
     // condition physique : le match coûte selon le temps de jeu et l'endurance
     p.fit = Math.max(0, Math.round((fitOf(p) - (matchCost(p) * (st.minutes ?? 90)) / 90) * 10) / 10);
+    fitness[p.id] = [p.fit]; // condition au coup de sifflet final (après-match)
   }
   // blessures du match : durée tirée maintenant, en dates du calendrier
   for (const inj of live.injuries || []) {
@@ -377,8 +379,12 @@ export function applyMatchResult(s, live) {
     p.injury = drawInjury();
     absences.push({ id: p.id, name: p.name, kind: 'injury', matches: p.injury.out, why: p.injury.label.toLowerCase() });
   }
-  // récupération avant la prochaine date, pour tous (le centre d'entraînement et son centre médical aident)
-  for (const p of s.players) p.fit = Math.min(100, Math.round((fitOf(p) + recoveryOf(p, s.buildings.training || 0)) * 10) / 10);
+  // récupération avant la prochaine date, pour tous (le centre d'entraînement aide) : l'après-match montre la condition
+  // au coup de sifflet et celle du prochain match, les autres écrans celle du prochain match
+  for (const p of s.players) {
+    p.fit = Math.min(100, Math.round((fitOf(p) + recoveryOf(p, s.buildings.training || 0)) * 10) / 10);
+    if (fitness[p.id]) fitness[p.id].push(p.fit);
+  }
   s.money += res.revenue;
   for (const [k, v] of Object.entries(res.breakdown)) book(s, k, v);
   if (league) { // paie de la journée : un septième des salaires et de l'entretien (un quatorzième en Élite)
@@ -400,7 +406,7 @@ export function applyMatchResult(s, live) {
     s.round++;
   }
   if (ctx.fixture >= 0) s.calIndex = ctx.fixture + 1;
-  s.lastMatch = { ...res, round: s.round, comp: ctx.comp, stage: ctx.stage, label: league ? fixtureLabel(null, s.round, leagueLength(s)) : ctx.label, cup: cupNote, status: status?.name || null, before, absences };
+  s.lastMatch = { ...res, round: s.round, comp: ctx.comp, stage: ctx.stage, label: league ? fixtureLabel(null, s.round, leagueLength(s)) : ctx.label, cup: cupNote, status: status?.name || null, before, absences, fitness };
   recordMatch(s, s.lastMatch);
   if (absences.length) {
     pushJournal(s, {

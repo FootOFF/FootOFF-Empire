@@ -1024,6 +1024,37 @@ ouverte depuis la Direction (panneau étroit) est posée sur tout l'écran. Dur�
 « saison N ». Fiche : bloc Contrat (salaire, fin, clause) et « Prolonger son contrat ». Effectif : fin du contrat sous
 le salaire dans le tableau (PC), « Dernière année de contrat » sur la carte des seuls joueurs concernés.
 
+## Signes distinctifs, composition et fatigue (0.8.5)
+
+Demandes du PDG (2026-10-28) : des signes qui aient un réel effet, un bouton « Faire tourner » introuvable sur
+téléphone, un « Meilleur onze » au niveau des notes seulement, un troisième bouton qui allie notes et condition, des
+joueurs presque toujours à 100 % après les matchs. Réponses à ses questions : « Nets et mesurés », « Eux aussi », « Les
+remplaçants jouent », « Se voit et se gère ».
+- Mesure d'avant (5 000 matchs appariés par signe) : seul le Chat comptait (−7,5 % de buts encaissés, +0,06 point par
+  match) ; Finisseur, Flèche, Roc, Leader, Grands soirs de 2 à 3 % ; Passeur, Sang chaud et Frappe lointaine sans aucun
+  effet sur le résultat ; Infatigable sans l'effet décrit. Repère : un point de niveau d'équipe vaut 0,35 point par match.
+- Effets (`live.js`, `TRAIT_FX`, `edgeOf`) : Finisseur ×1,5 sur sa finition ; Passeur +10 % d'occasions ; Infatigable
+  +40 % d'occasions dès la 70e minute (et 40 % de fatigue en moins) ; Flèche +9 %, +15 % en bloc bas ; Roc (défenseur ou
+  milieu) −10 % d'occasions adverses ; Leader +0,3 au niveau (`LEADER_BONUS`) ; Sang chaud +3 % d'occasions mais 40 % de jaunes en plus
+  et 2,2 fois le risque de rouge (pronostic compris) ; Frappe lointaine +9 % ; Grands soirs, contre plus fort, ×1,3 sur
+  sa finition et +6 % pour l'équipe ; Chat ×0,88 sur la finition adverse et 5 points de penalty. Les effets se cumulent
+  joueur par joueur. Mesure après : +0,07 à +0,11 point par match selon le signe, dans un camp comme dans l'autre.
+- Les deux équipes : le onze adverse (`awayElevenOf` : le vrai en ligue, celui tiré de son nom en solo) entre dans les
+  occasions, la finition, les penalties et les cartons ; le Leader adverse est déjà dans son niveau. Un onze compte cinq à
+  six signes : `TRAIT_NORM` (0,865) ramène un match entre onzes ordinaires à 2,44 buts (2,46 avant). Pronostic fidèle :
+  34,9 % de victoires annoncées, 35,5 % jouées sur 2 400 matchs. Le onze d'un adversaire de ligue entre amis est inconnu
+  avant la journée : estimation avec un onze ordinaire. Moteur des ligues en version 4 (`ENGINE_CURRENT` 4 côté site).
+- Boutons (`lineup.jsx`, `LineupActions`), toujours visibles : « Meilleur onze » (`autoLineup` avec `restWeight`, les
+  notes seules), « Onze en forme » (notes, condition et forme, comme le match) et « Faire tourner » (`rotateLineup` : les
+  joueurs qui n'ont pas débuté le dernier match, au poste où ils valent le plus, complétés par les titulaires les plus
+  reposés ; jamais un remplaçant sur la ligne opposée à la sienne ; le gardien reste sauf sous 75 %). Chacun dit ce qu'il
+  apporte ou qu'il est déjà en place.
+- Fatigue (`players.js`, `recoveryRate`) : une part de la fatigue récupérée d'ici le match suivant (55 %, 50 %, 45 % selon
+  l'âge, +2,5 points par niveau du centre). Titulaire sans rotation, simulé sur dix journées : 73 à 76 % au coup d'envoi
+  sans centre, 82 % au niveau 3, 83 à 85 % au niveau 5 ; 36 à 63 % au coup de sifflet ; de 50 % (vétéran peu endurant,
+  sans centre) à 90 % (jeune endurant, niveau 5) aux extrêmes. L'après-match affiche les deux
+  valeurs (`lastMatch.fitness`).
+
 ## Effectif minimum et tactique (0.8.4)
 
 Demandes du PDG (2026-10-28), réponses à ses questions : « Le plus utile », « Mi-temps et en jeu », « Je glisse

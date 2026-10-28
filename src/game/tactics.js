@@ -115,39 +115,51 @@ function hungarian(a) {
 // comptent (fitFactor, formFactor : un titulaire épuisé ou en méforme vaut moins qu'un remplaçant frais et en forme),
 // comme dans le pronostic et en match.
 export const fitWeight = (p) => fitFactor(fitOf(p)) * formFactor(p);
-export function autoLineup(players, formation = '433') {
+// factor : ce qui pèse sur la note de chacun ; par défaut condition et forme (« Onze en forme »), () => 1 pour les notes
+// seules (« Meilleur onze », 0.8.5).
+export const restWeight = () => 1;
+export function autoLineup(players, formation = '433', factor = fitWeight) {
   const slots = slotsOf(formation);
   const [nd, nm, na] = formationOf(formation).lines;
   const weight = { G: 0.12, D: 0.3 / nd, M: 0.26 / nm, A: 0.32 / na };
   const cols = players.filter(available);
   while (cols.length < slots.length) cols.push(null); // effectif trop court : poste laissé vide (niveau 3)
-  const cost = slots.map((pos) => cols.map((p) => (p ? -(weight[pos] * ratingAt(p, pos) * fitWeight(p)) - (p.pos === pos ? 1e-4 : 0) : -weight[pos] * 3)));
+  const cost = slots.map((pos) => cols.map((p) => (p ? -(weight[pos] * ratingAt(p, pos) * factor(p)) - (p.pos === pos ? 1e-4 : 0) : -weight[pos] * 3)));
   return hungarian(cost).map((j) => (cols[j] ? cols[j].id : null));
 }
 
-// Faire tourner (0.8.1) : chaque titulaire fatigué (condition sous ROTATE_FIT) cède sa place au meilleur joueur reposé
-// (ROTATE_FIT et plus) qui joue ce poste, en poste naturel ou de dépannage ; les autres titulaires gardent la leur, et
-// sans remplaçant reposé à ce poste, le fatigué reste. Renvoie le onze et le nombre de changements.
+// Faire tourner (0.8.5, demande du PDG : « utiliser les remplaçants à chaque fois ») : le onze se compose d'abord des
+// joueurs qui n'ont pas débuté le dernier match (last), chacun au poste où il vaut le plus, complété au besoin par les
+// titulaires les plus reposés ; un remplaçant n'est jamais aligné sur la ligne opposée à la sienne (un défenseur en
+// attaque), un titulaire reposé passe avant. Le gardien titulaire reste, sauf s'il est fatigué (sous ROTATE_FIT) et
+// qu'un autre gardien est disponible. Sans dernier match : le onze actuel tient lieu de titulaires.
 export const ROTATE_FIT = 75;
-export function rotateLineup(players, lineup, formation = '433') {
+const STARTER = 100; // coût d'un titulaire du dernier match : il ne joue que faute de remplaçant
+export function rotateLineup(players, last, formation = '433') {
   const slots = slotsOf(formation);
-  const used = new Set(lineup.filter((id) => id !== null));
-  const out = [...lineup];
-  let changes = 0;
-  slots.forEach((pos, k) => {
-    const p = players.find((x) => x.id === lineup[k]);
-    if (p && available(p) && fitOf(p) >= ROTATE_FIT) return;
-    const value = (q) => ratingAt(q, pos) * fitWeight(q) + (q.pos === pos ? 1e-4 : 0);
-    const fresh = players
-      .filter((q) => !used.has(q.id) && available(q) && fitOf(q) >= ROTATE_FIT && (q.pos === pos || q.alt === pos))
-      .sort((a, b) => value(b) - value(a))[0];
-    if (!fresh) return;
-    if (p) used.delete(p.id);
-    used.add(fresh.id);
-    out[k] = fresh.id;
-    changes++;
-  });
-  return { lineup: out, changes };
+  const [nd, nm, na] = formationOf(formation).lines;
+  const weight = { G: 0.12, D: 0.3 / nd, M: 0.26 / nm, A: 0.32 / na };
+  const started = new Set((last || []).filter((id) => id !== null));
+  const ok = players.filter(available);
+  const gk = slots.indexOf('G');
+  const keepers = ok.filter((p) => p.pos === 'G');
+  const was = keepers.find((p) => started.has(p.id));
+  const other = keepers.filter((p) => !started.has(p.id)).sort((a, b) => ratingAt(b, 'G') - ratingAt(a, 'G'))[0];
+  const keeper = was && (fitOf(was) >= ROTATE_FIT || !other) ? was : other || was || null;
+  const cols = ok.filter((p) => p.pos !== 'G');
+  const rows = slots.map((pos, k) => [pos, k]).filter(([, k]) => k !== gk);
+  while (cols.length < rows.length) cols.push(null);
+  const cost = rows.map(([pos]) => cols.map((p) => {
+    if (!p) return 3 * STARTER; // poste laissé vide : en tout dernier recours
+    const v = weight[pos] * ratingAt(p, pos) * fitWeight(p) + (p.pos === pos ? 1e-4 : 0);
+    if (started.has(p.id)) return STARTER - fitOf(p) / 100 - v; // le plus reposé d'abord, à un poste qui lui va
+    return ratingAt(p, pos) < 0.8 * ratingAt(p, p.pos) ? 2 * STARTER - v : -v;
+  }));
+  const pick = hungarian(cost);
+  const out = slots.map(() => null);
+  if (gk >= 0) out[gk] = keeper ? keeper.id : null;
+  rows.forEach(([, k], r) => { out[k] = cols[pick[r]] ? cols[pick[r]].id : null; });
+  return out;
 }
 
 // Répare un onze après des départs (retraite, libération), une blessure ou une suspension : garde les titulaires
@@ -184,6 +196,9 @@ export function reshapeLineup(players, lineup, formation) {
 
 export const lineupPlayers = (players, lineup) => lineup.map((id) => players.find((p) => p.id === id)).filter(Boolean);
 
+// « Leader » (0.8.5) : son onze gagne en sérénité, +0,3 au niveau d'équipe (un seul leader compte : le capitaine)
+export const LEADER_BONUS = 0.3;
+
 // Niveau d'un onze : même pondération par ligne que le moteur historique (gardien, défense, milieu, attaque).
 // Le poids de chaque ligne ne dépend pas du dispositif : un dispositif à un seul attaquant ne compte que le
 // meilleur, à cinq défenseurs la moyenne des cinq. Le bon dispositif est celui qui met en valeur ton effectif.
@@ -197,7 +212,7 @@ export function lineupRating(players, lineup, formation = '433', factorOf = null
     if (slots[k]) line[slots[k]].push(p ? ratingAt(p, slots[k]) * (factorOf ? factorOf(p) : 1) : 3);
   });
   const avg = (a, n) => (a.reduce((s, v) => s + v, 0) + (n - a.length) * 3) / n;
-  const leader = lineup.some((id) => players.find((x) => x.id === id)?.traits?.includes('leader')) ? 0.1 : 0;
+  const leader = lineup.some((id) => players.find((x) => x.id === id)?.traits?.includes('leader')) ? LEADER_BONUS : 0;
   return 0.12 * avg(line.G, 1) + 0.3 * avg(line.D, nd) + 0.26 * avg(line.M, nm) + 0.32 * avg(line.A, na) + leader;
 }
 

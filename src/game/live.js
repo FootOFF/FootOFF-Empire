@@ -227,9 +227,44 @@ export function highlightOf(e, fast = false) {
 // 20 000 matchs du moteur (tools/sim/pronostic.mjs).
 const HALF1 = [46, 47, 48]; // 45 minutes + 1 à 3 de temps additionnel
 const HALF2 = [47, 48, 49, 50]; // 45 minutes + 2 à 5
-// « Flèche » : plus d'occasions, surtout en bloc bas (le jeu de contre). « Infatigable » : le joueur se fatigue bien
-// moins vite (players.js, matchCost) et garde son niveau jusqu'au bout.
-const arrowBoost = (tactic) => (tactic === 'low' ? 1.06 : 1.03);
+// Signes distinctifs en match (0.8.5, demande du PDG : des effets nets et mesurés, environ +0,1 point par match là où le
+// signe agit, et les adversaires ont les leurs). Pour chaque équipe sur le terrain (edgeOf) : ses occasions (chances),
+// celles qu'elle laisse à l'adversaire (against), la finition adverse face à son gardien (keep, pen), ses cartons
+// (yellow, red). « Finisseur » et « Joueur des grands soirs » agissent sur la finition du tireur (convOf), « Leader » sur
+// le niveau d'équipe (tactics.js, lineupRating), « Infatigable » aussi sur la fatigue (players.js, matchCost).
+export const TRAIT_FX = {
+  finisseur: 1.5, // finition de ses tirs
+  passeur: 1.1, // occasions de son équipe
+  infatigable: 1.4, infatigableFrom: 70, // occasions de son équipe à partir de la 70e minute
+  fleche: 1.09, flecheLow: 1.15, // occasions de son équipe, davantage en bloc bas (le jeu de contre)
+  roc: 0.9, // occasions de l'adversaire (un défenseur ou un milieu)
+  sangChaud: 1.03, sangChaudYellow: 1.4, sangChaudRed: 2.2, // engagé dans les duels, mais des cartons
+  frappe: 1.09, // ses tentatives de loin : des occasions en plus
+  grandsSoirs: 1.3, grandsSoirsTeam: 1.06, // contre plus fort : sa finition, et son équipe le suit
+  chat: 0.88, chatPen: 0.05, // finition adverse, et penalties adverses
+};
+// Un onze compte en moyenne cinq à six signes (mesure : 5,8 chez nous, 5,5 chez l'adversaire) : ensemble, ils
+// gonfleraient les buts de 16 %. TRAIT_NORM ramène un match entre deux onzes ordinaires au nombre de buts d'avant ; un
+// onze riche en signes en marque et en sauve davantage, un onze qui en a peu, moins.
+const TRAIT_NORM = 0.865;
+const hasTrait = (p, t) => !!p?.traits?.includes(t);
+const convOf = (p, bigGame) => CONVERSION * (hasTrait(p, 'finisseur') ? TRAIT_FX.finisseur : 1) * (bigGame && hasTrait(p, 'grandsSoirs') ? TRAIT_FX.grandsSoirs : 1);
+export function edgeOf(on, { bigGame = false, tactic = 'balanced', minute = 0 } = {}) {
+  const e = { chances: 1, against: 1, keep: 1, pen: 0, yellow: 1, red: 1 };
+  const keeper = on.find((p) => p?.pos === 'G');
+  for (const p of on) {
+    if (!p?.traits?.length) continue;
+    if (hasTrait(p, 'passeur')) e.chances *= TRAIT_FX.passeur;
+    if (hasTrait(p, 'frappe')) e.chances *= TRAIT_FX.frappe;
+    if (hasTrait(p, 'fleche')) e.chances *= tactic === 'low' ? TRAIT_FX.flecheLow : TRAIT_FX.fleche;
+    if (hasTrait(p, 'infatigable') && minute >= TRAIT_FX.infatigableFrom) e.chances *= TRAIT_FX.infatigable;
+    if (bigGame && hasTrait(p, 'grandsSoirs')) e.chances *= TRAIT_FX.grandsSoirsTeam;
+    if (hasTrait(p, 'sangChaud')) { e.chances *= TRAIT_FX.sangChaud; e.yellow *= TRAIT_FX.sangChaudYellow; e.red *= TRAIT_FX.sangChaudRed; }
+    if ((p.pos === 'D' || p.pos === 'M') && hasTrait(p, 'roc')) e.against *= TRAIT_FX.roc;
+    if (p === keeper && hasTrait(p, 'chat')) { e.keep = TRAIT_FX.chat; e.pen = TRAIT_FX.chatPen; }
+  }
+  return e;
+}
 
 const shooterWeight = (p, bigGame) => {
   const base = p.pos === 'A' ? p.a.fin * 3 : p.pos === 'M' ? ((p.a.fin + p.a.pas) / 2) * 1.5 : p.a.fin * 0.5;
@@ -239,7 +274,7 @@ const shooterWeight = (p, bigGame) => {
 // gardien, sont celles d'un tir de la séance de tirs au but (cups.js, penaltySkills).
 const penaltyTaker = (field) => field.reduce((best, p) => (!best || p.a.fin > best.a.fin || (p.a.fin === best.a.fin && p.a.sfr > best.a.sfr) ? p : best), null);
 const penHome = (taker) => clamp(0.62 + (taker?.a.fin ?? 10) / 100, 0.66, 0.84);
-const penAway = (keeper) => 0.77 - (keeper ? (keeper.g?.ref || 10) / 400 : 0) - (keeper?.traits?.includes('chat') ? 0.03 : 0);
+const penAway = (keeper) => 0.77 - (keeper ? (keeper.g?.ref || 10) / 400 : 0);
 
 // facteur de chaque joueur à une minute donnée : sa condition physique (since : minute d'entrée en jeu de chacun) et sa
 // forme (players.js, formFactor)
@@ -251,35 +286,48 @@ const factorAt = (minute, since) => (p) => fitFactor(fitAt(p, minute, since(p.id
 // holes (0.8.4, solo) : un joueur sorti sans remplaçant (expulsé, blessé) laisse son poste vide dans le niveau de
 // l'équipe, et la pénalité d'infériorité numérique est réduite d'autant (même effet moyen) ; le poste où l'on place
 // l'expulsé compte donc. Sans (championnat entre amis, où personne ne peut le déplacer) : la pénalité seule, comme avant.
+// minute : la minute de jeu (« Infatigable ») ; away : les joueurs adverses sur le terrain, et leurs signes (0.8.5).
 export const HOLE_LOSE = 0.86;
 export const HOLE_GAIN = 1.115;
-function minuteGoalChances(s, lineup, tactic, oppStrength, short = { home: 0, away: 0 }, offIds = new Set(), formation = s.formation, factorOf = null, atHome = true, oppPlan = null, holes = false) {
-  const rating = lineupRating(s.players, holes ? lineup.map((id) => (offIds.has(id) ? null : id)) : lineup, formation, factorOf);
-  const xg = expectedGoals(rating, oppStrength, tactic, formation, atHome, oppPlan);
-  const bigGame = oppStrength > rating;
-  const on = lineup.map((id) => s.players.find((p) => p.id === id)).filter((p) => p && !offIds.has(p.id));
-  const has = (p, t) => p.traits?.includes(t);
-  const rocs = on.some((p) => p.pos === 'D' && has(p, 'roc'));
-  const keeper = on.find((p) => p.pos === 'G');
-  const field = on.filter((p) => p.pos !== 'G');
-  const arrow = field.some((p) => has(p, 'fleche')) ? arrowBoost(tactic) : 1;
-  const shooters = field.length ? field : on;
+// finition moyenne d'une équipe : celle de chaque tireur, pondérée par sa part des tirs (même tirage que le direct)
+const teamConv = (shooters, bigGame) => {
   let wSum = 0, convSum = 0;
   for (const p of shooters) {
     const w = shooterWeight(p, bigGame);
     wSum += w;
-    convSum += w * CONVERSION * (has(p, 'finisseur') ? 1.15 : 1) * (bigGame && has(p, 'grandsSoirs') ? 1.1 : 1);
+    convSum += w * convOf(p, bigGame);
   }
-  const convH = wSum ? convSum / wSum : CONVERSION;
-  const convA = CONVERSION * (keeper && has(keeper, 'chat') ? 0.92 : 1);
+  return wSum ? convSum / wSum : CONVERSION;
+};
+// adversaire dont on ne connaît pas le onze (estimation d'avant-match d'un championnat entre amis) : les signes d'un onze
+// moyen, moyenne géométrique de 2 000 onzes tirés comme en jeu (scratchpad avg-edge, 2026-10-28), finition de ses
+// tireurs comprise (AVERAGE_CONV : ses Finisseurs)
+const AVERAGE_EDGE = { chances: 1.2, against: 0.842, keep: 0.953, pen: 0.019, yellow: 1.122, red: 1.31 };
+const AVERAGE_CONV = 1.081;
+function minuteGoalChances(s, lineup, tactic, oppStrength, short = { home: 0, away: 0 }, offIds = new Set(), formation = s.formation, factorOf = null, atHome = true, oppPlan = null, holes = false, minute = 0, away = null) {
+  const rating = lineupRating(s.players, holes ? lineup.map((id) => (offIds.has(id) ? null : id)) : lineup, formation, factorOf);
+  const xg = expectedGoals(rating, oppStrength, tactic, formation, atHome, oppPlan);
+  const bigGame = oppStrength > rating;
+  const bigA = rating > oppStrength; // le grand soir de l'adversaire : nous sommes plus forts
+  const on = lineup.map((id) => s.players.find((p) => p.id === id)).filter((p) => p && !offIds.has(p.id));
+  const keeper = on.find((p) => p.pos === 'G');
+  const field = on.filter((p) => p.pos !== 'G');
+  const edgeH = edgeOf(on, { bigGame, tactic, minute });
+  const edgeA = away ? edgeOf(away, { bigGame: bigA, tactic: oppPlan?.tactic || 'balanced', minute }) : AVERAGE_EDGE;
+  const awayField = (away || []).filter((p) => p.pos !== 'G');
+  const keepH = edgeA.keep; // leur « Chat » face à nos tireurs
+  const keepA = edgeH.keep;
+  const convH = teamConv(field.length ? field : on, bigGame) * keepH;
+  const convA = (away?.length ? teamConv(awayField.length ? awayField : away, bigA) : CONVERSION * AVERAGE_CONV) * keepA;
   const lose = holes ? HOLE_LOSE : 0.78;
   const gain = holes ? HOLE_GAIN : 1.22;
-  const lamH = xg.for * lose ** short.home * 1.22 ** short.away * arrow;
-  const lamA = xg.against * gain ** short.home * 0.78 ** short.away * (rocs ? 0.97 : 1);
+  const lamH = xg.for * lose ** short.home * 1.22 ** short.away * edgeH.chances * edgeA.against * TRAIT_NORM;
+  const lamA = xg.against * gain ** short.home * 0.78 ** short.away * edgeA.chances * edgeH.against * TRAIT_NORM;
   const taker = penaltyTaker(field);
   return {
     pH: Math.min(1, lamH / (90 * CONVERSION)) * convH, pA: Math.min(1, lamA / (90 * CONVERSION)) * convA,
-    lamH, lamA, convH, convA, penH: penHome(taker), penA: penAway(keeper), taker, bigGame,
+    lamH, lamA, convH, convA, penH: penHome(taker) - edgeA.pen, penA: penAway(keeper) - edgeH.pen, taker, bigGame, bigA,
+    keepH, keepA, redH: edgeH.red, redA: edgeA.red, yellowH: edgeH.yellow, yellowA: edgeA.yellow,
   };
 }
 
@@ -339,8 +387,8 @@ function outcomeOdds(chancesAt, lead, durations, minuteOf = (k) => k, short = { 
           moved[d - 1] += v * down;
         }
         // les cartons de la minute tombent après ses occasions (simMinute)
-        const rH = a < hMax ? red : 0;
-        const rA = b < aMax ? red : 0;
+        const rH = a < hMax ? red * c.redH : 0;
+        const rA = b < aMax ? red * c.redA : 0;
         const spread = (to, w) => {
           const t = nxt[to];
           for (let d = nlo; d <= nhi; d++) t[d] += moved[d] * w;
@@ -393,8 +441,9 @@ const memoChances = (fn) => { const cache = new Map(); return (minute) => { if (
 // avant le coup d'envoi : 90 minutes plus le temps additionnel des deux mi-temps (chaque durée de la première
 // mi-temps à part : la seconde commence à la 46e minute de jeu, quel que soit le temps additionnel), le onze de
 // départ jusqu'au bout, sa condition qui baisse au fil du match ; home : false pour un match à l'extérieur (Élite)
-export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true, oppPlan = null }) {
-  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0), home, oppPlan));
+// away : le onze adverse, dont les signes comptent (awayElevenOf) ; inconnu (null) : un onze ordinaire
+export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true, oppPlan = null, away = null }) {
+  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0), home, oppPlan, false, minute, away));
   const parts = HALF1.map((h1) => outcomeOdds(chancesAt, 0, HALF2.map((h2) => h1 + h2), (k) => (k <= h1 ? k : 45 + k - h1)));
   const mean = (key) => parts.reduce((a, o) => a + o[key], 0) / parts.length;
   return { win: mean('win'), draw: mean('draw'), loss: mean('loss') };
@@ -405,8 +454,8 @@ export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formatio
 // contredisent ses pourcentages.
 const MEAN_H1 = Math.round(HALF1.reduce((a, b) => a + b, 0) / HALF1.length);
 const MEAN_H2 = Math.round(HALF2.reduce((a, b) => a + b, 0) / HALF2.length);
-export function prematchXg(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true, oppPlan = null }) {
-  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0), home, oppPlan));
+export function prematchXg(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true, oppPlan = null, away = null }) {
+  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0), home, oppPlan, false, minute, away));
   // répartition des expulsions (a chez nous, b chez eux), qui ne dépendent pas des buts : minute après minute
   let pr = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   let xf = 0, xa = 0;
@@ -421,8 +470,8 @@ export function prematchXg(s, { lineup = s.lineup, tactic = s.tactic, formation 
         const [pH, pA] = goalPair(c, a, b);
         xf += p * pH;
         xa += p * pA;
-        const rH = a < 3 ? red : 0;
-        const rA = b < 3 ? red : 0;
+        const rH = a < 3 ? red * c.redH : 0;
+        const rA = b < 3 ? red * c.redA : 0;
         next[a * 4 + b] += p * (1 - rH) * (1 - rA);
         if (rH) next[(a + 1) * 4 + b] += p * rH * (1 - rA);
         if (rA) next[a * 4 + b + 1] += p * (1 - rH) * rA;
@@ -495,6 +544,10 @@ export function statsOf(shown) {
   return x;
 }
 
+// Onze adverse d'un match : le vrai (championnat entre amis), sinon celui tiré de son nom (opponents.js). Une partie
+// de championnat entre amis ne connaît pas le onze de son adversaire avant la journée : null (un onze ordinaire).
+export const awayElevenOf = (s, ctx) => (ctx.awayEleven ? ctx.awayEleven.players : s.league ? null : opponentEleven(s, ctx.opp).players);
+
 // saved : un direct sauvegardé (save(), plus bas) à reprendre tel quel.
 // ctx.awayEleven : le vrai onze de l'adversaire ({ formation, players }, championnat entre amis), sinon tiré de son nom ;
 // ctx.oppPlan : son plan de jeu ({ tactic, formation }), qui pèse sur les occasions des deux côtés (expectedGoals).
@@ -557,7 +610,7 @@ export function createLiveMatch(s, ctx, saved = null) {
   }
   if (saved) Object.assign(m, unpackLive(saved));
   if (!m.preOdds) {
-    const o = prematchOdds(s, { oppStrength: ctx.opp.strength, home: ctx.home !== false, oppPlan: m.oppPlan });
+    const o = prematchOdds(s, { oppStrength: ctx.opp.strength, home: ctx.home !== false, oppPlan: m.oppPlan, away: m.awayRoster });
     const r4 = (v) => Math.round(v * 1e4) / 1e4;
     m.preOdds = { w: r4(o.win), d: r4(o.draw), l: r4(o.loss) };
     if (ctx.knockout) { // qualification : victoire, ou nul puis séance de tirs au but gagnée
@@ -590,7 +643,7 @@ export function createLiveMatch(s, ctx, saved = null) {
   };
   const make = (at, type, side, text, extra = {}) => ({ at, minute: label(at, extra.half ?? m.half), type, side, text, half: m.half, ...extra });
   const push = (at, type, side, text, extra = {}) => { const e = make(at, type, side, text, extra); events().push(e); return e; };
-  const chancesNow = (minute, lineup = m.lineup, tactic = m.tactic) => minuteGoalChances(s, lineup, tactic, m.oppStrength, shortOf(lineup), offIds(), m.formation, factorAt(minute, since), m.atHome !== false, m.oppPlan, m.holes);
+  const chancesNow = (minute, lineup = m.lineup, tactic = m.tactic) => minuteGoalChances(s, lineup, tactic, m.oppStrength, shortOf(lineup), offIds(), m.formation, factorAt(minute, since), m.atHome !== false, m.oppPlan, m.holes, minute, awayOn());
 
   // tireur : la finition compte (beaucoup pour un attaquant, un peu pour un milieu, peu pour un défenseur), chez nous
   // comme chez eux ; même pondération que le pronostic
@@ -598,7 +651,7 @@ export function createLiveMatch(s, ctx, saved = null) {
     const out = playersOn().filter((p) => p.pos !== 'G');
     return pickWeighted(out.length ? out : playersOn(), (p) => shooterWeight(p, bigGame));
   }
-  const awayShooter = () => { const field = awayOn().filter((p) => p.pos !== 'G'); return pickWeighted(field.length ? field : awayOn(), (p) => shooterWeight(p, false)); };
+  const awayShooter = (bigGame = false) => { const field = awayOn().filter((p) => p.pos !== 'G'); return pickWeighted(field.length ? field : awayOn(), (p) => shooterWeight(p, bigGame)); };
   const awayTaker = () => penaltyTaker(awayOn().filter((p) => p.pos !== 'G')) || awayShooter();
   // dernier passeur d'une action qui finit sur une passe : la passe compte, le signe « Passeur » triple les chances ;
   // un centre vient plutôt d'un joueur de couloir
@@ -696,17 +749,17 @@ export function createLiveMatch(s, ctx, saved = null) {
         q = 'pen';
         kind = 'penalty';
       } else {
-        p = home ? homeShooter(c.bigGame) : awayShooter();
-        // finition : « Finisseur » et « grands soirs » côté club, « Chat » dans nos cages contre l'adversaire ; les
-        // penalties prennent leur part des buts attendus (keep), la qualité de l'occasion a une moyenne de 1 : le
-        // nombre de buts attendu ne change pas, le pronostic reste exact
-        const base = home ? CONVERSION * (has(p, 'finisseur') ? 1.15 : 1) * (c.bigGame && has(p, 'grandsSoirs') ? 1.1 : 1) : c.convA;
+        p = home ? homeShooter(c.bigGame) : awayShooter(c.bigA);
+        // finition : « Finisseur » et « grands soirs » du tireur, « Chat » dans les cages d'en face, des deux côtés
+        // (0.8.5) ; les penalties prennent leur part des buts attendus (keep), la qualité de l'occasion a une moyenne
+        // de 1 : le nombre de buts attendu ne change pas, le pronostic reste exact
+        const base = convOf(p, home ? c.bigGame : c.bigA) * (home ? c.keepH : c.keepA);
         const keep = home ? (c.convH - PEN_SHARE * c.penH) / ((1 - PEN_SHARE) * c.convH) : (c.convA - PEN_SHARE * c.penA) / ((1 - PEN_SHARE) * c.convA);
         const qr = Math.random();
         q = qr < P_BIG ? 'big' : qr < P_BIG + P_STD ? 'std' : 'hard';
         conv = base * (q === 'big' ? Q_BIG : q === 'std' ? Q_STD : Q_HARD) * keep;
-        const long = home && has(p, 'frappe') && Math.random() < 0.4; // « Frappe » : il tente souvent sa chance de loin
-        if (long) m.stats.longShots++;
+        const long = has(p, 'frappe') && Math.random() < 0.4; // « Frappe » : il tente souvent sa chance de loin
+        if (long && home) m.stats.longShots++;
         kind = long ? 'long' : drawKind(q);
       }
       m.stats.shots[idx]++;
@@ -758,7 +811,7 @@ export function createLiveMatch(s, ctx, saved = null) {
       const pool = (home ? playersOn() : awayOn()).filter((p) => p.pos !== 'G');
       const keyOf = (q) => (home ? q.id : q.name);
       const team = home ? m.home : m.away;
-      const red = redAt(minute);
+      const red = redAt(minute) * (home ? c.redH : c.redA); // « Sang chaud » : plus d'expulsions (pronostic compris)
       if (r < red) {
         if (pool.length <= 7) continue; // une équipe ne descend pas sous sept joueurs de champ
         const p = pickWeighted(pool, (q) => (m.booked[side].has(keyOf(q)) ? RED_BOOKED : 1) * discipline(q));
@@ -767,7 +820,7 @@ export function createLiveMatch(s, ctx, saved = null) {
         if (home) { perf(p.id).red++; perf(p.id).out = Math.ceil(cat); }
         m.stats.red[home ? 0 : 1]++;
         add(cat, 'red', side, fill(pick(second ? T.secondYellow : T.red), vars({ p: p.name, team })), { player: p.name, playerId: home ? p.id : null, second });
-      } else if (r < red + YELLOW_PER_MIN) {
+      } else if (r < red + YELLOW_PER_MIN * (home ? c.yellowH : c.yellowA)) {
         const fresh = pool.filter((q) => !m.booked[side].has(keyOf(q)));
         if (!fresh.length) continue;
         const p = pickWeighted(fresh, discipline);
@@ -1053,7 +1106,7 @@ export function createLiveMatch(s, ctx, saved = null) {
       const end = halfEnd();
       const sinceOf = (id) => m.perf[id]?.in ?? (m.lineup.includes(id) ? 0 : minute);
       const short = shortOf(lineup);
-      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, offIds(), formation, factorAt(min, sinceOf), m.atHome !== false, m.oppPlan, m.holes));
+      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, offIds(), formation, factorAt(min, sinceOf), m.atHome !== false, m.oppPlan, m.holes, min, awayOn()));
       const rest = Math.max(0, end - minute); // la durée des mi-temps est tirée au coup d'envoi : le pronostic en tient compte
       const durations = [rest + (m.half === 1 ? m.halfLength[1] : 0)];
       return outcomeOdds(chancesAt, m.score.home - m.score.away, durations, (k) => (k <= rest ? minute + k : 45 + k - rest), short);
@@ -1076,7 +1129,7 @@ export function createLiveMatch(s, ctx, saved = null) {
       const short = { home: sentH.size + [...out].filter((id) => lineup.includes(id)).length, away: sentA };
       const off = new Set([...sentH, ...out]);
       const sinceOf = (id) => m.perf[id]?.in ?? (m.lineup.includes(id) ? 0 : minute);
-      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, off, formation, factorAt(min, sinceOf), m.atHome !== false, m.oppPlan, m.holes));
+      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, off, formation, factorAt(min, sinceOf), m.atHome !== false, m.oppPlan, m.holes, min, awayOn()));
       const rest = Math.max(0, halfEnd() - minute);
       const durations = [rest + (m.half === 1 ? m.halfLength[1] : 0)];
       return outcomeOdds(chancesAt, lead, durations, (k) => (k <= rest ? minute + k : 45 + k - rest), short);

@@ -38,18 +38,19 @@ export const WEIGHTS = {
   G: { ref: 0.28, gpl: 0.2, uns: 0.16, aer: 0.14, gsf: 0.12, rel: 0.1 },
 };
 
-// Signes distinctifs : une touche de personnalité, avec un petit effet en match (voir live.js / tactics.js).
+// Signes distinctifs : une touche de personnalité, avec un vrai effet en match (0.8.5 : environ +0,1 point par match là où
+// le signe agit, mesuré ; live.js, TRAIT_FX, et tactics.js, LEADER_BONUS). Les adversaires ont les leurs.
 export const TRAITS = {
-  finisseur: { name: 'Finisseur', desc: 'Transforme plus souvent ses occasions.' },
-  passeur: { name: 'Passeur', desc: 'Délivre plus souvent la passe décisive.' },
-  infatigable: { name: 'Infatigable', desc: 'Garde son niveau jusqu’au bout : après la 75e minute, son équipe se crée plus d’occasions.' },
-  fleche: { name: 'Flèche', desc: 'Fait la différence grâce à sa vitesse : plus d’occasions, surtout en bloc bas.' },
-  roc: { name: 'Roc', desc: 'Gagne ses duels : l’adversaire se crée moins d’occasions.' },
-  leader: { name: 'Leader', desc: 'Son onze gagne en sérénité (+0,1 au niveau d’équipe).' },
-  sangChaud: { name: 'Sang chaud', desc: 'Prend plus souvent des cartons.' },
-  frappe: { name: 'Frappe lointaine', desc: 'Tente sa chance de loin.' },
-  grandsSoirs: { name: 'Joueur des grands soirs', desc: 'Se transcende contre les équipes plus fortes.' },
-  chat: { name: 'Chat', desc: 'Réflexes de félin : plus d’arrêts décisifs.' },
+  finisseur: { name: 'Finisseur', desc: 'Transforme 50 % d’occasions de plus que les autres.' },
+  passeur: { name: 'Passeur', desc: 'Son équipe se crée 10 % d’occasions en plus, et il délivre bien plus souvent la passe décisive.' },
+  infatigable: { name: 'Infatigable', desc: 'Se fatigue 40 % moins vite. À partir de la 70e minute, son équipe se crée 40 % d’occasions en plus.' },
+  fleche: { name: 'Flèche', desc: 'Sa vitesse fait la différence : 9 % d’occasions en plus pour son équipe, 15 % en bloc bas.' },
+  roc: { name: 'Roc', desc: 'Gagne ses duels : l’adversaire se crée 10 % d’occasions en moins.' },
+  leader: { name: 'Leader', desc: 'Son onze gagne en sérénité : +0,3 au niveau d’équipe (un seul leader compte).' },
+  sangChaud: { name: 'Sang chaud', desc: 'Engagé dans les duels (3 % d’occasions en plus), mais son équipe prend 40 % de cartons jaunes en plus et 2,2 fois plus de rouges.' },
+  frappe: { name: 'Frappe lointaine', desc: 'Tente souvent sa chance de loin : 9 % d’occasions en plus pour son équipe.' },
+  grandsSoirs: { name: 'Joueur des grands soirs', desc: 'Contre un adversaire plus fort, il transforme 30 % d’occasions de plus, et son équipe s’en crée 6 % de plus.' },
+  chat: { name: 'Chat', desc: 'Réflexes de félin : l’adversaire transforme 12 % d’occasions en moins, et rate plus souvent ses penalties.' },
 };
 
 const r1 = (v) => Math.round(v * 10) / 10;
@@ -262,12 +263,11 @@ export function progressPlayer(p) {
 
 // --- Condition physique, blessures, suspensions ---------------------------------------------------------------
 // Condition (fit, 0 à 100, 100 au repos) : un match en coûte selon l'endurance (25 points pour un joueur très
-// endurant, 36 pour un joueur peu endurant ; moitié pour un gardien ; « Infatigable » : ×0,6), et chaque date du
-// calendrier en rend (24 points jusqu'à 27 ans, 21 jusqu'à 31, 18 ensuite, +1,5 par niveau du centre d'entraînement).
-// En match, la condition baisse minute après minute et pèse sur le niveau du joueur (fitFactor : −15 % à zéro). Un
-// joueur fatigué se blesse plus souvent. Récupération réduite en 0.5.1 (28, 24, 20 et +2 par niveau avant) : le onze
-// restait à 96 % de condition sans jamais tourner, la fatigue ne comptait pas (tools/sim/career.mjs, --sans-rotation) ;
-// un titulaire joue désormais sa saison autour de 90 %, et les plus fatigués méritent un repos.
+// endurant, 40 pour un joueur peu endurant ; moitié pour un gardien ; « Infatigable » : ×0,6), et d'ici la date
+// suivante le joueur en récupère une part (recoveryRate, 0.8.5). En match, la condition baisse minute après minute et
+// pèse sur le niveau du joueur (fitFactor : −15 % à zéro). Un joueur fatigué se blesse plus souvent. Avant la 0.8.5,
+// chaque date rendait un forfait (24, 21 ou 18 points, +1,5 par niveau du centre) : avec un centre développé, un
+// titulaire effaçait tout un match et restait près de 100 %.
 export const fitOf = (p) => clamp(p.fit ?? 100, 0, 100);
 export const fitFactor = (fit) => 0.85 + (0.15 * clamp(fit, 0, 100)) / 100;
 // Forme (0.8.1) : la moyenne des notes de ses derniers matchs (sur 10, deux matchs au moins) pèse un peu sur son niveau
@@ -282,7 +282,13 @@ export function matchCost(p) {
   const base = 30 * (1.35 - end / 40) * (p.pos === 'G' ? 0.5 : 1) * (p.traits?.includes('infatigable') ? 0.6 : 1);
   return Math.round(base * 10) / 10;
 }
-export const recoveryOf = (p, trainingLvl = 0) => (p.age <= 27 ? 24 : p.age <= 31 ? 21 : 18) + 1.5 * trainingLvl;
+// Récupération d'ici le prochain match (0.8.5, demande du PDG : la fatigue se voit et se gère) : une part de la fatigue,
+// non plus un forfait qui effaçait un match entier. Un titulaire qui enchaîne se stabilise autour de 75 % au coup
+// d'envoi (simulé : 73 à 76 % sans centre, 83 à 85 % au niveau 5 ; de 50 % pour un vétéran peu endurant à 90 % pour un
+// jeune endurant, davantage pour un gardien ou un Infatigable) : le centre d'entraînement ajoute 2,5 % de part par
+// niveau, il aide sans effacer la fatigue. Un remplaçant récupère vite.
+export const recoveryRate = (p, trainingLvl = 0) => (p.age <= 27 ? 0.55 : p.age <= 31 ? 0.5 : 0.45) + 0.025 * trainingLvl;
+export const recoveryOf = (p, trainingLvl = 0) => (100 - fitOf(p)) * recoveryRate(p, trainingLvl);
 // condition d'un joueur à une minute du match, entré à la minute `since`
 export const fitAt = (p, minute, since = 0) => Math.max(0, fitOf(p) - (matchCost(p) * Math.max(0, minute - since)) / 90);
 

@@ -4,7 +4,7 @@ import { divisionOf } from '../game/constants';
 import { repLevel } from '../game/reputation';
 import { activeGoal } from '../game/goals';
 import { seasonObjectives } from '../game/objectives';
-import { prematchOdds } from '../game/live';
+import { awayElevenOf, prematchOdds } from '../game/live';
 import { matchContext, standingsOf } from '../game/season';
 import { ClubCrest, Crest } from './crest';
 import { AnimatedMoney } from './moneyfx';
@@ -216,7 +216,7 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
   const watch = !!league?.pending;
   const waitSeason = done && league && !league.seasonOver; // dernière journée appliquée, la ligue n'a pas encore tourné
   useHudKey(['KeyJ'], () => (watch ? league.onWatch() : done ? (waitSeason ? null : onEndSeason()) : onPlay()), keys); // J : jouer (ou bilan de fin de saison)
-  const odds = useMemo(() => (ctx ? prematchOdds(state, { oppStrength: ctx.opp.strength, home: ctx.home !== false }) : null), [state]); // eslint-disable-line react-hooks/exhaustive-deps
+  const odds = useMemo(() => (ctx ? prematchOdds(state, { oppStrength: ctx.opp.strength, home: ctx.home !== false, away: awayElevenOf(state, ctx) }) : null), [state]); // eslint-disable-line react-hooks/exhaustive-deps
   const titleRef = useFitText(ctx?.opp.name, 17);
   if (watch) { // la journée est jouée : notre match nous attend, comme un direct
     return (

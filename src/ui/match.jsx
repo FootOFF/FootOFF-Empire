@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { TACTICS, TACTIC_ORDER, autoLineup, fitWeight, formationOf, lineupRating, reshapeLineup, slotsOf } from '../game/tactics';
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
-import { LIVE_VERSION, SUBS_MAX, createLiveMatch, highlightOf, liveKeyOf, pairSubs, prematchOdds, prematchXg, statsOf, subMinute } from '../game/live';
+import { LIVE_VERSION, SUBS_MAX, awayElevenOf, createLiveMatch, highlightOf, liveKeyOf, pairSubs, prematchOdds, prematchXg, statsOf, subMinute } from '../game/live';
 import { saveLive } from '../game/save';
-import { available, fitAt, fitFactor, fitOf, ratingAt } from '../game/players';
+import { TRAITS, available, fitAt, fitFactor, fitOf, ratingAt } from '../game/players';
 import { Portrait } from './portrait';
 import { teamCodes } from './teamcode';
-import { BestEleven, FormationPicker, LineupBoard, RotateButton, displayNames, formationEffect } from './lineup';
+import { FormationPicker, LineupActions, LineupBoard, displayNames, formationEffect } from './lineup';
 import { IconCheck, IconChevron, IconClose, IconMute, IconPlay, IconSound, IconUsers } from './icons';
 import { IconAssist, IconBall, IconMedic, IconSwap, IconWhistle, RatingBadge, VersusBar } from './kit';
 import { useKeydown } from './presence';
@@ -212,8 +212,15 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const formGap = Math.abs(rating - fitOnly) >= 0.05 ? rating - fitOnly : 0;
   const home = ctx.home !== false; // à l'extérieur (Élite) : l'avantage du terrain est à l'adversaire, pronostic compris
   // même moteur que le pronostic (calcul exact, expulsions à venir comprises : gardé tant que rien ne change)
-  const xg = useMemo(() => prematchXg(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength, home }), [state, lineup, tactic, formation, ctx.opp.strength, home]);
-  const odds = useMemo(() => prematchOdds(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength, home }), [state, lineup, tactic, formation, ctx.opp.strength, home]);
+  // le onze adverse et ses signes (0.8.5) : ils comptent dans le pronostic et se lisent sous la tactique
+  const away = useMemo(() => awayElevenOf(state, ctx), [state, ctx]);
+  const xg = useMemo(() => prematchXg(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength, home, away }), [state, lineup, tactic, formation, ctx.opp.strength, home, away]);
+  const odds = useMemo(() => prematchOdds(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength, home, away }), [state, lineup, tactic, formation, ctx.opp.strength, home, away]);
+  const awayTraits = (away || []).flatMap((p) => (p.traits || []).filter((t) => TRAITS[t]).map((t) => ({ t, p })));
+  const [traitTip, setTraitTip] = useState(null); // signe adverse dont l'effet est déplié
+  const tipRef = useRef(null);
+  // l'effet déplié remonte au centre de l'écran : sur téléphone, le pronostic collé en bas le cacherait
+  useEffect(() => { if (traitTip) tipRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, [traitTip]);
   // coupe : qualifié en gagnant, ou en gagnant la séance de tirs au but après un nul (chance exacte, tireurs et gardien de
   // ce onze) ; le nul ne compte plus pour une demi-qualification
   const pens = ctx.knockout ? penaltySkills(lineup.map((id) => state.players.find((p) => p.id === id)).filter(Boolean)) : null;
@@ -286,10 +293,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
             <div className="pm-xi-head">
               <h3 className="pm-sh mark-head">Onze de départ · <span className="nowrap">{form.name}</span></h3>
               <span className="pm-level">Niveau <b>{fmtRating(rating)}</b>{tired > 0 && <em className="pm-tired" title={`${fmtRating(rested)} au repos`}>fatigue −{fmtRating(tired)}</em>}{formGap !== 0 && <em className={`pm-form ${formGap > 0 ? 'up' : 'down'}`} title="Moyenne des notes des derniers matchs">forme {formGap > 0 ? '+' : '−'}{fmtRating(Math.abs(formGap))}</em>}</span>
-              <span className="lu-acts">
-                <BestEleven players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
-                <RotateButton players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
-              </span>
+              <LineupActions state={state} lineup={lineup} formation={formation} onApply={setLineup} />
               <button type="button" className="pm-fold" onClick={() => setBoard(false)}>Replier</button>
             </div>
             <LineupBoard players={state.players} lineup={lineup} formation={formation} onChange={setLineup} fitness={(p) => fitAt(p, 0)} />
@@ -297,10 +301,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
         ) : (
           <div className="pm-compo">
             <CompoCard title="Composition" detail={`Onze en ${form.name} · niveau ${fmtRating(rating)}${tired || formGap ? ` (${[tired ? `fatigue −${fmtRating(tired)}` : '', formGap ? `forme ${formGap > 0 ? '+' : '−'}${fmtRating(Math.abs(formGap))}` : ''].filter(Boolean).join(', ')})` : ''}`} onOpen={() => setBoard(true)} />
-            <span className="lu-acts">
-              <BestEleven players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
-              <RotateButton players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
-            </span>
+            <LineupActions state={state} lineup={lineup} formation={formation} onApply={setLineup} />
           </div>
         )}
         <section className="pm-plan glass" aria-label="Dispositif et tactique">
@@ -309,6 +310,23 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           <p className="pm-blurb">{form.blurb} <span className="pm-effect">{formationEffect(formation)}</span></p>
           <h3 className="pm-sh mark-head">Tactique</h3>
           <TacticPicker value={tactic} onChange={setTactic} />
+          {awayTraits.length > 0 && <>
+            <h3 className="pm-sh mark-head">Signes adverses</h3>
+            <ul className="pm-traits" aria-label="Signes distinctifs des joueurs adverses">
+              {awayTraits.map(({ t, p }) => {
+                const key = `${p.name}-${t}`;
+                return (
+                  <li key={key}>
+                    <button type="button" title={TRAITS[t].desc} aria-expanded={traitTip === key} onClick={() => setTraitTip(traitTip === key ? null : key)}>
+                      <b>{TRAITS[t].name}</b><span>{p.name.split(' ').slice(1).join(' ') || p.name}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            {/* au toucher, l'effet du signe choisi (téléphone : pas d'infobulle) */}
+            {awayTraits.some(({ t, p }) => `${p.name}-${t}` === traitTip) && <p ref={tipRef} className="pm-trait-tip">{TRAITS[traitTip.slice(traitTip.lastIndexOf('-') + 1)].desc}</p>}
+          </>}
           {friends && <>
             <h3 className="pm-sh mark-head">Plans de mi-temps</h3>
             <PlansSummary players={state.players} lineup={lineup} formation={formation} tactic={tactic} plans={plans} onOpen={setPlansOpen} />

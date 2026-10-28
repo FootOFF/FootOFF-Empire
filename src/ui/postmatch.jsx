@@ -44,6 +44,18 @@ function Goals({ list, align }) {
 }
 
 // Classement après la journée : où en est le club (place gagnée, perdue ou gardée), puis le tableau.
+// Condition d'un joueur après le match (0.8.5) : au coup de sifflet final, puis au prochain match (récupération).
+const fitTone = (f) => (f >= 75 ? 'good' : f >= 50 ? 'mid' : 'low');
+function FitAfter({ fit }) {
+  if (!fit) return null;
+  const [end, next = end] = fit;
+  return (
+    <span className="post-fit" title={`Condition : ${Math.round(end)} % au coup de sifflet, ${Math.round(next)} % au prochain match`}>
+      <b>{Math.round(end)} %</b><i aria-hidden="true">→</i><span className={fitTone(next)}>{Math.round(next)} %</span>
+    </span>
+  );
+}
+
 function TableStep({ state, lm, onClose }) {
   const standings = standingsOf(state);
   const pos = standings.findIndex((t) => t.i === 0) + 1;
@@ -135,6 +147,7 @@ export default function PostMatch({ state, onClose, onStats, initialStep = 'resu
         <div className="post-body">
           <section className="post-col">
             <SectionHead label="Notes du match" aside="sur 10" />
+            {lm.fitness && <p className="post-fit-note">Condition au coup de sifflet, puis au prochain match.</p>}
             {motm && (
               <div className="post-motm">
                 <span className="post-motm-tag"><IconStar /> Homme du match</span>
@@ -144,6 +157,7 @@ export default function PostMatch({ state, onClose, onStats, initialStep = 'resu
                   <div>
                     <strong>{motm.name}</strong>
                     <span>{POS_LABELS[motm.pos]}{motm.goals ? ` · ${motm.goals} but${motm.goals > 1 ? 's' : ''}` : ''}{motm.assists ? ` · ${motm.assists} passe${motm.assists > 1 ? 's' : ''} déc.` : ''}</span>
+                    <FitAfter fit={lm.fitness?.[motm.id]} />
                   </div>
                 </div>
               </div>
@@ -162,6 +176,7 @@ export default function PostMatch({ state, onClose, onStats, initialStep = 'resu
                       {p.red > 0 && <Card color="red" />}
                     </span>
                   </span>
+                  <FitAfter fit={lm.fitness?.[p.id]} />
                 </li>
               ))}
             </ol>

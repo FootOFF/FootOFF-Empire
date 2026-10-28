@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { createPortal } from 'react-dom';
 import { POS_LABELS } from '../game/constants';
 import { absenceOf, available, fitFactor, fitOf, playerRating, ratingAt } from '../game/players';
-import { FORMATIONS, FORMATION_ORDER, ROTATE_FIT, autoLineup, fitWeight, formationOf, lineupRating, reshapeLineup, rotateLineup, slotsOf } from '../game/tactics';
+import { FORMATIONS, FORMATION_ORDER, autoLineup, fitWeight, formationOf, lineupRating, reshapeLineup, restWeight, rotateLineup, slotsOf } from '../game/tactics';
 import { fmtRating } from './format';
 import { RatingBadge } from './kit';
 import { haptic } from './haptics';
@@ -121,18 +121,31 @@ export function FormationPicker({ value, onChange }) {
   );
 }
 
-// « Meilleur onze » : le bouton dit ce qu'il apporte (+0,4), ou que le onze est déjà le meilleur possible. Le gain
-// se mesure condition physique et forme comprises (comme le pronostic et le match) : un titulaire épuisé ou en méforme
-// peut céder sa place.
-export function BestEleven({ players, lineup, formation, onApply }) {
-  const best = useMemo(() => autoLineup(players, formation), [players, formation]);
-  const gain = lineupRating(players, best, formation, fitWeight) - lineupRating(players, lineup, formation, fitWeight);
-  if (gain < 1e-6) return <span className="lu-best done"><IconCheck />Meilleur onze possible</span>;
+// Trois boutons de composition (0.8.5, demande du PDG), toujours visibles :
+//  - « Meilleur onze » : les meilleures notes, sans regarder la condition ni la forme ;
+//  - « Onze en forme » : le onze le plus fort pour ce match, notes, condition physique et forme réunies, comme le
+//    pronostic et le match ;
+//  - « Faire tourner » : les remplaçants du dernier match jouent (tactics.js, rotateLineup).
+// Chacun dit ce qu'il change (+0,4 de niveau, ou le nombre de joueurs qui entrent), ou que le onze y est déjà.
+const changed = (a, b) => a.filter((id, k) => id !== null && !b.includes(id) && id !== b[k]).length;
+function LineupAction({ next, lineup, onApply, label, done, gain = null, title, className = '' }) {
+  const n = changed(next, lineup);
+  if (!n && next.every((id, k) => id === lineup[k])) return <span className={`lu-best done ${className}`} title={title}><IconCheck />{done}</span>;
   return (
-    <button className="lu-best" onClick={() => { haptic('tap'); onApply(best); }}>
-      Meilleur onze{gain >= 0.05 && <b>+{fmtRating(gain)}</b>}
+    <button className={`lu-best ${className}`} title={title} onClick={() => { haptic('tap'); onApply(next); }}>
+      {label}{gain !== null ? gain >= 0.05 && <b>+{fmtRating(gain)}</b> : n > 0 && <b>{n}</b>}
     </button>
   );
+}
+export function BestEleven({ players, lineup, formation, onApply }) {
+  const best = useMemo(() => autoLineup(players, formation, restWeight), [players, formation]);
+  const gain = lineupRating(players, best, formation) - lineupRating(players, lineup, formation);
+  return <LineupAction next={best} lineup={lineup} onApply={onApply} label="Meilleur onze" done="Meilleur onze" gain={gain} title="Les meilleures notes, sans regarder la condition physique ni la forme" />;
+}
+export function FitEleven({ players, lineup, formation, onApply }) {
+  const best = useMemo(() => autoLineup(players, formation), [players, formation]);
+  const gain = lineupRating(players, best, formation, fitWeight) - lineupRating(players, lineup, formation, fitWeight);
+  return <LineupAction next={best} lineup={lineup} onApply={onApply} label="Onze en forme" done="Onze en forme" gain={gain} className="lu-fresh" title="Le onze le plus fort pour ce match : notes, condition physique et forme réunies" />;
 }
 
 // Niveau d'un onze tel qu'il jouera, condition et forme comprises (comme le pronostic et le match), avec ce que la
@@ -154,15 +167,20 @@ export function LevelReadout({ level }) {
   );
 }
 
-// « Faire tourner » : les titulaires fatigués (sous 75 %) laissent leur place aux remplaçants reposés de leur poste. Le
-// bouton dit combien de joueurs il repose ; personne à reposer (ou aucun remplaçant reposé) : il disparaît.
-export function RotateButton({ players, lineup, formation, onApply }) {
-  const r = useMemo(() => rotateLineup(players, lineup, formation), [players, lineup, formation]);
-  if (!r.changes) return null;
+// last : le onze de départ du dernier match (sans dernier match : le onze actuel)
+export function RotateButton({ players, lineup, last, formation, onApply }) {
+  const ref = last?.length ? last : lineup;
+  const next = useMemo(() => rotateLineup(players, ref, formation), [players, ref, formation]);
+  return <LineupAction next={next} lineup={lineup} onApply={onApply} label="Faire tourner" done="Rotation en place" className="lu-rotate" title="Les remplaçants du dernier match jouent, complétés par les titulaires les plus reposés" />;
+}
+// Les trois boutons ensemble (avant-match, onglet Composition)
+export function LineupActions({ state, lineup, formation, onApply }) {
   return (
-    <button className="lu-best lu-rotate" title={`Repose les titulaires sous ${ROTATE_FIT} % de condition`} onClick={() => { haptic('tap'); onApply(r.lineup); }}>
-      Faire tourner<b>{r.changes}</b>
-    </button>
+    <span className="lu-acts">
+      <BestEleven players={state.players} lineup={lineup} formation={formation} onApply={onApply} />
+      <FitEleven players={state.players} lineup={lineup} formation={formation} onApply={onApply} />
+      <RotateButton players={state.players} lineup={lineup} last={state.lastMatch?.lineup} formation={formation} onApply={onApply} />
+    </span>
   );
 }
 
@@ -408,10 +426,7 @@ export function LineupEditor({ state, run }) {
         <div className="pm-xi-head">
           <h3 className="pm-sh mark-head">Onze de départ · <span className="nowrap">{formationOf(formation).name}</span></h3>
           <LevelReadout level={level} />
-          <span className="lu-acts">
-            <BestEleven players={state.players} lineup={state.lineup} formation={formation} onApply={(l) => save(l)} />
-            <RotateButton players={state.players} lineup={state.lineup} formation={formation} onApply={(l) => save(l)} />
-          </span>
+          <LineupActions state={state} lineup={state.lineup} formation={formation} onApply={(l) => save(l)} />
         </div>
         <LineupBoard players={state.players} lineup={state.lineup} formation={formation} onChange={(l) => save(l)} />
       </section>
