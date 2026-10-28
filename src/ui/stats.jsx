@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { deName } from '../game/names';
 import { DIVISIONS, divisionOf } from '../game/constants';
 import { TACTICS, formationOf } from '../game/tactics';
 import { TICKET_POLICIES } from '../game/economy';
@@ -602,7 +603,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
                   <li key={i} className={e.side === 'home' ? 'dom' : 'ext'}>
                     <span className="sp-min">{e.minute}′</span>
                     <span className="sp-ico">{e.type === 'goal' ? <IconBall /> : <i className={`card ${e.type}`} />}</span>
-                    <span className="sp-who">{e.player}{assist ? <em> · passe de {shortName(assist)}</em> : null}</span>
+                    <span className="sp-who">{e.player}{assist ? <em> · passe {deName(shortName(assist))}</em> : null}</span>
                   </li>
                 );
               })}

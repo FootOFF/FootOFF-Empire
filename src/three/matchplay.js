@@ -8,7 +8,11 @@ import { hash, rng } from '../game/faces';
 // Le match sur la pelouse du stade, seulement les jours de match.
 //  - Avant le coup d'envoi (jour de match, pas encore de direct) : échauffement, chaque équipe dans sa moitié.
 //  - Pendant le direct (0.7, façon FM) : la 3D ne joue que les temps forts que le direct lui demande (matchFeed.hl) :
-//    buts, penalties, expulsions, grosses occasions, arrêts, poteaux. Chaque action est construite comme une vraie,
+//    buts, penalties, expulsions, grosses occasions, arrêts, poteaux. Depuis la 0.8.7 (demande du PDG : un rendu
+//    professionnel, plus jamais de ballon qui se téléporte), chaque temps fort s'ouvre sur un plan de coupe (plan large
+//    du stade) qui masque la mise en place, puis l'action, déjà en mouvement, part d'une vraie situation (relance,
+//    récupération) et se construit en deux ou trois relais jusqu'à sa finale : 8 à 12 s de jeu, coups de pied arrêtés
+//    à part. Le ballon ne change de pied qu'au contact. Chaque finale est construite comme une vraie,
 //    selon son type (live.js : ouverture, contre, centre, centre en retrait, une-deux, cafouillage, percée, corner,
 //    pressing, frappe lointaine, coup franc, penalty) : les deux équipes placées selon leur dispositif, la relance, les
 //    passes, le centre ou l'ouverture, la frappe (pied, tête, volée, coup franc enroulé, penalty) et le plongeon du
@@ -38,7 +42,10 @@ const SPRINT = 0.74; // u/s (7,4 m/s)
 const REPLAY_SPEED = 0.5; // ralenti
 const REPLAY_BEFORE = 2.6; // secondes d'action avant l'instant décisif, dans le ralenti
 const REPLAY_AFTER = 0.8;
-const HL_PRE = 0.12; // minutes de jeu du début d'un temps fort à son instant décisif (comme match.jsx)
+const HL_PRE = 0.2; // minutes de jeu du début d'un temps fort à son instant décisif (comme match.jsx) : 12 s
+const CUT = 1.1; // plan de coupe (s) : la mise en place se fait hors champ, l'action démarre déjà en mouvement
+const RECV = 0.05; // contact pied-ballon (u) : un ballon arrêté se prend à cette distance du pied
+const REACH = 0.1; // portée d'une jambe tendue (u, un mètre du corps) : un ballon qui passe là, au sol, est contrôlé
 
 const clamp = THREE.MathUtils.clamp;
 const teamOf = (i) => (i < 11 ? 0 : 1);
@@ -169,6 +176,17 @@ export function createMatchScene(parent) {
     a.h = Math.atan2(fz - a.z, fx - a.x);
     H.home.set(i, [u, v]);
   }
+  // place un joueur au départ de la construction (hors champ, pendant le plan de coupe), sans changer sa place de finale
+  function place(i, u, v, faceU = GOAL_X, faceV = 0) {
+    const a = agents[i];
+    [a.x, a.z] = at(u, v);
+    Object.assign(a, { vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0 });
+    const [fx, fz] = at(faceU, faceV);
+    a.h = Math.atan2(fz - a.z, fx - a.x);
+  }
+  // pendant la construction, chacun remonte de son point de départ vers sa place de finale (u reculé de shift au début)
+  const lagAt = (i, t) => (H.shift && slotOf(i) > 0 ? H.shift * (1 - clamp(t / Math.max(0.5, H.bT), 0, 1)) : 0);
+  const planAt = (i, t) => { const [u, v] = H.home.get(i); return [u - lagAt(i, t), v]; };
   // joueurs encore sur la pelouse, par poste
   function rolesOf(t) {
     const r = { G: [], D: [], M: [], A: [] };
@@ -235,7 +253,7 @@ export function createMatchScene(parent) {
       A: red ? 1 - sideT : sideT, D: red ? sideT : 1 - sideT,
       kind: red ? 'red' : e.kind || 'combo',
       outcome: red ? 'red' : e.type === 'goal' ? 'g' : (e.outcome || 'wide')[0],
-      beats: [], k: 0, bt: 0, t: 0, phase: 'play', revealed: false, revealT: 0, react: 0,
+      beats: [], k: 0, bt: 0, t: 0, phase: 'cut', revealed: false, revealT: 0, react: 0, fk: 0, finale: true, shift: 0, bT: 1,
       home: new Map(), runs: new Map(), busy: new Set(), rec: [], shot: null, dive: null, cut: true,
       speed: spec.speed > 1 ? 1.35 : 1, est: 4,
     };
@@ -366,7 +384,7 @@ export function createMatchScene(parent) {
         put(shooter, 4.25, -s * 0.45);
         boxRuns(otherAttackers(3, [shooter, taker]));
         beats = [
-          { t: 'wait', dur: 0.9 },
+          { t: 'wait', dur: 0.9 + CUT }, // la mise en place se joue pendant le plan de coupe : l'attente visible reste la même
           { t: 'runup', who: taker, back: 0.18 },
           { t: 'pass', from: taker, to: shooter, at: [4.62, s * rr(-0.35, 0.25)], style: 'cross', y1: HEAD },
           { t: 'shot', who: shooter, style: 'head', first: true },
@@ -422,7 +440,7 @@ export function createMatchScene(parent) {
           } else { const [hu, hv] = H.home.get(i); put(i, clamp(hu - 0.2, 0.4, 2.4), hv * 0.8); }
         }
         beats = [
-          { t: 'wait', dur: 1.1 },
+          { t: 'wait', dur: 1.1 + CUT },
           { t: 'runup', who: shooter, back: 0.06 },
           { t: 'shot', who: shooter, style: 'curl' },
         ];
@@ -448,7 +466,7 @@ export function createMatchScene(parent) {
         put(shooter, SPOT - 0.3, s * 0.08, SPOT, 0);
         put(keeper, GOAL_X - 0.02, 0, 0, 0);
         beats = [
-          { t: 'wait', dur: 1.25 },
+          { t: 'wait', dur: 1.25 + CUT },
           { t: 'runup', who: shooter, back: 0.06 },
           { t: 'shot', who: shooter, style: 'pen' },
         ];
@@ -479,12 +497,90 @@ export function createMatchScene(parent) {
         ];
       }
     }
+    if (!['corner', 'freekick', 'penalty'].includes(H.kind)) beats = buildUp(beats);
     H.beats = beats;
-    H.est = beats.reduce((t, x) => t + (x.t === 'wait' ? x.dur : x.t === 'pass' ? 1.1 : x.t === 'carry' ? Math.min(x.max ?? 1.5, 1.5) : 0.8), 0.6);
+    H.finale = H.fk === 0;
+    H.est = beats.reduce((t, x) => t + (x.t === 'wait' ? x.dur : x.t === 'pass' ? 1.3 : x.t === 'carry' ? Math.min(x.max ?? 1.5, 1.5) : 0.8), CUT + 0.6);
     if (b.state === 'held') { const [fx, fz] = footSpot(agents[b.owner]); b.x = fx; b.z = fz; b.y = 0; }
     b.prev = [b.x, b.z];
     matchFeed.hlAck = spec.id;
     matchFeed.hlPhase = 'play';
+  }
+
+  // Construction (0.8.7) : la finale (placements et gestes ci-dessus) est l'arrivée. On part de plus loin : toute la
+  // scène reculée de shift (12 à 17 m ; 8 à 11 m pour un contre), le ballon à un défenseur central qui relance (parfois
+  // après une passe de son gardien) ou, sur un contre, à un milieu qui vient de le récupérer ; deux ou trois passes, d'un
+  // côté puis de l'autre, le mènent au joueur qui lance la finale, à sa place, pendant que les deux blocs remontent
+  // (lagAt). Le pressing part d'une relance adverse : le gardien, puis un défenseur, servent celui qui perd le ballon.
+  function buildUp(finale) {
+    const owner0 = b.state === 'held' ? b.owner : -1;
+    if (owner0 < 0) return finale;
+    const { r, rr } = H;
+    const T = teamOf(owner0);
+    const outfield = (t) => teamIdx(t).filter((i) => active(i) && slotOf(i) > 0);
+    const chain = [];
+    let from;
+    if (H.kind === 'press') { // relance adverse sous pressing : gardien → défenseur → celui qui va perdre le ballon
+      const keeper = T * 11;
+      const mate = outfield(T).filter((i) => i !== owner0).sort((x, y) => Math.abs(H.home.get(x)[1]) - Math.abs(H.home.get(y)[1]))[0];
+      give(keeper);
+      chain.push({ t: 'wait', dur: 0.5 });
+      if (mate !== undefined) {
+        chain.push({ t: 'pass', from: keeper, to: mate, at: H.home.get(mate), style: 'ground' });
+        chain.push({ t: 'carry', who: mate, to: H.home.get(mate), speed: 0.25, max: 0.6 });
+        from = mate;
+      } else from = keeper;
+      chain.push({ t: 'pass', from, to: owner0, at: H.home.get(owner0), style: 'ground' });
+      H.fk = chain.length;
+      return [...chain, ...finale];
+    }
+    const counter = H.kind === 'counter';
+    H.shift = counter ? rr(0.8, 1.1) : rr(1.2, 1.7);
+    for (const i of [...outfield(0), ...outfield(1)]) {
+      const [u, v] = H.home.get(i);
+      place(i, clamp(u - H.shift, -4.3, 4.6), v, teamOf(i) === H.A ? GOAL_X : -GOAL_X, 0);
+    }
+    const mates = outfield(T).filter((i) => i !== owner0);
+    const homeU = (i) => H.home.get(i)[0];
+    const homeV = (i) => H.home.get(i)[1];
+    // départ : un défenseur central (le plus axial), ou sur un contre le milieu le plus reculé
+    const starters = mates.filter((i) => slotsOf(S.formation[T])[slotOf(i)] === (counter ? 'M' : 'D'));
+    const starter = (starters.length ? starters : mates).sort((x, y) => (counter ? homeU(x) - homeU(y) : Math.abs(homeV(x)) - Math.abs(homeV(y))))[0];
+    if (starter === undefined) return finale;
+    const keeperFirst = !counter && r() < 0.2; // relance du gardien : une passe courte vers son défenseur
+    if (keeperFirst) {
+      const keeper = T * 11;
+      give(keeper);
+      chain.push({ t: 'wait', dur: 0.35 });
+      chain.push({ t: 'pass', from: keeper, to: starter, at: 'plan', style: 'ground' });
+    } else give(starter);
+    chain.push({ t: 'carry', who: starter, to: 'plan', speed: 0.3, max: rr(0.4, 0.8) }); // quelques mètres balle au pied
+    // les relais : de l'arrière vers l'avant, souvent d'un côté à l'autre, jusqu'au joueur de la finale
+    const k = counter ? (r() < 0.5 ? 1 : 2) : 2 + (r() < 0.3 ? 1 : 0);
+    const seq = [];
+    let cur = starter;
+    for (let j = 0; j < k - 1; j++) {
+      const cu = homeU(cur), cv = homeV(cur);
+      const opts = mates.filter((i) => i !== starter && !seq.includes(i) && homeU(i) > cu - 0.3 && homeU(i) < Math.max(cu + 2.4, homeU(owner0) - 0.2)
+        && Math.hypot(homeU(i) - cu, homeV(i) - cv) > 1.2 && Math.hypot(homeU(i) - homeU(owner0), homeV(i) - homeV(owner0)) > 1.0); // jamais une passe de quelques pas
+      if (!opts.length) break;
+      const score = (i) => (homeU(i) - cu) * 0.6 + (Math.sign(homeV(i)) !== Math.sign(cv) && Math.abs(homeV(i) - cv) > 0.8 ? 0.9 : 0) + r() * 0.8;
+      opts.sort((x, y) => score(y) - score(x));
+      seq.push(opts[0]);
+      cur = opts[0];
+    }
+    seq.push(owner0);
+    from = starter;
+    seq.forEach((to, j) => {
+      const last = j === seq.length - 1;
+      const [fu, fv] = H.home.get(from), [tu, tv] = H.home.get(to);
+      chain.push({ t: 'pass', from, to, at: last ? H.home.get(to) : 'plan', style: Math.hypot(tu - fu, tv - fv) > 2.6 ? 'lob' : 'ground' });
+      if (!last && r() < 0.5) chain.push({ t: 'carry', who: to, to: 'plan', speed: 0.34, max: rr(0.25, 0.5) }); // contrôle orienté, quelques pas (sinon, en une touche)
+      from = to;
+    });
+    H.fk = chain.length;
+    H.bT = chain.reduce((t, x) => t + (x.t === 'wait' ? x.dur : x.t === 'pass' ? 1.4 : Math.min(x.max ?? 1, 1)), 0.4);
+    return [...chain, ...finale];
   }
 
   // --- Temps forts : le jeu ---------------------------------------------------------------------------------------
@@ -503,11 +599,13 @@ export function createMatchScene(parent) {
     b.vz = (dz / d) * v;
     b.owner = -1;
   }
+  // durées réalistes (0.8.7) : une passe au sol file à 12 m/s de moyenne et arrive moins vite ; une transversale est lobée
   const passTimeOf = (style, d) => (
     style === 'cross' ? clamp(0.75 + d * 0.13, 0.85, 1.5)
       : style === 'flick' ? 0.5
-        : style === 'through' ? clamp(d / 1.35, 0.55, 1.8)
-          : clamp(d / 1.6, 0.35, 1.5)
+        : style === 'lob' ? clamp(0.8 + d * 0.22, 1.1, 2.0)
+          : style === 'through' ? clamp(d / 1.25, 0.6, 2.0)
+            : clamp(d / 1.2, 0.45, 2.0)
   );
   // Frappe : la cible sur la ligne de but dépend de l'issue (live.js) et de la place du gardien. Le gardien plonge
   // dans les derniers instants : vers le ballon pour un arrêt, trop court ou du mauvais côté pour un but.
@@ -575,9 +673,12 @@ export function createMatchScene(parent) {
       b.y = Math.max(0, b.y - dt * 1.2);
       return;
     }
-    if (b.state === 'keeper') {
+    if (b.state === 'keeper') { // dans les gants : le ballon y vient en douceur (jamais recollé d'un coup)
       const kp = agents[H.keeper];
-      b.x = kp.x + Math.cos(kp.h) * 0.02; b.z = kp.z + Math.sin(kp.h) * 0.02 + kp.lean * 0.11; b.y = 0.09 * (1 - Math.abs(kp.lean) * 0.55);
+      const k = Math.min(1, dt * 14);
+      b.x += (kp.x + Math.cos(kp.h) * 0.02 - b.x) * k;
+      b.z += (kp.z + Math.sin(kp.h) * 0.02 + kp.lean * 0.11 - b.z) * k;
+      b.y += (0.09 * (1 - Math.abs(kp.lean) * 0.55) - b.y) * k;
       return;
     }
     if (b.state === 'dead') return;
@@ -621,8 +722,51 @@ export function createMatchScene(parent) {
     }
   }
 
-  // Un pas des actions du temps fort
-  function next() { H.k += 1; H.bt = 0; }
+  // Un pas des actions du temps fort (0.8.7). Le ballon ne change jamais de pied à distance : un joueur ne le prend
+  // qu'au contact (son pied à RECV du ballon, ballon bas ; sa tête à hauteur d'un centre), sinon il va le chercher
+  // (gather). Une passe part vers le point où son receveur peut être à temps (passTime) ; s'il la manque malgré tout, il
+  // court après le ballon qui roule. Aucun ballon recollé, aucun joueur posé pendant le jeu.
+  function next() { H.k += 1; H.bt = 0; if (H.k >= H.fk && !H.finale) { H.finale = true; H.finaleT = H.t; } }
+  const touching = (i, head = false) => {
+    const p = agents[i];
+    if (head) return Math.hypot(b.x - p.x, b.z - p.z) < 0.1 && b.y > 0.1 && b.y < 0.27;
+    const [fx, fz] = footSpot(p);
+    return (Math.hypot(b.x - fx, b.z - fz) < RECV || Math.hypot(b.x - p.x, b.z - p.z) < REACH) && b.y < 0.09;
+  };
+  // il va au ballon (libre, qui roule ou arrêté) et le prend au contact ; vrai quand il l'a
+  function gather(i, dt, speed = 0.62) {
+    if (b.state === 'held') return b.owner === i;
+    if (b.state === 'shot' || b.state === 'net' || b.state === 'keeper') return false;
+    const p = agents[i];
+    const sp = Math.hypot(b.vx, b.vz);
+    const ahead = Math.min(0.35, sp * 0.35); // là où le ballon sera dans un instant
+    const tx = b.x + (sp > 0.02 ? (b.vx / sp) * ahead : 0), tz = b.z + (sp > 0.02 ? (b.vz / sp) * ahead : 0);
+    const [fx, fz] = p.forward();
+    p.steer(tx - fx * 0.04, tz - fz * 0.04, speed, dt, b.x, b.z);
+    if (touching(i)) { give(i); return true; }
+    return false;
+  }
+  // durée d'une passe vers (tx, tz) : celle du geste, ou davantage si le receveur a besoin de plus de temps pour y être
+  function passTime(bt, tx, tz) {
+    const base = passTimeOf(bt.style, Math.hypot(tx - b.x, tz - b.z));
+    const rc = agents[bt.to];
+    // un joueur arrêté met plus d'une seconde à prendre sa vitesse (ACCEL 0,55 u/s²) : sa course est comptée large
+    return Math.max(base, Math.hypot(tx - rc.x, tz - rc.z) / 0.5 + (rc.speed < 0.2 ? 0.5 : 0.25));
+  }
+  // point visé d'un relais de la construction : le receveur vient au ballon, à quelques mètres de lui dans la direction de
+  // sa place (il la rejoint ensuite balle au pied) ; ailleurs, le point donné par la finale
+  const targetOf = (bt) => {
+    if (bt.at !== 'plan') return at(...bt.at);
+    const rc = agents[bt.to];
+    const [pu, pv] = planAt(bt.to, H.t + 1.2);
+    const [ru, rv] = uvOf(rc.x, rc.z);
+    const [bu, bv] = uvOf(b.x, b.z);
+    const toBall = Math.hypot(bu - ru, bv - rv) || 1;
+    // un pas vers sa place, un pas vers le ballon : 2 à 4 m de course au plus
+    const u = ru + clamp(pu - ru, -0.28, 0.28) + ((bu - ru) / toBall) * 0.1;
+    const v = rv + clamp(pv - rv, -0.28, 0.28) + ((bv - rv) / toBall) * 0.1;
+    return at(clamp(u, -4.6, 4.6), clamp(v, -3.2, 3.2));
+  };
   function runBeats(dt) {
     const bt = H.beats[H.k];
     if (!bt || H.revealed) return;
@@ -630,27 +774,37 @@ export function createMatchScene(parent) {
     if (bt.t === 'wait') { if (H.bt >= bt.dur) next(); return; }
     if (bt.t === 'carry') {
       H.busy.add(bt.who);
-      if (b.owner !== bt.who && b.state !== 'held') give(bt.who);
-      const [tx, tz] = at(...bt.to);
+      if (!gather(bt.who, dt)) return; // il va d'abord au ballon
+      const [tx, tz] = bt.to === 'plan' ? at(...planAt(bt.who, H.t + 0.8)) : at(...bt.to);
       agents[bt.who].steer(tx, tz, bt.speed, dt);
       if (Math.hypot(tx - agents[bt.who].x, tz - agents[bt.who].z) < 0.035 || H.bt > (bt.max ?? 3)) next();
       return;
     }
-    if (bt.t === 'runup') { // élan vers le ballon arrêté (penalty, coup franc, corner)
+    if (bt.t === 'runup') { // élan vers le ballon arrêté (penalty, coup franc, corner) : il le prend au contact
       H.busy.add(bt.who);
       const p = agents[bt.who];
       const [gx, gz] = at(GOAL_X, 0);
       const toGoal = Math.atan2(gz - b.z, gx - b.x);
       const tx = b.x - Math.cos(toGoal) * 0.035, tz = b.z - Math.sin(toGoal) * 0.035;
       p.steer(tx, tz, 0.36, dt, b.x, b.z);
-      if (Math.hypot(tx - p.x, tz - p.z) < 0.025 || H.bt > 1.6) { give(bt.who); next(); }
+      if (Math.hypot(tx - p.x, tz - p.z) < 0.025 && (touching(bt.who) || H.bt > 2)) { give(bt.who); next(); }
       return;
     }
-    if (bt.t === 'steal') { // il chipe le ballon au porteur adverse
+    if (bt.t === 'steal') { // il chipe le ballon au porteur adverse : un tacle, le ballon file d'un pas, il le reprend
       H.busy.add(bt.who);
-      const c = agents[b.owner];
-      agents[bt.who].steer(c.x, c.z, 0.68, dt);
-      if (Math.hypot(c.x - agents[bt.who].x, c.z - agents[bt.who].z) < 0.06 || H.bt > 1.6) { c.vx *= 0.2; c.vz *= 0.2; give(bt.who); next(); }
+      const p = agents[bt.who];
+      if (b.state === 'held' && b.owner !== bt.who) {
+        p.steer(b.x, b.z, 0.68, dt, b.x, b.z);
+        if (Math.hypot(b.x - p.x, b.z - p.z) < 0.06 || H.bt > 2.4) {
+          const c = agents[b.owner];
+          c.vx *= 0.2; c.vz *= 0.2;
+          const [fx, fz] = at(GOAL_X, 0);
+          const d = Math.hypot(fx - b.x, fz - b.z) || 1;
+          Object.assign(b, { state: 'free', owner: -1, vx: ((fx - b.x) / d) * 0.3, vz: ((fz - b.z) / d) * 0.3, vy: 0 });
+        }
+        return;
+      }
+      if (gather(bt.who, dt, 0.55)) next();
       return;
     }
     if (bt.t === 'pass') {
@@ -658,48 +812,58 @@ export function createMatchScene(parent) {
       const rcv = agents[bt.to];
       H.busy.add(bt.from);
       H.busy.add(bt.to);
-      if (!bt.target) bt.target = at(...bt.at);
-      const [tx, tz] = bt.target;
-      if (!bt.launched) {
-        if (b.owner !== bt.from && !bt.head) give(bt.from);
-        if (bt.head) { // déviation de la tête (défenseur) : le ballon arrive, il le repousse
-          bt.launched = true;
-          const T = passTimeOf(bt.style, Math.hypot(tx - b.x, tz - b.z));
-          launchBall(tx, tz, T, { y1: 0.04 });
-          bt.T = T; bt.t0 = H.t; b.state = 'pass';
-        } else {
-          if (!p.kick) p.kick = 0.001;
-          p.steer(p.x, p.z, 0, dt, tx, tz);
-          if (p.kick >= KICK_CONTACT) {
-            const T = passTimeOf(bt.style, Math.hypot(tx - b.x, tz - b.z));
-            launchBall(tx, tz, T, { ground: bt.style === 'ground' || bt.style === 'through', y1: bt.y1 || 0 });
-            bt.launched = true; bt.T = T; bt.t0 = H.t; b.state = 'pass';
-            H.busy.delete(bt.from);
-          }
-        }
-        // le receveur part à temps pour être au point d'arrivée avec le ballon
-        const left = (bt.T ?? passTimeOf(bt.style, Math.hypot(tx - b.x, tz - b.z))) + (bt.launched ? 0 : ARMED);
-        rcv.steer(tx, tz, Math.min(SPRINT, Math.hypot(tx - rcv.x, tz - rcv.z) / Math.max(0.15, left - 0.05) + 0.05), dt, b.x, b.z);
-        return;
-      }
-      const left = bt.t0 + bt.T - H.t;
-      rcv.steer(tx, tz, left > 0 ? Math.min(0.9, Math.hypot(tx - rcv.x, tz - rcv.z) / Math.max(0.08, left) + 0.02) : 0.5, dt, b.x, b.z);
       const shot = H.beats[H.k + 1];
       const firstShot = shot && shot.t === 'shot' && shot.first && shot.who === bt.to;
       const firstPass = shot && shot.t === 'pass' && shot.first && shot.from === bt.to;
+      const headed = (firstShot && shot.style === 'head') || (firstPass && shot.head);
+      if (!bt.launched) {
+        if (bt.head) { // déviation de la tête (défenseur) : le ballon arrive sur lui, il le repousse aussitôt
+          if (!bt.target) bt.target = at(...bt.at);
+          const [tx, tz] = bt.target;
+          const T = passTimeOf(bt.style, Math.hypot(tx - b.x, tz - b.z));
+          launchBall(tx, tz, T, { y1: 0.04 });
+          bt.launched = true; bt.T = T; bt.t0 = H.t; b.state = 'pass';
+          return;
+        }
+        if (!bt.target) bt.target = targetOf(bt);
+        const [tx, tz] = bt.target;
+        // le receveur se met en route vers le point visé
+        const lead = passTime(bt, tx, tz) + ARMED;
+        rcv.steer(tx, tz, Math.min(SPRINT, Math.hypot(tx - rcv.x, tz - rcv.z) / Math.max(0.15, lead - 0.05) + 0.05), dt, b.x, b.z);
+        if (!gather(bt.from, dt)) return; // le passeur doit d'abord avoir le ballon
+        if (!p.kick && (p.facing(tx, tz) < 1.0 || H.bt > 0.35)) p.kick = 0.001; // il frappe en finissant de se tourner
+        p.steer(p.x, p.z, 0, dt, tx, tz);
+        if (p.kick >= KICK_CONTACT) {
+          const T = passTime(bt, tx, tz);
+          launchBall(tx, tz, T, { ground: bt.style === 'ground' || bt.style === 'through', y1: bt.y1 || 0 });
+          bt.launched = true; bt.T = T; bt.t0 = H.t; b.state = 'pass';
+          H.busy.delete(bt.from);
+        }
+        return;
+      }
+      const [tx, tz] = bt.target;
+      const left = bt.t0 + bt.T - H.t;
+      // le receveur court au point visé, sur la trajectoire même du ballon, et l'y attend face à lui ; manqué, la poursuite
+      // plus bas le déplace (un seul pas par image)
+      if (left > -0.15) rcv.steer(tx, tz, left > 0 ? Math.min(SPRINT, Math.hypot(tx - rcv.x, tz - rcv.z) / Math.max(0.08, left) + 0.02) : 0.4, dt, b.x, b.z);
       // reprise du pied : l'élan commence avant que le ballon n'arrive ; de la tête : il saute
       if (firstShot && shot.style !== 'head' && left <= ARMED && !rcv.kick) rcv.kick = 0.001;
-      if ((firstShot && shot.style === 'head') || (firstPass && shot.head)) {
+      if (headed) {
         const jt = 0.32;
         rcv.lift = left < jt && left > -jt ? 0.07 * Math.max(0, 1 - (left / jt) ** 2) : rcv.lift * 0.8;
       }
-      if (left <= 0) {
-        const near = Math.hypot(b.x - rcv.x, b.z - rcv.z) < 0.16;
-        if (near || left < -0.35) {
-          if (!near) { const [fx, fz] = footSpot(rcv); b.x = fx; b.z = fz; }
-          if (firstShot) { next(); shot.launched = true; shoot(bt.to, shot.style); H.busy.add(bt.to); return; }
-          if (firstPass) { next(); return; } // la déviation part tout de suite (beat suivant)
-          give(bt.to);
+      const headNow = headed && b.y > 0.1;
+      if (touching(bt.to, headNow)) {
+        if (firstShot) { next(); shot.launched = true; shoot(bt.to, headNow ? 'head' : shot.style === 'head' ? 'volley' : shot.style); H.busy.add(bt.to); return; }
+        if (firstPass) { next(); return; } // la déviation part tout de suite (geste suivant)
+        give(bt.to);
+        next();
+        return;
+      }
+      if (left < -0.15) { // manqué : il va chercher le ballon (qui roule, ou retombe) et le prend au contact
+        if (firstPass && left < -0.4) { next(); return; } // la déviation se fait sans lui : le ballon est repoussé là où il est
+        if (gather(bt.to, dt, SPRINT)) {
+          if (firstShot) { next(); shot.launched = true; shoot(bt.to, shot.style === 'head' ? 'poke' : shot.style); H.busy.add(bt.to); return; }
           next();
         }
       }
@@ -709,7 +873,7 @@ export function createMatchScene(parent) {
       H.busy.add(bt.who);
       const p = agents[bt.who];
       if (bt.launched) return;
-      if (b.owner !== bt.who) give(bt.who);
+      if (!gather(bt.who, dt)) return;
       const [gx, gz] = at(GOAL_X, 0);
       p.steer(p.x, p.z, 0, dt, gx, gz);
       if (!p.kick) p.kick = 0.001;
@@ -762,13 +926,14 @@ export function createMatchScene(parent) {
       const a = agents[i];
       const t = teamOf(i);
       if (slotOf(i) === 0) { keeperStep(i, dt, bu, bv); continue; }
-      const [hu, hv] = H.home.get(i) || uvOf(a.x, a.z);
+      const [hu0, hv] = H.home.get(i) || uvOf(a.x, a.z);
+      const hu = hu0 - lagAt(i, H.t); // construction : la place de finale, reculée au début
       if (setPiece || H.wall?.has(i) || H.pen) { // coup de pied arrêté : chacun tient sa place, face au ballon
         steerUV(i, hu, hv, 0.12, dt, [b.x, b.z]);
         continue;
       }
       if (t === A) {
-        const run = H.runs.get(i);
+        const run = H.finale ? H.runs.get(i) : null; // les appels dans la surface : pour la finale
         if (run) { steerUV(i, run[0], run[1], 0.55, dt, [b.x, b.z]); continue; }
         steerUV(i, clamp(hu + clamp(bu - 2.6, -1.2, 1.2) * 0.4, -1.6, 4.3), hv + (bv - hv) * 0.08, 0.3, dt, [b.x, b.z]);
         continue;
@@ -866,6 +1031,7 @@ export function createMatchScene(parent) {
   }
   function startReplay() {
     H.phase = 'replay';
+    H.replayAngle = H.r() < 0.5 ? 'goal' : 'low'; // derrière la cage, ou au ras de la pelouse
     H.rt = Math.max(H.rec[0].t, H.revealT - REPLAY_BEFORE);
     H.rEnd = Math.min(H.rec[H.rec.length - 1].t, H.revealT + REPLAY_AFTER);
     H.cut = true;
@@ -934,14 +1100,15 @@ export function createMatchScene(parent) {
       cut = H.cut;
       H.cut = false;
       const step = dt * H.speed;
-      if (H.phase === 'play' || H.phase === 'react') {
+      if (H.phase === 'cut' || H.phase === 'play' || H.phase === 'react') {
         H.t += step;
-        if (H.phase === 'play') {
+        if (H.phase === 'cut' && H.t >= CUT) { H.phase = 'play'; H.cut = true; } // retour au jeu : changement de plan franc
+        if (H.phase === 'cut' || H.phase === 'play') {
           runBeats(step);
           offBall(step);
           ballUpdate(step);
-          if (H.revealed) H.phase = 'react';
-          else if (H.t > H.est + 6) { reveal(); H.phase = 'react'; } // une action qui n'aboutit pas : l'issue s'affiche quand même
+          if (H.revealed) H.phase = 'react'; // (jamais pendant le plan de coupe : la construction dure bien plus)
+          else if (H.t > H.est + 10) { H.forced = true; reveal(); H.phase = 'react'; } // une action qui n'aboutit pas : l'issue s'affiche quand même (filet de sécurité, jamais atteint au banc)
           if (!H.revealed) matchFeed.hlClock = H.e.at - HL_PRE * (1 - Math.min(0.98, H.t / Math.max(1, H.est)));
         } else {
           reactStep(step);
@@ -987,6 +1154,8 @@ export function createMatchScene(parent) {
     if (S.play !== 'live' || !H) return null;
     // plan demandé à la réalisation (Empire3D) : l'action (ballon, porteur), un coup de pied arrêté (entre le ballon et
     // le but), la joie du buteur, le carton, le ralenti ; cut : changement de plan franc
+    // plan de coupe : plan large du stade, le temps de la mise en place (Empire3D)
+    if (H.phase === 'cut') return { x: 0, z: 0, vx: 0, vz: 0, cam: 'cutaway', live: true, cut, t: H.t, side: S.dir[H.A], slow: false };
     const mover = b.state === 'held' && b.owner >= 0 ? agents[b.owner] : b;
     let focus = b, cam = 'attack';
     if (H.phase === 'replay') cam = 'replay';
@@ -997,13 +1166,18 @@ export function createMatchScene(parent) {
       focus = { x: (b.x * 2 + gx) / 3, z: (b.z * 2 + gz) / 3 };
       cam = 'set';
     }
+    // construction : plan large ; dans les quarante derniers mètres, le plan se resserre (façon retransmission)
+    if (cam === 'attack' && uvOf(focus.x, focus.z)[0] < 1.4) cam = 'play';
     // dans le dernier tiers, le cadre penche vers le but : le ballon et la cage restent à l'image (écran en portrait compris)
     if (cam === 'attack' || cam === 'replay') {
       const [fu] = uvOf(focus.x, focus.z);
       const w = clamp((fu - 2.2) / 2.4, 0, 1) * 0.4;
       if (w > 0) { const [gx, gz] = at(GOAL_X, 0); focus = { x: focus.x + (gx - focus.x) * w, z: focus.z + (gz - focus.z) * w * 0.5 }; }
     }
-    return { x: focus.x, z: focus.z, vx: mover.vx || 0, vz: mover.vz || 0, cam, live: true, cut, slow: H.phase === 'replay' };
+    return {
+      x: focus.x, z: focus.z, vx: mover.vx || 0, vz: mover.vz || 0, cam, live: true, cut, slow: H.phase === 'replay',
+      angle: H.phase === 'replay' ? H.replayAngle : null, goalX: S.dir[H.A] * GOAL_X, bx: b.x, by: b.y, bz: b.z,
+    };
   }
 
   return {
@@ -1021,7 +1195,7 @@ export function createMatchScene(parent) {
     get ball() { return b; },
     get agents() { return agents; }, // lecture seule (inspection en développement)
     get debug() {
-      return H && { id: H.id, kind: H.kind, outcome: H.outcome, phase: H.phase, beat: H.beats[H.k]?.t, k: H.k, t: +H.t.toFixed(2), revealed: H.revealed, ball: { state: b.state, x: +b.x.toFixed(2), z: +b.z.toFixed(2), y: +b.y.toFixed(2) } };
+      return H && { id: H.id, kind: H.kind, outcome: H.outcome, phase: H.phase, beat: H.beats[H.k]?.t, k: H.k, t: +H.t.toFixed(2), revealed: H.revealed, forced: !!H.forced, finaleT: H.finaleT ?? (H.fk === 0 ? 0 : null), est: H.est, fk: H.fk, bstate: b.state, owner: b.owner, bt: H.beats[H.k] && { t: H.beats[H.k].t, from: H.beats[H.k].from, to: H.beats[H.k].to, who: H.beats[H.k].who }, ball: { state: b.state, x: +b.x.toFixed(2), z: +b.z.toFixed(2), y: +b.y.toFixed(2) } };
     },
     dispose() {
       matchFeed.scene = false;

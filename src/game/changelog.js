@@ -4,6 +4,14 @@
 
 export const CHANGELOG = [
   {
+    version: '0.8.7', date: '2026-10-28', title: 'Temps forts façon retransmission',
+    items: [
+      'Hors coups de pied arrêtés, chaque temps fort part d’une vraie situation, une relance ou une récupération, et se construit en quelques passes jusqu’au geste décisif : 8 à 12 secondes de jeu.',
+      'Le ballon ne se téléporte plus : un joueur ne le contrôle qu’à sa portée, et s’il le manque, il court après.',
+      'Réalisation façon télévision : un plan large du stade entre deux temps forts, un plan qui se resserre à l’approche de la surface et, après un but, le ralenti filmé derrière la cage ou au ras de la pelouse.',
+    ],
+  },
+  {
     version: '0.8.6', date: '2026-10-28', title: 'Championnats entre amis en direct',
     items: [
       'Dès que tous les amis ont validé leur équipe, un compte à rebours de dix minutes remplace « Validée » chez chacun ; à zéro, le match se regarde, sans quitter le jeu. L’heure fixée par le créateur reste la limite.',

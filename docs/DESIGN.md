@@ -1024,6 +1024,42 @@ ouverte depuis la Direction (panneau étroit) est posée sur tout l'écran. Dur�
 « saison N ». Fiche : bloc Contrat (salaire, fin, clause) et « Prolonger son contrat ». Effectif : fin du contrat sous
 le salaire dans le tableau (PC), « Dernière année de contrat » sur la carte des seuls joueurs concernés.
 
+## Temps forts façon retransmission (0.8.7)
+
+Demande du PDG (2026-10-28) : « le ballon se téléporte trop, il y a trop d'incohérences, les actions ne sont pas
+réalistes ni travaillées. Je veux un rendu professionnel. » Réponses à ses questions : actions construites de 8 à 12 s,
+coupe façon télévision entre deux temps forts, réalisation façon retransmission, captures de contrôle avant publication.
+- Mesure d'avant (banc `csptest/hlbench.mjs` : le vrai moteur `matchplay.js` joue chaque type d'action avec chaque
+  issue, 60 images par seconde, dans le navigateur sans affichage) : ballon qui saute dans 34 % des actions (toutes les
+  ouvertures, centres, une-deux et frappes : le ballon était recollé au pied d'un receveur en retard), actions de 2,7 à
+  7 s, joueurs posés d'un coup au début de chaque temps fort.
+- Plan de coupe (`CUT`, 1,1 s) : plan large du stade (Empire3D, `cutaway`) pendant que la scène se met en place hors
+  champ ; la simulation tourne déjà, l'action reprend en mouvement (changement de plan franc). Les coups de pied arrêtés
+  gardent leur attente visible (la mise en place se joue pendant le plan de coupe).
+- Construction (`buildUp`) : la finale de chaque type est l'arrivée ; la scène part de 12 à 17 m plus loin (8 à 11 m
+  sur un contre), le ballon à un défenseur central qui relance (une fois sur cinq après une passe de son gardien) ou, sur
+  un contre, au milieu le plus reculé ; deux ou trois relais (un sur deux contrôle et fait quelques pas, sinon il joue
+  en une touche), souvent d'un côté à l'autre, jamais à moins de 12 m, jusqu'au joueur de la finale, à sa place. Les
+  deux blocs remontent pendant ce temps (`lagAt`, `planAt`) ; les appels dans la surface n'ont lieu que pour la finale.
+  Le pressing part d'une relance adverse (gardien, défenseur, puis celui qui perd le ballon).
+- Ballon strictement physique : un joueur ne prend le ballon qu'au contact (`touching` : pied à 5 cm, ou corps à un
+  mètre, jambe tendue, `REACH`, ballon bas ; tête à hauteur d'un centre), sinon il va le chercher (`gather`) ; une passe
+  part vers le point où son receveur peut être à temps (`passTime` compte son accélération), à 12 m/s de moyenne au sol
+  (transversales lobées) ; le receveur court au point visé, sur la trajectoire même du ballon ; s'il la manque, il
+  court après. Le tacle du pressing fait filer le ballon d'un pas ; le ballon arrêté vient en douceur dans les gants.
+- Réalisation (Empire3D, `broadcastStep`) : plan large pendant la construction, resserré dans les quarante derniers
+  mètres ; téléphone un peu plus serré (joueurs lisibles) ; ralenti d'un but derrière la cage (le cadre vise entre le
+  ballon et la cage) ou au ras de la pelouse (angle sous l'horizon et plan proche permis le temps du ralenti, rétablis
+  ensuite).
+- Rythme : `HL_PRE` 0,2 minute (12 s) dans `match.jsx` et `matchplay.js`, `HL_MAX` 50 s.
+- Lisibilité (revue brand-guardian) : en 3D, un adversaire en blanc, orange ou jaune proche de l'or joue en marine
+  (`kits.js`, `matchKitOf` ; ses écussons gardent la palette d'origine) ; au téléphone, le bandeau du but descend
+  au-dessus des commandes pendant un temps fort et son sous-titre passe à la ligne ; « passe d'Isidore » (élision,
+  bandeau et statistiques).
+- Mesure d'après (159 actions, 13 types × 4 issues + expulsions) : aucun ballon qui saute, aucun joueur plus vite qu'un
+  sprint, aucune issue forcée ; jeu ouvert de 9,6 à 11,9 s en moyenne (7,2 à 14,5 s), pressing 7,5 s, coups de pied
+  arrêtés 3 à 5 s. Vidéos de contrôle (PC et téléphone) dans `FootOFF Agents/Controles_Temps_Forts_087`.
+
 ## Championnats entre amis en direct, match sans glissement (0.8.6)
 
 Retours du PDG après une partie avec son frère (2026-10-28) : impossible de supprimer « Ligue Test », un ami arrivé

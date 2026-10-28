@@ -23,3 +23,15 @@ export function kitOf(name = '') {
 }
 
 export const HOME_KIT = { shirt: 0xc7a15a, keeper: 0x2f343c };
+
+// Tenue de match en 3D (0.8.7) : les temps forts se jouent de nuit, sous des projecteurs chauds, où le blanc, l'orange
+// et le jaune citron se confondent avec notre or ; ces adversaires y jouent en marine (leur écusson ne change pas).
+const AWAY_ALT = { shirt: 0x1d2c5e, keeper: 0xe74c3c };
+const rgb = (c) => [(c >> 16) & 255, (c >> 8) & 255, c & 255];
+const tooClose = (shirt) => {
+  const [a, b] = [rgb(shirt), rgb(HOME_KIT.shirt)];
+  const [r, g, bl] = a;
+  const light = Math.min(r, g, bl) > 200; // blanc et presque blanc : crème sous les projecteurs
+  return light || Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) < 110;
+};
+export const matchKitOf = (name = '') => { const k = kitOf(name); return tooClose(k.shirt) ? AWAY_ALT : k; };

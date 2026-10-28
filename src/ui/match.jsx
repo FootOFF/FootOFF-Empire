@@ -10,6 +10,7 @@ import { FormationPicker, LineupActions, LineupBoard, displayNames, formationEff
 import { IconCheck, IconChevron, IconClose, IconMute, IconPlay, IconSound, IconUsers } from './icons';
 import { IconAssist, IconBall, IconMedic, IconSwap, IconWhistle, RatingBadge, VersusBar } from './kit';
 import { useKeydown } from './presence';
+import { deName } from '../game/names';
 import { PHONE, useSwipe } from './gestures';
 import { SEC_PER_MIN, matchFeed } from '../game/matchFeed';
 import { ClubCrest, Crest } from './crest';
@@ -361,9 +362,9 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
 
 const ICON = { goal: <IconBall />, sub: <IconSwap />, injury: <IconMedic />, kickoff: <IconWhistle />, halftime: <IconWhistle />, fulltime: <IconWhistle /> };
 const LOOKAHEAD = 14; // minutes simulées d'avance sur l'horloge : les temps forts se préparent avant leur instant
-const HL_PRE = 0.12; // minutes de jeu entre le début d'un temps fort et son instant décisif (l'action se construit)
+const HL_PRE = 0.2; // minutes de jeu entre le début d'un temps fort et son instant décisif (l'action se construit : 8 à 12 s, 0.8.7)
 const HL_ACK = 1500; // ms : une scène 3D qui ne répond pas laisse le direct continuer sans elle
-const HL_MAX = 32000; // ms : au-delà, le temps fort se termine quoi qu'il arrive (onglet caché, scène bloquée)
+const HL_MAX = 50000; // ms : au-delà, le temps fort se termine quoi qu'il arrive (onglet caché, scène bloquée)
 const HL_LABEL = { goal: 'Temps fort', big: 'Temps fort', save: 'Temps fort', post: 'Temps fort', penalty: 'Penalty', red: 'Temps fort' };
 
 // Les classes tirées des données du match sont toujours préfixées (ev-side-…, ev-out-…) : un nom nu comme
@@ -445,7 +446,7 @@ function GoalBanner({ banner, state, m, shown, codes, flip = false }) {
   const p = ours ? state.players.find((q) => q.id === banner.playerId) : (m.awayRoster || []).find((q) => q.name === banner.player);
   const nth = ours && p ? (p.season?.goals || 0) + shown.filter((e) => e.type === 'goal' && e.playerId === banner.playerId
     && (e.half < banner.half || (e.half === banner.half && e.at <= banner.at))).length : 0;
-  const facts = [`${banner.minute}′`, banner.q === 'pen' && 'sur penalty', banner.assist && `passe de ${banner.assist}`, nth && `${nth === 1 ? 'premier' : `${nth}e`} but de la saison`].filter(Boolean);
+  const facts = [`${banner.minute}′`, banner.q === 'pen' && 'sur penalty', banner.assist && `passe ${deName(banner.assist)}`, nth && `${nth === 1 ? 'premier' : `${nth}e`} but de la saison`].filter(Boolean);
   return (
     <div className={`lv-goal ${ours ? 'ours' : 'theirs'} ${banner.fast ? 'fast' : ''}`} role="status">
       <span className="lv-goal-word">{ours ? 'But !' : `But ${codes[1]}`}</span>

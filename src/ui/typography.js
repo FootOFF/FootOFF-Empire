@@ -9,7 +9,7 @@
 const NBSP = '\u00a0';
 const NNBSP = '\u202f'; // espace fine insécable
 
-const UNITS = 'pts?|points?|ans|places?|spectateurs?|matchs?|joueurs?|buts?|saisons?|journées?|jours?|heures?|h|min|minutes?|niveaux?|étoiles?';
+const UNITS = 'pts?|points?|ans|places?|spectateurs?|matchs?|joueurs?|buts?|saisons?|journées?|jours?|heures?|h|min|minutes?|secondes?|niveaux?|étoiles?';
 
 const RULES = [
   [/ ([;!?])/g, `${NNBSP}$1`],

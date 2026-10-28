@@ -22,7 +22,7 @@ import { honoursOf, plural } from '../game/honours';
 import { createMatchScene } from '../three/matchplay';
 import { matchFeed } from '../game/matchFeed';
 import { createCrowd } from '../three/crowd';
-import { HOME_KIT, kitOf } from '../game/kits';
+import { HOME_KIT, matchKitOf } from '../game/kits';
 import {
   buildingMesh, padMesh, setProceduralNight, stadiumMesh,
 } from '../three/procedural';
@@ -585,16 +585,53 @@ export default function Empire3D({
     };
 
     // Réalisation des temps forts : caméra télé dans l'axe de la tribune principale, en plan large, qui suit le ballon
-    // (un peu devant lui quand il file) et serre le plan selon l'action : attaque, coup de pied arrêté, carton, joie du
-    // buteur, ralenti (jamais un gros plan : les joueurs sont simples). La largeur de terrain montrée se règle sur
-    // l'écran. Tout glisse en douceur ; un nouveau temps fort ou le ralenti changent de plan d'un coup (cut).
+    // (un peu devant lui quand il file) et serre le plan selon l'action : construction (plan large), attaque dans les
+    // quarante derniers mètres, coup de pied arrêté, carton, joie du buteur (jamais un gros plan : les joueurs sont
+    // simples). La largeur de terrain montrée se règle sur l'écran. Tout glisse en douceur ; un nouveau temps fort (plan de
+    // coupe sur le stade, puis retour au jeu) et le ralenti (derrière la cage ou au ras de la pelouse) changent de plan
+    // d'un coup (cut).
     const SHOT_WIDTH = { // largeur de terrain visible (unités du jeu, 1 = 10 m)
       wide: { play: 6.2, attack: 4.8, set: 4.2, card: 3.6, celebrate: 3.3, replay: 3.4 },
-      narrow: { play: 3.7, attack: 3.1, set: 2.9, card: 2.5, celebrate: 2.3, replay: 2.4 },
+      narrow: { play: 3.0, attack: 2.7, set: 2.7, card: 2.4, celebrate: 2.2, replay: 2.3 }, // téléphone : des joueurs lisibles (0.8.7)
     };
     const tvDir = new THREE.Vector3();
     const camOff = new THREE.Vector3();
+    const camWant = new THREE.Vector3();
+    const camAim = new THREE.Vector3();
+    const POLAR = controls.maxPolarAngle; // rétabli après un ralenti au ras de la pelouse
+    const NEAR = camera.near; // le ralenti rapproche le plan de coupe proche (la pelouse au pied de la caméra)
+    ctx.restorePolar = () => {
+      controls.maxPolarAngle = POLAR;
+      if (camera.near !== NEAR) { camera.near = NEAR; camera.updateProjectionMatrix(); }
+    };
     const broadcastStep = (mi, dt) => {
+      // plan de coupe (0.8.7) : plan large du stade, en lent travelling, le temps de la mise en place de l'action
+      if (mi.cam === 'cutaway') {
+        const side = mi.side || 1, k = mi.t || 0;
+        controls.target.set(0, 0, 0.6);
+        camera.position.set(-side * (7.6 - k * 1.1), 8.4 - k * 0.5, 11.6);
+        camera.lookAt(controls.target);
+        return;
+      }
+      // ralenti sous un autre angle (0.8.7) : derrière la cage attaquée, ou au ras de la pelouse sur le côté de l'action
+      if (mi.cam === 'replay' && mi.angle) {
+        controls.minDistance = 0.3;
+        controls.maxPolarAngle = Math.PI * 0.499;
+        if (camera.near !== 0.06) { camera.near = 0.06; camera.updateProjectionMatrix(); }
+        const sgn = Math.sign(mi.goalX) || 1;
+        if (mi.angle === 'goal') camWant.set(mi.goalX + sgn * 0.95, 0.62, THREE.MathUtils.clamp(mi.bz * 0.35, -0.5, 0.5));
+        else camWant.set(mi.bx - sgn * 0.85, 0.1, THREE.MathUtils.clamp(mi.bz + (mi.bz > 0 ? -1.25 : 1.25), -3.1, 3.1));
+        // derrière la cage : le cadre vise entre le ballon et la cage (le but reste à l'image) ; au ras : le ballon
+        if (mi.angle === 'goal') camAim.set(mi.bx * 0.65 + mi.goalX * 0.35, Math.max(0.03, (mi.by || 0) * 0.6), mi.bz * 0.65);
+        else camAim.set(mi.bx * 0.8 + mi.goalX * 0.2, Math.max(0.03, (mi.by || 0) * 0.6), mi.bz * 0.85); // la cage entre dans le cadre
+        if (mi.cut) { camera.position.copy(camWant); controls.target.copy(camAim); }
+        else {
+          camera.position.lerp(camWant, 1 - Math.exp(-dt * 2.5));
+          controls.target.lerp(camAim, 1 - Math.exp(-dt * 6));
+        }
+        camera.lookAt(controls.target);
+        return;
+      }
       const arena = (stateRef.current.buildings?.terrain || 0) >= 5;
       const view = arena ? TV_VIEW_ARENA : TV_VIEW;
       tvDir.subVectors(view.pos, view.target).normalize();
@@ -606,7 +643,8 @@ export default function Empire3D({
       const want = THREE.MathUtils.clamp(width / perUnit, 2.6, 12.5);
       const lim = 5.25 - width * 0.3;
       const tx = THREE.MathUtils.clamp(mi.x + THREE.MathUtils.clamp((mi.vx || 0) * 0.3, -0.7, 0.7), -lim, lim);
-      const tz = THREE.MathUtils.clamp(mi.z * 0.55 + (mi.vz || 0) * 0.15, -1.6, 1.6) + 0.3;
+      // téléphone : le ballon un peu plus bas dans le cadre, l'espace vers l'arrière-plan reste visible (0.8.7)
+      const tz = THREE.MathUtils.clamp(mi.z * 0.55 + (mi.vz || 0) * 0.15, -1.6, 1.6) + (narrow ? -0.15 : 0.3);
       controls.minDistance = Math.min(controls.minDistance, 2.5);
       if (mi.cut) { // changement de plan franc : la caméra est tout de suite en place
         controls.target.set(tx, 0, tz);
@@ -912,6 +950,7 @@ export default function Empire3D({
       crowd.update(dt, time);
       // direct : réalisation télé (sauf si le joueur déplace lui-même la caméra)
       if (mi?.cut) ctx.camTween = null; // un temps fort commence : la réalisation prend la main tout de suite
+      if (!(mi?.cam === 'replay' && mi.angle)) ctx.restorePolar(); // l'angle sous l'horizon n'est permis que le temps du ralenti
       if (mi && modeRef.current.live && mi.live && !ctx.camTween && !(ctx.userCam > performance.now())) broadcastStep(mi, dt);
       ctx.anims.forEach((a) => { a.update(dt); if (a.done) ctx.anims.delete(a); });
       if (ctx.holo) { // aperçu : l'hologramme sort de terre puis respire
@@ -1077,7 +1116,7 @@ export default function Empire3D({
     const ctx = ctxRef.current;
     if (!ctx || !ready) return;
     const opp = matchInfo?.opp || '';
-    const away = kitOf(opp);
+    const away = matchKitOf(opp); // tenue de match lisible face à notre or (0.8.7)
     ctx.plots.get('t0')?.squad?.setKits(HOME_KIT, away);
     ctx.crowdFill = matchInfo?.capacity ? Math.min(1, (matchInfo.attendance || 0) / matchInfo.capacity) : 0.6;
     ctx.awayColor = away.shirt;
