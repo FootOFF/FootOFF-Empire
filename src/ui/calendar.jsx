@@ -11,7 +11,7 @@ import { ordinal } from '../game/utils';
 import { ClubCrest, Crest } from './crest';
 import { Eyebrow } from './kit';
 import { IconCheck, IconChevron, IconClose, IconLock, IconPlay, IconStar, IconTrophy } from './icons';
-import { fmtMoney, fmtNum, fmtPrice, fmtRating, roundPercents } from './format';
+import { fmtMoney, fmtNum, fmtPrice, fmtRating, homeFirst, roundPercents, scoreText } from './format';
 import { useSwipe } from './gestures';
 import { uiSound } from './uisound';
 import { clubStars } from '../game/crest';
@@ -35,7 +35,7 @@ const rgbOf = (hex) => [(hex >> 16) & 255, (hex >> 8) & 255, hex & 255].join(', 
 const tagOf = (f) => (f.comp === 'league' ? <>J{f.round}{f.away && <small className="sc-away">ext</small>}</> : STAGES_SHORT[f.stage]);
 const roundOf = (f, total) => (f.comp === 'league' ? `Journée ${f.round} / ${total}` : STAGES[f.stage]);
 const nameOf = (f, r) => `${COMP[f.comp]} · ${f.comp === 'league' ? `journée ${f.round}` : STAGES[f.stage].toLowerCase()}`
-  + `${f.away ? ' · à l’extérieur' : ''}${f.opp?.name ? ` · ${f.opp.name}` : ''}${r ? ` · ${r.gf}–${r.ga}` : ''}`;
+  + `${f.away ? ' · à l’extérieur' : ''}${f.opp?.name ? ` · ${f.opp.name}` : ''}${r ? ` · ${scoreText({ ...r, away: f.away })}` : ''}`;
 const minus = (v) => `−${fmtRating(Math.abs(v))}`;
 
 // Issue d'une date jouée : en championnat Victoire / Match nul / Défaite ; en coupe Qualifié / Éliminé / Vainqueur.
@@ -134,7 +134,7 @@ function DateChip({ f, k, on, onPick }) {
   const o = r ? outcomeOf(r) : null;
   const Icon = COMP_ICON[f.comp];
   const name = nameOf(f, r);
-  const res = r ? <em className={`sc-res o-${o}`}>{LETTER[o]} {r.gf}–{r.ga}</em>
+  const res = r ? <em className={`sc-res o-${o}`}>{LETTER[o]} {scoreText({ ...r, away: f.away })}</em>
     : f.status === 'next' ? <em className="sc-res next">À suivre</em>
       : f.status === 'upcoming' ? <em className="sc-res soon">à venir</em>
         : f.status === 'tbd' ? <em className="sc-res soon">tirage</em> : null;
@@ -264,10 +264,12 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
       <div className="sc-facts">
         <Fact label={m.scorers?.length > 1 ? 'Buteurs' : 'Buteur'} wide>{m.scorers?.length ? scorersOf(m) : 'Aucun but marqué'}</Fact>
         {star && <Fact label="Homme du match" sub={`note ${fmtRating(star.rating)}`} tone="gold">{star.name}</Fact>}
-        <Fact label="Affluence" sub={full ? 'stade plein' : m.capacity ? `sur ${fmtNum(m.capacity)} places` : null}>{fmtNum(m.attendance || 0)}</Fact>
+        {f.away
+          ? <Fact label="Lieu" sub="droits TV seulement">À l’extérieur</Fact>
+          : <Fact label="Affluence" sub={full ? 'stade plein' : m.capacity ? `sur ${fmtNum(m.capacity)} places` : null}>{fmtNum(m.attendance || 0)}</Fact>}
         <Fact label="Recette">{fmtMoney(m.revenue || 0)}</Fact>
         <Fact label="Dispositif" sub={TACTICS[m.tactic]?.name}>{formationOf(m.formation).name}</Fact>
-        {played && <Fact label="Billets" sub={`formule ${played.name}`}>{m.ticketPrice ? fmtPrice(m.ticketPrice) : played.name}</Fact>}
+        {played && !f.away && <Fact label="Billets" sub={`formule ${played.name}`}>{m.ticketPrice ? fmtPrice(m.ticketPrice) : played.name}</Fact>}
       </div>
     );
   } else if (r) {
@@ -311,10 +313,25 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
     );
   }
 
+  // nos couleurs et celles de l'adversaire, à leur place : l'équipe qui reçoit à gauche (0.8.1)
+  const usEl = (
+    <div className="sc-team us">
+      <span className="sc-slot"><ClubCrest crest={state.crest} name={state.clubName} className="sc-crest" full stars={clubStars(state)} /></span>
+      <strong>{state.clubName}</strong>
+      {ours != null && <span>Niveau {fmtRating(ours)}</span>}
+    </div>
+  );
+  const themEl = (
+    <div className="sc-team them">
+      <span className="sc-slot">{opp ? <Crest name={opp.name} className="sc-crest" full /> : <span className="sc-crest-q" aria-hidden="true">{f.status === 'out' ? '—' : '?'}</span>}</span>
+      <strong>{opp?.name || (f.status === 'out' ? 'Aucun adversaire' : 'Adversaire à tirer')}</strong>
+      {oppMeta && <span>{oppMeta}</span>}
+    </div>
+  );
   return (
     <article
       ref={ref}
-      className={`sc-poster ${f.comp} ${f.status} ${v ? `o-${v.o}` : ''}`}
+      className={`sc-poster ${f.comp} ${f.status} ${v ? `o-${v.o}` : ''} ${f.away ? 'ext' : ''}`}
       style={{ '--opp': opp ? rgbOf(kitOf(opp.name).shirt) : '128, 128, 128' }}
       aria-label={nameOf(f, r)}
     >
@@ -322,23 +339,15 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
         <span className="sc-comp">{Icon && <Icon aria-hidden="true" />}{COMP[f.comp]}<em>{roundOf(f, leagueLength(state))}{f.away ? ' · Extérieur' : ''}</em></span>
       </header>
 
-      <div className="sc-versus">
-        <div className="sc-team us">
-          <span className="sc-slot"><ClubCrest crest={state.crest} name={state.clubName} className="sc-crest" full stars={clubStars(state)} /></span>
-          <strong>{state.clubName}</strong>
-          {ours != null && <span>Niveau {fmtRating(ours)}</span>}
-        </div>
+      <div className={`sc-versus ${f.away ? 'ext' : ''}`}>
+        {f.away ? themEl : usEl}
         <div className="sc-mid">
-          <div className="sc-slot sc-mid-main">{r ? <div className="sc-score" aria-label={`${r.gf} à ${r.ga}`}><b>{r.gf}</b><i>–</i><b>{r.ga}</b></div> : <span className="sc-vs">VS</span>}</div>
+          <div className="sc-slot sc-mid-main">{r ? <div className="sc-score" aria-label={homeFirst({ ...r, away: f.away }).join(' à ')}>{homeFirst({ ...r, away: f.away }).map((g, i) => <React.Fragment key={i}>{i ? <i>–</i> : null}<b>{g}</b></React.Fragment>)}</div> : <span className="sc-vs">VS</span>}</div>
           <span className={`sc-state ${v ? v.o : f.status}`}>{state0}</span>
           {r?.pens && <span className="sc-pens">t.a.b. {r.pens[0]}–{r.pens[1]}</span>}
           {r && f.comp !== 'league' && v.o === 'win' && f.stage < 3 && <span className="sc-pens">en route pour {NEXT_STAGE[f.stage]}</span>}
         </div>
-        <div className="sc-team them">
-          <span className="sc-slot">{opp ? <Crest name={opp.name} className="sc-crest" full /> : <span className="sc-crest-q" aria-hidden="true">{f.status === 'out' ? '—' : '?'}</span>}</span>
-          <strong>{opp?.name || (f.status === 'out' ? 'Aucun adversaire' : 'Adversaire à tirer')}</strong>
-          {oppMeta && <span>{oppMeta}</span>}
-        </div>
+        {f.away ? usEl : themEl}
       </div>
 
       {body}

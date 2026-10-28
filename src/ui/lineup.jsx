@@ -1,8 +1,8 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { POS_LABELS } from '../game/constants';
-import { absenceOf, available, fitOf, playerRating, ratingAt } from '../game/players';
-import { FORMATIONS, FORMATION_ORDER, autoLineup, fitWeight, formationOf, lineupRating, reshapeLineup, slotsOf } from '../game/tactics';
+import { absenceOf, available, fitFactor, fitOf, playerRating, ratingAt } from '../game/players';
+import { FORMATIONS, FORMATION_ORDER, ROTATE_FIT, autoLineup, fitWeight, formationOf, lineupRating, reshapeLineup, rotateLineup, slotsOf } from '../game/tactics';
 import { fmtRating } from './format';
 import { RatingBadge } from './kit';
 import { haptic } from './haptics';
@@ -122,7 +122,8 @@ export function FormationPicker({ value, onChange }) {
 }
 
 // « Meilleur onze » : le bouton dit ce qu'il apporte (+0,4), ou que le onze est déjà le meilleur possible. Le gain
-// se mesure condition physique comprise (comme le pronostic) : un titulaire épuisé peut céder sa place.
+// se mesure condition physique et forme comprises (comme le pronostic et le match) : un titulaire épuisé ou en méforme
+// peut céder sa place.
 export function BestEleven({ players, lineup, formation, onApply }) {
   const best = useMemo(() => autoLineup(players, formation), [players, formation]);
   const gain = lineupRating(players, best, formation, fitWeight) - lineupRating(players, lineup, formation, fitWeight);
@@ -130,6 +131,37 @@ export function BestEleven({ players, lineup, formation, onApply }) {
   return (
     <button className="lu-best" onClick={() => { haptic('tap'); onApply(best); }}>
       Meilleur onze{gain >= 0.05 && <b>+{fmtRating(gain)}</b>}
+    </button>
+  );
+}
+
+// Niveau d'un onze tel qu'il jouera, condition et forme comprises (comme le pronostic et le match), avec ce que la
+// fatigue lui retire et ce que la forme lui ajoute ou lui retire (avant-match, onglet Composition).
+export function levelOf(players, lineup, formation) {
+  const rating = lineupRating(players, lineup, formation, fitWeight);
+  const rested = lineupRating(players, lineup, formation);
+  const fitOnly = lineupRating(players, lineup, formation, (p) => fitFactor(fitOf(p)));
+  return { rating, rested, tired: rested - fitOnly >= 0.05 ? rested - fitOnly : 0, formGap: Math.abs(rating - fitOnly) >= 0.05 ? rating - fitOnly : 0 };
+}
+export function LevelReadout({ level }) {
+  const { rating, rested, tired, formGap } = level;
+  return (
+    <span className="pm-level">
+      Niveau <b>{fmtRating(rating)}</b>
+      {tired > 0 && <em className="pm-tired" title={`${fmtRating(rested)} au repos`}>fatigue −{fmtRating(tired)}</em>}
+      {formGap !== 0 && <em className={`pm-form ${formGap > 0 ? 'up' : 'down'}`} title="Moyenne des notes des derniers matchs">forme {formGap > 0 ? '+' : '−'}{fmtRating(Math.abs(formGap))}</em>}
+    </span>
+  );
+}
+
+// « Faire tourner » : les titulaires fatigués (sous 75 %) laissent leur place aux remplaçants reposés de leur poste. Le
+// bouton dit combien de joueurs il repose ; personne à reposer (ou aucun remplaçant reposé) : il disparaît.
+export function RotateButton({ players, lineup, formation, onApply }) {
+  const r = useMemo(() => rotateLineup(players, lineup, formation), [players, lineup, formation]);
+  if (!r.changes) return null;
+  return (
+    <button className="lu-best lu-rotate" title={`Repose les titulaires sous ${ROTATE_FIT} % de condition`} onClick={() => { haptic('tap'); onApply(r.lineup); }}>
+      Faire tourner<b>{r.changes}</b>
     </button>
   );
 }
@@ -352,7 +384,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
 // (l'avant-match repart de là).
 export function LineupEditor({ state, run }) {
   const formation = formationOf(state.formation).id;
-  const rating = lineupRating(state.players, state.lineup, formation);
+  const level = levelOf(state.players, state.lineup, formation); // condition et forme comprises, comme à l'avant-match
   const save = (lineup, f = formation) => run((s) => { s.lineup = lineup; s.formation = f; return s; });
   const offPos = state.lineup.filter((id, k) => {
     const p = state.players.find((q) => q.id === id);
@@ -363,8 +395,11 @@ export function LineupEditor({ state, run }) {
       <section className="lu-main">
         <div className="pm-xi-head">
           <h3 className="pm-sh mark-head">Onze de départ · <span className="nowrap">{formationOf(formation).name}</span></h3>
-          <span className="pm-level">Niveau <b>{fmtRating(rating)}</b></span>
-          <BestEleven players={state.players} lineup={state.lineup} formation={formation} onApply={(l) => save(l)} />
+          <LevelReadout level={level} />
+          <span className="lu-acts">
+            <BestEleven players={state.players} lineup={state.lineup} formation={formation} onApply={(l) => save(l)} />
+            <RotateButton players={state.players} lineup={state.lineup} formation={formation} onApply={(l) => save(l)} />
+          </span>
         </div>
         <LineupBoard players={state.players} lineup={state.lineup} formation={formation} onChange={(l) => save(l)} />
       </section>

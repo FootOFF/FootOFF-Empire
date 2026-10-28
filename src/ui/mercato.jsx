@@ -825,7 +825,7 @@ export function Negotiation({ state, p, run, refLvl, onClose, onSheet, onLineup 
           <h3>{p.name}</h3>
           <span className="ng-club">
             {mode === 'renew'
-              ? <>Sous contrat jusqu’à la saison {own.deal.until} · {fmtMoney(own.deal.wage)} par saison · {p.age} ans</>
+              ? <>Saison en cours : {state.seasonNumber} · {own.deal.until <= state.seasonNumber ? 'dernière année de contrat' : `sous contrat jusqu’à la saison ${own.deal.until}`} · {fmtMoney(own.deal.wage)} par saison · {p.age} ans</>
               : p.club ? <><Crest name={p.club} className="mc-crest" />{p.club} · encore {plural(p.contract, 'an', 'ans')} de contrat avec son club · {p.age} ans</> : <>Joueur libre · pas d’indemnité · {p.age} ans</>}
           </span>
         </div>
@@ -1006,7 +1006,7 @@ function ContractStep({ state, p, run, opened, renew, feeAgreed }) {
             </section>
             <section className="ng-terms">
               <div className="ng-term">
-                <div className="ng-term-top"><span className="eyebrow">Durée</span><em>saison en cours comptée · fin du contrat : saison {state.seasonNumber + years - 1}</em></div>
+                <div className="ng-term-top"><span className="eyebrow">Durée</span><em>saison en cours : {state.seasonNumber} · fin : saison {state.seasonNumber + years - 1}</em></div>
                 <div className="segmented n5" role="group" aria-label="Durée du contrat">
                   {Array.from({ length: MAX_YEARS }, (_, i) => i + 1).map((y) => (
                     <button key={y} type="button" className={y === years ? 'on' : ''} aria-pressed={y === years} disabled={y < minY} title={y < minY ? 'Une prolongation doit finir après le contrat actuel' : ''} onClick={() => setYears(y)}>{y} {y > 1 ? 'ans' : 'an'}</button>

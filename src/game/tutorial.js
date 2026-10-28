@@ -157,7 +157,7 @@ export function stepContent(step, s) {
       return {
         ...base,
         title: 'Ménage ton effectif',
-        text: 'Sous chaque joueur, une barre : sa condition physique. Un match la fait baisser selon l’endurance, chaque date la remonte. Fatigué, un joueur joue moins bien et se blesse plus souvent : fais tourner, « Meilleur onze » s’en charge.',
+        text: 'Sous chaque joueur, une barre : sa condition physique. Un match la fait baisser selon l’endurance, chaque date la remonte. Fatigué, un joueur joue moins bien et se blesse plus souvent : dès qu’un titulaire passe sous 75 %, « Faire tourner » le repose d’un geste.',
         why: 'Blessés et suspendus (rouge : deux matchs, second jaune ou trois jaunes : un) restent sur le banc, grisés. Pendant un match, « Changement » arrête le jeu à toute minute : cinq changements par match.',
         cta: 'Compris',
       };

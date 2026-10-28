@@ -73,9 +73,11 @@ export const SCREENS = [
   ['comparateur', 'Comparateur radar'],
   ['avant-match', 'Avant-match'],
   ['avant-match-coupe', 'Avant-match · tour de coupe (titulaires fatigués, tirs au but)'],
+  ['avant-match-rotation', 'Avant-match · trois titulaires fatigués (« Faire tourner »)'],
   ['avant-match-exterieur', 'Avant-match · Elite, journée à l’extérieur (droits TV seulement)'],
   ['avant-match-europe', 'Avant-match · Coupe d’Europe (budget du géant adverse)'],
   ['direct', 'Match en direct'],
+  ['direct-exterieur', 'Match en direct · Elite, à l’extérieur (l’équipe qui reçoit à gauche)'],
   ['direct-but', 'Match en direct · bandeau du but'],
   ['direct-notes', 'Match en direct · notes des joueurs (téléphone)'],
   ['direct-fil', 'Match en direct · le fil'],
@@ -86,6 +88,7 @@ export const SCREENS = [
   ['changement', 'Direct · changement en cours de jeu'],
   ['erreur', 'Écran d’erreur (barrière globale)'],
   ['apres-match', 'Après-match'],
+  ['apres-match-exterieur', 'Après-match · Elite, à l’extérieur'],
   ['apres-match-classement', 'Après-match · classement de la journée'],
   ['bilan', 'Bilan de saison'],
   ['bilan-champion', 'Bilan · titre de champion'],
@@ -94,11 +97,13 @@ export const SCREENS = [
   ['saison-coupe', 'Saison · calendrier, tour de coupe à tirer'],
   ['saison-fin', 'Saison · calendrier, saison terminée'],
   ['calendrier-europe', 'Saison · calendrier en Elite avec la Coupe d’Europe'],
+  ['calendrier-exterieur', 'Saison · calendrier en Elite, prochain match à l’extérieur'],
   ['classement', 'Saison · classement'],
   ['europe', 'Saison en Elite · Coupe d’Europe, places européennes'],
   ['finances', 'Finances'],
   ['stats', 'Statistiques'],
   ['stats-pass', 'Stats Pass d’un match'],
+  ['stats-pass-exterieur', 'Stats Pass · match joué à l’extérieur'],
   ['stats-detail', 'Stats Pass · statistiques détaillées'],
   ['stats-pronostic', 'Statistiques · fiabilité du pronostic sur tes matchs'],
   ['journal', 'Journal du club'],
@@ -141,7 +146,10 @@ export function previewState(screen) {
     for (let k = 0; k < 3; k++) playRound(s); // statistiques, forme, dernier match
     s.money = elite ? 38500000 : 42000;
   }
-  if (screen === 'avant-match-exterieur') { // prochaine journée chez l'adversaire
+  if (['apres-match-exterieur', 'stats-pass-exterieur'].includes(screen)) { // dernier match joué chez l'adversaire
+    for (let k = 0; k < 8 && !s.lastMatch?.away; k++) playRound(s);
+  }
+  if (['avant-match-exterieur', 'direct-exterieur', 'calendrier-exterieur'].includes(screen)) { // prochaine journée chez l'adversaire
     for (let k = 0; k < 8 && !(matchContext(s)?.comp === 'league' && matchContext(s)?.home === false); k++) playRound(s);
   }
   if (screen === 'avant-match-europe') for (let k = 0; k < 8 && matchContext(s)?.comp !== 'c1'; k++) playRound(s); // soir européen
@@ -149,6 +157,7 @@ export function previewState(screen) {
     for (let k = 0; k < 6 && matchContext(s)?.comp === 'league'; k++) playRound(s);
     s.lineup.slice(1, 4).forEach((id, k) => { s.players.find((p) => p.id === id).fit = [52, 61, 70][k]; });
   }
+  if (screen === 'avant-match-rotation') s.lineup.slice(1, 4).forEach((id, k) => { s.players.find((p) => p.id === id).fit = [52, 61, 70][k]; }); // trois titulaires sous 75 %
   if (screen === 'vitrine-fonds') s.money = 4200; // un seul bâtiment payable : les autres disent ce qui manque
   if (screen === 'saison-fin') while (matchContext(s)) playRound(s); // toutes les dates jouées, avant le bilan
   // classement de l'après-match : il suit une journée de championnat (pas un match de coupe)
@@ -248,7 +257,7 @@ function trainingPreview(s) {
 const MERCATO = ['negociation', 'contre-offre', 'contrat', 'contrat-contre', 'suivis', 'offres', 'offres-europe', 'encheres', 'vente-negociation', 'vente-accord', 'vente-conclue', 'bilan-mercato'];
 const SALES = ['offres', 'offres-europe', 'encheres', 'vente-negociation', 'vente-accord', 'vente-conclue'];
 // écrans joués en Elite, qualifié pour la Coupe d'Europe
-const ELITE = ['europe', 'calendrier-europe', 'avant-match-exterieur', 'avant-match-europe', 'offres-europe'];
+const ELITE = ['europe', 'calendrier-europe', 'avant-match-exterieur', 'avant-match-europe', 'offres-europe', 'direct-exterieur', 'apres-match-exterieur', 'stats-pass-exterieur', 'calendrier-exterieur'];
 const later = () => Date.now() + 60000; // réponse affichée à l'ouverture de la vue
 function mercatoPreview(s, screen) {
   const mine = [...s.players].sort((a, b) => playerRating(a) - playerRating(b));
@@ -392,7 +401,7 @@ export function previewUi(screen, s) {
     case 'entrainement-progres': return { panel: 'training', trainingTab: 'progress' };
     case 'entrainement-batiment': return { sel: { plotId: 't1', sector: 'main' } };
     case 'comparateur': return { panel: 'mercato', squad: { compare: true } };
-    case 'saison': case 'saison-fin': case 'calendrier-europe': return { panel: 'season' };
+    case 'saison': case 'saison-fin': case 'calendrier-europe': case 'calendrier-exterieur': return { panel: 'season' };
     case 'saison-joue': return { panel: 'season', seasonSel: seasonFixtures(s).find((f) => f.match)?.index };
     case 'saison-coupe': return { panel: 'season', seasonSel: seasonFixtures(s).find((f) => f.status === 'tbd' || f.status === 'out')?.index };
     case 'classement': return { panel: 'season', seasonTab: 'table' };
@@ -400,12 +409,13 @@ export function previewUi(screen, s) {
     case 'journal': return { panel: 'journal' };
     case 'finances': return { panel: 'finances' };
     case 'stats': return { panel: 'stats' };
-    case 'stats-pass': return { panel: 'stats', statsMatch: 'last' };
+    case 'stats-pass': case 'stats-pass-exterieur': return { panel: 'stats', statsMatch: 'last' };
     case 'stats-detail': return { panel: 'stats', statsMatch: 'last' };
     case 'stats-pronostic': return { panel: 'stats', statsTab: 'prono' };
     case 'trophees': return { panel: 'trophies' };
-    case 'avant-match': case 'avant-match-coupe': case 'avant-match-exterieur': case 'avant-match-europe': return { matchPhase: 'prematch', matchCtx: matchContext(s), matchDay: true };
+    case 'avant-match': case 'avant-match-coupe': case 'avant-match-rotation': case 'avant-match-exterieur': case 'avant-match-europe': return { matchPhase: 'prematch', matchCtx: matchContext(s), matchDay: true };
     case 'direct': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34 } };
+    case 'direct-exterieur': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34, goal: true } };
     case 'direct-but': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 34, goal: true } };
     case 'direct-notes': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 38, view: 'notes' } };
     case 'direct-fil': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { minute: 38, view: 'feed' } };
@@ -414,7 +424,7 @@ export function previewUi(screen, s) {
     case 'mi-temps': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime' } };
     case 'mi-temps-compo': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime', board: true } };
     case 'changement': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'subs', minute: 31 } };
-    case 'apres-match': return { showResult: true, matchDay: true };
+    case 'apres-match': case 'apres-match-exterieur': return { showResult: true, matchDay: true };
     case 'apres-match-classement': return { showResult: true, matchDay: true, postStep: 'table' };
     case 'menu': return { menu: true };
     case 'notification': return {

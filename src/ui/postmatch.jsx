@@ -3,7 +3,7 @@ import { DIVISIONS, POS_LABELS, divisionOf } from '../game/constants';
 import { standingsOf } from '../game/season';
 import { ordinal } from '../game/utils';
 import { StandingsTable, ZoneLegend } from './panels';
-import { fmtMoney, fmtNum, fmtRating } from './format';
+import { fmtMoney, fmtNum, fmtRating, homeFirst } from './format';
 import { AnimatedMoney } from './moneyfx';
 import { Card, Eyebrow, IconAssist, IconBall, IconStar, RatingBadge, SectionHead, VersusBar } from './kit';
 import { useKeydown } from './presence';
@@ -108,16 +108,17 @@ export default function PostMatch({ state, onClose, onStats, initialStep = 'resu
             <span className={`post-outcome ${outcome}`}>{lm.pens ? `${outcome === 'win' ? 'Qualifié' : 'Éliminé'} aux t.a.b. ${lm.pens[0]}–${lm.pens[1]}` : OUTCOME[outcome]}</span>
           </div>
           <div className="post-score">
+            {/* l'équipe qui reçoit à gauche (0.8.1) : à l'extérieur, l'adversaire */}
             <div className="post-team home">
-              <ClubCrest crest={state.crest} name={state.clubName} className="post-crest" stars={clubStars(state)} />
-              <strong>{state.clubName}</strong>
-              <Goals list={homeGoals} align="right" />
+              {lm.away ? <Crest name={lm.oppName} className="post-crest" /> : <ClubCrest crest={state.crest} name={state.clubName} className="post-crest" stars={clubStars(state)} />}
+              <strong>{lm.away ? lm.oppName : state.clubName}</strong>
+              <Goals list={lm.away ? awayGoals : homeGoals} align="right" />
             </div>
-            <div className="post-num"><b>{lm.gf}</b><i>–</i><b>{lm.ga}</b></div>
+            <div className="post-num">{homeFirst(lm).map((g, i) => <React.Fragment key={i}>{i ? <i>–</i> : null}<b>{g}</b></React.Fragment>)}</div>
             <div className="post-team away">
-              <Crest name={lm.oppName} className="post-crest" />
-              <strong>{lm.oppName}</strong>
-              <Goals list={awayGoals} align="left" />
+              {lm.away ? <ClubCrest crest={state.crest} name={state.clubName} className="post-crest" stars={clubStars(state)} /> : <Crest name={lm.oppName} className="post-crest" />}
+              <strong>{lm.away ? state.clubName : lm.oppName}</strong>
+              <Goals list={lm.away ? homeGoals : awayGoals} align="left" />
             </div>
           </div>
           {cup && (
@@ -167,13 +168,13 @@ export default function PostMatch({ state, onClose, onStats, initialStep = 'resu
           </section>
 
           <section className="post-col">
-            <SectionHead label="Le match en chiffres" aside={<span className="hide-sm">{state.clubName} · {lm.oppName}</span>} />
+            <SectionHead label="Le match en chiffres" aside={<span className="hide-sm">{lm.away ? `${lm.oppName} · ${state.clubName}` : `${state.clubName} · ${lm.oppName}`}</span>} />
             {st && (
               <div className="post-stats">
-                <VersusBar label="Possession" home={st.possession} away={100 - st.possession} suffix=" %" />
-                <VersusBar label="Tirs" home={st.shots[0]} away={st.shots[1]} />
-                <VersusBar label="Tirs cadrés" home={st.onTarget[0]} away={st.onTarget[1]} />
-                <VersusBar label="Cartons" home={st.yellow[0] + st.red[0]} away={st.yellow[1] + st.red[1]} />
+                <VersusBar label="Possession" home={st.possession} away={100 - st.possession} suffix=" %" flip={!!lm.away} />
+                <VersusBar label="Tirs" home={st.shots[0]} away={st.shots[1]} flip={!!lm.away} />
+                <VersusBar label="Tirs cadrés" home={st.onTarget[0]} away={st.onTarget[1]} flip={!!lm.away} />
+                <VersusBar label="Cartons" home={st.yellow[0] + st.red[0]} away={st.yellow[1] + st.red[1]} flip={!!lm.away} />
               </div>
             )}
 

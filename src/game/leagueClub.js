@@ -161,6 +161,11 @@ export function applyLeagueRound(s, result, live = null) {
     const side = x.h === L.slot ? 'home' : 'away';
     const lv = live || myReplay(s, result)?.live;
     applyMatchResult(s, lv ? perspectiveResult(lv, side, s.players) : summaryResult(s, x, side));
+    if (side === 'away') { // chez un ami : l'affichage met l'équipe qui reçoit à gauche (0.8.1), l'économie ne change pas
+      if (s.lastMatch) s.lastMatch.away = true;
+      const rec = s.matches?.[s.matches.length - 1];
+      if (rec) rec.away = true;
+    }
   } else {
     s.round += 1;
     s.table = officialTable(s);

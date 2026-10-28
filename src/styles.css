@@ -1557,6 +1557,10 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .pm-level { display: flex; align-items: baseline; gap: 8px; font-size: 12px; color: var(--muted); }
 .pm-level b { font-family: var(--font-disp); font-weight: 700; font-size: 28px; line-height: .9; color: var(--text); font-variant-numeric: tabular-nums; }
 .pm-tired { font-style: normal; font-size: 12px; font-weight: 600; color: var(--amber); white-space: nowrap; } /* niveau perdu par la fatigue */
+.pm-form { font-style: normal; font-size: 12px; font-weight: 600; white-space: nowrap; } /* niveau gagné ou perdu par la forme (0.8.1) */
+.pm-form.up { color: var(--green); }
+.pm-form.down { color: var(--red); }
+.pm-tired + .pm-form { margin-left: 8px; }
 .pm-fold { display: none; padding: 0; border: 0; background: none; font-size: var(--t-sm); color: var(--gold-light); }
 .pm-compo { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 .pm-plan { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
@@ -2566,6 +2570,12 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .sp-events li.ext .sp-who { order: -1; text-align: right; }
 .sp-events li.ext .sp-min { order: 1; text-align: right; }
 .sp-events li.dom .sp-ico svg { color: var(--gold); }
+/* à l'extérieur (0.8.1) : l'équipe qui reçoit à gauche, nous à droite ; chacun garde ses couleurs */
+.sp-events.flip li.dom { grid-template-columns: minmax(0, 1fr) 20px 44px; }
+.sp-events.flip li.dom .sp-who { order: -1; text-align: right; }
+.sp-events.flip li.dom .sp-min { order: 1; text-align: right; }
+.sp-events.flip li.ext { grid-template-columns: 44px 20px minmax(0, 1fr); }
+.sp-events.flip li.ext .sp-who, .sp-events.flip li.ext .sp-min { order: 0; text-align: left; }
 .sp-min { font-family: var(--font-disp); font-weight: 600; font-size: var(--d-xs); color: var(--muted); }
 .sp-ico { display: grid; place-items: center; }
 .sp-who em { font-style: normal; color: var(--muted); }
@@ -2952,6 +2962,9 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .lu-best svg { width: 16px; height: 16px; stroke-width: 2.2; }
 @media (hover: hover) { button.lu-best:hover { background: rgba(222, 193, 127, .18); } }
 .lu-best.done { background: rgba(114, 197, 149, .1); color: var(--green); }
+.lu-rotate b { color: var(--amber); } /* titulaires fatigués à reposer (0.8.1) */
+.lv-legend.flip { flex-direction: row-reverse; justify-content: flex-end; } /* légende des temps forts dans l'ordre de l'écran, à l'extérieur */
+.lu-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-left: auto; } /* « Meilleur onze » et « Faire tourner » passent à la ligne ensemble */
 
 /* onglet Composition de l'Équipe */
 .lu-editor { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--s-4); align-items: start; }
@@ -3469,6 +3482,13 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
     var(--plate-2);
   box-shadow: var(--plate-hi); clip-path: var(--cut-shape);
 }
+/* à l'extérieur (0.8.1) : l'adversaire reçoit, ses couleurs à gauche, les nôtres à droite */
+.sc-poster.ext {
+  background:
+    radial-gradient(70% 85% at 100% 32%, rgba(199, 161, 90, .16), transparent 70%),
+    radial-gradient(70% 85% at 0% 32%, rgba(var(--opp), .22), transparent 70%),
+    var(--plate-2);
+}
 /* le terrain vu du dessus : bandes de tonte et ligne médiane, qui s'effacent vers le bas */
 .sc-poster::before {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
@@ -3512,6 +3532,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .sc-score { display: flex; align-items: center; gap: 12px; font-family: var(--font-disp); font-weight: 700; font-size: 88px; line-height: .9; font-variant-numeric: tabular-nums; }
 .sc-score i { font-style: normal; font-weight: 300; font-size: .5em; color: var(--muted); }
 .sc-poster.o-loss .sc-score b:first-child, .sc-poster.o-win .sc-score b:last-child { color: var(--text-2); }
+.sc-poster.ext.o-loss .sc-score b:first-child, .sc-poster.ext.o-win .sc-score b:last-child { color: inherit; } /* à l'extérieur : nous à droite */
+.sc-poster.ext.o-loss .sc-score b:last-child, .sc-poster.ext.o-win .sc-score b:first-child { color: var(--text-2); }
 .sc-pens { font-family: var(--font-disp); font-weight: 600; font-size: var(--d-xs); letter-spacing: .04em; color: var(--muted); }
 .sc-vs { font-family: var(--font-disp); font-weight: 700; font-size: 38px; letter-spacing: .12em; color: var(--text-2); }
 
@@ -3997,7 +4019,9 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ng-win p.ng-terms-line { font-size: var(--t-sm); }
 /* Contrats (0.8.0) : le bloc Contrat de la fiche (squad.jsx), la fin du contrat sous le salaire dans le tableau de
    l'effectif, la mention des joueurs en dernière année sur leur carte */
-.sh-contract b.amber, .sh-deal b.amber { color: var(--amber); }
+.sh-contract b.amber, .sh-deal b.amber, .sh-deal em.amber { color: var(--amber); }
+.sh-contract .sh-pot b { color: var(--text); }
+.sh-deal em { font-style: normal; }
 .sh-deal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin: 10px 0; }
 .sh-deal div { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 10px 12px; background: var(--plate-2); }
 .sh-deal b { font-family: var(--font-disp); font-weight: 700; font-size: 22px; line-height: 1.05; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }

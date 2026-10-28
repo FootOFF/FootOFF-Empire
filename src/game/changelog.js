@@ -4,6 +4,15 @@
 
 export const CHANGELOG = [
   {
+    version: '0.8.1', date: '2026-10-28', title: 'Forme, rotation et matchs à l’extérieur',
+    items: [
+      'La forme compte désormais en match : un joueur en grande forme joue un peu mieux, un joueur en méforme un peu moins bien. « Meilleur onze » en tient compte, avec la condition physique.',
+      'Nouveau bouton « Faire tourner », avant le match et dans la Composition : les titulaires fatigués (sous 75 %) laissent leur place aux remplaçants reposés de leur poste.',
+      'À l’extérieur, l’équipe qui reçoit passe à gauche, partout : calendrier, avant-match, match en direct, après-match et statistiques, avec le score dans l’ordre du football.',
+      'La saison en cours s’affiche sur les écrans de contrat (négociation, fiche du joueur, Direction) et dans l’en-tête de l’Équipe.',
+    ],
+  },
+  {
     version: '0.8.0', date: '2026-10-28', title: 'Contrats et salaires',
     items: [
       'Chaque joueur a maintenant un contrat : un salaire par saison, une durée, parfois une clause de montée. Le salaire reste fixe pendant le contrat : seules une prolongation, la clause de montée ou une descente le changent.',

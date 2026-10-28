@@ -86,7 +86,7 @@ function ContractsTab({ state, onRenew }) {
   return (
     <div className="dir-wages">
       <p className="dir-note">
-        Les contrats de l’effectif, les plus proches de leur fin d’abord. Sans prolongation, un joueur en dernière année part
+        <b>Saison en cours : {state.seasonNumber}.</b> Les contrats de l’effectif, les plus proches de leur fin d’abord. Sans prolongation, un joueur en dernière année part
         libre à l’intersaison, sans indemnité.{' '}
         {lvl ? `Au niveau ${lvl}, ta Direction baisse de ${lvl * DIRECTION_EASE} % les exigences de salaire des joueurs.` : 'Construis la Direction pour baisser les exigences de salaire des joueurs.'}
       </p>

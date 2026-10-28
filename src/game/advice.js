@@ -198,7 +198,7 @@ export function staffTip(s) {
   if (lineupRating(s.players, best, s.formation, fitWeight) > lineupRating(s.players, s.lineup, s.formation, fitWeight) + 0.15) {
     return {
       id: `lineup-${s.seasonNumber}-${s.round}`, title: 'Ton onze peut faire mieux',
-      text: 'Des remplaçants sont plus forts, ou plus frais, que certains titulaires. Choisis « Meilleur onze » dans l’avant-match.',
+      text: 'Des remplaçants sont plus forts, plus frais ou plus en forme que certains titulaires. Choisis « Meilleur onze » dans l’avant-match.',
       action: { kind: 'match', label: 'Préparer le match' },
     };
   }

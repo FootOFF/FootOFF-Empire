@@ -1,5 +1,5 @@
 import { clamp } from './utils';
-import { available, fitFactor, fitOf, ratingAt } from './players';
+import { available, fitFactor, fitOf, formFactor, ratingAt } from './players';
 
 // Onze de départ, dispositif (formation) et tactique : décisions d'avant-match ; la tactique se change aussi à la
 // mi-temps. Le onze est une liste de 11 joueurs rangés dans l'ordre des postes du dispositif (gardien, défenseurs,
@@ -105,9 +105,10 @@ function hungarian(a) {
 // Meilleur onze : la répartition des joueurs sur les postes du dispositif qui donne le niveau d'équipe le plus haut
 // (même pondération que lineupRating). Un joueur hors de son poste est retenu s'il y reste meilleur que le
 // spécialiste ; à égalité, le joueur à son poste naturel passe devant.
-// Les joueurs blessés ou suspendus (players.js, available) ne sont jamais alignés ; la condition physique compte
-// (fitFactor : un titulaire épuisé vaut moins qu'un remplaçant frais), comme dans le pronostic.
-export const fitWeight = (p) => fitFactor(fitOf(p));
+// Les joueurs blessés ou suspendus (players.js, available) ne sont jamais alignés ; la condition physique et la forme
+// comptent (fitFactor, formFactor : un titulaire épuisé ou en méforme vaut moins qu'un remplaçant frais et en forme),
+// comme dans le pronostic et en match.
+export const fitWeight = (p) => fitFactor(fitOf(p)) * formFactor(p);
 export function autoLineup(players, formation = '433') {
   const slots = slotsOf(formation);
   const [nd, nm, na] = formationOf(formation).lines;
@@ -116,6 +117,31 @@ export function autoLineup(players, formation = '433') {
   while (cols.length < slots.length) cols.push(null); // effectif trop court : poste laissé vide (niveau 3)
   const cost = slots.map((pos) => cols.map((p) => (p ? -(weight[pos] * ratingAt(p, pos) * fitWeight(p)) - (p.pos === pos ? 1e-4 : 0) : -weight[pos] * 3)));
   return hungarian(cost).map((j) => (cols[j] ? cols[j].id : null));
+}
+
+// Faire tourner (0.8.1) : chaque titulaire fatigué (condition sous ROTATE_FIT) cède sa place au meilleur joueur reposé
+// (ROTATE_FIT et plus) qui joue ce poste, en poste naturel ou de dépannage ; les autres titulaires gardent la leur, et
+// sans remplaçant reposé à ce poste, le fatigué reste. Renvoie le onze et le nombre de changements.
+export const ROTATE_FIT = 75;
+export function rotateLineup(players, lineup, formation = '433') {
+  const slots = slotsOf(formation);
+  const used = new Set(lineup.filter((id) => id !== null));
+  const out = [...lineup];
+  let changes = 0;
+  slots.forEach((pos, k) => {
+    const p = players.find((x) => x.id === lineup[k]);
+    if (p && available(p) && fitOf(p) >= ROTATE_FIT) return;
+    const value = (q) => ratingAt(q, pos) * fitWeight(q) + (q.pos === pos ? 1e-4 : 0);
+    const fresh = players
+      .filter((q) => !used.has(q.id) && available(q) && fitOf(q) >= ROTATE_FIT && (q.pos === pos || q.alt === pos))
+      .sort((a, b) => value(b) - value(a))[0];
+    if (!fresh) return;
+    if (p) used.delete(p.id);
+    used.add(fresh.id);
+    out[k] = fresh.id;
+    changes++;
+  });
+  return { lineup: out, changes };
 }
 
 // Répare un onze après des départs (retraite, libération), une blessure ou une suspension : garde les titulaires

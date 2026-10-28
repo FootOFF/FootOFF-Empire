@@ -19,6 +19,11 @@ export const fmtPrice = (n) => price[Number.isInteger(Math.round(n * 100) / 100)
 export const fmtEuros = (n) => euros.format(n);
 
 // Note sur 20 avec une décimale, virgule à la française : 7,8.
+// Score dans l'ordre du football (0.8.1) : l'équipe qui reçoit d'abord. m : { gf, ga, away } (nos buts, les siens ; away :
+// joué chez l'adversaire, qui vient alors en premier). homeFirst rend la paire [gauche, droite] de deux valeurs « nous,
+// eux » (score, tirs).
+export const homeFirst = (m, ours = m.gf, theirs = m.ga) => (m?.away ? [theirs, ours] : [ours, theirs]);
+export const scoreText = (m, sep = '–') => homeFirst(m).join(sep);
 export const fmtRating = (v) => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',');
 
 // Pourcentages qui tombent juste (pronostic victoire / nul / défaite) : arrondis par la méthode du plus fort reste,

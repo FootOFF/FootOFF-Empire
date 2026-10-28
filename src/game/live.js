@@ -2,7 +2,7 @@ import { clamp, pick, ri } from './utils';
 import { capitalize, clubAfter, deName, isPluralClub } from './names';
 import { penaltySkills, shootout, shootoutWinChance } from './cups';
 import { TACTICS, expectedGoals, formationOf, lineupRating, slotsOf } from './tactics';
-import { available, fitAt, fitFactor, ratingAt } from './players';
+import { available, fitAt, fitFactor, formFactor, ratingAt } from './players';
 import { injuryCut } from './medical';
 import { opponentEleven } from './opponents';
 
@@ -241,8 +241,9 @@ const penaltyTaker = (field) => field.reduce((best, p) => (!best || p.a.fin > be
 const penHome = (taker) => clamp(0.62 + (taker?.a.fin ?? 10) / 100, 0.66, 0.84);
 const penAway = (keeper) => 0.77 - (keeper ? (keeper.g?.ref || 10) / 400 : 0) - (keeper?.traits?.includes('chat') ? 0.03 : 0);
 
-// facteur de condition physique de chaque joueur à une minute donnée (since : minute d'entrée en jeu de chacun)
-const factorAt = (minute, since) => (p) => fitFactor(fitAt(p, minute, since(p.id)));
+// facteur de chaque joueur à une minute donnée : sa condition physique (since : minute d'entrée en jeu de chacun) et sa
+// forme (players.js, formFactor)
+const factorAt = (minute, since) => (p) => fitFactor(fitAt(p, minute, since(p.id))) * formFactor(p);
 
 // probabilités de but par minute pour chaque équipe, dans l'état donné (onze, tactique, joueurs en moins : expulsés
 // et blessés non remplacés, condition physique) ; convH, convA : conversion moyenne d'une occasion ; penH, penA :

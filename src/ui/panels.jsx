@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { DIVISIONS, divisionOf } from '../game/constants';
 import { standingsOf } from '../game/season';
 import { ordinal } from '../game/utils';
-import { fmtMoney, fmtNum, fmtRating } from './format';
+import { fmtMoney, fmtNum, fmtRating, scoreText } from './format';
 import { IconClose, IconCoin } from './icons';
 import { ClubCrest, Crest } from './crest';
 import { AnimatedMoney } from './moneyfx';
@@ -244,16 +244,16 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
                 <SectionHead label={`Dernier match · ${lm.comp && lm.comp !== 'league' ? `${lm.comp === 'c1' ? 'Europe' : 'Coupe'} · ${STAGES_SHORT[lm.stage].toLowerCase()}` : `journée ${lm.round}`}`} aside={lmPens ? `${lmWon ? 'Qualifié' : 'Éliminé'} aux t.a.b. ${lm.pens[0]}–${lm.pens[1]}` : lm.gf > lm.ga ? 'Victoire' : lm.gf < lm.ga ? 'Défaite' : 'Match nul'} />
                 <div className="last-match">
                   <div className="lm-score">
-                    <span className="lm-team">{state.clubName}</span>
-                    <b className={lmWon ? 'win' : lm.gf < lm.ga || lmPens ? 'loss' : ''}>{lm.gf} – {lm.ga}</b>
-                    <span className="lm-team away">{lm.oppName}</span>
+                    <span className="lm-team">{lm.away ? lm.oppName : state.clubName}</span>
+                    <b className={lmWon ? 'win' : lm.gf < lm.ga || lmPens ? 'loss' : ''}>{scoreText(lm, ' – ')}</b>
+                    <span className="lm-team away">{lm.away ? state.clubName : lm.oppName}</span>
                   </div>
                   {lm.scorers?.length > 0 && (
                     <p className="lm-scorers"><IconBall /> {lm.scorers.map((x) => `${x.name} ${x.minute}′`).join(' · ')}</p>
                   )}
                   <div className="lm-facts">
                     {motm && <span className="lm-motm"><RatingBadge value={motm.rating} /> {motm.name}, homme du match</span>}
-                    <span>{fmtNum(lm.attendance)} spectateurs · {fmtMoney(lm.revenue)}</span>
+                    <span>{lm.away ? `À l’extérieur · droits TV ${fmtMoney(lm.revenue)}` : `${fmtNum(lm.attendance)} spectateurs · ${fmtMoney(lm.revenue)}`}</span>
                   </div>
                 </div>
               </section>

@@ -37,17 +37,19 @@ export function Stat({ label, value, sub, tone = '' }) {
 }
 
 // Comparaison club / adversaire sur une ligne : valeur, barres opposées, valeur.
-export function VersusBar({ label, home, away, suffix = '', format = (v) => v }) {
-  const total = home + away;
-  const h = total ? (home / total) * 100 : 50;
+// flip : match joué chez l'adversaire, qui passe à gauche (0.8.1) ; chaque barre garde la couleur de son équipe.
+export function VersusBar({ label, home, away, suffix = '', format = (v) => v, flip = false }) {
+  const [l, r, lc, rc] = flip ? [away, home, 'a', 'h'] : [home, away, 'h', 'a'];
+  const total = l + r;
+  const w = total ? (l / total) * 100 : 50;
   return (
     <div className="ui-vs">
-      <b className={home >= away ? 'lead' : ''}>{format(home)}{suffix}</b>
+      <b className={l > r || (l === r && !flip) ? 'lead' : ''}>{format(l)}{suffix}</b>
       <div className="ui-vs-mid">
         <span className="ui-vs-label">{label}</span>
-        <span className="ui-vs-bars"><i className="h" style={{ width: `${h}%` }} /><i className="a" style={{ width: `${100 - h}%` }} /></span>
+        <span className="ui-vs-bars"><i className={lc} style={{ width: `${w}%` }} /><i className={rc} style={{ width: `${100 - w}%` }} /></span>
       </div>
-      <b className={away > home ? 'lead' : ''}>{format(away)}{suffix}</b>
+      <b className={r > l || (l === r && flip) ? 'lead' : ''}>{format(r)}{suffix}</b>
     </div>
   );
 }

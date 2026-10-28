@@ -3,7 +3,7 @@ import { DIVISIONS, divisionOf } from '../game/constants';
 import { TACTICS, formationOf } from '../game/tactics';
 import { TICKET_POLICIES } from '../game/economy';
 import { ordinal } from '../game/utils';
-import { fmtMoney, fmtNum, fmtPrice, fmtRating } from './format';
+import { fmtMoney, fmtNum, fmtPrice, fmtRating, homeFirst, scoreText } from './format';
 import { IconBall, RatingBadge, SectionHead, Stat, VersusBar } from './kit';
 import { IconChevron, IconChevronLeft, IconClose } from './icons';
 import { Panel } from './panels';
@@ -57,7 +57,7 @@ function FormPills({ list, onOpen }) {
   return (
     <div className="st-form">
       {list.map((m) => (
-        <button key={mkey(m)} className={`st-pill ${outcome(m)}`} onClick={() => onOpen?.(m)} title={`${whenOf(m)} · ${m.gf}–${m.ga}${pensOf(m)} contre ${m.opp}`}>
+        <button key={mkey(m)} className={`st-pill ${outcome(m)}`} onClick={() => onOpen?.(m)} title={`${whenOf(m)} · ${scoreText(m)}${pensOf(m)} ${m.away ? 'chez' : 'contre'} ${m.opp}`}>
           {LETTER[outcome(m)]}
         </button>
       ))}
@@ -275,10 +275,10 @@ function MatchesTab({ matches, onOpen }) {
         {list.map((m) => (
           <li key={mkey(m)}>
             <button className="st-match" onClick={() => onOpen(m)}>
-              <span className={`st-when ${m.comp && m.comp !== 'league' ? `st-comp ${m.comp}` : ''}`}>S{m.season} · {whenOf(m)}</span>
+              <span className={`st-when ${m.comp && m.comp !== 'league' ? `st-comp ${m.comp}` : ''}`}>S{m.season} · {whenOf(m)}{m.away ? ' · ext' : ''}</span>
               <span className="st-opp">{m.opp}</span>
-              <span className={`st-score ${outcome(m)}`}>{m.gf}–{m.ga}{m.pens && <small>t.a.b. {m.pens[0]}–{m.pens[1]}</small>}</span>
-              <span className="st-mini">{formationOf(m.formation).name}{m.stats ? ` · ${m.stats.possession} % · ${m.stats.shots[0]}–${m.stats.shots[1]} tirs` : ''}</span>
+              <span className={`st-score ${outcome(m)}`}>{scoreText(m)}{m.pens && <small>t.a.b. {m.pens[0]}–{m.pens[1]}</small>}</span>
+              <span className="st-mini">{formationOf(m.formation).name}{m.stats ? ` · possession ${m.stats.possession} % · ${homeFirst(m, m.stats.shots[0], m.stats.shots[1]).join('–')} tirs` : ''}</span>
               <IconChevron />
             </button>
           </li>
@@ -377,30 +377,30 @@ function MatchStats({ m }) {
     <>
       <section className="sh-sec">
         <span className="sh-cap">Attaque</span>
-        <VersusBar label="Buts" home={m.gf} away={m.ga} />
-        {st.xg && <VersusBar label="Buts attendus (xG)" home={st.xg[0]} away={st.xg[1]} format={xgFmt} />}
-        <VersusBar label="Tirs" home={st.shots[0]} away={st.shots[1]} />
-        {st.big && <VersusBar label="Occasions franches" home={st.big[0]} away={st.big[1]} />}
-        <VersusBar label="Tirs cadrés" home={st.onTarget[0]} away={st.onTarget[1]} />
-        <VersusBar label="Tirs non cadrés" home={miss(0)} away={miss(1)} />
-        {st.post && <VersusBar label="Sur les montants" home={st.post[0]} away={st.post[1]} />}
-        <VersusBar label="Précision" home={pct(st.onTarget[0], st.shots[0])} away={pct(st.onTarget[1], st.shots[1])} suffix=" %" />
-        <VersusBar label="Tirs transformés" home={pct(m.gf, st.shots[0])} away={pct(m.ga, st.shots[1])} suffix=" %" />
+        <VersusBar flip={!!m.away} label="Buts" home={m.gf} away={m.ga} />
+        {st.xg && <VersusBar flip={!!m.away} label="Buts attendus (xG)" home={st.xg[0]} away={st.xg[1]} format={xgFmt} />}
+        <VersusBar flip={!!m.away} label="Tirs" home={st.shots[0]} away={st.shots[1]} />
+        {st.big && <VersusBar flip={!!m.away} label="Occasions franches" home={st.big[0]} away={st.big[1]} />}
+        <VersusBar flip={!!m.away} label="Tirs cadrés" home={st.onTarget[0]} away={st.onTarget[1]} />
+        <VersusBar flip={!!m.away} label="Tirs non cadrés" home={miss(0)} away={miss(1)} />
+        {st.post && <VersusBar flip={!!m.away} label="Sur les montants" home={st.post[0]} away={st.post[1]} />}
+        <VersusBar flip={!!m.away} label="Précision" home={pct(st.onTarget[0], st.shots[0])} away={pct(st.onTarget[1], st.shots[1])} suffix=" %" />
+        <VersusBar flip={!!m.away} label="Tirs transformés" home={pct(m.gf, st.shots[0])} away={pct(m.ga, st.shots[1])} suffix=" %" />
         {st.xg && <p className="sp-note">Buts attendus : la somme des chances de marquer de chaque tir. Au-dessus, l’équipe a été réaliste ; en dessous, elle a manqué d’efficacité.</p>}
       </section>
       {st.saves && (
         <section className="sh-sec">
           <span className="sh-cap">Gardiens</span>
-          <VersusBar label="Arrêts" home={st.saves[0]} away={st.saves[1]} />
-          <VersusBar label="Tirs cadrés arrêtés" home={savePct(0)} away={savePct(1)} suffix=" %" />
-          <VersusBar label="Buts encaissés" home={m.ga} away={m.gf} />
+          <VersusBar flip={!!m.away} label="Arrêts" home={st.saves[0]} away={st.saves[1]} />
+          <VersusBar flip={!!m.away} label="Tirs cadrés arrêtés" home={savePct(0)} away={savePct(1)} suffix=" %" />
+          <VersusBar flip={!!m.away} label="Buts encaissés" home={m.ga} away={m.gf} />
         </section>
       )}
       <section className="sh-sec">
         <span className="sh-cap">Possession</span>
-        <VersusBar label="Sur le match" home={st.possession} away={100 - st.possession} suffix=" %" />
-        {st.possHalf?.[0] != null && <VersusBar label="1re mi-temps" home={st.possHalf[0]} away={100 - st.possHalf[0]} suffix=" %" />}
-        {st.possHalf?.[1] != null && <VersusBar label="2de mi-temps" home={st.possHalf[1]} away={100 - st.possHalf[1]} suffix=" %" />}
+        <VersusBar flip={!!m.away} label="Sur le match" home={st.possession} away={100 - st.possession} suffix=" %" />
+        {st.possHalf?.[0] != null && <VersusBar flip={!!m.away} label="1re mi-temps" home={st.possHalf[0]} away={100 - st.possHalf[0]} suffix=" %" />}
+        {st.possHalf?.[1] != null && <VersusBar flip={!!m.away} label="2de mi-temps" home={st.possHalf[1]} away={100 - st.possHalf[1]} suffix=" %" />}
       </section>
       {shots.length > 0 && (
         <section className="sh-sec">
@@ -411,8 +411,8 @@ function MatchStats({ m }) {
             return (
               <div key={h} className="sp-half">
                 <span>{h === 1 ? '1re mi-temps' : '2de mi-temps'}</span>
-                <b className={a.goals > b.goals ? 'win' : a.goals < b.goals ? 'loss' : ''}>{a.goals} – {b.goals}</b>
-                <em>tirs {a.shots} – {b.shots}</em>
+                <b className={a.goals > b.goals ? 'win' : a.goals < b.goals ? 'loss' : ''}>{homeFirst(m, a.goals, b.goals).join(' – ')}</b>
+                <em>tirs {homeFirst(m, a.shots, b.shots).join(' – ')}</em>
               </div>
             );
           })}
@@ -420,8 +420,8 @@ function MatchStats({ m }) {
       )}
       <section className="sh-sec">
         <span className="sh-cap">Discipline</span>
-        <VersusBar label="Cartons jaunes" home={st.yellow[0]} away={st.yellow[1]} />
-        <VersusBar label="Cartons rouges" home={st.red[0]} away={st.red[1]} />
+        <VersusBar flip={!!m.away} label="Cartons jaunes" home={st.yellow[0]} away={st.yellow[1]} />
+        <VersusBar flip={!!m.away} label="Cartons rouges" home={st.red[0]} away={st.red[1]} />
       </section>
       <section className="sh-sec">
         <span className="sh-cap">Le contexte</span>
@@ -516,7 +516,7 @@ function MatchTimeline({ m }) {
       </section>
       <section className="sh-sec">
         <span className="sh-cap">Tir par tir</span>
-        <ul className="sp-events sp-all">
+        <ul className={`sp-events sp-all ${m.away ? 'flip' : ''}`}>
           {all.map((x, i) => (
             <li key={i} className={`${x.s === 0 ? 'dom' : 'ext'} ${x.kind === 'shot' ? `o-${x.o}` : ''}`}>
               <span className="sp-min">{x.m}′</span>
@@ -576,8 +576,10 @@ function MatchGate({ m }) {
   const refused = m.demand && m.capacity && m.demand > m.capacity ? m.demand - m.capacity : 0;
   return (
     <ul className="sp-facts">
-      <li><span>Formule des billets</span><b>{policy ? `${policy.name}${m.ticketPrice ? ` · ${fmtPrice(m.ticketPrice)} le billet` : ''}` : 'Non enregistrée (match ancien)'}</b></li>
-      <li><span>Affluence</span><b>{fmtNum(m.attendance || 0)}{m.capacity ? ` / ${fmtNum(m.capacity)} · ${pct(m.attendance, m.capacity)} %` : ''}</b></li>
+      {m.away ? <li><span>Lieu</span><b>À l’extérieur · droits TV seulement</b></li> : <>
+        <li><span>Formule des billets</span><b>{policy ? `${policy.name}${m.ticketPrice ? ` · ${fmtPrice(m.ticketPrice)} le billet` : ''}` : 'Non enregistrée (match ancien)'}</b></li>
+        <li><span>Affluence</span><b>{fmtNum(m.attendance || 0)}{m.capacity ? ` / ${fmtNum(m.capacity)} · ${pct(m.attendance, m.capacity)} %` : ''}</b></li>
+      </>}
       {refused > 0 && <li><span>Restés aux guichets</span><b>{fmtNum(refused)}</b></li>}
       {m.breakdown && Object.entries(m.breakdown).filter(([, v]) => v > 0).map(([k, v]) => <li key={k}><span>{GATE_LABEL[k] || k}</span><b>{fmtMoney(v)}</b></li>)}
       <li className="sp-total"><span>Recette du match</span><b>{fmtMoney(m.revenue || 0)}</b></li>
@@ -613,15 +615,16 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
         </header>
 
         <section className="sp-card">
-          <span className="sp-meta">{m.label || `Journée ${m.round}`} · {m.comp === 'c1' ? 'Europe' : m.division} · Saison {m.season}</span>
+          <span className="sp-meta">{m.label || `Journée ${m.round}`}{m.away ? ' · Extérieur' : ''} · {m.comp === 'c1' ? 'Europe' : m.division} · Saison {m.season}</span>
           <div className="sp-grid">
-            <div className="sp-team"><ClubCrest crest={state.crest} name={state.clubName} className="sp-crest" stars={clubStars(state)} />{state.clubName}</div>
-            <div className={`sp-score ${o}`}>{m.gf}<i>–</i>{m.ga}</div>
-            <div className="sp-team ext">{m.opp}<Crest name={m.opp} className="sp-crest" /></div>
+            {/* l'équipe qui reçoit à gauche (0.8.1) */}
+            <div className="sp-team">{m.away ? <><Crest name={m.opp} className="sp-crest" />{m.opp}</> : <><ClubCrest crest={state.crest} name={state.clubName} className="sp-crest" stars={clubStars(state)} />{state.clubName}</>}</div>
+            <div className={`sp-score ${o}`}>{homeFirst(m).map((g, i) => <React.Fragment key={i}>{i ? <i>–</i> : null}{g}</React.Fragment>)}</div>
+            <div className="sp-team ext">{m.away ? <>{state.clubName}<ClubCrest crest={state.crest} name={state.clubName} className="sp-crest" stars={clubStars(state)} /></> : <>{m.opp}<Crest name={m.opp} className="sp-crest" /></>}</div>
           </div>
           <span className={`sp-state ${o}`}>{m.pens ? `${o === 'win' ? 'Qualifié' : 'Éliminé'} aux tirs au but ${m.pens[0]}–${m.pens[1]}` : WORD[o]}</span>
           <div className="sp-strip">
-            <span><b>{fmtNum(m.attendance || 0)}</b> spectateurs{m.capacity ? ` · ${pct(m.attendance, m.capacity)} % de remplissage` : ''}</span>
+            {m.away ? <span>À l’extérieur · droits TV seulement</span> : <span><b>{fmtNum(m.attendance || 0)}</b> spectateurs{m.capacity ? ` · ${pct(m.attendance, m.capacity)} % de remplissage` : ''}</span>}
             <span>Recette <b>{fmtMoney(m.revenue || 0)}</b></span>
           </div>
         </section>
@@ -635,11 +638,15 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
         {st && (
           <section className="sh-sec">
             <span className="sh-cap">Le rapport de forces</span>
-            <VersusBar label="Possession" home={st.possession} away={100 - st.possession} suffix=" %" />
-            <VersusBar label="Tirs" home={st.shots[0]} away={st.shots[1]} />
-            <VersusBar label="Tirs cadrés" home={st.onTarget[0]} away={st.onTarget[1]} />
-            <VersusBar label="Cartons" home={st.yellow[0] + st.red[0]} away={st.yellow[1] + st.red[1]} />
-            <div className="sp-levels"><span>Niveau du onze <b className="dom">{fmtRating(m.myRating || 0)}</b></span><span>Adversaire <b>{fmtRating(m.oppStrength || 0)}</b></span></div>
+            <VersusBar label="Possession" home={st.possession} away={100 - st.possession} suffix=" %" flip={!!m.away} />
+            <VersusBar label="Tirs" home={st.shots[0]} away={st.shots[1]} flip={!!m.away} />
+            <VersusBar label="Tirs cadrés" home={st.onTarget[0]} away={st.onTarget[1]} flip={!!m.away} />
+            <VersusBar label="Cartons" home={st.yellow[0] + st.red[0]} away={st.yellow[1] + st.red[1]} flip={!!m.away} />
+            <div className="sp-levels">
+              {m.away && <span>Adversaire <b>{fmtRating(m.oppStrength || 0)}</b></span>}
+              <span>Niveau du onze <b className="dom">{fmtRating(m.myRating || 0)}</b></span>
+              {!m.away && <span>Adversaire <b>{fmtRating(m.oppStrength || 0)}</b></span>}
+            </div>
             <button className="btn ghost wide sp-more" onClick={() => setView('stats')}>Toutes les statistiques du match</button>
           </section>
         )}
@@ -647,7 +654,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
         <section className="sh-sec">
           <span className="sh-cap">Le fil du match</span>
           {events.length === 0 && (m.scorers || []).length === 0 ? <p className="st-muted">Aucun but ni carton.</p> : (
-            <ul className="sp-events">
+            <ul className={`sp-events ${m.away ? 'flip' : ''}`}>
               {(events.length ? events : (m.scorers || []).map((g) => ({ minute: g.minute, type: 'goal', side: 'home', player: g.name }))).map((e, i) => {
                 const assist = e.type === 'goal' && e.side === 'home' ? (m.scorers || []).find((g) => g.name === e.player && String(g.minute) === String(e.minute).split('+')[0])?.assist : null;
                 return (
@@ -661,7 +668,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
             </ul>
           )}
           {m.pens && (
-            <ul className="sp-events">
+            <ul className={`sp-events ${m.away ? 'flip' : ''}`}>
               <li className={o === 'win' ? 'dom' : 'ext'}>
                 <span className="sp-min">t.a.b.</span>
                 <span className="sp-ico"><IconBall /></span>
@@ -699,7 +706,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
         <section className="sh-sec">
           <span className="sh-cap">Les dernières confrontations</span>
           {h2h.length === 0 ? <p className="st-muted">Première rencontre entre les deux clubs.</p> : (
-            <ul className="sp-h2h">{h2h.map((x) => <li key={mkey(x)}><span>Saison {x.season} · {whenOf(x)}</span><b className={outcome(x)}>{x.gf}–{x.ga}{pensOf(x)}</b></li>)}</ul>
+            <ul className="sp-h2h">{h2h.map((x) => <li key={mkey(x)}><span>Saison {x.season} · {whenOf(x)}{x.away ? ' · ext' : ''}</span><b className={outcome(x)}>{scoreText(x)}{pensOf(x)}</b></li>)}</ul>
           )}
         </section>
 

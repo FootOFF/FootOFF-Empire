@@ -3,10 +3,10 @@ import { TACTICS, TACTIC_ORDER, fitWeight, formationOf, lineupRating, reshapeLin
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
 import { LIVE_VERSION, SUBS_MAX, createLiveMatch, highlightOf, liveKeyOf, pairSubs, prematchOdds, prematchXg, statsOf, subMinute } from '../game/live';
 import { saveLive } from '../game/save';
-import { available, fitAt } from '../game/players';
+import { available, fitAt, fitFactor, fitOf } from '../game/players';
 import { Portrait } from './portrait';
 import { teamCodes } from './teamcode';
-import { BestEleven, FormationPicker, LineupBoard, displayNames, formationEffect } from './lineup';
+import { BestEleven, FormationPicker, LineupBoard, RotateButton, displayNames, formationEffect } from './lineup';
 import { IconCheck, IconChevron, IconClose, IconMute, IconPlay, IconSound, IconUsers } from './icons';
 import { IconAssist, IconBall, IconMedic, IconSwap, IconWhistle, RatingBadge, VersusBar } from './kit';
 import { useKeydown } from './presence';
@@ -90,11 +90,13 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const [tactic, setTactic] = useState(state.tactic || 'balanced');
   const [formation, setFormation] = useState(formationOf(state.formation).id);
   const [board, setBoard] = useState(() => !narrowScreen()); // composition dépliée sur PC, repliée sur téléphone
-  // niveau de l'onze au coup d'envoi, condition physique comprise (comme le pronostic et le meilleur onze) ; au repos,
-  // il vaudrait `rested` : la fatigue se lit à côté du niveau, les pourcentages ne la cachent plus
+  // niveau de l'onze au coup d'envoi, condition physique et forme comprises (comme le pronostic et le meilleur onze) ;
+  // au repos, il vaudrait `rested` : la fatigue et la forme se lisent à côté du niveau, les pourcentages ne les cachent plus
   const rating = lineupRating(state.players, lineup, formation, fitWeight);
   const rested = lineupRating(state.players, lineup, formation);
-  const tired = rested - rating >= 0.05 ? rested - rating : 0;
+  const fitOnly = lineupRating(state.players, lineup, formation, (p) => fitFactor(fitOf(p)));
+  const tired = rested - fitOnly >= 0.05 ? rested - fitOnly : 0;
+  const formGap = Math.abs(rating - fitOnly) >= 0.05 ? rating - fitOnly : 0;
   const home = ctx.home !== false; // à l'extérieur (Elite) : l'avantage du terrain est à l'adversaire, pronostic compris
   // même moteur que le pronostic (calcul exact, expulsions à venir comprises : gardé tant que rien ne change)
   const xg = useMemo(() => prematchXg(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength, home }), [state, lineup, tactic, formation, ctx.opp.strength, home]);
@@ -121,6 +123,18 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const ref = useRef(null);
   useSwipe(ref, { onDown: onCancel, downMedia: PHONE });
 
+  // les deux équipes, l'équipe qui reçoit à gauche (0.8.1) : à l'extérieur, l'adversaire passe à gauche
+  const usTeam = {
+    crest: <ClubCrest crest={state.crest} name={state.clubName} className="pm-crest" stars={clubStars(state)} />, name: state.clubName, ref: homeRef,
+    title: tired ? `${fmtRating(rested)} au repos, ${fmtRating(tired)} de moins avec la fatigue` : undefined,
+    sub: <>{standing(me)}niveau <strong>{fmtRating(rating)}</strong></>,
+  };
+  const themTeam = {
+    crest: ctx.opp.crest ? <ClubCrest crest={ctx.opp.crest} name={ctx.opp.name} className="pm-crest" /> : <Crest name={ctx.opp.name} className="pm-crest" />,
+    name: ctx.opp.name, ref: awayRef, title: undefined,
+    sub: <>{standing(them)}{ctx.opp.budget ? `budget ${fmtMoney(ctx.opp.budget)} · ` : ''}niveau <strong>{fmtRating(ctx.opp.strength)}</strong></>,
+  };
+  const [left, right] = home ? [usTeam, themTeam] : [themTeam, usTeam];
   return (
     <div ref={ref} className={`matchscreen prematch ${board ? 'board-open' : 'board-closed'}`}>
       <span className="grip" aria-hidden="true" />
@@ -129,13 +143,13 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
         <div className="pm-top">
           <div className="pm-matchup">
             <div className="pm-team home">
-              <ClubCrest crest={state.crest} name={state.clubName} className="pm-crest" stars={clubStars(state)} />
-              <div className="pm-tname"><b ref={homeRef}>{state.clubName}</b><small title={tired ? `${fmtRating(rested)} au repos, ${fmtRating(tired)} de moins avec la fatigue` : undefined}>{standing(me)}niveau <strong>{fmtRating(rating)}</strong></small></div>
+              {left.crest}
+              <div className="pm-tname"><b ref={left.ref}>{left.name}</b><small title={left.title}>{left.sub}</small></div>
             </div>
             <span className="pm-vs" aria-label="contre">VS</span>
             <div className="pm-team away">
-              <div className="pm-tname"><b ref={awayRef}>{ctx.opp.name}</b><small>{standing(them)}{ctx.opp.budget ? `budget ${fmtMoney(ctx.opp.budget)} · ` : ''}niveau <strong>{fmtRating(ctx.opp.strength)}</strong></small></div>
-              {ctx.opp.crest ? <ClubCrest crest={ctx.opp.crest} name={ctx.opp.name} className="pm-crest" /> : <Crest name={ctx.opp.name} className="pm-crest" />}
+              <div className="pm-tname"><b ref={right.ref}>{right.name}</b><small title={right.title}>{right.sub}</small></div>
+              {right.crest}
             </div>
           </div>
           {ctx.gate && (home ? (
@@ -158,16 +172,22 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           <section className="pm-xi glass" aria-label="Onze de départ">
             <div className="pm-xi-head">
               <h3 className="pm-sh mark-head">Onze de départ · <span className="nowrap">{form.name}</span></h3>
-              <span className="pm-level">Niveau <b>{fmtRating(rating)}</b>{tired > 0 && <em className="pm-tired" title={`${fmtRating(rested)} au repos`}>fatigue −{fmtRating(tired)}</em>}</span>
-              <BestEleven players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
+              <span className="pm-level">Niveau <b>{fmtRating(rating)}</b>{tired > 0 && <em className="pm-tired" title={`${fmtRating(rested)} au repos`}>fatigue −{fmtRating(tired)}</em>}{formGap !== 0 && <em className={`pm-form ${formGap > 0 ? 'up' : 'down'}`} title="Moyenne des notes des derniers matchs">forme {formGap > 0 ? '+' : '−'}{fmtRating(Math.abs(formGap))}</em>}</span>
+              <span className="lu-acts">
+                <BestEleven players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
+                <RotateButton players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
+              </span>
               <button type="button" className="pm-fold" onClick={() => setBoard(false)}>Replier</button>
             </div>
             <LineupBoard players={state.players} lineup={lineup} formation={formation} onChange={setLineup} fitness={(p) => fitAt(p, 0)} />
           </section>
         ) : (
           <div className="pm-compo">
-            <CompoCard title="Composition" detail={`Onze en ${form.name} · niveau ${fmtRating(rating)}${tired ? ` (fatigue −${fmtRating(tired)})` : ''}`} onOpen={() => setBoard(true)} />
-            <BestEleven players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
+            <CompoCard title="Composition" detail={`Onze en ${form.name} · niveau ${fmtRating(rating)}${tired || formGap ? ` (${[tired ? `fatigue −${fmtRating(tired)}` : '', formGap ? `forme ${formGap > 0 ? '+' : '−'}${fmtRating(Math.abs(formGap))}` : ''].filter(Boolean).join(', ')})` : ''}`} onOpen={() => setBoard(true)} />
+            <span className="lu-acts">
+              <BestEleven players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
+              <RotateButton players={state.players} lineup={lineup} formation={formation} onApply={setLineup} />
+            </span>
           </div>
         )}
         <section className="pm-plan glass" aria-label="Dispositif et tactique">
@@ -181,7 +201,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           <section className="pm-odds glass" aria-label="Pronostic">
             <div className="pm-odds-head">
               <h3 className="pm-sh mark-head">Pronostic</h3>
-              <span className="pm-xg">Buts attendus <b>{fmtRating(xg.for)}</b> – <b>{fmtRating(xg.against)}</b></span>
+              <span className="pm-xg">Buts attendus <b>{fmtRating(home ? xg.for : xg.against)}</b> – <b>{fmtRating(home ? xg.against : xg.for)}</b></span>
             </div>
             <OddsBar odds={odds} />
             {ctx.knockout && <p className="pm-xg pm-ko">Élimination directe, tirs au but en cas d’égalité ({pctOf(shootoutWinChance(pens.home, pens.away))} % pour toi) · qualification <b>{pctOf(qualify)} %</b></p>}
@@ -227,7 +247,7 @@ const EventRow = React.memo(function EventRow({ e }) {
 // tranches suivantes, et penche légèrement du côté de la possession de la mi-temps.
 const SLOTS = 45; // 23 tranches pour la première période (temps additionnel dans la dernière), 22 pour la seconde
 const slotOf = (at, half) => (half === 1 ? Math.min(22, Math.floor(Math.max(0, at - 0.001) / 2)) : 23 + Math.min(21, Math.floor(Math.max(0, at - 45.001) / 2)));
-function Momentum({ shown, upTo, possHalf, names, codes }) {
+function Momentum({ shown, upTo, possHalf, names, codes, flip = false }) {
   const { bars, goals } = useMemo(() => {
     const raw = new Array(SLOTS).fill(0);
     const gl = [];
@@ -253,7 +273,8 @@ function Momentum({ shown, upTo, possHalf, names, codes }) {
     <div className="lv-moment">
       <div className="lv-moment-head">
         <span>Temps forts</span>
-        <span className="lv-legend">
+        {/* légende dans l'ordre de l'écran (à l'extérieur, l'équipe qui reçoit d'abord) ; chaque équipe garde sa couleur */}
+        <span className={`lv-legend ${flip ? 'flip' : ''}`}>
           <span><i className="h" /><span className="hide-sm">{names[0]}</span><span className="show-sm">{codes[0]}</span></span>
           <span><i className="a" /><span className="hide-sm">{names[1]}</span><span className="show-sm">{codes[1]}</span></span>
         </span>
@@ -281,7 +302,7 @@ function Momentum({ shown, upTo, possHalf, names, codes }) {
 
 // Bandeau du but, façon habillage télé : « BUT ! », le buteur (portrait, minute, passeur, penalty, combientième but de
 // sa saison), le score.
-function GoalBanner({ banner, state, m, shown, codes }) {
+function GoalBanner({ banner, state, m, shown, codes, flip = false }) {
   const ours = banner.ours;
   const p = ours ? state.players.find((q) => q.id === banner.playerId) : (m.awayRoster || []).find((q) => q.name === banner.player);
   const nth = ours && p ? (p.season?.goals || 0) + shown.filter((e) => e.type === 'goal' && e.playerId === banner.playerId
@@ -294,14 +315,14 @@ function GoalBanner({ banner, state, m, shown, codes }) {
         {p && <Portrait p={p} club={ours ? null : m.away} size={64} />}
         <span className="lv-goal-text"><b>{banner.player}</b><small>{facts.join(' · ')}</small></span>
       </span>
-      <span className="lv-goal-score">{banner.score.home}-{banner.score.away}</span>
+      <span className="lv-goal-score">{flip ? `${banner.score.away}-${banner.score.home}` : `${banner.score.home}-${banner.score.away}`}</span>
     </div>
   );
 }
 
 // Faits du match sous le tableau de score : buteurs (minutes, penalty) et expulsés de chaque équipe, comme à la télé.
 const lastName = (n) => n.split(' ').slice(1).join(' ') || n;
-function ScoreFacts({ shown, side }) {
+function ScoreFacts({ shown, side, pos = side }) {
   const goals = new Map();
   const reds = [];
   for (const e of [...shown].reverse()) {
@@ -312,9 +333,9 @@ function ScoreFacts({ shown, side }) {
       goals.get(k).push(`${e.minute}′${e.q === 'pen' ? ' (pen.)' : ''}`);
     } else if (e.type === 'red') reds.push({ who: e.player, minute: e.minute });
   }
-  if (!goals.size && !reds.length) return <ul className={`lv-facts ${side}`} />;
+  if (!goals.size && !reds.length) return <ul className={`lv-facts ${pos}`} />;
   return (
-    <ul className={`lv-facts ${side}`}>
+    <ul className={`lv-facts ${pos}`}>
       {[...goals].map(([who, mins]) => <li key={`g${who}`}><IconBall /><span><b>{lastName(who)}</b> {mins.join(', ')}</span></li>)}
       {reds.map((r) => <li key={`r${r.who}`}><i className="card red" aria-label="carton rouge" /><span><b>{lastName(r.who)}</b> {r.minute}′</span></li>)}
     </ul>
@@ -323,20 +344,20 @@ function ScoreFacts({ shown, side }) {
 
 // Statistiques en direct : seulement ce que le direct a déjà montré (statsOf, live.js) ; la possession ondule minute
 // après minute autour de la tendance de la mi-temps.
-function LiveStats({ st, poss }) {
+function LiveStats({ st, poss, flip = false }) {
   const n = (v) => fmtNum(v);
   return (
     <div className="lv-srows">
-      <VersusBar label="Possession" home={poss} away={100 - poss} suffix=" %" />
-      <VersusBar label="Tirs" home={st.shots[0]} away={st.shots[1]} format={n} />
-      <VersusBar label="Tirs cadrés" home={st.on[0]} away={st.on[1]} format={n} />
-      <VersusBar label="Grosses occasions" home={st.big[0]} away={st.big[1]} format={n} />
-      <VersusBar label="Buts attendus" home={st.xg[0]} away={st.xg[1]} format={(v) => fmtRating(v)} />
-      <VersusBar label="Arrêts" home={st.saves[0]} away={st.saves[1]} format={n} />
-      <VersusBar label="Poteaux" home={st.post[0]} away={st.post[1]} format={n} />
-      <VersusBar label="Cartons jaunes" home={st.yellow[0]} away={st.yellow[1]} format={n} />
-      <VersusBar label="Cartons rouges" home={st.red[0]} away={st.red[1]} format={n} />
-      {st.pens[0] + st.pens[1] > 0 && <VersusBar label="Penalties" home={st.pens[0]} away={st.pens[1]} format={n} />}
+      <VersusBar label="Possession" home={poss} away={100 - poss} suffix=" %" flip={flip} />
+      <VersusBar label="Tirs" home={st.shots[0]} away={st.shots[1]} format={n} flip={flip} />
+      <VersusBar label="Tirs cadrés" home={st.on[0]} away={st.on[1]} format={n} flip={flip} />
+      <VersusBar label="Grosses occasions" home={st.big[0]} away={st.big[1]} format={n} flip={flip} />
+      <VersusBar label="Buts attendus" home={st.xg[0]} away={st.xg[1]} format={(v) => fmtRating(v)} flip={flip} />
+      <VersusBar label="Arrêts" home={st.saves[0]} away={st.saves[1]} format={n} flip={flip} />
+      <VersusBar label="Poteaux" home={st.post[0]} away={st.post[1]} format={n} flip={flip} />
+      <VersusBar label="Cartons jaunes" home={st.yellow[0]} away={st.yellow[1]} format={n} flip={flip} />
+      <VersusBar label="Cartons rouges" home={st.red[0]} away={st.red[1]} format={n} flip={flip} />
+      {st.pens[0] + st.pens[1] > 0 && <VersusBar label="Penalties" home={st.pens[0]} away={st.pens[1]} format={n} flip={flip} />}
     </div>
   );
 }
@@ -479,7 +500,9 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const [lineupKey, setLineupKey] = useState(0); // le onze a changé : la scène 3D relit les noms
   // ce que montre le centre du match : stats, notes (téléphone : les PC les voient en colonnes) ou le fil
   const [view, setView] = useState(preview?.view || 'stats');
-  const [notesSide, setNotesSide] = useState('home'); // téléphone : l'équipe dont on lit les notes
+  // téléphone : la colonne de notes montrée (home : celle de gauche) ; d'abord la nôtre, à droite quand on joue chez
+  // l'adversaire (l'équipe qui reçoit passe à gauche)
+  const [notesSide, setNotesSide] = useState(() => (side === 'home' && live.state.atHome === false ? 'away' : 'home'));
   const [hl, setHl] = useState(null); // temps fort en cours (affichage) : { id, type, e, replay }
   const hlRef = useRef(null); // le même, pour l'horloge : { id, e, type, started, revealed }
   const hlSeq = useRef(0);
@@ -763,6 +786,14 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const fitOf = (r) => { const p = state.players.find((q) => q.id === r.id); return p ? Math.round(fitAt(p, minute, since(r.id))) : null; };
   const homeRows = notesNow.home;
   const awayRows = notesNow.away;
+  // à l'extérieur en carrière (le moteur nous garde du côté « home ») : l'équipe qui reçoit passe à gauche (0.8.1) ;
+  // L et R : le côté du moteur montré à gauche et à droite (un match revu d'un ami est déjà dans le bon sens)
+  const flip = side === 'home' && m.atHome === false;
+  const [L, R] = flip ? ['away', 'home'] : ['home', 'away'];
+  const teamName = { home: m.home, away: m.away };
+  const teamCode = { home: codes[0], away: codes[1] };
+  const teamGoals = { home: goalsH, away: goalsA };
+  const crestOf = (k, className) => (k === 'home' ? <HomeCrest state={state} name={m.home} className={className} /> : <AwayCrest ctx={ctx} name={m.away} className={className} />);
 
   const boardEl = (
     <LineupBoard
@@ -794,23 +825,23 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
       <div className="lv-centre" aria-hidden={hl ? 'true' : undefined}>
         <header className="lv-board">
           <p className="lv-eyebrow">{round}{m.atHome === false ? ' · Extérieur' : ''} · {period}</p>
-          <div className="lv-sb" aria-label={`${m.home} ${goalsH}, ${m.away} ${goalsA}`}>
+          <div className="lv-sb" aria-label={`${teamName[L]} ${teamGoals[L]}, ${teamName[R]} ${teamGoals[R]}`}>
             <div className="lv-sb-team home">
-              <HomeCrest state={state} name={m.home} className="lv-sb-crest" />
-              <b title={m.home}><span className="hide-sm">{m.home}</span><span className="show-sm">{codes[0]}</span></b>
+              {crestOf(L, 'lv-sb-crest')}
+              <b title={teamName[L]}><span className="hide-sm">{teamName[L]}</span><span className="show-sm">{teamCode[L]}</span></b>
             </div>
             <div className="lv-sb-mid">
-              <span className="lv-sb-score"><b key={`h${goalsH}`}>{goalsH}</b><i>-</i><b key={`a${goalsA}`}>{goalsA}</b></span>
+              <span className="lv-sb-score"><b key={`${L}${teamGoals[L]}`}>{teamGoals[L]}</b><i>-</i><b key={`${R}${teamGoals[R]}`}>{teamGoals[R]}</b></span>
               <span className={`lv-sb-clock is-${phase}`}>{clockEl}</span>
             </div>
             <div className="lv-sb-team away">
-              <b title={m.away}><span className="hide-sm">{m.away}</span><span className="show-sm">{codes[1]}</span></b>
-              <AwayCrest ctx={ctx} name={m.away} className="lv-sb-crest" />
+              <b title={teamName[R]}><span className="hide-sm">{teamName[R]}</span><span className="show-sm">{teamCode[R]}</span></b>
+              {crestOf(R, 'lv-sb-crest')}
             </div>
           </div>
           <div className="lv-sb-facts">
-            <ScoreFacts shown={shown} side="home" />
-            <ScoreFacts shown={shown} side="away" />
+            <ScoreFacts shown={shown} side={L} pos="home" />
+            <ScoreFacts shown={shown} side={R} pos="away" />
           </div>
         </header>
 
@@ -821,12 +852,12 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
         </div>
 
         <div className={`lv-cols view-${viewNow} notes-${notesSide}`}>
-          <section className="lv-col home" aria-label={`Notes de ${m.home}`}>
+          <section className="lv-col home" aria-label={`Notes de ${teamName[L]}`}>
             <div className="lv-col-head">
-              <h3 className="pm-sh mark-head">{m.home}</h3>
+              <h3 className="pm-sh mark-head">{teamName[L]}</h3>
               <span className="lv-col-sub">Notes du match</span>
             </div>
-            <TeamNotes rows={homeRows} shown={shown} side="home" fitOf={fitOf} names={names} />
+            <TeamNotes rows={L === 'home' ? homeRows : awayRows} shown={shown} side={L} fitOf={L === 'home' ? fitOf : null} names={names} />
           </section>
           <section className="lv-mid" aria-label="Statistiques et fil du match">
             <div className="lv-mid-tabs" role="tablist" aria-label="Statistiques ou fil">
@@ -835,23 +866,23 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
               ))}
             </div>
             <div className="lv-sec stats">
-              <LiveStats st={st} poss={poss} />
+              <LiveStats st={st} poss={poss} flip={flip} />
               {prono}
-              <Momentum shown={shown} upTo={slotOf(clockRef.current, half)} possHalf={m.stats.possHalf} names={[m.home, m.away]} codes={codes} />
+              <Momentum shown={shown} upTo={slotOf(clockRef.current, half)} possHalf={m.stats.possHalf} names={[m.home, m.away]} codes={codes} flip={flip} />
             </div>
             <div className="lv-sec feed">
               <ol className="feed-list">{shown.map((e) => <EventRow key={keyOf(e)} e={e} />)}</ol>
             </div>
           </section>
-          <section className="lv-col away" aria-label={`Notes de ${m.away}`}>
+          <section className="lv-col away" aria-label={`Notes de ${teamName[R]}`}>
             <div className="lv-col-head">
-              <h3 className="pm-sh mark-head">{m.away}</h3>
+              <h3 className="pm-sh mark-head">{teamName[R]}</h3>
               <span className="lv-col-sub">Notes du match</span>
             </div>
-            <TeamNotes rows={awayRows} shown={shown} side="away" names={names} />
+            <TeamNotes rows={R === 'home' ? homeRows : awayRows} shown={shown} side={R} fitOf={R === 'home' ? fitOf : null} names={names} />
           </section>
           <div className="lv-notes-switch" role="tablist" aria-label="Équipe">
-            {[['home', m.home], ['away', m.away]].map(([id, label]) => (
+            {[['home', teamName[L]], ['away', teamName[R]]].map(([id, label]) => (
               <button key={id} role="tab" aria-selected={notesSide === id} className={notesSide === id ? 'on' : ''} onClick={() => setNotesSide(id)}>{label}</button>
             ))}
           </div>
@@ -860,10 +891,10 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
 
       {/* pendant un temps fort : le score façon télé au-dessus de la 3D */}
       <header className="lv-top">
-        <div className="lv-bug" aria-label={`${m.home} ${goalsH}, ${m.away} ${goalsA}`}>
-          <span className="lv-team home"><HomeCrest state={state} name={m.home} className="lv-crest" /><b title={m.home}>{codes[0]}</b></span>
-          <span className="lv-score"><b key={`h${goalsH}`}>{goalsH}</b><i>-</i><b key={`a${goalsA}`}>{goalsA}</b></span>
-          <span className="lv-team away"><b title={m.away}>{codes[1]}</b><AwayCrest ctx={ctx} name={m.away} className="lv-crest" /></span>
+        <div className="lv-bug" aria-label={`${teamName[L]} ${teamGoals[L]}, ${teamName[R]} ${teamGoals[R]}`}>
+          <span className="lv-team home">{crestOf(L, 'lv-crest')}<b title={teamName[L]}>{teamCode[L]}</b></span>
+          <span className="lv-score"><b key={`${L}${teamGoals[L]}`}>{teamGoals[L]}</b><i>-</i><b key={`${R}${teamGoals[R]}`}>{teamGoals[R]}</b></span>
+          <span className="lv-team away"><b title={teamName[R]}>{teamCode[R]}</b>{crestOf(R, 'lv-crest')}</span>
         </div>
         <span className={`lv-clock is-${phase}`}>{clockEl}</span>
       </header>
@@ -874,7 +905,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
         </div>
       )}
 
-      {banner && <GoalBanner key={`${banner.half}-${banner.at}`} banner={banner} state={state} m={m} shown={shown} codes={codes} />}
+      {banner && <GoalBanner key={`${banner.half}-${banner.at}`} banner={banner} state={state} m={m} shown={shown} codes={codes} flip={flip} />}
 
       {phase === 'playing' && (hl ? (
         <div className="live-controls lv-controls">

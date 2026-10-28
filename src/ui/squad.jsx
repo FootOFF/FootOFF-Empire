@@ -241,7 +241,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
       id={mode === 'mercato' ? 'mercato' : 'squad'}
       size="lg"
       title={tab === 'market' ? 'Mercato' : 'Effectif'}
-      eyebrow={<>{squad.length}/{SQUAD_MAX} joueurs<span className="hide-sm"> · {divisionOf(state).name}</span></>}
+      eyebrow={<>{squad.length}/{SQUAD_MAX} joueurs<span className="hide-sm"> · {divisionOf(state).name}</span> · saison {state.seasonNumber}</>}
       money={state.money}
       onClose={onClose}
       onEscape={onEscape}
@@ -578,11 +578,11 @@ function ContractBlock({ state, p, onRenew }) {
     <section className="sh-sec sh-contract">
       <div className="sh-row">
         <span className="sh-cap">Contrat</span>
-        <span className="sh-pot">{last ? <b className="amber">Dernière année</b> : <>encore <b>{left}</b> ans</>}</span>
+        <span className="sh-pot">Saison en cours : <b>{state.seasonNumber}</b></span>
       </div>
       <div className="sh-deal">
         <div><b>{fmtMoney(p.deal.wage)}</b><span>par saison</span></div>
-        <div><b className={last ? 'amber' : ''}>Saison {p.deal.until}</b><span>fin du contrat</span></div>
+        <div><b className={last ? 'amber' : ''}>Saison {p.deal.until}</b><span>{last ? <>fin du contrat · <em className="amber">dernière année</em></> : `fin du contrat · encore ${left} ans`}</span></div>
         {clauseOpen(state) || p.deal.clause
           ? <div><b>{p.deal.clause ? `+${Math.round(p.deal.clause * 100)} %` : 'Aucune'}</b><span>clause de montée</span></div>
           : <div><b>Saison {p.deal.since}</b><span>signé en</span></div>}

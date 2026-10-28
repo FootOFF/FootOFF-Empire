@@ -890,6 +890,25 @@ Aperçus : `?ecran=marche`, `transferts`, `negociation`, `contre-offre`, `suivis
 folle d'un géant européen pour une star de 21 ans), `encheres`, `vente`, `vente-negociation`, `vente-conclue`,
 `bilan-mercato`. Contrôle des chances de la vente : `tmp/ph3/salecheck.js`.
 
+### Forme, rotation, matchs à l'extérieur, saison en cours (0.8.1)
+
+Demandes de l'utilisateur (2026-10-28), choix faits sur propositions :
+- Forme (`formFactor`, players.js) : la moyenne des notes des derniers matchs (deux au moins) pèse sur le niveau en match
+  avec la condition (`factorAt`, live.js), ±4 % au plus autour de 6,2 (forme moyenne mesurée sur 40 saisons simulées ;
+  huit joueurs sur dix entre 5,5 et 6,8). « Meilleur onze », le pronostic et l'avant-match (« forme +0,1 » à côté de la
+  fatigue) en tiennent compte. Un joueur venu d'un ami en ligue n'a pas de forme (elle ne voyage pas dans les feuilles
+  d'équipe) : les résultats calculés par chaque ami restent identiques.
+- « Faire tourner » (`rotateLineup`, tactics.js ; bouton à côté de « Meilleur onze ») : chaque titulaire sous 75 % de
+  condition cède sa place au meilleur remplaçant reposé qui joue ce poste (naturel ou de dépannage) ; le bouton dit
+  combien il en repose et disparaît s'il n'y a rien à faire.
+- À l'extérieur, l'équipe qui reçoit à gauche partout (calendrier et son affiche aux couleurs inversées, avant-match,
+  direct, bandeau télé, bandeau du but, notes, statistiques, après-match, dernier match de la Saison, Stats), score dans
+  l'ordre du football (`homeFirst`, `scoreText`, format.js ; `VersusBar` `flip`). Le moteur garde notre club du côté
+  « home » : seul l'affichage s'inverse (`flip`, LiveMatch). Les textes du journal gardent notre score d'abord. En ligue
+  entre amis, un match chez un ami est marqué `away` pour l'affichage, sans toucher à l'économie.
+- Saison en cours : en tête du bloc Contrat de la fiche, de l'onglet Contrats de la Direction, d'une prolongation, dans
+  la durée d'un contrat (« en cours : saison 2 · fin : saison 4 ») et dans l'en-tête de l'Équipe et du Mercato.
+
 ### Contrats et salaires (0.8.0)
 
 Demande de l'utilisateur (2026-10-28) : des négociations et des salaires réalistes, sans moral ni temps de jeu promis.
