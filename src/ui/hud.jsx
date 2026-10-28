@@ -8,7 +8,7 @@ import { awayElevenOf, prematchOdds } from '../game/live';
 import { matchContext, standingsOf } from '../game/season';
 import { ClubCrest, Crest } from './crest';
 import { AnimatedMoney } from './moneyfx';
-import { roundPercents } from './format';
+import { fmtMoney, roundPercents } from './format';
 import {
   IconCal, IconCheck, IconChevron, IconCoin, IconEmpire, IconMenu, IconMoon, IconPlay, IconStadium, IconStar, IconSun,
   IconTarget, IconTrophy, IconUsers, IconClock, IconEye, IconCrane, IconStaff, IconClose, IconTransfer, IconShield,
@@ -17,6 +17,7 @@ import { sectionOf } from './nav';
 import { clubStars } from '../game/crest';
 import { useFitText } from './fittext';
 import { deadlineText } from '../game/league';
+import { duesNow } from '../game/advice';
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran, en plaques façon habillage télé (docs/DESIGN.md).
 
@@ -29,6 +30,7 @@ const ordinal = (n) => <>{n}<sup>{n === 1 ? 'er' : 'e'}</sup></>;
 export function TopHud({ state, onMenu, onFinances, onReputation, onTable }) {
   const div = divisionOf(state);
   const rl = repLevel(state.reputation); // statut de notoriété et avancée vers le suivant (reputation.js)
+  const due = duesNow(state); // salaires et entretien à payer au bilan, et ce qui reste disponible (economy.js)
   const rounds = state.schedule.length;
   const round = Math.min(state.round + 1, rounds); // journée à jouer (la dernière une fois le championnat fini)
   const rank = state.table[0].played ? standingsOf(state).findIndex((t) => t.i === 0) + 1 : null; // avant la 1re journée : « – »
@@ -48,9 +50,14 @@ export function TopHud({ state, onMenu, onFinances, onReputation, onTable }) {
         </button>
       </div>
       <div className="hud-bug hud-res" aria-label="Ressources">
-        <button className={`hud-cell hud-money ${state.money < 0 ? 'neg' : ''}`} onClick={onFinances} title="Trésorerie : voir les finances" aria-label="Trésorerie : voir les finances" data-money-target>
+        <button className={`hud-cell hud-money ${state.money < 0 ? 'neg' : ''}`} onClick={onFinances} title={`Trésorerie : ${fmtMoney(due.total)} à payer en fin de saison, dont ${fmtMoney(due.owed)} déjà dus ; ${fmtMoney(due.available)} disponibles · voir les finances`}
+          aria-label={`Trésorerie : ${fmtMoney(state.money)} ; à payer en fin de saison : ${fmtMoney(due.total)}, dont ${fmtMoney(due.owed)} déjà dus ; disponible : ${fmtMoney(due.available)}. Voir les finances`} data-money-target>
           <IconCoin />
-          <span className="hud-stack"><small>Trésorerie</small><b className="hud-val"><AnimatedMoney value={state.money} /></b></span>
+          <span className="hud-stack">
+            <small>Trésorerie</small>
+            <b className="hud-val"><AnimatedMoney value={state.money} /></b>
+            <em className={`hud-avail ${due.available < 0 ? 'neg' : ''}`}><span className="hide-sm">disponible</span><span className="show-sm">dispo</span> {fmtMoney(due.available)}</em>
+          </span>
         </button>
         <button className="hud-cell hud-rep" onClick={onReputation} aria-label={`Notoriété : ${rl.level.name}, réputation ${Math.round(state.reputation)}`}
           title={`${rl.level.name}${rl.next ? ` · prochain statut : ${rl.next.name} à ${rl.next.min} de réputation` : ''} · voir ce qu’elle apporte`}>
@@ -270,7 +277,7 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
         <strong className="hud-match-title" ref={titleRef} title={opp.name}>{opp.name}</strong>
         <span className="hm-odds" title={`Pronostic : victoire ${w.label}, nul ${d.label}, défaite ${l.label}`}>
           <span className="tri" aria-hidden="true"><i style={{ flexGrow: odds.win * 100 }} /><i style={{ flexGrow: odds.draw * 100 }} /><i style={{ flexGrow: odds.loss * 100 }} /></span>
-          <b>{w.label}</b> de victoire
+          <span className="hm-odds-text"><b>{w.label}</b> de victoire</span>
         </span>
       </div>
       {league ? (

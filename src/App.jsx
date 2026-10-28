@@ -5,7 +5,7 @@ import {
 import { staffOn } from './game/training';
 import { BUILDINGS, DIVISIONS, upgradeCost } from './game/constants';
 import { fmtMoney } from './ui/format';
-import { withArticle } from './game/names';
+import { clubAfter, withArticle } from './game/names';
 import { dealOnScreen, leagueNote } from './ui/mercato';
 import { clearGame, clearLive, decodeCode, exportCode, importSave, lastLoad, loadGame, loadLive, saveGame } from './game/save';
 import { LIVE_VERSION, liveKeyOf } from './game/live';
@@ -35,11 +35,13 @@ import { MedicalView } from './ui/medical';
 import { LeagueView } from './ui/league';
 import { deadlineText, leagueOpen } from './game/league';
 import { LeagueError, kickoffAt, leagueResults, myLeagues, pulseUrgent, refreshLeague, sendMove, sendSheet, takeInvite, userActive, watchPulse } from './game/leagueNet';
-import { applyLeagueRound, createLeagueClub, leagueClubProgress, leagueRequest, loadLeagueClub, myReplay, readLeagueClub, saveLeagueClub, settleLeague, syncLeagueClub, teamSheet } from './game/leagueClub';
+import { applyLeagueRound, closeGoneDeals, createLeagueClub, leagueClubProgress, leagueRequest, loadLeagueClub, myReplay, readLeagueClub, saveLeagueClub, settleLeague, syncLeagueClub, teamSheet } from './game/leagueClub';
 import { adoptPulled, cloudNote, cloudPlan, isPushing, markUnreadable, playedPrint, pullClub, pushClub, savedWhen, stageOf, syncOf } from './game/leagueCloud';
 import ConfirmDialog from './ui/confirm';
 import { Presence } from './ui/presence';
 import { LoadingScreen } from './ui/loading';
+import { knowCrests } from './game/crest';
+import { setOurKit } from './game/kits';
 import { TitleScreen } from './ui/title';
 import { PauseMenu } from './ui/pause';
 import { setUiSound } from './ui/console';
@@ -103,6 +105,8 @@ export default function App({ preview = null }) {
     return { state: st, ui: previewUi(preview, st) };
   });
   const [state, setState] = useState(boot.state);
+  knowCrests(state?.league ? state.rivals : null); // écussons des amis, sur tous les écrans (game/crest.js)
+  setOurKit(state?.crest); // notre tenue aux couleurs de l'écusson : 3D, portraits (game/kits.js)
   const [screen, setScreen] = useState(boot.ui.screen || (preview ? 'game' : 'title')); // 'title' | 'game'
   const [titleView, setTitleView] = useState(boot.ui.titleView || 'menu'); // menu, réglages, création du club
   const [booted, setBooted] = useState(!!preview); // écran de chargement terminé (barre à 100 %)
@@ -294,6 +298,7 @@ export default function App({ preview = null }) {
     if (base?.tutorial) base.tutorial.just = []; // seules les primes gagnées par cette action s'annoncent, une fois
     const ns = fn(base);
     if (!ns) { notify({ kind: 'warn', title: failMsg || 'Action impossible.' }); return false; }
+    if (ns.league) closeGoneDeals(ns); // un joueur parti autrement rompt ses négociations entre amis
     setState(advanceTutorial(ns)); // une étape du tutoriel se valide dès que son objectif est atteint
     for (const r of ns.tutorial?.just || []) { // et sa prime s'annonce
       notify({ kind: 'success', eyebrow: 'Étape réussie', title: `${r.label} : +${r.money.toLocaleString('fr-FR')} €`, text: 'La prime est versée au club.' });
@@ -741,9 +746,15 @@ export default function App({ preview = null }) {
           : { kind: 'warn', eyebrow: state.league.name, title: res?.taken ? 'Trop tard' : 'Signature non confirmée', text: res?.taken ? `Un autre club de la ligue a signé ${item.n} juste avant toi.` : leagueNote(res?.error, 'sign'), key: 'league-sign' });
       }
       if (item.k === 'answer' && res?.status === 'done') {
-        const who = state.players.find((p) => p.lid === item.lid)?.name || 'Le joueur';
-        const to = state.league.clubs.find((c) => c.slot === item.b)?.name;
-        notify({ kind: 'success', eyebrow: state.league.name, title: 'Transfert conclu', text: `${who} rejoint ${to ? withArticle(to) : 'le club de ton ami'} : ${fmtMoney(item.fee)} arrivent sur ton compte.`, key: 'league-sale' });
+        const fee = Number.isSafeInteger(res.fee) ? res.fee : item.fee;
+        if (item.role === 'b') {
+          const from = state.league.clubs.find((c) => c.slot === item.s)?.name;
+          notify({ kind: 'success', eyebrow: state.league.name, title: 'Transfert conclu', text: `${item.n || 'Le joueur'} arrive ${from ? clubAfter('de ', from) : 'du club de ton ami'} : ${fmtMoney(fee)} versés.`, key: 'league-sale' });
+        } else {
+          const who = state.players.find((p) => p.lid === item.lid)?.name || 'Le joueur';
+          const to = state.league.clubs.find((c) => c.slot === item.b)?.name;
+          notify({ kind: 'success', eyebrow: state.league.name, title: 'Transfert conclu', text: `${who} rejoint ${to ? withArticle(to) : 'le club de ton ami'} : ${fmtMoney(fee)} arrivent sur ton compte.`, key: 'league-sale' });
+        }
       }
       if (item.k !== 'sign' && res?.error) {
         notify({

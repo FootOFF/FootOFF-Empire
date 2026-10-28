@@ -1024,6 +1024,33 @@ ouverte depuis la Direction (panneau étroit) est posée sur tout l'écran. Dur�
 « saison N ». Fiche : bloc Contrat (salaire, fin, clause) et « Prolonger son contrat ». Effectif : fin du contrat sous
 le salaire dans le tableau (PC), « Dernière année de contrat » sur la carte des seuls joueurs concernés.
 
+## Économie, négociation entre amis, couleurs du club (0.8.8)
+
+Demandes du PDG (2026-10-28), réponses à ses questions : salaires « fin de saison, avec réserve », « négociation libre »,
+« tous les clubs », « nuancier complet, maillot assorti » ; puis « Onze frais » (80 % de condition, la forme ne pèse
+jamais en match) et aucun changement d'écusson en cours de partie.
+- Trésorerie : sous la caisse du bandeau, « dispo » (la caisse moins ce qui est déjà dû) en petit, gris ou rouge. Les
+  Finances ajoutent « À payer » (fin de saison, dont déjà dus). Négociations et travaux : ligne « Disponible » et un
+  avertissement or (`.ng-warn.soft`, `.ins-hint.warn`) quand un achat entame le dû ; le rouge reste à la saison dans le
+  rouge.
+- Négociation entre amis (onglet Offres) : une rangée par négociation, prix sur la table, prix successifs en légende
+  (« 2 500 € → 4 000 € »), à son tour trois boutons (Accepter, Contre-offre, Refuser) qui tiennent sur une ligne au
+  téléphone ; la contre-offre se règle en place (− / montant / +, Envoyer, Annuler). En attente : « Rompre ».
+- Effectif d'un club (`.roster`) : feuille du bas ouverte d'un nom souligné d'or au classement ; écusson, nom, nombre de
+  joueurs et valeur, puis une rangée par joueur (médaille de niveau, poste, âge, valeur) ; « Faire une offre » (ami,
+  bouton plein) ou « Sa fiche » (ordinateur, bouton fantôme).
+- Couleurs : deux lignes du créateur d'écusson (Principale, Secondaire) avec une pastille ronde qui ouvre le sélecteur du
+  système ; « Fond » choisit laquelle remplit l'écusson. Symbole or en métal poli, sinon émail clair ou sombre ; liseré
+  argent si une couleur est claire et sans or. Tenue 3D : maillot principal, short et col secondaires (troisième
+  maillage instancié) ; l'adversaire passe à sa seconde couleur, puis blanc, marine, rouge ou vert si les maillots se
+  confondent sous les projecteurs.
+- Réglages : la ligne « Retour » (même style et même animation que les autres) est en tête, hors de la liste qui défile.
+- Transferts de la ligue (onglet Bilan, `.lt`) : au-dessus du bilan du club, les transferts conclus par les amis (saison
+  en cours et précédente, puces de saison), une rangée par transfert (médaille de niveau, « club de départ → club
+  d'arrivée », montant, journée), les nôtres bordés d'or. Offres faites : une seule rangée par joueur visé.
+- Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
+  était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
+
 ## Temps forts façon retransmission (0.8.7)
 
 Demande du PDG (2026-10-28) : « le ballon se téléporte trop, il y a trop d'incohérences, les actions ne sont pas

@@ -55,6 +55,8 @@ export const leagueState = (m, { teams = false, since = null } = {}) => {
   return call(`/${m.code}/state${q ? `?${q}` : ''}`, { auth: m });
 };
 export const leagueResults = (m, season) => call(`/${m.code}/results?season=${season}`, { auth: m });
+// Historique du mercato de la ligue (0.8.8) : les transferts conclus par les amis, saison en cours et précédente.
+export const leagueTransfers = (m) => call(`/${m.code}/transfers`, { auth: m });
 // Pouls (0.8.6) : une empreinte de ce qui change dans le championnat (arrivées, équipes validées, journée, offres et
 // réponses entre amis), de quelques octets ; relire l'état complet seulement quand elle change.
 export const leaguePulse = (m) => call(`/${m.code}/pulse`, { auth: m }).then((d) => d?.p ?? null);

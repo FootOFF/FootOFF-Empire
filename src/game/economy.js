@@ -167,11 +167,30 @@ export function seasonForecast(s, wages) {
   return { income, wages, upkeep, net: income - wages - upkeep, wageShare: wages / Math.max(1, income) };
 }
 
+// Salaires et entretien (0.8.8) : chaque journée de championnat en ajoute sa part (un septième, un quatorzième en Élite)
+// à ce que le club doit, payé en une fois au bilan de la saison (season.js). s.dues : ce qui est déjà dû { wages, upkeep }.
+// Un joueur ne coûte donc que les journées passées au club, et une recrue de mars ne paie pas une saison entière.
+export function accrueDues(s, wages, upkeep) {
+  const d = s.dues || (s.dues = { wages: 0, upkeep: 0 });
+  d.wages += wages;
+  d.upkeep += upkeep;
+}
+
+// À payer en fin de saison (total) : le dû, plus la part des journées restantes au train de vie actuel (wages : la masse
+// salariale d'une saison). Réellement disponible (available) : la caisse moins ce qui est déjà dû aux joueurs et pour
+// l'entretien ; les journées à venir se paieront avec leurs recettes.
+export function duesOf(s, wages) {
+  const len = leagueLength(s);
+  const left = Math.max(0, len - s.round);
+  const owed = s.dues || { wages: 0, upkeep: 0 };
+  const w = owed.wages + Math.round((wages * left) / len);
+  const u = owed.upkeep + Math.round((upkeepOf(s) * left) / len);
+  return { wages: w, upkeep: u, total: w + u, owed: owed.wages + owed.upkeep, left, len, available: s.money - owed.wages - owed.upkeep };
+}
+
 // Prévision de fin de saison (écran Finances) : trésorerie actuelle, plus les matchs restants, les sponsors (s'ils ne
 // sont pas déjà payés : depuis la 0.6.0, ils le sont à la reprise, season.js) et la prime au classement actuel, moins
-// les salaires et l'entretien qui restent à payer.
-// Les salaires et l'entretien se paient à chaque journée de championnat (un septième, un quatorzième en Élite) : il ne
-// reste à payer que la part des journées restantes. Un match à l'extérieur ne rapporte que ses droits TV.
+// les salaires et l'entretien à payer au bilan (duesOf). Un match à l'extérieur ne rapporte que ses droits TV.
 export function endOfSeasonForecast(s, position, wages) {
   const len = leagueLength(s);
   const left = Math.max(0, len - s.round);
@@ -185,12 +204,10 @@ export function endOfSeasonForecast(s, position, wages) {
   const sponsorsPaid = s.sponsorsPaid === s.seasonNumber;
   const sponsors = sponsorsPaid ? 0 : sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation);
   const prize = prizeFor(position, s.divisionIndex);
-  const upkeepAll = upkeepOf(s);
-  const wagesLeft = Math.round((wages * left) / len);
-  const upkeep = Math.round((upkeepAll * left) / len);
+  const due = duesOf(s, wages);
   return {
-    left, homes, len, perMatch, matches, sponsors, sponsorsPaid, prize, wages: wagesLeft, wagesSeason: wages, upkeep, upkeepSeason: upkeepAll,
-    end: s.money + matches + sponsors + prize - wagesLeft - upkeep,
+    left, homes, len, perMatch, matches, sponsors, sponsorsPaid, prize, wages: due.wages, wagesSeason: wages, upkeep: due.upkeep, upkeepSeason: upkeepOf(s),
+    due: due.total, owed: due.owed, available: due.available, end: s.money + matches + sponsors + prize - due.total,
   };
 }
 

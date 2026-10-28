@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Panel } from './panels';
 import { SectionHead } from './kit';
-import { ClubCrest, Crest, CrestArt } from './crest';
+import { COLOR_KEYS, ClubCrest, ColorValue, Crest, CrestArt } from './crest';
 import { CREST_ROWS } from './title';
 import { IconCheck, IconChevron, IconChevronLeft, IconClock, IconDice, IconPlay, IconPlus, IconRefresh, IconUsers } from './icons';
 import { mmss, useCountdown } from './hud';
@@ -33,7 +33,7 @@ const clean = (t) => String(t || '').replace(/\s+/g, ' ').trim();
 const okText = (t, max) => { const c = clean(t); return c.length >= 2 && c.length <= max && !/[<>]/.test(c); };
 const okPseudo = (p) => okText(p, 20) && clean(p).toLowerCase() !== AI_PSEUDO.toLowerCase();
 const plural = (n, one, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
-const LOGO_ROWS = CREST_ROWS.filter(([key]) => key !== 'ground'); // le fond du logo : les couleurs de la ligue
+const LOGO_ROWS = CREST_ROWS.filter(([key]) => key !== 'ground' && !COLOR_KEYS.includes(key)); // le logo : les couleurs de la ligue
 const LEAGUE_NAMES = [
   'Ligue du Quartier', 'Championnat des Copains', 'Trophée du Dimanche', 'Ligue de la Place', 'Coupe des Voisins',
   'Championnat du Vendredi', 'Ligue des Lumières', 'Ligue des Anciens', 'Trophée de la Rue', 'Ligue du Soir',
@@ -52,13 +52,14 @@ export function LeagueLogo({ name, settings, className = '', full = false }) {
   return <CrestArt spec={spec} initials={clubInitials(name)} name={name} short={name} full={full} className={`lig-logo ${className}`} title={`Logo : ${name}`} />;
 }
 
-// Club d'une ligue : l'écusson noir et or d'un ami, celui d'un club de l'ordinateur tiré de son nom.
+// Club d'une ligue : l'écusson d'un ami à ses couleurs, celui d'un club de l'ordinateur tiré de son nom.
 function ClubMark({ club, className = '' }) {
   return club.crest ? <ClubCrest crest={club.crest} name={club.name} className={className} /> : <Crest name={club.name} className={className} />;
 }
 
-// Une ligne de choix (style, forme, couleurs…) : flèches à la souris ou au doigt, gauche / droite au clavier.
-function PickRow({ label, list, value, onStep }) {
+// Une ligne de choix (style, forme, couleurs…) : flèches à la souris ou au doigt, gauche / droite au clavier. onPick :
+// une ligne de couleur, dont la pastille ouvre le sélecteur du système.
+function PickRow({ label, list, value, onStep, onPick = null }) {
   const cur = list.find(([id]) => id === value) || list[0];
   return (
     <div
@@ -73,7 +74,7 @@ function PickRow({ label, list, value, onStep }) {
     >
       <span className="ts-pick-label">{label}</span>
       <button type="button" tabIndex={-1} className="ts-pick-arrow" aria-label={`${label} précédent`} onClick={() => onStep(-1)}><IconChevronLeft /></button>
-      <span className="ts-pick-value">{cur[1]}</span>
+      {onPick ? <ColorValue value={value} label={label} onPick={onPick} /> : <span className="ts-pick-value">{cur[1]}</span>}
       <button type="button" tabIndex={-1} className="ts-pick-arrow" aria-label={`${label} suivant`} onClick={() => onStep(1)}><IconChevron /></button>
     </div>
   );
@@ -91,11 +92,13 @@ function CrestPicker({ crest, onChange, rows, preview, label, extra = null }) {
     <div className="ts-crest lig-crest">
       <div className="ts-crest-side">
         {preview}
-        <button type="button" className="ts-dice" onClick={() => { onChange(randomCrest()); uiSound('move'); }} aria-label="Écusson au hasard" title="Écusson au hasard"><IconDice /></button>
+        <button type="button" className="ts-dice" onClick={() => { onChange({ ...randomCrest(), primary: crest.primary, secondary: crest.secondary }); uiSound('move'); }} aria-label="Écusson au hasard" title="Écusson au hasard"><IconDice /></button>
       </div>
       <div className="ts-crest-rows">
         <span className="ts-field-label">{label}</span>
-        {rows.map(([key, lab, listOf]) => <PickRow key={key} label={lab} list={listOf(crest)} value={crest[key]} onStep={(d) => step(key, listOf(crest), d)} />)}
+        {rows.map(([key, lab, listOf]) => (
+          <PickRow key={key} label={lab} list={listOf(crest)} value={crest[key]} onStep={(d) => step(key, listOf(crest), d)} onPick={COLOR_KEYS.includes(key) ? (v) => onChange({ ...crest, [key]: v }) : null} />
+        ))}
         {extra}
       </div>
     </div>
@@ -135,7 +138,7 @@ function ClubFields({ pseudo, setPseudo, club, setClub, crest, setCrest, taken =
         crest={crest}
         onChange={setCrest}
         rows={CREST_ROWS}
-        label="Écusson · noir et or"
+        label="Écusson · or et noir FootOFF, ou tes couleurs"
         preview={<ClubCrest crest={crest} name={clean(club) || 'Ton club'} className="ts-crest-art" full title={`Écusson de ${clean(club) || 'ton club'}`} />}
       />
     </>
@@ -216,7 +219,7 @@ function CreateForm({ onDone }) {
   const [minute, setMinute] = useState(0);
   const [pseudo, setPseudo] = useState('');
   const [club, setClub] = useState(randomClubName);
-  const [crest, setCrest] = useState(() => randomCrest());
+  const [crest, setCrest] = useState(() => normalizeCrest(randomCrest()));
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState(null);
   const ok = okText(name, 40) && okPseudo(pseudo) && okText(club, 32);
@@ -289,7 +292,7 @@ function JoinForm({ initialCode, mine, onDone, onOpen }) {
   const [busy, setBusy] = useState(false);
   const [pseudo, setPseudo] = useState('');
   const [club, setClub] = useState(randomClubName);
-  const [crest, setCrest] = useState(() => randomCrest());
+  const [crest, setCrest] = useState(() => normalizeCrest(randomCrest()));
   const look = async (c) => {
     if (!isLeagueCode(c) || busy) return;
     setBusy(true);

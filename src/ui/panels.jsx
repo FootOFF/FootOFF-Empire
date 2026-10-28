@@ -12,10 +12,11 @@ import { STAGES_SHORT, STAGES, leagueLength, nextFixture, ofDiv } from '../game/
 import { prizeFor } from '../game/economy';
 import { clubAfter } from '../game/names';
 import { Portrait } from './portrait';
-import { useDialogFocus, useKeydown, useLeaving } from './presence';
+import { Presence, useDialogFocus, useKeydown, useLeaving } from './presence';
 import { uiSound } from './uisound';
 import { PHONE, useMedia, useSwipe } from './gestures';
 import { SeasonCalendar } from './calendar';
+import { ClubRoster } from './roster';
 import { SECTIONS, SectionPager, SectionTabs, sectionNear, sectionOf, useNav } from './nav';
 
 // Un panneau ou une fiche qui s'ouvre fait un léger souffle qui monte, qui descend quand il se ferme. D'un onglet à
@@ -119,8 +120,9 @@ const signed = (v) => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0');
 // Classement de la division (panneau Saison, et après chaque journée de championnat) : la zone de chaque place en
 // liseré à gauche (or : montée, bleu : Europe, rouge : descente ; la légende dessous), notre ligne dorée. Colonnes
 // G, N, P quand la saison les a comptés depuis la 1re journée. before : ordre des clubs avant la dernière journée
-// (indices) ; chaque club montre alors ce qu'il a gagné ou perdu de places.
-export function StandingsTable({ state, before = null }) {
+// (indices) ; chaque club montre alors ce qu'il a gagné ou perdu de places. onClub : ligue entre amis, chaque autre club
+// ouvre son effectif (0.8.8).
+export function StandingsTable({ state, before = null, onClub = null }) {
   const standings = standingsOf(state);
   const wdl = standings.every((t) => t.w != null && t.w + t.d + t.l === t.played);
   return (
@@ -147,7 +149,10 @@ export function StandingsTable({ state, before = null }) {
               )}
               <td className="t-club">
                 {t.i === 0 ? <ClubCrest crest={state.crest} name={t.name} className="t-crest" /> : <Crest name={t.name} className="t-crest" />}
-                <span className="t-name">{t.name}</span>{zone && <span className="sr-only">, zone de {ZONE_TAG[zone]}</span>}
+                {onClub && t.i !== 0
+                  ? <button type="button" className="t-name t-open" onClick={() => onClub(t.i)} title={`Voir l’effectif de ${t.name}`}>{t.name}</button>
+                  : <span className="t-name">{t.name}</span>}
+                {zone && <span className="sr-only">, zone de {ZONE_TAG[zone]}</span>}
               </td>
               <td>{t.played}</td>
               {wdl && <><td className="t-wdl">{t.w}</td><td className="t-wdl">{t.d}</td><td className="t-wdl">{t.l}</td></>}
@@ -183,6 +188,7 @@ export function ZoneLegend({ state }) {
 // sheet : la fiche joueur posée par-dessus (App) ; sheetOpen : elle a la main sur Échap
 export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = null, onOpenMatch, onPlay, onPlayerSheet, sheet = null, sheetOpen = false }) {
   const standings = standingsOf(state);
+  const [roster, setRoster] = useState(null); // ligue entre amis : club dont l'effectif est ouvert (index du classement)
   const div = divisionOf(state);
   const lm = state.lastMatch;
   const lmPens = !!lm?.pens; // coupe : égalité tranchée aux tirs au but
@@ -211,8 +217,13 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
       title={`Saison ${state.seasonNumber} · ${div.name}`}
       eyebrow={`${div.name} · Saison ${state.seasonNumber} · ${state.round ? `journée ${Math.min(state.round, leagueLength(state))} / ${leagueLength(state)}` : 'avant la 1re journée'}`}
       onClose={onClose}
-      onEscape={sheetOpen ? () => {} : undefined}
-      overlay={sheet}
+      onEscape={sheetOpen || roster !== null ? () => {} : undefined}
+      overlay={(
+        <>
+          <Presence>{roster !== null && state.league && <ClubRoster state={state} index={roster} blocked={sheetOpen} onClose={() => setRoster(null)} onPlayer={onPlayerSheet} />}</Presence>
+          {sheet}
+        </>
+      )}
       toolbar={(
         <>
           <div className="season-stats">
@@ -230,7 +241,7 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
         <div className="season-cols">
           <section className="season-plate season-table" aria-label={`Classement ${ofDiv(div.name)}`}>
             <SectionHead label={`Classement · ${div.name}`} aside={me.played ? `après ${me.played} journée${me.played > 1 ? 's' : ''} sur ${leagueLength(state)}` : 'avant la 1re journée'} />
-            <StandingsTable state={state} />
+            <StandingsTable state={state} onClub={state.league ? setRoster : null} />
             <ZoneLegend state={state} />
           </section>
 

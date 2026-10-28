@@ -204,13 +204,11 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const friends = !!state.league; // partie de championnat entre amis : son match se joue sans elle (plans de mi-temps)
   const [plans, setPlans] = useState(() => ({ ...(state.league?.plans || {}) })); // plans de mi-temps (ligue)
   const [plansOpen, setPlansOpen] = useState(null); // situation ouverte dans la fenêtre des plans
-  // niveau de l'onze au coup d'envoi, condition physique et forme comprises (comme le pronostic et le meilleur onze) ;
-  // au repos, il vaudrait `rested` : la fatigue et la forme se lisent à côté du niveau, les pourcentages ne les cachent plus
+  // niveau de l'onze au coup d'envoi, condition physique comprise (comme le pronostic) ; au repos, il vaudrait `rested` :
+  // la fatigue se lit à côté du niveau. La forme ne pèse plus en match (0.8.8).
   const rating = lineupRating(state.players, lineup, formation, fitWeight);
   const rested = lineupRating(state.players, lineup, formation);
-  const fitOnly = lineupRating(state.players, lineup, formation, (p) => fitFactor(fitOf(p)));
-  const tired = rested - fitOnly >= 0.05 ? rested - fitOnly : 0;
-  const formGap = Math.abs(rating - fitOnly) >= 0.05 ? rating - fitOnly : 0;
+  const tired = rested - rating >= 0.05 ? rested - rating : 0;
   const home = ctx.home !== false; // à l'extérieur (Élite) : l'avantage du terrain est à l'adversaire, pronostic compris
   // même moteur que le pronostic (calcul exact, expulsions à venir comprises : gardé tant que rien ne change)
   // le onze adverse et ses signes (0.8.5) : ils comptent dans le pronostic et se lisent sous la tactique
@@ -293,7 +291,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           <section className="pm-xi glass" aria-label="Onze de départ">
             <div className="pm-xi-head">
               <h3 className="pm-sh mark-head">Onze de départ · <span className="nowrap">{form.name}</span></h3>
-              <span className="pm-level">Niveau <b>{fmtRating(rating)}</b>{tired > 0 && <em className="pm-tired" title={`${fmtRating(rested)} au repos`}>fatigue −{fmtRating(tired)}</em>}{formGap !== 0 && <em className={`pm-form ${formGap > 0 ? 'up' : 'down'}`} title="Moyenne des notes des derniers matchs">forme {formGap > 0 ? '+' : '−'}{fmtRating(Math.abs(formGap))}</em>}</span>
+              <span className="pm-level">Niveau <b>{fmtRating(rating)}</b>{tired > 0 && <em className="pm-tired" title={`${fmtRating(rested)} au repos`}>fatigue −{fmtRating(tired)}</em>}</span>
               <LineupActions state={state} lineup={lineup} formation={formation} onApply={setLineup} />
               <button type="button" className="pm-fold" onClick={() => setBoard(false)}>Replier</button>
             </div>
@@ -301,7 +299,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           </section>
         ) : (
           <div className="pm-compo">
-            <CompoCard title="Composition" detail={`Onze en ${form.name} · niveau ${fmtRating(rating)}${tired || formGap ? ` (${[tired ? `fatigue −${fmtRating(tired)}` : '', formGap ? `forme ${formGap > 0 ? '+' : '−'}${fmtRating(Math.abs(formGap))}` : ''].filter(Boolean).join(', ')})` : ''}`} onOpen={() => setBoard(true)} />
+            <CompoCard title="Composition" detail={`Onze en ${form.name} · niveau ${fmtRating(rating)}${tired ? ` (fatigue −${fmtRating(tired)})` : ''}`} onOpen={() => setBoard(true)} />
             <LineupActions state={state} lineup={lineup} formation={formation} onApply={setLineup} />
           </div>
         )}
@@ -440,18 +438,21 @@ function Momentum({ shown, upTo, possHalf, names, codes, flip = false }) {
 }
 
 // Bandeau du but, façon habillage télé : « BUT ! », le buteur (portrait, minute, passeur, penalty, combientième but de
-// sa saison), le score.
-function GoalBanner({ banner, state, m, shown, codes, flip = false }) {
+// sa saison), le score. Tout se lit du côté qui marque (banner.side), pas du nôtre : un match revu où l'on jouait à
+// l'extérieur (replay, side « away ») a l'équipe qui reçoit dans state et nous dans m.awayRoster (0.8.8 : le but d'un
+// ami s'affichait à notre nom).
+function GoalBanner({ banner, state, m, shown, codes, flip = false, replay = false }) {
   const ours = banner.ours;
-  const p = ours ? state.players.find((q) => q.id === banner.playerId) : (m.awayRoster || []).find((q) => q.name === banner.player);
-  const nth = ours && p ? (p.season?.goals || 0) + shown.filter((e) => e.type === 'goal' && e.playerId === banner.playerId
+  const home = banner.side === 'home';
+  const p = home ? state.players.find((q) => q.id === banner.playerId) : (m.awayRoster || []).find((q) => q.name === banner.player);
+  const nth = home && !replay && p ? (p.season?.goals || 0) + shown.filter((e) => e.type === 'goal' && e.playerId === banner.playerId
     && (e.half < banner.half || (e.half === banner.half && e.at <= banner.at))).length : 0;
   const facts = [`${banner.minute}′`, banner.q === 'pen' && 'sur penalty', banner.assist && `passe ${deName(banner.assist)}`, nth && `${nth === 1 ? 'premier' : `${nth}e`} but de la saison`].filter(Boolean);
   return (
     <div className={`lv-goal ${ours ? 'ours' : 'theirs'} ${banner.fast ? 'fast' : ''}`} role="status">
-      <span className="lv-goal-word">{ours ? 'But !' : `But ${codes[1]}`}</span>
+      <span className="lv-goal-word">{ours ? 'But !' : `But ${codes[home ? 0 : 1]}`}</span>
       <span className="lv-goal-who">
-        {p && <Portrait p={p} club={ours ? null : m.away} size={64} />}
+        {p && <Portrait p={p} club={home ? (replay ? m.home : null) : m.away} size={64} />}
         <span className="lv-goal-text"><b>{banner.player}</b><small>{facts.join(' · ')}</small></span>
       </span>
       <span className="lv-goal-score">{flip ? `${banner.score.away}-${banner.score.home}` : `${banner.score.home}-${banner.score.away}`}</span>
@@ -1106,7 +1107,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
         </div>
       )}
 
-      {banner && <GoalBanner key={`${banner.half}-${banner.at}`} banner={banner} state={state} m={m} shown={shown} codes={codes} flip={flip} />}
+      {banner && <GoalBanner key={`${banner.half}-${banner.at}`} banner={banner} state={state} m={m} shown={shown} codes={codes} flip={flip} replay={!!replay} />}
 
       {phase === 'playing' && (hl ? (
         <div className="live-controls lv-controls">

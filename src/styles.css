@@ -218,6 +218,8 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .hud-res .hud-cell > svg { width: 22px; height: 22px; color: var(--gold-light); flex-shrink: 0; }
 .hud-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; }
 .hud-money.neg, .hud-money.neg svg { color: var(--red); }
+.hud-avail { font-style: normal; font-size: 11px; font-weight: 600; line-height: 1; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.hud-avail.neg { color: var(--red); }
 .hud-repline { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .hud-rep-bar { width: 74px; min-width: 24px; flex-shrink: 1; height: 4px; background: rgba(255, 255, 255, .1); overflow: hidden; }
 .hud-rep-bar i { display: block; height: 100%; background: var(--gold-grad); }
@@ -1691,8 +1693,11 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .lv-goal-text { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .lv-goal-text b { font-family: var(--font-disp); font-weight: 700; font-size: 46px; line-height: .9; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lv-goal-text small { font-size: 14px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* score : son biais suit exactement celui de la pièce d'à côté (0.8.8, le PDG voyait un coin de fond dépasser entre
+   « BUT » et le score) ; la découpe locale lit --slant ici, var(--skew) le lirait à la racine (10 px) */
 .lv-goal-score {
-  --slant: 14px; display: grid; place-items: center; flex-shrink: 0; margin-left: -12px; padding: 0 30px; background: var(--plate-3); clip-path: var(--skew);
+  --slant: 14px; display: grid; place-items: center; flex-shrink: 0; margin-left: calc(-1 * var(--slant)); padding: 0 calc(18px + var(--slant)); background: var(--plate-3);
+  clip-path: polygon(var(--slant) 0, 100% 0, calc(100% - var(--slant)) 100%, 0 100%);
   font-family: var(--font-disp); font-weight: 700; font-size: 48px; line-height: 1; font-variant-numeric: tabular-nums;
 }
 @keyframes lg-in { 0% { opacity: 0; transform: translateX(-40px); } 8% { opacity: 1; transform: none; } 86% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateX(-16px); } }
@@ -1999,7 +2004,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
   .pm-go { /* bas négatif : jusqu'au bord de l'écran, sous la marge basse de la page qui défile (28 px) */
     position: sticky; bottom: calc(-28px - var(--hb)); margin: 0 -12px calc(-28px - var(--hb));
     padding: 10px 12px calc(40px + var(--hb) + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(180deg, rgba(6, 7, 8, 0), rgba(6, 7, 8, .94) 18%);
+    background: linear-gradient(180deg, rgba(6, 7, 8, 0), rgba(6, 7, 8, .94) 18%, rgb(6, 7, 8) 32%); /* opaque sous le bouton : la liste ne s'y lit plus (0.8.8) */
   }
   .pm-odds { padding: 12px 14px 14px; gap: 12px; background: var(--plate-solid); }
   .odds-legend b { font-size: 30px; }
@@ -2059,9 +2064,9 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
     left: var(--gap); right: var(--gap); max-width: none; height: auto; flex-wrap: wrap; align-items: stretch;
     bottom: calc(var(--hud-bottom) + var(--lc-h) + var(--sheet-h) + 12px);
   }
-  .lv-goal-word { order: 1; height: 56px; padding: 0 34px 0 18px; font-size: 44px; }
+  .lv-goal-word { order: 1; height: 56px; padding: 0 34px 0 18px; font-size: 44px; margin-right: 0; } /* le score se pose sur son biais (sa marge du PC le recouvrait de 37 px) */
   .lv-goal.theirs .lv-goal-word { font-size: 30px; }
-  .lv-goal-score { order: 2; height: 56px; padding: 0 22px; font-size: 34px; margin-left: -14px; }
+  .lv-goal-score { order: 2; --slant: 18px; height: 56px; padding: 0 calc(10px + var(--slant)); font-size: 34px; margin-left: calc(-1px - var(--slant)); } /* même biais que « BUT », 1 px dessous */
   .lv-goal-who { order: 3; flex: 1 1 100%; height: 72px; padding: 0 18px 0 12px; gap: 14px; clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%); }
   .lv-goal-who .pf { width: 48px; height: 48px; }
   .lv-goal-text b { font-size: 30px; }
@@ -2210,6 +2215,8 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
   .hud-rank small { font-size: 11px; }
   .hud-rank b { font-size: 26px; }
   .hud-res .hud-stack small, .hud-rep-next { display: none; }
+  .hud-money .hud-stack { gap: 3px; }
+  .hud-avail { font-size: 11px; }
   .hud-res .hud-cell > svg { width: 20px; height: 20px; }
   .hud-val { font-size: 24px; }
   .hud-rep-bar { width: 56px; }
@@ -2782,6 +2789,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .cr-attrs i b { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
 .cr-attrs em { font-style: normal; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
 .ins-hint.risk { color: var(--red); }
+.ins-hint.warn { color: var(--gold-light); }
 
 /* =========================================================== composition interactive (lineup.jsx LineupBoard)
    Terrain (onglet Composition, avant-match, mi-temps) : on glisse un joueur sur un poste ou un coéquipier, ou on
@@ -4009,6 +4017,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ng-costs dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 .ng-costs dd.down { color: var(--red); }
 .ng-warn { font-size: var(--t-xs); color: #f0b3ab; }
+.ng-warn.soft { color: var(--gold-light); }
 .ng-foot { position: sticky; bottom: 0; z-index: 1; margin: auto calc(-1 * var(--px)) 0; padding: var(--s-3) var(--px) var(--s-5); display: flex; flex-direction: column; gap: var(--s-2); border-top: 1px solid var(--line); background: rgb(13, 13, 14); }
 .ng-tries { font-size: var(--t-xs); color: var(--muted); text-align: center; }
 .ng-block, .ng-closed { font-size: var(--t-sm); color: #f0b3ab; text-align: center; }
@@ -5418,3 +5427,41 @@ html, body { overscroll-behavior: none; }
 /* Mercato d'une ligue (0.8.3) : l'accord trouvé attend la confirmation de la ligue (le premier club qui signe l'emporte) */
 .ng-win-ico.wait { background: var(--gold-soft); color: var(--gold-light); box-shadow: inset 0 0 0 1px var(--gold-line); }
 .ng-win-ico.lost { background: rgba(238, 142, 131, .1); color: var(--red); box-shadow: inset 0 0 0 1px rgba(224, 122, 111, .4); }
+
+/* effectif d'un autre club de la ligue (roster.jsx, 0.8.8) : ouvert depuis le classement */
+.t-open { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; text-decoration: underline; text-decoration-color: var(--gold-line); text-underline-offset: 3px; }
+@media (hover: hover) { .t-open:hover { color: var(--gold-light); } }
+.ro-head { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-3); }
+.ro-head .ro-crest { width: 56px; height: 64px; flex-shrink: 0; }
+.ro-head h3 { margin: 0; font-family: var(--font-disp); font-size: var(--d-lg); line-height: 1.1; }
+.ro-head span { font-size: var(--t-sm); color: var(--muted); }
+.ro-rows .mc-row.muted { opacity: .72; }
+.mc-haggle { flex-wrap: wrap; }
+.mc-haggle .ng-mini { min-width: 210px; }
+/* couleurs du club dans le créateur d'écusson (0.8.8) : la pastille ouvre le sélecteur du système */
+.ts-color { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-width: 0; }
+.ts-color > span { overflow: hidden; text-overflow: ellipsis; }
+.ts-swatch { position: relative; flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255, 255, 255, .85), 0 0 0 3px rgba(0, 0, 0, .5); cursor: pointer; }
+.ts-swatch input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+/* négociation entre amis au téléphone : trois réponses sur une ligne, sans déborder du cadre (0.8.8) */
+@media (max-width: 760px) {
+  .mc-row.offer .mc-row-actions { gap: 6px; }
+  .mc-row.offer .mc-row-actions .btn-sm { flex: 1 1 auto; min-width: 0; --slant: 6px; padding: 0 calc(6px + var(--slant)); font-size: 15px; }
+}
+/* réglages : la ligne Retour en tête, hors de la liste qui défile (0.8.8, demande du PDG) */
+.cm-row.back.top { flex-shrink: 0; margin-bottom: 2px; }
+.mc-line { white-space: nowrap; } /* prix successifs d'une négociation : jamais coupés autour de la flèche */
+/* carte du prochain match (0.8.8, le PDG voyait « de victoire » passer sous le bouton Jouer sur un portable) : la jauge
+   se resserre, le texte s'arrête avant le bouton, et le bouton se resserre aussi sous 1420 px */
+.hm-odds { min-width: 0; overflow: hidden; }
+.hm-odds .tri { flex: 0 200 78px; min-width: 28px; } /* la jauge cède la place avant le texte */
+.hm-odds-text { flex-shrink: 0; } /* entier tant que la jauge peut céder ; la ligne coupe avant le bouton au pire */
+@media (min-width: 761px) and (max-width: 1420px) {
+  .hud-match { gap: 12px; }
+  .hud-match .btn { padding: 0 calc(9px + var(--slant)); font-size: 19px; }
+}
+/* transferts de la ligue (onglet Bilan, 0.8.8) : les nôtres en or */
+.lt { margin-bottom: var(--s-4); }
+.lt-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
+.lt-rows .mc-row.mine { border-color: var(--gold-line); }
+.ro-rows .mc-row-main b { white-space: normal; overflow: visible; text-overflow: clip; } /* effectif d'un club : le nom entier, sur deux lignes au besoin */

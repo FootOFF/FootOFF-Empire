@@ -1,5 +1,5 @@
 import React, { useId } from 'react';
-import { CLUB_BLACK, clubInitials, hexLum, normalizeCrest, rivalCrest, shortName } from '../game/crest';
+import { CLUB_BLACK, CLUB_GOLD, CREST_COLORS, clubInitials, colorName, hexLum, knownCrest, normalizeCrest, rivalCrest, shortName } from '../game/crest';
 
 // Dessin des écussons (données : src/game/crest.js). Repère 100 × 116, trois familles :
 // - blason : bouclier sur un liseré de métal, couronne (ou étoiles de titres) au-dessus, ruban en bas ;
@@ -523,25 +523,41 @@ function Modern({ spec, field, body, url, metal, want, short, year, second }) {
   );
 }
 
-// Notre écusson : toujours noir et or (fond noir, motifs et symbole or ; ou fond or, motifs et symbole noirs), liseré
-// d'or ; une étoile par titre de champion au-dessus.
-export function ClubCrest({ crest, name = '', className = '', title = null, full = false, stars = 0 }) {
-  const c = normalizeCrest(crest);
-  const gold = c.ground === 'or';
-  const spec = {
+// Notre écusson (et celui d'un ami) : ses deux couleurs (or et noir par défaut), le fond à l'une, motifs et symbole à
+// l'autre ; un symbole or reste en métal poli, sinon il prend l'émail clair ou sombre le plus lisible ; liseré d'argent
+// quand une couleur est claire et sans or (0.8.8) ; une étoile par titre de champion au-dessus.
+const sat = (hex) => {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return Math.max(r, g, b) - Math.min(r, g, b);
+};
+export function crestSpec(c) {
+  const field = c.ground === 'or' ? c.primary : c.secondary;
+  const motif = c.ground === 'or' ? c.secondary : c.primary;
+  const gold = (hex) => hex === CLUB_GOLD;
+  const paint = (hex) => (gold(hex) ? 'gold' : hex);
+  const pale = (hex) => hexLum(hex) > 175 && sat(hex) < 40;
+  const ink = gold(motif) ? 'metal' : hexLum(motif) > 150 ? 'light' : hexLum(motif) < 70 ? 'dark' : hexLum(field) > 150 ? 'dark' : 'light';
+  return {
     ...c,
-    base: gold ? 'gold' : CLUB_BLACK,
-    second: gold ? CLUB_BLACK : 'gold',
-    metal: 'or',
-    ink: gold ? 'dark' : 'metal',
-    band: gold ? CLUB_BLACK : '#15120c',
+    base: paint(field),
+    second: paint(motif),
+    metal: !gold(field) && !gold(motif) && (pale(field) || pale(motif)) ? 'argent' : 'or',
+    ink,
+    band: hexLum(field) < 60 && !gold(field) ? '#15120c' : CLUB_BLACK,
     crown: false,
   };
+}
+
+export function ClubCrest({ crest, name = '', className = '', title = null, full = false, stars = 0 }) {
+  const spec = crestSpec(normalizeCrest(crest));
   return <CrestArt spec={spec} initials={clubInitials(name)} name={name} full={full} stars={stars} className={`ours ${className}`} title={title} />;
 }
 
-// Écusson d'un autre club, d'après son nom.
+// Écusson d'un autre club, d'après son nom ; celui qu'un ami a composé s'il est connu (knowCrests).
 export function Crest({ name = '', className = '', full = false }) {
+  const known = knownCrest(name);
+  if (known) return <ClubCrest crest={known} name={name} className={className} full={full} />;
   return <CrestArt spec={rivalCrest(name)} initials={clubInitials(name)} name={name} full={full} className={className} />;
 }
 
@@ -549,4 +565,20 @@ export function Crest({ name = '', className = '', full = false }) {
 export function AnyCrest({ name = '', state, className = '', full = false }) {
   if (state && name === state.clubName) return <ClubCrest crest={state.crest} name={name} className={className} full={full} />;
   return <Crest name={name} className={className} full={full} />;
+}
+
+// Couleurs du club dans le créateur d'écusson (0.8.8) : le nuancier se parcourt aux flèches comme les autres lignes, et
+// la pastille ouvre le sélecteur du système pour toute autre couleur. colorList : le nuancier, plus la couleur en cours
+// si elle est sur mesure.
+export const colorList = (v) => (CREST_COLORS.some(([h]) => h === v) ? CREST_COLORS : [...CREST_COLORS, [v, 'Sur mesure']]);
+export const COLOR_KEYS = ['primary', 'secondary'];
+export function ColorValue({ value, label, onPick }) {
+  return (
+    <span className="ts-pick-value ts-color">
+      <label className="ts-swatch" style={{ background: value }} title={`${label} : toute couleur`}>
+        <input type="color" value={value} tabIndex={-1} onChange={(e) => onPick(e.target.value.toLowerCase())} aria-label={`${label} : choisir une couleur`} />
+      </label>
+      <span>{colorName(value)}</span>
+    </span>
+  );
 }

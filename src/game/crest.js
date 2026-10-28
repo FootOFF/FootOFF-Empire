@@ -1,8 +1,9 @@
 // Écussons des clubs, en trois familles comme dans un vrai championnat : le blason (bouclier héraldique, couronne ou
 // ruban), le médaillon (nom du club en cercle, année de fondation) et le badge moderne (monogramme, bandeau). Tous ont
 // un liseré de métal, or ou argent, et un émail bombé (dessin : src/ui/crest.jsx).
-// Le nôtre se compose à la fondation (style, forme, motif, symbole, inscription, fond) et reste toujours noir et or :
-// la charte FootOFF. Ceux des autres clubs se déduisent de leur nom, aux couleurs de leur maillot (kits.js) : toujours
+// Le nôtre se compose à la fondation (style, forme, motif, symbole, inscription, deux couleurs et le fond) : l'or et le
+// noir de FootOFF par défaut, toute couleur depuis la 0.8.8 (la principale habille le maillot, la secondaire le short et
+// le col : kits.js). Ceux des autres clubs se déduisent de leur nom, aux couleurs de leur maillot (kits.js) : toujours
 // le même écusson pour un même club.
 
 import { kitOf } from './kits';
@@ -44,17 +45,28 @@ export const CREST_SYMBOLS = [
 // « Aucun » : écusson sans symbole (notre club seulement : le nom, l'année ou le motif le portent)
 export const CREST_EMBLEMS = [['aucun', 'Aucun'], ['monogramme', 'Monogramme'], ...CREST_SYMBOLS, ...CREST_ANIMALS];
 export const CREST_TEXTS = [['les-deux', 'Nom et année'], ['nom', 'Nom'], ['annee', 'Année'], ['aucune', 'Aucune']];
-// fond noir (motifs or) ou fond or (motifs noirs) : les deux seules couleurs de notre club
-export const CREST_GROUNDS = [['noir', 'Noir'], ['or', 'Or']];
+// fond de l'écusson : la couleur secondaire (motifs et symbole à la principale), ou l'inverse. Identifiants d'origine
+// (« noir » : fond secondaire, noir par défaut ; « or » : fond principal, or par défaut), lus tels quels par le serveur.
+export const CREST_GROUNDS = [['noir', 'Secondaire'], ['or', 'Principale']];
 
 export const CLUB_BLACK = '#0d0d0e';
 export const CLUB_GOLD = '#c7a15a';
+
+// Nuancier des deux couleurs du club (et toute autre au choix, crest.jsx ColorRow) : l'or et le noir d'abord.
+export const CREST_COLORS = [
+  ['#c7a15a', 'Or'], ['#0d0d0e', 'Noir'], ['#f4f4f2', 'Blanc'], ['#c4c8cc', 'Argent'], ['#8a8f96', 'Gris'],
+  ['#c0392b', 'Rouge'], ['#7b1e3a', 'Grenat'], ['#e05a8a', 'Rose'], ['#e67e22', 'Orange'], ['#f2c94c', 'Jaune'],
+  ['#1f8a4c', 'Vert'], ['#0f5c3a', 'Vert sombre'], ['#6cb4e8', 'Ciel'], ['#2463c9', 'Bleu'], ['#1d2c5e', 'Marine'],
+  ['#6c3fa0', 'Violet'],
+];
+export const isHex = (v) => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
+export const colorName = (hex) => CREST_COLORS.find(([h]) => h === hex)?.[1] || 'Sur mesure';
 
 const ids = (list) => list.map(([id]) => id);
 const thisYear = () => new Date().getFullYear();
 
 export function defaultCrest() {
-  return { v: 2, style: 'blason', shape: 'ancien', pattern: 'uni', emblem: 'etoile', text: 'annee', ground: 'noir', year: thisYear() };
+  return { v: 2, style: 'blason', shape: 'ancien', pattern: 'uni', emblem: 'etoile', text: 'annee', ground: 'noir', primary: CLUB_GOLD, secondary: CLUB_BLACK, year: thisYear() };
 }
 
 export function randomCrest(rng = Math.random) {
@@ -68,6 +80,8 @@ export function randomCrest(rng = Math.random) {
     emblem: pick(CREST_EMBLEMS),
     text: style === 'medaillon' ? 'les-deux' : pick(CREST_TEXTS),
     ground: rng() < 0.75 ? 'noir' : 'or',
+    primary: CLUB_GOLD,
+    secondary: CLUB_BLACK,
     year: thisYear(),
   };
 }
@@ -96,6 +110,8 @@ export function normalizeCrest(c) {
     emblem: ok(emblem, CREST_EMBLEMS, d.emblem),
     text: ok(c.text, CREST_TEXTS, style === 'medaillon' ? 'les-deux' : 'annee'),
     ground: ok(c.ground, CREST_GROUNDS, d.ground),
+    primary: isHex(c.primary) ? c.primary.toLowerCase() : d.primary, // couleurs libres (0.8.8) ; avant : l'or et le noir
+    secondary: isHex(c.secondary) ? c.secondary.toLowerCase() : d.secondary,
     year: Number.isInteger(c.year) && c.year > 1800 && c.year < 3000 ? c.year : thisYear(),
   };
 }
@@ -178,6 +194,15 @@ export function rivalCrest(name = '') {
     crown: style === 'blason' && (/^(Real|Royal)\b/.test(name) || h(13) % 100 < 22),
   };
 }
+
+// Écussons connus par nom : ceux des amis d'une ligue, composés à la fondation de leur club. App les pose à chaque rendu
+// (knowCrests) ; tout écran qui montre un club par son nom dessine alors le vrai, et non celui tiré du nom (0.8.8).
+const KNOWN = new Map();
+export function knowCrests(list) {
+  KNOWN.clear();
+  for (const c of list || []) if (c?.name && c.crest) KNOWN.set(c.name, c.crest);
+}
+export const knownCrest = (name) => KNOWN.get(name) || null;
 
 // Monogramme d'un club : initiale du premier et du dernier mot qui comptent (« US des Fontaines » → UF).
 export function clubInitials(name = '') {

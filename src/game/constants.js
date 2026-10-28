@@ -75,8 +75,8 @@ export const START_MONEY = 8000;
 // Échelle de l'argent en Élite depuis la 0.6.0 (×4 : salaires, valeurs, recettes) : les parties commencées avant
 // et déjà en Élite y sont portées une fois (save.js).
 export const ELITE_SCALE = 4;
-// Les salaires et l'entretien se paient à chaque journée de championnat (un septième de la saison, un quatorzième en
-// Élite ; season.js) : pas de grosse note en fin de saison, la trésorerie suit la vraie vie du club.
+// Les salaires et l'entretien se comptent à chaque journée de championnat (un septième de la saison, un quatorzième en
+// Élite) et se paient en une fois au bilan (0.8.8, economy.js accrueDues et season.js endSeason).
 
 export function upgradeCost(key, targetLevel) {
   const b = BUILDINGS[key];

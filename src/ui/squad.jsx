@@ -76,7 +76,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
   const [sort, setSort] = useState('pos');
   const [view, setView] = useState(() => { try { return localStorage.getItem(VIEW_KEY) === 'table' ? 'table' : 'cards'; } catch { return 'cards'; } });
   const pickView = (v) => { setView(v); try { localStorage.setItem(VIEW_KEY, v); } catch { /* préférence non conservée */ } };
-  const [sheet, setSheet] = useState(preview?.sheet ? { id: preview.sheet } : initialSheet ? { id: initialSheet } : null); // { id, market, order }
+  const [sheet, setSheet] = useState(preview?.sheet ? { id: preview.sheet } : initialSheet ? (typeof initialSheet === 'object' ? initialSheet : { id: initialSheet }) : null); // { id, market, order }
   const [compare, setCompare] = useState(null); // { a, b } identifiants
   const [career, setCareer] = useState(null); // fiche carrière (joueur actuel ou ancien)
   const [deal, setDeal] = useState(initialDeal); // négociation en cours (identifiant du joueur visé : recrue, ou joueur du club à prolonger)

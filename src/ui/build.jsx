@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BUILDINGS, upgradeCost } from '../game/constants';
 import { BUILDING_KIND, buildingStats, investmentPreview } from '../game/economy';
-import { matchesToAfford, seasonEndForecast } from '../game/advice';
+import { duesNow, matchesToAfford, seasonEndForecast } from '../game/advice';
 import { fmtMoney } from './format';
 import { haptic } from './haptics';
 import { uiSound } from './uisound';
@@ -50,7 +50,8 @@ export function Payoff({ state, k, target, compact = false }) {
 }
 
 // Sous le bouton d'achat : ce qui manque (et combien de matchs à domicile pour l'avoir), la fin de saison dans le
-// rouge, ou la trésorerie qui restera.
+// rouge, une caisse qui ne couvrirait plus ce qui est déjà dû (salaires et entretien, payés au bilan), ou ce qui restera
+// réellement disponible.
 export function spendHint(state, cost) {
   const missing = cost - state.money;
   if (missing > 0) {
@@ -59,7 +60,9 @@ export function spendHint(state, cost) {
   }
   const endAfter = seasonEndForecast(state) - cost - Math.round(cost * 0.04);
   if (endAfter < 0) return { tone: 'risk', text: `Attention : fin de saison prévue dans le rouge (${fmtMoney(endAfter)})` };
-  return { tone: '', text: `Trésorerie après travaux : ${fmtMoney(state.money - cost)}` };
+  const due = duesNow(state);
+  if (due.available - cost < 0) return { tone: 'warn', text: `Après travaux, ta caisse ne couvre plus les ${fmtMoney(due.owed)} déjà dus en salaires et entretien : les recettes des matchs restants devront compléter` };
+  return { tone: '', text: `Disponible après travaux : ${fmtMoney(due.available - cost)}` };
 }
 
 // Carte de la vitrine : vignette, famille, nom, effet phare, prix (ou ce qui manque). Au doigt, sur téléphone, elle

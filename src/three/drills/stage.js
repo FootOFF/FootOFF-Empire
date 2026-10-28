@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createPhotoSky, lookFor } from '../sky';
 import { createPlayers } from '../players';
+import { ourKit } from '../../game/kits';
 import { initAssets, instantiateModel } from '../assets';
 import { resolveProp } from '../manifest';
 import { createForest, setForestTime } from '../forest';
@@ -19,7 +20,7 @@ export const M = 0.1; // un mètre en unités du jeu
 export const PITCH = { len: 10.5, half: 3.4 };
 export const GOAL = { w: 0.732, h: 0.244, post: 0.006, depth: 0.2 };
 export const BALL_R = 0.011;
-export const KITS = { ours: 0xc7a15a, keeper: 0x2f343c, bibs: 0xc9e23b, rival: 0x2d6be0, coach: 0x22262c };
+export const KITS = { get ours() { return ourKit().shirt; }, keeper: 0x2f343c, bibs: 0xc9e23b, rival: 0x2d6be0, coach: 0x22262c }; // nos couleurs (0.8.8)
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 

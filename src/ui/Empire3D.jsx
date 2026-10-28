@@ -22,7 +22,7 @@ import { honoursOf, plural } from '../game/honours';
 import { createMatchScene } from '../three/matchplay';
 import { matchFeed } from '../game/matchFeed';
 import { createCrowd } from '../three/crowd';
-import { HOME_KIT, matchKitOf } from '../game/kits';
+import { matchKitOf, ourKit } from '../game/kits';
 import {
   buildingMesh, padMesh, setProceduralNight, stadiumMesh,
 } from '../three/procedural';
@@ -1116,8 +1116,9 @@ export default function Empire3D({
     const ctx = ctxRef.current;
     if (!ctx || !ready) return;
     const opp = matchInfo?.opp || '';
-    const away = matchKitOf(opp); // tenue de match lisible face à notre or (0.8.7)
-    ctx.plots.get('t0')?.squad?.setKits(HOME_KIT, away);
+    const home = ourKit(); // nos couleurs d'écusson (0.8.8)
+    const away = matchKitOf(opp, home); // tenue de match lisible face à la nôtre (0.8.7)
+    ctx.plots.get('t0')?.squad?.setKits(home, away);
     ctx.crowdFill = matchInfo?.capacity ? Math.min(1, (matchInfo.attendance || 0) / matchInfo.capacity) : 0.6;
     ctx.awayColor = away.shirt;
     ctx.postMatch = !!matchInfo?.played;

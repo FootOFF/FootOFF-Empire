@@ -4,9 +4,10 @@ import { Agent, PassingGame, createBallMesh, placeBall } from './motion';
 import { formationOf } from '../game/tactics';
 
 // Joueurs : silhouette humaine low-poly réaliste (crampons, chaussettes, jambes, short, maillot, bras,
-// tête et cheveux), modélisée en mètres (1,80 m), face vers +X. Deux maillages instanciés partagent
-// les mêmes matrices : la tenue (maillot + chaussettes, couleur du club) et le corps (teint de peau
-// varié ; short, crampons et cheveux sombres par couleurs de sommets).
+// tête et cheveux), modélisée en mètres (1,80 m), face vers +X. Trois maillages instanciés partagent
+// les mêmes matrices : la tenue (maillot + chaussettes, couleur principale du club), le short et le col
+// (sa couleur secondaire, 0.8.8) et le corps (teint de peau varié ; crampons et cheveux sombres par
+// couleurs de sommets).
 // Squelette animé dans le vertex shader : hanches, genoux, épaules, coudes. La phase de foulée est
 // calculée par la locomotion (liée à la distance parcourue : pas de pieds qui glissent) ; la frappe de
 // balle a sa propre courbe (armé de la jambe, frappe, accompagnement, bras opposé en équilibre).
@@ -38,12 +39,13 @@ const cyl = (rt, rb, h, y, z = 0, x = 0, seg = 8) => new THREE.CylinderGeometry(
 const ellipsoid = (rx, ry, rz, y, z = 0, x = 0) => new THREE.SphereGeometry(1, 10, 8).scale(rx, ry, rz).translate(x, y, z);
 
 const WHITE = [1, 1, 1];
-const SHORTS = [0.09, 0.09, 0.1];
+const SHORTS = 0x171719; // short et col par défaut : l'anthracite FootOFF
 const BOOTS = [0.04, 0.04, 0.045];
 const HAIR = [0.07, 0.06, 0.05];
 
 function buildGeometries() {
   const kit = [];
+  const trim = []; // short et col : la couleur secondaire du club
   const body = [];
   for (const [side, thigh, shin, arm, fore] of [[1, PART.thighA, PART.shinA, PART.armA, PART.foreA], [-1, PART.thighB, PART.shinB, PART.armB, PART.foreB]]) {
     const z = side * 0.1;
@@ -51,21 +53,21 @@ function buildGeometries() {
     kit.push(piece(cyl(0.05, 0.042, 0.4, 0.07, z), WHITE, shin)); // chaussette
     body.push(piece(cyl(0.065, 0.05, 0.12, 0.47, z), WHITE, shin)); // genou (peau)
     body.push(piece(cyl(0.08, 0.066, 0.2, 0.59, z), WHITE, thigh)); // cuisse (peau)
-    body.push(piece(cyl(0.088, 0.082, 0.16, 0.76, z), SHORTS, thigh)); // jambe de short
+    trim.push(piece(cyl(0.088, 0.082, 0.16, 0.76, z), WHITE, thigh)); // jambe de short
     // bras légèrement écartés du corps (rotation autour de l'axe avant-arrière, à l'épaule)
     const tilt = (g) => g.translate(0, -SHOULDER, -side * 0.235).rotateX(-side * 0.1).translate(0, SHOULDER, side * 0.235);
     kit.push(piece(tilt(cyl(0.056, 0.05, 0.2, 1.2, side * 0.225)), WHITE, arm)); // manche
     body.push(piece(tilt(cyl(0.043, 0.035, 0.31, 0.88, side * 0.24)), WHITE, fore)); // avant-bras
     body.push(piece(tilt(ellipsoid(0.038, 0.05, 0.03, 0.85, side * 0.24)), WHITE, fore)); // main
   }
-  body.push(piece(lathe([[0.001, 0.8], [0.17, 0.81], [0.19, 0.88], [0.18, 0.97], [0.16, 1.0], [0.001, 1.0]], 0.66), SHORTS, PART.torso)); // bassin (short)
+  trim.push(piece(lathe([[0.001, 0.8], [0.17, 0.81], [0.19, 0.88], [0.18, 0.97], [0.16, 1.0], [0.001, 1.0]], 0.66), WHITE, PART.torso)); // bassin (short)
   kit.push(piece(lathe([[0.001, 0.95], [0.165, 0.95], [0.17, 1.05], [0.2, 1.22], [0.215, 1.34], [0.19, 1.42], [0.12, 1.465], [0.06, 1.48], [0.001, 1.48]]), WHITE, PART.torso)); // maillot
   kit.push(piece(ellipsoid(0.095, 0.055, 0.205, 1.405), WHITE, PART.torso)); // épaules
-  body.push(piece(new THREE.TorusGeometry(0.058, 0.012, 5, 14).rotateX(Math.PI / 2).translate(0, 1.47, 0), SHORTS, PART.torso)); // col
+  trim.push(piece(new THREE.TorusGeometry(0.058, 0.012, 5, 14).rotateX(Math.PI / 2).translate(0, 1.47, 0), WHITE, PART.torso)); // col
   body.push(piece(cyl(0.05, 0.055, 0.1, 1.43), WHITE, PART.torso)); // cou
   body.push(piece(ellipsoid(0.1, 0.12, 0.092, 1.62), WHITE, PART.torso)); // tête
   body.push(piece(ellipsoid(0.104, 0.07, 0.096, 1.68, 0, -0.01), HAIR, PART.torso)); // cheveux
-  return { kit: mergeGeometries(kit), body: mergeGeometries(body) };
+  return { kit: mergeGeometries(kit), trim: mergeGeometries(trim), body: mergeGeometries(body) };
 }
 
 // Squelette en GLSL (angles dans le plan avant / haut ; angle positif = vers l'avant).
@@ -124,20 +126,23 @@ function injectSkeleton(mat) {
 const SKINS = [0xf1c9a5, 0xe0ac84, 0xc68863, 0x9c6644, 0x7a4b2f, 0x5a3420];
 
 export function createPlayers(parent, max = 64) {
-  const { kit, body } = buildGeometries();
+  const { kit, trim, body } = buildGeometries();
   const anim = new THREE.InstancedBufferAttribute(new Float32Array(max * 3), 3);
   anim.setUsage(THREE.DynamicDrawUsage);
   kit.setAttribute('aAnim', anim);
+  trim.setAttribute('aAnim', anim);
   body.setAttribute('aAnim', anim);
   const mKit = new THREE.InstancedMesh(kit, injectSkeleton(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.65 })), max);
+  const mTrim = new THREE.InstancedMesh(trim, injectSkeleton(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7 })), max);
   const mBody = new THREE.InstancedMesh(body, injectSkeleton(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75 })), max);
   const depth = injectSkeleton(new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking })); // ombres fidèles à la pose
   const col = new THREE.Color();
   for (let i = 0; i < max; i++) {
     mBody.setColorAt(i, col.setHex(SKINS[(i * 7 + 3) % SKINS.length]));
     mKit.setColorAt(i, col.setHex(0xc7a15a));
+    mTrim.setColorAt(i, col.setHex(SHORTS));
   }
-  [mKit, mBody].forEach((m) => {
+  [mKit, mTrim, mBody].forEach((m) => {
     m.castShadow = true;
     m.receiveShadow = true;
     m.customDepthMaterial = depth;
@@ -150,7 +155,12 @@ export function createPlayers(parent, max = 64) {
   const FWD = new THREE.Vector3(1, 0, 0);
   return {
     max,
-    setKit(i, hex) { mKit.setColorAt(i, col.setHex(hex)); mKit.instanceColor.needsUpdate = true; },
+    // trim : le short et le col (la couleur secondaire) ; sans elle, l'anthracite
+    setKit(i, hex, trim = SHORTS) {
+      mKit.setColorAt(i, col.setHex(hex));
+      mTrim.setColorAt(i, col.setHex(trim));
+      mKit.instanceColor.needsUpdate = mTrim.instanceColor.needsUpdate = true;
+    },
     // un joueur d'après son état de locomotion (Agent) ; y = sol, échelle 0,1 = taille réelle en unités du jeu
     setAgent(i, ag, y, scale = 0.1) {
       P.set(ag.x, y + (ag.lift || 0), ag.z);
@@ -167,16 +177,17 @@ export function createPlayers(parent, max = 64) {
       S.setScalar(scale);
       M.compose(P, Q, S);
       mKit.setMatrixAt(i, M);
+      mTrim.setMatrixAt(i, M);
       mBody.setMatrixAt(i, M);
       anim.setXYZ(i, ag.phase, ag.gait, ag.cheer > 0.01 && !ag.kick ? -ag.cheer : ag.kick);
     },
     commit(count) {
-      mKit.count = mBody.count = count;
-      mKit.instanceMatrix.needsUpdate = mBody.instanceMatrix.needsUpdate = true;
+      mKit.count = mTrim.count = mBody.count = count;
+      mKit.instanceMatrix.needsUpdate = mTrim.instanceMatrix.needsUpdate = mBody.instanceMatrix.needsUpdate = true;
       anim.needsUpdate = true;
     },
     dispose() {
-      [mKit, mBody].forEach((m) => { parent.remove(m); m.geometry.dispose(); m.material.dispose(); m.dispose(); });
+      [mKit, mTrim, mBody].forEach((m) => { parent.remove(m); m.geometry.dispose(); m.material.dispose(); m.dispose(); });
       depth.dispose();
     },
   };

@@ -9,7 +9,8 @@ import { fmtEuros, fmtMoney } from './format';
 import { SectionHead, Stat } from './kit';
 import { Panel } from './panels';
 
-// Finances : où va l'argent du club. Prévision de fin de saison (ce qu'il restera après les salaires),
+// Finances : où va l'argent du club. La caisse, ce qu'il faudra payer au bilan (salaires et entretien, dus journée après
+// journée et payés en une fois en fin de saison) et ce qui reste réellement disponible ; prévision de fin de saison,
 // recettes et dépenses de la saison poste par poste, et trésorerie au fil des saisons.
 
 const signed = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmtEuros(Math.abs(v))}`;
@@ -63,7 +64,8 @@ export function FinancesPanel({ state, onClose, onOpenSquad }) {
       onClose={onClose}
       toolbar={(
         <div className="season-stats fin-stats">
-          <Stat label="Trésorerie" value={fmtMoney(state.money)} tone={state.money < 0 ? 'down' : ''} />
+          <Stat label="Trésorerie" value={fmtMoney(state.money)} sub={`disponible ${fmtMoney(fc.available)}`} tone={state.money < 0 ? 'down' : ''} />
+          <Stat label="À payer" value={fmtMoney(fc.due)} sub={`fin de saison · ${fmtMoney(fc.owed)} déjà dus`} />
           <Stat label="Fin de saison" value={fmtMoney(fc.end)} sub="prévision" tone={fc.end < 0 ? 'down' : ''} />
           <Stat label="Salaires" value={`${Math.round(share * 100)} %`} sub="des revenus" tone={shareTone} />
         </div>
@@ -71,7 +73,7 @@ export function FinancesPanel({ state, onClose, onOpenSquad }) {
     >
       <SectionHead label="Prévision de fin de saison" aside={fc.left ? `${fc.left} match${fc.left > 1 ? 's' : ''} à jouer` : 'saison terminée'} />
       <ul className="fin-flow">
-        <li><span>Trésorerie actuelle</span><b>{fmtEuros(state.money)}</b></li>
+        <li><span>Trésorerie actuelle <em>{fc.owed ? `dont ${fmtEuros(fc.owed)} déjà dus en salaires et entretien · ` : ''}{fc.available < 0 ? `il manque ${fmtEuros(-fc.available)}` : `${fmtEuros(fc.available)} disponibles`}</em></span><b>{fmtEuros(state.money)}</b></li>
         {fc.left > 0 && (
           <li className="in">
             <span>Matchs restants <em>{fc.homes < fc.left ? `${fc.homes} à domicile, ${fc.left - fc.homes} à l’extérieur (droits TV)` : `${fc.left} × environ ${fmtEuros(fc.perMatch)}`}</em></span>
@@ -80,8 +82,8 @@ export function FinancesPanel({ state, onClose, onOpenSquad }) {
         )}
         <li className="in"><span>Sponsors <em>{fc.sponsorsPaid ? `${fmtEuros(state.seasonStats?.sponsors || 0)} reçus à la reprise` : 'versés au bilan'}</em></span><b>{fc.sponsorsPaid ? 'déjà en caisse' : signed(fc.sponsors)}</b></li>
         <li className="in"><span>Prime de classement <em>à la {ordinal(pos, true)} place</em></span><b>{signed(fc.prize)}</b></li>
-        <li className="out"><span>Salaires restants <em>{state.players.length} joueurs · {fc.left} journée{fc.left > 1 ? 's' : ''} sur {fc.len}</em></span><b>{signed(-fc.wages)}</b></li>
-        {fc.upkeep > 0 && <li className="out"><span>Entretien restant</span><b>{signed(-fc.upkeep)}</b></li>}
+        <li className="out"><span>Salaires de la saison <em>payés au bilan · {fc.left ? `${state.players.length} joueurs · ${fc.left} journée${fc.left > 1 ? 's' : ''} sur ${fc.len} à venir` : `${fc.len} journées`}</em></span><b>{signed(-fc.wages)}</b></li>
+        {fc.upkeep > 0 && <li className="out"><span>Entretien de la saison <em>payé au bilan</em></span><b>{signed(-fc.upkeep)}</b></li>}
         <li className={`fin-total ${fc.end < 0 ? 'neg' : ''}`}><span>Trésorerie en fin de saison</span><b>{fmtEuros(fc.end)}</b></li>
       </ul>
       {fc.end < 0 ? (
@@ -110,7 +112,7 @@ export function FinancesPanel({ state, onClose, onOpenSquad }) {
               {spent.map((x) => <Line key={x.k} label={x.label} value={x.v} max={max} kind="out" />)}
             </ul>
           )}
-          <p className="fin-note">Salaires et entretien se paient à chaque journée de championnat : un {state.schedule?.length > 7 ? 'quatorzième' : 'septième'} de la saison.</p>
+          <p className="fin-note">Salaires et entretien se comptent à chaque journée de championnat (un {state.schedule?.length > 7 ? 'quatorzième' : 'septième'} de la saison) et se paient en une fois au bilan.</p>
         </>
       )}
 

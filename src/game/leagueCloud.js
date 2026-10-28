@@ -12,7 +12,8 @@ import { fetchSave, sendSave } from './leagueNet';
 const SYNC = (code) => `fo-ligue-sync-${code}`;
 const OLD = (code) => `fo-ligue-club-${code}.remplacee`; // la partie de l'appareil remplacée par celle du serveur
 
-// { base, sent, at, bad } ; bad : le numéro d'une copie du serveur illisible ici (plus redemandée)
+// { base, sent, at, bad, pending } ; bad : le numéro d'une copie du serveur illisible ici (plus redemandée) ; pending :
+// l'envoi en cours ({ fp, base }), noté avant de partir (0.8.8)
 export function syncOf(code) {
   try {
     const v = JSON.parse(localStorage.getItem(SYNC(code)) || 'null');
@@ -95,6 +96,13 @@ export function cloudPlan(code, local, card) {
   if (!server) return 'local';
   if (!cloudReady()) return local ? 'local' : 'blocked';
   if (server === sync.base || server === sync.bad) return 'local'; // déjà la nôtre, ou illisible ici
+  // notre dernier envoi est arrivé sans que l'appareil en voie la réponse (le joueur a quitté le jeu pendant l'envoi :
+  // keepalive) : la copie du serveur, une version plus loin, est la nôtre si la partie n'a pas changé depuis (0.8.8 :
+  // le PDG recevait le conflit à chaque retour sur le même appareil)
+  if (local && sync.pending && server === sync.pending.base + 1 && sync.pending.fp === playedPrint(local)) {
+    writeSync(code, { base: server, sent: sync.pending.fp, at: card?.at || sync.at });
+    return 'local';
+  }
   if (server < sync.base) { // la copie du serveur a été perdue ou remplacée par une plus ancienne : la nôtre repart
     writeSync(code, { ...sync, base: server, sent: null });
     return 'local';
@@ -127,6 +135,7 @@ export async function pushClub(m, s, { force = false, keepalive = false } = {}) 
   const sync = syncOf(m.code);
   if (!force && sync.sent === fp) return { unchanged: true };
   busy.add(m.code);
+  writeSync(m.code, { ...sync, pending: { fp, base: sync.base } }); // noté avant de partir (voir cloudPlan)
   try {
     const data = await pack(JSON.stringify(s));
     const send = (base, again) => sendSave(m, { base, season: s.seasonNumber, round: s.round || 0, data, force: again }, { keepalive: keepalive && data.length < 60000 });
@@ -137,6 +146,9 @@ export async function pushClub(m, s, { force = false, keepalive = false } = {}) 
     });
     writeSync(m.code, { base: r.version, sent: fp, at: r.at });
     return r;
+  } catch (x) {
+    writeSync(m.code, { ...syncOf(m.code), pending: null }); // refusé ou perdu : rien n'a été enregistré
+    throw x;
   } finally {
     busy.delete(m.code);
   }

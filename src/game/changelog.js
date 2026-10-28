@@ -4,6 +4,18 @@
 
 export const CHANGELOG = [
   {
+    version: '0.8.8', date: '2026-10-28', title: 'Économie, négociation et couleurs',
+    items: [
+      'Salaires et entretien se comptent à chaque journée et se paient en une fois au bilan de la saison. La trésorerie montre ce qu’il faudra payer en fin de saison et ce qui est réellement disponible ; un achat qui entamerait ce qui est déjà dû est signalé avant d’être conclu.',
+      'Entre amis, la négociation est libre : accepte, fais une contre-offre ou refuse, chacun à son tour, trois contre-offres au plus. Chacun peut rompre à tout moment.',
+      'Depuis le classement, chaque club ouvre son effectif : poste, âge, niveau et valeur (celui d’un ami après son premier match joué). Le joueur d’un ami ouvre directement l’offre, celui d’un club de l’ordinateur sa fiche du mercato.',
+      'Dans l’onglet Bilan du mercato, les transferts des amis de la saison en cours et de la précédente : le joueur, ses clubs de départ et d’arrivée, le montant et la journée ; les tiens en or.',
+      'Ton écusson à tes couleurs, à la fondation du club ou en rejoignant un championnat : la couleur principale habille le maillot, la secondaire le short. Si deux maillots se ressemblent, l’adversaire change de tenue. L’or et le noir restent le choix par défaut.',
+      '« Onze frais » remplace « Onze en forme » : les meilleurs joueurs à 80 % de condition ou plus. La forme ne pèse plus en match : seules la condition physique et les capacités comptent.',
+      'Corrections : le vrai écusson de chaque ami sur tous les écrans, plus de conflit de sauvegarde en revenant sur le même appareil, le but d’un ami n’est plus annoncé à ton nom dans un match revu, une seule ligne par joueur pour tes offres refusées, le score du bandeau de but n’est plus rogné au téléphone, « Jouer » ne recouvre plus les chances de victoire, et « Retour » est en tête des réglages.',
+    ],
+  },
+  {
     version: '0.8.7', date: '2026-10-28', title: 'Temps forts façon retransmission',
     items: [
       'Hors coups de pied arrêtés, chaque temps fort part d’une vraie situation, une relance ou une récupération, et se construit en quelques passes jusqu’au geste décisif : 8 à 12 secondes de jeu.',

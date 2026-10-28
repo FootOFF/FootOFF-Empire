@@ -7,10 +7,10 @@ import { CHANGELOG, CURRENT } from '../game/changelog';
 import { useInputMode } from './input';
 import { useKeydown } from './presence';
 import { IconChevron, IconChevronLeft, IconDice } from './icons';
-import { ClubCrest } from './crest';
+import { COLOR_KEYS, ClubCrest, ColorValue, colorList } from './crest';
 import { randomClubName } from '../game/names';
 import { DIVISIONS } from '../game/constants';
-import { CREST_EMBLEMS, CREST_GROUNDS, CREST_PATTERNS, CREST_SHAPES, CREST_STYLES, CREST_TEXTS, clubStars, randomCrest, withStyle } from '../game/crest';
+import { CREST_EMBLEMS, CREST_GROUNDS, CREST_PATTERNS, CREST_SHAPES, CREST_STYLES, CREST_TEXTS, clubStars, normalizeCrest, randomCrest, withStyle } from '../game/crest';
 
 // Écran titre, façon jeu de console : le complexe tourne lentement en 3D derrière (mode vitrine d'Empire3D), le
 // menu à gauche (en bas sur téléphone), la carte de l'entrée choisie à droite. Trois vues : menu, réglages,
@@ -135,8 +135,9 @@ function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews }, li
 }
 
 // Création du club : nom (proposé au hasard, modifiable), écusson composé ici (style, forme, symbole ou animal, motif,
-// inscription du nom et de l'année de fondation, fond) avec son aperçu, puis « Fonder le club ». Les couleurs ne se choisissent pas : notre club est noir et or, la charte
-// FootOFF. Au doigt, le champ du nom n'est pas sélectionné d'office (le clavier du téléphone masquerait la moitié
+// inscription du nom et de l'année de fondation, deux couleurs et le fond) avec son aperçu, puis « Fonder le club ».
+// L'or et le noir FootOFF par défaut, toute couleur au choix (0.8.8) : la principale habille aussi le maillot, la
+// secondaire le short. Au doigt, le champ du nom n'est pas sélectionné d'office (le clavier du téléphone masquerait la moitié
 // de l'écran). Au clavier et à la manette : haut / bas pour choisir la ligne, gauche / droite pour changer.
 export const CREST_ROWS = [ // [champ, libellé, choix possibles selon l'écusson en cours] (aussi pour les ligues : league.jsx)
   ['style', 'Style', () => CREST_STYLES],
@@ -144,12 +145,14 @@ export const CREST_ROWS = [ // [champ, libellé, choix possibles selon l'écusso
   ['emblem', 'Symbole', () => CREST_EMBLEMS],
   ['pattern', 'Motif', () => CREST_PATTERNS],
   ['text', 'Inscription', () => CREST_TEXTS],
+  ['primary', 'Principale', (c) => colorList(c.primary)],
+  ['secondary', 'Secondaire', (c) => colorList(c.secondary)],
   ['ground', 'Fond', () => CREST_GROUNDS],
 ];
 
 function CreateClub({ onCreate, onBack, active }) {
   const [name, setName] = useState(randomClubName);
-  const [crest, setCrest] = useState(() => randomCrest());
+  const [crest, setCrest] = useState(() => normalizeCrest(randomCrest()));
   const mode = useInputMode();
   const fields = [{ id: 'name' }, ...CREST_ROWS.map(([id]) => ({ id })), { id: 'go' }, { id: 'back' }];
   const menu = useMenu(fields, { onBack, active: active && mode !== 'touch' });
@@ -199,12 +202,12 @@ function CreateClub({ onCreate, onBack, active }) {
       <div className="ts-crest">
         <div className="ts-crest-side">
           <ClubCrest crest={crest} name={name} className="ts-crest-art" full title={`Écusson de ${name || 'ton club'}`} />
-          <button type="button" className="ts-dice" onClick={() => { setCrest(randomCrest()); uiSound('move'); }} aria-label="Écusson au hasard" title="Écusson au hasard">
+          <button type="button" className="ts-dice" onClick={() => { setCrest((c) => ({ ...randomCrest(), primary: c.primary, secondary: c.secondary })); uiSound('move'); }} aria-label="Écusson au hasard" title="Écusson au hasard">
             <IconDice />
           </button>
         </div>
         <div className="ts-crest-rows">
-          <span className="ts-field-label">Écusson · noir et or, aux couleurs FootOFF</span>
+          <span className="ts-field-label">Écusson · or et noir FootOFF, ou tes couleurs</span>
           {CREST_ROWS.map(([key, label, listOf], k) => { const list = listOf(crest); return (
             <div
               key={key}
@@ -217,7 +220,9 @@ function CreateClub({ onCreate, onBack, active }) {
             >
               <span className="ts-pick-label">{label}</span>
               <button type="button" tabIndex={-1} className="ts-pick-arrow" aria-label={`${label} précédent`} onClick={() => step(key, list, -1)}><IconChevronLeft /></button>
-              <span className="ts-pick-value">{list.find(([id]) => id === crest[key])?.[1]}</span>
+              {COLOR_KEYS.includes(key)
+                ? <ColorValue value={crest[key]} label={label} onPick={(v) => setCrest((c) => ({ ...c, [key]: v }))} />
+                : <span className="ts-pick-value">{list.find(([id]) => id === crest[key])?.[1]}</span>}
               <button type="button" tabIndex={-1} className="ts-pick-arrow" aria-label={`${label} suivant`} onClick={() => step(key, list, 1)}><IconChevron /></button>
             </div>
           ); })}

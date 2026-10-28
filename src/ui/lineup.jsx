@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { createPortal } from 'react-dom';
 import { POS_LABELS } from '../game/constants';
 import { absenceOf, available, fitFactor, fitOf, playerRating, ratingAt } from '../game/players';
-import { FORMATIONS, FORMATION_ORDER, autoLineup, fitWeight, formationOf, lineupRating, reshapeLineup, restWeight, rotateLineup, slotsOf } from '../game/tactics';
+import { FORMATIONS, FORMATION_ORDER, FRESH_FIT, autoLineup, fitWeight, formationOf, freshLineup, lineupRating, reshapeLineup, restWeight, rotateLineup, slotsOf } from '../game/tactics';
 import { fmtRating } from './format';
 import { RatingBadge } from './kit';
 import { haptic } from './haptics';
@@ -122,9 +122,9 @@ export function FormationPicker({ value, onChange }) {
 }
 
 // Trois boutons de composition (0.8.5, demande du PDG), toujours visibles :
-//  - « Meilleur onze » : les meilleures notes, sans regarder la condition ni la forme ;
-//  - « Onze en forme » : le onze le plus fort pour ce match, notes, condition physique et forme réunies, comme le
-//    pronostic et le match ;
+//  - « Meilleur onze » : les meilleures notes, sans regarder la condition ;
+//  - « Onze frais » (0.8.8, « Onze en forme » avant) : les meilleurs joueurs à 80 % de condition ou plus, niveau et
+//    condition réunis ; un joueur fatigué seulement si personne de frais ne tient son poste (tactics.js, freshLineup) ;
 //  - « Faire tourner » : les remplaçants du dernier match jouent (tactics.js, rotateLineup).
 // Chacun dit ce qu'il change (+0,4 de niveau, ou le nombre de joueurs qui entrent), ou que le onze y est déjà.
 const changed = (a, b) => a.filter((id, k) => id !== null && !b.includes(id) && id !== b[k]).length;
@@ -140,29 +140,27 @@ function LineupAction({ next, lineup, onApply, label, done, gain = null, title, 
 export function BestEleven({ players, lineup, formation, onApply }) {
   const best = useMemo(() => autoLineup(players, formation, restWeight), [players, formation]);
   const gain = lineupRating(players, best, formation) - lineupRating(players, lineup, formation);
-  return <LineupAction next={best} lineup={lineup} onApply={onApply} label="Meilleur onze" done="Meilleur onze" gain={gain} title="Les meilleures notes, sans regarder la condition physique ni la forme" />;
+  return <LineupAction next={best} lineup={lineup} onApply={onApply} label="Meilleur onze" done="Meilleur onze" gain={gain} title="Les meilleures notes, sans regarder la condition physique" />;
 }
 export function FitEleven({ players, lineup, formation, onApply }) {
-  const best = useMemo(() => autoLineup(players, formation), [players, formation]);
-  const gain = lineupRating(players, best, formation, fitWeight) - lineupRating(players, lineup, formation, fitWeight);
-  return <LineupAction next={best} lineup={lineup} onApply={onApply} label="Onze en forme" done="Onze en forme" gain={gain} className="lu-fresh" title="Le onze le plus fort pour ce match : notes, condition physique et forme réunies" />;
+  const best = useMemo(() => freshLineup(players, formation), [players, formation]);
+  const n = changed(best, lineup);
+  return <LineupAction next={best} lineup={lineup} onApply={onApply} label="Onze frais" done="Onze frais" gain={n ? null : 0} className="lu-fresh" title={`Les meilleurs joueurs à ${FRESH_FIT} % de condition physique ou plus ; un joueur fatigué seulement si personne de frais ne tient son poste`} />;
 }
 
-// Niveau d'un onze tel qu'il jouera, condition et forme comprises (comme le pronostic et le match), avec ce que la
-// fatigue lui retire et ce que la forme lui ajoute ou lui retire (avant-match, onglet Composition).
+// Niveau d'un onze tel qu'il jouera, condition comprise (comme le pronostic et le match), avec ce que la fatigue lui
+// retire (avant-match, onglet Composition). La forme ne pèse plus en match (0.8.8).
 export function levelOf(players, lineup, formation) {
   const rating = lineupRating(players, lineup, formation, fitWeight);
   const rested = lineupRating(players, lineup, formation);
-  const fitOnly = lineupRating(players, lineup, formation, (p) => fitFactor(fitOf(p)));
-  return { rating, rested, tired: rested - fitOnly >= 0.05 ? rested - fitOnly : 0, formGap: Math.abs(rating - fitOnly) >= 0.05 ? rating - fitOnly : 0 };
+  return { rating, rested, tired: rested - rating >= 0.05 ? rested - rating : 0 };
 }
 export function LevelReadout({ level }) {
-  const { rating, rested, tired, formGap } = level;
+  const { rating, rested, tired } = level;
   return (
     <span className="pm-level">
       Niveau <b>{fmtRating(rating)}</b>
       {tired > 0 && <em className="pm-tired" title={`${fmtRating(rested)} au repos`}>fatigue −{fmtRating(tired)}</em>}
-      {formGap !== 0 && <em className={`pm-form ${formGap > 0 ? 'up' : 'down'}`} title="Moyenne des notes des derniers matchs">forme {formGap > 0 ? '+' : '−'}{fmtRating(Math.abs(formGap))}</em>}
     </span>
   );
 }

@@ -8,7 +8,7 @@ import { treatFee, treatOpen } from './medical';
 import { autoLineup, fitWeight, lineupRating, slotsOf } from './tactics';
 import { costOf, ratingAt, wageOf } from './players';
 import { dateKey, fitGain, pendingCounters, poolOf } from './mercato';
-import { capacity, endOfSeasonForecast, expectedGate, investmentPreview, seasonForecast } from './economy';
+import { capacity, duesOf, endOfSeasonForecast, expectedGate, investmentPreview, seasonForecast } from './economy';
 import { standingsOf } from './season';
 import { lastYear } from './contracts';
 
@@ -55,6 +55,9 @@ export function bestSigning(s) {
 }
 
 const wageBill = (s) => s.players.reduce((a, p) => a + wageOf(p, s.divisionIndex), 0);
+
+// À payer au bilan (salaires et entretien, 0.8.8) et ce qui reste réellement disponible : bandeau, travaux, mercato.
+export const duesNow = (s) => duesOf(s, wageBill(s));
 
 // Trésorerie prévue au coup de sifflet final de la saison (matchs restants, sponsors, prime au classement actuel,
 // moins salaires et entretien) : sert à prévenir avant une dépense qui ferait finir la saison dans le rouge.
@@ -232,7 +235,7 @@ export function staffTips(s) {
   if (lineupRating(s.players, best, s.formation, fitWeight) > lineupRating(s.players, s.lineup, s.formation, fitWeight) + 0.15) {
     out.push({
       id: `lineup-${s.seasonNumber}`, title: 'Ton onze peut faire mieux',
-      text: 'Des remplaçants sont plus forts, plus frais ou plus en forme que certains titulaires. Choisis « Onze en forme » ou « Faire tourner » dans l’avant-match.',
+      text: 'Des remplaçants sont plus forts ou plus frais que certains titulaires. Choisis « Onze frais » ou « Faire tourner » dans l’avant-match.',
       action: { kind: 'match', label: 'Préparer le match' },
     });
   }

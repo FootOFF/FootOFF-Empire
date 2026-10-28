@@ -139,10 +139,12 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
   const [note, setNote] = useState(null);
   const [fsOk] = useState(canFullscreen); // PC seulement (fullscreen.js)
   const fullscreen = useFullscreen();
-  const rows = [{ id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'fluid', disabled: !onToggleFluid }, ...(fsOk ? [{ id: 'fullscreen' }] : []),
-    { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'report' }, { id: 'back' }];
+  // Retour en tête (0.8.8, demande du PDG) : la même ligne qu'avant, fixe au-dessus de la liste qui défile, première de
+  // la navigation ; le curseur s'ouvre sur Son
+  const rows = [{ id: 'back' }, { id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'fluid', disabled: !onToggleFluid }, ...(fsOk ? [{ id: 'fullscreen' }] : []),
+    { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'report' }];
   const at = (id) => rows.findIndex((r) => r.id === id); // rang d'une entrée (le plein écran n'existe que sur PC)
-  const menu = useMenu(rows, { initial: Math.max(0, rows.findIndex((r) => r.id === focus)), onBack: () => (mode === 'menu' ? onBack() : setMode('menu')), active: active && mode === 'menu' });
+  const menu = useMenu(rows, { initial: focus ? Math.max(0, at(focus)) : at('sound'), onBack: () => (mode === 'menu' ? onBack() : setMode('menu')), active: active && mode === 'menu' });
   const { cur, setCur, refs, hover } = menu;
   const row = (i) => ({ ref: (el) => { refs.current[i] = el; }, onPointerEnter: hover(i), onFocus: () => setCur(i), style: { '--i': i } });
   const vibOn = vibration && canVibrate;
@@ -211,13 +213,19 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
     );
   }
   return (
+    <>
+    <button type="button" className={`cm-row back top ${cur === at('back') ? 'on' : ''}`} {...row(at('back'))} onClick={() => { uiSound('back'); onBack(); }}>
+      <span className="cm-bar" aria-hidden="true" />
+      <IconChevronLeft className="cm-back-icon" />
+      <span className="cm-row-text"><strong>Retour</strong></span>
+    </button>
     <div className="cm-settings" role="menu" aria-label="Réglages">
-      <button type="button" role="menuitemcheckbox" aria-checked={!muted} className={`cm-row ${cur === 0 ? 'on' : ''}`} {...row(0)} onClick={() => { onToggleSound(); uiSound('select'); }}>
+      <button type="button" role="menuitemcheckbox" aria-checked={!muted} className={`cm-row ${cur === at('sound') ? 'on' : ''}`} {...row(at('sound'))} onClick={() => { onToggleSound(); uiSound('select'); }}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text"><strong>Son</strong><span>Ambiance du stade, sifflet, pièces et sons du menu.</span></span>
         <span className={`switch ${muted ? '' : 'on'}`} aria-hidden="true"><i /></span>
       </button>
-      <button type="button" role="menuitemcheckbox" aria-checked={vibOn} disabled={!canVibrate} className={`cm-row ${cur === 1 ? 'on' : ''}`} {...row(1)} onClick={() => { onToggleVibration(); uiSound('select'); }}>
+      <button type="button" role="menuitemcheckbox" aria-checked={vibOn} disabled={!canVibrate} className={`cm-row ${cur === at('vibration') ? 'on' : ''}`} {...row(at('vibration'))} onClick={() => { onToggleVibration(); uiSound('select'); }}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">
           <strong>Vibrations</strong>
@@ -225,7 +233,7 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
         </span>
         <span className={`switch ${vibOn ? 'on' : ''}`} aria-hidden="true"><i /></span>
       </button>
-      <button type="button" role="menuitemcheckbox" aria-checked={fluid} disabled={!onToggleFluid} className={`cm-row ${cur === 2 ? 'on' : ''}`} {...row(2)} onClick={() => { onToggleFluid(); uiSound('select'); }}>
+      <button type="button" role="menuitemcheckbox" aria-checked={fluid} disabled={!onToggleFluid} className={`cm-row ${cur === at('fluid') ? 'on' : ''}`} {...row(at('fluid'))} onClick={() => { onToggleFluid(); uiSound('select'); }}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">
           <strong>Fluidité sur appareil lent</strong>
@@ -264,12 +272,8 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
           <span>Un rapport à coller dans un message : version, erreurs, et ta partie si tu l’acceptes.</span>
         </span>
       </button>
-      <button type="button" className={`cm-row back ${cur === at('back') ? 'on' : ''}`} {...row(at('back'))} onClick={() => { uiSound('back'); onBack(); }}>
-        <span className="cm-bar" aria-hidden="true" />
-        <IconChevronLeft className="cm-back-icon" />
-        <span className="cm-row-text"><strong>Retour</strong></span>
-      </button>
     </div>
+    </>
   );
 }
 

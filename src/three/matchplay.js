@@ -97,10 +97,10 @@ export function createMatchScene(parent) {
   const teamIdx = (t) => Array.from({ length: 11 }, (_, k) => t * 11 + k);
 
   // --- Équipes, couleurs, dispositifs ----------------------------------------------------------------------------
-  function setKits(home, away) {
+  function setKits(home, away) { // maillot, et short et col à la couleur secondaire (0.8.8)
     for (let k = 0; k < 11; k++) {
-      players.setKit(k, k === 0 ? home.keeper : home.shirt);
-      players.setKit(11 + k, k === 0 ? away.keeper : away.shirt);
+      players.setKit(k, k === 0 ? home.keeper : home.shirt, home.trim);
+      players.setKit(11 + k, k === 0 ? away.keeper : away.shirt, away.trim);
     }
   }
   function setFormations(home, away = S.formation[1]) {

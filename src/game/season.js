@@ -4,7 +4,7 @@ import { REP_DECAY, REP_DIVISION } from './reputation';
 import { refreshSales, refreshTransfers } from './transfers';
 import { refreshScouting, trainYouth, youthSeasonEnd } from './academy';
 import { leagueRounds, logMove } from './mercato';
-import { awayGate, expectedGate, matchGate, prizeFor, sponsorIncome, ticketPrice, upkeepOf } from './economy';
+import { accrueDues, awayGate, expectedGate, matchGate, prizeFor, sponsorIncome, ticketPrice, upkeepOf } from './economy';
 import { clamp, ordinal, pick, rnd } from './utils';
 import { clubAfter, leagueClubNames, randomClubName } from './names';
 import { drawInjury, fitOf, freshSeason, matchCost, playerRating, progressPlayer, recoveryOf, saleValue, wageOf, wantsRetirement } from './players';
@@ -387,13 +387,9 @@ export function applyMatchResult(s, live) {
   }
   s.money += res.revenue;
   for (const [k, v] of Object.entries(res.breakdown)) book(s, k, v);
-  if (league) { // paie de la journée : un septième des salaires et de l'entretien (un quatorzième en Élite)
+  if (league) { // part de la journée (un septième des salaires et de l'entretien, un quatorzième en Élite) : due, payée au bilan
     const len = leagueLength(s);
-    const wagePart = Math.round(s.players.reduce((sum, p) => sum + wageOf(p, s.divisionIndex), 0) / len);
-    const upkeepPart = Math.round(upkeepOf(s) / len);
-    s.money -= wagePart + upkeepPart;
-    book(s, 'wages', wagePart);
-    book(s, 'upkeep', upkeepPart);
+    accrueDues(s, Math.round(s.players.reduce((sum, p) => sum + wageOf(p, s.divisionIndex), 0) / len), Math.round(upkeepOf(s) / len));
   }
   markTreasury(s);
   s.seasonStats.gate = (s.seasonStats.gate || 0) + res.revenue; // recettes cumulées, pour le bilan
@@ -471,7 +467,12 @@ export function endSeason(s) {
   // sponsors de la saison : payés à la reprise (paySponsors), sinon maintenant (première saison, partie d'avant la 0.6.0)
   const upfront = sponsorsPaid(s);
   const sponsors = upfront ? s.seasonStats?.sponsors || 0 : sponsorIncome(s.buildings.sponsor, s.divisionIndex, s.reputation);
-  // salaires et entretien déjà payés journée après journée : le bilan en montre le total de la saison
+  // salaires et entretien dus journée après journée : payés maintenant, d'un coup (0.8.8) ; le bilan en montre le total
+  const dues = s.dues || { wages: 0, upkeep: 0 };
+  s.money -= dues.wages + dues.upkeep;
+  book(s, 'wages', dues.wages);
+  book(s, 'upkeep', dues.upkeep);
+  s.dues = null;
   const wages = s.ledger?.lines?.wages || 0;
   const upkeep = s.ledger?.lines?.upkeep || 0;
   const promoted = !s.league && position <= 2 && s.divisionIndex < 3;

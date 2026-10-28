@@ -1,5 +1,5 @@
 import React from 'react';
-import { HOME_KIT, kitOf } from '../game/kits';
+import { HOME_KIT, ourKit, teamKitOf } from '../game/kits';
 import { BANDS, EYES, GREY, HAIRS, SKINS, agedFace, faceOf } from '../game/faces';
 
 // Portrait d'un joueur, dessiné (SVG) et toujours le même pour un même joueur (ses traits : src/game/faces.js) : forme
@@ -119,10 +119,11 @@ export function Portrait({ p, club = null, free = false, size = 32, className = 
   const { grey, style, beard: fh } = agedFace(F, age);
   const detail = size >= 40; // traits fins (forme des yeux, nez, bouche, taches, grain de beauté, cicatrice)
   const fine = size >= 64; // couleur des yeux et leur reflet
-  const kit = free ? FREE_TOP : club ? (p.pos === 'G' ? kitOf(club).keeper : kitOf(club).shirt) : p.pos === 'G' ? HOME_KIT.keeper : HOME_KIT.shirt;
+  const our = ourKit(); // nos couleurs d'écusson (0.8.8)
+  const kit = free ? FREE_TOP : club ? (p.pos === 'G' ? teamKitOf(club).keeper : teamKitOf(club).shirt) : p.pos === 'G' ? our.keeper : our.shirt;
   const shirt = hex(kit);
   const ours = !club && !free;
-  const trim = ours ? (p.pos === 'G' ? '#c7a15a' : '#14120e') : shade(shirt, 0.62);
+  const trim = ours ? (p.pos === 'G' ? hex(our.shirt) : our.trim === HOME_KIT.trim ? '#14120e' : hex(our.trim)) : shade(shirt, 0.62);
   const skin = SKINS[F.sk] || SKINS[2];
   const skinShade = shade(skin, 0.8);
   const line = shade(skin, 0.55);

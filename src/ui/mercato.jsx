@@ -15,13 +15,15 @@ import {
   refWageOf, termReasons, wageStep,
 } from '../game/contracts';
 import { listedToday } from '../game/transfers';
-import { endOfSeasonForecast, officeSize, seasonForecast } from '../game/economy';
+import { duesOf, endOfSeasonForecast, officeSize, seasonForecast } from '../game/economy';
 import { standingsOf } from '../game/season';
 import { capitalize, clubAfter, isPluralClub, withArticle } from '../game/names';
 import { Crest } from './crest';
 import { fmtMoney, fmtRating } from './format';
 import { Tabs } from './glass';
 import { answerFriend, canSell, offerFriend, queuedFor } from '../game/leagueClub';
+import { leagueTransfers, myLeagues } from '../game/leagueNet';
+import { unsnapPlayer } from '../game/leagueWorld';
 import { IconCheck, IconChevron, IconClose, IconRadar, IconSearch, IconStar, IconTransfer, IconTrend } from './icons';
 import { useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
@@ -63,15 +65,28 @@ const vsAsk = (offer, ask) => {
   return `${d} % ${offer < ask ? 'sous le' : 'au-dessus du'} prix demandé`;
 };
 
-// Effet d'une dépense ou d'un salaire en plus sur la fin de saison prévue et la part des salaires.
+// Effet d'une dépense ou d'un salaire en plus sur la fin de saison prévue, la part des salaires et ce qui reste
+// disponible une fois payé le bilan (salaires et entretien dus en fin de saison, 0.8.8 : le nouveau salaire n'y compte
+// que pour les journées restantes).
 function impactOf(state, wageDelta, cash) {
   const wages = state.players.reduce((a, q) => a + wageOf(q, state.divisionIndex), 0);
   const position = standingsOf(state).findIndex((t) => t.i === 0) + 1;
   const endNow = endOfSeasonForecast(state, position, wages).end;
+  const dueNow = duesOf(state, wages);
+  const dueAfter = duesOf(state, wages + wageDelta);
   return {
-    endNow, endAfter: endNow - cash - wageDelta,
+    endNow, endAfter: endNow - cash - (dueAfter.total - dueNow.total),
     share: seasonForecast(state, wages).wageShare, shareAfter: seasonForecast(state, wages + wageDelta).wageShare,
+    availNow: dueNow.available, availAfter: dueNow.available - cash, owed: dueNow.owed,
   };
+}
+
+// Sous les coûts d'un achat : la saison dans le rouge (le conseil vendrait), sinon une caisse qui ne couvrirait plus ce
+// qui est déjà dû aux joueurs et pour l'entretien (payé au bilan).
+function ReserveWarn({ imp, what }) {
+  if (imp.endAfter < 0) return <p className="ng-warn">{what}, la saison finirait dans le rouge : le conseil vendrait alors tes plus gros salaires.</p>;
+  if (imp.availAfter < 0) return <p className="ng-warn soft">{what}, ta caisse ne couvrirait plus les {fmtMoney(imp.owed)} déjà dus en salaires et entretien : les recettes des matchs restants devront compléter avant le bilan.</p>;
+  return null;
 }
 
 // --- Carte d'un joueur du marché ----------------------------------------------------------------------------
@@ -642,7 +657,66 @@ function OffersView({ state, refLvl, run, ask, onOffer, onSale, onList }) {
 
 // --- Bilan des transferts -----------------------------------------------------------------------------
 
-function LogView({ state }) {
+// Transferts de la ligue (0.8.8, demande du PDG) : ceux des amis, saison en cours et précédente, journée par journée,
+// relus du serveur à l'ouverture du Bilan. Chaque ligne : le joueur (niveau d'après ses qualités, poste, âge), club de
+// départ → club d'arrivée, montant, journée ; les nôtres en or. Les négociations refusées n'y figurent pas.
+function LeagueTransfers({ state, refLvl }) {
+  const L = state.league;
+  const [data, setData] = useState(null); // null : chargement ; { list } ou { error }
+  const [season, setSeason] = useState(L.server?.season || state.seasonNumber);
+  useEffect(() => {
+    let live = true;
+    const m = myLeagues().find((x) => x.code === L.code);
+    if (!m) { setData({ error: true }); return undefined; }
+    leagueTransfers(m).then((d) => { if (live) setData({ list: Array.isArray(d?.transfers) ? d.transfers : [] }); }, () => { if (live) setData({ error: true }); });
+    return () => { live = false; };
+  }, [L.code]);
+  const club = (member) => L.clubs.find((c) => c.member === member)?.name || 'un club';
+  const from = (x) => (x.kind === 'm' ? 'Marché commun' : x.kind === 'a' ? L.clubs.find((c) => c.slot === Number(x.seller))?.name || 'un club' : club(x.seller));
+  const seasons = data?.list ? [...new Set(data.list.map((x) => x.season))].sort((a, b) => b - a) : [];
+  const shown = (data?.list || []).filter((x) => x.season === season);
+  const level = (x) => {
+    if (!x.pos || !x.a) return null;
+    try { return playerRating(unsnapPlayer({ n: x.n, pos: x.pos, g: x.g, a: x.a, ...(x.k ? { k: x.k } : {}) })); } catch { return null; }
+  };
+  return (
+    <section className="mc-sec lt">
+      <div className="lt-head">
+        <span className="eyebrow">Transferts de la ligue</span>
+        {seasons.length > 1 && (
+          <div className="chips">
+            {seasons.map((n) => <button key={n} type="button" className={n === season ? 'active' : ''} onClick={() => setSeason(n)}>Saison {n}</button>)}
+          </div>
+        )}
+      </div>
+      {!data ? <p className="mc-hint">Chargement des transferts…</p>
+        : data.error ? <p className="mc-hint">Historique indisponible pour l’instant : il revient avec la connexion à la ligue.</p>
+          : shown.length === 0 ? <p className="mc-hint">Aucun transfert entre amis cette saison. Chaque signature au marché commun, chez un club de l’ordinateur ou entre amis s’inscrira ici.</p>
+            : (
+              <ul className="mc-rows lt-rows">
+                {shown.map((x, i) => {
+                  const r = level(x);
+                  const mine = x.buyer === L.me || x.seller === L.me;
+                  return (
+                    <li key={`${x.season}-${x.round}-${i}`} className={`mc-row ${mine ? 'mine' : ''}`}>
+                      {r !== null
+                        ? <span className={`mc-medal sm ${heat(r, refLvl)}`}><b>{fmtRating(r)}</b><span>{x.pos}</span></span>
+                        : <span className="mc-medal sm" aria-hidden="true"><b>–</b><span>{x.pos || ''}</span></span>}
+                      <span className="mc-row-main">
+                        <b>{x.n || 'Joueur'}</b>
+                        <em>{from(x)}{' '}→ {club(x.buyer)}{x.g ? ` · ${x.g} ans` : ''}</em>
+                      </span>
+                      <span className="mc-amount"><b>{x.fee ? fmtMoney(x.fee) : 'Libre'}</b><em>{x.round ? `après la journée ${x.round}` : 'avant la 1re journée'}</em></span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+    </section>
+  );
+}
+
+function LogView({ state, refLvl }) {
   const log = state.mercatoLog || [];
   const season = log.filter((x) => x.season === state.seasonNumber);
   const sum = (list, kind) => list.filter((x) => x.kind === kind).reduce((a, x) => a + x.fee, 0);
@@ -653,6 +727,7 @@ function LogView({ state }) {
   const bestSale = log.filter((x) => x.kind === 'out' && x.fee > 0).sort((a, b) => b.fee - a.fee)[0];
   return (
     <>
+      {state.league && <LeagueTransfers state={state} refLvl={refLvl} />}
       <span className="eyebrow">Saison {state.seasonNumber}</span>
       <div className="mc-tiles">
         <div><span>Achats</span><b>{fmtMoney(sum(season, 'in'))}</b><em>{plural(count(season, 'in'), 'arrivée', 'arrivées')}</em></div>
@@ -698,7 +773,10 @@ export function Mercato({ state, run, ask, refLvl, recommended, initialView = 'b
   const setView = onView || setViewState;
   const followed = new Set((state.shortlist || []).filter((x) => !x.gone).map((x) => x.id));
   const follow = (p) => run((s) => toggleShortlist(s, p.id));
-  const todo = (state.offers || []).length + pendingCounters(state).length + (state.league?.offersIn || []).length;
+  // à traiter : offres reçues, contre-offres en attente, négociations entre amis où c'est notre tour (0.8.8)
+  const L = state.league;
+  const todo = (state.offers || []).length + pendingCounters(state).length + (L?.offersIn || []).filter((o) => o.w !== 'b').length
+    + (L?.offersOut || []).filter((o) => o.status === 'open' && o.w === 'b').length;
   const common = { state, refLvl, recommended, onOpen, onCompare, onFollow: follow, onOffer };
   return (
     <div className="mc">
@@ -718,7 +796,7 @@ export function Mercato({ state, run, ask, refLvl, recommended, initialView = 'b
       {view === 'watch' && <WatchView {...common} run={run} />}
       {view === 'offers' && state.league && <LeagueOffersBlock state={state} run={run} ask={ask} refLvl={refLvl} onOffer={onOffer} />}
       {view === 'offers' && <OffersView state={state} refLvl={refLvl} run={run} ask={ask} onOffer={onOffer} onSale={onSale} onList={onList} />}
-      {view === 'log' && <LogView state={state} />}
+      {view === 'log' && <LogView state={state} refLvl={refLvl} />}
     </div>
   );
 }
@@ -954,9 +1032,10 @@ function FeeStep({ state, p, run, opened }) {
         <dl className="ng-costs">
           <div><dt>Salaire demandé ensuite</dt><dd>{fmtMoney(wage)} / saison</dd></div>
           <div><dt>Salaires / revenus</dt><dd className={imp.shareAfter > 0.75 ? 'down' : ''}>{Math.round(imp.share * 100)} % → {Math.round(imp.shareAfter * 100)} %</dd></div>
+          <div><dt>Disponible</dt><dd className={imp.availAfter < 0 ? 'down' : ''}>{fmtMoney(imp.availNow)} → {fmtMoney(imp.availAfter)}</dd></div>
           <div><dt>Fin de saison prévue</dt><dd className={imp.endAfter < 0 ? 'down' : ''}>{fmtMoney(imp.endNow)} → {fmtMoney(imp.endAfter)}</dd></div>
         </dl>
-        {imp.endAfter < 0 && <p className="ng-warn">Avec cette recrue, la saison finirait dans le rouge : le conseil vendrait alors tes plus gros salaires.</p>}
+        <ReserveWarn imp={imp} what="Avec cette recrue" />
         <footer className="ng-foot">
           {talks.closed ? (
             <p className="ng-closed">Le vendeur ne discutera plus avant la prochaine journée{talks.counter ? ' (sa contre-offre tient toujours)' : ''}.</p>
@@ -1088,9 +1167,10 @@ function ContractStep({ state, p, run, opened, renew, feeAgreed }) {
           {fee > 0 && <div><dt>Indemnité convenue</dt><dd>{fmtMoney(fee)}</dd></div>}
           <div><dt>Coût du contrat ({yearsOf(years)})</dt><dd>{fmtMoney(wage * years + bonus)}</dd></div>
           <div><dt>Salaires / revenus</dt><dd className={imp.shareAfter > 0.75 ? 'down' : ''}>{Math.round(imp.share * 100)} % → {Math.round(imp.shareAfter * 100)} %</dd></div>
+          <div><dt>Disponible</dt><dd className={imp.availAfter < 0 ? 'down' : ''}>{fmtMoney(imp.availNow)} → {fmtMoney(imp.availAfter)}</dd></div>
           <div><dt>Fin de saison prévue</dt><dd className={imp.endAfter < 0 ? 'down' : ''}>{fmtMoney(imp.endNow)} → {fmtMoney(imp.endAfter)}</dd></div>
         </dl>
-        {imp.endAfter < 0 && <p className="ng-warn">Avec ce contrat, la saison finirait dans le rouge : le conseil vendrait alors tes plus gros salaires.</p>}
+        <ReserveWarn imp={imp} what="Avec ce contrat" />
         <footer className="ng-foot">
           {ct.closed ? (
             <p className="ng-closed">Il ne discutera plus avant la prochaine journée{counter ? ' (la contre-proposition de son agent tient toujours)' : ''}{fee ? ' ; l’indemnité convenue tombera alors' : ''}.</p>
@@ -1461,26 +1541,35 @@ export function LeagueOffer({ state, p, run, refLvl, onClose, onSheet }) {
   const step = stepFor(ask);
   const mine = (L.offersOut || []).find((o) => o.l === p.lid) || null;
   const open = mine?.status === 'open' ? mine : null;
-  const queued = queuedFor(state, (x) => (x.k === 'offer' || x.k === 'withdraw') && x.lid === p.lid);
+  const queued = queuedFor(state, (x) => (x.k === 'offer' || x.k === 'withdraw' || x.k === 'answer') && x.lid === p.lid);
+  // négociation en cours (0.8.8) : à notre tour après une contre-offre de l'ami (reply), le montant devient notre
+  // contre-offre, sous son prix ; une offre déjà discutée ne se remplace plus, elle se retire
+  const reply = open?.w === 'b' ? open : null;
+  const talked = !!open && open.c > 0;
+  const lastWord = !!reply && reply.c >= 3;
   const lo = roundTo(ask * 0.5, step);
-  const hi = Math.max(lo + step, roundTo(ask * 2, step));
-  const [offer, setOffer] = useState(open?.x ?? ask);
+  const hi = reply ? Math.max(lo, reply.x - step) : Math.max(lo + step, roundTo(ask * 2, step));
+  const [offer, setOffer] = useState(() => (reply ? Math.max(lo, Math.min(hi, roundTo(reply.x * 0.9, step))) : open?.x ?? ask));
   const set = (v) => setOffer(Math.min(hi, Math.max(lo, roundTo(v, step))));
   const others = (L.offersOut || []).filter((o) => o.status === 'open' && o.l !== p.lid);
   const engaged = sumOf(others);
   const tooMuch = engaged + offer > state.money;
+  const short = reply ? engaged + reply.x - state.money : 0; // accepter son prix
   const full = others.length >= 3 && !open;
   const squadFull = state.players.length >= SQUAD_MAX;
   const failed = state.lastLeague?.k === 'offer' && state.lastLeague.lid === p.lid && !state.lastLeague.ok ? state.lastLeague : null;
   const r = playerRating(p);
-  const send = () => { run((s) => offerFriend(s, p, offer)); haptic('build'); };
-  const remove = () => run((s) => offerFriend(s, p, null));
+  const send = () => { run((s) => (reply ? answerFriend(s, reply, false, offer, 'b') : offerFriend(s, p, offer))); haptic('build'); };
+  const remove = () => run((s) => (reply ? answerFriend(s, reply, false, null, 'b') : offerFriend(s, p, null)));
+  const accept = () => { run((s) => answerFriend(s, reply, true, null, 'b')); haptic('build'); };
+  const line = open?.h?.length > 1 ? open.h.map(fmtMoney).join(' → ') : null;
   const plural2 = isPluralClub(p.club);
   // état de l'offre : la file d'envoi d'abord, puis la réponse du serveur, puis celle de l'ami
-  const state2 = queued ? (queued.k === 'withdraw' ? ['Retrait en cours', 'Retrait de ton offre…', 'countered'] : ['Envoi en cours', 'Envoi de ton offre…', 'countered'])
+  const state2 = queued ? (queued.k === 'withdraw' ? ['Retrait en cours', 'Retrait de ton offre…', 'countered'] : ['Envoi en cours', 'Envoi de ta réponse…', 'countered'])
     : failed ? ['Offre non envoyée', leagueNote(failed.note, 'offer'), '']
-      : open ? ['En attente de la réponse de ton ami', `Offre de ${fmtMoney(open.x)} envoyée : ${withArticle(p.club)} ${plural2 ? 'n’ont' : 'n’a'} pas encore répondu.`, 'countered']
-        : mine?.status === 'no' ? ['Offre refusée', `${capitalize(withArticle(p.club))} ${plural2 ? 'ont' : 'a'} refusé ton offre de ${fmtMoney(mine.x)}.`, ''] : null;
+      : reply ? [`Contre-offre ${clubAfter('de ', p.club)} : ${fmtMoney(reply.x)}`, `${line ? `${line}. ` : ''}${lastWord ? 'Dernier mot : accepte son prix ou refuse.' : `À toi : accepte son prix, fais une contre-offre (encore ${3 - reply.c} possible${3 - reply.c > 1 ? 's' : ''}) ou refuse.`}`, 'countered']
+        : open ? ['En attente de la réponse de ton ami', `${talked ? `Ta contre-offre de ${fmtMoney(open.x)}` : `Offre de ${fmtMoney(open.x)}`} envoyée${line ? ` (${line})` : ''} : ${withArticle(p.club)} ${plural2 ? 'n’ont' : 'n’a'} pas encore répondu.`, 'countered']
+          : mine?.status === 'no' ? ['Négociation rompue', `Pas d’accord avec ${withArticle(p.club)} sur ${fmtMoney(mine.x)}.`, ''] : null;
   return (
     <div className="sq-overlay" onClick={onClose}>
       <article ref={ref} className="sq-sheet glass ng" onClick={(e) => e.stopPropagation()} aria-label={`Offre pour ${p.name}`}>
@@ -1503,46 +1592,89 @@ export function LeagueOffer({ state, p, run, refLvl, onClose, onSheet }) {
             <span>{state2[1]}</span>
           </section>
         )}
-        <section className="ng-offer">
-          <div className="ng-ask"><span>Sa valeur</span><b>{fmtMoney(ask)}</b></div>
-          <span className="eyebrow">Ton offre</span>
+        {!lastWord && (<section className="ng-offer">
+          <div className="ng-ask"><span>{reply ? 'Son prix' : 'Sa valeur'}</span><b>{fmtMoney(reply ? reply.x : ask)}</b></div>
+          <span className="eyebrow">{reply ? 'Ta contre-offre' : 'Ton offre'}</span>
           <div className="ng-amount">
             <button className="hud-icon" onClick={() => set(offer - step)} aria-label="Baisser l’offre" disabled={offer <= lo}>−</button>
             <output className="ng-value" aria-live="polite">{fmtMoney(offer)}</output>
             <button className="hud-icon" onClick={() => set(offer + step)} aria-label="Monter l’offre" disabled={offer >= hi}>+</button>
           </div>
           <input className="ng-range" type="range" min={lo} max={hi} step={step} value={offer} style={{ '--fill': `${((offer - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => set(Number(e.target.value))} aria-label="Montant de l’offre" />
-        </section>
+        </section>)}
         <section className="ng-chance">
           <span className="eyebrow">Comment ça se joue</span>
           <ul className="ng-reasons">
-            <li>Ton offre part aussitôt : ton ami l’accepte ou la refuse depuis son mercato.</li>
+            <li>Ton offre part aussitôt : ton ami l’accepte, fait une contre-offre ou refuse depuis son mercato. Trois contre-offres au plus, des deux côtés ; puis accepter ou refuser.</li>
             <li>Acceptée, le transfert est conclu sur-le-champ : le joueur rejoint ton effectif, l’indemnité part de ton compte.</li>
             <li>Trois offres en attente au plus ; une offre restée sans réponse tombe à la fin de la journée.</li>
             {engaged > 0 && <li>Déjà promis dans tes autres offres : {fmtMoney(engaged)}.</li>}
           </ul>
         </section>
         <footer className="ng-foot">
-          <button className="btn btn-xl" disabled={tooMuch || full || squadFull || !!queued || (!!open && offer === open.x)} onClick={send}>
-            {squadFull ? `Effectif complet (${SQUAD_MAX})` : full ? 'Trois offres déjà en attente' : tooMuch ? `Il te manque ${fmtMoney(engaged + offer - state.money)}` : open ? `Changer mon offre · ${fmtMoney(offer)}` : `Faire cette offre · ${fmtMoney(offer)}`}
-          </button>
-          {open
-            ? <button className="btn ghost" disabled={!!queued} onClick={remove}>Retirer mon offre</button>
-            : !full && <span className="ng-tries">Encore {plural(3 - others.length, 'offre possible', 'offres possibles')}</span>}
+          {reply ? (
+            <>
+              <button className="btn btn-xl" disabled={short > 0 || squadFull || !!queued} onClick={accept}>
+                {squadFull ? `Effectif complet (${SQUAD_MAX})` : short > 0 ? `Il te manque ${fmtMoney(short)}` : `Accepter son prix · ${fmtMoney(reply.x)}`}
+              </button>
+              {!lastWord && <button className="btn" disabled={tooMuch || squadFull || !!queued} onClick={send}>{tooMuch ? `Il te manque ${fmtMoney(engaged + offer - state.money)}` : `Contre-offre · ${fmtMoney(offer)}`}</button>}
+              <button className="btn ghost" disabled={!!queued} onClick={remove}>Refuser</button>
+            </>
+          ) : (
+            <>
+              {!talked && (
+                <button className="btn btn-xl" disabled={tooMuch || full || squadFull || !!queued || (!!open && offer === open.x)} onClick={send}>
+                  {squadFull ? `Effectif complet (${SQUAD_MAX})` : full ? 'Trois offres déjà en attente' : tooMuch ? `Il te manque ${fmtMoney(engaged + offer - state.money)}` : open ? `Changer mon offre · ${fmtMoney(offer)}` : `Faire cette offre · ${fmtMoney(offer)}`}
+                </button>
+              )}
+              {open
+                ? <button className="btn ghost" disabled={!!queued} onClick={remove}>Retirer mon offre</button>
+                : !full && <span className="ng-tries">Encore {plural(3 - others.length, 'offre possible', 'offres possibles')}</span>}
+            </>
+          )}
         </footer>
       </article>
     </div>
   );
 }
 
-// Offres de tes amis (à accepter ou refuser : acceptée, la vente est conclue aussitôt) et tes offres en cours (réponse
-// de tes amis, signatures qui attendent la ligue), en tête de l'onglet Offres du mercato, avec les rangées du solo.
+// Contre-offre dans une négociation entre amis : le montant se règle au pas du prix, au-dessus de l'offre pour le vendeur,
+// en dessous de son prix pour l'acheteur.
+const COUNTERS = 3;
+function CounterPicker({ o, role, onSend, onCancel, money = null }) {
+  const step = stepFor(o.x);
+  const lo = role === 's' ? o.x + step : Math.max(250, roundTo(o.x * 0.5, step));
+  const hi = role === 's' ? Math.max(lo, roundTo(o.x * 2, step)) : Math.max(lo, o.x - step);
+  const [v, setV] = useState(() => (role === 's' ? Math.min(hi, Math.max(lo, roundTo(o.x * 1.15, step))) : Math.min(hi, Math.max(lo, roundTo(o.x * 0.9, step)))));
+  const set = (x) => setV(Math.min(hi, Math.max(lo, roundTo(x, step))));
+  const short = money !== null && v > money;
+  return (
+    <div className="mc-row-actions mc-haggle">
+      <div className="ng-mini">
+        <button className="hud-icon" type="button" onClick={() => set(v - step)} aria-label="Baisser la contre-offre" disabled={v <= lo}>−</button>
+        <output aria-live="polite">{fmtMoney(v)}</output>
+        <button className="hud-icon" type="button" onClick={() => set(v + step)} aria-label="Monter la contre-offre" disabled={v >= hi}>+</button>
+      </div>
+      <button className="btn btn-sm" disabled={short} onClick={() => onSend(v)}>{short ? `Il te manque ${fmtMoney(v - money)}` : `Envoyer · ${fmtMoney(v)}`}</button>
+      <button className="btn btn-sm ghost" onClick={onCancel}>Annuler</button>
+    </div>
+  );
+}
+
+// Prix successifs d'une négociation (offre, contre-offres) : « 10 000 € → 14 000 € → 12 000 € ».
+const haggleLine = (o) => (o.h?.length > 1 ? o.h.map(fmtMoney).join(' → ') : null);
+
+// Négociations entre amis (0.8.8), en tête de l'onglet Offres du mercato : celles où l'on vend (offres reçues) et celles
+// où l'on achète. À son tour : accepter (conclu aussitôt), contre-offre (trois au plus dans une négociation) ou refuser ;
+// sinon, l'attente de la réponse de l'ami, et rompre reste possible. Puis les signatures qui attendent la ligue.
 function LeagueOffersBlock({ state, run, ask, refLvl, onOffer }) {
   const L = state.league;
+  const [haggle, setHaggle] = useState(null); // négociation dont la contre-offre se règle
   const name = (slot) => L.clubs.find((c) => c.slot === slot)?.name || '?';
   const pool = poolOf(state);
   const target = (lid) => pool.find((p) => p.lid === lid && p.leagueKind === 'friend');
   const busy = (id) => queuedFor(state, (x) => x.k === 'answer' && x.id === id);
+  const counter = (o, role) => (v) => { setHaggle(null); run((s) => answerFriend(s, o, false, v, role)); };
   // vendre à un ami se confirme, comme une vente du solo (rien ne revient en arrière)
   const sell = (o, p, club) => {
     const imp = impactOf(state, -wageOf(p, state.divisionIndex), -o.x);
@@ -1558,20 +1690,47 @@ function LeagueOffersBlock({ state, run, ask, refLvl, onOffer }) {
       onConfirm: () => run((s) => answerFriend(s, o, true)),
     });
   };
+  // acheter au prix de l'ami (sa contre-offre) : conclu aussitôt, le joueur arrive
+  const buy = (o, p, club) => {
+    const wage = p ? wageOf(p, state.divisionIndex) : 0;
+    const imp = impactOf(state, wage, o.x);
+    ask({
+      title: `Recruter ${p?.name || o.n} pour ${fmtMoney(o.x)} ?`,
+      text: `Tu acceptes le prix ${clubAfter('de ', club)} : le transfert est conclu aussitôt, le joueur rejoint ton effectif.`,
+      rows: [
+        ['Montant du transfert', `−${fmtMoney(o.x)}`, 'down'],
+        ...(p ? [['Salaire', `${fmtMoney(wage)} / saison`]] : []),
+        ['Disponible', `${fmtMoney(imp.availNow)} → ${fmtMoney(imp.availAfter)}`, imp.availAfter < 0 ? 'down' : ''],
+        ['Fin de saison prévue', `${fmtMoney(imp.endNow)} → ${fmtMoney(imp.endAfter)}`, imp.endAfter < 0 ? 'down' : ''],
+      ],
+      confirmLabel: `Recruter · ${fmtMoney(o.x)}`,
+      onConfirm: () => run((s) => answerFriend(s, o, true, null, 'b')),
+    });
+  };
   const signing = (L.outbox || []).filter((x) => x.k === 'sign');
-  const out = (L.offersOut || []).map((o) => ({
-    key: o.id, p: target(o.l), name: o.n, x: o.x,
-    note: o.status === 'open' ? `${name(o.s)} · en attente de sa réponse` : `${name(o.s)} · refusée`, refused: o.status === 'no',
-  }));
   const medal = (p) => (p
     ? <span className={`mc-medal sm ${heat(playerRating(p), refLvl)}`}><b>{fmtRating(playerRating(p))}</b><span>{p.pos}</span></span>
     : <span className="mc-medal sm" aria-hidden="true"><b>–</b></span>);
+  // les trois réponses à son tour, ou la contre-offre en cours de réglage
+  const answers = (o, role, accept, acceptOk, acceptLabel) => {
+    const sending = busy(o.id);
+    if (haggle === o.id) return <CounterPicker o={o} role={role} money={role === 'b' ? state.money : null} onSend={counter(o, role)} onCancel={() => setHaggle(null)} />;
+    return (
+      <div className="mc-row-actions">
+        <button className="btn btn-sm" disabled={!!sending || !acceptOk} onClick={accept}>{acceptLabel}</button>
+        {o.c < COUNTERS && <button className="btn btn-sm ghost" disabled={!!sending || (role === 's' && !canSell(state, o.l))} onClick={() => setHaggle(o.id)}>Contre-offre</button>}
+        <button className="btn btn-sm refuse ghost" disabled={!!sending} onClick={() => run((s) => answerFriend(s, o, false, null, role))}>Refuser</button>
+      </div>
+    );
+  };
+  const left = (o) => (o.c < COUNTERS ? `${plural(COUNTERS - o.c, 'contre-offre possible', 'contre-offres possibles')}` : 'dernier mot : accepter ou refuser');
+  const outs = L.offersOut || [];
   return (
     <>
       <section className="mc-sec">
         <span className="eyebrow">Offres de tes amis</span>
         {(L.offersIn || []).length === 0 ? (
-          <p className="mc-hint">Aucune offre d’un ami pour l’instant. Accepter conclut le transfert aussitôt : le joueur part, l’indemnité arrive.</p>
+          <p className="mc-hint">Aucune offre d’un ami pour l’instant. À chaque offre : accepter (le transfert est conclu aussitôt), faire une contre-offre ou refuser.</p>
         ) : (
           <ul className="mc-rows">
             {L.offersIn.map((o) => {
@@ -1579,15 +1738,20 @@ function LeagueOffersBlock({ state, run, ask, refLvl, onOffer }) {
               const club = name(o.b);
               const sending = busy(o.id);
               const sellable = canSell(state, o.l);
+              const mine = o.w === 's';
+              const line = haggleLine(o);
               return (
                 <li key={o.id} className="mc-row offer">
                   {medal(p)}
-                  <span className="mc-row-main"><b>{o.n}</b><em>{capitalize(withArticle(club))} {isPluralClub(club) ? 'veulent' : 'veut'} le recruter{sellable ? '' : ` · effectif au minimum (${SQUAD_MIN} joueurs) : recrute avant de vendre`}</em></span>
-                  <span className="mc-amount"><b>{fmtMoney(o.x)}</b><em>{sending ? 'envoi…' : 'attend ta réponse'}</em></span>
-                  <div className="mc-row-actions">
-                    <button className="btn btn-sm" disabled={!!sending || !sellable || !p} onClick={() => sell(o, p, club)}>Accepter</button>
-                    <button className="btn btn-sm refuse ghost" disabled={!!sending} onClick={() => run((s) => answerFriend(s, o, false))}>Refuser</button>
-                  </div>
+                  <span className="mc-row-main"><b>{o.n}</b><em>{mine
+                    ? <>{capitalize(withArticle(club))} {isPluralClub(club) ? 'veulent' : 'veut'} le recruter{line && <> · <span className="mc-line">{line}</span></>}{sellable ? '' : ` · effectif au minimum (${SQUAD_MIN} joueurs) : recrute avant de vendre`}</>
+                    : <>Ta contre-offre · <span className="mc-line">{line || fmtMoney(o.x)}</span> · {clubAfter('à ', club)} de répondre</>}</em></span>
+                  <span className="mc-amount"><b>{fmtMoney(o.x)}</b><em>{sending ? 'envoi…' : mine ? left(o) : 'en attente de sa réponse'}</em></span>
+                  {mine ? answers(o, 's', () => sell(o, p, club), sellable && !!p, 'Accepter') : (
+                    <div className="mc-row-actions">
+                      <button className="btn btn-sm refuse ghost" disabled={!!sending} onClick={() => run((s) => answerFriend(s, o, false, null, 's'))}>Rompre</button>
+                    </div>
+                  )}
                 </li>
               );
             })}
@@ -1596,7 +1760,7 @@ function LeagueOffersBlock({ state, run, ask, refLvl, onOffer }) {
       </section>
       <section className="mc-sec">
         <span className="eyebrow">Mes offres en cours</span>
-        {out.length === 0 && signing.length === 0 ? (
+        {outs.length === 0 && signing.length === 0 ? (
           <p className="mc-hint">Aucune offre en cours. Négocie sur le marché commun ou avec un club de l’ordinateur, ou fais une offre pour le joueur d’un ami.</p>
         ) : (
           <ul className="mc-rows">
@@ -1607,14 +1771,25 @@ function LeagueOffersBlock({ state, run, ask, refLvl, onOffer }) {
                 <span className="mc-amount"><b>{fmtMoney(x.fee || x.terms?.bonus || 0)}</b><em>{x.fee ? (x.terms?.bonus ? 'indemnité, hors prime' : 'indemnité') : 'prime à la signature'}</em></span>
               </li>
             ))}
-            {out.map((r) => (
-              <li key={r.key} className="mc-row">
-                {medal(r.p)}
-                <span className="mc-row-main"><b>{r.p?.name || r.name || '?'}</b><em className={r.refused ? 'down' : ''}>{r.note}</em></span>
-                <span className="mc-amount"><b>{fmtMoney(r.x)}</b></span>
-                {r.p && <button className="btn btn-sm" onClick={() => onOffer(r.p)}>Voir</button>}
-              </li>
-            ))}
+            {outs.map((o) => {
+              const p = target(o.l);
+              const club = name(o.s);
+              const line = haggleLine(o);
+              const myTurn = o.status === 'open' && o.w === 'b';
+              const squadFull = state.players.length >= SQUAD_MAX;
+              const prices = line && <> · <span className="mc-line">{line}</span></>;
+              const note = o.status === 'no' ? `${club} · ${o.c ? 'négociation rompue' : 'offre refusée'} : tu peux en refaire une` : myTurn ? <>Contre-offre {clubAfter('de ', club)}{prices}</> : <>{club} · en attente de sa réponse{prices}</>;
+              return (
+                <li key={o.id} className={`mc-row ${myTurn ? 'offer' : ''}`}>
+                  {medal(p)}
+                  <span className="mc-row-main"><b>{p?.name || o.n || '?'}</b><em className={o.status === 'no' ? 'down' : ''}>{note}</em></span>
+                  <span className="mc-amount"><b>{fmtMoney(o.x)}</b>{myTurn && <em>{busy(o.id) ? 'envoi…' : left(o)}</em>}</span>
+                  {myTurn
+                    ? answers(o, 'b', () => buy(o, p, club), !squadFull && o.x <= state.money, squadFull ? `Effectif complet (${SQUAD_MAX})` : o.x > state.money ? `Il te manque ${fmtMoney(o.x - state.money)}` : 'Accepter')
+                    : p && <button className="btn btn-sm" onClick={() => onOffer(p)}>Voir</button>}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

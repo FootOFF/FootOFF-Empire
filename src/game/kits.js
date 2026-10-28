@@ -1,5 +1,7 @@
+import { knownCrest } from './crest';
+
 // Couleurs des maillots adverses : propres à chaque club, toujours les mêmes pour un même nom, et contrastées avec
-// notre tenue noir et or. Les « Bleus » jouent en bleu, les « Jaunes » en jaune citron, les « Verts » en vert.
+// notre tenue (noir et or par défaut). Les « Bleus » jouent en bleu, les « Jaunes » en jaune citron, les « Verts » en vert.
 
 const PALETTE = [
   { shirt: 0xc0392b, keeper: 0x2ecc71 }, // rouge
@@ -22,16 +24,43 @@ export function kitOf(name = '') {
   return PALETTE[h % PALETTE.length];
 }
 
-export const HOME_KIT = { shirt: 0xc7a15a, keeper: 0x2f343c };
+export const HOME_KIT = { shirt: 0xc7a15a, keeper: 0x2f343c, trim: 0x171719 };
 
-// Tenue de match en 3D (0.8.7) : les temps forts se jouent de nuit, sous des projecteurs chauds, où le blanc, l'orange
-// et le jaune citron se confondent avec notre or ; ces adversaires y jouent en marine (leur écusson ne change pas).
-const AWAY_ALT = { shirt: 0x1d2c5e, keeper: 0xe74c3c };
-const rgb = (c) => [(c >> 16) & 255, (c >> 8) & 255, c & 255];
-const tooClose = (shirt) => {
-  const [a, b] = [rgb(shirt), rgb(HOME_KIT.shirt)];
-  const [r, g, bl] = a;
-  const light = Math.min(r, g, bl) > 200; // blanc et presque blanc : crème sous les projecteurs
-  return light || Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) < 110;
+// Tenue d'un club à ses deux couleurs d'écusson (0.8.8) : le maillot à la principale, le short et le col à la secondaire
+// (le noir FootOFF garde son anthracite), le gardien en anthracite, ou en violet si le maillot est déjà sombre.
+const hexInt = (h) => parseInt(h.slice(1), 16);
+export function kitOfCrest(c) {
+  if (!c?.primary || !c?.secondary) return HOME_KIT;
+  const shirt = hexInt(c.primary);
+  const trim = c.secondary === '#0d0d0e' ? HOME_KIT.trim : hexInt(c.secondary);
+  return { shirt, trim, keeper: clash(shirt, HOME_KIT.keeper) ? 0x8e44ad : HOME_KIT.keeper };
+}
+
+// Notre tenue, posée par App à chaque rendu (setOurKit) : scène 3D, portraits, exercices d'entraînement.
+let OURS = HOME_KIT;
+export const setOurKit = (crest) => { OURS = kitOfCrest(crest); };
+export const ourKit = () => OURS;
+
+// Tenue d'un autre club : celle qu'un ami a composée (son écusson connu), sinon celle tirée de son nom.
+export const teamKitOf = (name = '') => {
+  const c = knownCrest(name);
+  return c ? kitOfCrest(c) : { ...kitOf(name), trim: HOME_KIT.trim };
 };
-export const matchKitOf = (name = '') => { const k = kitOf(name); return tooClose(k.shirt) ? AWAY_ALT : k; };
+
+// Tenue de match en 3D (0.8.7, 0.8.8) : les temps forts se jouent de nuit, sous des projecteurs chauds, où le blanc se
+// confond avec l'or, l'orange ou le jaune ; deux maillots trop proches, l'adversaire change de tenue : sa seconde couleur
+// si elle se lit, sinon le blanc, le marine, le rouge ou le vert (son écusson ne change pas).
+const rgb = (c) => [(c >> 16) & 255, (c >> 8) & 255, c & 255];
+const light = (c) => Math.min(...rgb(c)) > 200; // blanc et presque blanc : crème sous les projecteurs
+const warm = (c) => { const [r, g, b] = rgb(c); return r > 150 && g > 110 && r > b + 50; }; // or, jaune, orange
+function clash(a, b) {
+  const [x, y] = [rgb(a), rgb(b)];
+  return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]) < 110 || (light(a) && warm(b)) || (light(b) && warm(a));
+}
+const ALTS = [0xf2f2f2, 0x1d2c5e, 0xc0392b, 0x1f8a4c, 0x151515];
+export function matchKitOf(name = '', ours = OURS) {
+  const k = teamKitOf(name);
+  if (!clash(k.shirt, ours.shirt)) return k;
+  const shirt = [k.trim, ...ALTS].find((c) => c !== HOME_KIT.trim && !clash(c, ours.shirt)) ?? 0x1d2c5e;
+  return { shirt, trim: shirt === k.trim ? k.shirt : HOME_KIT.trim, keeper: k.keeper };
+}

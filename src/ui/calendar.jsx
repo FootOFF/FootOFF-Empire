@@ -6,7 +6,7 @@ import { TICKET_POLICIES, awayGate, expectedGate, ticketPrice } from '../game/ec
 import { TACTICS, formationOf, lineupRating } from '../game/tactics';
 import { standingsOf } from '../game/season';
 import { awayElevenOf, prematchOdds } from '../game/live';
-import { kitOf } from '../game/kits';
+import { teamKitOf } from '../game/kits';
 import { ordinal } from '../game/utils';
 import { ClubCrest, Crest } from './crest';
 import { Eyebrow } from './kit';
@@ -332,7 +332,7 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
     <article
       ref={ref}
       className={`sc-poster ${f.comp} ${f.status} ${v ? `o-${v.o}` : ''} ${f.away ? 'ext' : ''}`}
-      style={{ '--opp': opp ? rgbOf(kitOf(opp.name).shirt) : '128, 128, 128' }}
+      style={{ '--opp': opp ? rgbOf(teamKitOf(opp.name).shirt) : '128, 128, 128' }}
       aria-label={nameOf(f, r)}
     >
       <header className="sc-top">

@@ -4,7 +4,7 @@ import { logMove, poolOf } from './mercato';
 import { SQUAD_MIN } from './constants';
 import { repairSave, validSave } from './save';
 import { FORMATIONS, TACTICS, autoLineup, ensureLineup } from './tactics';
-import { assignNumber, available, freshSeason, refWage } from './players';
+import { assignNumber, available, freshSeason, playerRating, refWage } from './players';
 import { distinctFace } from './faces';
 import { book, markTreasury } from './ledger';
 import { pushJournal } from './journal';
@@ -312,12 +312,18 @@ export function leagueMercato(s, d) {
   s.market = marketPlayers(world).filter((p) => !signed.has(`m:${p.id}`))
     .map((p) => keep({ ...p, id: MARKET_ID + p.id, lid: p.id, leaguePrice: p.price, leagueKind: 'market', club: null, priceMod: 1 }));
   s.transfers = [];
+  // effectifs des autres clubs, ouverts depuis le classement (0.8.8) : poste, âge, niveau, valeur, et le joueur du marché
+  // (id) quand il s'achète ; un club de l'ordinateur au minimum ne vend personne
+  L.rosters = {};
+  const row = (p, id) => ({ id, n: p.name, pos: p.pos, age: p.age, r: Math.round(playerRating(p) * 10) / 10, v: priceOf(p) });
   // clubs de l'ordinateur : tout l'effectif, sauf sous le minimum (un titulaire coûte plus cher)
   const squads = squadsOf(d.league, world);
   for (const c of L.clubs) {
     if (c.human || c.slot === L.slot || !world.clubs?.[c.slot]) continue;
     const players = squads[c.slot];
-    if (players.length <= SQUAD_MIN) continue;
+    const listed = players.length > SQUAD_MIN;
+    L.rosters[c.slot] = players.filter((p) => !signed.has(`a:${p.id}`)).map((p) => row(p, listed ? AI_ID + p.id : null));
+    if (!listed) continue;
     const eleven = new Set(autoLineup(players, '433'));
     for (const p of players) {
       if (signed.has(`a:${p.id}`)) continue;
@@ -340,16 +346,23 @@ export function leagueMercato(s, d) {
   }
   for (const [slot, known] of seen) {
     const club = L.clubs.find((q) => q.slot === slot);
+    L.rosters[slot] = [];
     for (const snap of known.values()) {
       if (signed.has(`f:${snap.l}`) || s.players.some((q) => q.lid === snap.l)) continue;
       const p = unsnapPlayer(snap);
       s.transfers.push({ ...p, id: FRIEND_ID + p.lid, leaguePrice: priceOf(p), leagueKind: 'friend', leagueSlot: slot, leagueMember: club.member, club: club.name, priceMod: 1, contract: 2 });
+      L.rosters[slot].push(row(p, FRIEND_ID + p.lid));
     }
   }
-  // offres entre amis de la journée : reçues (en attente de ta réponse), faites (en attente, refusées)
+  // négociations entre amis de la journée : reçues (vendeur), faites (acheteur, en attente ou refusées). Le prix sur la
+  // table (x), le tour (w : le vendeur « s » ou l'acheteur « b »), le nombre de contre-offres (c), les prix successifs (h).
   const mine = moves.filter((x) => x.kind === 'f');
-  L.offersIn = mine.filter((x) => x.seller === L.me && x.status === 'open').map((x) => ({ id: x.id, l: x.pid, n: x.data?.n || '?', x: x.fee, b: slotOfMember(L, x.buyer) }));
-  L.offersOut = mine.filter((x) => x.buyer === L.me && x.status !== 'done').map((x) => ({ id: x.id, l: x.pid, n: x.data?.n || '?', x: x.fee, s: slotOfMember(L, x.seller), status: x.status }));
+  const deal = (x) => ({ id: x.id, l: x.pid, n: x.data?.n || '?', x: x.fee, w: x.data?.w === 'b' ? 'b' : 's', c: Number(x.data?.c) || 0, h: Array.isArray(x.data?.h) ? x.data.h : [x.fee] });
+  L.offersIn = mine.filter((x) => x.seller === L.me && x.status === 'open').map((x) => ({ ...deal(x), b: slotOfMember(L, x.buyer) }));
+  // une seule ligne par joueur visé, la dernière offre (0.8.8 : les offres refusées s'empilaient) ; aucune s'il est signé
+  const last = new Map();
+  for (const x of mine) if (x.buyer === L.me && !(last.get(x.pid)?.id > x.id)) last.set(x.pid, x);
+  L.offersOut = [...last.values()].filter((x) => x.status !== 'done').map((x) => ({ ...deal(x), s: slotOfMember(L, x.seller), status: x.status }));
   return s;
 }
 
@@ -391,7 +404,7 @@ export function applyLeagueMoves(s, d) {
 // --- File des demandes au serveur des ligues ---------------------------------------------------------------------------
 // Gardée dans la partie (s.league.outbox), envoyée une à une dans l'ordre (App.jsx) : une demande coupée par le réseau
 // repart à la visite suivante. sign : une recrue négociée (engine.js, sealContract) ; offer, withdraw : une offre pour le
-// joueur d'un ami, la retirer ; answer : la réponse à une offre reçue.
+// joueur d'un ami, la retirer ; answer : une réponse dans une négociation entre amis (accepter, contre-offre, refuser).
 const sameItem = (a, b) => a.k === b.k && (a.k === 'offer' ? a.lid === b.lid : a.k === 'sign' ? a.pid === b.pid : a.id === b.id);
 export function queueLeague(s, item) {
   const L = s.league;
@@ -406,8 +419,20 @@ export function offerFriend(s, p, fee) {
   if (fee == null) return open ? queueLeague(s, { k: 'withdraw', id: open.id, lid: p.lid }) : s;
   return queueLeague(s, { k: 'offer', lid: p.lid, fee, to: p.leagueMember, n: p.name, slot: p.leagueSlot });
 }
-// Réponse à une offre reçue : acceptée, le joueur part aussitôt (il doit encore être là, et l'effectif garder son minimum).
-export const answerFriend = (s, o, yes) => queueLeague(s, { k: 'answer', id: o.id, lid: o.l, yes, fee: o.x, b: o.b });
+// Réponse dans une négociation entre amis (0.8.8) : accepter (vendeur : le joueur part aussitôt, il doit encore être là et
+// l'effectif garder son minimum ; acheteur : il arrive aussitôt), contre-offre (counter : le nouveau prix, à son tour), ou
+// refuser. role : « s » vendeur, « b » acheteur.
+export const answerFriend = (s, o, yes, counter = null, role = 's') => queueLeague(s, {
+  k: 'answer', id: o.id, lid: o.l, yes: !!yes && !counter, ...(counter ? { counter } : {}), role, fee: o.x, b: o.b ?? null, s: o.s ?? null, n: o.n,
+});
+// Un joueur parti autrement (vente, retraite, fin de contrat) : ses négociations comme vendeur sont rompues.
+export function closeGoneDeals(s) {
+  const L = s.league;
+  for (const o of L?.offersIn || []) {
+    if (!s.players.some((q) => q.lid === o.l) && !queuedFor(s, (x) => x.k === 'answer' && x.id === o.id)) answerFriend(s, o, false);
+  }
+  return s;
+}
 export const canSell = (s, lid) => s.players.some((q) => q.lid === lid) && s.players.length > SQUAD_MIN;
 
 // La demande telle qu'elle part au serveur (leagueNet.js, moveRequest).
@@ -417,9 +442,14 @@ export function leagueRequest(s, item) {
   if (item.k === 'sign') return { action: 'sign', body: { ...at, kind: item.kind, pid: item.pid, fee: item.fee, ...(item.kind === 'a' ? { slot: item.slot } : {}), data: { pl: item.pl, t: item.terms, ...(item.club ? { c: item.club } : {}) } } };
   if (item.k === 'offer') return { action: 'offer', body: { ...at, pid: item.lid, fee: item.fee, to: item.to, data: { n: item.n } } };
   if (item.k === 'withdraw') return { action: 'withdraw', body: { id: item.id } };
+  if (item.role === 'b') return { action: 'answer', body: { ...at, id: item.id, yes: !!item.yes, ...(item.counter ? { counter: item.counter } : {}), data: {} } };
+  // vendeur : le joueur cédé part avec l'acceptation ou la contre-offre (l'acheteur peut conclure sans lui) ; un joueur
+  // qu'il ne peut plus céder fait de la réponse un refus
   const p = s.players.find((q) => q.lid === item.lid);
-  const yes = !!item.yes && canSell(s, item.lid);
-  return { action: 'answer', body: { ...at, id: item.id, yes, data: yes ? { pl: snapPlayer(p) } : {} } };
+  const sellable = canSell(s, item.lid);
+  const yes = !!item.yes && sellable;
+  const counter = item.counter && sellable ? item.counter : null;
+  return { action: 'answer', body: { ...at, id: item.id, yes, ...(counter ? { counter } : {}), data: yes || counter ? { pl: snapPlayer(p) } : {} } };
 }
 
 // La réponse du serveur appliquée à la partie (res : sa réponse, ou { error, taken } quand il a refusé). La demande sort
@@ -446,7 +476,7 @@ export function settleLeague(s, item, res) {
     return s;
   }
   if (item.k === 'offer') {
-    if (res?.id) L.offersOut = [...(L.offersOut || []).filter((o) => o.l !== item.lid), { id: res.id, l: item.lid, n: item.n, x: item.fee, s: item.slot, status: 'open' }];
+    if (res?.id) L.offersOut = [...(L.offersOut || []).filter((o) => o.l !== item.lid), { id: res.id, l: item.lid, n: item.n, x: item.fee, s: item.slot, status: 'open', w: 's', c: 0, h: [item.fee] }];
     s.lastLeague = { k: 'offer', lid: item.lid, ok: !!res?.id, note: res?.error || '', at };
     return s;
   }
@@ -454,15 +484,33 @@ export function settleLeague(s, item, res) {
     if (!res?.error) L.offersOut = (L.offersOut || []).filter((o) => o.id !== item.id); // refusé : l'offre reste en attente
     return s;
   }
-  // answer
-  L.offersIn = (L.offersIn || []).filter((x) => x.id !== item.id);
+  // answer : la négociation telle que le serveur l'a écrite (conclue, relancée par une contre-offre, rompue)
+  const buyer = item.role === 'b';
+  const list = buyer ? 'offersOut' : 'offersIn';
+  const fee = Number.isSafeInteger(res?.fee) ? res.fee : item.fee;
+  if (res?.status === 'open') {
+    L[list] = (L[list] || []).map((o) => (o.id === item.id ? { ...o, x: fee, w: buyer ? 's' : 'b', c: (o.c || 0) + 1, h: [...(o.h || [o.x]), fee].slice(-5) } : o));
+  } else if (buyer) {
+    L.offersOut = (L.offersOut || []).map((o) => (o.id === item.id ? { ...o, status: res?.status === 'no' ? 'no' : o.status } : o)).filter((o) => o.id !== item.id || res?.status !== 'done');
+  } else if (res?.status || res?.error) {
+    L.offersIn = (L.offersIn || []).filter((x) => x.id !== item.id);
+  }
   if (res?.status === 'done' && !(L.done || []).includes(item.id)) {
-    const p = s.players.find((q) => q.lid === item.lid);
-    const buyer = L.clubs.find((c) => c.slot === item.b)?.name || 'un club';
-    if (p) depart(s, p, item.fee, buyer);
+    const club = (slot) => L.clubs.find((c) => c.slot === slot)?.name || 'un club';
+    if (buyer) {
+      // l'acheteur conclut : le joueur arrive avec ce que le vendeur a envoyé de lui (sa dernière contre-offre)
+      try {
+        const p = unsnapPlayer(res.data.pl);
+        arrive(s, p, fee, club(item.s));
+        pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: `${p.name} signe au club`, text: `Transfert conclu avec ${club(item.s)} pour ${fee.toLocaleString('fr-FR')} €.` });
+      } catch { /* joueur illisible : il arrivera avec la relecture de la ligue (applyLeagueMoves) */ }
+    } else {
+      const p = s.players.find((q) => q.lid === item.lid);
+      if (p) depart(s, p, fee, club(item.b));
+    }
     L.done = [...(L.done || []), item.id].slice(-200);
     markTreasury(s);
   }
-  s.lastLeague = { k: 'answer', id: item.id, ok: !!res?.status, sold: res?.status === 'done', note: res?.error || '', at };
+  s.lastLeague = { k: 'answer', id: item.id, lid: item.lid, role: item.role || 's', ok: !!res?.status, sold: res?.status === 'done' && !buyer, bought: res?.status === 'done' && buyer, countered: res?.status === 'open', note: res?.error || '', at };
   return s;
 }

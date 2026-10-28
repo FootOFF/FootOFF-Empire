@@ -270,13 +270,10 @@ export function progressPlayer(p) {
 // titulaire effaçait tout un match et restait près de 100 %.
 export const fitOf = (p) => clamp(p.fit ?? 100, 0, 100);
 export const fitFactor = (fit) => 0.85 + (0.15 * clamp(fit, 0, 100)) / 100;
-// Forme (0.8.1) : la moyenne des notes de ses derniers matchs (sur 10, deux matchs au moins) pèse un peu sur son niveau
-// en match, comme la condition : +4 % au plus en grande forme, −4 % en méforme. Calée sur des saisons simulées
-// (2026-10-28) : forme moyenne 6,2, huit joueurs sur dix entre 5,5 et 6,8, soit environ ±2,5 %. Sans assez de matchs
-// (recrue, jeune monté, joueur d'un ami en ligue : sa forme ne voyage pas), aucun effet.
+// Forme (0.8.1) : la moyenne des notes de ses derniers matchs (sur 10, deux matchs au moins). Elle se lit sur les fiches
+// mais ne pèse plus en match depuis la 0.8.8 (demande du PDG) : seules la condition physique et les capacités comptent.
 export const FORM_NEUTRAL = 6.2;
 export const formAvg = (p) => (p.form?.length >= 2 ? p.form.reduce((a, b) => a + b, 0) / p.form.length : null);
-export const formFactor = (p) => { const f = formAvg(p); return f === null ? 1 : 1 + clamp((f - FORM_NEUTRAL) * 0.04, -0.04, 0.04); };
 export function matchCost(p) {
   const end = p.a?.end ?? 10;
   const base = 30 * (1.35 - end / 40) * (p.pos === 'G' ? 0.5 : 1) * (p.traits?.includes('infatigable') ? 0.6 : 1);
