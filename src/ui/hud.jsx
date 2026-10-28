@@ -223,8 +223,8 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
       <section className="hud-match glass comp-league" aria-label="Match à regarder">
         {ctx ? <MatchCrest opp={ctx.opp} /> : <span className="hm-icon" aria-hidden="true"><IconPlay /></span>}
         <div className="hm-info">
-          <span className="hm-eyebrow">{ctx ? <>Journée {state.round + 1}/{state.schedule.length} · {ctx.home === false ? 'À l’extérieur' : 'À domicile'}</> : 'Dernière journée'}</span>
-          <strong className="hud-match-title">{ctx ? ctx.opp.name : 'Ton match'}</strong>
+          <span className="hm-eyebrow">{ctx ? <>J{state.round + 1}/{state.schedule.length} · {ctx.home === false ? 'Extérieur' : 'Domicile'}</> : 'Dernière journée'}</span>
+          <strong className="hud-match-title" ref={titleRef} title={ctx?.opp.name}>{ctx ? ctx.opp.name : 'Ton match'}</strong>
           <span className="hm-odds"><button type="button" className="linkbtn" onClick={() => league.onWatch(true)}>Voir le résultat sans le match</button></span>
         </div>
         <button className="btn" onClick={() => league.onWatch()} aria-keyshortcuts="J"><IconPlay className="fill" /> Regarder<kbd className="hm-key" aria-hidden="true">J</kbd></button>
@@ -263,7 +263,7 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
       <MatchCrest opp={opp} />
       <div className="hm-info">
         <span className="hm-eyebrow" title={ctx.label}>
-          {champ ? <><span className="hm-long">Journée </span><span className="hm-short">J</span>{state.round + 1}/{state.schedule.length}</> : ctx.short} · {ctx.home === false ? 'À l’extérieur' : 'À domicile'}
+          {champ ? <>J{state.round + 1}/{state.schedule.length}</> : ctx.short} · {ctx.home === false ? 'Extérieur' : 'Domicile'}
         </span>
         <strong className="hud-match-title" ref={titleRef} title={opp.name}>{opp.name}</strong>
         <span className="hm-odds" title={`Pronostic : victoire ${w.label}, nul ${d.label}, défaite ${l.label}`}>

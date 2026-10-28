@@ -251,8 +251,8 @@ function HowTo({ run, league = false }) {
       {league ? (
         <ol>
           <li><b>Repère</b><span>Le marché commun est le même pour toute la ligue ; de nouveaux joueurs y arrivent à chaque journée.</span></li>
-          <li><b>Offre</b><span>Sur le marché, la plus haute offre l’emporte au calcul de la journée. Pour le joueur d’un ami, il répond la semaine suivante.</span></li>
-          <li><b>Vends</b><span>Mets des joueurs en vente : des clubs font leurs offres après chaque journée. Tes amis peuvent aussi t’en faire.</span></li>
+          <li><b>Offre</b><span>Sur le marché, la plus haute offre l’emporte au calcul de la journée. Pour le joueur d’un ami, c’est ton ami qui répond, à la journée suivante.</span></li>
+          <li><b>Vends</b><span>Mets des joueurs en vente : des clubs font aussitôt leurs offres, d’autres après chaque journée. Tes amis peuvent aussi t’en faire.</span></li>
         </ol>
       ) : (
         <ol>
@@ -711,7 +711,7 @@ export function Mercato({ state, run, ask, refLvl, recommended, initialView = 'b
       />}
       {view === 'buy' && <BuyView {...common} run={run} followed={followed} />}
       {view === 'watch' && <WatchView {...common} run={run} />}
-      {view === 'offers' && state.league && <LeagueOffersBlock state={state} run={run} />}
+      {view === 'offers' && state.league && <LeagueOffersBlock state={state} run={run} refLvl={refLvl} onOffer={onOffer} />}
       {view === 'offers' && <OffersView state={state} refLvl={refLvl} run={run} ask={ask} onOffer={onOffer} onSale={onSale} onList={onList} />}
       {view === 'log' && <LogView state={state} />}
     </div>
@@ -1210,10 +1210,10 @@ export function SaleToggle({ state, p, run, onList }) {
   );
 }
 
-// --- Championnat entre amis : les offres d'une semaine --------------------------------------------------------------
+// --- Championnat entre amis : les offres d'une journée --------------------------------------------------------------
 // Dans une partie de ligue (leagueClub.js), le mercato est commun : un joueur du marché commun se recrute sous pli
 // fermé (au moins le prix affiché, la plus haute offre l'emporte au calcul de la journée), un joueur d'ami par une offre
-// à laquelle il répond la semaine suivante. Pas de négociation : l'offre devient un ordre de la semaine, envoyé avec
+// à laquelle il répond à la journée suivante. Pas de négociation : l'offre devient un ordre de la journée, envoyé avec
 // l'équipe validée (renvoyé aussitôt si elle l'est déjà). Même fenêtre que la négociation du solo.
 const sumOf = (list) => list.reduce((a, b) => a + (b.x || 0), 0);
 export function LeagueOffer({ state, p, run, refLvl, onClose, onSheet }) {
@@ -1267,71 +1267,89 @@ export function LeagueOffer({ state, p, run, refLvl, onClose, onSheet }) {
           <span className="eyebrow">Comment ça se joue</span>
           <ul className="ng-reasons">
             {market
-              ? <li>La plus haute offre de la ligue l’emporte au calcul de la journée, si le club a encore les moyens et la place. Les autres ne paient rien.</li>
-              : <li>{capitalize(withArticle(p.club))} répond la semaine prochaine ; s’il accepte, le transfert se fait au calcul de la journée suivante.</li>}
-            <li>Ton offre part avec ton équipe validée ; si elle l’est déjà, elle est envoyée aussitôt. Trois offres au plus par semaine, sur le marché comme aux amis.</li>
-            {engaged > 0 && <li>Déjà engagé cette semaine : {fmtMoney(engaged)}.</li>}
+              ? <li>La plus haute offre de la ligue l’emporte au calcul de la journée, si son club a encore les moyens et une place dans l’effectif. Les autres ne paient rien.</li>
+              : <li>{capitalize(withArticle(p.club))} répond à la journée suivante ; s’il accepte, le transfert se fait à son calcul.</li>}
+            <li>Ton offre part avec ton équipe validée ; si ton équipe est déjà validée, l’offre part aussitôt. Trois offres au plus par journée, sur le marché comme auprès de tes amis.</li>
+            {engaged > 0 && <li>Déjà engagé pour cette journée : {fmtMoney(engaged)}.</li>}
           </ul>
         </section>
-        <div className="ng-actions">
-          <button className="btn" disabled={tooMuch || full || squadFull} onClick={send}>
+        <footer className="ng-foot">
+          <button className="btn btn-xl" disabled={tooMuch || full || squadFull} onClick={send}>
             {squadFull ? `Effectif complet (${SQUAD_MAX})` : full ? 'Trois offres déjà faites' : tooMuch ? `Il te manque ${fmtMoney(engaged + offer - state.money)}` : current != null ? `Changer mon offre · ${fmtMoney(offer)}` : `Faire cette offre · ${fmtMoney(offer)}`}
           </button>
-          {current != null && <button className="btn ghost" onClick={remove}>Retirer mon offre</button>}
-        </div>
+          {current != null
+            ? <button className="btn ghost" onClick={remove}>Retirer mon offre</button>
+            : !full && <span className="ng-tries">{plural(3 - others.length, 'offre possible', 'offres possibles')} pour cette journée</span>}
+        </footer>
       </article>
     </div>
   );
 }
 
-// Offres d'amis reçues (réponse avant la journée) et offres faites, en attente ; en tête de l'onglet Offres du mercato.
-function LeagueOffersBlock({ state, run }) {
+// Offres de tes amis (réponse avant la journée) et tes offres de la journée, en tête de l'onglet Offres du mercato,
+// avec les rangées des offres reçues du solo.
+function LeagueOffersBlock({ state, run, refLvl, onOffer }) {
   const L = state.league;
   const orders = L.orders || {};
   const name = (slot) => L.clubs.find((c) => c.slot === slot)?.name || '?';
-  const mine = [...(orders.bids || []).map((b) => ({ ...b, kind: 'market' })), ...(orders.offers || []).map((b) => ({ ...b, kind: 'friend' }))];
   const pool = poolOf(state);
-  const who = (b) => pool.find((p) => (b.kind === 'market' ? p.lid === b.i && p.leagueKind === 'market' : p.lid === b.l && p.leagueKind === 'friend'));
+  const target = (kind, lid) => pool.find((p) => p.lid === lid && p.leagueKind === kind);
+  const mine = [
+    ...(orders.bids || []).map((b) => ({ key: `m-${b.i}`, p: target('market', b.i), x: b.x, note: 'Marché commun · sous pli fermé' })),
+    ...(orders.offers || []).map((b) => {
+      const p = target('friend', b.l);
+      return { key: `f-${b.l}`, p, x: b.x, note: `${p?.club || 'Ami'} · réponse à la journée suivante` };
+    }),
+  ];
+  const waiting = (L.offersOut || []).map((o) => ({ key: o.id, p: target('friend', o.l), name: o.n, x: o.x, note: `${name(o.s)} · réponse avant la prochaine journée` }));
+  const medal = (p) => (p
+    ? <span className={`mc-medal sm ${heat(playerRating(p), refLvl)}`}><b>{fmtRating(playerRating(p))}</b><span>{p.pos}</span></span>
+    : <span className="mc-medal sm" aria-hidden="true"><b>–</b></span>);
   return (
-    <section className="mc-block mc-league">
-      <h3 className="mc-sub">Offres d’amis reçues</h3>
-      {(L.offersIn || []).length === 0 ? <p className="mc-empty">Aucune offre d’un ami cette semaine.</p> : (
-        <ul className="mc-league-list">
-          {L.offersIn.map((o) => {
-            const yes = (orders.accept || []).includes(o.id);
-            const no = (orders.refuse || []).includes(o.id);
-            return (
-              <li key={o.id}>
-                <span className="mc-league-who"><b>{o.n}</b><em>{capitalize(withArticle(name(o.b)))} {isPluralClub(name(o.b)) ? 'offrent' : 'offre'} {fmtMoney(o.x)}</em></span>
-                <div className="segmented mc-league-answer" role="radiogroup" aria-label={`Réponse pour ${o.n}`}>
-                  <button type="button" role="radio" aria-checked={yes} className={yes ? 'on' : ''} onClick={() => run((s) => answerLeagueOffer(s, o.id, yes ? null : true))}>Accepter</button>
-                  <button type="button" role="radio" aria-checked={no} className={no ? 'on' : ''} onClick={() => run((s) => answerLeagueOffer(s, o.id, no ? null : false))}>Refuser</button>
-                </div>
+    <>
+      <section className="mc-sec">
+        <span className="eyebrow">Offres de tes amis</span>
+        {(L.offersIn || []).length === 0 ? (
+          <p className="mc-hint">Aucune offre d’un ami pour l’instant. Ta réponse part avec ton équipe validée ; le transfert se fait au calcul de la journée.</p>
+        ) : (
+          <ul className="mc-rows">
+            {L.offersIn.map((o) => {
+              const p = state.players.find((q) => q.lid === o.l);
+              const yes = (orders.accept || []).includes(o.id);
+              const no = (orders.refuse || []).includes(o.id);
+              const club = name(o.b);
+              return (
+                <li key={o.id} className="mc-row offer">
+                  {medal(p)}
+                  <span className="mc-row-main"><b>{o.n}</b><em>{capitalize(withArticle(club))} {isPluralClub(club) ? 'offrent' : 'offre'} {fmtMoney(o.x)}</em></span>
+                  <span className="mc-amount"><b>{fmtMoney(o.x)}</b><em className={yes ? 'up' : ''}>{yes ? 'acceptée' : no ? 'refusée' : 'à ta réponse'}</em></span>
+                  <div className="mc-row-actions">
+                    <button className={`btn btn-sm ${yes ? '' : 'ghost'}`} aria-pressed={yes} onClick={() => run((s) => answerLeagueOffer(s, o.id, yes ? null : true))}>Accepter</button>
+                    <button className={`btn btn-sm refuse ${no ? '' : 'ghost'}`} aria-pressed={no} onClick={() => run((s) => answerLeagueOffer(s, o.id, no ? null : false))}>Refuser</button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+      <section className="mc-sec">
+        <span className="eyebrow">Mes offres de la journée</span>
+        {mine.length === 0 && waiting.length === 0 ? (
+          <p className="mc-hint">Aucune offre en cours. Recrute sur le marché commun, ou fais une offre pour le joueur d’un ami.</p>
+        ) : (
+          <ul className="mc-rows">
+            {[...mine, ...waiting].map((r) => (
+              <li key={r.key} className="mc-row">
+                {medal(r.p)}
+                <span className="mc-row-main"><b>{r.p?.name || r.name || '?'}</b><em>{r.note}</em></span>
+                <span className="mc-amount"><b>{fmtMoney(r.x)}</b></span>
+                {r.p && !r.name && <button className="btn btn-sm" onClick={() => onOffer(r.p)}>Voir</button>}
               </li>
-            );
-          })}
-        </ul>
-      )}
-      <h3 className="mc-sub">Tes offres de la semaine</h3>
-      {mine.length === 0 && (L.offersOut || []).length === 0 ? <p className="mc-empty">Aucune offre en cours. Recrute sur le marché commun, ou fais une offre pour le joueur d’un ami.</p> : (
-        <ul className="mc-league-list">
-          {mine.map((b) => {
-            const p = who(b);
-            return (
-              <li key={`${b.kind}-${b.i ?? b.l}`}>
-                <span className="mc-league-who"><b>{p?.name || '?'}</b><em>{b.kind === 'market' ? 'Marché commun, sous pli fermé' : `${p?.club || 'Ami'} · réponse la semaine prochaine`}</em></span>
-                <b className="mc-league-amount">{fmtMoney(b.x)}</b>
-              </li>
-            );
-          })}
-          {(L.offersOut || []).map((o) => (
-            <li key={o.id}>
-              <span className="mc-league-who"><b>{o.n}</b><em>{name(o.s)} · réponse attendue avant la journée</em></span>
-              <b className="mc-league-amount">{fmtMoney(o.x)}</b>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+            ))}
+          </ul>
+        )}
+      </section>
+    </>
   );
 }

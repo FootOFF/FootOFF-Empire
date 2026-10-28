@@ -33,7 +33,7 @@ import { MedicalView } from './ui/medical';
 import { LeagueView } from './ui/league';
 import { deadlineText, leagueOpen } from './game/league';
 import { leagueResults, myLeagues, refreshLeague, sendSheet, takeInvite } from './game/leagueNet';
-import { applyLeagueRound, createLeagueClub, loadLeagueClub, myReplay, saveLeagueClub, syncLeagueClub, teamSheet } from './game/leagueClub';
+import { applyLeagueRound, createLeagueClub, leagueClubProgress, loadLeagueClub, myReplay, saveLeagueClub, syncLeagueClub, teamSheet } from './game/leagueClub';
 import ConfirmDialog from './ui/confirm';
 import { Presence } from './ui/presence';
 import { LoadingScreen } from './ui/loading';
@@ -591,7 +591,7 @@ export default function App({ preview = null }) {
     const t = setTimeout(() => {
       ordersSent.current = ordersKey;
       sendSheet(m, d.league.season, d.league.round, teamSheet(clone(state)))
-        .then(() => notify({ kind: 'success', eyebrow: state.league.name, title: 'Choix de la semaine envoyés', text: 'Ils partent avec ton équipe validée.' }))
+        .then(() => notify({ kind: 'success', eyebrow: state.league.name, title: 'Choix de la journée envoyés', text: 'Ils partent avec ton équipe validée.', key: 'league-orders' }))
         .catch((x) => notify({ kind: 'warn', eyebrow: state.league.name, title: 'Choix non envoyés', text: x.message }));
     }, 900);
     return () => clearTimeout(t);
@@ -611,7 +611,7 @@ export default function App({ preview = null }) {
       if (d.league.season !== state.league.season || d.league.round !== state.round) throw new Error('La journée a changé : regarde d’abord le match de la journée précédente.');
       await sendSheet(m, d.league.season, d.league.round, teamSheet(clone(state), { lineup, tactic, formation }));
       run((s) => { s.lineup = lineup; s.tactic = tactic; s.formation = formation; s.league.sent = key; return s; });
-      notify({ kind: 'success', eyebrow: state.league.name, title: 'Équipe validée', text: `Journée ${d.league.round + 1} : le match se joue dès que tous ont validé, au plus tard ${deadlineText(d.league.deadline)}.` });
+      notify({ kind: 'success', eyebrow: state.league.name, title: 'Équipe validée', text: `Journée ${d.league.round + 1} : le match se joue dès que tous ont validé, au plus tard ${deadlineText(d.league.deadline)}.`, key: 'league-sent' });
     } catch (x) {
       notify({ kind: 'warn', eyebrow: state.league.name, title: 'Équipe non envoyée', text: x.message });
     }
@@ -971,7 +971,7 @@ export default function App({ preview = null }) {
             onContinue={() => { setLeagueHub(null); setScreen('game'); }}
             liveNote={resumeLive && matchPhase === 'live' ? liveNoteOf(resumeLive) : null}
             onNewGame={askNewGame}
-            leagues={leagueOpen() ? { count: myLeagues().length, clubs: myLeagues(), onOpen: () => setLeagueHub({}), onPlay: enterLeague } : null}
+            leagues={leagueOpen() ? { count: myLeagues().length, clubs: myLeagues().map((m) => ({ ...m, progress: leagueClubProgress(m.code) })), onOpen: () => setLeagueHub({}), onPlay: enterLeague } : null}
             onCreate={(name, crest) => { setLeagueHub(null); setState(createInitialState(name, crest)); setTitleView('menu'); setScreen('game'); }}
           />
         )}

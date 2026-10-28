@@ -1416,7 +1416,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 @keyframes fo-fade { from { opacity: 0; } }
 .cine-card { width: min(620px, 100%); margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; animation: fo-up .6s var(--ease); }
 .cine-card.small { width: min(420px, 100%); }
-.cine-card .btn-xl { width: min(320px, 100%); margin-top: 8px; }
+.cine-card .btn-xl { width: auto; min-width: min(320px, 100%); max-width: 100%; margin-top: 8px; padding-inline: var(--s-8); } /* nom de ligue entre amis parfois long */
 .cine-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; width: 100%; }
 .cs-team { font-family: var(--font-disp); font-weight: 600; font-size: var(--d-lg); text-align: right; }
 .cs-team:last-child { text-align: left; }
@@ -5197,18 +5197,5 @@ html, body { overscroll-behavior: none; }
   .lig-market li:not(:has(.pos-pill)) .lig-answer { grid-column: 1 / -1; }
 }
 
-/* Mercato d'une partie de ligue (mercato.jsx, LeagueOffersBlock) : offres d'amis reçues, offres de la semaine */
-.mc-league { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-4); background: var(--plate-2); clip-path: var(--cut-shape-sm); }
-.mc-league .mc-sub { margin: var(--s-2) 0 0; font-family: var(--font-disp); font-weight: 600; font-size: var(--d-xs); letter-spacing: .07em; text-transform: uppercase; color: var(--text-2); }
-.mc-league .mc-sub:first-child { margin-top: 0; }
-.mc-league-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.mc-league-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
-.mc-league-who { display: flex; flex-direction: column; min-width: 0; }
-.mc-league-who b { font-weight: 600; overflow-wrap: anywhere; }
-.mc-league-who em { font-style: normal; font-size: var(--t-xs); color: var(--muted); }
-.mc-league-amount { font-family: var(--font-disp); font-weight: 700; font-size: 18px; color: var(--gold-light); font-variant-numeric: tabular-nums; }
-.segmented.mc-league-answer { grid-template-columns: 1fr 1fr; min-width: 180px; }
-.mc-league-answer button { min-height: 32px; font-size: 14px; }
-@media (max-width: 760px) { .mc-league-list li { grid-template-columns: 1fr; } }
 /* bouton du HUD d'une partie de ligue : équipe validée */
 .hud-match.sent .btn.ghost { color: var(--green); }

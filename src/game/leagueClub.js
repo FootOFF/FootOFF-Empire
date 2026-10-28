@@ -20,6 +20,16 @@ import { clone } from './utils';
 
 const KEY = (code) => `fo-ligue-club-${code}`;
 
+// Où en est la partie de ligue de l'appareil (écran titre) : saison et journée, sans la réparer ni la charger en jeu.
+export function leagueClubProgress(code) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY(code)) || 'null');
+    return raw?.league ? { season: raw.seasonNumber, round: raw.round || 0, rounds: raw.schedule?.length || 0 } : null;
+  } catch {
+    return null;
+  }
+}
+
 export function loadLeagueClub(code) {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY(code)) || 'null');

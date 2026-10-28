@@ -112,6 +112,12 @@ function SideCard({ id, state, settings, leagues = null }) {
   return null;
 }
 
+// Club de ligue de l'appareil : son championnat, sa saison et sa journée (comme « Continuer » pour la carrière).
+const clubProgress = ({ name, code, progress: p }) => {
+  if (!p || !p.rounds) return `${name || code} · ton club t’attend`;
+  return `${name || code} · Saison ${p.season} · ${p.round >= p.rounds ? 'terminée' : `J${p.round + 1}/${p.rounds}`}`;
+};
+
 // Entrées du menu principal : Continuer (s'il y a une partie ; liveNote : un match interrompu qui reprendra à la minute
 // près), Nouvelle partie, Championnats entre amis (leagues, quand ils sont ouverts), Réglages, FootOFF Media.
 function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews }, liveNote = null, leagues = null) {
@@ -119,7 +125,7 @@ function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews }, li
   return [
     ...(state ? [{ id: 'continue', label: 'Continuer', sub: liveNote || `${state.clubName} · ${div.name} · Saison ${state.seasonNumber}`, onSelect: onContinue }] : []),
     { id: 'new', label: 'Nouvelle partie', sub: state ? 'Fonder un autre club' : 'Fonde ton club et bâtis ton empire', onSelect: onNew },
-    ...(leagues ? (leagues.clubs || []).map((m) => ({ id: `club-${m.code}`, label: m.club.name, sub: `Championnat entre amis · ${m.name || m.code}`, onSelect: () => leagues.onPlay(m) })) : []),
+    ...(leagues ? (leagues.clubs || []).map((m) => ({ id: `club-${m.code}`, label: m.club.name, sub: clubProgress(m), onSelect: () => leagues.onPlay(m) })) : []),
     ...(leagues ? [{ id: 'leagues', label: 'Championnats entre amis', sub: leagues.count ? `${leagues.count} championnat${leagues.count > 1 ? 's' : ''} · créer, rejoindre, classements` : 'Rejoins tes amis avec leur code', onSelect: leagues.onOpen }] : []),
     { id: 'rules', label: 'Règles du jeu', sub: 'Matchs, joueurs, mercato, argent, réputation', onSelect: onRules },
     { id: 'news', label: 'Nouveautés', sub: `Version ${CURRENT}${unseenNews() ? ' · à lire' : ''}`, badge: unseenNews(), onSelect: onNews },

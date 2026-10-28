@@ -27,9 +27,13 @@ export function useNotifications(held) {
   const [queue, setQueue] = useState([]);
   const seq = useRef(0);
   // un avertissement (geste refusé) passe devant : il répond à ce que le joueur vient de faire
+  // key : un bandeau plus récent de même clé remplace celui encore en attente (une validation refaite, par exemple)
   const notify = useCallback((n) => {
     const item = { kind: 'info', ...n, id: ++seq.current };
-    setQueue((q) => (item.kind === 'warn' ? [item, ...q] : [...q, item]));
+    setQueue((q) => {
+      const rest = item.key ? q.filter((x, i) => i === 0 || x.key !== item.key) : q;
+      return item.kind === 'warn' ? [item, ...rest] : [...rest, item];
+    });
   }, []);
   const done = useCallback((id) => setQueue((q) => q.filter((x) => x.id !== id)), []);
   const current = queue.find((n) => !held || n.kind === 'warn') || null;
