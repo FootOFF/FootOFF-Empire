@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    version: '0.8.9', date: '2026-10-28', title: 'Vitesse du match',
+    items: [
+      'Un seul bouton de vitesse, qui dit où tu en es : « ×1 » à vitesse normale, « ×4 » sur fond or quand le match est accéléré. Un toucher bascule de l’un à l’autre.',
+      'À ×4, seul le jeu entre deux temps forts file plus vite : tous les temps forts s’affichent, à vitesse normale, avec le ralenti des buts.',
+    ],
+  },
+  {
     version: '0.8.8', date: '2026-10-28', title: 'Économie, négociation et couleurs',
     items: [
       'Salaires et entretien se comptent à chaque journée et se paient en une fois au bilan de la saison. La trésorerie montre ce qu’il faudra payer en fin de saison et ce qui est réellement disponible ; un achat qui entamerait ce qui est déjà dû est signalé avant d’être conclu.',

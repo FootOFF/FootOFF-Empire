@@ -255,7 +255,7 @@ export function createMatchScene(parent) {
       outcome: red ? 'red' : e.type === 'goal' ? 'g' : (e.outcome || 'wide')[0],
       beats: [], k: 0, bt: 0, t: 0, phase: 'cut', revealed: false, revealT: 0, react: 0, fk: 0, finale: true, shift: 0, bT: 1,
       home: new Map(), runs: new Map(), busy: new Set(), rec: [], shot: null, dive: null, cut: true,
-      speed: spec.speed > 1 ? 1.35 : 1, est: 4,
+      speed: 1, est: 4, // toujours à vitesse normale : ×4 n'accélère que le jeu entre deux temps forts (0.8.9)
     };
     H.roles = [rolesOf(0), rolesOf(1)];
     card.visible = false;

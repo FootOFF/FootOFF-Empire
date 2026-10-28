@@ -13,6 +13,7 @@ export const IconSponsor = I(<><rect x="4" y="3" width="10" height="18" rx="1" /
 export const IconCoin = I(<><circle cx="12" cy="12" r="8.5" /><path d="M14.5 9a3.2 3.2 0 1 0 0 6M8.5 11h5M8.5 13.2h5" /></>);
 export const IconStar = I(<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8L3.5 9.7l5.9-.8Z" />);
 export const IconPlay = I(<path d="M8 5.5v13l10.5-6.5Z" />);
+export const IconFast = I(<path d="M3.5 6v12l8-6ZM12.5 6v12l8-6Z" />); // avance rapide (vitesse du match)
 export const IconUsers = I(<><circle cx="9" cy="8.5" r="3.2" /><path d="M3 19.5a6 6 0 0 1 12 0" /><circle cx="17" cy="9.5" r="2.5" /><path d="M16 14.2a5 5 0 0 1 5.5 4.8" /></>);
 export const IconCal = I(<><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M3.5 10h17M8 3v4M16 3v4" /></>);
 export const IconNews = I(<><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 9h8M8 12.5h8M8 16h5" /></>);

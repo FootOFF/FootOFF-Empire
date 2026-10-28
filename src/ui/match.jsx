@@ -3,11 +3,11 @@ import { TACTICS, TACTIC_ORDER, autoLineup, fitWeight, formationOf, lineupRating
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
 import { LIVE_VERSION, SUBS_MAX, awayElevenOf, createLiveMatch, highlightOf, liveKeyOf, pairSubs, prematchOdds, prematchXg, statsOf, subMinute } from '../game/live';
 import { saveLive } from '../game/save';
-import { TRAITS, available, fitAt, fitFactor, fitOf, ratingAt } from '../game/players';
+import { TRAITS, available, fitAt, ratingAt } from '../game/players';
 import { Portrait } from './portrait';
 import { teamCodes } from './teamcode';
 import { FormationPicker, LineupActions, LineupBoard, displayNames, formationEffect } from './lineup';
-import { IconCheck, IconChevron, IconClose, IconMute, IconPlay, IconSound, IconUsers } from './icons';
+import { IconCheck, IconChevron, IconClose, IconFast, IconMute, IconPlay, IconSound, IconUsers } from './icons';
 import { IconAssist, IconBall, IconMedic, IconSwap, IconWhistle, RatingBadge, VersusBar } from './kit';
 import { useKeydown } from './presence';
 import { deName } from '../game/names';
@@ -782,7 +782,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     hlRef.current = { id, e, type, started: performance.now(), revealed: false };
     setHl({ id, type, e, replay: false });
     Object.assign(matchFeed, {
-      hl: { id, e, type, half, replay: speed === 1, homeNames: homeNames(), awayNames: awayNames(), awayFormation: awayFormationNow(), formation: formationNow() },
+      hl: { id, e, type, half, replay: true, homeNames: homeNames(), awayNames: awayNames(), awayFormation: awayFormationNow(), formation: formationNow() },
       hlAck: 0, hlReveal: 0, hlDone: 0, hlClock: clockRef.current, hlPhase: '', show3D: true,
     });
   };
@@ -830,7 +830,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
       let start = null;
       if (sceneReady()) {
         for (let k = revealed.current; k < events.length && events[k].at <= next + HL_PRE; k++) {
-          const type = highlightOf(events[k], speed > 1);
+          const type = highlightOf(events[k]); // à ×4 aussi : ×4 n'accélère que le jeu entre deux temps forts (0.8.9)
           if (type) { start = { e: events[k], type }; break; }
         }
       }
@@ -882,13 +882,15 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   function react(e, { highlighted = false } = {}) {
     if (e.type === 'goal') {
       const ours = e.side === side;
-      setBanner({ ...e, ours, fast: speed > 1 });
+      // un but joué en 3D est un temps fort : bandeau et célébration à vitesse normale, même à ×4
+      const fast = speed > 1 && !highlighted;
+      setBanner({ ...e, ours, fast });
       if (!highlighted) {
         pause.current = speed > 1 ? 1.6 : 4.4;
         setTimeout(() => setBanner((b) => (b && b.at === e.at ? null : b)), (speed > 1 ? 1.6 : 4.2) * 1000);
       }
       if (ours) sound.goal(); else sound.conceded();
-      onFx({ type: ours ? 'goal' : 'conceded', fast: speed > 1 });
+      onFx({ type: ours ? 'goal' : 'conceded', fast });
     } else if (e.type === 'chance' && (e.outcome === 'post' || e.outcome === 'saved')) sound.chance();
     else if (e.type === 'yellow' || e.type === 'red') sound.card();
     else if (e.type === 'injury') { // un blessé : s'il reste un changement, le match s'arrête pour le faire
@@ -1119,10 +1121,12 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
         </div>
       ) : (
         <div className="live-controls lv-controls">
-          <div className="lc-speed" role="group" aria-label="Vitesse du match">
-            <button className={speed === 1 ? 'on' : ''} aria-pressed={speed === 1} onClick={() => setSpeed(1)} title="Vitesse normale : tous les temps forts, avec les ralentis">×1</button>
-            <button className={speed === 4 ? 'on' : ''} aria-pressed={speed === 4} onClick={() => setSpeed(4)} title="Accélérer : les buts, les penalties et les expulsions seulement"><span className="hide-sm">Accélérer </span>×4</button>
-          </div>
+          {/* vitesse du match (0.8.9, demande du PDG) : un seul bouton qui dit l'état, « ▶ ×1 » ou « ⏩ ×4 » plein en or ;
+              ×4 n'accélère que le jeu entre deux temps forts, qui se jouent toujours à vitesse normale */}
+          <button className={`lc-speed ${speed > 1 ? 'on' : ''}`} aria-pressed={speed > 1} aria-label={speed > 1 ? 'Match accéléré ×4 : revenir à la vitesse normale' : 'Vitesse normale : accélérer ×4'}
+            title={speed > 1 ? 'Accéléré ×4 entre les temps forts : toucher pour revenir à ×1' : 'Vitesse normale : toucher pour accélérer ×4 entre les temps forts'} onClick={() => setSpeed(speed > 1 ? 1 : 4)}>
+            {speed > 1 ? <IconFast className="fill" /> : <IconPlay className="fill" />}×{speed}
+          </button>
           {!replay && <button className="lc-sub" onClick={() => openSubs()} disabled={!canAdjust()} title={!canAdjust() ? (half === 1 ? 'Attends la mi-temps' : 'Trop tard : le match touche à sa fin') : canSub() ? 'Faire un changement, changer de dispositif ou de tactique' : 'Plus de changement possible : dispositif, tactique et postes seulement'}>
             <IconSwap /><span className="hide-sm">Changement</span><span className="show-sm">Changer</span><em className={subsLeftNow() ? '' : 'none'}>{subsLeftNow()}</em>
           </button>}

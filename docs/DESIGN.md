@@ -1024,6 +1024,14 @@ ouverte depuis la Direction (panneau étroit) est posée sur tout l'écran. Dur�
 « saison N ». Fiche : bloc Contrat (salaire, fin, clause) et « Prolonger son contrat ». Effectif : fin du contrat sous
 le salaire dans le tableau (PC), « Dernière année de contrat » sur la carte des seuls joueurs concernés.
 
+## Vitesse du match (0.8.9)
+
+Demande du PDG (2026-10-28) : « on comprend pas lequel est actif » ; réponses : un bouton qui dit l'état, et à ×4 tous
+les temps forts. Un seul bouton `.lc-speed` dans la barre du direct : « ▶ ×1 » en gris, « ⏩ ×4 » plein en or (dégradé
+de la marque, biais de 7 px) ; un toucher bascule. ×4 n'accélère que l'horloge entre deux temps forts : tous les temps
+forts s'affichent, à vitesse normale, ralenti des buts compris ; un but joué en 3D garde son bandeau et sa célébration
+à la durée normale.
+
 ## Économie, négociation entre amis, couleurs du club (0.8.8)
 
 Demandes du PDG (2026-10-28), réponses à ses questions : salaires « fin de saison, avec réserve », « négociation libre »,

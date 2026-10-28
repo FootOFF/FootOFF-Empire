@@ -1784,9 +1784,6 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 @media (hover: hover) { .lv-controls button:hover:not(:disabled):not(.on) { color: var(--gold-light); background: rgba(255, 255, 255, .04); } }
 .lv-controls button:disabled { opacity: .4; cursor: not-allowed; }
 .lv-controls button svg { width: 19px; height: 19px; }
-.lc-speed { display: flex; align-items: center; gap: 2px; padding: 0 8px 0 12px; }
-.lv-controls .lc-speed button { height: 38px; padding: 0 14px; font-size: 19px; letter-spacing: .02em; text-transform: none; color: var(--text-2); }
-.lv-controls .lc-speed button.on { --slant: 7px; background: var(--text); color: var(--gold-ink); clip-path: var(--skew); }
 .lc-sub em {
   min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; display: grid; place-items: center; font-style: normal;
   font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0; background: var(--gold-light); color: var(--gold-ink);
@@ -2055,9 +2052,6 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
   .lv-controls { left: var(--gap); right: var(--gap); clip-path: none; border-top: 1px solid var(--line); }
   .lv-controls > * { flex: 1 1 auto; }
   .lv-controls button { padding: 0 12px; font-size: 17px; }
-  .lc-speed { flex: 0 0 auto; padding: 0 6px; }
-  .lv-controls .lc-speed button.on { display: none; } /* un seul bouton : la vitesse que l'on peut prendre */
-  .lv-controls .lc-speed button { clip-path: none; background: none; }
   .lc-sub .show-sm { display: inline; }
   .lv-controls .lc-sound { flex: 0 0 var(--lc-h); }
   .lv-goal {
@@ -5465,3 +5459,7 @@ html, body { overscroll-behavior: none; }
 .lt-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
 .lt-rows .mc-row.mine { border-color: var(--gold-line); }
 .ro-rows .mc-row-main b { white-space: normal; overflow: visible; text-overflow: clip; } /* effectif d'un club : le nom entier, sur deux lignes au besoin */
+/* vitesse du match (0.8.9) : un seul bouton qui dit l'état ; gris à ×1, plein en or à ×4 */
+.lv-controls .lc-speed { --slant: 7px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 76px; padding: 0 14px; font-size: 19px; letter-spacing: .02em; text-transform: none; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.lv-controls .lc-speed svg { width: 15px; height: 15px; }
+.lv-controls .lc-speed.on { background: var(--gold-grad); color: var(--gold-ink); clip-path: var(--skew); }
