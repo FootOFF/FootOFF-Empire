@@ -683,8 +683,9 @@ partie). Remplace la carte « Ton club » à onglets et l'avant-match du Siège 
 - Mercato : l'écran du solo. Recruter montre le marché commun (`leagueMercato` ; avant la première journée, celui de
   départ, `startWorld`) et les joueurs des amis ; « Offre » ouvre la fenêtre d'offre de ligue (`LeagueOffer` : sous pli
   fermé au marché, offre à un ami), qui part avec l'équipe validée. En tête de l'onglet Offres, les offres d'amis
-  reçues (accepter, refuser) et les offres de la semaine. Mise en vente comme en solo : des clubs hors de la ligue font
-  leurs offres après chaque journée (`refreshSales`). Recrues et transferts conclus arrivent par les mouvements de la
+  reçues (accepter, refuser) et les offres de la journée (« journée » partout : une journée par jour en ligue).
+  Mise en vente comme en solo : des clubs hors de la ligue font aussitôt leurs offres, d'autres après chaque journée
+  (`refreshSales`). Recrues et transferts conclus arrivent par les mouvements de la
   journée (`applyMoves`).
 - Vérifié (2026-10-28) : saison simulée de deux appareils (classements identiques), puis dans le navigateur une saison
   entière (sept journées, bilan, saison 2, retour à la carrière intacte) et une recrue du marché commun.
