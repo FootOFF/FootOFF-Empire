@@ -64,6 +64,9 @@ export const BUILDINGS = {
   // amis (league.js), un monde à part de la carrière : il ne rapporte rien et ne coûte aucun entretien (economy.js).
   league: { name: 'Siège de la Ligue', max: 1, baseCost: 60000000, mult: 1, first: 1 },
 };
+// Division d'une partie pour l'écran : une partie de championnat entre amis (leagueClub.js) porte le nom de sa ligue,
+// avec l'échelle économique de son niveau.
+export const divisionOf = (s) => (s.league ? { ...DIVISIONS[s.divisionIndex], name: s.league.name } : DIVISIONS[s.divisionIndex]);
 // Championnats entre amis : fermés tant que le serveur des ligues n'est pas en service (le bâtiment ne se propose pas).
 export const LEAGUE_OPEN = false;
 

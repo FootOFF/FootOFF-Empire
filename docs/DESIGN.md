@@ -660,6 +660,37 @@ Entraînement, marché commun et offres entre amis (2026-10-27, à la suite, dem
 - Reste à faire : le direct à l'heure de la journée, les finances complètes (salaires) et les bâtiments du club de
   ligue, la fatigue et les absences d'une journée à l'autre, le fil de la ligue, la ligue qui grandit avec ses clubs.
 
+Le club de ligue, une partie solo (2026-10-28, demande de l'utilisateur : « la même interface que lorsqu'on joue une
+partie solo » ; ses choix : accès comme une partie, bâtiments construits et améliorés comme en solo, match comme en solo
+une fois joué, épreuves 3D d'entraînement qui comptent, marché commun et offres entre amis, départ comme une nouvelle
+partie). Remplace la carte « Ton club » à onglets et l'avant-match du Siège de la version précédente.
+- Partie (`leagueClub.js`) : chaque ami a, sur son appareil, une partie solo complète par championnat
+  (`fo-ligue-club-CODE`, à côté de la carrière) : complexe 3D, bâtiments, entraînement et ses épreuves, académie,
+  finances, objectifs du conseil. Départ d'une nouvelle partie (8 000 €, terrain de quartier, aucun bâtiment) avec
+  l'effectif de ligue du club (`createLeagueClub` : identifiants de ligue `lid`, onze conseillé en 4-3-3). L'écran titre
+  liste ces clubs sous la carrière ; le Siège les ouvre (« Jouer mon club ») ; « Écran titre » rend la carrière.
+- Saison (`leagueSeason.js`) : adversaires, calendrier et classement officiel de la ligue (`officialTable`) ; ni coupes,
+  ni montée, ni descente ; le bilan de saison du solo, au nom de la ligue (« Sur le podium » pour le 2e et le 3e).
+- Journée : « Jouer » ouvre l'avant-match du solo, « Valider mon équipe » envoie la feuille avec l'effectif entier
+  (`teamSheet` : instantanés `snapPlayer` des joueurs, centre médical, trésorerie, ordres du mercato). Le HUD passe à
+  « Validée », puis à « Regarder » quand la journée est jouée : le match revu dans l'écran du direct (rejeu), puis
+  l'après-match du solo ; ou « Voir le résultat sans le match ». La journée est appliquée comme un match de carrière
+  (`applyLeagueRound`, `perspectiveResult` : notre côté, à domicile ou à l'extérieur).
+- Calcul de la journée (`playLeagueRound`, v3) : les amis jouent avec leur effectif envoyé (qualités, forme,
+  condition, absents), l'ordinateur avec l'état de la ligue ; chaque match garde ses effectifs (`sq`) pour le rejeu
+  à l'identique ; environ 53 Ko par journée. Les clubs de l'ordinateur s'entraînent au calcul (`trainClub`) ; les amis
+  dans leur partie.
+- Mercato : l'écran du solo. Recruter montre le marché commun (`leagueMercato` ; avant la première journée, celui de
+  départ, `startWorld`) et les joueurs des amis ; « Offre » ouvre la fenêtre d'offre de ligue (`LeagueOffer` : sous pli
+  fermé au marché, offre à un ami), qui part avec l'équipe validée. En tête de l'onglet Offres, les offres d'amis
+  reçues (accepter, refuser) et les offres de la semaine. Mise en vente comme en solo : des clubs hors de la ligue font
+  leurs offres après chaque journée (`refreshSales`). Recrues et transferts conclus arrivent par les mouvements de la
+  journée (`applyMoves`).
+- Vérifié (2026-10-28) : saison simulée de deux appareils (classements identiques), puis dans le navigateur une saison
+  entière (sept journées, bilan, saison 2, retour à la carrière intacte) et une recrue du marché commun.
+- Reste à faire : sauvegarde du club de ligue sur le serveur (un autre appareil ne reprend que l'adhésion), direct à
+  l'heure de la journée, bureau des transferts sans usage en ligue, clubs de l'ordinateur sans bâtiments.
+
 ## Centre médical
 
 Nouveau bâtiment (2026-10-25, demande de l'utilisateur : « un bâtiment qui permet de soigner les joueurs blessés ») :

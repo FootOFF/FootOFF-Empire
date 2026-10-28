@@ -1,5 +1,5 @@
 import React from 'react';
-import { DIVISIONS } from '../game/constants';
+import { DIVISIONS, divisionOf } from '../game/constants';
 import { endOfSeasonForecast, seasonForecast } from '../game/economy';
 import { EXPENSE, INCOME, totals } from '../game/ledger';
 import { wageOf } from '../game/players';
@@ -59,7 +59,7 @@ export function FinancesPanel({ state, onClose, onOpenSquad }) {
     <Panel
       id="finances"
       title="Finances"
-      eyebrow={`Saison ${state.seasonNumber} · ${DIVISIONS[state.divisionIndex].name}`}
+      eyebrow={`Saison ${state.seasonNumber} · ${divisionOf(state).name}`}
       onClose={onClose}
       toolbar={(
         <div className="season-stats fin-stats">

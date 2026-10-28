@@ -150,6 +150,17 @@ export function listingOffers(s, p, price) {
 
 // mode 'full' : marché neuf (début de saison) ; 'round' : après une journée ; 'grow' : bureau construit ou amélioré,
 // la liste des joueurs sous contrat s'allonge tout de suite. Les arrivants (hors marché neuf) sont marqués « Nouveau ».
+// Championnat entre amis : le marché vient de la ligue (leagueClub.js, leagueMercato) ; les ventes restent celles du
+// solo : après chaque journée, les clubs hors de la ligue font leurs offres pour les joueurs en vente.
+export function refreshSales(s) {
+  const key = roundKey(s);
+  s.saleList = (s.saleList || []).filter((x) => s.players.some((p) => p.id === x.id));
+  s.parkedOffers = []; s.saleOffered = {}; s.auctions = {};
+  s.offers = incomingOffers(s, key);
+  s.mercatoNews = { key, arrivals: 0, departures: 0, followedGone: [], followedCourted: [], offers: s.offers.length };
+  return s;
+}
+
 export function refreshTransfers(s, mode = 'round') {
   const full = mode === 'full';
   const round = mode === 'round';

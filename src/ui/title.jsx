@@ -37,7 +37,7 @@ function Pillars() {
 }
 
 // Carte de droite (PC) : le détail de l'entrée active du menu.
-function SideCard({ id, state, settings }) {
+function SideCard({ id, state, settings, leagues = null }) {
   if (id === 'continue' && state) return <ClubCard state={state} eyebrow="Continuer la partie" />;
   if (id === 'new') {
     return (
@@ -81,6 +81,16 @@ function SideCard({ id, state, settings }) {
       </section>
     );
   }
+  if (id.startsWith('club-')) { // un club de championnat entre amis : une partie à part, comme une carrière
+    const m = leagues?.clubs?.find((x) => `club-${x.code}` === id);
+    return m ? (
+      <section className="cm-card">
+        <span className="eyebrow">Championnat entre amis</span>
+        <p className="cm-card-lead">{m.club.name}</p>
+        <p className="cm-card-note">{m.name || m.code} · ton club de ligue se joue comme une partie solo, à part de ta carrière : son complexe, son effectif, ses finances. Ses matchs se jouent à l’heure de la ligue.</p>
+      </section>
+    ) : null;
+  }
   if (id === 'leagues') {
     return (
       <section className="cm-card">
@@ -109,7 +119,8 @@ function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews }, li
   return [
     ...(state ? [{ id: 'continue', label: 'Continuer', sub: liveNote || `${state.clubName} · ${div.name} · Saison ${state.seasonNumber}`, onSelect: onContinue }] : []),
     { id: 'new', label: 'Nouvelle partie', sub: state ? 'Fonder un autre club' : 'Fonde ton club et bâtis ton empire', onSelect: onNew },
-    ...(leagues ? [{ id: 'leagues', label: 'Championnats entre amis', sub: leagues.count ? `${leagues.count} championnat${leagues.count > 1 ? 's' : ''} en cours` : 'Rejoins tes amis avec leur code', onSelect: leagues.onOpen }] : []),
+    ...(leagues ? (leagues.clubs || []).map((m) => ({ id: `club-${m.code}`, label: m.club.name, sub: `Championnat entre amis · ${m.name || m.code}`, onSelect: () => leagues.onPlay(m) })) : []),
+    ...(leagues ? [{ id: 'leagues', label: 'Championnats entre amis', sub: leagues.count ? `${leagues.count} championnat${leagues.count > 1 ? 's' : ''} · créer, rejoindre, classements` : 'Rejoins tes amis avec leur code', onSelect: leagues.onOpen }] : []),
     { id: 'rules', label: 'Règles du jeu', sub: 'Matchs, joueurs, mercato, argent, réputation', onSelect: onRules },
     { id: 'news', label: 'Nouveautés', sub: `Version ${CURRENT}${unseenNews() ? ' · à lire' : ''}`, badge: unseenNews(), onSelect: onNews },
     { id: 'settings', label: 'Réglages', sub: 'Son, vibrations, fluidité, sauvegarde, signaler un problème', onSelect: onSettings },
@@ -276,7 +287,7 @@ export function TitleScreen({ state, view, onView, onContinue, onNewGame, onCrea
       </div>
       {view !== 'settings' && view !== 'rules' && view !== 'news' && (
         <aside className="ts-side" key={view === 'create' ? 'create' : current}>
-          <SideCard id={view === 'create' ? 'new' : current} state={view === 'create' ? null : state} settings={settings} />
+          <SideCard id={view === 'create' ? 'new' : current} state={view === 'create' ? null : state} settings={settings} leagues={leagues} />
         </aside>
       )}
       <footer className="ts-bottom">

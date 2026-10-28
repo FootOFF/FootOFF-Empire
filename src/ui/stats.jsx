@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { DIVISIONS } from '../game/constants';
+import { DIVISIONS, divisionOf } from '../game/constants';
 import { TACTICS, formationOf } from '../game/tactics';
 import { TICKET_POLICIES } from '../game/economy';
 import { ordinal } from '../game/utils';
@@ -82,7 +82,7 @@ function ClubTab({ state, matches, season, onOpen, onCareer }) {
   return (
     <>
       <TrophyCase trophies={state.trophies || []} />
-      <SectionHead label={`Saison ${season}`} aside={list[0]?.division || DIVISIONS[state.divisionIndex].name} />
+      <SectionHead label={`Saison ${season}`} aside={list[0]?.division || divisionOf(state).name} />
       {list.length === 0 ? <p className="st-muted">Aucun match enregistré pour cette saison : les statistiques détaillées démarrent au prochain match joué.</p> : (
         <>
           <div className="st-tiles">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DIVISIONS, POS_LABELS } from '../game/constants';
+import { DIVISIONS, POS_LABELS, divisionOf } from '../game/constants';
 import { standingsOf } from '../game/season';
 import { ordinal } from '../game/utils';
 import { StandingsTable, ZoneLegend } from './panels';
@@ -62,7 +62,7 @@ function TableStep({ state, lm, onClose }) {
             <Eyebrow>Classement · journée {Math.min(lm.round, leagueLength(state))} / {leagueLength(state)}</Eyebrow>
             <span className={`post-outcome ${tone}`}>{line}</span>
           </div>
-          <h2 className="post-standings-title">{DIVISIONS[state.divisionIndex].name}</h2>
+          <h2 className="post-standings-title">{divisionOf(state).name}</h2>
         </header>
         <div className="post-body">
           <StandingsTable state={state} before={lm.before} />

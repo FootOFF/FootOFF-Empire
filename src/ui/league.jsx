@@ -1,27 +1,20 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Panel } from './panels';
-import { PreMatch } from './match';
 import { SectionHead } from './kit';
 import { ClubCrest, Crest, CrestArt } from './crest';
 import { CREST_ROWS } from './title';
 import { IconCheck, IconChevron, IconChevronLeft, IconClock, IconDice, IconPlay, IconPlus, IconUsers } from './icons';
 import { uiSound } from './uisound';
-import { capitalize, clubAfter, isPluralClub, randomClubName, withArticle } from '../game/names';
+import { capitalize, isPluralClub, randomClubName, withArticle } from '../game/names';
 import { CLUB_BLACK, clubInitials, defaultCrest, hexLum, normalizeCrest, randomCrest, withStyle } from '../game/crest';
 import {
-  AI_PSEUDO, LEAGUE_CLUBS, LEAGUE_COLORS, LEAGUE_MIN_HUMANS, MAX_MY_LEAGUES, autoSheet, cleanCode, cleanSheet, deadlineText,
-  deviceZone, hourText, isLeagueCode, leagueClubs, leagueFixtures, leagueRounds, leagueTable, replayOf, squadsOf, startWorld as startWorldOf,
+  AI_PSEUDO, LEAGUE_CLUBS, LEAGUE_COLORS, LEAGUE_MIN_HUMANS, MAX_MY_LEAGUES, cleanCode, deadlineText,
+  deviceZone, hourText, isLeagueCode, leagueClubs, leagueFixtures, leagueRounds, leagueTable, replayOf,
 } from '../game/league';
-import { LINES, MAX_BIDS, SQUAD_CAP, SQUAD_FLOOR, START_BUDGET, marketPlayers, paceOfLeague, priceOf, resaleOf, sessionPreview, trainingPlan } from '../game/leagueWorld';
-import { catsFor } from '../game/training';
-import { playerRating } from '../game/players';
-import { fmtMoney, fmtRating } from './format';
 import {
   createLeague, forgetLeague, inviteLink, joinLeague, kickMember, leagueInfo, leagueState, leaveLeague, myLeagues,
-  parseResumeCode, refreshLeague, rememberLeague, resumeCodeOf, sendSheet, startLeague, updateLeague,
+  parseResumeCode, refreshLeague, rememberLeague, resumeCodeOf, startLeague, updateLeague,
 } from '../game/leagueNet';
-import { lineupRating } from '../game/tactics';
 
 // Siège de la Ligue : les championnats entre amis (league.js, leagueNet.js). Une fenêtre, cinq vues :
 //   home     mes championnats (trois au plus sur cet appareil), créer, rejoindre, reprendre
@@ -407,8 +400,8 @@ function ResumeForm({ mine, onDone }) {
 // ------------------------------------------------------------------------------------------------- un championnat
 
 // reload : relire tout de suite (équipe tout juste validée) ; onTeam : ouvrir l'avant-match pour valider son équipe.
-// onMine : les choix de la semaine viennent d'être gardés sur l'appareil (la fenêtre relit mes championnats).
-function LeagueDetail({ m, ask, flash, onGone, onTeam, onReplay, onMine, reload = 0 }) {
+// onPlayClub : jouer son club de ligue (App : la partie de ligue, comme une partie solo).
+function LeagueDetail({ m, ask, flash, onGone, onReplay, onPlayClub, reload = 0 }) {
   const [data, setData] = useState(null);
   const [problem, setProblem] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -538,7 +531,7 @@ function LeagueDetail({ m, ask, flash, onGone, onTeam, onReplay, onMine, reload 
           <p className="dir-note">Une salle d’attente jamais lancée ferme d’elle-même au bout de 48 heures.</p>
         </>
       ) : (
-        <RunningLeague league={league} clubs={clubs} humans={humans} results={data.results} world={data.world} worldBefore={data.worldBefore} me={me} m={m} onTeam={(t) => onTeam({ ...t, m, world: data.world })} onReplay={onReplay} flash={flash} onSaved={() => { onMine(); load(); }} />
+        <RunningLeague league={league} clubs={clubs} humans={humans} results={data.results} worldBefore={data.worldBefore} me={me} onPlayClub={() => onPlayClub(m)} onReplay={onReplay} flash={flash} />
       )}
 
       {!lobby && (
@@ -560,7 +553,7 @@ function LeagueDetail({ m, ask, flash, onGone, onTeam, onReplay, onMine, reload 
 }
 
 // Saison en cours : la journée (échéance, qui a validé), ses matchs, le classement, le palmarès de la ligue.
-function RunningLeague({ league, clubs, humans, results, world, worldBefore, me, m, onTeam, onReplay, flash, onSaved }) {
+function RunningLeague({ league, clubs, humans, results, worldBefore, me, onPlayClub, onReplay, flash }) {
   const rounds = leagueRounds(league);
   const table = leagueTable(clubs, results);
   const fixtures = leagueFixtures(league)[league.round] || [];
@@ -574,21 +567,14 @@ function RunningLeague({ league, clubs, humans, results, world, worldBefore, me,
     <>
       {mine && opp && (
         <section className={`dir-card lig-team ${mine.validated ? 'ok' : ''}`}>
-          <SectionHead label="Ton équipe" aside={mine.validated ? 'validée' : 'à valider'} />
+          <SectionHead label="Ton club" aside={mine.validated ? 'équipe validée' : 'équipe à valider'} />
           <div className="lig-vs">
             <ClubMark club={mine} className="lig-vs-crest" />
             <span><strong>{atHome ? 'À domicile' : 'À l’extérieur'}</strong><em>Adversaire · {opp.name}{opp.human ? ` · ${opp.pseudo}` : ''}</em></span>
             <ClubMark club={opp} className="lig-vs-crest" />
           </div>
-          <button type="button" className={`btn ${mine.validated ? 'ghost' : ''}`} onClick={() => onTeam({ league, slot: mine.slot, opp, atHome, validated: mine.validated })}>
-            {mine.validated ? 'Modifier mon équipe' : 'Préparer mon équipe'}
-          </button>
-          <p className="dir-note">
-            Onze, dispositif et tactique restent cachés à ton adversaire.
-            {mine.validated
-              ? ` Tu peux encore les modifier${league.deadline ? ` jusqu’à ${deadlineText(league.deadline)}` : ''}.`
-              : ' Sans validation à l’heure, ton équipe est composée d’office.'}
-          </p>
+          <button type="button" className="btn" onClick={onPlayClub}><IconPlay className="fill" /> Jouer mon club</button>
+          <p className="dir-note">Ton club se gère comme une partie solo : complexe, effectif, entraînement, mercato. « Jouer » valide ton équipe avant l’heure ; une fois la journée jouée, tu regardes ton match.</p>
         </section>
       )}
       <section className="dir-card lig-round">
@@ -617,7 +603,6 @@ function RunningLeague({ league, clubs, humans, results, world, worldBefore, me,
           })}
         </ul>
       </section>
-      {mine && <MyClub key={`${league.season}:${league.round}`} league={league} clubs={clubs} world={world} startWorld={worldBefore(0)} slot={mine.slot} m={m} validated={mine.validated} lastResult={results[results.length - 1]} flash={flash} onSaved={onSaved} />}
       {played > 0 && <Results league={league} clubs={clubs} results={results} worldBefore={worldBefore} bySlot={bySlot} mine={mine} onReplay={onReplay} flash={flash} />}
       <section className="lig-block">
         <SectionHead label="Classement" aside={played ? `après ${plural(played, 'journée')}` : 'avant la 1re journée'} />
@@ -653,273 +638,6 @@ function RunningLeague({ league, clubs, humans, results, world, worldBefore, me,
         </section>
       )}
     </>
-  );
-}
-
-// Ton club, en quatre onglets : la séance de la semaine (un joueur par ligne, sur la catégorie choisie ; simulée au gain
-// moyen, la même chez chaque ami, faite après le match), l'effectif (note, progrès de la saison, vente au-dehors), le
-// marché commun (offres sous pli fermé) et les offres entre amis (faites, reçues). Tous ces choix partent avec l'équipe
-// validée ; si elle l'est déjà depuis cet appareil, ils sont renvoyés aussitôt. Ils jouent au calcul de la journée.
-const LINE_NAMES = { G: 'Gardien', D: 'Défense', M: 'Milieu', A: 'Attaque' };
-const CLUB_TABS = [['train', 'Séance'], ['squad', 'Effectif'], ['market', 'Marché'], ['offers', 'Offres']];
-const signed2 = (v) => `${v < 0 ? '−' : '+'}${Math.abs(v).toFixed(2).replace('.', ',')}`;
-const sum = (list) => list.reduce((a, b) => a + (b.x || 0), 0);
-const stepMoney = (v, d) => Math.max(250, Math.round((v + d * 250) / 250) * 250);
-
-// Les choix de la semaine encore valables (joueurs toujours là, offres toujours en attente).
-function weekOrders(draft, players, squads, market, pending, slot) {
-  const mineIds = new Set(players.map((p) => p.id));
-  const onMarket = new Set(market.map((p) => p.id));
-  const elsewhere = new Set(squads.flatMap((list, s) => (s === slot ? [] : list.map((p) => p.id))));
-  const toMe = new Set(pending.filter((o) => o.s === slot).map((o) => o.id));
-  return {
-    train: trainingPlan(players, draft?.train),
-    bids: (draft?.bids || []).filter((b) => onMarket.has(b.i)).slice(0, MAX_BIDS),
-    sell: (draft?.sell || []).filter((i) => mineIds.has(i)),
-    offers: (draft?.offers || []).filter((b) => elsewhere.has(b.i)).slice(0, MAX_BIDS),
-    accept: (draft?.accept || []).filter((id) => toMe.has(id)),
-    refuse: (draft?.refuse || []).filter((id) => toMe.has(id)),
-  };
-}
-
-function Money({ value, onChange, min = 250 }) {
-  return (
-    <span className="lig-money">
-      <button type="button" aria-label="Moins 250 €" disabled={value - 250 < min} onClick={() => onChange(stepMoney(value, -1))}>−</button>
-      <b>{fmtMoney(value)}</b>
-      <button type="button" aria-label="Plus 250 €" onClick={() => onChange(stepMoney(value, 1))}>+</button>
-    </span>
-  );
-}
-
-// Un club en sujet de phrase, avec son article (« L’Olympique Clairval », « Les Jaunes du Lac ») ; son verbe accordé.
-const subject = (n) => capitalize(withArticle(n));
-const agree = (n, one, many) => (isPluralClub(n) ? many : one);
-const MOVE_TEXT = {
-  buy: (x, name) => `${subject(name(x.s))} ${agree(name(x.s), 'recrute', 'recrutent')} ${x.n} sur le marché pour ${fmtMoney(x.x)}`,
-  sale: (x, name) => `${subject(name(x.s))} ${agree(name(x.s), 'vend', 'vendent')} ${x.n} hors de la ligue pour ${fmtMoney(x.x)}`,
-  deal: (x, name) => `${x.n} passe ${clubAfter('de ', name(x.s))} ${clubAfter('à ', name(x.b))} pour ${fmtMoney(x.x)}`,
-  fail: (x) => `Offre acceptée pour ${x.n}, mais le transfert n’a pas pu se faire (budget ou effectif) : rien n’a été payé`,
-  refused: (x, name) => `${subject(name(x.s))} ${agree(name(x.s), 'refuse', 'refusent')} l’offre ${clubAfter('de ', name(x.b))} pour ${x.n}`,
-  expired: (x, name) => `L’offre ${clubAfter('de ', name(x.b))} pour ${x.n} est restée sans réponse`,
-};
-
-function MyClub({ league, clubs, world, startWorld, slot, m, validated, lastResult, flash, onSaved }) {
-  const squads = useMemo(() => squadsOf(league, world), [league, world]);
-  const start = useMemo(() => squadsOf(league, startWorld), [league, startWorld]);
-  const market = useMemo(() => marketPlayers(world || startWorldOf(league)), [league, world]);
-  const pending = world?.offers || [];
-  const players = squads[slot];
-  const byId = new Map(squads.flat().concat(market).map((p) => [p.id, p]));
-  const clubOf = (id) => squads.findIndex((list) => list.some((p) => p.id === id));
-  const was = new Map(start[slot].map((p) => [p.id, playerRating(p)]));
-  const money = world?.clubs?.[slot]?.money ?? START_BUDGET;
-  const scale = paceOfLeague(league);
-  const name = (s) => clubs[s]?.name || '?';
-  const saved = weekOrders(m.draft, players, squads, market, pending, slot);
-  const [orders, setOrders] = useState(saved);
-  const [tab, setTab] = useState('train');
-  const [busy, setBusy] = useState(false);
-  const [target, setTarget] = useState(null); // offre à un ami en préparation : { slot, id, x }
-  const dirty = JSON.stringify(orders) !== JSON.stringify(saved);
-  const committed = sum(orders.bids) + sum(orders.offers);
-  const sentHere = validated && m.draft?.sent === `${league.season}:${league.round}`;
-  const set = (patch) => setOrders((o) => ({ ...o, ...patch }));
-  const choose = (pos, patch) => { set({ train: { ...orders.train, [pos]: { ...orders.train[pos], ...patch } } }); uiSound('move'); };
-  const friends = clubs.filter((c) => c.human && c.active && c.slot !== slot);
-  const save = async () => {
-    if (committed > money) { flash(`Tes offres engagent ${fmtMoney(committed)} pour un budget de ${fmtMoney(money)} : retire-en une.`, 'warn'); return; }
-    setBusy(true);
-    const draft = { ...(m.draft || {}), ...orders };
-    try {
-      if (sentHere) {
-        const sheet = cleanSheet(m.draft, players);
-        await sendSheet(m, league.season, league.round, { formation: sheet.formation, lineup: sheet.lineup, tactic: sheet.tactic, ...orders });
-      }
-      updateLeague(m.code, { draft });
-      flash(sentHere ? 'Choix de la semaine enregistrés avec ton équipe.' : 'Choix enregistrés : ils partiront avec ton équipe.');
-      onSaved();
-    } catch (x) {
-      flash(x.message, 'warn');
-    }
-    setBusy(false);
-  };
-  const toggle = (key, value) => set({ [key]: orders[key].includes(value) ? orders[key].filter((v) => v !== value) : [...orders[key], value] });
-  const forSale = new Set(orders.sell);
-  const received = pending.filter((o) => o.s === slot);
-  const sent = pending.filter((o) => o.b === slot);
-  const changes = [
-    orders.bids.length && `${plural(orders.bids.length, 'offre')} au marché`,
-    orders.sell.length && `${plural(orders.sell.length, 'vente')}`,
-    orders.offers.length && `${plural(orders.offers.length, 'offre')} à un ami`,
-    (orders.accept.length + orders.refuse.length) && `${plural(orders.accept.length + orders.refuse.length, 'réponse')}`,
-  ].filter(Boolean);
-  return (
-    <section className="dir-card lig-club">
-      <SectionHead label="Ton club" aside={`budget ${fmtMoney(money)}${committed ? ` · engagé ${fmtMoney(committed)}` : ''}`} />
-      <div className="segmented lig-tabs" role="tablist" aria-label="Ton club">
-        {CLUB_TABS.map(([id, label]) => (
-          <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => { setTab(id); uiSound('tab'); }}>
-            {label}{id === 'offers' && received.length ? <em className="lig-dot" role="img" aria-label={`${received.length} offre${received.length > 1 ? 's' : ''} reçue${received.length > 1 ? 's' : ''}`} /> : null}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'train' && (
-        <>
-          <ul className="lig-train-rows">
-            {LINES.map((pos) => {
-              const pick = orders.train[pos];
-              const p = pick && byId.get(pick.id);
-              if (!p) return null;
-              const gain = sessionPreview(p, pick.cat, scale);
-              return (
-                <li key={pos}>
-                  <span className="lig-train-line">{LINE_NAMES[pos]}</span>
-                  <select value={pick.id} aria-label={`${LINE_NAMES[pos]} : joueur`} onChange={(e) => choose(pos, { id: Number(e.target.value) })}>
-                    {players.filter((q) => q.pos === pos).map((q) => <option key={q.id} value={q.id}>{q.name} · {fmtRating(playerRating(q))}</option>)}
-                  </select>
-                  <em className={gain > 0.0005 ? 'up' : ''}>{gain > 0.0005 ? signed2(gain) : 'au plafond'}</em>
-                  <div className="segmented lig-cats" role="radiogroup" aria-label={`${LINE_NAMES[pos]} : catégorie`}>
-                    {Object.entries(catsFor(pos)).map(([id, c]) => (
-                      <button key={id} type="button" role="radio" aria-checked={pick.cat === id} className={pick.cat === id ? 'on' : ''} onClick={() => choose(pos, { cat: id })}>{c.short}</button>
-                    ))}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          {lastResult?.train?.[slot]?.length > 0 && (
-            <p className="dir-note">Dernière séance · {lastResult.train[slot].map(([id, , g]) => `${byId.get(id)?.name || '?'} ${signed2(g / 1000)}`).join(' · ')}</p>
-          )}
-        </>
-      )}
-
-      {tab === 'squad' && (
-        <>
-        <p className="dir-note">Vendre : hors de la ligue, à 85 % de sa valeur, au calcul de la journée ({SQUAD_FLOOR} joueurs au moins).</p>
-        <ul className="lig-squad">
-          {LINES.flatMap((pos) => players.filter((p) => p.pos === pos)).map((p) => {
-            const r = playerRating(p);
-            const d = r - (was.get(p.id) ?? r);
-            const selling = forSale.has(p.id);
-            const room = players.length - forSale.size > SQUAD_FLOOR;
-            return (
-              <li key={p.id} className={selling ? 'selling' : ''}>
-                <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
-                <span className="lig-who"><strong>{p.name}</strong><em>{p.age} ans · potentiel {fmtRating(p.pot)}</em></span>
-                <span className="lig-rate"><b>{fmtRating(r)}</b>{d >= 0.005 && <em>{signed2(d)}</em>}</span>
-                <button type="button" className="linkbtn lig-sell" disabled={!selling && !room} onClick={() => toggle('sell', p.id)}>
-                  {selling ? `Garder (vente ${fmtMoney(resaleOf(p))})` : `Vendre ${fmtMoney(resaleOf(p))}`}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-        </>
-      )}
-
-      {tab === 'market' && (
-        <>
-          <p className="dir-note">Six joueurs libres pour toute la ligue, chacun deux semaines sur le marché. Offre sous pli fermé, au moins au prix affiché : la plus haute l’emporte au calcul de la journée. Trois offres au plus, effectif limité à {SQUAD_CAP} joueurs.</p>
-          <ul className="lig-market">
-            {market.map((p) => {
-              const bid = orders.bids.find((b) => b.i === p.id);
-              return (
-                <li key={p.id} className={bid ? 'on' : ''}>
-                  <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
-                  <span className="lig-who"><strong>{p.name}</strong><em>{p.age} ans · potentiel {fmtRating(p.pot)} · prix {fmtMoney(p.price)}</em></span>
-                  <span className="lig-rate"><b>{fmtRating(playerRating(p))}</b></span>
-                  {bid ? (
-                    <span className="lig-bid">
-                      <Money value={bid.x} min={p.price} onChange={(x) => set({ bids: orders.bids.map((b) => (b.i === p.id ? { ...b, x } : b)) })} />
-                      <button type="button" className="linkbtn" onClick={() => set({ bids: orders.bids.filter((b) => b.i !== p.id) })}>Retirer</button>
-                    </span>
-                  ) : (
-                    <button type="button" className="btn btn-sm ghost" disabled={orders.bids.length >= MAX_BIDS || players.length >= SQUAD_CAP} onClick={() => set({ bids: [...orders.bids, { i: p.id, x: p.price }] })}>Offrir</button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-          {lastResult?.moves?.length > 0 && (
-            <>
-              <SectionHead label="Semaine passée" />
-              <ul className="lig-moves">{lastResult.moves.map((x, k) => <li key={k} className={x.s === slot || x.b === slot ? 'me' : ''}>{MOVE_TEXT[x.k]?.(x, name)}</li>)}</ul>
-            </>
-          )}
-        </>
-      )}
-
-      {tab === 'offers' && (
-        <>
-          <SectionHead label="Offres reçues" aside={received.length ? 'à toi de répondre' : null} />
-          {received.length === 0 ? <p className="dir-note">Aucune offre d’un ami cette semaine.</p> : (
-            <ul className="lig-market">
-              {received.map((o) => (
-                <li key={o.id}>
-                  <span className="lig-who"><strong>{o.n}</strong><em>{subject(name(o.b))} {agree(name(o.b), 'offre', 'offrent')} {fmtMoney(o.x)}</em></span>
-                  <div className="segmented lig-answer" role="radiogroup" aria-label={`Réponse pour ${o.n}`}>
-                    <button type="button" role="radio" aria-checked={orders.accept.includes(o.id)} className={orders.accept.includes(o.id) ? 'on' : ''} onClick={() => set({ accept: [...orders.accept.filter((v) => v !== o.id), o.id], refuse: orders.refuse.filter((v) => v !== o.id) })}>Accepter</button>
-                    <button type="button" role="radio" aria-checked={orders.refuse.includes(o.id)} className={orders.refuse.includes(o.id) ? 'on' : ''} onClick={() => set({ refuse: [...orders.refuse.filter((v) => v !== o.id), o.id], accept: orders.accept.filter((v) => v !== o.id) })}>Refuser</button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-          {sent.length > 0 && <p className="dir-note">En attente de réponse · {sent.map((o) => `${o.n} (${name(o.s)}), ${fmtMoney(o.x)}`).join(' · ')}</p>}
-          <SectionHead label="Faire une offre à un ami" aside={`${orders.offers.length} / ${MAX_BIDS}`} />
-          {orders.offers.length > 0 && (
-            <ul className="lig-market">
-              {orders.offers.map((b) => {
-                const p = byId.get(b.i);
-                return (
-                  <li key={b.i} className="on">
-                    <span className="lig-who"><strong>{p?.name || '?'}</strong><em>{name(clubOf(b.i))} · niveau {p ? fmtRating(playerRating(p)) : '?'}</em></span>
-                    <span className="lig-bid">
-                      <Money value={b.x} onChange={(x) => set({ offers: orders.offers.map((o) => (o.i === b.i ? { ...o, x } : o)) })} />
-                      <button type="button" className="linkbtn" onClick={() => set({ offers: orders.offers.filter((o) => o.i !== b.i) })}>Retirer</button>
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {friends.length === 0 ? <p className="dir-note">Aucun ami actif dans ce championnat pour l’instant.</p> : orders.offers.length < MAX_BIDS && (
-            <div className="lig-offer">
-              <select value={target?.slot ?? ''} aria-label="Club de l’ami" onChange={(e) => setTarget(e.target.value === '' ? null : { slot: Number(e.target.value), id: null })}>
-                <option value="">Choisir un club</option>
-                {friends.map((c) => <option key={c.slot} value={c.slot}>{c.name} · {c.pseudo}</option>)}
-              </select>
-              {target && (
-                <select value={target.id ?? ''} aria-label="Joueur" onChange={(e) => {
-                  const p = byId.get(Number(e.target.value));
-                  setTarget({ ...target, id: p?.id ?? null, x: p ? priceOf(p) : 0 });
-                }}>
-                  <option value="">Choisir un joueur</option>
-                  {squads[target.slot].filter((p) => !orders.offers.some((o) => o.i === p.id)).map((p) => <option key={p.id} value={p.id}>{p.pos} · {p.name} · {fmtRating(playerRating(p))}</option>)}
-                </select>
-              )}
-              {target?.id && (
-                <span className="lig-bid">
-                  <Money value={target.x} onChange={(x) => setTarget({ ...target, x })} />
-                  <button type="button" className="btn btn-sm" onClick={() => { set({ offers: [...orders.offers, { i: target.id, x: target.x }] }); setTarget(null); uiSound('select'); }}>Ajouter l’offre</button>
-                </span>
-              )}
-            </div>
-          )}
-          <p className="dir-note">Ton ami répond la semaine suivante ; le joueur arrive au calcul de la journée, si chacun en a encore les moyens et la place.</p>
-        </>
-      )}
-
-      <div className="lig-actions lig-save">
-        <button type="button" className="btn btn-sm" disabled={busy || !dirty} onClick={save}>Enregistrer mes choix</button>
-        <small className="lig-hint">
-          {dirty ? 'Choix modifiés, pas encore enregistrés' : sentHere ? 'Choix de la semaine enregistrés avec ton équipe' : 'Tes choix partiront avec ton équipe : valide-la avant l’heure'}
-          {changes.length > 0 && ` · ${changes.join(' · ')}`}
-        </small>
-      </div>
-    </section>
   );
 }
 
@@ -984,7 +702,7 @@ function Results({ league, clubs, results, worldBefore, bySlot, mine, onReplay, 
 // state : la partie en cours (peut manquer : invité arrivé par un lien) ; le Siège construit permet de créer.
 // invite : code d'un lien d'invitation, ouvert d'emblée sur « rejoindre ». overTitle : ouverte depuis l'écran titre.
 // onReplay : revoir un match en 3D (App, l'écran du direct en rejeu) ; replaying : un match est en train d'être revu.
-export function LeagueView({ state, ask, invite = null, overTitle = false, onClose, onReplay, replaying = false }) {
+export function LeagueView({ state, ask, invite = null, overTitle = false, onClose, onReplay, onPlayClub, replaying = false }) {
   const [mine, setMine] = useState(myLeagues);
   const [view, setView] = useState(() => (invite ? { id: 'join', code: invite } : { id: 'home' }));
   const [note, setNote] = useState(null); // retour dans la fenêtre : { text, tone }
@@ -1007,43 +725,6 @@ export function LeagueView({ state, ask, invite = null, overTitle = false, onClo
     if (text) flash(text);
   };
   const back = () => { uiSound('back'); home(); };
-  // Son équipe de la journée : l'avant-match du jeu (onze, dispositif, tactique, pronostic), posé sur tout l'écran ;
-  // la dernière équipe choisie revient d'une journée à l'autre (draft, sur l'appareil).
-  const [team, setTeam] = useState(null); // { m, league, world, slot, opp, atHome, validated }
-  const [reload, setReload] = useState(0);
-  const teamScreen = team && (() => {
-    const squads = squadsOf(team.league, team.world);
-    const m = myLeagues().find((x) => x.code === team.m.code) || team.m;
-    const draft = cleanSheet(m.draft, squads[team.slot]);
-    const rounds = leagueRounds(team.league);
-    return {
-      state: { clubName: m.club.name, crest: m.club.crest, players: squads[team.slot], lineup: draft.lineup, formation: draft.formation, tactic: draft.tactic, trophies: [], buildings: {} },
-      ctx: {
-        comp: 'friends', home: team.atHome, label: `${team.league.name} · journée ${team.league.round + 1} / ${rounds}`,
-        goLabel: team.validated ? 'Valider ces changements' : 'Valider mon équipe',
-        opp: { name: team.opp.name, crest: team.opp.crest, strength: lineupRating(squads[team.opp.slot], autoSheet(squads[team.opp.slot]).lineup, '433') },
-      },
-    };
-  })();
-  const validate = async (lineup, tactic, formation) => {
-    const { league } = team;
-    const m = myLeagues().find((x) => x.code === team.m.code) || team.m;
-    const { train = null, bids = [], sell = [], offers = [], accept = [], refuse = [] } = m.draft || {}; // les choix de la semaine partent avec l'équipe
-    const week = { ...(train ? { train } : {}), bids, sell, offers, accept, refuse };
-    try {
-      await sendSheet(m, league.season, league.round, { formation, lineup, tactic, ...week });
-      updateLeague(m.code, { draft: { ...(m.draft || {}), formation, lineup, tactic, sent: `${league.season}:${league.round}` } });
-      setMine(myLeagues());
-      setTeam(null);
-      uiSound('select');
-      flash(`Équipe validée pour la journée ${league.round + 1}.`);
-      setReload((n) => n + 1);
-    } catch (x) {
-      setTeam(null);
-      flash(x.message, 'warn');
-      setReload((n) => n + 1);
-    }
-  };
   const current = view.id === 'league' ? (mine.find((x) => x.code === view.m.code) || view.m) : null;
   const eyebrow = view.id === 'league' ? `Ton club · ${current.club.name}` : `Championnats entre amis · ${mine.length} / ${MAX_MY_LEAGUES}`;
   return (
@@ -1055,7 +736,7 @@ export function LeagueView({ state, ask, invite = null, overTitle = false, onClo
         eyebrow={eyebrow}
         className={`lig ${overTitle ? 'over-title' : ''}`}
         onClose={onClose}
-        onEscape={team || replaying ? () => {} : view.id !== 'home' ? back : undefined}
+        onEscape={replaying ? () => {} : view.id !== 'home' ? back : undefined}
         toolbar={note ? <p className={`lig-note ${note.tone}`} role="status" key={note.at}>{note.text}</p> : null}
       >
         {view.id !== 'home' && (
@@ -1074,12 +755,8 @@ export function LeagueView({ state, ask, invite = null, overTitle = false, onClo
         {view.id === 'create' && <CreateForm onDone={open} />}
         {view.id === 'join' && <JoinForm initialCode={view.code} mine={mine} onDone={open} onOpen={(m) => open(m)} />}
         {view.id === 'resume' && <ResumeForm mine={mine} onDone={open} />}
-        {view.id === 'league' && <LeagueDetail key={current.code} m={current} ask={ask} flash={flash} onGone={home} onTeam={setTeam} onReplay={onReplay} onMine={() => setMine(myLeagues())} reload={reload} />}
+        {view.id === 'league' && <LeagueDetail key={current.code} m={current} ask={ask} flash={flash} onGone={home} onReplay={onReplay} onPlayClub={onPlayClub} />}
       </Panel>
-      {teamScreen && createPortal(
-        <div className="lig-match team"><PreMatch state={teamScreen.state} ctx={teamScreen.ctx} onCancel={() => setTeam(null)} onKickoff={validate} /></div>,
-        document.querySelector('.game') || document.body,
-      )}
     </>
   );
 }

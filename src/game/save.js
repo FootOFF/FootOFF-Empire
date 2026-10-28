@@ -186,7 +186,7 @@ export function repairSave(s) {
       // trophées : les titres de champion déjà gagnés sont retrouvés dans l'historique des classements
       if (!y.trophies) y.trophies = (y.history || []).filter((h) => h.position === 1).map((h) => ({ comp: 'league', season: h.season, division: h.division }));
       // calendrier avec coupes : la saison en cours reprend à la bonne journée, la coupe au prochain tour au calendrier
-      if (!y.calendar) {
+      if (!y.calendar && !y.league) { // partie de ligue : pas de coupes (leagueSeason.js)
         buildCalendar(y);
         let leagues = 0;
         let i = 0;
@@ -220,7 +220,7 @@ export function repairSave(s) {
       if (beforeMercato) refreshTransfers(y, 'grow'); // le mercato se remplit tout de suite (joueurs libres et sous contrat)
       y.youth ||= []; // équipe de jeunes de l'académie (ajoutée après coup)
       const renamed = new Map(); // ancien nom → nouveau
-      for (const p of [...y.players, ...(y.market || []), ...y.transfers]) {
+      for (const p of y.league ? [] : [...y.players, ...(y.market || []), ...y.transfers]) { // ligue : les noms sont ceux de la ligue
         const before = p.name;
         renameRetired(p);
         if (p.name !== before) renamed.set(before, p.name);
@@ -244,7 +244,7 @@ export function repairSave(s) {
       }
       registerNames([...y.players, ...y.youth, ...(y.scouting?.list || []), ...y.market, ...y.transfers, ...y.alumni].map((p) => p.name));
       if (!y.scouting) refreshScouting(y); // jeunes repérés de la journée, tout de suite (noms déjà tous connus)
-      fixLeagueNames(y); // un club adverse en double (même nom ou même lieu) dans la division est renommé
+      if (!y.league) fixLeagueNames(y); // un club adverse en double (même nom ou même lieu) dans la division est renommé
       scaleElite(y); // Elite à l'échelle d'un grand championnat (0.6.0)
       // visages (0.6.1) : un joueur d'avant garde la base de son portrait (teint, cheveux, coiffure, barbe), avec les
       // nouveaux traits ; puis aucun sosie dans l'effectif (de deux sosies, le dernier arrivé change de coupe)

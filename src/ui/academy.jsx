@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { BUILDINGS, DIVISIONS, POS_LABELS, SQUAD_MAX, upgradeCost } from '../game/constants';
+import { BUILDINGS, DIVISIONS, POS_LABELS, SQUAD_MAX, upgradeCost, divisionOf } from '../game/constants';
 import { ATTRS, FAMILIES, GK_ATTRS, TRAITS, playerRating, potentialRange, ratingAt, wageOf } from '../game/players';
 import {
   MISSION_KINDS, MISSION_REGIONS, MISSION_STEPS, PLANS, PROFILES, SCOUTED, YOUTH_LEAVE_AGE, YOUTH_PLACES, advisedPlan, cancelMission,
@@ -127,7 +127,7 @@ export function AcademyView({ state, run, ask, notify = () => {}, onClose, onBui
       id="academy"
       size="lg"
       title="Académie"
-      eyebrow={<>Niveau {lvl} / {BUILDINGS.academy.max} · {youth.length} / {YOUTH_PLACES} jeunes<span className="hide-sm"> · {DIVISIONS[state.divisionIndex].name}</span></>}
+      eyebrow={<>Niveau {lvl} / {BUILDINGS.academy.max} · {youth.length} / {YOUTH_PLACES} jeunes<span className="hide-sm"> · {divisionOf(state).name}</span></>}
       onClose={onClose}
       onEscape={onEscape}
       toolbar={(

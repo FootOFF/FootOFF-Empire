@@ -14,7 +14,7 @@ import { PHONE, useSwipe } from './gestures';
 import { SEC_PER_MIN, matchFeed } from '../game/matchFeed';
 import { ClubCrest, Crest } from './crest';
 import { clubStars } from '../game/crest';
-import { DIVISIONS } from '../game/constants';
+import { divisionOf } from '../game/constants';
 import { penaltySkills, shootoutWinChance } from '../game/cups';
 import { pctOf } from '../game/mercato';
 import { standingsOf } from '../game/season';
@@ -125,7 +125,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
     <div ref={ref} className={`matchscreen prematch ${board ? 'board-open' : 'board-closed'}`}>
       <span className="grip" aria-hidden="true" />
       <header className="pm-head">
-        <p className={`pm-eyebrow comp-${ctx.comp || 'league'}`}>{league ? `${DIVISIONS[state.divisionIndex].name} · ` : ''}{ctx.label || `Journée ${state.round + 1} / ${state.schedule.length}`} · {home ? 'À domicile' : 'À l’extérieur'}</p>
+        <p className={`pm-eyebrow comp-${ctx.comp || 'league'}`}>{league ? `${divisionOf(state).name} · ` : ''}{ctx.label || `Journée ${state.round + 1} / ${state.schedule.length}`} · {home ? 'À domicile' : 'À l’extérieur'}</p>
         <div className="pm-top">
           <div className="pm-matchup">
             <div className="pm-team home">
@@ -442,7 +442,8 @@ function AwayCrest({ ctx, name, className }) {
 
 // replay : un match déjà joué d'un bloc (championnat entre amis, league.js replayOf), revu avec ses temps forts en 3D :
 // ni changement ni consigne, rien n'est retiré, aucune sauvegarde du direct.
-export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, restore = null, replay = null }) {
+// side : notre camp dans le match revu (championnat entre amis, à l'extérieur : 'away') ; les buts de notre camp sont fêtés.
+export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, restore = null, replay = null, side = 'home' }) {
   const [live] = useState(() => replay || createLiveMatch(state, ctx, restore?.engine || null)); // un seul match par montage (jamais recréé)
   const [half, setHalf] = useState(restore?.ui.half || 1);
   const [clock, setClock] = useState(restore ? Math.ceil(restore.ui.clock) : 0);
@@ -675,7 +676,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   // highlighted : l'événement vient d'être joué en 3D (sa célébration y a eu lieu : pas de pause en plus)
   function react(e, { highlighted = false } = {}) {
     if (e.type === 'goal') {
-      const ours = e.side === 'home';
+      const ours = e.side === side;
       setBanner({ ...e, ours, fast: speed > 1 });
       if (!highlighted) {
         pause.current = speed > 1 ? 1.6 : 4.4;
@@ -750,7 +751,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     : live.oddsShown(oddsMinute, shown, boardOpen ? { lineup: planned, tactic: tactic2 } : {})), [oddsMinute, shown, phase, plan, tactic2, lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const st = useMemo(() => statsOf(shown), [shown]);
   const poss = phase === 'halftime' || phase === 'fulltime' ? m.stats.possession : live.possessionAt(half, minute);
-  const div = DIVISIONS[state.divisionIndex]?.name || ''; // championnat entre amis : pas de division (ctx.label)
+  const div = divisionOf(state)?.name || ''; // championnat entre amis : pas de division (ctx.label)
   const round = ctx.comp === 'league' || !ctx.comp
     ? <><span className="hm-long">{div} · Journée </span><span className="hm-short">{div} · J</span>{state.round + 1}/{state.schedule.length}</> : ctx.label;
   const period = phase === 'halftime' ? 'Mi-temps' : phase === 'fulltime' ? `Fin du match${m.pens ? ` · t.a.b. ${m.pens[0]}-${m.pens[1]}` : ''}` : half === 1 ? '1re période' : '2e période';

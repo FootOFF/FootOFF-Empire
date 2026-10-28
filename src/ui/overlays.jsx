@@ -1,5 +1,5 @@
 import React from 'react';
-import { DIVISIONS } from '../game/constants';
+import { divisionOf } from '../game/constants';
 import { OFFLINE_CAP } from '../game/economy';
 import { FOMonogram } from './brand';
 import { fmtMoney, fmtNum } from './format';
@@ -27,7 +27,8 @@ export function SeasonReview({ state, onClose }) {
         <div className="cine-rank"><b>{r.position}<sup>{r.position === 1 ? 'er' : 'e'}</sup></b><span>sur 8 · {r.division}</span></div>
         {r.promoted && <span className="cine-word win">Montée en {r.nextDivision}</span>}
         {r.relegated && <span className="cine-word loss">Descente en {r.nextDivision}</span>}
-        {!r.promoted && !r.relegated && <span className={`cine-word ${r.champion ? 'win' : 'draw'}`}>{r.champion ? 'Titre conservé en Elite' : 'Maintien'}</span>}
+        {!r.promoted && !r.relegated && !r.league && <span className={`cine-word ${r.champion ? 'win' : 'draw'}`}>{r.champion ? 'Titre conservé en Elite' : 'Maintien'}</span>}
+        {r.league && !r.champion && r.position <= 3 && <span className="cine-word win">Sur le podium</span>}{/* entre amis : ni montée ni descente */}
         <div className="cine-facts">
           {r.matchday > 0 && <div><span>Recettes des matchs</span><b className="up">+{fmtMoney(r.matchday)}</b></div>}
           <div><span>Prime</span><b className="up">+{fmtMoney(r.prize)}</b></div>
@@ -45,7 +46,7 @@ export function SeasonReview({ state, onClose }) {
         )}
         {r.events.length > 0 && <ul className="cine-events">{r.events.map((e, i) => <li key={i}>{e}</li>)}</ul>}
         <button className="btn btn-xl" onClick={onClose}>
-          Saison {state.seasonNumber} · {DIVISIONS[state.divisionIndex].name}
+          Saison {state.seasonNumber} · {divisionOf(state).name}
         </button>
       </div>
     </div>

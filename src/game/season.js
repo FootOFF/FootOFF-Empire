@@ -1,7 +1,7 @@
 import { DIVISIONS, SQUAD_MIN } from './constants';
 import { pushJournal } from './journal';
 import { REP_DECAY, REP_DIVISION } from './reputation';
-import { refreshTransfers } from './transfers';
+import { refreshSales, refreshTransfers } from './transfers';
 import { refreshScouting, trainYouth, youthSeasonEnd } from './academy';
 import { leagueRounds, logMove } from './mercato';
 import { awayGate, expectedGate, matchGate, prizeFor, sponsorIncome, ticketPrice, upkeepOf } from './economy';
@@ -17,6 +17,7 @@ import { C1_ENTRY, COMPS, STAGES, buildCalendar, cupPrize, drawOpponent, fixture
 import { addMatch, rebuildRecords } from './records';
 import { distinctFace, distinctSquad } from './faces';
 import { collectiveSession, staffSession, tidyTraining, windowKey } from './training';
+import { leagueSeasonStart, officialTable } from './leagueSeason';
 
 export function roundRobin(n) {
   const rounds = [];
@@ -33,7 +34,17 @@ export function roundRobin(n) {
 
 export { pushJournal } from './journal';
 
+// Partie de championnat entre amis (s.league, leagueSeason.js) : les adversaires, le calendrier et le classement viennent
+// de la ligue ; ni coupes ni marché privé. Le reste de la reprise (académie, objectifs, sponsors) est celui de la carrière.
 export function startSeason(s) {
+  if (s.league) {
+    leagueSeasonStart(s);
+    refreshScouting(s);
+    resetSeasonStats(s);
+    drawObjectives(s);
+    if (s.seasonNumber > 1) paySponsors(s);
+    return;
+  }
   const div = DIVISIONS[s.divisionIndex];
   s.rivals = [];
   const names = leagueClubNames(7, s.clubName); // sept clubs tous différents, jamais deux du même lieu
@@ -293,7 +304,7 @@ export function applyMatchResult(s, live) {
   const league = ctx.comp === 'league';
   const before = league ? standingsOf(s).map((t) => t.i) : null; // ordre du classement avant la journée (après-match)
   const trainingWindow = windowKey(s); // séance d'entraînement de l'avant-match (training.js)
-  if (league) {
+  if (league && !s.league) { // en ligue entre amis, les autres matchs sont joués par la ligue (classement officiel)
     for (const [i, j] of s.schedule[s.round]) {
       if (i === 0 || j === 0) continue;
       const [gi, gj] = quickSim(s.rivals[i - 1].strength, s.rivals[j - 1].strength);
@@ -311,7 +322,8 @@ export function applyMatchResult(s, live) {
     revenue: gate.revenue,
     repDelta: Math.round((live.gf > live.ga ? 1 : live.gf === live.ga ? 0.2 : -0.6) * ctx.repMult * REP_DIVISION[s.divisionIndex] * 10) / 10,
   };
-  if (league) applyResult(s, 0, ctx.oppIdx, res.gf, res.ga);
+  if (league && s.league) s.table = officialTable(s);
+  else if (league) applyResult(s, 0, ctx.oppIdx, res.gf, res.ga);
   const cupNote = league ? null : cupResult(s, ctx, res);
   // les absents de ce match purgent une date : suspension et blessure diminuent d'un match
   for (const p of s.players) {
@@ -382,7 +394,8 @@ export function applyMatchResult(s, live) {
     });
   }
   ensureLineup(s); // blessés et suspendus quittent le onze du prochain match
-  refreshTransfers(s); // le marché des transferts bouge à chaque journée
+  if (!s.league) refreshTransfers(s); // le marché des transferts bouge à chaque journée
+  else refreshSales(s); // ligue : marché commun (leagueClub.js), ventes du solo
   if (league) trainYouth(s); // académie : les jeunes progressent à chaque journée de championnat
   refreshScouting(s); // et de nouveaux jeunes sont repérés
   collectiveSession(s, trainingWindow); // centre d'entraînement : séance collective pour ceux qui n'étaient pas à la séance
@@ -427,10 +440,11 @@ export function nextOpponent(s) {
 const n = (v) => new Intl.NumberFormat('fr-FR').format(v);
 
 export function endSeason(s) {
-  for (let guard = 0; nextFixture(s) && guard < 40; guard++) playRound(s); // dates restantes jouées d'un bloc (22 en Elite)
+  if (!s.league) for (let guard = 0; nextFixture(s) && guard < 40; guard++) playRound(s); // dates restantes jouées d'un bloc (22 en Elite)
   const standings = standingsOf(s);
   const position = standings.findIndex((t) => t.i === 0) + 1;
-  const div = DIVISIONS[s.divisionIndex];
+  // ligue entre amis : son nom tient lieu de division (trophée, historique, bilan), l'économie garde son échelle
+  const div = s.league ? { ...DIVISIONS[s.divisionIndex], name: s.league.name } : DIVISIONS[s.divisionIndex];
   const prize = prizeFor(position, s.divisionIndex);
   // sponsors de la saison : payés à la reprise (paySponsors), sinon maintenant (première saison, partie d'avant la 0.6.0)
   const upfront = sponsorsPaid(s);
@@ -438,8 +452,8 @@ export function endSeason(s) {
   // salaires et entretien déjà payés journée après journée : le bilan en montre le total de la saison
   const wages = s.ledger?.lines?.wages || 0;
   const upkeep = s.ledger?.lines?.upkeep || 0;
-  const promoted = position <= 2 && s.divisionIndex < 3;
-  const relegated = position >= 7 && s.divisionIndex > 0;
+  const promoted = !s.league && position <= 2 && s.divisionIndex < 3;
+  const relegated = !s.league && position >= 7 && s.divisionIndex > 0;
 
   s.money += prize + (upfront ? 0 : sponsors);
   book(s, 'prize', prize);
@@ -455,7 +469,7 @@ export function endSeason(s) {
     events.unshift(`Champion ${ofDiv(div.name)} ! Le trophée rejoint la vitrine et rapporte ${n(titleBonus)} € de primes de titre.`);
   }
   // Coupe d'Europe : les deux premiers de l'Elite la disputent la saison suivante
-  if (s.divisionIndex === DIVISIONS.length - 1 && position <= 2) {
+  if (!s.league && s.divisionIndex === DIVISIONS.length - 1 && position <= 2) {
     s.c1Next = true;
     events.push(`Qualifié pour la Coupe d’Europe des clubs : ${n(C1_ENTRY)} € de prime de participation dès la reprise.`);
   }
@@ -518,7 +532,7 @@ export function endSeason(s) {
   });
   s.seasonReview = {
     position, division: div.name, matchday, prize, sponsors, sponsorsUpfront: upfront, wages, upkeep, promoted, relegated, events, nextDivision: nextDivName,
-    titleBonus, cups: cupsMoney, trophies, cupRuns, champion: position === 1, c1Next: !!s.c1Next,
+    titleBonus, cups: cupsMoney, trophies, cupRuns, champion: position === 1, c1Next: !!s.c1Next, league: !!s.league,
   };
   closeSeasonGoals(s, events);
   closeSeasonObjectives(s, events); // objectifs du conseil : primes et bonus de saison parfaite
@@ -534,6 +548,7 @@ export function endSeason(s) {
   if (promoted) s.divisionIndex += 1;
   if (relegated) s.divisionIndex -= 1;
   s.seasonNumber += 1;
+  if (s.league) s.league.season += 1; // la saison suivante de la ligue (son calendrier)
   s.lastMatch = null;
   ensureLineup(s); // retraites, amateurs de secours : l'onze est complété
   startSeason(s);

@@ -5,7 +5,7 @@ import { NewsView, unseenNews } from './news';
 import { CURRENT } from '../game/changelog';
 import { IconCheck } from './icons';
 import { ClubCrest } from './crest';
-import { DIVISIONS } from '../game/constants';
+import { DIVISIONS, divisionOf } from '../game/constants';
 import { clubStars } from '../game/crest';
 
 // Menu pause, façon jeu de console : le jeu se fige (la vue 3D s'arrête et se floute derrière), le menu à gauche,
@@ -14,7 +14,7 @@ import { clubStars } from '../game/crest';
 // focus : ouvert directement sur une entrée des réglages (notification « Le jeu rame » : la fluidité)
 export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMatch = false, blocked = false, focus = null }) {
   const [view, setView] = useState(focus ? 'settings' : 'menu');
-  const div = DIVISIONS[state.divisionIndex];
+  const div = divisionOf(state);
   const total = state.schedule?.length || 7;
   const items = [
     { id: 'resume', label: 'Reprendre', sub: 'Retour au complexe', onSelect: onResume },
@@ -22,7 +22,7 @@ export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMat
     { id: 'rules', label: 'Règles du jeu', sub: 'Matchs, joueurs, mercato, argent, réputation', onSelect: () => setView('rules') },
     { id: 'news', label: 'Nouveautés', sub: `Version ${CURRENT}${unseenNews() ? ' · à lire' : ''}`, badge: unseenNews(), onSelect: () => setView('news') },
     { id: 'title', label: 'Écran titre', sub: inMatch ? 'Indisponible pendant un match' : 'Ta partie reste sauvegardée', disabled: inMatch, onSelect: onTitle },
-    { id: 'new', label: 'Nouvelle partie', sub: 'Efface la partie en cours', tone: 'danger', onSelect: onNewGame },
+    ...(onNewGame ? [{ id: 'new', label: 'Nouvelle partie', sub: 'Efface la partie en cours', tone: 'danger', onSelect: onNewGame }] : []),
     { id: 'media', label: 'FootOFF Media', sub: 'footoff.media', href: 'https://footoff.media' },
   ];
   const menu = useMenu(items, { onBack: onResume, active: view === 'menu' && !blocked });
@@ -36,7 +36,7 @@ export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMat
             <ClubCrest crest={state.crest} name={state.clubName} className="pz-crest" stars={clubStars(state)} />
             <h2 className={state.clubName.length > 16 ? 'long' : ''}>{state.clubName}</h2>
           </div>
-          <p>{div.name} · Saison {state.seasonNumber} · {state.round ? `journée ${Math.min(state.round, total)}/${total}` : 'avant la 1re journée'}</p>
+          <p>{state.league ? state.league.name : div.name} · Saison {state.seasonNumber} · {state.round ? `journée ${Math.min(state.round, total)}/${total}` : 'avant la 1re journée'}</p>
         </header>
         {view === 'menu' ? (
           <MenuList items={items} menu={menu} label="Menu pause" />

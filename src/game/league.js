@@ -3,7 +3,9 @@ import { distinctFace, drawFace, hash } from './faces';
 import { createLiveMatch } from './live';
 import { distinctClubName, squadName } from './names';
 import { seeded } from './opponents';
-import { compactPlayer, incomeOf, initialWorld, paceOfLeague, refill, runMarket, summer, trainClub, worldSquads } from './leagueWorld';
+import {
+  START_BUDGET, compactPlayer, incomeOf, initialWorld, paceOfLeague, refill, runMarket, summer, toSnap, trainClub, unsnapPlayer, worldSquads,
+} from './leagueWorld';
 import { assignNumber, makePlayer } from './players';
 import { FORMATIONS, TACTICS, autoLineup, lineupRating } from './tactics';
 import { clone } from './utils';
@@ -143,7 +145,7 @@ export function cleanSheet(sheet, players) {
 // niveau, son dispositif et sa tactique. home, away : { slot, name, crest, players, sheet }.
 export function leagueMatch(league, season, round, home, away) {
   return seeded(hash(`${league.code}|${league.seed}|${season}|${round}|${home.slot}-${away.slot}|match`), () => {
-    const s = { clubName: home.name, crest: home.crest, players: home.players, lineup: [...home.sheet.lineup], formation: home.sheet.formation, tactic: home.sheet.tactic, buildings: {} };
+    const s = { clubName: home.name, crest: home.crest, players: home.players, lineup: [...home.sheet.lineup], formation: home.sheet.formation, tactic: home.sheet.tactic, buildings: { medical: home.medical || 0 } };
     const ctx = {
       comp: 'friends',
       home: true,
@@ -172,59 +174,78 @@ export function startWorld(league) {
 // Effectifs d'un état de la ligue (leagueWorld.js) ; sans état (avant la première journée) : ceux de départ.
 export const squadsOf = (league, world) => worldSquads(leagueSquads(league), world || startWorld(league));
 
-// Ordres d'un club pour la journée (équipe, séance) : ceux d'un ami présent, sinon rien (choix automatiques).
-const ordersOf = (clubs, teams, slot) => (clubs[slot].human && clubs[slot].active ? teams?.[clubs[slot].member] || null : null);
-// Les deux clubs d'une rencontre, prêts à jouer : l'équipe validée d'un ami présent, sinon l'équipe automatique.
-function matchSide(clubs, squads, teams, slot) {
+// Un club prêt à jouer sa rencontre. Un ami joue avec l'effectif qu'il a envoyé (sa partie est sur son appareil) et son
+// équipe validée ; absent depuis 7 jours, parti, ou sans équipe validée cette journée : l'équipe automatique de son
+// dernier effectif connu. Un club de l'ordinateur : l'effectif de l'état de la ligue, équipe automatique.
+function sideOf(clubs, teams, squads, world, slot) {
   const c = clubs[slot];
-  return { slot, name: c.name, crest: c.crest, players: squads[slot], sheet: cleanSheet(ordersOf(clubs, teams, slot), squads[slot]) };
+  const sent = c.member ? teams?.[c.member] : null;
+  if (sent?.squad?.length >= 11) {
+    const players = sent.squad.map(unsnapPlayer);
+    const own = c.human && c.active && !sent.auto;
+    return { slot, name: c.name, crest: c.crest, players, sheet: own ? cleanSheet(sent, players) : autoSheet(players), medical: Number(sent.med) || 0, money: Number(sent.money) || 0, sent };
+  }
+  return { slot, name: c.name, crest: c.crest, players: squads[slot], sheet: autoSheet(squads[slot]), medical: 0, money: world.clubs[slot]?.money ?? START_BUDGET, sent: null };
 }
 const packSheet = (sh) => ({ f: sh.formation, t: sh.tactic, l: sh.lineup, ...(sh.auto ? { a: 1 } : {}) });
 export const unpackSheet = (x) => ({ formation: x.f, tactic: x.t, lineup: x.l, auto: !!x.a });
+const elevenOf = (side) => side.sheet.lineup.map((id) => side.players.find((p) => p.id === id)).filter(Boolean);
 
 // Une journée entière, à envoyer au serveur (le premier envoi fait foi) : chaque rencontre avec son score, ses buts
-// (minute, camp 0 domicile ou 1 extérieur, buteur, penalty) et les équipes jouées, de quoi rejouer le match à
-// l'identique ; puis la semaine qui suit (séances de chaque club, recettes, et après la dernière journée l'intersaison)
-// et l'état de la ligue qui en sort (world, leagueWorld.js). world : l'état d'avant la journée (null : le départ).
+// (minute, camp 0 domicile ou 1 extérieur, buteur, penalty), les équipes jouées et les joueurs du match (effectif du club
+// qui reçoit, onze du visiteur : sq), de quoi la rejouer à l'identique chez chacun et l'appliquer à sa partie ; puis la
+// semaine des clubs de l'ordinateur (séances, recettes, intersaison après la dernière journée), le marché commun et les
+// offres entre amis (moves : ce que chaque ami applique à sa partie), et l'état de la ligue qui en sort. world : l'état
+// d'avant la journée (null : le départ).
 export function playLeagueRound(league, members, teams, world) {
   const clubs = leagueClubs(league, members);
-  const squads = squadsOf(league, world);
   const before = world || startWorld(league);
+  const squads = squadsOf(league, before);
+  const sides = [...Array(LEAGUE_CLUBS).keys()].map((slot) => sideOf(clubs, teams, squads, before, slot));
   const matches = (leagueFixtures(league)[league.round] || []).map(([h, a]) => {
-    const home = matchSide(clubs, squads, teams, h);
-    const away = matchSide(clubs, squads, teams, a);
-    const { live } = leagueMatch(league, league.season, league.round, home, away);
+    const { live } = leagueMatch(league, league.season, league.round, sides[h], sides[a]);
     const goals = [...live.eventsOf(1), ...live.eventsOf(2)].filter((e) => e.type === 'goal')
       .map((e) => ({ m: e.minute, s: e.side === 'home' ? 0 : 1, p: e.player || '', ...(e.q === 'pen' ? { pen: 1 } : {}) }));
-    return { h, a, hg: live.state.score.home, ag: live.state.score.away, g: goals, sh: packSheet(home.sheet), sa: packSheet(away.sheet) };
+    return {
+      h, a, hg: live.state.score.home, ag: live.state.score.away, g: goals, sh: packSheet(sides[h].sheet), sa: packSheet(sides[a].sheet),
+      sq: [sides[h].players.map(toSnap), elevenOf(sides[a]).map(toSnap)], md: sides[h].medical,
+    };
   });
   const last = league.round + 1 >= leagueRounds(league);
-  const scale = paceOfLeague(league);
-  const money = before.clubs.map((c) => c.money);
+  const ai = (slot) => !sides[slot].sent; // clubs tenus par l'état de la ligue
+  const humans = clubs.filter((c) => c.human && c.active).map((c) => c.slot);
+  const money = sides.map((x) => x.money);
   for (const x of matches) {
-    money[x.h] += incomeOf(x.hg, x.ag);
-    money[x.a] += incomeOf(x.ag, x.hg);
+    if (ai(x.h)) money[x.h] += incomeOf(x.hg, x.ag);
+    if (ai(x.a)) money[x.a] += incomeOf(x.ag, x.hg);
   }
-  // la semaine qui suit : séances, intersaison après la dernière journée, puis le marché commun
   const week = seeded(hash(`${league.code}|${league.seed}|${league.season}|${league.round}|semaine`), () => {
-    const train = squads.map((players, slot) => trainClub(players, ordersOf(clubs, teams, slot)?.train, scale));
-    if (last) squads.forEach(summer);
-    const market = runMarket({ squads, money, orders: (slot) => ordersOf(clubs, teams, slot), world: before, round: league.season * 100 + league.round, season: league.season, humans: clubs.filter((c) => c.human && c.active).map((c) => c.slot) });
-    return { train, ...market };
+    const scale = paceOfLeague(league);
+    squads.forEach((players, slot) => { if (ai(slot)) trainClub(players, null, scale); });
+    if (last) squads.forEach((players, slot) => { if (ai(slot)) summer(players); });
+    const list = sides.map((x, slot) => (ai(slot) ? squads[slot] : x.players));
+    return runMarket({ squads: list, money, orders: (slot) => (humans.includes(slot) ? sides[slot].sent : null), world: before, round: league.season * 100 + league.round, humans });
   });
-  const next = { v: 1, clubs: squads.map((players, slot) => ({ money: money[slot], players: players.map(compactPlayer) })), market: week.market, nextId: week.nextId, offers: week.offers };
-  return { v: 2, matches, train: week.train, moves: week.moves, world: next };
+  const next = {
+    v: 2,
+    clubs: squads.map((players, slot) => (ai(slot) ? { money: money[slot], players: players.map(compactPlayer) } : null)),
+    market: week.market, nextId: week.nextId, offers: week.offers,
+  };
+  // niveau de chaque club (onze automatique de son effectif) : ce que montrent l'avant-match et le classement
+  const str = sides.map((x) => Math.round(lineupRating(x.players, autoSheet(x.players).lineup, '433') * 10) / 10);
+  return { v: 3, matches, moves: week.moves, str, world: next };
 }
 
-// Un match joué, à revoir en 3D (l'écran du direct, en rejeu) : rejoué à l'identique depuis les équipes gardées avec le
-// résultat et l'état de la ligue d'avant la journée (worldBefore). Seulement si le moteur retrouve le score officiel
-// (une autre version du jeu, ou un calcul d'un autre navigateur qui diverge : pas de rejeu, le résumé reste).
-// clubs : leagueClubs ; x : la rencontre ({ h, a, hg, ag, sh, sa }).
-export function replayOf(league, clubs, round, x, worldBefore) {
-  if (!x.sh || !x.sa) return null;
-  const squads = squadsOf(league, worldBefore);
-  const side = (slot, packed) => ({ slot, name: clubs[slot].name, crest: clubs[slot].crest, players: squads[slot], sheet: cleanSheet(unpackSheet(packed), squads[slot]) });
-  const { live, state, ctx } = leagueMatch(league, league.season, round, side(x.h, x.sh), side(x.a, x.sa));
+// Un match joué, à revoir en 3D (l'écran du direct, en rejeu) et à appliquer à sa partie : rejoué à l'identique depuis
+// les joueurs et les équipes gardés avec le résultat. Seulement si le moteur retrouve le score officiel (une autre
+// version du jeu, ou un calcul d'un autre navigateur qui diverge : pas de rejeu, le résumé reste). clubs : leagueClubs ;
+// x : la rencontre ({ h, a, hg, ag, sh, sa, sq, md }).
+export function replayOf(league, clubs, round, x, season = league.season) {
+  if (!x.sh || !x.sa || !x.sq) return null;
+  const home = x.sq[0].map(unsnapPlayer);
+  const away = x.sq[1].map(unsnapPlayer);
+  const side = (slot, players, packed, md = 0) => ({ slot, name: clubs[slot].name, crest: clubs[slot].crest, players, sheet: unpackSheet(packed), medical: md });
+  const { live, state, ctx } = leagueMatch(league, season, round, side(x.h, home, x.sh, x.md), side(x.a, away, x.sa));
   if (live.state.score.home !== x.hg || live.state.score.away !== x.ag) return null;
   live.state.half = 1; // le direct montre la première période d'abord (la seconde est déjà jouée)
   return { live, state, ctx: { ...ctx, label: `${league.name} · journée ${round + 1}` } };

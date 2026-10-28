@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { DIVISIONS } from '../game/constants';
+import { DIVISIONS, divisionOf } from '../game/constants';
 import { standingsOf } from '../game/season';
 import { ordinal } from '../game/utils';
 import { fmtMoney, fmtNum, fmtRating } from './format';
@@ -134,7 +134,7 @@ export function StandingsTable({ state, before = null }) {
       </thead>
       <tbody>
         {standings.map((t, i) => {
-          const zone = zoneOf(state.divisionIndex, i);
+          const zone = state.league ? null : zoneOf(state.divisionIndex, i); // ligue entre amis : ni montée ni descente
           const was = before ? before.indexOf(t.i) : -1;
           const move = was < 0 ? 0 : was - i; // positif : le club remonte
           return (
@@ -163,6 +163,7 @@ export function StandingsTable({ state, before = null }) {
 
 // Légende des zones (montée, Europe, descente) sous le classement : la couleur du liseré, ce que la place apporte.
 export function ZoneLegend({ state }) {
+  if (state.league) return null;
   const rel = state.divisionIndex > 0;
   const promo = state.divisionIndex < DIVISIONS.length - 1;
   return (
@@ -182,12 +183,12 @@ export function ZoneLegend({ state }) {
 // sheet : la fiche joueur posée par-dessus (App) ; sheetOpen : elle a la main sur Échap
 export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = null, onOpenMatch, onPlay, onPlayerSheet, sheet = null, sheetOpen = false }) {
   const standings = standingsOf(state);
-  const div = DIVISIONS[state.divisionIndex];
+  const div = divisionOf(state);
   const lm = state.lastMatch;
   const lmPens = !!lm?.pens; // coupe : égalité tranchée aux tirs au but
   const lmWon = lm && (lm.gf > lm.ga || (lmPens && lm.pens[0] > lm.pens[1]));
-  const rel = state.divisionIndex > 0;
-  const promo = state.divisionIndex < 3;
+  const rel = !state.league && state.divisionIndex > 0;
+  const promo = !state.league && state.divisionIndex < 3;
   const pos = standings.findIndex((t) => t.i === 0) + 1;
   const me = standings[pos - 1];
   let goal;
@@ -198,6 +199,7 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
   };
   if (promo && pos > 2) goal = behind('de la montée');
   else if (promo) goal = 'En zone de montée';
+  else if (state.league) goal = pos === 1 ? 'En tête de la ligue' : `${standings[0].pts - me.pts} pt${standings[0].pts - me.pts > 1 ? 's' : ''} du premier`;
   else goal = pos === 1 ? 'En tête de l’Elite' : pos === 2 ? 'Place européenne' : behind('de l’Europe');
   if (rel && pos >= 7) goal = 'En zone de descente';
   const motm = lm?.players?.length ? [...lm.players].sort((a, b) => b.rating - a.rating)[0] : null;
@@ -218,7 +220,7 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
           <Stat label="Points" value={me.pts} sub={`${me.played} match${me.played > 1 ? 's' : ''}`} />
           <Stat label="Diff." value={signed(me.gd)} />
           {/* « Ambition » : la place visée au classement (l'« objectif de saison » du HUD est celui des primes de palier) */}
-          <Stat label="Ambition" value={promo ? 'Top 2' : 'Europe'} sub={goal} />
+          <Stat label="Ambition" value={state.league ? 'Titre' : promo ? 'Top 2' : 'Europe'} sub={goal} />
           </div>
         </>
       )}
@@ -284,12 +286,13 @@ const days = (n) => `${n} journée${n > 1 ? 's' : ''}`;
 function RaceCard({ state, standings, pos }) {
   const d = state.divisionIndex;
   const elite = d === DIVISIONS.length - 1;
+  const lg = !!state.league; // ligue entre amis : la course au titre
   const me = standings[pos - 1];
   const left = Math.max(0, leagueLength(state) - me.played);
-  const danger = d > 0 && pos >= 7;
-  const target = danger ? 6 : 2; // place à atteindre (6e : maintien) ou à garder (2e)
-  const title = danger ? 'Sauver sa place' : elite ? 'Jouer l’Europe' : 'Monter en fin de saison';
-  const aim = danger
+  const danger = !lg && d > 0 && pos >= 7;
+  const target = danger ? 6 : lg ? 1 : 2; // place à atteindre (6e : maintien) ou à garder (2e ; 1re en ligue)
+  const title = lg ? 'Être champion' : danger ? 'Sauver sa place' : elite ? 'Jouer l’Europe' : 'Monter en fin de saison';
+  const aim = lg ? `Le premier est champion ${ofDiv(state.league.name)} et entre à son palmarès.` : danger
     ? `Les deux derniers descendent en ${DIVISIONS[d - 1].name}.`
     : elite ? 'Les deux premiers jouent la Coupe d’Europe des clubs la saison prochaine.' : `Les deux premiers montent en ${DIVISIONS[d + 1].name}.`;
   let where;
@@ -308,9 +311,9 @@ function RaceCard({ state, standings, pos }) {
   }
   return (
     <section className={`season-plate sc-race ${danger ? 'danger' : pos <= 2 ? 'in' : ''}`} aria-label="Course de la saison">
-      <SectionHead label={danger ? 'Maintien' : elite ? 'Course à l’Europe' : 'Course à la montée'} />
+      <SectionHead label={lg ? 'Course au titre' : danger ? 'Maintien' : elite ? 'Course à l’Europe' : 'Course à la montée'} />
       <h3>{title}</h3>
-      <p>{aim} {where} {left ? `Il reste ${days(left)}.` : 'Le championnat est terminé.'}</p>
+      <p>{aim} {lg && pos === 1 && standings[1] ? <>Tu es <b>1er</b>, {pts(Math.max(0, me.pts - standings[1].pts))} devant {clubAfter('', standings[1].name)}.</> : where} {left ? `Il reste ${days(left)}.` : 'Le championnat est terminé.'}</p>
       <p className="sc-race-prize">Prime de classement à ta place : <b>{fmtMoney(prizeFor(pos, d))}</b></p>
     </section>
   );

@@ -190,6 +190,7 @@ export function transferFee(p, divisionIndex = 0, officeLvl = 0) {
 // selon le cours du joueur sur le marché (priceMod : le prix monte s'il est courtisé, baisse s'il ne trouve pas
 // preneur). Arrondi à une somme ronde à l'échelle du montant.
 export const costOf = (p, s) => {
+  if (p.leaguePrice != null) return p.leaguePrice; // championnat entre amis : prix du marché commun, ou prix indicatif d'un joueur d'ami
   const base = (p.club ? transferFee(p, s.divisionIndex, s.buildings.transfers || 0) : signingFee(p, s.divisionIndex)) * (p.priceMod || 1);
   const step = base < 5000 ? 50 : base < 50000 ? 250 : base < 500000 ? 2500 : 25000;
   return Math.max(step, Math.round(base / step) * step);

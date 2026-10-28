@@ -31,8 +31,9 @@ import { CoachCard, StaffTip } from './ui/guide';
 import { DirectionView } from './ui/direction';
 import { MedicalView } from './ui/medical';
 import { LeagueView } from './ui/league';
-import { leagueOpen } from './game/league';
-import { myLeagues, takeInvite } from './game/leagueNet';
+import { deadlineText, leagueOpen } from './game/league';
+import { leagueResults, myLeagues, refreshLeague, sendSheet, takeInvite } from './game/leagueNet';
+import { applyLeagueRound, createLeagueClub, loadLeagueClub, myReplay, saveLeagueClub, syncLeagueClub, teamSheet } from './game/leagueClub';
 import ConfirmDialog from './ui/confirm';
 import { Presence } from './ui/presence';
 import { LoadingScreen } from './ui/loading';
@@ -138,8 +139,12 @@ export default function App({ preview = null }) {
   const [confirm, setConfirm] = useState(boot.ui.confirm || null); // fenêtre de confirmation du jeu (vente, nouvelle partie…)
   // Siège de la Ligue ouvert sur l'écran titre (un invité n'a besoin ni du bâtiment ni d'une partie) : { invite } quand
   // on arrive par un lien d'invitation (…/footoffempire/?ligue=CODE), la fenêtre s'ouvre alors sur « rejoindre »
-  // match d'un championnat entre amis revu en 3D (league.js replayOf) : l'écran du direct en rejeu, par-dessus tout
+  // match d'un championnat entre amis revu en 3D (league.js replayOf) : l'écran du direct en rejeu, par-dessus tout ;
+  // result : la journée à appliquer à la partie de ligue en cours une fois le match vu
   const [replay, setReplay] = useState(null);
+  // Partie de ligue en cours (state.league, leagueClub.js) : la dernière lecture du serveur { d, m, prev } (prev : les
+  // résultats de la saison d'avant, tant que la partie ne les a pas tous appliqués)
+  const [leagueLive, setLeagueLive] = useState(null);
   const [leagueHub, setLeagueHub] = useState(() => {
     if (preview || !leagueOpen()) return null;
     const code = takeInvite();
@@ -180,7 +185,7 @@ export default function App({ preview = null }) {
 
   useEffect(() => {
     if (!state || preview) return;
-    saveGame(state);
+    if (state.league) saveLeagueClub(state); else saveGame(state);
     if (liveDone.current) { liveDone.current = false; clearLive(); } // le résultat est sauvegardé : plus rien à reprendre
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   // chaque gain ou dépense s'anime (pièces vers la trésorerie, « +1 252 € », tintement)
@@ -370,13 +375,15 @@ export default function App({ preview = null }) {
     const ctx = matchContext(state);
     if (!ctx) return;
     if (staffOn(state)) run((s) => { staffSession(s); return s; }); // séances confiées au staff : faites avant le match
-    setMatchCtx(ctx);
+    // ligue : l'avant-match valide l'équipe de la journée (le match se joue à l'heure, pour tous) ; l'écusson d'un ami
+    setMatchCtx(state.league ? { ...ctx, opp: { ...ctx.opp, crest: ctx.opp.human ? ctx.opp.crest : null }, goLabel: state.league.sent ? 'Valider ces changements' : 'Valider mon équipe' } : ctx);
     setPanel(null); setSel(null); setMenu(false);
     setMatchDay(true);
     setMatchPhase('prematch');
   };
   const cancelMatch = () => { setMatchPhase(null); setMatchDay(false); };
   const kickoff = (lineup, tactic, formation) => {
+    if (state.league) { sendLeagueTeam(lineup, tactic, formation); return; }
     setResumeLive(null);
     clearLive();
     if (run((s) => { staffSession(s); s.lineup = lineup; s.tactic = tactic; s.formation = formation; return s; })) setMatchPhase('live');
@@ -529,8 +536,101 @@ export default function App({ preview = null }) {
   // Retour à l'écran titre (la partie reste sauvegardée) : la caméra repart en vitrine autour du complexe.
   const toTitle = () => {
     setMenu(false); setSel(null); setPanel(null); setMatchDay(false);
+    if (state?.league) { prevMoney.current = null; setState(loadGame()); setLeagueLive(null); } // la carrière reprend sa place
     setTitleView('menu');
     setScreen('title');
+  };
+
+  // --- Partie de championnat entre amis (leagueClub.js) -----------------------------------------------------------------
+  // Entrer dans son club de ligue : la partie de l'appareil (créée à la première visite, comme une nouvelle partie solo),
+  // relue avec la ligue ; tout le jeu passe à ce club (complexe, HUD, écrans), la carrière reste sauvegardée à côté.
+  const enterLeague = async (m) => {
+    try {
+      const d = await refreshLeague(m);
+      if (d.league.status !== 'running') { notify({ kind: 'info', eyebrow: d.league.name, title: 'La saison n’a pas commencé', text: 'Le créateur lancera la saison depuis le Siège de la Ligue.' }); return; }
+      const s = syncLeagueClub(loadLeagueClub(m.code) || createLeagueClub(d, m), d);
+      const prev = d.league.season > s.league.season ? (await leagueResults(m, s.league.season)).results : null;
+      prevMoney.current = null;
+      setState(s);
+      setLeagueLive({ d, m, prev });
+      setLeagueHub(null); setPanel(null); setSel(null); setMenu(false); setMatchDay(false); setShowResult(false); setMatchPhase(null);
+      setTitleView('menu');
+      setScreen('game');
+    } catch (x) {
+      notify({ kind: 'warn', eyebrow: 'Championnat entre amis', title: 'Serveur des ligues injoignable', text: x.message });
+    }
+  };
+  // la ligue relue chaque minute (amis qui valident, journée jouée), et au retour sur le jeu
+  const leagueCode = state?.league?.code || null;
+  useEffect(() => {
+    if (!leagueCode || !leagueLive?.m) return undefined;
+    const m = leagueLive.m;
+    const tick = async () => {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        const d = await refreshLeague(m);
+        let prev = null;
+        const local = state?.league?.season;
+        if (local && d.league.season > local) prev = (await leagueResults(m, local)).results;
+        setLeagueLive({ d, m, prev });
+        setState((s) => (s?.league?.code === m.code ? syncLeagueClub(clone(s), d) : s));
+      } catch { /* hors ligne : on réessaiera */ }
+    };
+    const t = setInterval(tick, 60000);
+    document.addEventListener('visibilitychange', tick);
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', tick); };
+  }, [leagueCode, leagueLive?.m]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Ordres de la semaine (offres au marché commun, aux amis, réponses : leagueClub.js) : équipe déjà validée, ils
+  // repartent aussitôt avec elle ; sinon, ils partiront avec elle.
+  const ordersKey = state?.league ? JSON.stringify(state.league.orders || {}) : null;
+  const ordersSent = useRef(ordersKey);
+  useEffect(() => {
+    if (!ordersKey || !leagueLive || ordersKey === ordersSent.current) return undefined;
+    const { d, m } = leagueLive;
+    if (state.league.sent !== `${d.league.season}:${d.league.round}`) { ordersSent.current = ordersKey; return undefined; }
+    const t = setTimeout(() => {
+      ordersSent.current = ordersKey;
+      sendSheet(m, d.league.season, d.league.round, teamSheet(clone(state)))
+        .then(() => notify({ kind: 'success', eyebrow: state.league.name, title: 'Choix de la semaine envoyés', text: 'Ils partent avec ton équipe validée.' }))
+        .catch((x) => notify({ kind: 'warn', eyebrow: state.league.name, title: 'Choix non envoyés', text: x.message }));
+    }, 900);
+    return () => clearTimeout(t);
+  }, [ordersKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // La journée à appliquer : celle de notre prochaine journée, une fois jouée par la ligue (saison d'avant comprise).
+  const leaguePending = (() => {
+    if (!state?.league || !leagueLive) return null;
+    const { d, prev } = leagueLive;
+    const list = d.league.season === state.league.season ? d.results : state.league.season < d.league.season ? prev || [] : [];
+    return list.find((r) => r.round === state.round) || null;
+  })();
+  // « Valider mon équipe » : l'équipe et l'effectif partent au serveur (teamSheet), pour la journée ouverte.
+  const sendLeagueTeam = async (lineup, tactic, formation) => {
+    const { d, m } = leagueLive;
+    const key = `${d.league.season}:${d.league.round}`;
+    try {
+      if (d.league.season !== state.league.season || d.league.round !== state.round) throw new Error('La journée a changé : regarde d’abord le match de la journée précédente.');
+      await sendSheet(m, d.league.season, d.league.round, teamSheet(clone(state), { lineup, tactic, formation }));
+      run((s) => { s.lineup = lineup; s.tactic = tactic; s.formation = formation; s.league.sent = key; return s; });
+      notify({ kind: 'success', eyebrow: state.league.name, title: 'Équipe validée', text: `Journée ${d.league.round + 1} : le match se joue dès que tous ont validé, au plus tard ${deadlineText(d.league.deadline)}.` });
+    } catch (x) {
+      notify({ kind: 'warn', eyebrow: state.league.name, title: 'Équipe non envoyée', text: x.message });
+    }
+    cancelMatch();
+  };
+  // « Regarder le match » : notre match de la journée, revu comme un direct (temps forts en 3D), puis l'après-match
+  const watchLeague = (skip = false) => {
+    const result = leaguePending;
+    if (!result) return;
+    const rp = skip ? null : myReplay(state, result);
+    setPanel(null); setSel(null);
+    if (!rp) { // sans rejeu possible (autre version du moteur) ou résumé demandé : l'après-match directement
+      run((s) => applyLeagueRound(s, result));
+      setMatchDay(true);
+      setShowResult(true);
+      return;
+    }
+    setMatchDay(true);
+    setReplay({ ...rp, result });
   };
   const askNewGame = () => {
     if (!state) { setTitleView('create'); return; }
@@ -681,7 +781,8 @@ export default function App({ preview = null }) {
               onTipDismiss={() => setDismissedTips((d) => new Set(d).add(shownTip.id))}
             />
           )}
-          <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} keys={hudKeys && !panel && !sel} />
+          <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} keys={hudKeys && !panel && !sel}
+            league={state.league ? { pending: !!leaguePending, sent: state.league.sent === `${leagueLive?.d.league.season}:${leagueLive?.d.league.round}`, deadline: leagueLive?.d.league.deadline, onWatch: watchLeague, seasonOver: (leagueLive?.d.league.season || 0) > state.league.season } : null} />
           <Dock panel={panel} onPanel={openPanel} badges={signals} keys={hudKeys} />
         </div>
       )}
@@ -786,6 +887,7 @@ export default function App({ preview = null }) {
             overTitle={screen === 'title'}
             replaying={!!replay}
             onReplay={setReplay}
+            onPlayClub={enterLeague}
             onClose={() => { if (screen === 'title') setLeagueHub(null); else setPanel(null); }}
           />
         )}
@@ -843,9 +945,14 @@ export default function App({ preview = null }) {
             state={replay.state}
             ctx={replay.ctx}
             replay={replay.live}
+            side={replay.side || 'home'}
             sound={sound.current}
             onFx={(fx) => { if (fx.type === 'goal') haptic('goal'); setMatchFx({ ...fx, id: performance.now() }); }}
-            onFinish={() => { setReplay(null); setMatchFx(null); }}
+            onFinish={() => {
+              if (replay.result) { const { result, live } = replay; run((s) => applyLeagueRound(s, result, live)); setShowResult(true); }
+              setReplay(null);
+              setMatchFx(null);
+            }}
           />
         </div>
       )}
@@ -864,7 +971,7 @@ export default function App({ preview = null }) {
             onContinue={() => { setLeagueHub(null); setScreen('game'); }}
             liveNote={resumeLive && matchPhase === 'live' ? liveNoteOf(resumeLive) : null}
             onNewGame={askNewGame}
-            leagues={leagueOpen() ? { count: myLeagues().length, onOpen: () => setLeagueHub({}) } : null}
+            leagues={leagueOpen() ? { count: myLeagues().length, clubs: myLeagues(), onOpen: () => setLeagueHub({}), onPlay: enterLeague } : null}
             onCreate={(name, crest) => { setLeagueHub(null); setState(createInitialState(name, crest)); setTitleView('menu'); setScreen('game'); }}
           />
         )}
@@ -878,7 +985,7 @@ export default function App({ preview = null }) {
           focus={menuFocus}
           onResume={() => setMenu(false)}
           onTitle={toTitle}
-          onNewGame={askNewGame}
+          onNewGame={state.league ? null : askNewGame}
         />
       )}</Presence>
       <Presence>

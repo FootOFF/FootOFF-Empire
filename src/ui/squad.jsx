@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN } from '../game/constants';
+import { DIVISIONS, POS_LABELS, SQUAD_MAX, SQUAD_MIN, divisionOf } from '../game/constants';
 import {
   ATTRS, FAMILIES, GK_ATTRS, TRAITS, WEIGHTS, costOf, playerRating, potentialRange, ratingAt, marketValue, wageOf, absenceOf, fitOf, matchCost, recoveryOf } from '../game/players';
 import { seasonForecast } from '../game/economy';
@@ -16,7 +16,7 @@ import { LineupEditor } from './lineup';
 import { careerOf } from '../game/career';
 import { Presence, useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
-import { FollowButton, ListingSheet, Mercato, Negotiation, SaleNegotiation, SaleToggle, heat } from './mercato';
+import { FollowButton, LeagueOffer, ListingSheet, Mercato, Negotiation, SaleNegotiation, SaleToggle, heat } from './mercato';
 import { Portrait } from './portrait';
 import { divRef, tierOf } from './kit';
 
@@ -184,7 +184,18 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
         />
       )}</Presence>
       <Presence>{career !== null && <PlayerCareer state={state} id={career} onClose={() => setCareer(null)} onSheet={(pid) => { setCareer(null); setSheet({ id: pid }); }} />}</Presence>
-      <Presence>{dealPlayer && (
+      <Presence>{dealPlayer && dealPlayer.leagueKind && state.league && (
+        <LeagueOffer
+          key={dealPlayer.id}
+          state={state}
+          p={dealPlayer}
+          run={run}
+          refLvl={ref}
+          onClose={() => setDeal(null)}
+          onSheet={(id) => { setDeal(null); setCompare(null); setSheet({ id }); }}
+        />
+      )}</Presence>
+      <Presence>{dealPlayer && !(dealPlayer.leagueKind && state.league) && (
         <Negotiation
           key={dealPlayer.id}
           state={state}
@@ -228,7 +239,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
       id={mode === 'mercato' ? 'mercato' : 'squad'}
       size="lg"
       title={tab === 'market' ? 'Mercato' : 'Effectif'}
-      eyebrow={<>{squad.length}/{SQUAD_MAX} joueurs<span className="hide-sm"> · {DIVISIONS[state.divisionIndex].name}</span></>}
+      eyebrow={<>{squad.length}/{SQUAD_MAX} joueurs<span className="hide-sm"> · {divisionOf(state).name}</span></>}
       money={state.money}
       onClose={onClose}
       onEscape={onEscape}

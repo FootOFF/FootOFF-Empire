@@ -106,8 +106,10 @@ export function fixtureShort(f, round, total = 7) {
   if (!f || f.comp === 'league') return `Journée ${round} / ${total}`;
   return `${f.comp === 'c1' ? 'Europe' : 'Coupe'} · ${STAGES_MID[f.stage]}`;
 }
-// « de Nationale », « d'Elite » : élision devant une voyelle
-export const ofDiv = (name) => (/^[AEIOUÉÈÊ]/i.test(name) ? `d’${name}` : `de ${name}`);
+// « de Nationale », « d'Elite » : élision devant une voyelle ; le nom d'une ligue entre amis prend son article (« de la
+// Ligue du Soir », « du Trophée du Dimanche »)
+export const ofDiv = (name) => (/^(Ligue|Coupe)/.test(name) ? `de la ${name}` : /^(Championnat|Trophée|Tournoi)/.test(name) ? `du ${name}`
+  : /^[AEIOUÉÈÊ]/i.test(name) ? `d’${name}` : `de ${name}`);
 
 // Réussite aux tirs au but : la nôtre selon la finition de nos cinq meilleurs tireurs (joueurs de champ sur le
 // terrain), celle de l'adversaire selon les réflexes de notre gardien (et son signe « Chat »).

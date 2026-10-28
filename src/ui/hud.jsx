@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGlass } from './glass';
-import { DIVISIONS } from '../game/constants';
+import { divisionOf } from '../game/constants';
 import { repLevel } from '../game/reputation';
 import { activeGoal } from '../game/goals';
 import { seasonObjectives } from '../game/objectives';
@@ -16,6 +16,7 @@ import {
 import { sectionOf } from './nav';
 import { clubStars } from '../game/crest';
 import { useFitText } from './fittext';
+import { deadlineText } from '../game/league';
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran, en plaques façon habillage télé (docs/DESIGN.md).
 
@@ -26,7 +27,7 @@ const ordinal = (n) => <>{n}<sup>{n === 1 ? 'er' : 'e'}</sup></>;
 // journée, classement en or), à droite la trésorerie et la notoriété, puis le menu. Téléphone : le club et le menu
 // sur la première ligne, les ressources dessous (la journée passe dans la ligne du club).
 export function TopHud({ state, onMenu, onFinances, onReputation, onTable }) {
-  const div = DIVISIONS[state.divisionIndex];
+  const div = divisionOf(state);
   const rl = repLevel(state.reputation); // statut de notoriété et avancée vers le suivant (reputation.js)
   const rounds = state.schedule.length;
   const round = Math.min(state.round + 1, rounds); // journée à jouer (la dernière une fois le championnat fini)
@@ -206,12 +207,42 @@ export function Dock({ panel, onPanel, badges = {}, keys = false }) {
 
 // Prochain match : écusson de l'adversaire, compétition et journée, nom, chances de victoire (le pronostic de
 // l'avant-match, calculé sur le même moteur avec le onze et la tactique enregistrés), bouton Jouer (touche J).
-export function MatchCta({ state, onPlay, onEndSeason, keys = false }) {
+// league (partie de championnat entre amis) : { pending : la journée est jouée, notre match est à regarder ; sent : notre
+// équipe est validée ; deadline : l'heure de la journée ; onWatch(skip) ; seasonOver : la ligue est passée à la saison
+// suivante }. « Jouer » ouvre l'avant-match pour valider l'équipe ; le match se joue à l'heure, pour tous.
+export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = null }) {
   const ctx = matchContext(state);
   const done = !ctx;
-  useHudKey(['KeyJ'], () => (done ? onEndSeason() : onPlay()), keys); // J : jouer (ou bilan de fin de saison)
+  const watch = !!league?.pending;
+  const waitSeason = done && league && !league.seasonOver; // dernière journée appliquée, la ligue n'a pas encore tourné
+  useHudKey(['KeyJ'], () => (watch ? league.onWatch() : done ? (waitSeason ? null : onEndSeason()) : onPlay()), keys); // J : jouer (ou bilan de fin de saison)
   const odds = useMemo(() => (ctx ? prematchOdds(state, { oppStrength: ctx.opp.strength, home: ctx.home !== false }) : null), [state]); // eslint-disable-line react-hooks/exhaustive-deps
   const titleRef = useFitText(ctx?.opp.name, 17);
+  if (watch) { // la journée est jouée : notre match nous attend, comme un direct
+    return (
+      <section className="hud-match glass comp-league" aria-label="Match à regarder">
+        {ctx ? <MatchCrest opp={ctx.opp} /> : <span className="hm-icon" aria-hidden="true"><IconPlay /></span>}
+        <div className="hm-info">
+          <span className="hm-eyebrow">{ctx ? <>Journée {state.round + 1}/{state.schedule.length} · {ctx.home === false ? 'À l’extérieur' : 'À domicile'}</> : 'Dernière journée'}</span>
+          <strong className="hud-match-title">{ctx ? ctx.opp.name : 'Ton match'}</strong>
+          <span className="hm-odds"><button type="button" className="linkbtn" onClick={() => league.onWatch(true)}>Voir le résultat sans le match</button></span>
+        </div>
+        <button className="btn" onClick={() => league.onWatch()} aria-keyshortcuts="J"><IconPlay className="fill" /> Regarder<kbd className="hm-key" aria-hidden="true">J</kbd></button>
+      </section>
+    );
+  }
+  if (waitSeason) {
+    return (
+      <section className="hud-match glass done" aria-label="Fin de saison">
+        <span className="hm-icon" aria-hidden="true"><IconTrophy /></span>
+        <div className="hm-info">
+          <span className="hm-eyebrow">Saison {state.seasonNumber} terminée</span>
+          <strong className="hud-match-title">Le bilan arrive</strong>
+          <span className="hm-odds">La ligue passe à la saison suivante</span>
+        </div>
+      </section>
+    );
+  }
   if (done) {
     return (
       <section className="hud-match glass done" aria-label="Fin de saison">
@@ -225,14 +256,14 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false }) {
     );
   }
   const opp = ctx.opp;
-  const league = ctx.comp === 'league';
+  const champ = ctx.comp === 'league'; // journée de championnat (sinon un tour de coupe)
   const [w, d, l] = roundPercents([odds.win, odds.draw, odds.loss]); // les chiffres de l'avant-match, au point près
   return (
-    <section className={`hud-match glass comp-${ctx.comp}`} aria-label="Prochain match">
-      <Crest name={opp.name} className="hm-crest" />
+    <section className={`hud-match glass comp-${ctx.comp} ${league?.sent ? 'sent' : ''}`} aria-label="Prochain match">
+      <MatchCrest opp={opp} />
       <div className="hm-info">
         <span className="hm-eyebrow" title={ctx.label}>
-          {league ? <><span className="hm-long">Journée </span><span className="hm-short">J</span>{state.round + 1}/{state.schedule.length}</> : ctx.short} · {ctx.home === false ? 'À l’extérieur' : 'À domicile'}
+          {champ ? <><span className="hm-long">Journée </span><span className="hm-short">J</span>{state.round + 1}/{state.schedule.length}</> : ctx.short} · {ctx.home === false ? 'À l’extérieur' : 'À domicile'}
         </span>
         <strong className="hud-match-title" ref={titleRef} title={opp.name}>{opp.name}</strong>
         <span className="hm-odds" title={`Pronostic : victoire ${w.label}, nul ${d.label}, défaite ${l.label}`}>
@@ -240,9 +271,22 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false }) {
           <b>{w.label}</b> de victoire
         </span>
       </div>
-      <button className="btn" onClick={onPlay} title="Jouer le match (J)" aria-label="Jouer le match" aria-keyshortcuts="J"><IconPlay className="fill" /> Jouer<kbd className="hm-key" aria-hidden="true">J</kbd></button>
+      {league ? (
+        league.sent ? (
+          <button className="btn ghost" onClick={onPlay} title={`Équipe validée : le match se joue ${deadlineText(league.deadline)} au plus tard (J pour la modifier)`} aria-keyshortcuts="J"><IconCheck /> Validée<kbd className="hm-key" aria-hidden="true">J</kbd></button>
+        ) : (
+          <button className="btn" onClick={onPlay} title="Préparer et valider ton équipe (J)" aria-keyshortcuts="J"><IconPlay className="fill" /> Jouer<kbd className="hm-key" aria-hidden="true">J</kbd></button>
+        )
+      ) : (
+        <button className="btn" onClick={onPlay} title="Jouer le match (J)" aria-label="Jouer le match" aria-keyshortcuts="J"><IconPlay className="fill" /> Jouer<kbd className="hm-key" aria-hidden="true">J</kbd></button>
+      )}
     </section>
   );
+}
+
+// Écusson de l'adversaire : celui d'un club d'ami (noir et or, composé par lui), sinon celui tiré du nom.
+function MatchCrest({ opp }) {
+  return opp.human && opp.crest ? <ClubCrest crest={opp.crest} name={opp.name} className="hm-crest" /> : <Crest name={opp.name} className="hm-crest" />;
 }
 
 const TIME_UI = {

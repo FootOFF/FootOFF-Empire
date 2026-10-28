@@ -1,5 +1,5 @@
 import React from 'react';
-import { DIVISIONS } from '../game/constants';
+import { DIVISIONS, divisionOf } from '../game/constants';
 import { isInjured, playerRating } from '../game/players';
 import { injuryCut, treatChance, treatFee, treatOpen, treatPlayer, treatedToday } from '../game/medical';
 import { Panel } from './panels';
@@ -23,7 +23,7 @@ export function MedicalView({ state, run, onClose, onBuilding }) {
     <Panel
       id="medical"
       title="Centre médical"
-      eyebrow={<>Niveau {lvl} / 5<span className="hide-sm"> · {DIVISIONS[state.divisionIndex].name}</span></>}
+      eyebrow={<>Niveau {lvl} / 5<span className="hide-sm"> · {divisionOf(state).name}</span></>}
       money={state.money}
       onClose={onClose}
       toolbar={(

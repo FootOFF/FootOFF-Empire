@@ -64,8 +64,8 @@ export function drawObjectives(s) {
   return s;
 }
 
-const RANK_TITLE = (s, t) => (t === 1 ? 'Être champion' : t === 2 ? (s.divisionIndex < DIVISIONS.length - 1 ? 'Monter en fin de saison' : 'Finir dans les deux premiers')
-  : t === 4 ? 'Finir dans la première moitié' : s.divisionIndex > 0 ? 'Se maintenir' : 'Finir 6e ou mieux');
+const RANK_TITLE = (s, t) => (t === 1 ? 'Être champion' : t === 2 ? (s.divisionIndex < DIVISIONS.length - 1 && !s.league ? 'Monter en fin de saison' : 'Finir dans les deux premiers')
+  : t === 4 ? 'Finir dans la première moitié' : s.divisionIndex > 0 && !s.league ? 'Se maintenir' : 'Finir 6e ou mieux');
 
 // Où en est un objectif : titre, texte, avancée (0 à 1), état ('live', 'done' atteint, 'failed' manqué pour de bon),
 // et l'avancée en mots.

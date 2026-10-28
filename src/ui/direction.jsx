@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { DIVISIONS } from '../game/constants';
+import { DIVISIONS, divisionOf } from '../game/constants';
 import { playerRating, wageOf } from '../game/players';
 import {
   TV_ASK_MAX, localTv, maxCut, negotiateTv, negotiateWage, tvBoost, tvChance, tvOpen, tvPerMatch, wageChance, wageOpen,
@@ -39,7 +39,7 @@ function TvTab({ state, run, notify }) {
   const [ask, setAsk] = useState(0.15);
   const deal = state.tvDeal?.season === state.seasonNumber ? state.tvDeal : null;
   const base = tvPerMatch(state, null);
-  const local = !DIVISIONS[state.divisionIndex].tv;
+  const local = !divisionOf(state).tv;
   if (deal) {
     return (
       <section className={`dir-card ${deal.ok ? 'ok' : 'ko'}`}>
@@ -63,7 +63,7 @@ function TvTab({ state, run, notify }) {
       <h3>{local ? 'Télé locale' : 'Diffuseur de la division'}</h3>
       <p className="dir-note">
         Contrat de base : {fmtMoney(base)} par match de championnat{lvl ? `, dont +${pct(tvBoost(lvl))} grâce à la Direction` : ''}
-        {local ? ` (pas de télévision nationale en ${DIVISIONS[state.divisionIndex].name} : ${fmtMoney(localTv(lvl))} de la télé locale)` : ''}.
+        {local ? ` (pas de télévision nationale en ${divisionOf(state).name} : ${fmtMoney(localTv(lvl))} de la télé locale)` : ''}.
         Une seule demande par saison : bien dosée, elle s’ajoute à chaque match.
       </p>
       <label className="dir-slider">
@@ -156,7 +156,7 @@ export function DirectionView({ state, run, notify = () => {}, initialTab = 'tv'
     <Panel
       id="direction"
       title="Direction du club"
-      eyebrow={<>Niveau {lvl} / 5<span className="hide-sm"> · {DIVISIONS[state.divisionIndex].name}</span></>}
+      eyebrow={<>Niveau {lvl} / 5<span className="hide-sm"> · {divisionOf(state).name}</span></>}
       money={state.money}
       onClose={onClose}
       toolbar={(
