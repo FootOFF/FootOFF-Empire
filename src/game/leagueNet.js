@@ -15,8 +15,16 @@ export class LeagueError extends Error {
   }
 }
 
+// Activité du joueur (pouls des ligues, 0.8.6) : son dernier geste, et sa dernière demande au serveur des ligues.
+let lastInput = Date.now();
+let lastAction = 0;
+if (typeof window !== 'undefined') {
+  for (const ev of ['pointerdown', 'keydown', 'touchstart', 'wheel']) window.addEventListener(ev, () => { lastInput = Date.now(); }, { passive: true, capture: true });
+}
+
 // keepalive : la demande part même si l'onglet se ferme (64 Ko au plus, règle des navigateurs)
 async function call(path, { method = 'GET', body, auth, keepalive = false } = {}) {
+  if (method !== 'GET') lastAction = Date.now();
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (auth) headers['x-ligue-auth'] = `${auth.id}.${auth.secret}`;
@@ -47,9 +55,80 @@ export const leagueState = (m, { teams = false, since = null } = {}) => {
   return call(`/${m.code}/state${q ? `?${q}` : ''}`, { auth: m });
 };
 export const leagueResults = (m, season) => call(`/${m.code}/results?season=${season}`, { auth: m });
+// Pouls (0.8.6) : une empreinte de ce qui change dans le championnat (arrivées, équipes validées, journée, offres et
+// réponses entre amis), de quelques octets ; relire l'état complet seulement quand elle change.
+export const leaguePulse = (m) => call(`/${m.code}/pulse`, { auth: m }).then((d) => d?.p ?? null);
+// Cadence (audit cyber-auditor du 2026-10-28 : appels comptés par Vercel, pare-feu à 30 par minute et par adresse) :
+// toutes les 6 s quand quelque chose est en attente (urgent, ou moins de deux minutes après une demande au serveur),
+// sinon toutes les 30 s, puis 60 s tant que rien ne change ; jamais sans un geste du joueur dans les trois dernières
+// minutes ni écran caché.
+export const PULSE_FAST = 6000;
+const PULSE_SLOW = 30000;
+const PULSE_MAX = 60000;
+const ACTIVE_MS = 3 * 60000;
+// Quelque chose attend dans ce championnat (état relu d) : salle d'attente, coup d'envoi annoncé, offre ouverte, ou
+// mon équipe validée en attendant celle d'un ami.
+export function pulseUrgent(d) {
+  if (!d?.league) return true;
+  if (d.league.status === 'lobby' || (d.kickoff && !d.due)) return true;
+  if (d.moves?.some((x) => x.kind === 'f' && x.status === 'open')) return true;
+  const mine = d.members?.find((x) => x.id === d.me?.id);
+  return !!mine?.validated && d.members.some((x) => x.id !== mine.id && !x.validated && x.active && x.pseudo !== 'Ordinateur');
+}
+// Surveille un championnat : onChange quand son empreinte change (pas au premier relevé, pris tout de suite : la
+// référence est celle de l'état qu'on vient de lire). urgent() : la cadence rapide. S'arrête quand le championnat
+// disparaît ou n'est plus le nôtre (401, 404, dont un serveur qui ne connaît pas encore le pouls : la relecture de
+// chaque minute suffit) ; patiente une minute quand le serveur freine (429).
+// Le joueur est devant le jeu : écran visible, un geste dans les trois dernières minutes (relectures de chaque minute
+// comprises : un onglet oublié ne coûte plus rien).
+export const userActive = () => document.visibilityState === 'visible' && Date.now() - lastInput <= ACTIVE_MS;
+// Une seule surveillance par championnat sur l'appareil, partagée par les écrans qui la demandent (le club de ligue et
+// le panneau du championnat), arrêtée quand plus aucun ne s'en sert.
+const watchers = new Map();
+export function watchPulse(m, onChange, urgent = () => true) {
+  let w = watchers.get(m.code);
+  if (!w) {
+    const subs = new Set();
+    w = { subs, stop: runPulse(m, () => [...subs].forEach((s) => s.onChange()), () => [...subs].some((s) => s.urgent())) };
+    watchers.set(m.code, w);
+  }
+  const sub = { onChange, urgent };
+  w.subs.add(sub);
+  return () => {
+    w.subs.delete(sub);
+    if (!w.subs.size) { w.stop(); if (watchers.get(m.code) === w) watchers.delete(m.code); }
+  };
+}
+// L'horloge locale bat toutes les 6 s sans rien demander : la cadence suit aussitôt ce qui se passe (une équipe validée,
+// une offre faite) ; le serveur n'est interrogé que si c'est urgent, juste après une demande, ou le délai calme écoulé.
+function runPulse(m, onChange, urgent) {
+  let last = null, stop = false, timer = null, idle = PULSE_SLOW, asked = 0, pause = 0;
+  const beat = async () => {
+    if (stop) return;
+    const now = Date.now();
+    const want = urgent() || now - lastAction < 2 * 60000 || now - asked >= idle;
+    if (want && now >= pause && userActive()) { // personne devant : rien n'est demandé
+      asked = now;
+      try {
+        const p = await leaguePulse(m);
+        if (stop) return;
+        if (last !== null && p !== last) { idle = PULSE_SLOW; onChange(); } else if (last !== null) idle = Math.min(PULSE_MAX, idle * 2);
+        last = p;
+      } catch (x) {
+        if (x?.status === 401 || x?.status === 404) { stop = true; return; }
+        pause = Date.now() + (x?.status === 429 ? 60000 : 30000); // serveur qui freine, en panne, ou réseau coupé
+      }
+    }
+    if (!stop) timer = setTimeout(beat, PULSE_FAST);
+  };
+  beat();
+  return () => { stop = true; clearTimeout(timer); };
+}
 export const startLeague = (m) => call(`/${m.code}/start`, { method: 'POST', body: {}, auth: m });
 export const kickMember = (m, member) => call(`/${m.code}/kick`, { method: 'POST', body: { member }, auth: m });
 export const leaveLeague = (m) => call(`/${m.code}/leave`, { method: 'POST', body: {}, auth: m });
+// le créateur supprime le championnat pour tout le monde ; name : son nom exact, tapé pour confirmer
+export const deleteLeague = (m, name) => call(`/${m.code}/delete`, { method: 'POST', body: { name }, auth: m });
 export const sendSheet = (m, season, round, sheet) => call(`/${m.code}/sheet`, { method: 'POST', body: { season, round, sheet }, auth: m });
 export const sendResult = (m, body) => call(`/${m.code}/result`, { method: 'POST', body: { ...body, engine: LEAGUE_ENGINE }, auth: m });
 // Mercato immédiat (0.8.3) : une demande de la file de la partie (leagueClub.js, leagueRequest) : sign, offer, withdraw,
@@ -109,8 +188,12 @@ async function syncedState(m, { teams = false } = {}) {
     const before = results.filter((r) => r.round < round && r.world);
     return before.length ? before[before.length - 1].world : start;
   };
-  return { ...d, results, world: worldAt(Infinity), worldBefore: worldAt };
+  // skew : avance de l'horloge du serveur sur celle de l'appareil (compte à rebours du coup d'envoi, 0.8.6)
+  const skew = d.serverTime ? Date.parse(d.serverTime) - Date.now() : 0;
+  return { ...d, results, world: worldAt(Infinity), worldBefore: worldAt, skew };
 }
+// Coup d'envoi annoncé (tous ont validé, 0.8.6) en heure de l'appareil, ou null
+export const kickoffAt = (d) => (d?.kickoff && !d.due ? Date.parse(d.kickoff) - (d.skew || 0) : null);
 
 // État d'un championnat, journée jouée au passage : si elle est due (tous ont validé, ou l'heure est passée), ce jeu la
 // calcule (roundPayload, à l'identique chez chacun, depuis l'état de la ligue d'avant) et l'envoie ; le premier envoi

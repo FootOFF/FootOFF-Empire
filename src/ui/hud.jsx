@@ -209,7 +209,9 @@ export function Dock({ panel, onPanel, badges = {}, keys = false }) {
 // l'avant-match, calculé sur le même moteur avec le onze et la tactique enregistrés), bouton Jouer (touche J).
 // league (partie de championnat entre amis) : { pending : la journée est jouée, notre match est à regarder ; sent : notre
 // équipe est validée ; deadline : l'heure de la journée ; onWatch(skip) ; seasonOver : la ligue est passée à la saison
-// suivante }. « Jouer » ouvre l'avant-match pour valider l'équipe ; le match se joue à l'heure, pour tous.
+// suivante ; kickoff : tous ont validé, coup d'envoi à cette heure (0.8.6) }. « Jouer » ouvre l'avant-match pour valider
+// l'équipe ; une fois tous validés, un compte à rebours de dix minutes remplace « Validée » (l'équipe se retouche encore),
+// puis le match se regarde.
 export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = null }) {
   const ctx = matchContext(state);
   const done = !ctx;
@@ -272,7 +274,9 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
         </span>
       </div>
       {league ? (
-        league.sent ? (
+        league.kickoff ? (
+          <KickoffButton at={league.kickoff} onPlay={onPlay} />
+        ) : league.sent ? (
           <button className="btn ghost" onClick={onPlay} title={`Équipe validée : le match se joue ${deadlineText(league.deadline)} au plus tard (J pour la modifier)`} aria-keyshortcuts="J"><IconCheck /> Validée<kbd className="hm-key" aria-hidden="true">J</kbd></button>
         ) : (
           <button className="btn" onClick={onPlay} title="Préparer et valider ton équipe (J)" aria-keyshortcuts="J"><IconPlay className="fill" /> Jouer<kbd className="hm-key" aria-hidden="true">J</kbd></button>
@@ -281,6 +285,33 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
         <button className="btn" onClick={onPlay} title="Jouer le match (J)" aria-label="Jouer le match" aria-keyshortcuts="J"><IconPlay className="fill" /> Jouer<kbd className="hm-key" aria-hidden="true">J</kbd></button>
       )}
     </section>
+  );
+}
+
+// Compte à rebours du coup d'envoi (0.8.6) : tous ont validé, le match part dans m:ss (libellé « Coup d'envoi » au-dessus,
+// lisible sur téléphone sans infobulle) ; l'équipe se retouche encore (J).
+export function useCountdown(at) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!at) return undefined;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [at]);
+  return at ? Math.max(0, Math.ceil((at - now) / 1000)) : null;
+}
+export const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+function KickoffButton({ at, onPlay }) {
+  const left = useCountdown(at);
+  return left > 0 ? (
+    <button className="btn ghost hm-kickoff" onClick={onPlay} title="Tout le monde a validé : coup d’envoi à la fin du compte à rebours (J pour retoucher ton équipe)" aria-keyshortcuts="J" aria-label={`Coup d’envoi dans ${mmss(left)}`}>
+      <span className="hm-kickoff-label">Coup d’envoi</span>
+      <span className="hm-kickoff-row"><IconClock /><span className="hm-kickoff-time">{mmss(left)}</span></span><kbd className="hm-key" aria-hidden="true">J</kbd>
+    </button>
+  ) : (
+    <button className="btn ghost hm-kickoff" disabled title="Le match se joue">
+      <span className="hm-kickoff-label">Coup d’envoi</span>
+      <span className="hm-kickoff-row"><IconClock /><span className="hm-kickoff-time">…</span></span>
+    </button>
   );
 }
 

@@ -4,6 +4,15 @@
 
 export const CHANGELOG = [
   {
+    version: '0.8.6', date: '2026-10-28', title: 'Championnats entre amis en direct',
+    items: [
+      'Dès que tous les amis ont validé leur équipe, un compte à rebours de dix minutes remplace « Validée » chez chacun ; à zéro, le match se regarde, sans quitter le jeu. L’heure fixée par le créateur reste la limite.',
+      'Un ami qui rejoint, une équipe validée, une offre reçue ou la réponse à la tienne : tout se voit en quelques secondes. Le bouton Actualiser, en haut de la carte du championnat, relit tout à la demande.',
+      'Le créateur peut supprimer son championnat pour tout le monde, en tapant son nom pour confirmer.',
+      'En match et à l’avant-match, glisser le doigt sur le côté ne fait plus apparaître d’autres écrans.',
+    ],
+  },
+  {
     version: '0.8.5', date: '2026-10-28', title: 'Signes distinctifs et fatigue',
     items: [
       'Les signes distinctifs pèsent vraiment : un Finisseur transforme 50 % d’occasions de plus, face à un Chat l’adversaire en transforme 12 % de moins, et face à un Roc il s’en crée 10 % de moins. Chaque signe est chiffré sur la fiche du joueur.',

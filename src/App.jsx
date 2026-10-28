@@ -34,7 +34,7 @@ import { DirectionView } from './ui/direction';
 import { MedicalView } from './ui/medical';
 import { LeagueView } from './ui/league';
 import { deadlineText, leagueOpen } from './game/league';
-import { LeagueError, leagueResults, myLeagues, refreshLeague, sendMove, sendSheet, takeInvite } from './game/leagueNet';
+import { LeagueError, kickoffAt, leagueResults, myLeagues, pulseUrgent, refreshLeague, sendMove, sendSheet, takeInvite, userActive, watchPulse } from './game/leagueNet';
 import { applyLeagueRound, createLeagueClub, leagueClubProgress, leagueRequest, loadLeagueClub, myReplay, readLeagueClub, saveLeagueClub, settleLeague, syncLeagueClub, teamSheet } from './game/leagueClub';
 import { adoptPulled, cloudNote, cloudPlan, isPushing, markUnreadable, playedPrint, pullClub, pushClub, savedWhen, stageOf, syncOf } from './game/leagueCloud';
 import ConfirmDialog from './ui/confirm';
@@ -257,9 +257,16 @@ export default function App({ preview = null }) {
   // Retour du navigateur (bouton Précédent, souris, geste ou touche retour d'Android) : il ferme la fenêtre du dessus
   // (fiche, panneau, bâtiment), comme Échap, au lieu de quitter le jeu. Une entrée d'historique, sans changer
   // l'adresse, garde la place tant qu'une fenêtre est ouverte ; fermée autrement, l'entrée est retirée.
-  const layered = inGame && !preview && !!(panel || sel);
+  // En match (0.8.6, demande du PDG : avant-match, direct, mi-temps, après-match, rejeu) : l'entrée posée à l'ouverture
+  // efface toute page « suivante » (le glissement de bord de Safari ramenait l'image figée d'une fenêtre fermée), et un
+  // retour ne fait rien : l'entrée revient aussitôt. Posée une fois l'écran du match affiché, l'image que Safari garde
+  // de l'entrée d'avant est celle du match : le geste de côté ne montre rien d'autre.
+  const inMatch = inGame && !preview && !!(matchPhase || showResult || replay);
+  const layered = inGame && !preview && !!(panel || sel || inMatch);
   const layeredRef = useRef(layered);
   layeredRef.current = layered;
+  const inMatchRef = useRef(inMatch);
+  inMatchRef.current = inMatch;
   const backGuard = useRef({ armed: false, skip: false });
   useEffect(() => {
     const g = backGuard.current;
@@ -271,6 +278,7 @@ export default function App({ preview = null }) {
     const onPop = () => {
       if (g.skip) { g.skip = false; return; }
       if (!g.armed) return;
+      if (inMatchRef.current) { window.history.pushState({ fo: 'layer' }, ''); return; } // en match : rien ne bouge
       g.armed = false;
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true }));
       setTimeout(() => { // une fenêtre reste ouverte (la fiche fermée, le panneau dessous) : la garde revient
@@ -668,9 +676,19 @@ export default function App({ preview = null }) {
     const t = setTimeout(() => cloudSave(), 1500);
     return () => clearTimeout(t);
   }, [stageKey, leagueLive?.m]); // eslint-disable-line react-hooks/exhaustive-deps
-  // la ligue relue chaque minute (amis qui valident, journée jouée), et au retour sur le jeu ; le club joué entre-temps sur
+  // la ligue relue chaque minute (amis qui valident, journée jouée), dès que son pouls change, et au retour sur le jeu ; le club joué entre-temps sur
   // un autre appareil est repris (ou, s'il a changé ici aussi, le joueur choisit)
   const leagueCode = state?.league?.code || null;
+  const leagueTick = useRef(null);
+  const leagueLiveRef = useRef(null);
+  leagueLiveRef.current = leagueLive;
+  // coup d'envoi annoncé (tous ont validé, 0.8.6) : la ligue est relue à l'heure dite, la journée se joue et se regarde
+  const leagueKickoff = kickoffAt(leagueLive?.d);
+  useEffect(() => {
+    if (!leagueKickoff) return undefined;
+    const t = setTimeout(() => leagueTick.current?.(), Math.max(0, leagueKickoff - Date.now()) + 1200);
+    return () => clearTimeout(t);
+  }, [leagueKickoff]);
   useEffect(() => {
     if (!leagueCode || !leagueLive?.m) return undefined;
     const m = leagueLive.m;
@@ -694,10 +712,12 @@ export default function App({ preview = null }) {
         setState((s) => (s?.league?.code === m.code ? syncLeagueClub(clone(s), d) : s));
       } catch { /* hors ligne : on réessaiera */ }
     };
-    const t = setInterval(tick, 60000);
+    leagueTick.current = tick;
+    const t = setInterval(() => { if (userActive()) tick(); }, 60000);
+    const stopPulse = watchPulse(m, tick, () => pulseUrgent(leagueLiveRef.current?.d)); // offres, réponses, amis qui valident : vus en quelques secondes (0.8.6)
     document.addEventListener('visibilitychange', tick);
     return () => {
-      clearInterval(t); clearInterval(t2);
+      clearInterval(t); clearInterval(t2); stopPulse(); leagueTick.current = null;
       document.removeEventListener('visibilitychange', tick); document.removeEventListener('visibilitychange', away);
     };
   }, [leagueCode, leagueLive?.m]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -749,7 +769,7 @@ export default function App({ preview = null }) {
       if (d.league.season !== state.league.season || d.league.round !== state.round) throw new Error('La journée a changé : regarde d’abord le match de la journée précédente.');
       await sendSheet(m, d.league.season, d.league.round, teamSheet(clone(state), { lineup, tactic, formation, plans }));
       run((s) => { s.lineup = lineup; s.tactic = tactic; s.formation = formation; s.league.plans = plans || {}; s.league.sent = key; return s; });
-      notify({ kind: 'success', eyebrow: state.league.name, title: 'Équipe validée', text: `Journée ${d.league.round + 1} : le match se joue dès que tous ont validé, au plus tard ${deadlineText(d.league.deadline)}.`, key: 'league-sent' });
+      notify({ kind: 'success', eyebrow: state.league.name, title: 'Équipe validée', text: `Journée ${d.league.round + 1} : coup d’envoi dix minutes après la validation de la dernière équipe, au plus tard ${deadlineText(d.league.deadline)}.`, key: 'league-sent' });
     } catch (x) {
       notify({ kind: 'warn', eyebrow: state.league.name, title: 'Équipe non envoyée', text: x.message });
     }
@@ -921,7 +941,7 @@ export default function App({ preview = null }) {
             />
           )}
           <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} keys={hudKeys && !panel && !sel}
-            league={state.league ? { pending: !!leaguePending, sent: state.league.sent === `${leagueLive?.d.league.season}:${leagueLive?.d.league.round}`, deadline: leagueLive?.d.league.deadline, onWatch: watchLeague, seasonOver: (leagueLive?.d.league.season || 0) > state.league.season } : null} />
+            league={state.league ? { pending: !!leaguePending, sent: state.league.sent === `${leagueLive?.d.league.season}:${leagueLive?.d.league.round}`, deadline: leagueLive?.d.league.deadline, kickoff: leagueKickoff, onWatch: watchLeague, seasonOver: (leagueLive?.d.league.season || 0) > state.league.season } : null} />
           <Dock panel={panel} onPanel={openPanel} badges={signals} keys={hudKeys} />
         </div>
       )}

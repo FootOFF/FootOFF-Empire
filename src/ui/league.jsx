@@ -3,7 +3,8 @@ import { Panel } from './panels';
 import { SectionHead } from './kit';
 import { ClubCrest, Crest, CrestArt } from './crest';
 import { CREST_ROWS } from './title';
-import { IconCheck, IconChevron, IconChevronLeft, IconClock, IconDice, IconPlay, IconPlus, IconUsers } from './icons';
+import { IconCheck, IconChevron, IconChevronLeft, IconClock, IconDice, IconPlay, IconPlus, IconRefresh, IconUsers } from './icons';
+import { mmss, useCountdown } from './hud';
 import { uiSound } from './uisound';
 import { capitalize, isPluralClub, randomClubName, withArticle } from '../game/names';
 import { CLUB_BLACK, clubInitials, defaultCrest, hexLum, normalizeCrest, randomCrest, withStyle } from '../game/crest';
@@ -12,7 +13,7 @@ import {
   deviceZone, hourText, isLeagueCode, leagueClubs, leagueFixtures, leagueRounds, leagueTable, replayOf,
 } from '../game/league';
 import {
-  createLeague, forgetLeague, inviteLink, joinLeague, kickMember, leagueInfo, leagueState, leaveLeague, myLeagues,
+  createLeague, deleteLeague, forgetLeague, inviteLink, joinLeague, kickMember, kickoffAt, leagueInfo, leagueState, leaveLeague, myLeagues, pulseUrgent, userActive, watchPulse,
   parseResumeCode, refreshLeague, rememberLeague, resumeCodeOf, startLeague, updateLeague,
 } from '../game/leagueNet';
 import { dropLeagueClub, leagueClubProgress } from '../game/leagueClub';
@@ -269,7 +270,7 @@ function CreateForm({ onDone }) {
             {MINUTES.map((m) => <option key={m} value={m}>{String(m).padStart(2, '0')}</option>)}
           </select>
         </span>
-        <small className="lig-hint">Une journée se joue dès que tous les amis ont validé leur équipe, et au plus tard chaque jour à {hourText(hour, minute)} (heure de cet appareil). Un retardataire joue avec une équipe choisie pour lui.</small>
+        <small className="lig-hint">Les journées se jouent au plus tard chaque jour à {hourText(hour, minute)} (heure de cet appareil). Dès que tous les amis ont validé leur équipe, un compte à rebours de dix minutes s’affiche pour tous, puis les matchs commencent. Un retardataire joue avec une équipe choisie pour lui.</small>
       </div>
       <ClubFields pseudo={pseudo} setPseudo={setPseudo} club={club} setClub={setClub} crest={crest} setCrest={setCrest} />
       <Problem text={problem} />
@@ -405,6 +406,8 @@ function ResumeForm({ mine, onDone }) {
 // onPlayClub : jouer son club de ligue (App : la partie de ligue, comme une partie solo).
 function LeagueDetail({ m, ask, flash, onGone, onReplay, onPlayClub, reload = 0 }) {
   const [data, setData] = useState(null);
+  const dataRef = useRef(null);
+  dataRef.current = data;
   const [problem, setProblem] = useState(null);
   const [busy, setBusy] = useState(false);
   const [showCode, setShowCode] = useState(false);
@@ -416,10 +419,18 @@ function LeagueDetail({ m, ask, flash, onGone, onReplay, onPlayClub, reload = 0 
   ), [m]);
   useEffect(() => {
     load();
-    // les amis qui arrivent, valident, la journée qui se joue : relu chaque minute tant que la fenêtre est à l'écran
-    const t = setInterval(() => { if (document.visibilityState === 'visible') load(); }, 60000);
-    return () => clearInterval(t);
-  }, [load, reload]);
+    // les amis qui arrivent, valident, font une offre ou y répondent, la journée qui se joue : vus en quelques secondes
+    // (le pouls, 0.8.6), et relu de toute façon chaque minute tant que la fenêtre est à l'écran
+    const stopPulse = watchPulse(m, load, () => pulseUrgent(dataRef.current));
+    const t = setInterval(() => { if (userActive()) load(); }, 60000);
+    return () => { clearInterval(t); stopPulse(); };
+  }, [load, reload]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [fresh, setFresh] = useState(false);
+  const refresh = async () => { // « Actualiser » : relu tout de suite, à la demande
+    setFresh(true);
+    await load();
+    if (alive.current) setTimeout(() => { if (alive.current) setFresh(false); }, 600);
+  };
 
   const act = async (fn, after) => {
     setBusy(true);
@@ -465,11 +476,25 @@ function LeagueDetail({ m, ask, flash, onGone, onReplay, onPlayClub, reload = 0 
     cancelLabel: 'Rester',
     onConfirm: () => act(() => leaveLeague(m), () => { forgetLeague(m.code); dropLeagueClub(m.code); dropSync(m.code); onGone(lobby && creator ? `Le championnat ${league.name} est fermé.` : `Tu as quitté le championnat ${league.name}.`); }),
   });
+  // suppression par le créateur (0.8.6) : pour tout le monde, définitive, confirmée en tapant le nom du championnat
+  const remove = () => {
+    const friends = humans.length - 1;
+    ask({
+      tone: 'danger',
+      eyebrow: 'Suppression définitive',
+      title: `Supprimer ${league.name} pour tout le monde ?`,
+      text: `Ton club, ${friends === 1 ? 'celui de ton ami, ' : friends > 1 ? `ceux de tes ${friends} amis, ` : ''}le classement et le palmarès de ce championnat disparaissent. ${friends === 1 ? 'Ton ami verra qu’il a fermé. ' : friends > 1 ? 'Tes amis verront qu’il a fermé. ' : ''}Rien ne pourra être récupéré.`,
+      typed: league.name,
+      confirmLabel: 'Supprimer',
+      cancelLabel: 'Garder',
+      onConfirm: () => act(() => deleteLeague(m, league.name), () => { forgetLeague(m.code); dropLeagueClub(m.code); dropSync(m.code); onGone(`Le championnat ${league.name} est supprimé.`); }),
+    });
+  };
   const start = () => {
     const free = LEAGUE_CLUBS - members.length;
     ask({
       title: `Lancer ${league.name} ?`,
-      text: `Plus personne ne pourra s’inscrire${free ? `, et ${free > 1 ? `les ${free} places libres iront` : 'la place libre ira'} à l’ordinateur` : ''}. La 1re journée se jouera dès que tous auront validé leur équipe, au plus tard à ${hourText(league.settings.hour, league.settings.minute)}.`,
+      text: `Plus personne ne pourra s’inscrire${free ? `, et ${free > 1 ? `les ${free} places libres iront` : 'la place libre ira'} à l’ordinateur` : ''}. La 1re journée se jouera dix minutes après que tous auront validé leur équipe, au plus tard à ${hourText(league.settings.hour, league.settings.minute)}.`,
       confirmLabel: 'Lancer la saison',
       cancelLabel: 'Attendre encore',
       onConfirm: () => act(() => startLeague(m), () => { flash('La saison est lancée.'); load(); }),
@@ -494,6 +519,7 @@ function LeagueDetail({ m, ask, flash, onGone, onReplay, onPlayClub, reload = 0 
             <em>{lobby ? 'Salle d’attente' : `Saison ${league.season} · journée ${Math.min(league.round + 1, rounds)} / ${rounds}`} · code{'\u00a0'}<b className="lig-code-inline">{league.code}</b></em>
             <small>{league.settings.format === 'single' ? 'Aller simple' : 'Aller-retour'} · journées au plus tard à {hourText(league.settings.hour, league.settings.minute)}, heure du créateur</small>
           </span>
+          <button type="button" className={`lig-refresh ${fresh ? 'spin' : ''}`} onClick={refresh} disabled={fresh} aria-label="Actualiser le championnat" title="Actualiser"><IconRefresh /></button>
         </div>
       </section>
 
@@ -533,7 +559,7 @@ function LeagueDetail({ m, ask, flash, onGone, onReplay, onPlayClub, reload = 0 
           <p className="dir-note">Une salle d’attente jamais lancée ferme d’elle-même au bout de 48 heures.</p>
         </>
       ) : (
-        <RunningLeague league={league} clubs={clubs} humans={humans} results={data.results} worldBefore={data.worldBefore} me={me} onPlayClub={() => onPlayClub(m)} onReplay={onReplay} flash={flash} />
+        <RunningLeague league={league} clubs={clubs} humans={humans} results={data.results} worldBefore={data.worldBefore} me={me} kickoff={kickoffAt(data)} onPlayClub={() => onPlayClub(m)} onReplay={onReplay} flash={flash} />
       )}
 
       {!lobby && (
@@ -550,12 +576,18 @@ function LeagueDetail({ m, ask, flash, onGone, onReplay, onPlayClub, reload = 0 
       <button type="button" className="linkbtn lig-leave" disabled={busy} onClick={leave}>
         {lobby ? (creator ? 'Fermer la salle d’attente' : 'Quitter la salle d’attente') : 'Quitter ce championnat'}
       </button>
+      {creator && !lobby && <button type="button" className="linkbtn lig-delete" disabled={busy} onClick={remove}>Supprimer le championnat</button>}
     </>
   );
 }
 
 // Saison en cours : la journée (échéance, qui a validé), ses matchs, le classement, le palmarès de la ligue.
-function RunningLeague({ league, clubs, humans, results, worldBefore, me, onPlayClub, onReplay, flash }) {
+// tous ont validé : « coup d'envoi dans m:ss » (0.8.6)
+function KickoffNote({ at }) {
+  const left = useCountdown(at);
+  return <span className="lig-kickoff">{left > 0 ? <>tous ont validé · coup d’envoi dans <b>{mmss(left)}</b></> : 'coup d’envoi…'}</span>;
+}
+function RunningLeague({ league, clubs, humans, results, worldBefore, me, kickoff = null, onPlayClub, onReplay, flash }) {
   const rounds = leagueRounds(league);
   const table = leagueTable(clubs, results);
   const fixtures = leagueFixtures(league)[league.round] || [];
@@ -569,7 +601,7 @@ function RunningLeague({ league, clubs, humans, results, worldBefore, me, onPlay
     <>
       {mine && opp && (
         <section className={`dir-card lig-team ${mine.validated ? 'ok' : ''}`}>
-          <SectionHead label="Ton club" aside={mine.validated ? 'équipe validée' : 'équipe à valider'} />
+          <SectionHead label="Ton club" aside={kickoff ? <KickoffNote at={kickoff} /> : mine.validated ? 'équipe validée' : 'équipe à valider'} />
           <div className="lig-vs">
             <ClubMark club={mine} className="lig-vs-crest" />
             <span><strong>{atHome ? 'À domicile' : 'À l’extérieur'}</strong><em>Adversaire · {opp.name}{opp.human ? ` · ${opp.pseudo}` : ''}</em></span>

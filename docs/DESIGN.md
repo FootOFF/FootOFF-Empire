@@ -1024,6 +1024,32 @@ ouverte depuis la Direction (panneau étroit) est posée sur tout l'écran. Dur�
 « saison N ». Fiche : bloc Contrat (salaire, fin, clause) et « Prolonger son contrat ». Effectif : fin du contrat sous
 le salaire dans le tableau (PC), « Dernière année de contrat » sur la carte des seuls joueurs concernés.
 
+## Championnats entre amis en direct, match sans glissement (0.8.6)
+
+Retours du PDG après une partie avec son frère (2026-10-28) : impossible de supprimer « Ligue Test », un ami arrivé
+vu seulement après être ressorti du jeu, des offres et des réponses vues trop tard, deux équipes validées sans que le
+match parte, et en match un glissement de côté qui faisait apparaître d'autres écrans.
+- Suppression (site : action `delete`, jeu : `deleteLeague`) : le créateur seul, à tout moment, pour tout le monde ; le
+  serveur exige le nom exact du championnat, que le jeu envoie une fois tapé dans la confirmation (`ConfirmDialog`,
+  `typed` : casse et espaces en trop ignorés). Les amis voient « Ce championnat a fermé » (404) et le retirent de leur
+  liste. Une salle d'attente se ferme comme avant (« Fermer la salle d'attente »).
+- Pouls (site : action `pulse`, jeu : `watchPulse`) : une empreinte de quelques dizaines d'octets (arrivées et départs,
+  équipes validées, journée, mercato entre amis), interrogée toutes les 6 secondes quand l'écran est visible, hors du
+  quota général et limitée à 20 par minute ; l'état complet n'est relu que quand elle change (premier relevé à
+  l'ouverture). Un site sans pouls (404 « Action inconnue ») arrête la surveillance : la relecture de chaque minute
+  reste. Bouton « Actualiser » sur la carte du championnat.
+- Coup d'envoi (réponse du PDG : « dès que tout le monde valide, délai de 10 minutes annoncé avec un timer pour tout le
+  monde qui remplace le bouton validé ») : `KICKOFF_MS` 10 minutes après la première validation du dernier ami
+  (`ligue_sheets.at` gardé quand on retouche son équipe : le compte à rebours ne repart jamais) ; l'heure limite
+  quotidienne ne change pas. L'état renvoie `kickoff` ; le jeu l'affiche (`KickoffButton`, `KickoffNote`, horloge du
+  serveur `skew`) et relit la ligue à l'heure dite. Une équipe ne se retouche plus une fois le coup d'envoi donné.
+  Avant : jamais moins de quinze minutes après l'ouverture de la journée, sans rien annoncer.
+- Historique du navigateur en match (`App.jsx`, `inMatch`) : avant-match, direct, mi-temps, après-match et rejeu posent
+  leur entrée (plus de page « suivante » que le glissement de bord de Safari ramenait en image figée) ; un retour du
+  navigateur n'y fait rien.
+- Vérifié : API locale (suppression 9 contrôles, pouls 10, coup d'envoi 7), jeu réel PC et téléphone (suppression,
+  ami vu en 3,6 s, compte à rebours en 1,6 s puis « Regarder » tout seul), historique en match (7 contrôles).
+
 ## Signes distinctifs, composition et fatigue (0.8.5)
 
 Demandes du PDG (2026-10-28) : des signes qui aient un réel effet, un bouton « Faire tourner » introuvable sur
