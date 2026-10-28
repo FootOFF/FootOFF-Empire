@@ -1024,6 +1024,13 @@ ouverte depuis la Direction (panneau étroit) est posée sur tout l'écran. Dur�
 « saison N ». Fiche : bloc Contrat (salaire, fin, clause) et « Prolonger son contrat ». Effectif : fin du contrat sous
 le salaire dans le tableau (PC), « Dernière année de contrat » sur la carte des seuls joueurs concernés.
 
+## Match sans détour (0.8.10)
+
+Demandes du PDG (2026-10-28) : plus de retour arrière au doigt en plein match, et plus de signes adverses à l'avant-match.
+En match (avant-match, direct, mi-temps, après-match, rejeu), un toucher qui commence à moins de 24 px du bord est
+retenu (le geste retour de l'iPhone ne s'amorce plus) ; un toucher bref sur un bouton du bord reste un clic. Les signes
+adverses ne s'affichent plus mais comptent toujours dans le pronostic et le match.
+
 ## Vitesse du match (0.8.9)
 
 Demande du PDG (2026-10-28) : « on comprend pas lequel est actif » ; réponses : un bouton qui dit l'état, et à ×4 tous

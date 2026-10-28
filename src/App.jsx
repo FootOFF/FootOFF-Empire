@@ -292,6 +292,34 @@ export default function App({ preview = null }) {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
+  // En match (0.8.10, demande du PDG) : le glissement depuis le bord de l'écran (iPhone : retour, avance) ne s'amorce plus.
+  // La garde ci-dessus empêchait le retour, mais Safari montrait encore l'image de l'écran d'avant pendant le geste :
+  // un toucher qui commence à moins de EDGE du bord est retenu. Un toucher bref sur un bouton du bord reste un clic.
+  useEffect(() => {
+    if (!inMatch) return undefined;
+    const EDGE = 24;
+    let held = null; // { target, x, y } : toucher retenu au bord
+    const start = (e) => {
+      const t = e.touches[0];
+      if (e.touches.length !== 1 || (t.clientX > EDGE && t.clientX < window.innerWidth - EDGE)) { held = null; return; }
+      e.preventDefault();
+      held = { target: e.target, x: t.clientX, y: t.clientY };
+    };
+    const end = (e) => {
+      if (!held) return;
+      const t = e.changedTouches[0];
+      const tap = Math.hypot(t.clientX - held.x, t.clientY - held.y) < 10;
+      const el = held.target instanceof Element ? held.target.closest('button, a, [role="button"], input, label') : null;
+      held = null;
+      if (tap && el && !el.disabled) el.click();
+    };
+    document.addEventListener('touchstart', start, { passive: false, capture: true });
+    document.addEventListener('touchend', end, { capture: true });
+    return () => {
+      document.removeEventListener('touchstart', start, { capture: true });
+      document.removeEventListener('touchend', end, { capture: true });
+    };
+  }, [inMatch]);
 
   const run = (fn, failMsg) => {
     const base = clone(state);

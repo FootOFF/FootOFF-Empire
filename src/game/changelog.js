@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    version: '0.8.10', date: '2026-10-28', title: 'Match sans détour',
+    items: [
+      'En plein match et à l’avant-match, glisser le doigt depuis le bord de l’écran ne ramène plus en arrière ; les boutons du bord répondent toujours.',
+      'L’avant-match n’affiche plus les signes distinctifs de l’adversaire : ils comptent toujours en match et dans le pronostic.',
+    ],
+  },
+  {
     version: '0.8.9', date: '2026-10-28', title: 'Vitesse du match',
     items: [
       'Un seul bouton de vitesse, qui dit où tu en es : « ×1 » à vitesse normale, « ×4 » sur fond or quand le match est accéléré. Un toucher bascule de l’un à l’autre.',
