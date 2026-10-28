@@ -86,6 +86,7 @@ export const SCREENS = [
   ['mi-temps', 'Mi-temps (composition repliée)'],
   ['mi-temps-compo', 'Mi-temps · composition déployée'],
   ['changement', 'Direct · changement en cours de jeu'],
+  ['mi-temps-rouge', 'Mi-temps · un expulsé à déplacer, dispositif à changer'],
   ['erreur', 'Écran d’erreur (barrière globale)'],
   ['apres-match', 'Après-match'],
   ['apres-match-exterieur', 'Après-match · Élite, à l’extérieur'],
@@ -422,6 +423,7 @@ export function previewUi(screen, s) {
     case 'mi-temps': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime' } };
     case 'mi-temps-compo': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime', board: true } };
     case 'changement': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'subs', minute: 31 } };
+    case 'mi-temps-rouge': return { matchPhase: 'live', matchCtx: matchContext(s), matchDay: true, live: { phase: 'halftime', board: true, red: true } };
     case 'apres-match': case 'apres-match-exterieur': return { showResult: true, matchDay: true };
     case 'apres-match-classement': return { showResult: true, matchDay: true, postStep: 'table' };
     case 'menu': return { menu: true };

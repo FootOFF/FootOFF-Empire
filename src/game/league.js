@@ -19,8 +19,8 @@ import { clone } from './utils';
 // Version du moteur des matchs entre amis : le serveur (ENGINE_CURRENT de src/lib/ligue/core.ts du site) refuse un
 // numéro plus haut que le sien. À relever là-bas, et publier le site, AVANT de publier un jeu au moteur relevé.
 // 2 (0.8.3) : plans de mi-temps, mercato immédiat (mouvements du serveur rejoués) ; un match sans plan ni mouvement se
-// joue comme en version 1.
-export const LEAGUE_ENGINE = 2;
+// joue comme en version 1. 3 (0.8.4) : équilibre « Prudente » des tactiques (tactics.js) et ordinateur accordé.
+export const LEAGUE_ENGINE = 3;
 export const LEAGUE_CLUBS = 8; // amis complétés par l'ordinateur
 export const LEAGUE_MIN_HUMANS = 2;
 export const MAX_MY_LEAGUES = 3; // championnats à la fois sur un appareil
@@ -249,6 +249,7 @@ export function leagueMatch(league, season, round, home, away) {
     const ctx = {
       comp: 'friends',
       home: true,
+      holes: false, // pénalité d'infériorité numérique comme en version 1 : personne ne déplace d'expulsé dans un match joué sans lui
       opp: { name: away.name, crest: away.crest, strength: lineupRating(away.players, away.sheet.lineup, away.sheet.formation) },
       awayEleven: { formation: away.sheet.formation, players: away.sheet.lineup.map((id) => away.players.find((p) => p.id === id)).filter(Boolean) }, // poste vide : rien
       oppPlan: { tactic: away.sheet.tactic, formation: away.sheet.formation },
@@ -407,7 +408,8 @@ export function playLeagueRound(league, members, teams, world, moves = []) {
   };
   // niveau de chaque club (onze automatique de son effectif) : ce que montrent l'avant-match et le classement
   const str = sides.map((x) => Math.round(lineupRating(x.players, autoSheet(x.players).lineup, '433') * 10) / 10);
-  return { v: 3, matches, moves: week.moves, str, world: next, ...(applied.count ? { mv: applied.count } : {}) };
+  // e : la version du moteur qui a joué la journée (un rejeu d'un autre moteur peut ainsi s'en remettre au résumé)
+  return { v: 3, e: LEAGUE_ENGINE, matches, moves: week.moves, str, world: next, ...(applied.count ? { mv: applied.count } : {}) };
 }
 
 // Un match joué, à revoir en 3D (l'écran du direct, en rejeu) et à appliquer à sa partie : rejoué à l'identique depuis

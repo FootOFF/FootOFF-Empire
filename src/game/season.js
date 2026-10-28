@@ -7,7 +7,7 @@ import { leagueRounds, logMove } from './mercato';
 import { awayGate, expectedGate, matchGate, prizeFor, sponsorIncome, ticketPrice, upkeepOf } from './economy';
 import { clamp, ordinal, pick, rnd } from './utils';
 import { clubAfter, leagueClubNames, randomClubName } from './names';
-import { assignNumber, drawInjury, fitOf, freshSeason, makePlayer, matchCost, playerRating, progressPlayer, recoveryOf, saleValue, wageOf, wantsRetirement } from './players';
+import { drawInjury, fitOf, freshSeason, matchCost, playerRating, progressPlayer, recoveryOf, saleValue, wageOf, wantsRetirement } from './players';
 import { quickMatch } from './live';
 import { ensureLineup } from './tactics';
 import { closeSeasonGoals, reputationStatusEvent, resetSeasonStats } from './goals';
@@ -15,10 +15,11 @@ import { closeSeasonObjectives, drawObjectives } from './objectives';
 import { book, closeLedger, markTreasury } from './ledger';
 import { C1_ENTRY, COMPS, STAGES, buildCalendar, cupPrize, drawOpponent, fixtureLabel, fixtureShort, isAwayRound, leagueLength, nextFixture, ofDiv } from './cups';
 import { addMatch, rebuildRecords } from './records';
-import { distinctFace, distinctSquad } from './faces';
+import { distinctSquad } from './faces';
 import { collectiveSession, staffSession, tidyTraining, windowKey } from './training';
 import { leagueSeasonStart, officialTable } from './leagueSeason';
 import { divisionWages, ensureDeals, lastYear } from './contracts';
+import { ensureSquadMin } from './squadFloor';
 
 export function roundRobin(n) {
   const rounds = [];
@@ -533,17 +534,12 @@ export function endSeason(s) {
   distinctSquad(s.players); // un an de plus (cheveux gris, front dégarni) : pas de sosie pour autant, le dernier arrivé change de coupe
   tidyTraining(s); // programmes d'entraînement des retraités effacés
 
-  // académie : le bond de l'été, puis les jeunes de 19 ans qui ne sont pas montés quittent le club
-  for (const y of youthSeasonEnd(s)) events.push(`${y.name} (19 ans) quitte l’académie : il n’est pas monté en équipe première.`);
-  while (s.players.length < SQUAD_MIN) {
-    const p = makePlayer({ level: Math.max(0, s.divisionIndex - 0.5) });
-    p.id = s.nextId++;
-    p.joined = s.seasonNumber + 1;
-    assignNumber(s.players, p);
-    distinctFace(s.players, p); // aucun sosie dans l'effectif
-    s.players.push(p);
-    events.push(`Amateur de secours : ${p.name} (${p.age} ans) complète l’effectif.`);
-  }
+  // académie : le bond de l'été ; l'effectif remis au minimum (un jeune monte d'office, ceux qui allaient partir
+  // compris, sinon un amateur de secours), puis les jeunes de 19 ans qui ne sont pas montés quittent le club
+  const leaving = youthSeasonEnd(s);
+  const floor = ensureSquadMin(s, { joined: s.seasonNumber + 1, extra: leaving });
+  events.push(...floor.lines);
+  for (const y of leaving) if (!floor.raised.includes(y)) events.push(`${y.name} (19 ans) quitte l’académie : il n’est pas monté en équipe première.`);
   // salaires à la montée (clauses de montée) ou à la descente (ramenés au niveau de la nouvelle division)
   const nextIndex = clamp(s.divisionIndex + (promoted ? 1 : relegated ? -1 : 0), 0, 3);
   const wageNote = divisionWages(s, s.divisionIndex, nextIndex);

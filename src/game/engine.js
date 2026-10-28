@@ -1,6 +1,6 @@
 import { BUILDINGS, DIVISIONS, ELITE_SCALE, POS_LABELS, SQUAD_MAX, SQUAD_MIN, START_MONEY, upgradeCost } from './constants';
 import { OFFLINE_CAP, offlinePerHour } from './economy';
-import { assignNumber, costOf, makePlayer, refWage, saleValue, wageOf } from './players';
+import { assignNumber, costOf, makePlayer, saleValue, wageOf } from './players';
 import {
   C_TRIES, cleanTerms, contractChance, contractSerious, counterTerms, ctalksOf, demandOf, ensureDeals, renewOpen, setDeal,
 } from './contracts';
@@ -18,6 +18,7 @@ import { PLOTS, ensureFixedPlots, plotIndexOf } from './map';
 import { ensureLineup } from './tactics';
 import { prepareFirstSeason } from './tutorial';
 import { rnd } from './utils';
+import { raiseYouth } from './squadFloor';
 import { snapPlayer, unsnapPlayer } from './leagueWorld';
 import { book, ensureLedger } from './ledger';
 import { addSigning, emptyRecords, rebuildRecords } from './records';
@@ -170,19 +171,7 @@ export function signYouth(s, id) {
 export function promoteYouth(s, id) {
   const p = (s.youth || []).find((q) => q.id === id);
   if (!p || s.players.length >= SQUAD_MAX) return null;
-  s.youth = s.youth.filter((q) => q !== p);
-  delete p.plan;
-  delete p.gain;
-  p.joined = s.seasonNumber;
-  setDeal(s, p, { wage: refWage(p, s.divisionIndex), years: 3 }); // premier contrat professionnel : trois saisons
-  lockResale(s, p); // pas de vente avant quatre journées de championnat en équipe première
-  assignNumber(s.players, p);
-  distinctFace(s.players, p); // aucun sosie dans l'effectif
-  s.players.push(p);
-  pushJournal(s, {
-    season: s.seasonNumber, round: s.round, kind: 'academie', title: `${p.name} monte en équipe première`,
-    text: `Formé à l’académie, il rejoint l’effectif professionnel à ${p.age} ans, avec le numéro ${p.num}.`,
-  });
+  raiseYouth(s, p); // premier contrat professionnel : trois saisons (squadFloor.js)
   return s;
 }
 

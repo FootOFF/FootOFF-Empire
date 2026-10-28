@@ -248,8 +248,13 @@ const factorAt = (minute, since) => (p) => fitFactor(fitAt(p, minute, since(p.id
 // probabilités de but par minute pour chaque équipe, dans l'état donné (onze, tactique, joueurs en moins : expulsés
 // et blessés non remplacés, condition physique) ; convH, convA : conversion moyenne d'une occasion ; penH, penA :
 // réussite d'un penalty
-function minuteGoalChances(s, lineup, tactic, oppStrength, short = { home: 0, away: 0 }, offIds = new Set(), formation = s.formation, factorOf = null, atHome = true, oppPlan = null) {
-  const rating = lineupRating(s.players, lineup, formation, factorOf);
+// holes (0.8.4, solo) : un joueur sorti sans remplaçant (expulsé, blessé) laisse son poste vide dans le niveau de
+// l'équipe, et la pénalité d'infériorité numérique est réduite d'autant (même effet moyen) ; le poste où l'on place
+// l'expulsé compte donc. Sans (championnat entre amis, où personne ne peut le déplacer) : la pénalité seule, comme avant.
+export const HOLE_LOSE = 0.86;
+export const HOLE_GAIN = 1.115;
+function minuteGoalChances(s, lineup, tactic, oppStrength, short = { home: 0, away: 0 }, offIds = new Set(), formation = s.formation, factorOf = null, atHome = true, oppPlan = null, holes = false) {
+  const rating = lineupRating(s.players, holes ? lineup.map((id) => (offIds.has(id) ? null : id)) : lineup, formation, factorOf);
   const xg = expectedGoals(rating, oppStrength, tactic, formation, atHome, oppPlan);
   const bigGame = oppStrength > rating;
   const on = lineup.map((id) => s.players.find((p) => p.id === id)).filter((p) => p && !offIds.has(p.id));
@@ -267,8 +272,10 @@ function minuteGoalChances(s, lineup, tactic, oppStrength, short = { home: 0, aw
   }
   const convH = wSum ? convSum / wSum : CONVERSION;
   const convA = CONVERSION * (keeper && has(keeper, 'chat') ? 0.92 : 1);
-  const lamH = xg.for * 0.78 ** short.home * 1.22 ** short.away * arrow;
-  const lamA = xg.against * 1.22 ** short.home * 0.78 ** short.away * (rocs ? 0.97 : 1);
+  const lose = holes ? HOLE_LOSE : 0.78;
+  const gain = holes ? HOLE_GAIN : 1.22;
+  const lamH = xg.for * lose ** short.home * 1.22 ** short.away * arrow;
+  const lamA = xg.against * gain ** short.home * 0.78 ** short.away * (rocs ? 0.97 : 1);
   const taker = penaltyTaker(field);
   return {
     pH: Math.min(1, lamH / (90 * CONVERSION)) * convH, pA: Math.min(1, lamA / (90 * CONVERSION)) * convA,
@@ -498,6 +505,7 @@ export function createLiveMatch(s, ctx, saved = null) {
     away: ctx.opp.name,
     oppStrength: ctx.opp.strength,
     oppPlan: ctx.oppPlan || null,
+    holes: ctx.holes !== false, // poste vide d'un expulsé ou d'un blessé non remplacé compté (minuteGoalChances)
     lineup: [...s.lineup],
     startLineup: [...s.lineup], // onze de départ (historique du match : composition sur le terrain)
     subsList: [], // changements faits : entrant, sortant, minute
@@ -582,7 +590,7 @@ export function createLiveMatch(s, ctx, saved = null) {
   };
   const make = (at, type, side, text, extra = {}) => ({ at, minute: label(at, extra.half ?? m.half), type, side, text, half: m.half, ...extra });
   const push = (at, type, side, text, extra = {}) => { const e = make(at, type, side, text, extra); events().push(e); return e; };
-  const chancesNow = (minute, lineup = m.lineup, tactic = m.tactic) => minuteGoalChances(s, lineup, tactic, m.oppStrength, shortOf(lineup), offIds(), m.formation, factorAt(minute, since), m.atHome !== false, m.oppPlan);
+  const chancesNow = (minute, lineup = m.lineup, tactic = m.tactic) => minuteGoalChances(s, lineup, tactic, m.oppStrength, shortOf(lineup), offIds(), m.formation, factorAt(minute, since), m.atHome !== false, m.oppPlan, m.holes);
 
   // tireur : la finition compte (beaucoup pour un attaquant, un peu pour un milieu, peu pour un défenseur), chez nous
   // comme chez eux ; même pondération que le pronostic
@@ -887,9 +895,9 @@ export function createLiveMatch(s, ctx, saved = null) {
         if (p && !away.has(e.inName)) away.set(e.inName, { p, pos: p.pos, in: at, out: null });
         continue;
       }
-      if (e.type === 'info' && e.side === 'home' && e.formation) { // nouveau dispositif : les postes des entrants suivants
-        slots = slotsOf(e.formation);
-        if (e.lineup) lineup.splice(0, lineup.length, ...e.lineup);
+      if (e.type === 'info' && e.side === 'home' && e.lineup) { // dispositif ou postes changés : les postes des entrants suivants
+        if (e.formation) slots = slotsOf(e.formation);
+        lineup.splice(0, lineup.length, ...e.lineup);
         continue;
       }
       const recOf = (name, id) => (mine ? home.get(id ?? homeByName.get(name)) : away.get(name));
@@ -933,12 +941,13 @@ export function createLiveMatch(s, ctx, saved = null) {
   }
 
   // Ce qui empêche un onze d'entrer en jeu à cette minute, ou null : même nombre de joueurs, pas de doublon, les
-  // expulsés à leur place, au plus SUBS_MAX entrants dans le match, aucun entrant blessé, suspendu ou déjà sorti.
+  // expulsés toujours sur la feuille (au poste qu'on choisit de laisser vide), au plus SUBS_MAX entrants dans le match,
+  // aucun entrant blessé, suspendu ou déjà sorti.
   function lineupBlock(next) {
     const before = m.lineup;
     const named = Array.isArray(next) ? next.filter((id) => id !== null) : [];
     if (!Array.isArray(next) || next.length !== before.length || new Set(named).size !== named.length) return 'Onze incomplet.';
-    if (before.some((id, k) => m.sent.home.has(id) && next[k] !== id)) return 'Un expulsé ne peut pas être remplacé.';
+    if (before.some((id) => m.sent.home.has(id) && !next.includes(id))) return 'Un expulsé ne peut pas être remplacé.';
     const ins = named.filter((id) => !before.includes(id));
     if (ins.length > SUBS_MAX - m.subsUsed) return 'Plus de changement disponible.';
     for (const id of ins) {
@@ -987,7 +996,7 @@ export function createLiveMatch(s, ctx, saved = null) {
     if (FORMATIONS[formation] && formation !== m.formation) {
       m.formation = formation;
       target.push({ ...make(at, 'info', 'home', `Changement de dispositif : ${m.home} passe en ${formationOf(formation).name}.`), half, formation, lineup: [...next] });
-    } else if (moved) target.push({ ...make(at, 'info', 'home', `${m.home} réorganise son équipe.`), half });
+    } else if (moved) target.push({ ...make(at, 'info', 'home', `${m.home} réorganise son équipe.`), half, lineup: [...next] });
     if (tactic && TACTICS[tactic] && tactic !== m.tactic) {
       m.tactic = tactic;
       target.push({ ...make(at, 'info', 'home', `Changement tactique : ${m.home} passe en ${TACTICS[tactic].name.toLowerCase()}.`), half });
@@ -1040,11 +1049,11 @@ export function createLiveMatch(s, ctx, saved = null) {
     ratingsAt,
     // pronostic de fin de match depuis une minute de jeu (mi-temps : 45), avec le onze et la tactique envisagés ; les
     // entrants arrivent frais à cette minute
-    oddsFrom(minute, { lineup = m.lineup, tactic = m.tactic } = {}) {
+    oddsFrom(minute, { lineup = m.lineup, tactic = m.tactic, formation = m.formation } = {}) {
       const end = halfEnd();
       const sinceOf = (id) => m.perf[id]?.in ?? (m.lineup.includes(id) ? 0 : minute);
       const short = shortOf(lineup);
-      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, offIds(), m.formation, factorAt(min, sinceOf), m.atHome !== false, m.oppPlan));
+      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, offIds(), formation, factorAt(min, sinceOf), m.atHome !== false, m.oppPlan, m.holes));
       const rest = Math.max(0, end - minute); // la durée des mi-temps est tirée au coup d'envoi : le pronostic en tient compte
       const durations = [rest + (m.half === 1 ? m.halfLength[1] : 0)];
       return outcomeOdds(chancesAt, m.score.home - m.score.away, durations, (k) => (k <= rest ? minute + k : 45 + k - rest), short);
@@ -1053,8 +1062,8 @@ export function createLiveMatch(s, ctx, saved = null) {
     // Pronostic de fin de match tel que le direct l'a montré (shown : les événements déjà affichés). Le moteur a
     // quelques minutes d'avance sur l'horloge : ce qu'il a simulé sans l'avoir encore montré (un but, un carton, une
     // blessure) ne compte pas. minute : la minute de jeu affichée (la fin de la mi-temps à la pause) ; le onze et la
-    // tactique envisagés peuvent remplacer les actuels (changement en préparation).
-    oddsShown(minute, shown, { lineup = m.lineup, tactic = m.tactic } = {}) {
+    // tactique (et le dispositif) envisagés peuvent remplacer les actuels (changement en préparation).
+    oddsShown(minute, shown, { lineup = m.lineup, tactic = m.tactic, formation = m.formation } = {}) {
       let lead = 0;
       let sentA = 0;
       const sentH = new Set();
@@ -1067,7 +1076,7 @@ export function createLiveMatch(s, ctx, saved = null) {
       const short = { home: sentH.size + [...out].filter((id) => lineup.includes(id)).length, away: sentA };
       const off = new Set([...sentH, ...out]);
       const sinceOf = (id) => m.perf[id]?.in ?? (m.lineup.includes(id) ? 0 : minute);
-      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, off, m.formation, factorAt(min, sinceOf), m.atHome !== false, m.oppPlan));
+      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, off, formation, factorAt(min, sinceOf), m.atHome !== false, m.oppPlan, m.holes));
       const rest = Math.max(0, halfEnd() - minute);
       const durations = [rest + (m.half === 1 ? m.halfLength[1] : 0)];
       return outcomeOdds(chancesAt, lead, durations, (k) => (k <= rest ? minute + k : 45 + k - rest), short);

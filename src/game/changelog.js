@@ -4,6 +4,15 @@
 
 export const CHANGELOG = [
   {
+    version: '0.8.4', date: '2026-10-28', title: 'Tactique et effectif',
+    items: [
+      'Change de dispositif à la mi-temps, ou à n’importe quel arrêt de jeu : tes joueurs se replacent au mieux et le pronostic suit. Le bouton « Changement » reste utile même sans changement restant (dispositif, tactique, postes).',
+      'Après un carton rouge, déplace l’expulsé sur le poste que tu veux laisser vide (jamais celui du gardien) : le poste choisi compte vraiment dans le match.',
+      'Les tactiques se paient : attaquer rapporte quand tu es plus fort, l’équilibrée est le bon choix à niveau égal, le bloc bas face à un adversaire bien plus fort.',
+      'Ton effectif ne descend jamais sous 13 joueurs : la vente est refusée à 13, et si une fin de contrat te fait passer en dessous, le jeune le plus utile de ton académie monte d’office.',
+    ],
+  },
+  {
     version: '0.8.3', date: '2026-10-28', title: 'Championnats entre amis',
     items: [
       'Le Siège de la Ligue ouvre ses portes : crée un championnat entre amis (bâtiment de l’Élite), ou rejoins celui d’un ami par son lien d’invitation. Ni compte ni e-mail : un pseudo et ton club suffisent.',

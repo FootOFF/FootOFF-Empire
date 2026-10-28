@@ -14,6 +14,7 @@ import { expandPlayer, marketPlayers, priceOf, snapPlayer, unsnapPlayer } from '
 import { officialTable, perspectiveResult, refreshRivals } from './leagueSeason';
 import { clone } from './utils';
 import { ensureDeals, setDeal } from './contracts';
+import { ensureSquadMin } from './squadFloor';
 
 // Partie de championnat entre amis : une partie solo à part entière (même moteur, mêmes écrans : complexe, bâtiments,
 // entraînement, académie, finances), gardée sur l'appareil de chaque ami, à côté de sa carrière. La ligue lui donne ses
@@ -218,6 +219,7 @@ export function applyLeagueRound(s, result, live = null) {
     s.table = officialTable(s);
   }
   applyMoves(s, result.moves || []);
+  ensureSquadMin(s);
   L.round = s.round;
   L.sent = null; // l'équipe de la journée suivante reste à envoyer
   refreshRivals(s);
@@ -315,7 +317,7 @@ export function leagueMercato(s, d) {
   for (const c of L.clubs) {
     if (c.human || c.slot === L.slot || !world.clubs?.[c.slot]) continue;
     const players = squads[c.slot];
-    if (players.length <= SQUAD_MIN + 2) continue;
+    if (players.length <= SQUAD_MIN) continue;
     const eleven = new Set(autoLineup(players, '433'));
     for (const p of players) {
       if (signed.has(`a:${p.id}`)) continue;
@@ -381,6 +383,7 @@ export function applyLeagueMoves(s, d) {
     done.add(x.id);
   }
   L.done = [...done].slice(-200);
+  ensureSquadMin(s); // une vente faite sur un autre appareil ne laisse jamais l'effectif sous le minimum
   markTreasury(s);
   return s;
 }
@@ -405,7 +408,7 @@ export function offerFriend(s, p, fee) {
 }
 // Réponse à une offre reçue : acceptée, le joueur part aussitôt (il doit encore être là, et l'effectif garder son minimum).
 export const answerFriend = (s, o, yes) => queueLeague(s, { k: 'answer', id: o.id, lid: o.l, yes, fee: o.x, b: o.b });
-export const canSell = (s, lid) => s.players.some((q) => q.lid === lid) && s.players.length > SQUAD_MIN + 2;
+export const canSell = (s, lid) => s.players.some((q) => q.lid === lid) && s.players.length > SQUAD_MIN;
 
 // La demande telle qu'elle part au serveur (leagueNet.js, moveRequest).
 export function leagueRequest(s, item) {

@@ -150,8 +150,10 @@ export function aiBuild(club) {
 // Son équipe du jour : le dispositif qui met le mieux en valeur son effectif, une tactique selon l'écart de niveau avec
 // l'adversaire (plus fort : il attaque ; plus faible : il se replie), et ses plans de mi-temps : mené, il attaque et fait
 // entrer des forces fraîches ; devant, il gère ; à égalité, il pousse s'il est le plus fort. Les mêmes règles font jouer
-// le club d'un ami absent.
+// le club d'un ami absent. Seuils accordés à l'équilibre « Prudente » des tactiques (0.8.4) : il attaque plus fort de
+// 0,35, se replie en bloc bas plus faible de 1,2, joue équilibré entre les deux.
 const AI_GAP = 0.35;
+const AI_LOW = 1.2;
 export function appliedSheet(players, oppStrength = null) {
   let best = null;
   for (const f of FORMATION_ORDER) {
@@ -160,7 +162,7 @@ export function appliedSheet(players, oppStrength = null) {
     if (!best || r > best.r + 1e-9) best = { f, lineup, r };
   }
   const gap = oppStrength == null ? 0 : best.r - oppStrength;
-  const tactic = gap > AI_GAP ? 'offensive' : gap < -AI_GAP ? 'low' : 'balanced';
+  const tactic = gap > AI_GAP ? 'offensive' : gap < -AI_LOW ? 'low' : 'balanced';
   const fresh = (n) => freshLegs(players, best.lineup, best.f, n);
   const ht = {
     lead: { t: tactic === 'offensive' ? 'balanced' : 'low', ...(fresh(1).length ? { s: fresh(1) } : {}) },

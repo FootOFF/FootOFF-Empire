@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { TACTICS, TACTIC_ORDER, fitWeight, formationOf, lineupRating, reshapeLineup, slotsOf } from '../game/tactics';
+import { TACTICS, TACTIC_ORDER, autoLineup, fitWeight, formationOf, lineupRating, reshapeLineup, slotsOf } from '../game/tactics';
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
 import { LIVE_VERSION, SUBS_MAX, createLiveMatch, highlightOf, liveKeyOf, pairSubs, prematchOdds, prematchXg, statsOf, subMinute } from '../game/live';
 import { saveLive } from '../game/save';
-import { available, fitAt, fitFactor, fitOf } from '../game/players';
+import { available, fitAt, fitFactor, fitOf, ratingAt } from '../game/players';
 import { Portrait } from './portrait';
 import { teamCodes } from './teamcode';
 import { BestEleven, FormationPicker, LineupBoard, RotateButton, displayNames, formationEffect } from './lineup';
@@ -14,7 +14,7 @@ import { PHONE, useSwipe } from './gestures';
 import { SEC_PER_MIN, matchFeed } from '../game/matchFeed';
 import { ClubCrest, Crest } from './crest';
 import { clubStars } from '../game/crest';
-import { divisionOf } from '../game/constants';
+import { POS_LABELS, divisionOf } from '../game/constants';
 import { penaltySkills, shootoutWinChance } from '../game/cups';
 import { pctOf } from '../game/mercato';
 import { standingsOf } from '../game/season';
@@ -534,22 +534,52 @@ function TeamNotes({ rows, shown, side, fitOf = null, names }) {
 
 // Changements de la mi-temps : ce qui change entre le onze de la première période et celui composé sur le terrain
 // (entrants face aux sortants de leur poste, et niveau du onze avant → après).
-function HalftimeChanges({ state, m, plan, onReset }) {
+const PLURAL = { G: 'gardiens', D: 'défenseurs', M: 'milieux', A: 'attaquants' };
+// postes laissés vides, regroupés : « défenseur », « 2 défenseurs », « milieu, défenseur »
+function emptyText(empty) {
+  const count = new Map();
+  for (const p of empty) count.set(p, (count.get(p) || 0) + 1);
+  const parts = [...count].map(([p, n]) => (n > 1 ? `${n} ${PLURAL[p]}` : POS_LABELS[p].toLowerCase()));
+  return `${empty.length > 1 ? 'Postes laissés vides' : 'Poste laissé vide'} : ${parts.join(', ')}`;
+}
+const SHORT = ['onze', 'dix', 'neuf', 'huit', 'sept'];
+function HalftimeChanges({ state, m, plan, formation, halftime = true, onReset }) {
   const names = displayNames(state.players);
   const pairs = pairSubs(m.lineup, plan);
+  const isOut = (id) => m.sent.home.has(id) || m.out.has(id);
+  const reshaped = formation !== m.formation;
+  // qui change de poste (sans nouveau dispositif) : nommés s'ils sont trois au plus
+  const oldSlots = slotsOf(m.formation);
+  const newSlots = slotsOf(formation);
+  const moves = reshaped ? [] : plan.map((id, k) => {
+    const was = m.lineup.indexOf(id);
+    return was >= 0 && was !== k && !isOut(id) && oldSlots[was] !== newSlots[k] ? `${names[id]} passe ${POS_LABELS[newSlots[k]].toLowerCase()}` : null;
+  }).filter(Boolean);
   const moved = plan.some((id, k) => m.lineup.includes(id) && m.lineup[k] !== id);
-  if (!pairs.length && !moved) return <p className="ht-none">Aucun changement : l’équipe repart telle quelle.</p>;
-  const before = lineupRating(state.players, m.lineup, m.formation);
-  const after = lineupRating(state.players, plan, m.formation);
+  const empty = plan.map((id, k) => (isOut(id) ? newSlots[k] : null)).filter(Boolean);
+  if (!pairs.length && !moved && !reshaped) {
+    return (
+      <>
+        <p className="ht-none">{empty.length ? `Aucun changement : l’équipe ${halftime ? 'repart' : 'continue'} à ${SHORT[Math.min(empty.length, 4)]}.` : `Aucun changement : l’équipe ${halftime ? 'repart telle quelle' : 'continue telle quelle'}.`}</p>
+        {empty.length > 0 && <p className="ht-none">{emptyText(empty)}</p>}
+      </>
+    );
+  }
+  // niveau du onze en jeu : un expulsé ou un blessé non remplacé laisse son poste vide
+  const gone = (lineup) => lineup.map((id) => (isOut(id) ? null : id));
+  const before = lineupRating(state.players, gone(m.lineup), m.formation);
+  const after = lineupRating(state.players, gone(plan), formation);
   return (
     <div className="ht-changes">
+      {reshaped && <span className="ht-moved">Dispositif : {formationOf(m.formation).name} → {formationOf(formation).name}</span>}
       {pairs.map(([id, out]) => (
         <div key={id} className="ht-swap">
           <span className="sub-way in">Entre</span><b>{names[id]}</b>
           <span className="sub-way out">Sort</span><b>{names[out]}</b>
         </div>
       ))}
-      {moved && <span className="ht-moved">Postes réorganisés</span>}
+      {moved && !reshaped && <span className="ht-moved">{moves.length && moves.length <= 3 ? moves.join(' · ') : 'Postes réorganisés'}</span>}
+      {empty.length > 0 && <span className="ht-moved">{emptyText(empty)}</span>}
       <div className="ht-changes-foot">
         <span>Niveau du onze {fmtRating(before)} → <b className={after >= before ? 'up' : 'down'}>{fmtRating(after)}</b></span>
         <button className="linkbtn sub-reset" onClick={onReset}>Annuler</button>
@@ -616,6 +646,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   };
   const [plan, setPlan] = useState(null); // onze composé sur le terrain (mi-temps, changement en cours de jeu)
   const [tactic2, setTactic2] = useState(live.state.tactic);
+  const [form2, setForm2] = useState(live.state.formation); // dispositif envisagé (mi-temps, changement en jeu)
   const [board, setBoard] = useState(false); // composition repliée : on la déploie pour faire ses changements
   const [sub, setSub] = useState(null); // changement en cours de jeu : { at: minute d'effet, note, err }
   const [lineupKey, setLineupKey] = useState(0); // le onze a changé : la scène 3D relit les noms
@@ -680,6 +711,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     if (!preview) return;
     const halftime = preview.phase === 'halftime';
     live.advanceTo(Infinity);
+    // un des nôtres expulsé avant la pause (aperçu : l'expulsé à déplacer sur le poste à laisser vide)
+    if (preview.red && !live.state.sent.home.size) live.state.sent.home.add(live.state.lineup[9]);
     // bandeau du but : le dernier but de la première période, figé (s'il y en a un)
     const goal = preview.goal ? [...events].reverse().find((e) => e.type === 'goal') : null;
     const upTo = halftime ? Infinity : goal ? goal.at : preview.minute;
@@ -800,6 +833,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   // remplaçants qui peuvent encore entrer : disponibles (ni blessés ni suspendus), pas déjà sortis
   const benchReady = () => state.players.some((p) => !m.lineup.includes(p.id) && available(p) && !m.gone.has(p.id) && !m.out.has(p.id));
   const canSub = () => subsLeftNow() > 0 && benchReady() && subMinute(clockRef.current) <= live.halfEnd;
+  // le match peut s'arrêter pour réorganiser l'équipe (dispositif, tactique, postes) même sans changement restant
+  const canAdjust = () => subMinute(clockRef.current) <= live.halfEnd;
 
   // changement en cours de jeu : le match s'arrête, la composition s'ouvre ; le changement prendra effet au prochain
   // arrêt de jeu (une à deux minutes plus tard, après tout ce que le direct a montré)
@@ -807,13 +842,14 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     const at = subMinute(clockRef.current);
     setPlan([...m.lineup]);
     setTactic2(m.tactic);
+    setForm2(m.formation);
     setBoard(open || !narrowScreen());
     setSub({ at, note, err: null });
     setPhase('subs');
   }
   function closeSubs(apply) {
     if (apply && sub) {
-      const err = live.change(sub.at, { lineup: plan, tactic: tactic2 });
+      const err = live.change(sub.at, { lineup: plan, tactic: tactic2, formation: form2 });
       if (err) { setSub((x) => ({ ...x, err })); return; }
       live.advanceTo(Math.ceil(clockRef.current) + LOOKAHEAD);
       setLineupKey((k) => k + 1);
@@ -862,7 +898,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
 
   const resume = () => { // reprise de la seconde période, avec les changements et la tactique de la pause
     if (replay) live.state.half = 2; // match revu : la seconde période est déjà jouée, on la montre
-    else live.change(45, { lineup: plan || m.lineup, tactic: tactic2, halftime: true });
+    else live.change(45, { lineup: plan || m.lineup, tactic: tactic2, formation: form2, halftime: true });
     live.beginHalf(2);
     live.advanceTo(45 + LOOKAHEAD);
     const h2 = live.eventsOf(2);
@@ -876,7 +912,27 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     sound.whistle(1);
   };
 
-  useEffect(() => { if (phase === 'halftime') { setPlan([...m.lineup]); setTactic2(m.tactic); setBoard(!!preview?.board); } }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (phase === 'halftime') { setPlan([...m.lineup]); setTactic2(m.tactic); setForm2(m.formation); setBoard(!!preview?.board); } }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  // nouveau dispositif : les joueurs encore en jeu replacés au mieux ; un expulsé ou un blessé non remplacé prend le poste
+  // qui pèse le moins (on peut l'y déplacer ensuite, le poste où on le pose est celui laissé vide)
+  const reshapePlan = (f) => {
+    if (f === form2) return; // déjà choisi : les déplacements faits à la main restent
+    const cur = plan || m.lineup;
+    const off = cur.filter((id) => id !== null && (m.sent.home.has(id) || m.out.has(id)));
+    const fit = cur.filter((id) => id !== null && !off.includes(id)).map((id) => state.players.find((p) => p.id === id)).filter(Boolean);
+    let k = 0;
+    const next = autoLineup(fit, f).map((id) => (id === null ? off[k++] ?? null : id));
+    // jamais le but vide : si le poste laissé vide tombe au but, le meilleur gardien encore en jeu y retourne
+    const gk = slotsOf(f).indexOf('G');
+    if (off.includes(next[gk])) {
+      const byId = (id) => state.players.find((p) => p.id === id);
+      const best = next.map((id, j) => [id, j]).filter(([id, j]) => j !== gk && id !== null && !off.includes(id))
+        .sort((a, b) => ratingAt(byId(b[0]), 'G') - ratingAt(byId(a[0]), 'G'))[0];
+      if (best) [next[gk], next[best[1]]] = [next[best[1]], next[gk]];
+    }
+    setPlan(next);
+    setForm2(f);
+  };
   const planned = plan || m.lineup;
   const plannedSubs = pairSubs(m.lineup, planned).length; // changements prévus sur le terrain
   const subsLeft = SUBS_MAX - m.subsUsed - plannedSubs; // changements encore possibles
@@ -897,7 +953,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   // pronostic final, tel que le direct l'a montré (score, cartons et blessures déjà annoncés), avec le onze et la
   // tactique envisagés pendant un changement ou à la pause
   const odds = useMemo(() => (phase === 'fulltime' ? null
-    : live.oddsShown(oddsMinute, shown, boardOpen ? { lineup: planned, tactic: tactic2 } : {})), [oddsMinute, shown, phase, plan, tactic2, lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps
+    : live.oddsShown(oddsMinute, shown, boardOpen ? { lineup: planned, tactic: tactic2, formation: form2 } : {})), [oddsMinute, shown, phase, plan, tactic2, form2, lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const st = useMemo(() => statsOf(shown), [shown]);
   const poss = phase === 'halftime' || phase === 'fulltime' ? m.stats.possession : live.possessionAt(half, minute);
   const div = divisionOf(state)?.name || ''; // championnat entre amis : pas de division (ctx.label)
@@ -925,7 +981,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     <LineupBoard
       players={state.players}
       lineup={planned}
-      formation={m.formation}
+      formation={form2}
       onChange={setPlan}
       original={m.lineup}
       maxIn={SUBS_MAX - m.subsUsed}
@@ -1047,8 +1103,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
             <button className={speed === 1 ? 'on' : ''} aria-pressed={speed === 1} onClick={() => setSpeed(1)} title="Vitesse normale : tous les temps forts, avec les ralentis">×1</button>
             <button className={speed === 4 ? 'on' : ''} aria-pressed={speed === 4} onClick={() => setSpeed(4)} title="Accélérer : les buts, les penalties et les expulsions seulement"><span className="hide-sm">Accélérer </span>×4</button>
           </div>
-          {!replay && <button className="lc-sub" onClick={() => openSubs()} disabled={!canSub()} title={canSub() ? 'Faire un changement ou changer de tactique' : subsLeftNow() <= 0 ? 'Plus de changement disponible' : 'Attends la mi-temps'}>
-            <IconSwap /><span className="hide-sm">Changement</span><span className="show-sm">Changer</span><em>{subsLeftNow()}</em>
+          {!replay && <button className="lc-sub" onClick={() => openSubs()} disabled={!canAdjust()} title={!canAdjust() ? (half === 1 ? 'Attends la mi-temps' : 'Trop tard : le match touche à sa fin') : canSub() ? 'Faire un changement, changer de dispositif ou de tactique' : 'Plus de changement possible : dispositif, tactique et postes seulement'}>
+            <IconSwap /><span className="hide-sm">Changement</span><span className="show-sm">Changer</span><em className={subsLeftNow() ? '' : 'none'}>{subsLeftNow()}</em>
           </button>}
           <button className="lc-skip" onClick={skip}>
             <span className="hide-sm">{half === 1 ? 'Aller à la mi-temps' : 'Aller au coup de sifflet'}</span>
@@ -1081,16 +1137,20 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
             {!board && !replay && (
               <CompoCard
                 title="Composition et changements"
-                detail={`${formationOf(m.formation).name} · ${plannedSubs ? `${plannedSubs} changement${plannedSubs > 1 ? 's' : ''} prévu${plannedSubs > 1 ? 's' : ''} · ` : ''}${subsLeft} possible${subsLeft > 1 ? 's' : ''} sur ${SUBS_MAX}`}
+                detail={`${form2 !== m.formation ? `${formationOf(m.formation).name} → ` : ''}${formationOf(form2).name} · ${plannedSubs ? `${plannedSubs} changement${plannedSubs > 1 ? 's' : ''} prévu${plannedSubs > 1 ? 's' : ''} · ` : ''}${subsLeft} possible${subsLeft > 1 ? 's' : ''} sur ${SUBS_MAX}`}
                 onOpen={() => setBoard(true)}
               />
             )}
             {board && ( /* repliée, la carte résume les changements : rien d'autre de la composition à l'écran */
               <div className="ht-block ht-b-changes">
                 <span className="ht-label">Changements</span>
-                <HalftimeChanges state={state} m={m} plan={planned} onReset={() => setPlan([...m.lineup])} />
+                <HalftimeChanges state={state} m={m} plan={planned} formation={form2} halftime={phase === 'halftime'} onReset={() => { setPlan([...m.lineup]); setForm2(m.formation); }} />
               </div>
             )}
+            {!replay && <div className="ht-block ht-b-formation">
+              <span className="ht-label">{phase === 'halftime' ? 'Dispositif de la seconde période' : 'Dispositif'}</span>
+              <FormationPicker value={form2} onChange={reshapePlan} />
+            </div>}
             {!replay && <div className="ht-block ht-b-tactic">
               <span className="ht-label">{phase === 'halftime' ? 'Tactique de la seconde période' : 'Tactique'}</span>
               <TacticPicker value={tactic2} onChange={setTactic2} compact />

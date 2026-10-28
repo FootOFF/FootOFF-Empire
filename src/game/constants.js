@@ -15,7 +15,7 @@ export const DIVISIONS = [
 
 export const POS_LABELS = { G: 'Gardien', D: 'Défenseur', M: 'Milieu', A: 'Attaquant' };
 export const SQUAD_MAX = 25; // effectif professionnel : de quoi tourner sur le championnat et les coupes
-export const SQUAD_MIN = 11;
+export const SQUAD_MIN = 13; // jamais moins (0.8.4) : ventes refusées à 13, un jeune de l'académie monte d'office en dessous (squadFloor.js)
 
 // Académie (academy.js) : six places dans l'équipe de jeunes, départ à 19 ans sans montée en équipe première,
 // jeunes repérés après chaque journée de championnat selon le niveau de l'académie (0 à 5). Rééquilibré en 0.5.0 :

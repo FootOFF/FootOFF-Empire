@@ -768,6 +768,9 @@ lance », « joueur appliqué ») ; moteur des matchs entre amis en version 2 (`
   commun. Pas de salaires pour l'ordinateur (son économie reste celle de la ligue).
 - Ouverture au public (0.8.3, 2026-10-28, demande du PDG : « rends ça public pour que je puisse tester avec mon frère »)
   : `LEAGUE_OPEN` vrai, après le dépôt du correctif du site et un essai de fumée sur le vrai serveur (8 contrôles).
+- Moteur des matchs entre amis en version 3 (0.8.4) : équilibre « Prudente » des tactiques ; l'ordinateur attaque plus
+  fort de 0,35 et se replie en bloc bas plus faible de 1,2 (`AI_LOW`). Les matchs de ligue gardent la pénalité forfaitaire
+  à dix (`holes` faux) : personne n'y déplace d'expulsé.
 - Vérifié (2026-10-28) : plans (11 contrôles), mercato (26), ordinateur sur trois saisons (11), 20 contrôles de l'API
   (course à la signature, mercato fermé, journée qui oublie un mouvement), puis dans le navigateur les plans sur PC et
   téléphone appliqués dans le vrai match, et un mercato complet à deux clubs (joueur libre, joueur de l'ordinateur,
@@ -1021,6 +1024,26 @@ ouverte depuis la Direction (panneau étroit) est posée sur tout l'écran. Dur�
 « saison N ». Fiche : bloc Contrat (salaire, fin, clause) et « Prolonger son contrat ». Effectif : fin du contrat sous
 le salaire dans le tableau (PC), « Dernière année de contrat » sur la carte des seuls joueurs concernés.
 
+## Effectif minimum et tactique (0.8.4)
+
+Demandes du PDG (2026-10-28), réponses à ses questions : « Le plus utile », « Mi-temps et en jeu », « Je glisse
+l'expulsé », vérifier « effet réel, pronostic, composition, écrans », puis l'équilibre « Prudente ».
+- Effectif minimum de 13 joueurs (`SQUAD_MIN`, `squadFloor.js`) : vendre, libérer ou céder à un ami est refusé à 13 ; si
+  l'effectif tombe malgré tout en dessous (fins de contrat, retraites, vente faite sur un autre appareil, ancienne partie
+  à 11 ou 12), le jeune le plus utile de l'académie monte d'office (le poste le plus dégarni, un gardien d'abord s'il en
+  reste moins de deux, les jeunes de 19 ans sur le départ compris), annoncé au journal ; sans jeune, un amateur de
+  secours au poste qui manque. Premier contrat de trois saisons à compter de l'arrivée.
+- Poste laissé vide (`live.js`, `holes`) : en solo, un expulsé ou un blessé non remplacé laisse son poste vide dans le
+  niveau de l'équipe, et la pénalité d'infériorité numérique est réduite d'autant (`HOLE_LOSE` 0,86, `HOLE_GAIN` 1,115 :
+  même effet moyen qu'avant à ±0,4 %, mesuré sur 300 effectifs) ; selon le poste choisi, les buts marqués varient
+  d'environ 14 % entre le meilleur et le pire.
+- Équilibre des tactiques « Prudente » : offensive 1,26 d'occasions et 1,30 subies, bloc bas 0,70 et 0,74. Mesure de
+  25 200 matchs avant le changement : effets annoncés exacts, pronostic d'avant-match fidèle à 0,3 point, de mi-temps à
+  2,4 points, mais l'offensive rapportait le plus de points de +1,5 à −0,5 d'écart et l'équilibrée jamais. Désormais :
+  attaquer paie quand on est plus fort, l'équilibrée à niveau égal ou un peu plus faible, le bloc bas face à bien plus fort.
+- Composition vérifiée : meilleur onze jamais battu par 21 600 onzes au hasard, sans blessé ni suspendu ; hors-poste
+  pénalisé ; « Faire tourner » ; remplacements du staff (cinq au plus, à dix faute de remplaçant).
+
 ## Académie
 
 L'équipe de jeunes du club (`src/game/academy.js`, écran `src/ui/academy.jsx`) s'ouvre d'un clic sur le bâtiment
@@ -1183,8 +1206,10 @@ condition physique : une barre et son pourcentage, toujours, même au vert (vert
 `docs/JOUEURS.md` ; choix de l'utilisateur, 2026-10-25). Sur téléphone la barre se raccourcit (24 px) ; positions du
 3-5-2 et du 5-3-2 et écart du terrain couché (PC) réglés pour qu'aucune note ne recouvre la condition d'un voisin
 (contrôle des chevauchements, six dispositifs, de 375 à 1440 px). Blessés et suspendus restent sur le banc, grisés
-avec leur motif, et ne peuvent pas entrer ; en match, un blessé encore sur le terrain (pastille rouge) ne peut qu'être
-remplacé, un joueur sorti ne revient pas. On glisse un joueur sur un poste ou sur un coéquipier,
+avec leur motif, et ne peuvent pas entrer ; en match, un blessé encore sur le terrain (pastille rouge) se remplace, un
+joueur sorti ne revient pas. Expulsés et blessés non remplacés (0.8.4) se déplacent comme un joueur : le poste où on les
+pose est celui laissé vide (jamais celui du gardien), sans niveau ni condition affichés ; une consigne au-dessus du
+terrain le dit, et choisir l'un d'eux montre sur chaque coéquipier son niveau au poste qu'il libère. On glisse un joueur sur un poste ou sur un coéquipier,
 ou on en touche deux ; au doigt, un remplaçant se saisit après un court maintien (sinon le banc défile). Le joueur
 choisi affiche sur chaque poste le niveau qu'il y aurait (vert s'il y ferait mieux). « Meilleur onze » annonce son
 gain et dit quand le onze est déjà optimal. À la mi-temps, la composition est repliée : une carte « Composition et
@@ -1192,8 +1217,11 @@ changements » (formation, changements prévus et restants) la déploie, un lien
 rien d'autre de la composition n'est à l'écran (la carte résume les changements). Notes de la première période en
 petite pastille collée au coin du cercle (gardien placé à 90 % de la hauteur, joueurs de champ remontés : aucune
 pastille ne mord sur un nom, vérifié sur les six dispositifs, PC et téléphone) ; « Reprendre la seconde période »
-reste collé au bas de la carte quand la composition dépliée la fait défiler. Jusqu'à cinq entrants (`SUBS_MAX`, `live.applyLineup`), expulsés figés, résumé des changements visible
-une fois la composition dépliée, pronostic recalculé.
+reste collé au bas de la carte quand la composition dépliée la fait défiler. Jusqu'à cinq entrants (`SUBS_MAX`, `live.applyLineup`), expulsés jamais remplacés, résumé des changements visible
+une fois la composition dépliée (dispositif changé, qui change de poste, postes laissés vides, niveau du onze avant et
+après), pronostic recalculé. Le dispositif se change à la pause (« Dispositif de la seconde période ») et à chaque arrêt
+de jeu, avec le même sélecteur que l'avant-match : les joueurs encore en jeu se replacent au mieux, un expulsé prend le
+poste qui pèse le moins (0.8.4).
 
 Avant-match (`PreMatch`, `src/ui/match.jsx`, maquette A3), même principe : en tête la compétition et la journée, les
 deux clubs face à face (noms ajustés à leur longueur), l'affluence et la recette attendues ; puis la composition (les
@@ -1262,9 +1290,10 @@ dans la barre du bas, « Passer le temps fort ». Sans réponse de la scène en 
 direct se passe d'elle : l'événement s'affiche avec son bandeau et une pause, comme avant ; au-delà de 32 s, le temps
 fort se termine quoi qu'il arrive. Le bouton « Changement » (avec le nombre de
 changements restants) arrête le match à toute minute et ouvre la même carte qu'à la mi-temps : composition sur le
-terrain (notes du match en pastille, condition en barre), tactique, pronostic final recalculé ; « Reprendre » applique
-tout au prochain arrêt de jeu, une à deux minutes plus tard (`subMinute`), après tout ce que le direct a déjà montré : les
-minutes simulées d'avance sont reprises depuis un instantané et rejouées avec le nouveau onze (`change`). Une blessure
+terrain (notes du match en pastille, condition en barre), dispositif, tactique, pronostic final recalculé ; « Reprendre »
+applique tout au prochain arrêt de jeu, une à deux minutes plus tard (`subMinute`), après tout ce que le direct a déjà
+montré : les minutes simulées d'avance sont reprises depuis un instantané et rejouées avec le nouveau onze (`change`).
+Sans changement restant, le bouton reste actif pour le dispositif, la tactique et les postes (pastille éteinte à 0). Une blessure
 (croix médicale dans le fil et dans les notes) arrête le match d'elle-même s'il reste un changement et un remplaçant
 disponible ; sinon l'équipe joue à dix. Passer la fin d'une mi-temps (« Mi-temps », « Fin du match ») laisse le staff
 remplacer un blessé (`advanceTo(…, { staff: true })`). Cinq changements par match, à la pause ou en jeu. Aperçus :

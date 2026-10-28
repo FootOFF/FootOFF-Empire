@@ -50,9 +50,13 @@ export const slotsOf = (f) => {
 };
 export const SLOTS = slotsOf('433'); // dispositif par défaut (adversaires, anciennes parties)
 
+// Équilibre « Prudente » (0.8.4, choix du PDG sur mesure de 25 200 matchs) : chaque tactique se paie. Attaquer rapporte
+// quand on est plus fort, l'équilibrée est le bon choix à niveau égal ou un peu plus faible, le bloc bas face à bien plus
+// fort (points attendus : loi de Poisson du pronostic, fidèle au moteur à 0,3 point près). Avant : l'offensive gagnait
+// presque partout, l'équilibrée jamais.
 export const TACTICS = Object.assign(Object.create(null), {
   offensive: {
-    id: 'offensive', name: 'Offensive', for: 1.28, against: 1.22,
+    id: 'offensive', name: 'Offensive', for: 1.26, against: 1.30,
     blurb: 'Pressing haut, latéraux projetés : plus d’occasions des deux côtés.',
   },
   balanced: {
@@ -60,7 +64,7 @@ export const TACTICS = Object.assign(Object.create(null), {
     blurb: 'Bloc médian, transitions maîtrisées.',
   },
   low: {
-    id: 'low', name: 'Bloc bas', for: 0.72, against: 0.68,
+    id: 'low', name: 'Bloc bas', for: 0.70, against: 0.74,
     blurb: 'Défense regroupée et contres : match fermé, peu d’occasions.',
   },
 });

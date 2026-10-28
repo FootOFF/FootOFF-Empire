@@ -225,7 +225,9 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
     if (!from || !to) return false;
     const next = [...lineup];
     if (from.kind === 'slot' && to.kind === 'slot') {
-      if (from.k === to.k || isLocked(next[from.k]) || isLocked(next[to.k]) || isHurt(next[from.k]) || isHurt(next[to.k])) return false;
+      if (from.k === to.k) return false; // un expulsé ou un blessé se déplace aussi : son poste devient celui laissé vide
+      const isOff = (id) => isLocked(id) || isHurt(id);
+      if ((isOff(next[from.k]) && slots[to.k] === 'G') || (isOff(next[to.k]) && slots[from.k] === 'G')) return false; // jamais le but vide
       [next[from.k], next[to.k]] = [next[to.k], next[from.k]];
     } else if (from.kind === 'bench' && to.kind === 'bench') {
       return false;
@@ -256,7 +258,6 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
   };
   const down = (e, item) => {
     if (e.button > 0) return;
-    if (item.kind === 'slot' && isLocked(lineup[item.k])) return;
     if (item.kind === 'bench' && !canEnter(byId[item.id])) return;
     clearTimeout(drag.current?.timer);
     const hold = e.pointerType === 'touch' && item.kind === 'bench';
@@ -285,7 +286,6 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
   const tap = (item) => {
     if (keyOf(sel) === keyOf(item)) { setSel(null); return; }
     if (sel && act(sel, item)) { setSel(null); return; }
-    if (item.kind === 'slot' && isLocked(lineup[item.k])) return;
     if (item.kind === 'bench' && !canEnter(byId[item.id])) return;
     setSel(item);
   };
@@ -298,14 +298,25 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
     onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(item); } },
   });
 
-  const chosen = playerOf(sel) || ghost?.p || null;
+  // un expulsé ou un blessé non remplacé ne joue plus : le choisir montre, sur chaque coéquipier, son niveau au poste
+  // qu'il libérerait en venant s'y placer (celui de l'expulsé devient le poste laissé vide)
+  const isOutAt = (k) => isLocked(lineup[k]) || isHurt(lineup[k]);
+  const selOut = sel?.kind === 'slot' && isOutAt(sel.k);
+  const ghostOut = ghost?.from?.startsWith('slot:') && isOutAt(Number(ghost.from.slice(5)));
+  const chosen = selOut || ghostOut ? null : playerOf(sel) || ghost?.p || null;
+  const freed = selOut ? slots[sel.k] : null;
   const left = original ? maxIn - entering(lineup) : null;
-  const hint = sel
+  const sentOn = lineup.filter((id) => isLocked(id)).length;
+  const outHint = selOut
+    ? `${playerOf(sel)?.name} ne joue plus : choisis le poste à laisser vide (jamais celui du gardien)`
+    : sentOn > 1 ? 'Expulsés : déplace-les sur les postes à laisser vides' : sentOn ? 'Expulsé : déplace-le sur le poste à laisser vide' : null;
+  const hint = sel && !selOut
     ? `${playerOf(sel)?.name} : choisis un poste ou un joueur pour l’y placer`
     : 'Glisse un joueur sur un poste, ou choisis-en deux pour les échanger';
 
   return (
     <div className={`lu ${ghost ? 'dragging' : ''}`} ref={root} data-noswipe="">
+      {outHint && <p className="lu-hint lu-hint-out" role="status">{outHint}</p>}
       <div className="lu-pitch" ref={pitchEl}>
         <div className="p2-lines"><i className="half" /><i className="circle" /><i className="box top" /><i className="box bottom" /><i className="six top" /><i className="six bottom" /></div>
         {lineup.map((id, k) => {
@@ -315,8 +326,9 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
           const natural = p.pos === pos;
           const key = `slot:${k}`;
           const cur = ratingAt(p, pos);
-          const preview = chosen && chosen.id !== id ? ratingAt(chosen, pos) : null;
-          const cls = ['lu-chip', !natural && 'off', keyOf(sel) === key && 'sel', over === key && 'over', ghost?.from === key && 'src', isLocked(id) && 'locked', isHurt(id) && 'hurt'];
+          const out = isLocked(id) || isHurt(id);
+          const preview = freed ? (out || pos === 'G' ? null : ratingAt(p, freed)) : chosen && chosen.id !== id ? ratingAt(chosen, pos) : null;
+          const cls = ['lu-chip', !natural && !out && 'off', keyOf(sel) === key && 'sel', over === key && 'over', ghost?.from === key && 'src', isLocked(id) && 'locked', isHurt(id) && 'hurt'];
           return (
             <button
               key={k}
@@ -324,20 +336,20 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
               data-drop={key}
               className={cls.filter(Boolean).join(' ')}
               style={{ '--x': `${pitch[k][0]}%`, '--y': `${pitch[k][1]}%` }}
-              title={isLocked(id) ? 'Expulsé : il ne peut pas être remplacé' : isHurt(id) ? 'Blessé : à remplacer par un joueur du banc' : `${POS_LABELS[pos]}${natural ? '' : ` · hors de son poste (${POS_LABELS[p.pos].toLowerCase()})`}`}
-              aria-label={`${p.name}, ${POS_LABELS[pos].toLowerCase()}, niveau ${fmtRating(cur)}${isHurt(id) ? ', blessé' : ''}`}
+              title={isLocked(id) ? 'Expulsé : il ne peut pas être remplacé ; déplace-le sur le poste à laisser vide' : isHurt(id) ? 'Blessé : à remplacer par un joueur du banc, ou à déplacer sur le poste à laisser vide' : `${POS_LABELS[pos]}${natural ? '' : ` · hors de son poste (${POS_LABELS[p.pos].toLowerCase()})`}`}
+              aria-label={`${p.name}, ${POS_LABELS[pos].toLowerCase()}${out ? '' : `, niveau ${fmtRating(cur)}`}${isLocked(id) ? ', expulsé, poste laissé vide' : isHurt(id) ? ', blessé' : ''}`}
               {...handlers({ kind: 'slot', k })}
             >
               <span className="lu-face">
                 <Portrait p={p} size={52} />
-                <span className="lu-rate">{fmtRating(cur)}</span>
+                <span className="lu-rate">{out ? '—' : fmtRating(cur)}</span>
                 {preview !== null && <span className={`lu-alt ${preview > cur ? 'up' : preview < cur ? 'down' : ''}`}>{fmtRating(preview)}</span>}
                 {notes?.[id] != null && <span className="lu-note"><RatingBadge value={notes[id]} size="sm" /></span>}
                 {(isLocked(id) || booked?.has(id)) && <i className={`card ${isLocked(id) ? 'red' : 'yellow'} lu-flag`} />}
                 {isHurt(id) && <i className="lu-hurt" aria-hidden="true" />}
               </span>
               <span className="lu-name">{names[id]}</span>
-              {!isHurt(id) && <FitBar value={fitValue(p)} />}
+              {!out && <FitBar value={fitValue(p)} />}
             </button>
           );
         })}
@@ -371,7 +383,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
       </div>
       {ghost && createPortal(
         <div className="lu-ghost" style={{ left: ghost.x, top: ghost.y }} aria-hidden="true">
-          <span className="lu-face"><Portrait p={ghost.p} size={52} /><span className="lu-rate">{fmtRating(playerRating(ghost.p))}</span></span>
+          <span className="lu-face"><Portrait p={ghost.p} size={52} /><span className="lu-rate">{ghostOut ? '—' : fmtRating(playerRating(ghost.p))}</span></span>
           <span className="lu-name">{names[ghost.p.id]}</span>
         </div>,
         document.body,

@@ -1,7 +1,8 @@
-import { DIVISIONS, ELITE_SCALE, SAVE_KEY } from './constants';
+import { DIVISIONS, ELITE_SCALE, SAVE_KEY, SQUAD_MIN } from './constants';
 import { initGoals } from './goals';
 import { ensureFixedPlots } from './map';
 import { ensureLineup } from './tactics';
+import { ensureSquadMin } from './squadFloor';
 import { addReserves } from './engine';
 import { ensureTutorial } from './tutorial';
 import { assignNumber, upgradePlayer } from './players';
@@ -198,6 +199,7 @@ export function repairSave(s) {
       }
       y.transfers ||= [];
       y.market ||= [];
+      if (y.players.length < SQUAD_MIN) { ensureSquadMin(y); ensureLineup(y); } // minimum de 13 joueurs (0.8.4)
       const beforeMercato = !y.shortlist; // partie commencée avant le mercato unique
       y.shortlist ||= []; // mercato : joueurs suivis, joueurs à vendre, offres reçues, historique (ajoutés après coup)
       y.saleList ||= [];

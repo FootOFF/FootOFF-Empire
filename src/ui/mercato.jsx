@@ -512,7 +512,7 @@ function OffersView({ state, refLvl, run, ask, onOffer, onSale, onList }) {
       confirmLabel: `Vendre · ${fmtMoney(o.amount)}`,
       onConfirm: () => {
         const since = Date.now();
-        if (run((s) => answerOffer(s, o.id, 'accept'), 'Effectif au minimum (11 joueurs).')) onSale(o.id, since); // écran de vente conclue
+        if (run((s) => answerOffer(s, o.id, 'accept'), `Effectif au minimum (${SQUAD_MIN} joueurs).`)) onSale(o.id, since); // écran de vente conclue
       },
     });
   };
@@ -578,7 +578,7 @@ function OffersView({ state, refLvl, run, ask, onOffer, onSale, onList }) {
                           </span>
                           <span className="mc-amount"><b>{fmtMoney(o.amount)}</b><em className={o.talks?.agreed ? 'up' : o.talks?.closed ? '' : tone}>{o.talks?.agreed ? 'accord à ton prix' : o.talks?.closed ? 'dernier mot' : note}</em></span>
                           <div className="mc-row-actions">
-                            <button className="btn btn-sm" disabled={!canSell || !!block} onClick={() => accept(o, g.p)} title={block ? block.text : canSell ? '' : 'Effectif au minimum (11 joueurs)'}>Accepter</button>
+                            <button className="btn btn-sm" disabled={!canSell || !!block} onClick={() => accept(o, g.p)} title={block ? block.text : canSell ? '' : `Effectif au minimum (${SQUAD_MIN} joueurs)`}>Accepter</button>
                             {!o.talks?.closed && !block && <button className="btn ghost btn-sm" onClick={() => onSale(o.id)}>Négocier</button>}
                             <button className="btn ghost btn-sm refuse" onClick={() => run((s) => answerOffer(s, o.id, 'refuse'))}>Refuser</button>
                           </div>
@@ -1316,12 +1316,12 @@ export function SaleNegotiation({ state, offerId, since, run, refLvl, onClose, o
   const wage = wageOf(p, state.divisionIndex);
   const impOffer = impactOf(state, -wage, -o.amount);
   const imp = impactOf(state, -wage, -demand);
-  const blocked = state.players.length <= SQUAD_MIN ? 'Effectif au minimum (11 joueurs) : recrute avant de vendre.' : null;
+  const blocked = state.players.length <= SQUAD_MIN ? `Effectif au minimum (${SQUAD_MIN} joueurs) : recrute avant de vendre.` : null;
   const [tone, note] = offerNote(o, sale?.price);
   const r = playerRating(p);
   const set = (x) => setWant(Math.min(hi, Math.max(lo, roundTo(x, step))));
   const send = () => run((s) => demandOffer(s, o.id, demand));
-  const take = () => run((s) => answerOffer(s, o.id, 'accept'), 'Effectif au minimum (11 joueurs).');
+  const take = () => run((s) => answerOffer(s, o.id, 'accept'), `Effectif au minimum (${SQUAD_MIN} joueurs).`);
   const refuse = () => { run((s) => answerOffer(s, o.id, 'refuse')); onClose(); };
   const d = Math.max(1, Math.round((demand / o.amount - 1) * 100));
   // raccourcis : un montant chacun (les petites sommes, arrondies, peuvent tomber sur le même ; « Ton prix » d'abord)
@@ -1582,7 +1582,7 @@ function LeagueOffersBlock({ state, run, ask, refLvl, onOffer }) {
               return (
                 <li key={o.id} className="mc-row offer">
                   {medal(p)}
-                  <span className="mc-row-main"><b>{o.n}</b><em>{capitalize(withArticle(club))} {isPluralClub(club) ? 'veulent' : 'veut'} le recruter{sellable ? '' : ` · effectif trop court : ${SQUAD_MIN + 3} joueurs au moins pour vendre`}</em></span>
+                  <span className="mc-row-main"><b>{o.n}</b><em>{capitalize(withArticle(club))} {isPluralClub(club) ? 'veulent' : 'veut'} le recruter{sellable ? '' : ` · effectif au minimum (${SQUAD_MIN} joueurs) : recrute avant de vendre`}</em></span>
                   <span className="mc-amount"><b>{fmtMoney(o.x)}</b><em>{sending ? 'envoi…' : 'attend ta réponse'}</em></span>
                   <div className="mc-row-actions">
                     <button className="btn btn-sm" disabled={!!sending || !sellable || !p} onClick={() => sell(o, p, club)}>Accepter</button>
