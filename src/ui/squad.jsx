@@ -6,7 +6,8 @@ import { seasonForecast } from '../game/economy';
 import { teamLevel } from '../game/match';
 import { clubAfter, deName } from '../game/names';
 import { bestSigning } from '../game/advice';
-import { arrivalOf, findOnMarket, moveWhen, offersFor, poolOf, saleBlock } from '../game/mercato';
+import { arrivalOf, findOnMarket, moveWhen, offersFor, poolOf, saleBlock, valueOf } from '../game/mercato';
+import { askedWage, clauseOpen, lastYear, renewOpen, yearsLeft } from '../game/contracts';
 import { slotsOf } from '../game/tactics';
 import { fmtMoney, fmtNum, fmtRating } from './format';
 import { IconChevron, IconChevronLeft, IconClose, IconRadar } from './icons';
@@ -63,7 +64,7 @@ function SaleTag({ state, p }) {
 // mode : « squad » (section Équipe : joueurs, composition, anciens) ou « mercato » (section Mercato). L'onglet de
 // l'Effectif est piloté par les onglets de la section (tab, onTab) ; aller au mercato depuis l'Effectif (offres reçues
 // pour un joueur) passe par onMercato, et l'inverse (composer l'équipe après une signature) par onTab.
-export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad', tab: tabProp = null, onTab = null, onMercato = null, initialTab = 'players', preview = null, initialSheet = null, mercatoView = null, onMercatoView = null }) {
+export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad', tab: tabProp = null, onTab = null, onMercato = null, initialTab = 'players', preview = null, initialSheet = null, initialDeal = null, mercatoView = null, onMercatoView = null }) {
   const [tabState, setTabState] = useState(initialTab);
   const tab = mode === 'mercato' ? 'market' : tabProp ?? tabState;
   const setTab = (t) => {
@@ -78,7 +79,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
   const [sheet, setSheet] = useState(preview?.sheet ? { id: preview.sheet } : initialSheet ? { id: initialSheet } : null); // { id, market, order }
   const [compare, setCompare] = useState(null); // { a, b } identifiants
   const [career, setCareer] = useState(null); // fiche carrière (joueur actuel ou ancien)
-  const [deal, setDeal] = useState(null); // négociation en cours (identifiant du joueur visé)
+  const [deal, setDeal] = useState(initialDeal); // négociation en cours (identifiant du joueur visé : recrue, ou joueur du club à prolonger)
   const [listing, setListing] = useState(null); // mise en vente en cours (identifiant du joueur)
   const [saleDeal, setSaleDeal] = useState(null); // négociation d'une vente : { id de l'offre, since }
   // vue du mercato (recruter, suivis, offres, bilan) : choisie par les onglets de la section, dans l'en-tête
@@ -170,6 +171,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
           onOffers={openOffers}
           onList={() => setListing(sheetPlayer.id)}
           onOffer={() => offer(sheetPlayer)}
+          onRenew={() => offer(sheetPlayer)}
           onCareer={() => setCareer(sheetPlayer.id)}
         />
       )}</Presence>
@@ -316,7 +318,7 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
 function SquadOverview({ state, squad }) {
   if (!squad.length) return null;
   const forms = squad.map(formAvg).filter((f) => f !== null);
-  const value = squad.reduce((a, p) => a + marketValue(p, state.divisionIndex), 0);
+  const value = squad.reduce((a, p) => a + valueOf(state, p), 0);
   const fit = squad.reduce((a, p) => a + fitOf(p), 0) / squad.length;
   const tiles = [
     ['Niveau du onze', fmtRating(teamLevel(state)), 'gold'],
@@ -428,6 +430,7 @@ function PlayerCard({ p, state, refLvl, index, onOpen }) {
           <span className="sqc-face"><Portrait p={p} size={96} /></span>
         </span>
         <span className="sqc-name">{rest.length > 0 && <small>{first}</small>}<strong>{rest.length ? rest.join(' ') : first}</strong></span>
+        {lastYear(state, p) && <span className="sqc-end">Dernière année de contrat</span>}
         <SaleTag state={state} p={p} />
         <span className="sqc-stats">
           {topAttrs(p).map((a) => <span key={a.key} className={heat(a.v, refLvl)}><b>{Math.round(a.v)}</b><em>{a.short}</em></span>)}
@@ -518,7 +521,10 @@ function PlayerTable({ title, cols, span = cols.length, players, state, refLvl, 
                 {pad.map((i) => <td key={`pad${i}`} className="c-attr c-pad" aria-hidden="true" />)}
                 <td className="c-form">{f === null ? '–' : fmtRating(f)}</td>
                 <td className={`c-fit ${fitTone(fitOf(p))}`}>{Math.round(fitOf(p))} %</td>
-                <td className="c-wage">{fmtMoney(wageOf(p, state.divisionIndex))}</td>
+                <td className="c-wage">
+                  {fmtMoney(wageOf(p, state.divisionIndex))}
+                  {p.deal && <small className={`sq-end ${lastYear(state, p) ? 'last' : ''}`}>{lastYear(state, p) ? 'dernière année' : `jusqu’à S${p.deal.until}`}</small>}
+                </td>
               </tr>
             );
           })}
@@ -561,9 +567,38 @@ function Alumni({ state, onOpen }) {
   );
 }
 
+// Contrat d'un joueur du club (fiche) : salaire, fin, clause de montée, ce qui arrive sans prolongation, et le bouton
+// qui ouvre la négociation de prolongation (même fenêtre que le recrutement, mercato.jsx).
+function ContractBlock({ state, p, onRenew }) {
+  const last = lastYear(state, p);
+  const left = yearsLeft(state, p);
+  const open = renewOpen(state, p);
+  const ask = open ? askedWage(state, p) : 0;
+  return (
+    <section className="sh-sec sh-contract">
+      <div className="sh-row">
+        <span className="sh-cap">Contrat</span>
+        <span className="sh-pot">{last ? <b className="amber">Dernière année</b> : <>encore <b>{left}</b> ans</>}</span>
+      </div>
+      <div className="sh-deal">
+        <div><b>{fmtMoney(p.deal.wage)}</b><span>par saison</span></div>
+        <div><b className={last ? 'amber' : ''}>Saison {p.deal.until}</b><span>fin du contrat</span></div>
+        {clauseOpen(state) || p.deal.clause
+          ? <div><b>{p.deal.clause ? `+${Math.round(p.deal.clause * 100)} %` : 'Aucune'}</b><span>clause de montée</span></div>
+          : <div><b>Saison {p.deal.since}</b><span>signé en</span></div>}
+      </div>
+      <p className="sh-empty">
+        {last ? `Sans prolongation, il partira libre à la fin de la saison ${p.deal.until}, sans indemnité. ` : ''}
+        {open ? `Pour prolonger, il demande aujourd’hui ${fmtMoney(ask)} par saison.` : 'Contrat au plus long : rien à prolonger pour l’instant.'}
+      </p>
+      {open && <button className="btn sh-renew" type="button" onClick={onRenew}>Prolonger son contrat</button>}
+    </section>
+  );
+}
+
 // --- Fiche joueur (magazine FootOFF Media) ---------------------------------------------------------------
 
-function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, onNext, onCompare, onOffers, onList, onOffer, onCareer }) {
+function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, onNext, onCompare, onOffers, onList, onOffer, onRenew, onCareer }) {
   const r = playerRating(p);
   const pot = potentialRange(p, state);
   const f = formAvg(p);
@@ -572,7 +607,9 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
   const all = attrsOf(p);
   const keys = new Set(Object.entries(WEIGHTS[p.pos]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => k));
   const fee = costOf(p, state);
-  const value = marketValue(p, state.divisionIndex); // valeur de marché ; une vente rapporte autour de 85 % (plus avec un grand club ou en négociant)
+  // valeur de marché (avec ses saisons de contrat pour un joueur du club) ; une vente rapporte autour de 85 % (plus avec
+  // un grand club ou en négociant)
+  const value = market ? marketValue(p, state.divisionIndex) : valueOf(state, p);
   const prev = p.hist?.length ? p.hist[p.hist.length - 1] : null;
   const role = market ? (p.club ? `${p.club} · contrat ${p.contract} an${p.contract > 1 ? 's' : ''}` : 'Joueur libre') : state.lineup?.includes(p.id) ? 'Titulaire' : 'Remplaçant';
   const sale = market ? null : (state.saleList || []).find((x) => x.id === p.id) || null;
@@ -655,6 +692,8 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
           </div>
           <div className="sh-ticks" aria-hidden="true"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span></div>
         </section>
+
+        {!market && p.deal && <ContractBlock state={state} p={p} onRenew={onRenew} />}
 
         <div className="sh-tiles">
           <div><span>Âge</span><b>{p.age}<small> ans</small></b></div>
@@ -754,7 +793,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
 
         <footer className={`sh-foot ${market ? 'market' : 'own'}`}>
           {market ? (
-            <span>{p.club ? 'Indemnité' : 'Prime'} <b>{fmtMoney(fee)}</b> · salaire <b>{fmtMoney(wageOf(p, state.divisionIndex))}</b></span>
+            <span>{p.club ? 'Indemnité' : 'Prime'} <b>{fmtMoney(fee)}</b> · salaire demandé <b>{fmtMoney(askedWage(state, p))}</b></span>
           ) : sale && bid ? (
             <span key={bid.id} className="sh-bid">En vente à <b>{fmtMoney(sale.price)}</b> · {offers.length} {plural(offers.length, 'club intéressé', 'clubs intéressés')} · meilleure offre <b className="gold">{fmtMoney(bid.amount)}</b></span>
           ) : sale ? (
@@ -775,7 +814,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
                 onClick={onOffer}
                 title={state.players.length >= SQUAD_MAX ? 'Effectif complet' : ''}
               >
-                {talks.counter ? 'Contre-offre' : talks.closed ? 'Discussions closes' : 'Faire une offre'}
+                {talks.fee ? 'Négocier son contrat' : talks.counter ? 'Contre-offre' : talks.closed ? 'Discussions closes' : 'Faire une offre'}
               </button>
             ) : (
               <>
@@ -898,8 +937,8 @@ function CompareView({ state, a, b, onPick, onClose, onOffer }) {
 
         {isMarket && (
           <footer className="cmp-foot">
-            <span>{b.club ? 'Indemnité' : 'Prime'} <b>{fmtMoney(fee)}</b> · salaire <b>{fmtMoney(wageOf(b, state.divisionIndex))}</b></span>
-            <button className="btn" disabled={state.players.length >= SQUAD_MAX || (b.talks?.closed && !b.talks?.counter)} onClick={() => onOffer(b)}>{b.talks?.counter ? 'Contre-offre' : 'Faire une offre'}</button>
+            <span>{b.club ? 'Indemnité' : 'Prime'} <b>{fmtMoney(fee)}</b> · salaire demandé <b>{fmtMoney(askedWage(state, b))}</b></span>
+            <button className="btn" disabled={state.players.length >= SQUAD_MAX || (b.talks?.closed && !b.talks?.counter)} onClick={() => onOffer(b)}>{b.talks?.fee ? 'Négocier son contrat' : b.talks?.counter ? 'Contre-offre' : 'Faire une offre'}</button>
           </footer>
         )}
       </div>

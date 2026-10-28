@@ -4,7 +4,10 @@ import {
 import { clamp, rnd } from './utils';
 import { isAwayRound, leagueLength } from './cups';
 import { REP_START, mercatoRep, sponsorRep } from './reputation';
-import { localTv, maxCut, tvPerMatch } from './direction';
+import { localTv, tvPerMatch } from './direction';
+
+// Direction du club : chaque niveau baisse de 2 % les exigences de salaire des joueurs (contracts.js).
+export const DIRECTION_EASE = 2;
 import { treatPct } from './medical';
 
 // Économie du club : affluence, recettes d'un match, revenus de saison, salaires, entretien.
@@ -303,8 +306,8 @@ export function buildingStats(key, lvl, s) {
     case 'direction':
       return [
         { label: 'Droits TV', value: `+${lvl * 8} %`, short: `Droits TV +${lvl * 8} %`, sub: s && !DIVISIONS[s.divisionIndex].tv ? `télé locale : ${fmt(localTv(lvl))} € par match` : 'par match de championnat' },
-        { label: 'Baisse de salaire', value: `jusqu’à ${Math.round(maxCut(lvl) * 100)} %`, sub: 'négociée joueur par joueur' },
-        { label: 'Négociations', value: 'droits TV, salaires', sub: 'chances d’accord exactes' },
+        { label: 'Contrats', value: `−${lvl * DIRECTION_EASE} %`, sub: 'sur les exigences de salaire des joueurs' },
+        { label: 'Négociations', value: 'droits TV, contrats', sub: 'chances d’accord exactes' },
         { label: 'Billetterie', value: '4 formules', sub: 'recette prévue de chacune' },
       ];
     case 'medical':
@@ -351,7 +354,7 @@ export function buildingEffect(key, lvl, divIndex, rep = REP_START) {
       return `Public attiré : +${lvl * 7} % · Buvette +${lvl * 10} %, boutique +${lvl * 12} % · Réputation par match : +${lvl * 10} %.`;
     case 'direction':
       return lvl > 0
-        ? `Négociations du club : droits TV +${lvl * 8} %${DIVISIONS[divIndex].tv ? '' : ` (télé locale : ${fmt(localTv(lvl))} € par match)`}, hausse à demander chaque saison · baisses de salaire jusqu’à ${Math.round(maxCut(lvl) * 100)} % · formule des billets.`
+        ? `Négociations du club : droits TV +${lvl * 8} %${DIVISIONS[divIndex].tv ? '' : ` (télé locale : ${fmt(localTv(lvl))} € par match)`}, hausse à demander chaque saison · exigences de salaire des joueurs −${lvl * DIRECTION_EASE} % (recrues et prolongations) · formule des billets.`
         : 'Pas de négociations tant que la Direction du club n’est pas construite.';
     case 'medical':
       return lvl > 0

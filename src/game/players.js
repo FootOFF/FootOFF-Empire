@@ -162,11 +162,13 @@ export function assignNumber(players, p) {
   return p;
 }
 
-// Salaire annuel (voir economy.js) : suit la note du joueur et la division du club ; un salaire renégocié à la
-// Direction du club (direction.js) garde sa baisse (wageCut). La valeur de revente part du salaire de référence, sans la
-// baisse ; la prime de signature d'un joueur libre, de sa valeur.
+// Salaire de référence (voir economy.js) : il suit la note du joueur et la division du club. C'est la base des demandes
+// de salaire (contracts.js), de la valeur de marché et de la prime de signature d'un joueur libre. Le salaire d'un
+// joueur de l'effectif est celui de son contrat (p.deal, depuis la 0.8.0) ; sans contrat (marché, académie), la
+// référence (wageCut : baisse négociée à la Direction avant les contrats, reprise dans le contrat au chargement).
 const baseWage = (p, divisionIndex) => wageFor(playerRating(p), divisionIndex);
-export const wageOf = (p, divisionIndex = 0) => Math.round(baseWage(p, divisionIndex) * (1 - (p.wageCut || 0)));
+export const refWage = (p, divisionIndex = 0) => Math.round(baseWage(p, divisionIndex));
+export const wageOf = (p, divisionIndex = 0) => (p.deal ? p.deal.wage : Math.round(baseWage(p, divisionIndex) * (1 - (p.wageCut || 0))));
 export const signingFee = (p, divisionIndex = 0) => signingFor(marketValue(p, divisionIndex));
 
 // Valeur de marché d'un joueur : deux saisons de salaire, plus pour un jeune (à potentiel), moins pour un trentenaire.

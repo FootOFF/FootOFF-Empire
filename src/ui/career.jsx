@@ -19,10 +19,11 @@ export function departureText(c) {
   const o = c.old;
   if (!o) return `Au club depuis la saison ${c.joined}`;
   if (o.reason === 'retraite') return `Retraite à ${o.age} ans, à la fin de la saison ${o.left}`;
+  if (o.reason === 'libre') return `Parti libre à ${o.age} ans, en fin de contrat, à la fin de la saison ${o.left}`;
   if (o.reason === 'conseil') return `Vendu par le conseil (plan de redressement) à ${o.club || 'un autre club'} pour ${fmtMoney(o.fee || 0)}, saison ${o.left}`;
   return `Vendu à ${o.club || 'un autre club'} pour ${fmtMoney(o.fee || 0)}, saison ${o.left}${o.leftRound ? ` (journée ${o.leftRound})` : ''}`;
 }
-export const reasonTag = (c) => (!c.old ? 'Au club' : c.old.reason === 'retraite' ? 'Retraité' : 'Vendu');
+export const reasonTag = (c) => (!c.old ? 'Au club' : c.old.reason === 'retraite' ? 'Retraité' : c.old.reason === 'libre' ? 'Parti libre' : 'Vendu');
 
 export function PlayerCareer({ state, id, onClose, onSheet }) {
   const ref = useRef(null);
@@ -107,7 +108,7 @@ export function PlayerCareer({ state, id, onClose, onSheet }) {
           <ul className="sp-facts">
             <li><span>Niveau le plus haut</span><b>{fmtRating(c.peak)} / 20</b></li>
             <li><span>Matchs enregistrés en détail</span><b>{c.games}</b></li>
-            {c.old?.reason !== 'retraite' && c.old && <li><span>Montant de la vente</span><b>{fmtMoney(c.old.fee || 0)}</b></li>}
+            {c.old && !['retraite', 'libre'].includes(c.old.reason) && <li><span>Montant de la vente</span><b>{fmtMoney(c.old.fee || 0)}</b></li>}
           </ul>
         </section>
 

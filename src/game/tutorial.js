@@ -82,7 +82,7 @@ export function prepareFirstSeason(s) {
     .sort((a, b) => lines[a].reduce((x, y) => x + y, 0) / lines[a].length - lines[b].reduce((x, y) => x + y, 0) / lines[b].length)[0];
   const worst = Math.min(...lines[pos]);
   const budget = START_MONEY - upgradeCost('training', 1) - 200;
-  // son agent accepte à coup sûr une offre au prix demandé (première négociation sans mauvaise surprise)
+  // un joueur libre abordable : il signe à coup sûr à ses demandes (première négociation sans mauvaise surprise)
   let pick = null;
   for (let i = 0; i < 80 && !pick; i++) {
     const p = makePlayer({ level: 1.4 - i * 0.012, pos });

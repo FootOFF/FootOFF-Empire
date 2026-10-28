@@ -1,6 +1,9 @@
 import { BUILDINGS, DIVISIONS, ELITE_SCALE, POS_LABELS, SQUAD_MAX, SQUAD_MIN, START_MONEY, upgradeCost } from './constants';
 import { OFFLINE_CAP, offlinePerHour } from './economy';
-import { assignNumber, costOf, makePlayer, saleValue, wageOf } from './players';
+import { assignNumber, costOf, makePlayer, refWage, saleValue, wageOf } from './players';
+import {
+  C_TRIES, cleanTerms, contractChance, contractSerious, counterTerms, ctalksOf, demandOf, ensureDeals, renewOpen, setDeal,
+} from './contracts';
 import { distinctFace } from './faces';
 import {
   SALE_TRIES, TRIES, acceptChance, auctionDone, counterFor, dateKey, demandChance, findOnMarket, isSerious, lastWordOf,
@@ -70,6 +73,7 @@ export function createInitialState(clubName, crest = null) {
     s.players.push(p);
   }
   addReserves(s);
+  ensureDeals(s); // contrats de départ : deux à quatre saisons (contracts.js)
   ensureFixedPlots(s); // le stade occupe sa parcelle dès le départ
   ensureLineup(s); // onze de départ et tactique équilibrée
   startSeason(s);
@@ -169,6 +173,7 @@ export function promoteYouth(s, id) {
   delete p.plan;
   delete p.gain;
   p.joined = s.seasonNumber;
+  setDeal(s, p, { wage: refWage(p, s.divisionIndex), years: 3 }); // premier contrat professionnel : trois saisons
   lockResale(s, p); // pas de vente avant quatre journées de championnat en équipe première
   assignNumber(s.players, p);
   distinctFace(s.players, p); // aucun sosie dans l'effectif
@@ -238,53 +243,69 @@ export function sellPlayer(s, id, fee = null, club = null) {
 }
 export const releasePlayer = sellPlayer;
 
-// Signature d'une recrue du marché au montant convenu.
-function completeSigning(s, p, fee) {
+// Signature d'une recrue du marché : indemnité convenue avec son club (0 pour un joueur libre) et contrat signé avec
+// le joueur (salaire, durée, prime, clause : contracts.js). La prime se paie à la signature ; pour un joueur libre,
+// c'est elle qui fait le montant du transfert (bilan du mercato, fiche, records).
+function completeSigning(s, p, fee, terms) {
   const pool = s.market.includes(p) ? s.market : s.transfers;
   pool.splice(pool.indexOf(p), 1);
   const from = p.club;
-  for (const k of ['club', 'contract', 'listedAt', 'priceMod', 'trend', 'interest', 'listedRounds', 'talks']) delete p[k];
-  s.money -= fee;
-  book(s, 'signings', fee);
-  addSigning(s.records ||= rebuildRecords(s), p, fee, s); // record : plus gros achat
+  const paid = from ? fee : terms.bonus;
+  for (const k of ['club', 'contract', 'listedAt', 'priceMod', 'trend', 'interest', 'listedRounds', 'talks', 'ctalks']) delete p[k];
+  s.money -= fee + terms.bonus;
+  book(s, 'signings', fee + terms.bonus);
+  addSigning(s.records ||= rebuildRecords(s), p, paid, s); // record : plus gros achat
   p.joined = s.seasonNumber;
+  setDeal(s, p, terms);
   // montant, club d'origine et moment de la signature (fiche du joueur) ; pas de revente avant quatre journées de
   // championnat au club (mercato.js, saleBlock)
-  p.signed = { fee, from: from || null, season: s.seasonNumber, round: s.round, date: dateKey(s) };
+  p.signed = { fee: paid, from: from || null, season: s.seasonNumber, round: s.round, date: dateKey(s), ...(from && terms.bonus ? { bonus: terms.bonus } : {}) };
   lockResale(s, p);
   assignNumber(s.players, p);
   distinctFace(s.players, p); // aucun sosie dans l'effectif
   s.players.push(p);
   s.signings = (s.signings || 0) + 1;
-  logMove(s, 'in', p, fee, from);
+  logMove(s, 'in', p, paid, from);
   s.shortlist = (s.shortlist || []).filter((x) => x.id !== p.id);
+  const years = `${terms.years} an${terms.years > 1 ? 's' : ''}`;
+  const eur = (v) => `${v.toLocaleString('fr-FR')} €`;
   pushJournal(s, {
     season: s.seasonNumber, kind: 'mercato', title: `${p.name} rejoint ${s.clubName}`,
     text: from
-      ? `Transfert conclu : il arrive ${clubAfter('de ', from)} pour ${fee.toLocaleString('fr-FR')} €, à ${p.age} ans.`
-      : `À ${p.age} ans, il s’engage avec le club pour ${fee.toLocaleString('fr-FR')} €.`,
+      ? `Transfert conclu : il arrive ${clubAfter('de ', from)} pour ${eur(fee)}, à ${p.age} ans. Contrat de ${years} à ${eur(terms.wage)} par saison.`
+      : `À ${p.age} ans, il s’engage pour ${years} à ${eur(terms.wage)} par saison${terms.bonus ? `, avec une prime de ${eur(terms.bonus)}` : ''}.`,
   });
   return s;
 }
 
-// Achat au prix demandé, sans négociation.
+// Achat au prix demandé et aux conditions demandées par le joueur, sans négociation (aperçus de la galerie).
 export function signPlayer(s, id) {
   const p = findOnMarket(s, id);
   if (!p || s.players.length >= SQUAD_MAX) return null;
-  const fee = costOf(p, s);
-  if (s.money < fee) return null;
-  return completeSigning(s, p, fee);
+  const fee = p.club ? costOf(p, s) : 0;
+  const terms = demandOf(s, p);
+  if (s.money < fee + terms.bonus) return null;
+  return completeSigning(s, p, fee, terms);
 }
 
-// Offre d'achat : réponse immédiate du vendeur. Accord (avec exactement la chance affichée), contre-proposition
-// si l'offre était sérieuse, refus sec sinon ; trois tentatives par joueur et par journée. Résultat dans s.lastDeal.
+// Indemnité convenue avec le club vendeur : elle est réservée jusqu'à la prochaine journée (le marché referme alors les
+// négociations, transfers.js), le temps de s'accorder avec le joueur sur son contrat.
+function agreeFee(s, p, fee) {
+  p.talks = { tries: p.talks?.tries || 0, fee };
+  delete p.ctalks;
+}
+
+// Offre d'achat à un club : réponse immédiate du vendeur. Accord (avec exactement la chance affichée) : l'indemnité est
+// réservée et la négociation passe au contrat du joueur ; contre-proposition si l'offre était sérieuse, refus sec sinon ;
+// trois tentatives par joueur et par journée. Résultat dans s.lastDeal. Un joueur libre n'a pas d'indemnité : on négocie
+// directement son contrat (offerContract).
 export function makeOffer(s, id, amount) {
   const p = findOnMarket(s, id);
-  if (!p || s.players.length >= SQUAD_MAX || !(amount > 0) || amount > s.money || p.talks?.closed) return null;
+  if (!p || !p.club || s.players.length >= SQUAD_MAX || !(amount > 0) || amount > s.money || p.talks?.closed || p.talks?.fee) return null;
   const ask = costOf(p, s);
   if (Math.random() < acceptChance(s, p, amount, ask)) {
-    completeSigning(s, p, amount);
-    s.lastDeal = { id: p.id, name: p.name, result: 'accepted', amount, ask, at: Date.now() };
+    agreeFee(s, p, amount);
+    s.lastDeal = { id: p.id, name: p.name, result: 'agreed', amount, ask, at: Date.now() };
     return s;
   }
   const serious = isSerious(s, p, amount, ask);
@@ -295,17 +316,84 @@ export function makeOffer(s, id, amount) {
   return s;
 }
 
-// Contre-proposition acceptée : la signature est certaine.
+// Contre-proposition du vendeur acceptée : l'indemnité est convenue, place au contrat.
 export function acceptCounter(s, id) {
   const p = findOnMarket(s, id);
   const fee = p?.talks?.counter;
-  if (!fee || s.players.length >= SQUAD_MAX || fee > s.money) return null;
+  if (!fee || p.talks.fee || s.players.length >= SQUAD_MAX || fee > s.money) return null;
   const ask = costOf(p, s);
-  completeSigning(s, p, fee);
-  s.lastDeal = { id: p.id, name: p.name, result: 'accepted', amount: fee, ask, at: Date.now() };
+  agreeFee(s, p, fee);
+  s.lastDeal = { id: p.id, name: p.name, result: 'agreed', amount: fee, ask, at: Date.now() };
   return s;
 }
 
+// Ce qui empêche de proposer ce contrat, ou null : effectif complet, indemnité pas encore convenue, trésorerie (indemnité
+// et prime), discussions closes pour la journée, prolongation impossible.
+export function contractBlock(s, p, terms) {
+  if (ctalksOf(s, p).closed) return 'Il ne discutera plus avant la prochaine journée.';
+  if (s.players.includes(p)) {
+    if (!renewOpen(s, p)) return 'Son contrat court déjà sur cinq ans : impossible de le prolonger.';
+    if (terms.bonus > s.money) return 'Trésorerie insuffisante pour cette prime.';
+    return null;
+  }
+  if (s.players.length >= SQUAD_MAX) return `Effectif complet (${SQUAD_MAX} joueurs) : vends d’abord un joueur.`;
+  if (p.club && !p.talks?.fee) return 'Convenir d’abord de l’indemnité avec son club.';
+  const fee = p.club ? p.talks.fee : 0;
+  if (fee + terms.bonus > s.money) return fee ? 'Trésorerie insuffisante pour l’indemnité et la prime.' : 'Trésorerie insuffisante pour cette prime.';
+  return null;
+}
+
+// Contrat signé : recrue (signature du transfert) ou prolongation (nouveau contrat, prime payée tout de suite).
+function sealContract(s, p, terms, renew) {
+  if (!renew) {
+    const fee = p.club ? p.talks.fee : 0;
+    completeSigning(s, p, fee, terms);
+    s.lastContract = { id: p.id, name: p.name, result: 'accepted', renew, terms, fee, at: Date.now() };
+    return s;
+  }
+  const before = wageOf(p, s.divisionIndex);
+  setDeal(s, p, terms);
+  s.money -= terms.bonus;
+  book(s, 'wages', terms.bonus);
+  pushJournal(s, {
+    season: s.seasonNumber, round: s.round, kind: 'club', title: `${p.name} prolonge jusqu’à la saison ${p.deal.until}`,
+    text: `Nouveau contrat à ${terms.wage.toLocaleString('fr-FR')} € par saison (${before.toLocaleString('fr-FR')} € jusqu’ici)${terms.bonus ? `, prime de ${terms.bonus.toLocaleString('fr-FR')} €` : ''}${terms.clause ? `, clause de montée de +${Math.round(terms.clause * 100)} %` : ''}.`,
+  });
+  s.lastContract = { id: p.id, name: p.name, result: 'accepted', renew, terms, before, at: Date.now() };
+  return s;
+}
+
+// Proposition de contrat (recrue après l'indemnité, joueur libre, prolongation) : réponse immédiate du joueur. Accord
+// avec exactement la chance affichée ; sinon contre-proposition de son agent si la proposition était sérieuse (au
+// salaire qui le fait signer à coup sûr), refus sec sinon ; trois propositions par joueur et par journée. Résultat
+// dans s.lastContract.
+export function offerContract(s, id, terms) {
+  const own = s.players.find((q) => q.id === id);
+  const p = own || findOnMarket(s, id);
+  if (!p) return null;
+  const renew = !!own;
+  const t = cleanTerms(s, p, terms, renew);
+  if (!t || contractBlock(s, p, t)) return null;
+  if (Math.random() < contractChance(s, p, t, renew)) return sealContract(s, p, t, renew);
+  const serious = contractSerious(s, p, t, renew);
+  const tries = (ctalksOf(s, p).tries || 0) + 1;
+  p.ctalks = { at: roundKey(s), tries, closed: tries >= C_TRIES, counter: null };
+  if (serious) p.ctalks.counter = counterTerms(s, p, t, renew); // il durcit sa position après chaque refus
+  s.lastContract = { id: p.id, name: p.name, result: serious ? 'countered' : 'refused', renew, terms: t, counter: p.ctalks.counter, at: Date.now() };
+  return s;
+}
+
+// Contre-proposition de son agent acceptée : la signature est certaine (même après trois propositions refusées).
+export function acceptContractCounter(s, id) {
+  const own = s.players.find((q) => q.id === id);
+  const p = own || findOnMarket(s, id);
+  const counter = p && ctalksOf(s, p).counter;
+  if (!counter) return null;
+  const talks = p.ctalks;
+  p.ctalks = { ...talks, closed: false }; // la contre-proposition tient même quand les discussions sont closes
+  if (contractBlock(s, p, counter)) { p.ctalks = talks; return null; }
+  return sealContract(s, p, counter, !!own);
+}
 // Joueur suivi (liste de souhaits) : son prix au moment où on l'ajoute sert de repère.
 export function toggleShortlist(s, id) {
   s.shortlist ||= [];

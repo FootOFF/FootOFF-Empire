@@ -15,6 +15,7 @@ import { refreshTransfers } from './transfers';
 import { rebuildRecords } from './records';
 import { normalizeCrest } from './crest';
 import { distinctSquad, legacyFace } from './faces';
+import { ensureDeals } from './contracts';
 
 // Sauvegarde : un emplacement principal (SAVE_KEY) et une copie de secours (BACKUP_KEY), prise au chargement de chaque
 // session (la partie telle qu'elle était quand on a ouvert le jeu). Au chargement, une sauvegarde illisible ou
@@ -252,6 +253,7 @@ export function repairSave(s) {
         if (!p.face) p.face = legacyFace(p);
       }
       distinctSquad(y.players);
+      ensureDeals(y); // contrats (0.8.0) : chaque joueur reçoit un contrat au salaire du jour, de deux à quatre saisons
       return y;
     };
     if (s.version === 4) return fix(s);

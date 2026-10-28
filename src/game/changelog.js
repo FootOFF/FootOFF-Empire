@@ -4,6 +4,15 @@
 
 export const CHANGELOG = [
   {
+    version: '0.8.0', date: '2026-10-28', title: 'Contrats et salaires',
+    items: [
+      'Chaque joueur a maintenant un contrat : un salaire par saison, une durée, parfois une clause de montée. Le salaire reste fixe pendant le contrat : seules une prolongation, la clause de montée ou une descente le changent.',
+      'Recruter un joueur sous contrat se fait en deux temps : l’indemnité avec son club, puis son contrat avec lui (salaire, durée, prime à la signature, clause de montée), avec la chance exacte qu’il signe. Un joueur libre se négocie directement.',
+      'Prolonge depuis la fiche du joueur ou le nouvel onglet Contrats de la Direction. Sans prolongation, un joueur part libre à la fin de son contrat, sans indemnité.',
+      'Tes joueurs reçoivent un contrat de deux à quatre ans à leur salaire actuel : personne ne part à la fin de cette saison.',
+    ],
+  },
+  {
     version: '0.7.8', date: '2026-10-27', title: 'Une huitième parcelle',
     items: [
       'Le complexe compte maintenant huit parcelles : trois à l’est, comme à l’ouest. Tes bâtiments de l’est se décalent un peu, rien d’autre ne change.',

@@ -9,6 +9,7 @@ import { costOf, ratingAt, wageOf } from './players';
 import { fitGain, pendingCounters, poolOf } from './mercato';
 import { capacity, endOfSeasonForecast, expectedGate, investmentPreview, seasonForecast } from './economy';
 import { nextOpponent, standingsOf } from './season';
+import { lastYear } from './contracts';
 
 // Signaux et conseils : ce que le joueur peut faire d'utile maintenant (pastilles dorées du dock et de
 // la vue 3D, recrue recommandée, bouton du staff de la colonne d'outils). Tout est calculé à partir de l'état.
@@ -16,6 +17,8 @@ import { nextOpponent, standingsOf } from './season';
 const n = (v) => new Intl.NumberFormat('fr-FR').format(Math.round(v));
 const money = (v) => (v >= 1e6 ? `${(v / 1e6).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} M€` : `${n(v)} €`);
 const LINE = { G: 'Ton gardien', D: 'Ta défense', M: 'Ton milieu', A: 'Ton attaque' };
+// « A, B et C »
+const names = (list) => { const n = list.map((p) => p.name); return n.length > 1 ? `${n.slice(0, -1).join(', ')} et ${n.at(-1)}` : n[0]; };
 
 // Ligne la plus faible de l'onze aligné (moyenne des notes à leur poste).
 export function weakestLine(s) {
@@ -178,6 +181,17 @@ export function staffTip(s) {
       title: many ? `${leaving.length} jeunes dans leur dernière saison` : `${leaving[0].name} : dernière saison à l’académie`,
       text: `${many ? `${leaving.map((p) => p.name).join(', ')} auront` : 'Il aura'} ${YOUTH_LEAVE_AGE} ans à l’intersaison. Fais-${many ? 'les' : 'le'} monter en équipe première avant la fin de la saison, sinon ${many ? 'ils quitteront' : 'il quittera'} le club.`,
       action: { kind: 'panel', panel: 'academy', tab: 'youth', ids: leaving.map((p) => p.id), label: 'Voir l’académie' },
+    };
+  }
+  // contrats : en seconde moitié de saison, rappel des joueurs en dernière année (ils partiront libres à l'intersaison)
+  const ending = s.round * 2 >= leagueLength(s) ? s.players.filter((p) => lastYear(s, p)) : [];
+  if (ending.length) {
+    const many = ending.length > 1;
+    return {
+      id: `contracts-${s.seasonNumber}-${ending.length}`,
+      title: many ? `${ending.length} contrats se terminent cette saison` : `${ending[0].name} : dernière année de contrat`,
+      text: `${many ? `${names(ending)} partiront` : 'Il partira'} libre${many ? 's' : ''} à l’intersaison, sans indemnité. ${many ? 'Prolonge-les depuis leur fiche ou l’onglet Contrats de la Direction, ou vends-les' : 'Prolonge-le depuis sa fiche ou l’onglet Contrats de la Direction, ou vends-le'} avant la fin de la saison.`,
+      action: { kind: 'panel', panel: 'squad', ...(many ? {} : { sheet: ending[0].id }), label: many ? 'Voir l’effectif' : 'Voir sa fiche' },
     };
   }
   const best = autoLineup(s.players, s.formation);

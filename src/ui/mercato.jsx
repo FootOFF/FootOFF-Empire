@@ -7,8 +7,13 @@ import {
   saleReasons, stanceOf, stepFor, tagsOf, valueOf,
 } from '../game/mercato';
 import {
-  acceptCounter, answerOffer, demandOffer, makeOffer, setForSale, startAuction, toggleShortlist,
+  acceptContractCounter, acceptCounter, answerOffer, contractBlock, demandOffer, makeOffer, offerContract, setForSale,
+  startAuction, toggleShortlist,
 } from '../game/engine';
+import {
+  CLAUSES, C_TRIES, MAX_YEARS, askedWage, clauseOpen, contractChance, contractStance, ctalksOf, demandOf, minYears,
+  refWageOf, termReasons, wageStep,
+} from '../game/contracts';
 import { listedToday } from '../game/transfers';
 import { endOfSeasonForecast, officeSize, seasonForecast } from '../game/economy';
 import { standingsOf } from '../game/season';
@@ -94,7 +99,7 @@ export function MarketCard({ p, state, refLvl, followed, recommended, onOpen, on
                 <><Crest name={p.club} className="mc-crest" /><span className="mc-club-name">{p.club}</span></>
               ) : <span className="mc-free">Joueur libre</span>}
             </span>
-            <span className="mc-pot">{p.age} ans · {POS_LABELS[p.pos]} · salaire {fmtMoney(wageOf(p, state.divisionIndex))}</span>
+            <span className="mc-pot">{p.age} ans · {POS_LABELS[p.pos]} · salaire demandé {fmtMoney(askedWage(state, p))}</span>
           </span>
         </button>
         <div className="mc-quick">
@@ -130,16 +135,16 @@ export function MarketCard({ p, state, refLvl, followed, recommended, onOpen, on
             <b className={price > state.money ? 'over' : ''}>{fmtMoney(price)}</b>
             {p.trend ? <IconTrend className={`mc-trend ${p.trend > 0 ? 'up' : 'down'}`} aria-label={p.trend > 0 ? 'prix en hausse' : 'prix en baisse'} /> : null}
           </span>
-          <em>{p.club ? `indemnité · contrat ${plural(p.contract, 'an', 'ans')}` : 'prime de signature'}</em>
+          <em>{p.club ? `indemnité · contrat ${plural(p.contract, 'an', 'ans')}` : 'prime à la signature'}</em>
         </span>
         <button
           type="button"
-          className={`btn btn-sm mc-offer ${talks.counter ? 'counter' : ''}`}
+          className={`btn btn-sm mc-offer ${talks.counter || talks.fee ? 'counter' : ''}`}
           onClick={() => onOffer(p)}
           disabled={(full || talks.closed) && !talks.counter}
           title={full ? 'Effectif complet' : talks.closed ? 'Le vendeur ne discutera plus avant la prochaine journée' : ''}
         >
-          {talks.counter ? 'Contre-offre' : talks.closed ? 'Discussions closes' : 'Faire une offre'}
+          {talks.fee ? 'Négocier son contrat' : talks.counter ? 'Contre-offre' : talks.closed ? 'Discussions closes' : 'Faire une offre'}
         </button>
       </div>
     </li>
@@ -201,9 +206,9 @@ function MarketTable({ list, state, refLvl, followed, recommended, onOpen, onFol
                   <span className="mc-row-act">
                     <button type="button" className={`mc-icon ${followed.has(p.id) ? 'on' : ''}`} aria-pressed={followed.has(p.id)} onClick={() => onFollow(p)}
                       title={followed.has(p.id) ? 'Ne plus suivre' : 'Suivre ce joueur'} aria-label={followed.has(p.id) ? `Ne plus suivre ${p.name}` : `Suivre ${p.name}`}><IconStar /></button>
-                    <button type="button" className={`btn btn-sm mc-offer ${talks.counter ? 'counter' : ''}`} onClick={() => onOffer(p)}
+                    <button type="button" className={`btn btn-sm mc-offer ${talks.counter || talks.fee ? 'counter' : ''}`} onClick={() => onOffer(p)}
                       disabled={(full || talks.closed) && !talks.counter} title={full ? 'Effectif complet' : talks.closed ? 'Le vendeur ne discutera plus avant la prochaine journée' : ''}>
-                      {talks.counter ? 'Contre-offre' : talks.closed ? 'Closes' : 'Offre'}
+                      {talks.fee ? 'Contrat' : talks.counter ? 'Contre-offre' : talks.closed ? 'Closes' : 'Offre'}
                     </button>
                   </span>
                 </td>
@@ -533,7 +538,7 @@ function OffersView({ state, refLvl, run, ask, onOffer, onSale, onList }) {
             {counters.map((p) => (
               <li key={p.id} className="mc-row counter">
                 <span className={`mc-medal sm ${heat(playerRating(p), refLvl)}`}><b>{fmtRating(playerRating(p))}</b><span>{p.pos}</span></span>
-                <span className="mc-row-main"><b>{p.name}</b><em>Contre-offre {p.club ? clubAfter('de ', p.club) : 'de son agent'} : {fmtMoney(p.talks.counter)} (prix demandé {fmtMoney(costOf(p, state))})</em></span>
+                <span className="mc-row-main"><b>{p.name}</b><em>{pendingText(state, p)}</em></span>
                 <button className="btn btn-sm" onClick={() => onOffer(p)}>Voir</button>
               </li>
             ))}
@@ -645,7 +650,7 @@ function LogView({ state }) {
   const net = sum(season, 'out') - sum(season, 'in');
   const allNet = sum(log, 'out') - sum(log, 'in');
   const bestBuy = state.records?.bestBuy;
-  const bestSale = log.filter((x) => x.kind === 'out').sort((a, b) => b.fee - a.fee)[0];
+  const bestSale = log.filter((x) => x.kind === 'out' && x.fee > 0).sort((a, b) => b.fee - a.fee)[0];
   return (
     <>
       <span className="eyebrow">Saison {state.seasonNumber}</span>
@@ -672,9 +677,9 @@ function LogView({ state }) {
               <span className={`mc-way ${x.kind}`}>{x.kind === 'in' ? 'Arrivée' : 'Départ'}</span>
               <span className="mc-row-main">
                 <b>{x.name}</b>
-                <em>{x.pos} · {x.age} ans · {fmtRating(x.rating)} · {x.kind === 'in' ? (x.club ? clubAfter('de ', x.club) : 'joueur libre') : `vers ${withArticle(x.club)}${x.board ? ' (vendu par le conseil)' : ''}`} · {moveWhen(x.season, x.round)}</em>
+                <em>{x.pos} · {x.age} ans · {fmtRating(x.rating)} · {x.kind === 'in' ? (x.club ? clubAfter('de ', x.club) : 'joueur libre') : (x.club ? `vers ${withArticle(x.club)}${x.board ? ' (vendu par le conseil)' : ''}` : 'parti libre, en fin de contrat')} · {moveWhen(x.season, x.round)}</em>
               </span>
-              <b className={`mc-fee ${x.kind === 'in' ? 'down' : 'up'}`}>{x.kind === 'in' ? '−' : '+'}{fmtMoney(x.fee)}</b>
+              {x.kind === 'out' && !x.club ? <b className="mc-fee">Libre</b> : <b className={`mc-fee ${x.kind === 'in' ? 'down' : 'up'}`}>{x.kind === 'in' ? '−' : '+'}{fmtMoney(x.fee)}</b>}
             </li>
           ))}
         </ul>
@@ -721,13 +726,127 @@ export function Mercato({ state, run, ask, refLvl, recommended, initialView = 'b
 // --- Négociation ----------------------------------------------------------------------------------------
 
 const QUICK = [[0.8, '−20 %'], [0.9, '−10 %'], [1, 'Prix demandé']];
+const vsDemand = (x, d) => {
+  if (x === d) return 'sa demande';
+  const k = Math.max(1, Math.round(Math.abs(x / d - 1) * 100));
+  return `${k} % ${x < d ? 'sous' : 'au-dessus de'} sa demande`;
+};
+const yearsOf = (n) => plural(n, 'an', 'ans'); // durée d'un contrat (une saison = un an)
+const NICE = [50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1e6];
+const niceStep = (v) => NICE.find((x) => x >= v) || 1e6; // pas rond de la prime (dix pas environ jusqu'à ce qu'il attend)
+// Négociation en cours, à conclure avant la prochaine journée (vue Offres) : contre-proposition de l'agent, indemnité
+// convenue (contrat à négocier) ou contre-offre du club.
+function pendingText(state, p) {
+  const c = ctalksOf(state, p).counter;
+  if (c) return `Contre-proposition de son agent : ${fmtMoney(c.wage)} par saison sur ${yearsOf(c.years)}`;
+  if (p.talks?.fee) return `Indemnité convenue (${fmtMoney(p.talks.fee)}) : son contrat reste à négocier`;
+  return `Contre-offre ${clubAfter('de ', p.club)} : ${fmtMoney(p.talks.counter)} (prix demandé ${fmtMoney(costOf(p, state))})`;
+}
+const clauseText = (c) => (c ? `clause de montée +${Math.round(c * 100)} %` : '');
+// Conditions signées, en une phrase (écran d'accord) ; une prolongation rappelle seulement la prime et la clause.
+function termsLine(t, renew) {
+  const parts = [renew ? '' : `contrat de ${yearsOf(t.years)} à ${fmtMoney(t.wage)} par saison`, t.bonus ? `prime de ${fmtMoney(t.bonus)}` : '', t.clause ? `clause de montée de +${Math.round(t.clause * 100)} %` : ''].filter(Boolean);
+  return parts.length ? `${capitalize(parts.join(', '))}.` : '';
+}
 
+// Négociation d'une recrue (0.8.0), en deux temps : l'indemnité avec son club (joueur sous contrat), puis le contrat
+// avec le joueur (salaire, durée, prime, clause de montée) ; un joueur libre passe directement au contrat. La même
+// fenêtre sert à prolonger un joueur de l'effectif. Sur PC, une grande fenêtre centrée en deux colonnes (réglages à
+// gauche, raisons, coûts et chances à droite) ; au téléphone, une feuille, jauge et bouton collés en bas. Les chances
+// affichées sont celles qui décident (mercato.js, contracts.js).
 export function Negotiation({ state, p, run, refLvl, onClose, onSheet, onLineup }) {
   const ref = useRef(null);
   useSwipe(ref, { onDown: onClose, downMedia: PHONE });
   const [opened] = useState(() => Date.now());
+  const [mode] = useState(() => (state.players.some((q) => q.id === p.id) ? 'renew' : 'sign'));
+  const fresh = (x) => (x && x.id === p.id && x.at >= opened ? x : null); // réponse donnée dans cette fenêtre
+  const done = fresh(state.lastContract)?.result === 'accepted' ? state.lastContract : null;
+  useEffect(() => { if (done) haptic('build'); }, [done?.at]); // eslint-disable-line react-hooks/exhaustive-deps
   const onMarket = !!findOnMarket(state, p.id);
-  const ask = onMarket ? costOf(p, state) : 0;
+  const shell = (cls, label, body) => (
+    <div className="sq-overlay ng-overlay" onClick={onClose}>
+      <article ref={ref} className={`sq-sheet glass ng ng-deal ${cls}`} onClick={(e) => e.stopPropagation()} aria-label={label}>
+        <span className="grip" aria-hidden="true" />
+        {body}
+      </article>
+    </div>
+  );
+  const bar = (eyebrow) => <header className="sh-bar"><span className="eyebrow">{eyebrow}</span><button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button></header>;
+
+  if (done || (mode === 'sign' && !onMarket)) {
+    const signed = done && state.players.find((q) => q.id === p.id);
+    const gain = signed && mode === 'sign' ? fitGain(state, signed) : 0;
+    const t = done?.terms;
+    const deal = fresh(state.lastDeal) || (state.lastDeal?.id === p.id ? state.lastDeal : null);
+    const saved = mode === 'sign' && deal?.result === 'agreed' ? deal.ask - deal.amount : 0;
+    return shell('ng-done', mode === 'renew' ? 'Contrat prolongé' : 'Transfert conclu', (
+      <>
+        {bar(mode === 'renew' ? 'Prolongation' : 'Mercato')}
+        {signed ? (
+          <section className="ng-win">
+            <span className="ng-win-ico"><IconCheck /></span>
+            <h3>{mode === 'renew' ? 'Contrat prolongé !' : 'Accord conclu !'}</h3>
+            {mode === 'renew' ? (
+              <p><b>{p.name}</b> est sous contrat jusqu’à la saison <b>{signed.deal.until}</b>, à <b>{fmtMoney(t.wage)}</b> par saison{done.before ? ` (${fmtMoney(done.before)} jusqu’ici)` : ''}.</p>
+            ) : (
+              <p><b>{p.name}</b> rejoint ton effectif{done.fee ? <> pour <b>{fmtMoney(done.fee)}</b></> : ''}.</p>
+            )}
+            {termsLine(t, mode === 'renew') && <p className="ng-terms-line">{termsLine(t, mode === 'renew')}</p>}
+            {saved > 0 && <p className="ng-saved">{fmtMoney(saved)} économisés sur l’indemnité demandée ({fmtMoney(deal.ask)}).</p>}
+            {saved < 0 && <p className="ng-paid">{fmtMoney(-saved)} de plus que l’indemnité demandée ({fmtMoney(deal.ask)}).</p>}
+            {gain >= 0.3 && <p className="ng-fit">Il renforce ton onze : +{fmtRating(gain)} sur le titulaire le plus faible à son poste.</p>}
+            <div className="ng-actions">
+              {gain >= 0.3 && onLineup && <button className="btn" onClick={onLineup}>Composer l’équipe</button>}
+              <button className={`btn ${gain >= 0.3 && onLineup ? 'ghost' : ''}`} onClick={() => onSheet(p.id)}>Voir sa fiche</button>
+              <button className="btn ghost" onClick={onClose}>{mode === 'renew' ? 'Fermer' : 'Retour au mercato'}</button>
+            </div>
+          </section>
+        ) : (
+          <section className="ng-win">
+            <h3>Joueur indisponible</h3>
+            <p>{p.name} n’est plus sur le marché.</p>
+            <div className="ng-actions"><button className="btn ghost" onClick={onClose}>Retour au mercato</button></div>
+          </section>
+        )}
+      </>
+    ));
+  }
+
+  const own = mode === 'renew' ? state.players.find((q) => q.id === p.id) : null;
+  if (mode === 'renew' && !own) return shell('ng-done', 'Prolongation', <>{bar('Prolongation')}<section className="ng-win"><h3>Joueur parti</h3><p>{p.name} n’est plus au club.</p></section></>);
+  const feeStage = mode === 'sign' && !!p.club && !p.talks?.fee;
+  const r = playerRating(p);
+  return shell('', `${mode === 'renew' ? 'Prolongation' : 'Négociation'} pour ${p.name}`, (
+    <>
+      {bar(mode === 'renew' ? 'Prolongation' : feeStage ? 'Négociation · indemnité' : 'Négociation · contrat')}
+      <section className="ng-player">
+        <span className={`mc-medal ${heat(r, refLvl)}`}><b>{fmtRating(r)}</b><span>{p.pos}</span></span>
+        <div>
+          <h3>{p.name}</h3>
+          <span className="ng-club">
+            {mode === 'renew'
+              ? <>Sous contrat jusqu’à la saison {own.deal.until} · {fmtMoney(own.deal.wage)} par saison · {p.age} ans</>
+              : p.club ? <><Crest name={p.club} className="mc-crest" />{p.club} · encore {plural(p.contract, 'an', 'ans')} de contrat avec son club · {p.age} ans</> : <>Joueur libre · pas d’indemnité · {p.age} ans</>}
+          </span>
+        </div>
+        <button className="linkbtn ng-sheet" onClick={() => onSheet(p.id)}>Sa fiche</button>
+      </section>
+      {mode === 'sign' && p.club && (
+        <div className="ng-steps" aria-label="Étapes de la négociation">
+          <span className={`ng-step ${feeStage ? 'on' : 'done'}`}><i>{feeStage ? '1' : <IconCheck />}</i>Indemnité{!feeStage && <b>{fmtMoney(p.talks.fee)}</b>}</span>
+          <span className={`ng-step ${feeStage ? '' : 'on'}`}><i>2</i>Contrat du joueur</span>
+        </div>
+      )}
+      {feeStage
+        ? <FeeStep state={state} p={p} run={run} opened={opened} />
+        : <ContractStep state={state} p={own || p} run={run} opened={opened} renew={mode === 'renew'} feeAgreed={fresh(state.lastDeal)?.result === 'agreed' ? state.lastDeal : null} />}
+    </>
+  ));
+}
+
+// Première étape : l'indemnité de transfert avec le club du joueur (offre au curseur, chance exacte, contre-offre).
+function FeeStep({ state, p, run, opened }) {
+  const ask = costOf(p, state);
   const step = stepFor(ask || 1000);
   const lo = roundTo(ask * 0.6, step);
   const hi = roundTo(ask * 1.25, step);
@@ -735,125 +854,68 @@ export function Negotiation({ state, p, run, refLvl, onClose, onSheet, onLineup 
   // dans la limite de la trésorerie
   const [offer, setOffer] = useState(() => Math.min(ask, p.talks?.counter || ask, Math.max(lo, Math.floor(state.money / step) * step)));
   // réponse du vendeur à la dernière offre faite dans cette fenêtre
-  const result = state.lastDeal && state.lastDeal.id === p.id && state.lastDeal.at >= opened ? state.lastDeal : null;
-  useEffect(() => { if (result?.result === 'accepted') haptic('build'); }, [result?.at]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (result?.result === 'accepted' || !onMarket) {
-    const signed = state.players.find((q) => q.id === p.id);
-    const gain = signed ? fitGain(state, signed) : 0;
-    const saved = result?.ask ? result.ask - result.amount : 0;
-    return (
-      <div className="sq-overlay" onClick={onClose}>
-        <article ref={ref} className="sq-sheet glass ng ng-done" onClick={(e) => e.stopPropagation()} aria-label="Transfert conclu">
-          <span className="grip" aria-hidden="true" />
-          <header className="sh-bar"><span className="eyebrow">Mercato</span><button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button></header>
-          {signed ? (
-            <section className="ng-win">
-              <span className="ng-win-ico"><IconCheck /></span>
-              <h3>Accord conclu !</h3>
-              <p><b>{p.name}</b> rejoint ton effectif{result ? <> pour <b>{fmtMoney(result.amount)}</b></> : ''}.</p>
-              {saved > 0 && <p className="ng-saved">{fmtMoney(saved)} économisés sur le prix demandé ({fmtMoney(result.ask)}).</p>}
-              {saved < 0 && <p className="ng-paid">{fmtMoney(-saved)} de plus que le prix demandé ({fmtMoney(result.ask)}).</p>}
-              {gain >= 0.3 && <p className="ng-fit">Il renforce ton onze : +{fmtRating(gain)} sur le titulaire le plus faible à son poste.</p>}
-              <div className="ng-actions">
-                {gain >= 0.3 && onLineup && <button className="btn" onClick={onLineup}>Composer l’équipe</button>}
-                <button className={`btn ${gain >= 0.3 && onLineup ? 'ghost' : ''}`} onClick={() => onSheet(p.id)}>Voir sa fiche</button>
-                <button className="btn ghost" onClick={onClose}>Retour au mercato</button>
-              </div>
-            </section>
-          ) : (
-            <section className="ng-win">
-              <h3>Joueur indisponible</h3>
-              <p>{p.name} n’est plus sur le marché.</p>
-              <div className="ng-actions"><button className="btn ghost" onClick={onClose}>Retour au mercato</button></div>
-            </section>
-          )}
-        </article>
-      </div>
-    );
-  }
-
+  const result = state.lastDeal && state.lastDeal.id === p.id && state.lastDeal.at >= opened && state.lastDeal.result !== 'agreed' ? state.lastDeal : null;
   const talks = p.talks || {};
   const chance = acceptChance(state, p, offer, ask);
   const shown = pctOf(chance);
   const { reasons } = stanceOf(state, p);
-  const wage = wageOf(p, state.divisionIndex);
+  const wage = askedWage(state, p);
   const imp = impactOf(state, wage, offer);
   const block = offerBlock(state, p, offer);
   const left = TRIES - (talks.tries || 0);
   const set = (v) => setOffer(Math.min(hi, Math.max(lo, roundTo(v, step))));
   const send = () => run((s) => makeOffer(s, p.id, offer));
   const take = () => run((s) => acceptCounter(s, p.id), 'Trésorerie insuffisante ou effectif complet.');
-  const r = playerRating(p);
-
   return (
-    <div className="sq-overlay" onClick={onClose}>
-      <article ref={ref} className="sq-sheet glass ng" onClick={(e) => e.stopPropagation()} aria-label={`Négociation pour ${p.name}`}>
-        <span className="grip" aria-hidden="true" />
-        <header className="sh-bar">
-          <span className="eyebrow">Négociation</span>
-          <button className="hud-icon" onClick={onClose} aria-label="Fermer la négociation"><IconClose /></button>
-        </header>
-
-        <section className="ng-player">
-          <span className={`mc-medal ${heat(r, refLvl)}`}><b>{fmtRating(r)}</b><span>{p.pos}</span></span>
-          <div>
-            <h3>{p.name}</h3>
-            <span className="ng-club">{p.club ? <><Crest name={p.club} className="mc-crest" />{p.club} · {plural(p.contract, 'an', 'ans')} de contrat</> : 'Joueur libre'} · {p.age} ans</span>
-          </div>
-          <button className="linkbtn ng-sheet" onClick={() => onSheet(p.id)}>Sa fiche</button>
-        </section>
-
-        {result && result.result !== 'accepted' && (
+    <>
+      <div className="ng-col">
+        {result && (
           <section className={`ng-answer ${result.result}`}>
             <b>{result.result === 'countered' ? 'Offre refusée… mais le vendeur fait un pas' : 'Offre refusée : jugée trop basse'}</b>
             <span>Tu proposais {fmtMoney(result.amount)}.{talks.closed ? ' Le vendeur ne discutera plus avant la prochaine journée.' : ` Encore ${plural(left, 'tentative', 'tentatives')} aujourd’hui.`}</span>
           </section>
         )}
-
         {talks.counter && (
           <section className="ng-counter">
             <div>
-              <span className="eyebrow">Contre-offre {p.club ? clubAfter('de ', p.club) : 'de son agent'}</span>
+              <span className="eyebrow">Contre-offre {clubAfter('de ', p.club)}</span>
               <b>{fmtMoney(talks.counter)}</b>
-              <em>{talks.counter > state.money ? `Il te manque ${fmtMoney(talks.counter - state.money)} pour l’accepter.` : 'Signature assurée à ce prix, jusqu’à la prochaine journée.'}</em>
+              <em>{talks.counter > state.money ? `Il te manque ${fmtMoney(talks.counter - state.money)} pour l’accepter.` : 'Indemnité assurée à ce prix, jusqu’à la prochaine journée.'}</em>
             </div>
             <button className="btn" disabled={talks.counter > state.money || state.players.length >= SQUAD_MAX} onClick={take}>Accepter · {fmtMoney(talks.counter)}</button>
           </section>
         )}
-
         {!talks.closed && (
-          <>
-            <section className="ng-offer">
-              <div className="ng-ask"><span>{p.club ? 'Indemnité demandée' : 'Prime de signature demandée'}</span><b>{fmtMoney(ask)}</b></div>
-              <span className="eyebrow">Ton offre</span>
-              <div className="ng-amount">
-                <button className="hud-icon" onClick={() => set(offer - step)} aria-label="Baisser l’offre" disabled={offer <= lo}>−</button>
-                <output className="ng-value" aria-live="polite">{fmtMoney(offer)}<em>{vsAsk(offer, ask)}</em></output>
-                <button className="hud-icon" onClick={() => set(offer + step)} aria-label="Monter l’offre" disabled={offer >= hi}>+</button>
-              </div>
-              <input className="ng-range" type="range" min={lo} max={hi} step={step} value={offer} style={{ '--fill': `${((offer - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => set(Number(e.target.value))} aria-label="Montant de l’offre" />
-              <div className="chips ng-quick">
-                {QUICK.map(([k, label]) => <button key={label} className={roundTo(ask * k, step) === offer ? 'active' : ''} onClick={() => set(ask * k)}>{label}</button>)}
-              </div>
-            </section>
-
-            <section className="ng-chance">
-              <span className="eyebrow">Ce qui joue sur sa réponse</span>
-              <ul className="ng-reasons">
-                {reasons.map(([tone, text]) => <li key={text} className={tone}>{text}</li>)}
-              </ul>
-            </section>
-          </>
+          <section className="ng-offer">
+            <div className="ng-ask"><span>Indemnité demandée</span><b>{fmtMoney(ask)}</b></div>
+            <span className="eyebrow">Ton offre</span>
+            <div className="ng-amount">
+              <button className="hud-icon" onClick={() => set(offer - step)} aria-label="Baisser l’offre" disabled={offer <= lo}>−</button>
+              <output className="ng-value" aria-live="polite">{fmtMoney(offer)}<em>{vsAsk(offer, ask)}</em></output>
+              <button className="hud-icon" onClick={() => set(offer + step)} aria-label="Monter l’offre" disabled={offer >= hi}>+</button>
+            </div>
+            <input className="ng-range" type="range" min={lo} max={hi} step={step} value={offer} style={{ '--fill': `${((offer - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => set(Number(e.target.value))} aria-label="Montant de l’offre" />
+            <div className="chips ng-quick">
+              {QUICK.map(([k, label]) => <button key={label} className={roundTo(ask * k, step) === offer ? 'active' : ''} onClick={() => set(ask * k)}>{label}</button>)}
+            </div>
+          </section>
         )}
-
+      </div>
+      <div className="ng-col">
+        {!talks.closed && (
+          <section className="ng-chance">
+            <span className="eyebrow">Ce qui joue sur sa réponse</span>
+            <ul className="ng-reasons">
+              {reasons.map(([tone, text]) => <li key={text} className={tone}>{text}</li>)}
+            </ul>
+          </section>
+        )}
         <dl className="ng-costs">
-          <div><dt>Salaire</dt><dd>{fmtMoney(wage)} / saison</dd></div>
+          <div><dt>Salaire demandé ensuite</dt><dd>{fmtMoney(wage)} / saison</dd></div>
           <div><dt>Salaires / revenus</dt><dd className={imp.shareAfter > 0.75 ? 'down' : ''}>{Math.round(imp.share * 100)} % → {Math.round(imp.shareAfter * 100)} %</dd></div>
           <div><dt>Fin de saison prévue</dt><dd className={imp.endAfter < 0 ? 'down' : ''}>{fmtMoney(imp.endNow)} → {fmtMoney(imp.endAfter)}</dd></div>
         </dl>
         {imp.endAfter < 0 && <p className="ng-warn">Avec cette recrue, la saison finirait dans le rouge : le conseil vendrait alors tes plus gros salaires.</p>}
-
         <footer className="ng-foot">
           {talks.closed ? (
             <p className="ng-closed">Le vendeur ne discutera plus avant la prochaine journée{talks.counter ? ' (sa contre-offre tient toujours)' : ''}.</p>
@@ -861,15 +923,148 @@ export function Negotiation({ state, p, run, refLvl, onClose, onSheet, onLineup 
             <>
               <LiveChance label="Chances d’accord" shown={shown} note={shown === 0 ? 'Offre trop basse : refus assuré' : shown === 100 ? 'Accord assuré à ce prix' : null} />
               <button className="btn btn-xl" disabled={!!block} onClick={send} title={block || ''}>Envoyer l’offre · {fmtMoney(offer)}</button>
-              {block ? <span className="ng-block">{block}</span> : <span className="ng-tries">{plural(left, 'tentative', 'tentatives')} aujourd’hui</span>}
+              {block ? <span className="ng-block">{block}</span> : <span className="ng-tries">{plural(left, 'tentative', 'tentatives')} aujourd’hui · puis le contrat du joueur</span>}
             </>
           )}
         </footer>
-      </article>
-    </div>
+      </div>
+    </>
   );
 }
 
+// Le contrat du joueur : salaire (réglage principal), durée, prime à la signature et clause de montée, avec ses demandes,
+// ce qui joue sur sa réponse, le coût du contrat et la chance exacte. renew : prolongation d'un joueur de l'effectif.
+function ContractStep({ state, p, run, opened, renew, feeAgreed }) {
+  const demand = demandOf(state, p, renew);
+  const ref = refWageOf(state, p);
+  const ct = ctalksOf(state, p);
+  const step = wageStep(Math.max(demand.wage, 1));
+  const lo = roundTo(Math.max(ref * 0.6, step), step);
+  const hi = roundTo(Math.max(demand.wage * 1.3, ref * 1.5), step);
+  const bStep = niceStep(Math.max(demand.bonus, demand.wage, 1) / 10);
+  const bHi = roundTo(Math.max(demand.bonus * 1.6, demand.wage * 2), bStep);
+  const minY = minYears(state, p, renew);
+  const open = clauseOpen(state);
+  const start = ct.counter || demand;
+  const [wage, setWage] = useState(() => Math.min(hi, Math.max(lo, start.wage)));
+  const [years, setYears] = useState(() => Math.max(minY, start.years));
+  const [bonus, setBonus] = useState(() => Math.min(bHi, start.bonus));
+  const [clause, setClause] = useState(() => (open ? start.clause : 0));
+  const terms = { wage, years, bonus, clause: open ? clause : 0 };
+  const chance = contractChance(state, p, terms, renew);
+  const shown = pctOf(chance);
+  const reasons = [...contractStance(state, p, renew).reasons, ...termReasons(state, p, terms)];
+  const fee = !renew && p.club ? p.talks?.fee || 0 : 0;
+  const block = contractBlock(state, p, terms);
+  const result = state.lastContract && state.lastContract.id === p.id && state.lastContract.at >= opened && state.lastContract.result !== 'accepted' ? state.lastContract : null;
+  const left = C_TRIES - (ct.tries || 0);
+  const now = renew ? p.deal.wage : 0;
+  const imp = impactOf(state, wage - now, fee + bonus);
+  const setW = (v) => setWage(Math.min(hi, Math.max(lo, roundTo(v, step))));
+  const setB = (v) => setBonus(Math.min(bHi, Math.max(0, Math.round(v / bStep) * bStep)));
+  const send = () => run((s) => offerContract(s, p.id, terms));
+  const counter = ct.counter;
+  const counterBlock = counter ? contractBlock(state, p, counter) : null;
+  const take = () => run((s) => acceptContractCounter(s, p.id), 'Trésorerie insuffisante ou effectif complet.');
+  const club = p.club ? Club(p.club) : '';
+  return (
+    <>
+      <div className="ng-col">
+        {feeAgreed && !result && (
+          <section className="ng-answer agreed">
+            <b>{club} {agree(p.club, 'accepte', 'acceptent')} : {fmtMoney(feeAgreed.amount)}</b>
+            <span>Place au contrat : l’indemnité est réservée jusqu’à la prochaine journée.</span>
+          </section>
+        )}
+        {result && (
+          <section className={`ng-answer ${result.result}`}>
+            <b>{result.result === 'countered' ? 'Proposition refusée… mais son agent fait un pas' : 'Proposition refusée : jugée trop basse'}</b>
+            <span>Tu proposais {fmtMoney(result.terms.wage)} par saison sur {yearsOf(result.terms.years)}.{ct.closed ? ' Il ne discutera plus avant la prochaine journée.' : ` Encore ${plural(left, 'tentative', 'tentatives')} aujourd’hui.`}</span>
+          </section>
+        )}
+        {counter && (
+          <section className="ng-counter">
+            <div>
+              <span className="eyebrow">Contre-proposition de son agent</span>
+              <b>{fmtMoney(counter.wage)}<small> par saison</small></b>
+              <em>{[yearsOf(counter.years), counter.bonus ? `prime de ${fmtMoney(counter.bonus)}` : '', clauseText(counter.clause)].filter(Boolean).join(' · ')}. {counterBlock || 'Signature assurée à ces conditions, jusqu’à la prochaine journée.'}</em>
+            </div>
+            <button className="btn" disabled={!!counterBlock} onClick={take}>Accepter · {fmtMoney(counter.wage)}</button>
+          </section>
+        )}
+        {!ct.closed && (
+          <>
+            <section className="ng-offer">
+              <div className="ng-ask"><span>Il demande</span><b>{fmtMoney(demand.wage)} par saison</b></div>
+              <span className="eyebrow">Salaire par saison</span>
+              <div className="ng-amount">
+                <button className="hud-icon" onClick={() => setW(wage - step)} aria-label="Baisser le salaire" disabled={wage <= lo}>−</button>
+                <output className="ng-value" aria-live="polite">{fmtMoney(wage)}<em>{vsDemand(wage, demand.wage)}</em></output>
+                <button className="hud-icon" onClick={() => setW(wage + step)} aria-label="Monter le salaire" disabled={wage >= hi}>+</button>
+              </div>
+              <input className="ng-range" type="range" min={lo} max={hi} step={step} value={wage} style={{ '--fill': `${((wage - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => setW(Number(e.target.value))} aria-label="Salaire par saison" />
+            </section>
+            <section className="ng-terms">
+              <div className="ng-term">
+                <div className="ng-term-top"><span className="eyebrow">Durée</span><em>saison en cours comptée · fin du contrat : saison {state.seasonNumber + years - 1}</em></div>
+                <div className="segmented n5" role="group" aria-label="Durée du contrat">
+                  {Array.from({ length: MAX_YEARS }, (_, i) => i + 1).map((y) => (
+                    <button key={y} type="button" className={y === years ? 'on' : ''} aria-pressed={y === years} disabled={y < minY} title={y < minY ? 'Une prolongation doit finir après le contrat actuel' : ''} onClick={() => setYears(y)}>{y} {y > 1 ? 'ans' : 'an'}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="ng-term">
+                <div className="ng-term-top"><span className="eyebrow">Prime à la signature</span><em>{demand.bonus ? `il attend ${fmtMoney(demand.bonus)}` : 'payée une fois'}</em></div>
+                <div className="ng-mini">
+                  <button className="hud-icon" type="button" onClick={() => setB(bonus - bStep)} aria-label="Baisser la prime" disabled={bonus <= 0}>−</button>
+                  <output aria-live="polite">{fmtMoney(bonus)}</output>
+                  <button className="hud-icon" type="button" onClick={() => setB(bonus + bStep)} aria-label="Monter la prime" disabled={bonus >= bHi}>+</button>
+                </div>
+              </div>
+              {open && (
+                <div className="ng-term">
+                  <div className="ng-term-top"><span className="eyebrow">Clause de montée</span><em>hausse de salaire à chaque montée</em></div>
+                  <div className="segmented n4" role="group" aria-label="Clause de montée">
+                    {CLAUSES.map((c) => <button key={c} type="button" className={c === clause ? 'on' : ''} aria-pressed={c === clause} onClick={() => setClause(c)}>{c ? `+${Math.round(c * 100)} %` : 'Aucune'}</button>)}
+                  </div>
+                </div>
+              )}
+            </section>
+          </>
+        )}
+      </div>
+      <div className="ng-col">
+        {!ct.closed && (
+          <section className="ng-chance">
+            <span className="eyebrow">Ce qui joue sur sa réponse</span>
+            <ul className="ng-reasons">
+              {reasons.map(([tone, text]) => <li key={text} className={tone}>{text}</li>)}
+            </ul>
+          </section>
+        )}
+        <dl className="ng-costs">
+          {renew && <div><dt>Salaire</dt><dd>{fmtMoney(now)} → {fmtMoney(wage)} / saison</dd></div>}
+          {fee > 0 && <div><dt>Indemnité convenue</dt><dd>{fmtMoney(fee)}</dd></div>}
+          <div><dt>Coût du contrat ({yearsOf(years)})</dt><dd>{fmtMoney(wage * years + bonus)}</dd></div>
+          <div><dt>Salaires / revenus</dt><dd className={imp.shareAfter > 0.75 ? 'down' : ''}>{Math.round(imp.share * 100)} % → {Math.round(imp.shareAfter * 100)} %</dd></div>
+          <div><dt>Fin de saison prévue</dt><dd className={imp.endAfter < 0 ? 'down' : ''}>{fmtMoney(imp.endNow)} → {fmtMoney(imp.endAfter)}</dd></div>
+        </dl>
+        {imp.endAfter < 0 && <p className="ng-warn">Avec ce contrat, la saison finirait dans le rouge : le conseil vendrait alors tes plus gros salaires.</p>}
+        <footer className="ng-foot">
+          {ct.closed ? (
+            <p className="ng-closed">Il ne discutera plus avant la prochaine journée{counter ? ' (la contre-proposition de son agent tient toujours)' : ''}{fee ? ' ; l’indemnité convenue tombera alors' : ''}.</p>
+          ) : (
+            <>
+              <LiveChance label="Chances d’accord" shown={shown} note={shown === 0 ? 'Proposition trop basse : refus assuré' : shown === 100 ? 'Signature assurée à ces conditions' : null} />
+              <button className="btn btn-xl" disabled={!!block} onClick={send} title={block || ''}>{renew ? 'Prolonger' : 'Proposer le contrat'} · {fmtMoney(wage)}</button>
+              {block ? <span className="ng-block">{block}</span> : <span className="ng-tries">{plural(left, 'tentative', 'tentatives')} aujourd’hui{fee ? ' · indemnité réservée jusqu’à la prochaine journée' : ''}</span>}
+            </>
+          )}
+        </footer>
+      </div>
+    </>
+  );
+}
 // Chance exacte du montant choisi, collée au-dessus du bouton de la négociation : elle suit le curseur et reste à
 // l'écran quel que soit le défilement (sous les raccourcis, le bas de la fenêtre la cachait au téléphone). note : ce
 // qui est certain à 0 % ou 100 % (refus, club qui se retire, accord assuré).

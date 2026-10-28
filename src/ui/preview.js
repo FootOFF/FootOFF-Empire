@@ -9,6 +9,7 @@ import { matchContext, startSeason } from '../game/season';
 import { assignNumber, costOf, makePlayer, playerRating } from '../game/players';
 import { BUYERS, counterFor, dateKey, lastWordOf, outbidChance, poolOf, roundKey, roundTo, valueOf } from '../game/mercato';
 import { distinctClubName } from '../game/names';
+import { counterTerms, demandOf } from '../game/contracts';
 
 // Mode aperçu (galerie d'écrans) : une partie fictive, jamais sauvegardée, et l'écran demandé déjà ouvert.
 
@@ -36,6 +37,10 @@ export const SCREENS = [
   ['transferts', 'Mercato · bureau des transferts niveau 2'],
   ['negociation', 'Mercato · négociation'],
   ['contre-offre', 'Mercato · contre-offre du vendeur'],
+  ['contrat', 'Mercato · contrat du joueur (indemnité convenue)'],
+  ['contrat-contre', 'Mercato · contre-proposition de l’agent'],
+  ['fiche-contrat', 'Fiche joueur · dernière année de contrat'],
+  ['prolongation', 'Effectif · prolongation d’un contrat'],
   ['suivis', 'Mercato · joueurs suivis'],
   ['offres', 'Mercato · offres reçues'],
   ['offres-europe', 'Mercato · offre folle d’un géant européen (Elite, Coupe d’Europe)'],
@@ -62,7 +67,7 @@ export const SCREENS = [
   ['entrainement-progres', 'Centre d’entraînement · progrès et niveaux'],
   ['entrainement-batiment', 'Inspecteur · centre d’entraînement'],
   ['direction', 'Direction du club · droits TV'],
-  ['direction-salaires', 'Direction du club · salaires'],
+  ['direction-contrats', 'Direction du club · contrats'],
   ['medical', 'Centre médical · blessés et soins'],
   ['medical-batiment', 'Inspecteur · centre médical'],
   ['comparateur', 'Comparateur radar'],
@@ -180,6 +185,11 @@ export function previewState(screen) {
     }
   }
   if (screen === 'fiche-recrue') { s.money += 50000; signPlayer(s, s.market[0].id); } // signé aujourd'hui : pas de revente avant quatre journées
+  if (['effectif', 'fiche-contrat', 'prolongation'].includes(screen)) { // deux joueurs en dernière année de contrat
+    const best = [...s.players].sort((a, b) => playerRating(b) - playerRating(a));
+    best[1].deal.until = s.seasonNumber;
+    best[6].deal.until = s.seasonNumber;
+  }
   s.offline = null;
   return s;
 }
@@ -235,7 +245,7 @@ function trainingPreview(s) {
 // Mercato en aperçu : une négociation (avec ou sans contre-offre), des joueurs suivis dont un parti ailleurs, des
 // offres reçues (trois clubs pour un joueur, un pour un autre, une offre spontanée), des enchères, une négociation de
 // vente au dernier mot, une vente conclue, un bilan avec une arrivée et un départ.
-const MERCATO = ['negociation', 'contre-offre', 'suivis', 'offres', 'offres-europe', 'encheres', 'vente-negociation', 'vente-accord', 'vente-conclue', 'bilan-mercato'];
+const MERCATO = ['negociation', 'contre-offre', 'contrat', 'contrat-contre', 'suivis', 'offres', 'offres-europe', 'encheres', 'vente-negociation', 'vente-accord', 'vente-conclue', 'bilan-mercato'];
 const SALES = ['offres', 'offres-europe', 'encheres', 'vente-negociation', 'vente-accord', 'vente-conclue'];
 // écrans joués en Elite, qualifié pour la Coupe d'Europe
 const ELITE = ['europe', 'calendrier-europe', 'avant-match-exterieur', 'avant-match-europe', 'offres-europe'];
@@ -248,6 +258,18 @@ function mercatoPreview(s, screen) {
     target.talks = { tries: 1, counter, closed: false };
     const amount = roundTo(costOf(target, s) * 0.84);
     s.lastDeal = { id: target.id, name: target.name, result: 'countered', amount, counter, at: Date.now() + 60000 }; // affichée à l'ouverture
+  }
+  if (screen === 'contrat' || screen === 'contrat-contre') { // indemnité convenue : place au contrat du joueur
+    const fee = costOf(target, s);
+    target.talks = { tries: 0, fee };
+    s.lastDeal = { id: target.id, name: target.name, result: 'agreed', amount: fee, ask: fee, at: later() };
+    if (screen === 'contrat-contre') { // proposition sérieuse refusée : son agent propose ses conditions
+      const d = demandOf(s, target);
+      const terms = { ...d, wage: roundTo(d.wage * 0.9) };
+      target.ctalks = { at: roundKey(s), tries: 1, closed: false, counter: null };
+      target.ctalks.counter = counterTerms(s, target, terms);
+      s.lastContract = { id: target.id, name: target.name, result: 'countered', renew: false, terms, counter: target.ctalks.counter, at: later() };
+    }
   }
   if (screen === 'suivis') {
     for (const p of poolOf(s).slice(0, 4)) toggleShortlist(s, p.id);
@@ -342,10 +364,12 @@ export function previewUi(screen, s) {
     case 'effectif': return { panel: 'squad' };
     case 'fiche': return { panel: 'squad', squad: { sheet: s.players.find((p) => p.season?.apps)?.id ?? s.players[0].id } };
     case 'fiche-recrue': return { panel: 'squad', squad: { sheet: (s.players.find((p) => p.signed) || s.players[0]).id } };
+    case 'fiche-contrat': return { panel: 'squad', squad: { sheet: s.players.find((p) => p.deal?.until === s.seasonNumber).id } };
+    case 'prolongation': return { panel: 'squad', squad: { deal: s.players.find((p) => p.deal?.until === s.seasonNumber).id } };
     case 'composition': return { panel: 'squad', squadTab: 'lineup' };
     case 'anciens': return { panel: 'squad', squadTab: 'alumni' };
     case 'marche': case 'transferts': return { panel: 'mercato' };
-    case 'negociation': case 'contre-offre': return { panel: 'mercato', squad: { deal: s.transfers[0].id } };
+    case 'negociation': case 'contre-offre': case 'contrat': case 'contrat-contre': return { panel: 'mercato', squad: { deal: s.transfers[0].id } };
     case 'suivis': return { panel: 'mercato', squad: { mercato: 'watch' } };
     case 'offres': case 'offres-europe': case 'encheres': return { panel: 'mercato', squad: { mercato: 'offers' } };
     case 'vente': return { panel: 'mercato', squad: { mercato: 'offers', listing: [...s.players].sort((a, b) => playerRating(a) - playerRating(b))[2].id } };
@@ -359,7 +383,7 @@ export function previewUi(screen, s) {
     case 'academie-batiment': return { sel: { plotId: 't2', sector: 'main' } };
     case 'entrainement': case 'entrainement-staff': return { panel: 'training' };
     case 'direction': return { panel: 'direction' };
-    case 'direction-salaires': return { panel: 'direction', directionTab: 'wages' };
+    case 'direction-contrats': case 'direction-salaires': return { panel: 'direction', directionTab: 'contracts' };
     case 'medical': return { panel: 'medical' };
     case 'medical-batiment': return { sel: { plotId: 't4', sector: 'main' } };
     case 'entrainement-joueur': return { panel: 'training', training: { chooser: 'D' } };

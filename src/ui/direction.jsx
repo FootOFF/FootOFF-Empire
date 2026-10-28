@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { DIVISIONS, divisionOf } from '../game/constants';
 import { playerRating, wageOf } from '../game/players';
-import {
-  TV_ASK_MAX, localTv, maxCut, negotiateTv, negotiateWage, tvBoost, tvChance, tvOpen, tvPerMatch, wageChance, wageOpen,
-} from '../game/direction';
+import { TV_ASK_MAX, localTv, negotiateTv, tvBoost, tvChance, tvOpen, tvPerMatch } from '../game/direction';
+import { lastYear, renewOpen } from '../game/contracts';
+import { DIRECTION_EASE } from '../game/economy';
 import { setTicketPolicy } from '../game/engine';
 import { pctOf } from '../game/mercato';
 import { Panel } from './panels';
@@ -15,8 +15,8 @@ import { fmtMoney, fmtRating } from './format';
 // Direction du club (src/game/direction.js) : le bureau du président, trois onglets.
 // - Droits TV : une demande de hausse par saison au diffuseur, avec la chance exacte qu'il accepte ; puis le contrat
 //   de la saison (accordé ou refusé).
-// - Salaires : un joueur, une baisse proposée (jusqu'au plafond du niveau), l'économie sur la saison et la chance exacte
-//   qu'il accepte ; une seule discussion par joueur et par saison.
+// - Contrats (0.8.0) : les contrats de l'effectif, les plus proches de leur fin d'abord ; « Prolonger » ouvre la
+//   négociation de prolongation (la fenêtre du mercato, mercato.jsx), posée sur tout l'écran (App).
 // - Billetterie : la formule des billets et la recette prévue de chacune (même outil que la fiche du stade).
 
 const pct = (v) => `${Math.round(v * 100)} %`;
@@ -77,70 +77,33 @@ function TvTab({ state, run, notify }) {
   );
 }
 
-function WagesTab({ state, run, notify }) {
+function ContractsTab({ state, onRenew }) {
   const lvl = state.buildings.direction || 0;
-  const cap = maxCut(lvl);
-  const players = useMemo(() => [...state.players].sort((a, b) => wageOf(b, state.divisionIndex) - wageOf(a, state.divisionIndex)), [state.players, state.divisionIndex]);
-  const [sel, setSel] = useState(null);
-  const [cut, setCut] = useState(Math.min(0.1, cap));
-  // réponse du joueur à la proposition qui vient d'être faite : elle remplace la négociation, sur place
-  const [answer, setAnswer] = useState(null); // { id, ok, cut }
-  const p = players.find((q) => q.id === sel) || null;
-  const base = p ? Math.round(wageOf({ ...p, wageCut: 0 }, state.divisionIndex)) : 0;
-  const pick = (id) => { setSel(sel === id ? null : id); setAnswer(null); };
-  const propose = () => run((s) => {
-    const c = Math.min(Math.round(cut * 100) / 100, cap); // même arrondi que negotiateWage
-    const r = negotiateWage(s, p.id, c);
-    const q = r && r.players.find((x) => x.id === p.id);
-    if (q) {
-      const ok = !!r.lastWageTalk?.ok;
-      setTimeout(() => {
-        setAnswer({ id: q.id, ok, cut: c });
-        notify({ kind: ok ? 'success' : 'warn', eyebrow: 'Salaires', title: ok ? `${q.name} accepte −${pct(c)}` : `${q.name} refuse la baisse` });
-      }, 0);
-    }
-    return r;
-  }, 'Négociation impossible.');
+  const players = useMemo(
+    () => [...state.players].sort((a, b) => (a.deal?.until ?? 99) - (b.deal?.until ?? 99) || wageOf(b, state.divisionIndex) - wageOf(a, state.divisionIndex)),
+    [state.players, state.divisionIndex],
+  );
   return (
     <div className="dir-wages">
       <p className="dir-note">
-        Propose une baisse de salaire à un joueur, jusqu’à {pct(cap)} au niveau {lvl} de la Direction. Un joueur fort pour la
-        division résiste davantage ; acceptée, la baisse reste jusqu’à une prochaine renégociation. Une discussion par
-        joueur et par saison.
+        Les contrats de l’effectif, les plus proches de leur fin d’abord. Sans prolongation, un joueur en dernière année part
+        libre à l’intersaison, sans indemnité.{' '}
+        {lvl ? `Au niveau ${lvl}, ta Direction baisse de ${lvl * DIRECTION_EASE} % les exigences de salaire des joueurs.` : 'Construis la Direction pour baisser les exigences de salaire des joueurs.'}
       </p>
       <ul className="dir-list">
         {players.map((q) => {
-          const w = wageOf(q, state.divisionIndex);
-          const open = wageOpen(state, q);
+          const last = lastYear(state, q);
+          const open = renewOpen(state, q);
           return (
             <li key={q.id}>
-              <button type="button" className={`dir-row ${sel === q.id ? 'on' : ''}`} onClick={() => pick(q.id)} disabled={!open && sel !== q.id} aria-expanded={sel === q.id}>
+              <div className={`dir-row dir-contract ${last ? 'last' : ''}`}>
                 <Portrait p={q} size={34} />
-                <span className="dir-who"><strong>{q.name}</strong><em>{q.pos} · niveau {fmtRating(playerRating(q))}</em></span>
-                <span className="dir-wage"><b>{fmtMoney(w)}</b><em>{q.wageCut ? `−${pct(q.wageCut)} négocié` : open ? 'par saison' : 'déjà discuté'}</em></span>
-              </button>
-              {sel === q.id && p && answer?.id === q.id && (
-                <div className={`dir-talk dir-answer ${answer.ok ? 'ok' : 'ko'}`} role="status">
-                  <strong>{answer.ok ? `${q.name.split(' ')[0]} accepte : −${pct(answer.cut)}` : `${q.name.split(' ')[0]} refuse la baisse`}</strong>
-                  <p className="dir-big">
-                    {answer.ok
-                      ? <><b>{fmtMoney(w)}</b> par saison désormais · économie de {fmtMoney(base - w)}</>
-                      : <>Il garde <b>{fmtMoney(w)}</b> par saison. Prochaine discussion la saison prochaine.</>}
-                  </p>
-                  <button type="button" className="btn ghost" onClick={() => pick(q.id)}>Fermer</button>
-                </div>
-              )}
-              {sel === q.id && p && open && answer?.id !== q.id && (
-                <div className="dir-talk">
-                  <label className="dir-slider">
-                    <span>Baisse proposée <b>−{pct(cut)}</b></span>
-                    <input type="range" min="0.02" max={cap} step="0.01" value={Math.min(cut, cap)} onChange={(e) => setCut(+e.target.value)} aria-label="Baisse proposée" />
-                  </label>
-                  <p className="dir-big"><b>{fmtMoney(Math.round(base * (1 - cut)))}</b> par saison · économie de {fmtMoney(base - Math.round(base * (1 - cut)))}</p>
-                  <Chance value={wageChance(state, p, cut)} />
-                  <button type="button" className="btn" onClick={propose}>Proposer à {p.name.split(' ')[0]}</button>
-                </div>
-              )}
+                <span className="dir-who"><strong>{q.name}</strong><em>{q.pos} · niveau {fmtRating(playerRating(q))} · {q.age} ans</em></span>
+                <span className="dir-side">
+                  <span className="dir-wage"><b>{fmtMoney(wageOf(q, state.divisionIndex))}</b><em>{last ? 'dernière année' : q.deal ? `jusqu’à la saison ${q.deal.until}` : 'par saison'}</em></span>
+                  <button type="button" className="btn btn-sm" disabled={!open} onClick={() => onRenew(q.id)} title={open ? '' : 'Contrat au plus long'}>Prolonger</button>
+                </span>
+              </div>
             </li>
           );
         })}
@@ -149,8 +112,9 @@ function WagesTab({ state, run, notify }) {
   );
 }
 
-export function DirectionView({ state, run, notify = () => {}, initialTab = 'tv', onClose, onBuilding }) {
-  const [tab, setTab] = useState(initialTab || 'tv');
+// onRenew : ouvre la prolongation d'un joueur, posée sur tout l'écran (App) ; sheetOpen : elle a la main sur Échap.
+export function DirectionView({ state, run, notify = () => {}, initialTab = 'tv', onClose, onBuilding, onRenew = () => {}, sheetOpen = false }) {
+  const [tab, setTab] = useState(initialTab === 'wages' ? 'contracts' : initialTab || 'tv');
   const lvl = state.buildings.direction || 0;
   return (
     <Panel
@@ -159,18 +123,19 @@ export function DirectionView({ state, run, notify = () => {}, initialTab = 'tv'
       eyebrow={<>Niveau {lvl} / 5<span className="hide-sm"> · {divisionOf(state).name}</span></>}
       money={state.money}
       onClose={onClose}
+      onEscape={sheetOpen ? () => {} : undefined}
       toolbar={(
         <>
           <p className="dir-intro">
             Le bureau du président : les chances affichées sont celles qui décident.
             {onBuilding && <> <button type="button" className="linkbtn" onClick={onBuilding}>bâtiment</button></>}
           </p>
-          <Tabs items={[['tv', 'Droits TV'], ['wages', 'Salaires'], ['tickets', 'Billetterie']]} value={tab} onChange={setTab} />
+          <Tabs items={[['tv', 'Droits TV'], ['contracts', 'Contrats'], ['tickets', 'Billetterie']]} value={tab} onChange={setTab} />
         </>
       )}
     >
       {tab === 'tv' ? <TvTab state={state} run={run} notify={notify} />
-        : tab === 'wages' ? <WagesTab state={state} run={run} notify={notify} />
+        : tab === 'contracts' ? <ContractsTab state={state} onRenew={onRenew} />
           : (
             <section className="dir-card">
               <TicketPricing state={state} onChange={(id) => run((s) => setTicketPolicy(s, id))} />

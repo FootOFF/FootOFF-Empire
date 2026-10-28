@@ -822,7 +822,8 @@ export default function App({ preview = null }) {
   // la fiche (et ce qu'elle ouvre : carrière, comparaison, mise en vente) posée sur le panneau en cours ; elle se retire
   // d'elle-même une fois tout refermé (SquadView mode « sheet »)
   // calque au-dessus des fenêtres du panneau (la fiche carrière des Stats, qui l'a ouverte, passe dessous)
-  const peekSheet = <Presence>{peek !== null && <div className="peek-layer"><SquadView key={peek} mode="sheet" state={state} run={run} ask={setConfirm} initialSheet={peek} onMercato={openMercato} onClose={() => setPeek(null)} /></div>}</Presence>;
+  // peek : l'identifiant du joueur (sa fiche), ou { id, renew } pour la prolongation ouverte depuis la Direction
+  const peekSheet = <Presence>{peek !== null && <div className="peek-layer"><SquadView key={peek?.id ?? peek} mode="sheet" state={state} run={run} ask={setConfirm} initialSheet={peek?.renew ? null : peek} initialDeal={peek?.renew ? peek.id : null} onMercato={openMercato} onClose={() => setPeek(null)} /></div>}</Presence>;
 
   return (
     <NavContext.Provider value={nav}>
@@ -981,11 +982,15 @@ export default function App({ preview = null }) {
             run={run}
             notify={notify}
             initialTab={directionTab}
+            onRenew={(id) => setPeek({ id, renew: true })}
+            sheetOpen={peek !== null}
             onClose={() => setPanel(null)}
             onBuilding={() => { const plot = plotOf(state, 'direction'); if (plot) selectPlot(plot.id, plot.sector); }}
           />
         )}
       </Presence>
+      {/* prolongation ouverte depuis la Direction : posée sur tout l'écran (le panneau est trop étroit pour la grande fenêtre) */}
+      {inGame && panel === 'direction' && peekSheet}
       <Presence>
         {inGame && panel === 'medical' && (
           <MedicalView

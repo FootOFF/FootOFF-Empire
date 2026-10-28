@@ -3994,6 +3994,86 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ng-win p.ng-saved { color: var(--green); font-size: var(--t-sm); }
 .ng-win p.ng-paid { color: var(--muted); font-size: var(--t-sm); }
 .ng-win p.ng-fit { color: var(--gold-light); font-size: var(--t-sm); }
+.ng-win p.ng-terms-line { font-size: var(--t-sm); }
+/* Contrats (0.8.0) : le bloc Contrat de la fiche (squad.jsx), la fin du contrat sous le salaire dans le tableau de
+   l'effectif, la mention des joueurs en dernière année sur leur carte */
+.sh-contract b.amber, .sh-deal b.amber { color: var(--amber); }
+.sh-deal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin: 10px 0; }
+.sh-deal div { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 10px 12px; background: var(--plate-2); }
+.sh-deal b { font-family: var(--font-disp); font-weight: 700; font-size: 22px; line-height: 1.05; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.sh-deal span { font-size: var(--t-xs); color: var(--muted); }
+.sh-contract .sh-renew { width: 100%; margin-top: 10px; }
+.sq-end { display: block; font-size: 11px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.sq-end.last { color: var(--amber); }
+.sqc-end { margin-top: -2px; text-align: center; font-family: var(--font-disp); font-weight: 600; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--amber); }
+/* Négociation d'une recrue ou d'une prolongation (0.8.0, mercato.jsx) : les deux étapes (indemnité, contrat), les
+   réglages du contrat (durée, prime, clause de montée) ; sur PC, une grande fenêtre centrée en deux colonnes, tout
+   visible sans défiler ; au téléphone, la feuille, jauge et bouton collés en bas */
+.ng-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ng-step {
+  display: flex; align-items: center; gap: 8px; min-width: 0; padding: 9px 12px; background: var(--plate-2); clip-path: var(--cut-shape-sm);
+  font-family: var(--font-disp); font-weight: 600; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap;
+}
+.ng-step i { flex-shrink: 0; width: 20px; height: 20px; display: grid; place-items: center; font-style: normal; font-size: 12px; background: var(--plate-3); color: var(--text); }
+.ng-step i svg { width: 13px; height: 13px; stroke-width: 2.6; }
+.ng-step b { margin-left: auto; font-weight: 600; letter-spacing: .02em; color: var(--text); font-variant-numeric: tabular-nums; }
+.ng-step.done i { background: var(--green); color: #08090a; }
+.ng-step.on { color: var(--text); box-shadow: inset 0 -2px 0 var(--gold); }
+.ng-step.on i { background: var(--gold-grad); color: var(--gold-ink); }
+.ng-terms { display: flex; flex-direction: column; gap: 14px; }
+.ng-term { display: flex; flex-direction: column; gap: 8px; }
+.ng-term-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ng-term-top em { font-style: normal; font-size: var(--t-xs); color: var(--muted); text-align: right; }
+.ng-term .segmented.n5 { grid-template-columns: repeat(5, 1fr); }
+.ng-term .segmented.n4 { grid-template-columns: repeat(4, 1fr); }
+.ng-term .segmented button { font-size: 15px; min-height: 40px; padding: 4px 2px; }
+.ng-term .segmented button:disabled { opacity: .35; cursor: not-allowed; }
+.ng-mini { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 10px; }
+.ng-mini .hud-icon { width: 44px; height: 40px; font-size: 20px; line-height: 1; }
+.ng-mini .hud-icon:disabled { opacity: .35; cursor: not-allowed; }
+.ng-mini output { text-align: center; font-family: var(--font-disp); font-weight: 700; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) { .ng-counter > div { flex-basis: 100%; } .ng-counter .btn { flex-basis: 100%; } }
+.ng-answer b, .ng-counter .eyebrow { text-wrap: balance; }
+.ng-counter b small { font-family: 'Inter', system-ui, sans-serif; font-weight: 400; font-size: var(--t-sm); color: var(--text-2); }
+.ng-col { display: contents; }
+.sq-overlay.ng-overlay { container-type: inline-size; }
+@media (min-width: 980px) { .sq-overlay.ng-overlay { justify-content: center; align-items: center; padding: 24px; background: rgba(5, 5, 5, .74); } }
+/* deux colonnes seulement quand la place le permet (panneau large ou plein écran) ; ailleurs, la feuille */
+@container (min-width: 900px) {
+  .sq-sheet.ng-deal {
+    width: min(1080px, 100%); height: auto; max-height: calc(100% - 40px); display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    column-gap: 30px; row-gap: 12px; align-content: start; padding: 16px 26px 14px; clip-path: var(--cut-shape);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .6); animation: fo-up .3s var(--ease);
+  }
+  .sq-sheet.ng-deal > :not(.ng-col) { grid-column: 1 / -1; }
+  .ng-deal .ng-col { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+  /* écran peu haut ou contre-proposition affichée : quand la fenêtre défile, toute la colonne de droite (raisons, coûts,
+     avertissement, jauge, bouton) reste à l'écran, pas seulement le bas */
+  .ng-deal .ng-col:last-child { position: sticky; top: 0; align-self: start; }
+  .ng-deal .ng-foot { position: static; margin: 0; padding: var(--s-3) 0 0; background: none; }
+  .sq-sheet.ng-deal.ng-done { display: flex; width: min(600px, 100%); }
+  /* plus serré qu'en feuille : les deux étapes tiennent sans défiler sur un écran de 820 px de haut */
+  .ng-deal .ng-col { gap: 10px; }
+  .ng-deal .ng-offer { gap: 10px; padding-top: 12px; }
+  .ng-deal .ng-amount .hud-icon { width: 46px; height: 46px; }
+  .ng-deal .ng-value { font-size: 44px; }
+  .ng-deal .ng-terms { gap: 10px; }
+  .ng-deal .ng-term { gap: 6px; }
+  .ng-deal .ng-term .segmented button { min-height: 36px; }
+  .ng-deal .ng-chance { padding: 12px 16px; }
+  /* portable de faible hauteur (1366 × 768 : environ 650 px pour le jeu) */
+  @media (max-height: 760px) {
+    .sq-sheet.ng-deal { row-gap: 10px; padding-top: 12px; }
+    .ng-deal .ng-player h3 { font-size: 26px; }
+    .ng-deal .ng-value { font-size: 36px; }
+    .ng-deal .ng-amount .hud-icon { width: 40px; height: 40px; }
+    .ng-deal .ng-mini output { font-size: 22px; }
+    .ng-deal .ng-mini .hud-icon { height: 34px; }
+    .ng-deal .ng-term .segmented button { min-height: 32px; }
+    .ng-deal .ng-chance { padding: 10px 14px; }
+    .ng-deal .ng-costs { gap: 4px; }
+  }
+}
 .ng-actions { width: 100%; max-width: 320px; margin-top: var(--s-3); display: flex; flex-direction: column; gap: var(--s-2); }
 @keyframes ng-pop { 0% { opacity: 0; transform: scale(.4); } 60% { opacity: 1; transform: scale(1.12); } 100% { transform: scale(1); } }
 
@@ -4532,6 +4612,10 @@ html, body { overscroll-behavior: none; }
 .dir-row.on { background: linear-gradient(90deg, rgba(199, 161, 90, .18), rgba(199, 161, 90, .05)), var(--plate-2); box-shadow: inset 3px 0 0 var(--gold-light); }
 .dir-row:disabled { opacity: .55; cursor: default; }
 @media (hover: hover) { .dir-row:hover:not(:disabled):not(.on) { background: var(--plate-3); } }
+.dir-row.dir-contract { cursor: default; }
+.dir-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.dir-contract .dir-who strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.dir-contract.last .dir-wage em { color: var(--amber); }
 .dir-who, .dir-wage { display: flex; flex-direction: column; min-width: 0; }
 .dir-who strong { font-weight: 600; overflow-wrap: anywhere; }
 .dir-who em, .dir-wage em { font-style: normal; font-size: var(--t-xs); color: var(--muted); }

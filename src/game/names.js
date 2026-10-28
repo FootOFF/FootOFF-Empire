@@ -327,7 +327,7 @@ export function clubAfter(prep, name) {
   if (prep === 'de ' && a.startsWith('les ')) return `des ${a.slice(4)}`;
   if (prep === 'à ' && a.startsWith('le ')) return `au ${a.slice(3)}`;
   if (prep === 'à ' && a.startsWith('les ')) return `aux ${a.slice(4)}`;
-  if (prep === 'de ' && a === name) return deName(name); // nom sans article connu : « d'Inter Casa »
+  if (prep === 'de ' && a === name) return deName(name); // nom sans article connu : « d'Inter Valmont »
   return prep + a;
 }
 export const capitalize = (t) => t.charAt(0).toUpperCase() + t.slice(1);

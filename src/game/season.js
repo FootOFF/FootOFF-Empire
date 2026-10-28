@@ -18,6 +18,7 @@ import { addMatch, rebuildRecords } from './records';
 import { distinctFace, distinctSquad } from './faces';
 import { collectiveSession, staffSession, tidyTraining, windowKey } from './training';
 import { leagueSeasonStart, officialTable } from './leagueSeason';
+import { divisionWages, ensureDeals, lastYear } from './contracts';
 
 export function roundRobin(n) {
   const rounds = [];
@@ -36,6 +37,18 @@ export { pushJournal } from './journal';
 
 // Partie de championnat entre amis (s.league, leagueSeason.js) : les adversaires, le calendrier et le classement viennent
 // de la ligue ; ni coupes ni marché privé. Le reste de la reprise (académie, objectifs, sponsors) est celui de la carrière.
+// Reprise : les joueurs qui entament leur dernière année de contrat, au journal (prolonger à temps, ou les vendre).
+function announceLastYear(s) {
+  const last = s.players.filter((p) => lastYear(s, p));
+  if (!last.length) return;
+  const many = last.length > 1;
+  pushJournal(s, {
+    season: s.seasonNumber, kind: 'club',
+    title: many ? `${last.length} joueurs entament leur dernière année de contrat` : `${last[0].name} entame sa dernière année de contrat`,
+    text: `${many ? `${last.slice(0, -1).map((p) => p.name).join(', ')} et ${last.at(-1).name}` : last[0].name} : sans prolongation, ${many ? 'ils partiront' : 'il partira'} libre${many ? 's' : ''} à la fin de la saison, sans indemnité.`,
+  });
+}
+
 export function startSeason(s) {
   if (s.league) {
     leagueSeasonStart(s);
@@ -43,6 +56,7 @@ export function startSeason(s) {
     resetSeasonStats(s);
     drawObjectives(s);
     if (s.seasonNumber > 1) paySponsors(s);
+    announceLastYear(s);
     return;
   }
   const div = DIVISIONS[s.divisionIndex];
@@ -83,6 +97,7 @@ export function startSeason(s) {
     });
   }
   if (s.seasonNumber > 1) paySponsors(s);
+  announceLastYear(s);
 }
 
 // Sponsors : depuis la 0.6.0, les contrats de la saison se signent et se paient à la reprise (au bilan avant ; la
@@ -505,7 +520,16 @@ export function endSeason(s) {
       archivePlayer(s, p, { reason: 'retraite' });
     } else staying.push(p);
   }
-  s.players = staying;
+  // fins de contrat : sans prolongation, le joueur part libre, sans indemnité (contracts.js)
+  s.players = staying.filter((p) => {
+    if (!lastYear(s, p)) return true;
+    events.push(`${p.name} (${p.age} ans) part libre : son contrat est arrivé à son terme.`);
+    archivePlayer(s, p, { reason: 'libre' });
+    logMove(s, 'out', p, 0, null);
+    return false;
+  });
+  s.saleList = (s.saleList || []).filter((x) => s.players.some((q) => q.id === x.id));
+  s.offers = (s.offers || []).filter((o) => s.players.some((q) => q.id === o.playerId));
   distinctSquad(s.players); // un an de plus (cheveux gris, front dégarni) : pas de sosie pour autant, le dernier arrivé change de coupe
   tidyTraining(s); // programmes d'entraînement des retraités effacés
 
@@ -520,9 +544,13 @@ export function endSeason(s) {
     s.players.push(p);
     events.push(`Amateur de secours : ${p.name} (${p.age} ans) complète l’effectif.`);
   }
+  // salaires à la montée (clauses de montée) ou à la descente (ramenés au niveau de la nouvelle division)
+  const nextIndex = clamp(s.divisionIndex + (promoted ? 1 : relegated ? -1 : 0), 0, 3);
+  const wageNote = divisionWages(s, s.divisionIndex, nextIndex);
+  if (wageNote) events.push(wageNote);
 
   s.history.push({ season: s.seasonNumber, division: div.name, position });
-  const nextDivName = DIVISIONS[clamp(s.divisionIndex + (promoted ? 1 : relegated ? -1 : 0), 0, 3)].name;
+  const nextDivName = DIVISIONS[nextIndex].name;
   const matchday = s.seasonStats?.gate || 0;
   const cupsMoney = (s.ledger?.lines?.cups || 0);
   const trophies = (s.trophies || []).filter((t) => t.season === s.seasonNumber);
@@ -550,7 +578,8 @@ export function endSeason(s) {
   s.seasonNumber += 1;
   if (s.league) s.league.season += 1; // la saison suivante de la ligue (son calendrier)
   s.lastMatch = null;
-  ensureLineup(s); // retraites, amateurs de secours : l'onze est complété
+  ensureDeals(s); // amateurs de secours : un contrat au salaire de la division
+  ensureLineup(s); // retraites, départs libres, amateurs de secours : l'onze est complété
   startSeason(s);
   return s;
 }

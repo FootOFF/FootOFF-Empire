@@ -890,6 +890,43 @@ Aperçus : `?ecran=marche`, `transferts`, `negociation`, `contre-offre`, `suivis
 folle d'un géant européen pour une star de 21 ans), `encheres`, `vente`, `vente-negociation`, `vente-conclue`,
 `bilan-mercato`. Contrôle des chances de la vente : `tmp/ph3/salecheck.js`.
 
+### Contrats et salaires (0.8.0)
+
+Demande de l'utilisateur (2026-10-28) : des négociations et des salaires réalistes, sans moral ni temps de jeu promis.
+Règles dans `src/game/contracts.js` (calculs) et `src/game/engine.js` (actions).
+- Contrat de chaque joueur de l'effectif (`p.deal`) : salaire par saison, dernière saison (`until`), clause de montée
+  (`clause`, 0, 25, 50 ou 100 %), saison de signature (`since`), prime. `wageOf` rend le salaire du contrat ; le salaire
+  de référence (`refWage` : niveau du joueur et division) sert aux demandes, à la valeur et aux joueurs sans contrat.
+- Le salaire ne suit plus le niveau ni la division. Montée : la clause relève le salaire. Descente : un salaire
+  au-dessus de la référence de la nouvelle division y est ramené (clause de descente, la même pour tous, pour que la
+  descente d'Elite ne coule pas le club). Sans prolongation, le joueur part libre à la fin de sa dernière saison
+  (`archivePlayer`, raison « libre » ; bilan du mercato « Libre »), annoncé au journal à la reprise et par le staff en
+  seconde moitié de saison.
+- Recrue sous contrat : l'indemnité d'abord (`makeOffer` ; acceptée, elle est réservée dans `p.talks.fee` jusqu'à la
+  prochaine journée), puis le contrat (`offerContract`). Joueur libre : le contrat d'emblée, avec la prime de signature
+  qu'il attend (son prix au mercato). Prolongation : le même contrat pour un joueur de l'effectif, depuis sa fiche ou
+  l'onglet Contrats de la Direction (durée plus longue que celle qui reste, cinq saisons au plus).
+- Chance exacte : seuil du joueur en part du salaire de référence (Direction −2 % par niveau, notoriété, âge,
+  potentiel, clubs intéressés, dernière année, retard de salaire, propositions refusées, caractère), offre = salaire
+  + prime étalée sur la durée (moins celle qu'attend un joueur libre) + clause (plus quand le club joue la montée)
+  − écart à la durée souhaitée (courte pour un jeune à fort potentiel, longue passé 30 ans). Sa demande est le salaire
+  qui le fait signer à coup sûr ; refusée mais sérieuse, la proposition amène la contre-proposition de son agent
+  (`p.ctalks`, valable dans la journée, trois propositions par journée).
+- Valeur à la vente selon le contrat qui reste (`contractValue` : ×0,8 en dernière année, ×1,1 sur cinq saisons).
+- Parties d'avant : chaque joueur reçoit un contrat au salaire du jour (baisse négociée comprise), de deux à quatre
+  saisons (`ensureDeals`) ; personne ne part à la fin de la saison en cours. Effectif de départ : de même. Jeune monté
+  de l'académie : trois saisons. Ligue entre amis : la meilleure offre l'emporte, puis le joueur signe trois saisons au
+  salaire de son niveau.
+- La baisse de salaire de la Direction (une par saison et par joueur) disparaît : l'onglet Contrats la remplace.
+
+Interface (maquettes validées le 2026-10-28) : sur PC (980 px et plus), la négociation d'une recrue ou d'une
+prolongation est une grande fenêtre centrée en deux colonnes (`.ng-deal`) : étapes « Indemnité » puis « Contrat du
+joueur » en tête, réglages à gauche (salaire au grand curseur, durée et clause en boutons, prime au − / +), raisons, coûts, jauge et bouton à droite. Au téléphone, la feuille, réglages à la suite, jauge et bouton
+collés en bas. La grande fenêtre dépend de la place réelle (requête de conteneur, 900 px et plus) : la prolongation
+ouverte depuis la Direction (panneau étroit) est posée sur tout l'écran. Durées en ans (une saison = un an), fins en
+« saison N ». Fiche : bloc Contrat (salaire, fin, clause) et « Prolonger son contrat ». Effectif : fin du contrat sous
+le salaire dans le tableau (PC), « Dernière année de contrat » sur la carte des seuls joueurs concernés.
+
 ## Académie
 
 L'équipe de jeunes du club (`src/game/academy.js`, écran `src/ui/academy.jsx`) s'ouvre d'un clic sur le bâtiment

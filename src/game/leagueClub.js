@@ -3,7 +3,7 @@ import { applyMatchResult, archivePlayer, startSeason } from './season';
 import { logMove } from './mercato';
 import { repairSave, validSave } from './save';
 import { autoLineup, ensureLineup } from './tactics';
-import { assignNumber, freshSeason } from './players';
+import { assignNumber, freshSeason, refWage } from './players';
 import { distinctFace } from './faces';
 import { book, markTreasury } from './ledger';
 import { pushJournal } from './journal';
@@ -11,6 +11,7 @@ import { leagueClubs, leagueSquads, replayOf, startWorld } from './league';
 import { expandPlayer, marketPlayers, priceOf, snapPlayer, unsnapPlayer } from './leagueWorld';
 import { officialTable, perspectiveResult, refreshRivals } from './leagueSeason';
 import { clone } from './utils';
+import { ensureDeals, setDeal } from './contracts';
 
 // Partie de championnat entre amis : une partie solo à part entière (même moteur, mêmes écrans : complexe, bâtiments,
 // entraînement, académie, finances), gardée sur l'appareil de chaque ami, à côté de sa carrière. La ligue lui donne ses
@@ -80,6 +81,7 @@ export function createLeagueClub(d, m) {
     s.players.push(p);
   }
   s.nextId = s.players.length + 1;
+  ensureDeals(s); // contrats de départ (contracts.js)
   s.market = [];
   s.transfers = [];
   s.tutorial = { step: 'done' };
@@ -185,6 +187,8 @@ function applyMoves(s, moves) {
     p.sellFrom = 0;
     delete p.injury;
     p.ban = 0;
+    delete p.ctalks;
+    setDeal(s, p, { wage: refWage(p, s.divisionIndex), years: 3 }); // entre amis, la meilleure offre l'emporte : il signe trois saisons au salaire de son niveau
     if (s.players.some((q) => q.num === p.num) || p.num == null) assignNumber(s.players, p);
     distinctFace(s.players, p);
     s.players.push(p);

@@ -108,12 +108,12 @@ export function stanceOf(s, p) {
     t = 0.86;
     const c = p.contract || 2;
     if (c <= 1) { t -= 0.07; reasons.push(['down', 'Dernière année de contrat : son club préfère le vendre maintenant.']); }
-    else if (c === 2) { t -= 0.02; reasons.push(['', 'Contrat de 2 ans : son club peut le céder sans le brader.']); }
-    else { t += c >= 4 ? 0.05 : 0.02; reasons.push(['up', `Contrat de ${c} ans : son club ne le brade pas.`]); }
+    else if (c === 2) { t -= 0.02; reasons.push(['down', 'Encore 2 ans de contrat : son club peut le céder sans le brader.']); }
+    else { t += c >= 4 ? 0.05 : 0.02; reasons.push(['up', `Encore ${c} ans de contrat : son club ne le brade pas.`]); }
     if (lvl) { t -= 0.012 * lvl; reasons.push(['down', `Tes recruteurs négocient pour toi (bureau des transferts niveau ${lvl}).`]); }
   } else {
     t = 0.9;
-    reasons.push(['', 'Joueur libre : son agent discute la prime de signature.']);
+    reasons.push(['', 'Joueur libre : son agent discute la prime à la signature.']);
   }
   if (p.age >= 31) { t -= 0.04; reasons.push(['down', `${p.age} ans : le vendeur accepte de discuter.`]); }
   if (p.age <= 21 && potMid(s, p) - playerRating(p) >= 3) { t += 0.04; reasons.push(['up', 'Jeune à fort potentiel : le vendeur en veut un bon prix.']); }
@@ -157,11 +157,16 @@ export function offerBlock(s, p, amount) {
   return null;
 }
 
-// Négociations en cours : contre-propositions à accepter avant la prochaine journée.
-export const pendingCounters = (s) => poolOf(s).filter((p) => p.talks?.counter);
+// Négociations en cours, à conclure avant la prochaine journée : contre-offre d'un club, indemnité convenue (le contrat
+// du joueur reste à négocier), contre-proposition de l'agent d'un joueur (contracts.js : discussions du jour).
+export const pendingCounters = (s) => poolOf(s).filter((p) => p.talks?.counter || p.talks?.fee || (p.ctalks?.at === roundKey(s) && p.ctalks.counter));
 
-// Valeur de marché d'un joueur de l'effectif (players.js) : la référence des offres reçues, la même que la fiche.
-export const valueOf = (s, p) => marketValue(p, s.divisionIndex);
+// Valeur de marché d'un joueur de l'effectif (players.js) : la référence des offres reçues, la même que la fiche. Elle
+// suit les saisons de contrat qui restent (contracts.js) : en dernière année, les clubs paient moins (il pourrait
+// partir libre) ; sous long contrat, ils paient le prix fort.
+const CONTRACT_VALUE = [0.8, 0.92, 1, 1.06, 1.1];
+export const contractValue = (s, p) => (p.deal ? CONTRACT_VALUE[clamp(p.deal.until - s.seasonNumber, 0, 4)] : 1);
+export const valueOf = (s, p) => Math.round(marketValue(p, s.divisionIndex) * contractValue(s, p) / 50) * 50;
 
 // --- Ventes ------------------------------------------------------------------------------------------------
 //
@@ -211,6 +216,10 @@ export function buyerView(s, p) {
   if (p.age <= 23) { prem += 0.06; attract += 0.1; reasons.push(['good', `${p.age} ans : les clubs misent aussi sur sa revente.`]); }
   else if (p.age >= 31) { prem -= 0.08; attract -= 0.1; reasons.push(['bad', `${p.age} ans : les clubs paient moins un joueur en fin de carrière.`]); }
   if (p.age <= 21 && potMid(s, p) - playerRating(p) >= 3) { prem += 0.05; reasons.push(['good', 'Fort potentiel : les clubs paient pour l’avenir.']); }
+  const k = contractValue(s, p); // déjà dans sa valeur : la raison seulement
+  if (k < 0.85) reasons.push(['bad', 'Dernière année de contrat : les clubs paient moins, il pourrait partir libre.']);
+  else if (k < 1) reasons.push(['bad', 'Plus que deux ans de contrat : les clubs paient un peu moins.']);
+  else if (k > 1) reasons.push(['good', 'Long contrat : les clubs paient le prix fort.']);
   const gap = playerRating(p) - divRef(s);
   let weights;
   if (gap >= 1.5 && isElite(s)) {
