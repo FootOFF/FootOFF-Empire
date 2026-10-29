@@ -3046,32 +3046,73 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .tr-seasons { display: flex; flex-wrap: wrap; gap: 4px; margin: var(--s-1) 0 0; }
 .tr-seasons span { padding: 1px 8px; border-radius: 0; border: 0; background: var(--gold-soft); font-size: var(--t-xs); color: var(--gold-light); }
 .tr-meta { margin: var(--s-1) 0 0; font-size: var(--t-xs); color: var(--muted); }
-.ach-progress { height: 5px; border-radius: 0; background: rgba(255, 255, 255, .06); overflow: hidden; margin: 0 0 var(--s-4); }
-.ach-progress i { display: block; height: 100%; background: var(--gold-grad); border-radius: inherit; }
+/* Succès (0.8.16) : total et tuiles de familles en tête, filtre Tous / Obtenus / À obtenir, puis des lignes régulières :
+   médaillon au pictogramme de la famille, titre, règle et une ligne d'état dessous (jamais de colonne qui se coupe). */
+.ach-sum { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--s-4); padding: 10px 14px 12px; border: 0; border-radius: 0;
+  background: var(--plate-2); clip-path: var(--cut-shape-sm); color: inherit; text-align: start; cursor: pointer; }
+.ach-sum.on { background: linear-gradient(160deg, rgba(199, 161, 90, .2), rgba(199, 161, 90, .05)), var(--plate-2); box-shadow: inset 0 0 0 1px var(--gold); }
+.ach-sum-count { display: flex; align-items: baseline; gap: 6px; font-family: var(--font-disp); line-height: .9; }
+.ach-sum-count b { font-size: 46px; font-weight: 700; color: var(--gold-light); }
+.ach-sum-count span { font-size: 20px; font-weight: 600; color: var(--muted); }
+@media (orientation: landscape) and (max-height: 500px) { /* téléphone couché : la tête serrée, les premiers succès visibles dès l'ouverture */
+  .ach-sum { padding: 6px 12px 8px; }
+  .ach-sum-count b { font-size: 30px; }
+  .ach-fam { padding: 6px 10px 7px; }
+  .ach-fam-label { min-height: 0; }
+  .ach-show { margin-bottom: var(--s-3); }
+  .ach-show button { min-height: 30px; }
+}
+.ach-sum-side { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 7px var(--s-3); }
+.ach-sum-label { font-family: var(--font-disp); font-size: var(--d-xs); font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text-2); }
+.ach-sum-pct { font-family: var(--font-disp); font-size: var(--d-xs); font-weight: 600; color: var(--gold-light); }
+.ach-progress { display: block; grid-column: 1 / -1; height: 6px; background: var(--gold-grad) 0 0 / var(--p) 100% no-repeat, rgba(255, 255, 255, .08); }
+[dir="rtl"] .ach-progress { background-position: 100% 0, 0 0; } /* en arabe, la barre se remplit depuis la droite */
+.ach-fams { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 var(--s-2); } /* toujours quatre familles (carrière ou ligue) */
+.ach-fam { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 3px; min-width: 0; padding: 8px 10px 9px;
+  border: 0; border-radius: 0; background: var(--plate-2); clip-path: var(--cut-shape-sm); color: var(--text-2); text-align: start; cursor: pointer; }
+.ach-fam-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.ach-fam-top svg { width: 16px; height: 16px; color: var(--gold); flex: none; }
+.ach-fam-top b { font-family: var(--font-disp); font-size: var(--d-xs); font-weight: 600; color: var(--text); }
+.ach-fam-label { font-size: var(--t-xs); line-height: 1.3; min-height: 2.6em; display: flex; align-items: center; }
+.ach-fam-bar { display: block; height: 3px; background: linear-gradient(90deg, var(--gold-light) var(--p), rgba(255, 255, 255, .08) var(--p)); }
+.ach-fam.on { background: linear-gradient(160deg, rgba(199, 161, 90, .26), rgba(199, 161, 90, .08)), var(--plate-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--gold); }
+@media (hover: hover) { .ach-fam:not(.on):hover { background: var(--plate-3, #1b1e22); } }
+.ach-show { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0; margin: 0 0 var(--s-4); background: var(--plate-2); padding: 3px; clip-path: var(--cut-shape-sm); }
+.ach-show button { min-height: 34px; border: 0; border-radius: 0; background: transparent; color: var(--muted); cursor: pointer;
+  font-family: var(--font-disp); font-size: var(--d-xs); font-weight: 600; letter-spacing: .07em; text-transform: uppercase; }
+.ach-show button.on { background: var(--gold-soft); color: var(--gold-light); box-shadow: inset 0 -2px 0 var(--gold); }
+.ach-empty { margin: var(--s-4) 0; color: var(--muted); font-size: var(--t-sm); text-align: center; }
 .ach-cat { margin-bottom: var(--s-4); }
-.ach-cat h5 { display: flex; justify-content: space-between; margin: 0 0 var(--s-2); font-family: var(--font-disp); font-size: var(--d-xs);
+.ach-cat h5 { display: flex; align-items: center; gap: 8px; margin: 0 0 var(--s-2); font-family: var(--font-disp); font-size: var(--d-xs);
   font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text-2); }
-.ach-cat h5 em { font-style: normal; color: var(--muted); }
-.ach-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: var(--s-2); }
-.ach-list li { position: relative; display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) var(--s-3); border-radius: 0;
+.ach-cat h5 svg { width: 15px; height: 15px; color: var(--gold); flex: none; }
+.ach-cat h5 em { margin-inline-start: auto; font-style: normal; color: var(--muted); }
+.ach-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 6px; }
+.ach-list li { position: relative; display: flex; align-items: flex-start; gap: var(--s-3); padding: 11px 14px 12px; border-radius: 0;
   border: 0; background: var(--plate-2); clip-path: var(--cut-shape-sm); }
-.ach-list li > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.ach-list b { font-size: var(--t-sm); font-weight: 600; color: var(--text-2); }
-.ach-list li > div span { font-size: var(--t-xs); color: var(--muted); }
-.ach-list em { font-style: normal; font-size: var(--t-xs); color: var(--muted); white-space: nowrap; }
-.ach-list li.on { background: linear-gradient(100deg, rgba(199, 161, 90, .18), rgba(199, 161, 90, .05)), var(--plate-2); box-shadow: inset 3px 0 0 var(--gold-light); }
+.ach-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ach-text b { font-size: var(--t-sm); font-weight: 600; line-height: 1.3; color: var(--text-2); }
+.ach-desc { font-size: var(--t-xs); line-height: 1.4; color: var(--muted); }
+.ach-state { display: flex; align-items: center; gap: 6px; margin-top: 5px; min-width: 0; font-size: var(--t-xs); color: var(--muted); white-space: nowrap; }
+.ach-state > span { overflow: hidden; text-overflow: ellipsis; }
+.ach-state svg { width: 12px; height: 12px; flex: none; }
+.ach-count { gap: 8px; }
+.ach-bar { flex: 1; max-width: 140px; height: 4px; background: linear-gradient(90deg, var(--gold) var(--p), rgba(255, 255, 255, .09) var(--p)); }
+.ach-count bdi { font-variant-numeric: tabular-nums; color: var(--text-2); }
+.ach-list li.on { background: linear-gradient(100deg, rgba(199, 161, 90, .16), rgba(199, 161, 90, .04)), var(--plate-2); box-shadow: inset 3px 0 0 var(--gold-light); }
 .ach-list li.on b { color: var(--text); }
-.ach-list li.on em { color: var(--gold-light); }
-.ach-medal { flex: none; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #474747, #1d1d1d 70%);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .07); }
-.ach-list li.on .ach-medal { background: radial-gradient(circle at 35% 30%, #fff3cf, #dec17f 34%, #b9924c 68%, #74561f);
-  box-shadow: 0 0 12px rgba(222, 193, 127, .32), inset 0 0 0 2px rgba(255, 255, 255, .25); }
-/* succès tout juste débloqué (ouvert depuis sa notification) : liseré doré qui palpite, pastille « Nouveau » */
+.ach-list li.on .ach-state { color: var(--gold-light); }
+.ach-medal { flex: none; display: grid; place-items: center; width: 38px; height: 38px; margin-top: 1px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #34373b, #1a1c1f 70%); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .08); color: #5d6168; }
+.ach-medal svg { width: 18px; height: 18px; }
+.ach-list li.on .ach-medal { background: radial-gradient(circle at 35% 30%, #fff3cf, #dec17f 34%, #b9924c 68%, #74561f); color: #2a1f0b;
+  box-shadow: 0 0 10px rgba(222, 193, 127, .25), inset 0 0 0 1.5px rgba(255, 255, 255, .3); }
+/* succès tout juste débloqué (ouvert depuis sa notification) : liseré doré qui palpite, étiquette « Nouveau » sur la ligne d'état */
 .ach-list li.focus { --ring: var(--gold); box-shadow: inset 3px 0 0 var(--gold-light), inset 0 0 0 1px var(--gold); animation: ach-focus 1.4s .35s var(--ease) 3; }
 @keyframes ach-focus { 50% { background: rgba(199, 161, 90, .3); } }
 .ach-new {
-  --slant: 4px; display: inline-block; margin-left: 8px; padding: 2px 9px; border-radius: 0; clip-path: var(--skew); vertical-align: 1px; font-style: normal;
-  font-family: var(--font-disp); font-size: var(--d-xs); font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  --slant: 4px; flex: none; padding: 1px 8px; border-radius: 0; clip-path: var(--skew); font-style: normal;
+  font-family: var(--font-disp); font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
   background: var(--gold-grad); color: #0d0b07;
 }
 @media (prefers-reduced-motion: reduce) { .ach-list li.focus { animation: none; } }
@@ -3079,7 +3120,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 @media (max-width: 600px) {
   .tr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ach-list { grid-template-columns: minmax(0, 1fr); }
-  .ach-list em { white-space: normal; text-align: right; max-width: 92px; }
+  .ach-fams { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ach-sum-count b { font-size: 40px; }
 }
 
 /* =========================================================== menus façon console (écran titre, pause)
@@ -4325,6 +4367,64 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .ng-value { font-size: 40px; }
   .ng-player h3 { font-size: 26px; }
 }
+
+/* Mercato compact (0.8.16, demande du PDG : « pas pratique ni pro ») : filtres sur trois lignes fixes (recherche + tri,
+   postes en barre segmentée, bascules qui passent à la ligne) et cartes en trois bandes serrées, deux à trois fois plus
+   de joueurs par écran de téléphone. */
+.mc-filter-top { display: flex; align-items: center; gap: var(--s-2); }
+.mc-filter-top .mc-search { flex: 1; min-width: 0; height: 40px; }
+.mc-filter-top .mc-sortmenu { flex: none; }
+.mc-filter-top .mc-sortbtn { height: 40px; padding: 0 12px; font-size: 13px; white-space: nowrap; }
+.mc-pos { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; }
+.mc-pos button { min-height: 34px; padding: 4px 2px; font-size: 13.5px; letter-spacing: .04em; color: var(--muted); background: var(--plate-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mc-pos button.on { background: var(--gold-soft); color: var(--gold-light); box-shadow: inset 0 -2px 0 var(--gold); }
+.mc-toggles { display: flex; flex-wrap: wrap; gap: 6px; }
+.mc-toggles button { min-height: 30px; padding: 4px 12px; border: 0; border-radius: 0; background: var(--plate-2); color: var(--text-2); font-size: 12.5px; cursor: pointer; }
+.mc-toggles button.active { background: var(--gold-soft); color: var(--gold-light); box-shadow: inset 0 0 0 1px var(--gold); }
+@media (hover: hover) { .mc-toggles button:not(.active):hover { color: var(--text); background: rgba(255, 255, 255, .04); } }
+.mc-news { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 8px 12px; }
+.mc-news .eyebrow { font-size: 12px; }
+.mc-news p { font-size: 13px; }
+.mc-grid { gap: 8px; }
+.mc-card { gap: 8px; padding: 12px 12px 10px; }
+.mc-card > .mc-main { flex: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; width: 100%; padding: 0; text-align: start; cursor: pointer; }
+.mc-card .mc-face { width: 46px; height: 46px; margin: 0; }
+.mc-card .mc-face .mc-medal { height: 22px; min-width: 34px; right: -12px; bottom: -6px; }
+.mc-card .mc-face .mc-medal b { font-size: 15px; }
+.mc-card .mc-id { gap: 2px; }
+.mc-card .mc-name { font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mc-card .mc-club { font-size: 12.5px; }
+.mc-card .mc-club-name { -webkit-line-clamp: 1; }
+.mc-card .mc-crest { width: 14px; height: 16px; }
+.mc-card .mc-pot { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; color: var(--muted); }
+.mc-pot-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mc-card .mc-pot .pos-pill { width: 26px; height: 17px; font-size: 13px; --slant: 4px; flex: none; }
+.mc-card .mc-price { flex: none; align-items: flex-end; text-align: end; }
+.mc-card .mc-price-top { justify-content: flex-end; }
+.mc-card .mc-price b { font-size: 20px; }
+.mc-card .mc-price em { font-size: 11px; white-space: normal; max-width: 92px; line-height: 1.25; }
+.mc-strip { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.mc-card .mc-stats { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.mc-card .mc-stats > span { flex-direction: row; align-items: baseline; gap: 3px; }
+.mc-card .mc-stats b { font-size: 19px; line-height: 1; }
+.mc-card .mc-stats em { font-size: 11px; }
+.mc-potline b { color: var(--gold-light) !important; font-size: 15px !important; white-space: nowrap; }
+.mc-potline { padding-inline-start: 10px; box-shadow: inset 1px 0 0 var(--line); }
+.mc-acts { display: flex; align-items: center; gap: 6px; margin-inline-start: auto; }
+.mc-card .mc-icon { width: 36px; height: 36px; }
+.mc-card .mc-icon svg { width: 15px; height: 15px; }
+.mc-card .mc-foot { display: flex; align-items: flex-end; gap: 10px; margin: auto 0 0; padding: 0; border: 0; }
+.mc-card .mc-foot .mc-tags { flex: 1; min-width: 0; }
+.mc-card .mc-offer { flex: none; min-height: 34px; padding: 0 16px; font-size: 15px; }
+.mc-card .mc-tags { align-items: center; gap: 5px; }
+.mc-wage { flex-basis: 100%; font-size: 11.5px; line-height: 1.35; color: var(--muted); }
+.mc-wage b { font-weight: 600; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.mc-card .mc-tag { padding: 1px 7px; font-size: 11px; }
+/* un seul accent : « Nouveau » et « Recommandé » en contour or (le bouton d'offre reste le seul aplat doré), « Joueur libre »
+   en gris clair ; le vert et le rouge ne disent qu'un avantage ou un risque (onze, prix, club rival) */
+.mc-tag.new, .mc-card .mc-tag.rec, .mc-table .mc-tag.rec { background: none; color: var(--gold-light); box-shadow: inset 0 0 0 1px var(--gold-line); font-weight: 500; }
+.mc-card .mc-free { color: var(--text-2); }
+.mc-sort-ico { width: 15px; height: 15px; flex: none; color: var(--gold); transform: none !important; }
 
 /* =========================================================== notoriété (reputation.jsx, préfixe rp-) */
 .post-status { font-weight: 600; color: var(--gold-light); }

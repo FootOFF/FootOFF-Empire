@@ -1,2 +1,21 @@
-k:Un écran qui reste en place	A screen that stays put	Una pantalla que no se mueve	شاشة ثابتة في مكانها
 k:Au téléphone, debout comme couché, un glissement parti du bord de l’écran ne fait plus défiler la page vers l’écran d’avant ou d’après, sur tous les écrans du jeu et plus seulement en match.	On phones, upright or sideways, a swipe from the edge of the screen no longer slides the page towards the previous or next screen, on every screen of the game and not just during matches.	En el móvil, en vertical o en horizontal, deslizar desde el borde de la pantalla ya no desplaza la página hacia la pantalla anterior o siguiente, en todas las pantallas del juego y no solo durante los partidos.	على الهاتف، عموديًا أو أفقيًا، لم يعد السحب من حافة الشاشة يزيح الصفحة نحو الشاشة السابقة أو التالية، في كل شاشات اللعبة وليس أثناء المباريات فقط.
+k:Tous les succès	All achievements	Todos los logros	كل الإنجازات
+k:Familles de succès	Achievement families	Familias de logros	فئات الإنجازات
+k:Succès à afficher	Achievements to show	Logros que mostrar	الإنجازات المعروضة
+k:Obtenus	Unlocked	Conseguidos	المحققة
+k:À obtenir	Locked	Por conseguir	لم يتحقق بعد
+k:Obtenu	Unlocked	Conseguido	تحقق
+k:Aucun succès obtenu dans cette famille pour l’instant.	No achievement unlocked in this family yet.	Aún no has conseguido ningún logro de esta familia.	لم يتحقق أي إنجاز في هذه الفئة حتى الآن.
+k:Tous les succès de cette famille sont obtenus.	Every achievement in this family is unlocked.	Has conseguido todos los logros de esta familia.	تحققت كل إنجازات هذه الفئة.
+k:POT	POT	POT	إمكانات
+k:Joueur ou club	Player or club	Jugador o club	لاعب أو نادٍ
+k:Salaire demandé <0/>	Asking wage <0/>	Salario pedido <0/>	الراتب المطلوب <0/>
+k:contrat {plural}	contract {plural}	contrato {plural}	عقد {plural}
+k:Des écrans plus nets	Sharper screens	Pantallas más claras	شاشات أوضح
+k:Succès : un total et une tuile par famille qui filtre la liste, le choix Tous, Obtenus ou À obtenir, la date d’obtention sous chaque succès et la progression des succès à compteur.	Achievements: a total and one tile per family that filters the list, a choice of All, Unlocked or Locked, the unlock date under each achievement and progress on counter achievements.	Logros: un total y una ficha por familia que filtra la lista, la elección Todos, Conseguidos o Por conseguir, la fecha bajo cada logro y el progreso de los logros con contador.	الإنجازات: مجموع عام وبطاقة لكل فئة تُصفّي القائمة، والاختيار بين «الكل» و«المحققة» و«لم يتحقق بعد»، وتاريخ التحقق تحت كل إنجاز، وتقدّم الإنجازات ذات العدّاد.
+k:filtre-poste|Gardiens	Keepers	Porteros	الحراس
+k:filtre-poste|Défense	Defence	Defensa	الدفاع
+k:filtre-poste|Milieu	Midfield	Medio	الوسط
+k:filtre-poste|Attaque	Attack	Ataque	الهجوم
+k:Repères	Tags	Etiquetas	مؤشرات
+k:Mercato : des cartes de joueurs compactes, deux à trois fois plus de joueurs par écran de téléphone, et des filtres rangés : recherche et tri, postes, puis bascules.	Transfers: compact player cards, two to three times more players per phone screen, and tidier filters: search and sort, positions, then toggles.	Mercado: fichas de jugador compactas, de dos a tres veces más jugadores por pantalla de móvil, y filtros ordenados: búsqueda y orden, puestos y luego interruptores.	الانتقالات: بطاقات لاعبين مدمجة تعرض لاعبين أكثر بمرتين إلى ثلاث مرات في شاشة الهاتف، وفلاتر مرتبة: البحث والترتيب، ثم المراكز، ثم الخيارات.

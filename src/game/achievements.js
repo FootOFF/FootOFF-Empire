@@ -203,3 +203,37 @@ export function newAchievements(s) {
 }
 
 export const achievementById = (id) => ACHIEVEMENTS.find((a) => a.id === id);
+
+// Progression des succès à compteur (0.8.16) : [atteint, objectif], montrée tant que le succès reste à obtenir.
+const bestOf = (s, key) => Math.max(0, ...everyone(s).flatMap((p) => [...(p.hist || []).map((h) => h[key] || 0), p.season?.[key] || 0]));
+const steps = (list, f) => Object.fromEntries(list.map(([n, id]) => [id, (s, X) => [f(s, X), n]]));
+const PROGRESS = {
+  ...steps([[50, 'wins_50'], [100, 'wins_100'], [250, 'wins_250']], (s, X) => X.rec.totals.win || 0),
+  ...steps([[100, 'goals_100'], [500, 'goals_500']], (s, X) => X.rec.totals.gf || 0),
+  ...steps([[5, 'streak_5'], [10, 'streak_10']], (s, X) => X.rec.best.win?.n || 0),
+  unbeaten_10: (s, X) => [X.rec.best.unbeaten?.n || 0, 10],
+  clean_5: (s, X) => [X.rec.best.clean?.n || 0, 5],
+  golden_gen: (s) => [s.players.filter((p) => p.academy).length, 5],
+  characters: (s) => [new Set(s.players.flatMap((p) => p.traits || [])).size, 5],
+  scorer_20: (s) => [bestOf(s, 'goals'), 20],
+  playmaker: (s) => [bestOf(s, 'assists'), 15],
+  motm_5: (s) => [bestOf(s, 'motm'), 5],
+  loyal: (s) => [Math.max(0, ...everyone(s).map((p) => (p.hist || []).filter((h) => h.apps > 0).length)), 5],
+  legend: (s) => [Math.max(0, ...everyone(s).map(appsOf)), 100],
+  ...steps([[10000, 'crowd_10k'], [40000, 'crowd_40k']], (s, X) => X.rec.crowd?.attendance || 0),
+  seasons_10: (s, X) => [X.hist.length, 10],
+  ...steps([[1e6, 'million'], [1e7, 'ten_millions'], [1e8, 'hundred_millions']], (s) => Math.max(0, Math.round(s.money || 0))),
+  derby_5: (s, X) => [friendWins(s, X).length, 5],
+};
+export const MONEY_ACHIEVEMENTS = new Set(['million', 'ten_millions', 'hundred_millions']);
+export function achievementProgress(s) {
+  const X = context(s);
+  const have = s.achievements || {};
+  const out = {};
+  for (const a of achievementsFor(s)) {
+    if (have[a.id] || !PROGRESS[a.id]) continue;
+    const [cur, max] = PROGRESS[a.id](s, X);
+    out[a.id] = [Math.min(cur, max), max];
+  }
+  return out;
+}

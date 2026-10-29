@@ -56,6 +56,8 @@ export const IconLeague = I(<><path d="M7 21V9h10v12M4.5 21h15" /><path d="M9.5 
 export const IconDirection = I(<><rect x="3.5" y="7.5" width="17" height="12" rx="2" /><path d="M9 7.5V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 6v1.5M3.5 12.5h17M11 12.5v1.6h2v-1.6" /></>);
 // loupe (recherche)
 export const IconSearch = I(<><circle cx="11" cy="11" r="6.2" /><path d="m15.6 15.6 4.4 4.4" /></>);
+// tri : deux flèches opposées
+export const IconSort = I(<path d="M8 4v16M4.5 7.5 8 4l3.5 3.5M16 20V4M12.5 16.5 16 20l3.5-3.5" />);
 // bulle de parole (conseil du staff)
 export const IconStaff = I(<><path d="M5.5 5h13a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2H11l-4.5 3.5v-3.5h-1a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" /><path d="M8.6 10.8h.01M12 10.8h.01M15.4 10.8h.01" /></>);
 export const IconExpand = I(<path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5" />);

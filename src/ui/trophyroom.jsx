@@ -1,7 +1,9 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { STAGES } from '../game/cups';
 import { HONOURS, honoursOf } from '../game/honours';
-import { ACH_CATS, achievementsFor } from '../game/achievements';
+import { ACH_CATS, MONEY_ACHIEVEMENTS, achievementProgress, achievementsFor } from '../game/achievements';
+import { IconCheck, IconLeague, IconLock, IconPitch, IconStadium, IconStar, IconTrophy, IconUsers } from './icons';
+import { uiSound } from './uisound';
 import { rebuildRecords } from '../game/records';
 import { allCareers } from '../game/career';
 import { activeChapter, chaptersOf, rewardOf } from '../game/journey';
@@ -114,11 +116,23 @@ function Career({ state }) {
   );
 }
 
+// Succès (0.8.16, demande du PDG : un affichage de jeu professionnel) : en tête, le total et une tuile par famille (sa
+// part obtenue, elle filtre la liste), puis Tous / Obtenus / À obtenir. Chaque succès : un médaillon au pictogramme de
+// sa famille (doré obtenu, gris à obtenir), le titre, la règle, et une ligne d'état sous la règle (date d'obtention,
+// progression d'un succès à compteur, ou « À obtenir ») : plus de colonne de droite qui se coupait en deux lignes.
 // focus : succès tout juste débloqués (notification touchée) : la liste s'ouvre sur eux, mis en évidence.
+const FAMILY_ICON = { honours: IconTrophy, matches: IconPitch, players: IconUsers, club: IconStadium, league: IconLeague };
+const SHOW = [['all', t('Tous')], ['got', t('Obtenus')], ['todo', t('À obtenir')]];
 function Achievements({ state, focus = [] }) {
   const have = state.achievements || {};
   const all = achievementsFor(state); // une ligue entre amis n'affiche que ce qu'elle peut gagner
   const n = all.filter((a) => have[a.id]).length;
+  const prog = useMemo(() => achievementProgress(state), [state]);
+  const [fam, setFam] = useState('all');
+  const [show, setShow] = useState('all');
+  const fams = ACH_CATS.filter(([cat]) => all.some((a) => a.cat === cat));
+  const keep = (a) => (fam === 'all' || a.cat === fam) && (show === 'all' || (show === 'got') === !!have[a.id]);
+  const pickFam = (cat) => { if (cat !== fam) uiSound('tab'); setFam(cat); };
   const root = useRef(null);
   useLayoutEffect(() => {
     // le panneau arrive déjà positionné : le premier succès mis en évidence au milieu de la liste (on ne fait défiler
@@ -130,27 +144,62 @@ function Achievements({ state, focus = [] }) {
     const dy = el.getBoundingClientRect().top - body.getBoundingClientRect().top;
     body.scrollTop += dy - (body.clientHeight - el.offsetHeight) / 2;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const sections = fams.map(([cat, label]) => [cat, label, all.filter((a) => a.cat === cat && keep(a))]).filter(([, , list]) => list.length);
+  const amount = (id, v) => (MONEY_ACHIEVEMENTS.has(id) ? fmtMoney(v) : fmtNum(v));
   return (
-    <>
-      <SectionHead label={t('Succès')} aside={`${n} / ${all.length}`} />
-      <div ref={root} className="ach-progress" role="progressbar" aria-valuemin={0} aria-valuemax={all.length} aria-valuenow={n}>
-        <i style={{ width: `${(n / all.length) * 100}%` }} />
+    <div ref={root} className="ach">
+      <div className="ach-fams" role="tablist" aria-label={t('Familles de succès')}>
+        <button type="button" role="tab" aria-selected={fam === 'all'} className={`ach-sum ${fam === 'all' ? 'on' : ''}`} onClick={() => pickFam('all')}>
+          <span className="ach-sum-count"><b><bdi>{n}</bdi></b><span><bdi>/ {all.length}</bdi></span></span>
+          <span className="ach-sum-side">
+            <span className="ach-sum-label">{t('Tous les succès')}</span>
+            <span className="ach-sum-pct"><bdi>{Math.round((n / all.length) * 100)} %</bdi></span>
+            <i className="ach-progress" role="progressbar" aria-valuemin={0} aria-valuemax={all.length} aria-valuenow={n} style={{ '--p': `${(n / all.length) * 100}%` }} />
+          </span>
+        </button>
+        {fams.map(([cat, label]) => {
+          const Icon = FAMILY_ICON[cat] || IconStar;
+          const list = all.filter((a) => a.cat === cat);
+          const got = list.filter((a) => have[a.id]).length;
+          return (
+            <button key={cat} type="button" role="tab" aria-selected={fam === cat} className={`ach-fam ${fam === cat ? 'on' : ''}`} onClick={() => pickFam(fam === cat ? 'all' : cat)}>
+              <span className="ach-fam-top"><Icon /><b><bdi>{got}/{list.length}</bdi></b></span>
+              <span className="ach-fam-label">{label}</span>
+              <i className="ach-fam-bar" style={{ '--p': `${(got / list.length) * 100}%` }} />
+            </button>
+          );
+        })}
       </div>
-      {ACH_CATS.map(([cat, label]) => {
-        const list = all.filter((a) => a.cat === cat);
-        if (!list.length) return null;
+      <Tabs className="ach-show" role="radiogroup" label={t('Succès à afficher')} items={SHOW} value={show} onChange={setShow} />
+      {!sections.length && <p className="ach-empty">{show === 'got' ? t('Aucun succès obtenu dans cette famille pour l’instant.') : t('Tous les succès de cette famille sont obtenus.')}</p>}
+      {sections.map(([cat, label, list]) => {
+        const Icon = FAMILY_ICON[cat] || IconStar;
+        const fullList = all.filter((a) => a.cat === cat);
         return (
           <section key={cat} className="ach-cat">
-            <h5>{label}<em><bdi>{list.filter((a) => have[a.id]).length} / {list.length}</bdi></em></h5>
+            {fam === 'all' && <h5><Icon />{label}<em><bdi>{fullList.filter((a) => have[a.id]).length} / {fullList.length}</bdi></em></h5>}
             <ul className="ach-list">
               {list.map((a) => {
                 const d = have[a.id];
                 const lit = focus.includes(a.id);
+                const p = !d && prog[a.id];
                 return (
-                  <li key={a.id} className={`${d ? 'on' : ''} ${lit ? 'focus' : ''}`}>
-                    <span className="ach-medal" aria-hidden="true" />
-                    <div><b>{a.title}{lit && <i className="ach-new">{t('Nouveau')}</i>}</b><span>{a.desc}</span></div>
-                    <em>{d ? when(d) : t('À débloquer')}</em>
+                  <li key={a.id} className={`${d ? 'on' : 'off'} ${lit ? 'focus' : ''}`}>
+                    <span className="ach-medal" aria-hidden="true"><Icon /></span>
+                    <div className="ach-text">
+                      <b>{a.title}</b>
+                      <span className="ach-desc">{a.desc}</span>
+                      {d ? (
+                        <span className="ach-state">{lit && <i className="ach-new">{t('Nouveau')}</i>}<IconCheck /><span>{t('Obtenu')} · <bdi>{when(d)}</bdi></span></span>
+                      ) : p ? (
+                        <span className="ach-state ach-count">
+                          <i className="ach-bar" style={{ '--p': `${(p[0] / p[1]) * 100}%` }} />
+                          <bdi>{amount(a.id, p[0])} / {amount(a.id, p[1])}</bdi>
+                        </span>
+                      ) : (
+                        <span className="ach-state"><IconLock /><span>{t('À obtenir')}</span></span>
+                      )}
+                    </div>
                   </li>
                 );
               })}
@@ -158,7 +207,7 @@ function Achievements({ state, focus = [] }) {
           </section>
         );
       })}
-    </>
+    </div>
   );
 }
 
@@ -178,7 +227,7 @@ function Records({ state }) {
     r.best.win && [t('Plus longue série de victoires'), plural(r.best.win.n, 'match'), span(r.best.win)],
     r.best.unbeaten && [t('Plus longue série sans défaite'), plural(r.best.unbeaten.n, 'match'), span(r.best.unbeaten)],
     r.best.clean && [t('Plus longue série sans encaisser'), plural(r.best.clean.n, 'match'), span(r.best.clean)],
-    r.crowd && [t('Record d’affluence'), `${fmtNum(r.crowd.attendance)} spectateurs`, matchCtx(r.crowd)],
+    r.crowd && [t('Record d’affluence'), t('{fmt} spectateurs', { fmt: fmtNum(r.crowd.attendance) }), matchCtx(r.crowd)],
     r.gate && [t('Recette record'), fmtMoney(r.gate.revenue), matchCtx(r.gate)],
     bestSeason?.goals > 0 && [t('Meilleur buteur sur une saison'), plural(bestSeason.goals, 'but'), t('{name} · Saison {season}', { name: bestSeason.name, season: bestSeason.season })],
     scorer?.totals.goals > 0 && [t('Meilleur buteur de l’histoire'), plural(scorer.totals.goals, 'but'), scorer.p.name],

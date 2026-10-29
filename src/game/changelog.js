@@ -5,8 +5,10 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
-    version: '0.8.16', date: '2026-10-29', title: t('Un écran qui reste en place'),
+    version: '0.8.16', date: '2026-10-29', title: t('Des écrans plus nets'),
     items: [
+      t('Succès : un total et une tuile par famille qui filtre la liste, le choix Tous, Obtenus ou À obtenir, la date d’obtention sous chaque succès et la progression des succès à compteur.'),
+      t('Mercato : des cartes de joueurs compactes, deux à trois fois plus de joueurs par écran de téléphone, et des filtres rangés : recherche et tri, postes, puis bascules.'),
       t('Au téléphone, debout comme couché, un glissement parti du bord de l’écran ne fait plus défiler la page vers l’écran d’avant ou d’après, sur tous les écrans du jeu et plus seulement en match.'),
     ],
   },

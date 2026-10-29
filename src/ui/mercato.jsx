@@ -24,7 +24,7 @@ import { Tabs } from './glass';
 import { answerFriend, canSell, offerFriend, queuedFor } from '../game/leagueClub';
 import { leagueTransfers, myLeagues } from '../game/leagueNet';
 import { unsnapPlayer } from '../game/leagueWorld';
-import { IconCheck, IconChevron, IconClose, IconRadar, IconSearch, IconStar, IconTransfer, IconTrend } from './icons';
+import { IconCheck, IconChevron, IconClose, IconRadar, IconSearch, IconSort, IconStar, IconTransfer, IconTrend } from './icons';
 import { useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { haptic } from './haptics';
@@ -37,7 +37,8 @@ import { plural, t, tn, tr } from '../i18n/index';
 // face, enchères) et le bilan des transferts. Le marché bouge à chaque journée (transfers.js) ; les chances affichées
 // sont celles qui décident (mercato.js).
 
-const POS_FILTERS = [['all', t('Tous')], ['G', t('Gardiens')], ['D', t('Défense')], ['M', t('Milieu')], ['A', t('Attaque')]];
+// libellés de filtre propres (0.8.16) : des lignes de jeu courtes, pas les noms de poste (« Centrocampista » débordait)
+const POS_FILTERS = [['all', t('Tous')], ['G', t('Gardiens', {}, 'filtre-poste')], ['D', t('Défense', {}, 'filtre-poste')], ['M', t('Milieu', {}, 'filtre-poste')], ['A', t('Attaque', {}, 'filtre-poste')]];
 const KINDS = [['all', t('Tous')], ['free', t('Libres')], ['pro', t('Sous contrat')]];
 const SORTS = [['fit', t('Pour mon onze')], ['lvl', t('Niveau')], ['price', t('Prix')], ['pot', t('Potentiel')], ['age', t('Âge')]];
 const TAG = {
@@ -90,6 +91,10 @@ function ReserveWarn({ imp, what }) {
 }
 
 // --- Carte d'un joueur du marché ----------------------------------------------------------------------------
+// Compacte (0.8.16, demande du PDG : « pas pratique ni pro », un seul joueur par écran de téléphone) : comme une liste
+// de transferts de jeu de foot, trois bandes serrées. En haut, le portrait et sa note, le nom, le club, l'âge et le
+// poste, et le prix au bout. Au milieu, les trois points forts et le potentiel, puis suivre, comparer et l'offre. En
+// bas, le salaire demandé et les repères. Le toucher sur le joueur ouvre toujours sa fiche complète.
 
 export function MarketCard({ p, state, refLvl, followed, recommended, onOpen, onCompare, onFollow, onOffer, note = null, noteTone = 'note' }) {
   const r = playerRating(p);
@@ -101,57 +106,48 @@ export function MarketCard({ p, state, refLvl, followed, recommended, onOpen, on
   const full = state.players.length >= SQUAD_MAX;
   return (
     <li className={`mc-card t-${tierOf(r, refLvl)} ${recommended ? 'rec' : ''} ${p.club ? 'pro' : 'free'}`}>
-      <div className="mc-head">
-        <button type="button" className="mc-main" onClick={() => onOpen(p)} aria-label={t('Fiche de {name}', { name: p.name })}>
-          <span className="mc-face">
-            <Portrait p={p} size={58} club={p.club || null} free={!p.club} />
-            <span className={`mc-medal ${heat(r, refLvl)}`}><b>{fmtRating(r)}</b><span>{p.pos}</span></span>
+      <button type="button" className="mc-main" onClick={() => onOpen(p)} aria-label={t('Fiche de {name}', { name: p.name })}>
+        <span className="mc-face">
+          <Portrait p={p} size={46} club={p.club || null} free={!p.club} />
+          <span className={`mc-medal ${heat(r, refLvl)}`}><b>{fmtRating(r)}</b></span>
+        </span>
+        <span className="mc-id">
+          <span className="mc-name">{p.name}</span>
+          <span className="mc-club">
+            {p.club ? (
+              <><Crest name={p.club} className="mc-crest" /><span className="mc-club-name">{p.club}</span></>
+            ) : <span className="mc-free">{t('Joueur libre')}</span>}
           </span>
-          <span className="mc-id">
-            <span className="mc-name">{p.name}</span>
-            <span className="mc-club">
-              {p.club ? (
-                <><Crest name={p.club} className="mc-crest" /><span className="mc-club-name">{p.club}</span></>
-              ) : <span className="mc-free">{t('Joueur libre')}</span>}
-            </span>
-            <span className="mc-pot">{tr('<0/> ans · <1/> · salaire demandé <2/>', [p.age, POS_LABELS[p.pos], fmtMoney(askedWage(state, p))])}</span>
+          <span className="mc-pot"><span className={`pos-pill ${p.pos}`}>{p.pos}</span><span className="mc-pot-text">{tr('<0/> ans · <1/>', [p.age, POS_LABELS[p.pos]])}</span></span>
+        </span>
+        <span className="mc-price">
+          <span className="mc-price-top">
+            {p.trend ? <IconTrend className={`mc-trend ${p.trend > 0 ? 'up' : 'down'}`} aria-label={p.trend > 0 ? t('prix en hausse') : t('prix en baisse')} /> : null}
+            <b className={price > state.money ? 'over' : ''}>{fmtMoney(price)}</b>
           </span>
-        </button>
-        <div className="mc-quick">
-          <button type="button" className={`mc-icon ${followed ? 'on' : ''}`} aria-pressed={followed} onClick={() => onFollow(p)} title={followed ? t('Ne plus suivre') : t('Suivre ce joueur')} aria-label={followed ? t('Ne plus suivre {name}', { name: p.name }) : t('Suivre {name}', { name: p.name })}><IconStar /></button>
-          <button type="button" className="mc-icon" onClick={() => onCompare(p)} title={t('Comparer')} aria-label={t('Comparer {name}', { name: p.name })}><IconRadar /></button>
-        </div>
-      </div>
-      {/* points forts en grand, puis le niveau et la fourchette du potentiel sur l'échelle de 0 à 20 */}
-      <div className="mc-body">
+          <em>{p.club ? t('indemnité') : t('prime à la signature')}</em>
+        </span>
+      </button>
+      {/* points forts et fourchette du potentiel (échelle de 0 à 20), puis les gestes */}
+      <div className="mc-strip">
         <span className="mc-stats">
           {topAttrs(p).map((a) => <span key={a.key} className={heat(a.v, refLvl)}><b>{Math.round(a.v)}</b><em>{a.short}</em></span>)}
+          <span className="mc-potline" title={t('Potentiel')}><b><bdi dir="ltr">{pot ? `${fmtRating(pot[0])}–${fmtRating(pot[1])}` : t('atteint')}</bdi></b><em>{t('POT')}</em></span>
         </span>
-        <span className="mc-potential">
-          <span className="mc-potential-top"><em>{t('Potentiel')}</em><b>{pot ? `${fmtRating(pot[0])} – ${fmtRating(pot[1])}` : t('atteint')}</b></span>
-          <span className="sh-scale" aria-hidden="true">
-            <i className="now" style={{ width: `${(r / 20) * 100}%` }} />
-            {pot && <i className="pot" style={{ insetInlineStart: `${(pot[0] / 20) * 100}%`, width: `${((pot[1] - pot[0]) / 20) * 100}%` }} />}
-          </span>
+        <span className="mc-acts">
+          <button type="button" className={`mc-icon ${followed ? 'on' : ''}`} aria-pressed={followed} onClick={() => onFollow(p)} title={followed ? t('Ne plus suivre') : t('Suivre ce joueur')} aria-label={followed ? t('Ne plus suivre {name}', { name: p.name }) : t('Suivre {name}', { name: p.name })}><IconStar /></button>
+          <button type="button" className="mc-icon" onClick={() => onCompare(p)} title={t('Comparer')} aria-label={t('Comparer {name}', { name: p.name })}><IconRadar /></button>
         </span>
       </div>
-      {(recommended || gain >= 0.3 || tags.length > 0 || p.interest > 0 || note) && (
+      <div className="mc-foot">
         <div className="mc-tags">
+          <span className="mc-wage">{tr('Salaire demandé <0/>', [<b key="w">{fmtMoney(askedWage(state, p))}</b>])}{p.club ? <>{' · '}{t('contrat {plural}', { plural: plural(p.contract, 'an', 'ans') })}</> : null}</span>
           {recommended && <span className="mc-tag rec">{t('Recommandé')}</span>}
           {gain >= 0.3 && <span className="mc-tag good" title={t('Gain sur le titulaire le plus faible à son poste')}>{tr('Onze +<0/>', [fmtRating(gain)])}</span>}
           {p.interest > 0 && <span className="mc-tag warn">{tr('Courtisé<0/>', [tn(p.interest, '', ' par {interest} clubs', { interest: p.interest }, p.interest > 1)])}</span>}
           {tags.map((t) => <span key={t} className={`mc-tag ${TAG[t][1]}`}>{TAG[t][0]}</span>)}
           {note && <span className={`mc-tag ${noteTone}`}>{note}</span>}
         </div>
-      )}
-      <div className="mc-foot">
-        <span className="mc-price">
-          <span className="mc-price-top">
-            <b className={price > state.money ? 'over' : ''}>{fmtMoney(price)}</b>
-            {p.trend ? <IconTrend className={`mc-trend ${p.trend > 0 ? 'up' : 'down'}`} aria-label={p.trend > 0 ? t('prix en hausse') : t('prix en baisse')} /> : null}
-          </span>
-          <em>{p.club ? t('indemnité · contrat {plural}', { plural: plural(p.contract, 'an', 'ans') }) : t('prime à la signature')}</em>
-        </span>
         <button
           type="button"
           className={`btn btn-sm mc-offer ${talks.counter || talks.fee ? 'counter' : ''}`}
@@ -204,8 +200,8 @@ function MarketTable({ list, state, refLvl, followed, recommended, onOpen, onFol
                 </td>
                 <td><span className={`pos-pill ${p.pos}`}>{p.pos}</span></td>
                 <td className={`c-lvl ${heat(r, refLvl)}`}>{fmtRating(r)}</td>
-                <td className="c-pot">{pot ? `${fmtRating(pot[0])}–${fmtRating(pot[1])}` : t('atteint')}</td>
-                <td className={`c-gain ${gain >= 0.05 ? 'up' : ''}`}>{gain >= 0.05 ? `+${fmtRating(gain)}` : '–'}</td>
+                <td className="c-pot"><bdi dir="ltr">{pot ? `${fmtRating(pot[0])}–${fmtRating(pot[1])}` : t('atteint')}</bdi></td>
+                <td className={`c-gain ${gain >= 0.05 ? 'up' : ''}`}><bdi dir="ltr">{gain >= 0.05 ? `+${fmtRating(gain)}` : '–'}</bdi></td>
                 <td className="c-tags">
                   <span className="mc-row-tags">
                     {rec && <span className="mc-tag rec">{t('Recommandé')}</span>}
@@ -321,7 +317,7 @@ function SortMenu({ value, onChange }) {
   return (
     <div className="mc-sortmenu" ref={ref}>
       <button type="button" className={`mc-sortbtn ${open ? 'open' : ''}`} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <span>{t('Trier')}</span><b>{current[1]}</b><IconChevron />
+        <IconSort className="mc-sort-ico" /><span>{t('Trier')}</span><b>{current[1]}</b><IconChevron />
       </button>
       {open && (
         <div className="mc-sortlist" role="listbox" aria-label={t('Trier par')}>
@@ -366,28 +362,28 @@ function BuyView({ state, run, refLvl, recommended, followed, onOpen, onCompare,
     <>
       {!state.mercatoTips && <HowTo run={run} league={!!state.league} />}
       <News state={state} />
+      {/* filtres (0.8.16) : recherche et tri sur une ligne, les postes en barre segmentée qui tient toujours en largeur,
+          puis des bascules qui passent à la ligne au lieu de défiler hors de l'écran */}
       <div className="mc-filters">
-        <label className="mc-search">
-          <IconSearch />
-          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Rechercher un joueur ou un club')} aria-label={t('Rechercher un joueur ou un club')} enterKeyHint="search" autoComplete="off" spellCheck={false} />
-          {query && <button type="button" className="mc-search-clear" onClick={() => setQuery('')} aria-label={t('Effacer la recherche')}><IconClose /></button>}
-        </label>
-        <div className="chips">
-          {POS_FILTERS.map(([id, label]) => chip(pos === id, () => setPos(id), label))}
-          <span className="mc-sep" aria-hidden="true" />
-          {KINDS.map(([id, label]) => chip(kind === id, () => setKind(id), id === 'all' ? t('Tous statuts') : label))}
-        </div>
-        <div className="mc-filters-row">
-          <div className="chips">
-            {chip(only.afford, () => toggle('afford'), t('Dans mes moyens'), only.afford)}
-            {chip(only.fit, () => toggle('fit'), t('Renforce mon onze'), only.fit)}
-            {chip(only.gem, () => toggle('gem'), t('Pépites'), only.gem)}
-          </div>
+        <div className="mc-filter-top">
+          <label className="mc-search">
+            <IconSearch />
+            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Joueur ou club')} aria-label={t('Rechercher un joueur ou un club')} enterKeyHint="search" autoComplete="off" spellCheck={false} />
+            {query && <button type="button" className="mc-search-clear" onClick={() => setQuery('')} aria-label={t('Effacer la recherche')}><IconClose /></button>}
+          </label>
           <SortMenu value={sort} onChange={setSort} />
           <div className="sq-view mc-layout" role="group" aria-label={t('Affichage du marché')}>
             <button type="button" className={layout === 'cards' ? 'on' : ''} aria-pressed={layout === 'cards'} onClick={() => pickLayout('cards')}>{t('Cartes')}</button>
             <button type="button" className={layout === 'table' ? 'on' : ''} aria-pressed={layout === 'table'} onClick={() => pickLayout('table')}>{t('Tableau')}</button>
           </div>
+        </div>
+        <Tabs className="segmented mc-pos" role="radiogroup" label={t('Poste')} items={POS_FILTERS} value={pos} onChange={setPos} />
+        <div className="mc-toggles">
+          {chip(kind === 'free', () => setKind(kind === 'free' ? 'all' : 'free'), t('Libres'), kind === 'free')}
+          {chip(kind === 'pro', () => setKind(kind === 'pro' ? 'all' : 'pro'), t('Sous contrat'), kind === 'pro')}
+          {chip(only.afford, () => toggle('afford'), t('Dans mes moyens'), only.afford)}
+          {chip(only.fit, () => toggle('fit'), t('Renforce mon onze'), only.fit)}
+          {chip(only.gem, () => toggle('gem'), t('Pépites'), only.gem)}
         </div>
       </div>
       <p className="mc-count">{tr('<0/> · <1/>, <2/> sous contrat · le marché bouge à chaque journée', [list.length === pool.length ? plural(pool.length, 'joueur', 'joueurs') : t('{length} sur {length2} joueurs', { length: list.length, length2: pool.length }), plural(state.market.length, 'libre', 'libres'), (state.transfers || []).length])}</p>
