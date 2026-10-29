@@ -73,7 +73,7 @@ function buildGeometries() {
 // Squelette en GLSL (angles dans le plan avant / haut ; angle positif = vers l'avant).
 const SKELETON_GLSL = `
   attribute float aPart;
-  attribute vec3 aAnim; // x : phase de foulée, y : allure (0 arrêt .. 1 sprint), z : frappe (0 .. 1)
+  attribute vec4 aAnim; // x : phase de foulée, y : allure (0 arrêt .. 1 sprint), z : frappe (0 .. 1), w : pose (ci-dessous)
   vec3 foRot(vec3 p, float pivot, float a) {
     vec2 q = vec2(p.x, p.y - pivot);
     return vec3(q.x * cos(a) - q.y * sin(a), q.x * sin(a) + q.y * cos(a) + pivot, p.z);
@@ -104,12 +104,31 @@ const SKELETON_GLSL = `
     }
     float elbow = 0.25 + 1.15 * g;
     if (elbowCheer > 0.0) elbow = mix(elbow, 0.3, elbowCheer);
+    // Poses (0.8.15) : partie entière de w = la pose, partie décimale = son intensité. 1 : gardien prêt (genoux fléchis,
+    // buste en avant, bras ouverts devant lui) ; 2 : plongeon, bras tendus vers le ballon ; 3 : ballon serré contre la
+    // poitrine ; 4 : saut de la tête, bras levés pour l'élan.
+    float pose = floor(aAnim.w + 0.001), pc = clamp(fract(aAnim.w + 0.001) / 0.98, 0.0, 1.0);
+    float crouch = 0.0, bend = 0.0;
+    if (pose > 0.5 && pc > 0.0) {
+      float hp = 0.0, kn = 0.0, ar = 0.0, el = elbow;
+      if (pose < 1.5) { hp = 0.55; kn = -1.05; ar = 0.7; el = 0.55; crouch = pc; bend = -0.35 * pc; }
+      else if (pose < 2.5) { hp = 0.12; kn = -0.12; ar = 2.85; el = 0.08; }
+      else if (pose < 3.5) { hp = 0.05; kn = -0.15; ar = 0.7; el = 1.4; bend = -0.15 * pc; }
+      else { hp = 0.25; kn = -0.7; ar = 1.55; el = 0.4; }
+      hipA = mix(hipA, hp, pc); hipB = mix(hipB, pose > 3.5 ? -0.1 : hp, pc);
+      kneeA = mix(kneeA, kn, pc); kneeB = mix(kneeB, pose > 3.5 ? -0.2 : kn, pc);
+      armA = mix(armA, ar, pc); armB = mix(armB, ar, pc);
+      elbow = mix(elbow, el, pc);
+    }
     if (aPart > 4.5 && aPart < 6.5) p = foRot(p, ${KNEE.toFixed(2)}, aPart < 5.5 ? kneeA : kneeB);
     if (aPart > 6.5) p = foRot(p, ${ELBOW.toFixed(2)}, elbow);
     if (aPart == 1.0 || aPart == 5.0) p = foRot(p, ${HIP.toFixed(2)}, hipA);
     else if (aPart == 2.0 || aPart == 6.0) p = foRot(p, ${HIP.toFixed(2)}, hipB);
     else if (aPart == 3.0 || aPart == 7.0) p = foRot(p, ${SHOULDER.toFixed(2)}, armA);
     else if (aPart == 4.0 || aPart == 8.0) p = foRot(p, ${SHOULDER.toFixed(2)}, armB);
+    // buste penché vers l'avant (pose ; angle négatif = vers l'avant pour ce qui est au-dessus du pivot), autour des hanches
+    if (bend < 0.0 && (aPart == 0.0 || (aPart > 2.5 && aPart < 4.5) || aPart > 6.5) && p.y > ${(HIP - 0.05).toFixed(2)}) p = foRot(p, ${HIP.toFixed(2)}, bend);
+    p.y -= 0.125 * crouch; // genoux fléchis : le corps descend, les pieds restent au sol
     p.y += (0.5 - 0.5 * cos(2.0 * ph)) * 0.035 * g; // rebond à chaque appui
     return foRot(p, 0.0, -0.13 * g); // buste penché en avant quand il accélère
   }`;
@@ -127,7 +146,7 @@ const SKINS = [0xf1c9a5, 0xe0ac84, 0xc68863, 0x9c6644, 0x7a4b2f, 0x5a3420];
 
 export function createPlayers(parent, max = 64) {
   const { kit, trim, body } = buildGeometries();
-  const anim = new THREE.InstancedBufferAttribute(new Float32Array(max * 3), 3);
+  const anim = new THREE.InstancedBufferAttribute(new Float32Array(max * 4), 4);
   anim.setUsage(THREE.DynamicDrawUsage);
   kit.setAttribute('aAnim', anim);
   trim.setAttribute('aAnim', anim);
@@ -179,7 +198,7 @@ export function createPlayers(parent, max = 64) {
       mKit.setMatrixAt(i, M);
       mTrim.setMatrixAt(i, M);
       mBody.setMatrixAt(i, M);
-      anim.setXYZ(i, ag.phase, ag.gait, ag.cheer > 0.01 && !ag.kick ? -ag.cheer : ag.kick);
+      anim.setXYZW(i, ag.phase, ag.gait, ag.cheer > 0.01 && !ag.kick ? -ag.cheer : ag.kick, ag.pose || 0);
     },
     commit(count) {
       mKit.count = mTrim.count = mBody.count = count;

@@ -17,7 +17,7 @@ const tags = (s) => [...(s.match(/<\/?\d+\/?>/g) || [])].sort();
 const OPTIONAL = new Set(['{n}', '{v}', '{v2}', '{v3}', '{tn}', '{agree}', '{s}', '{e}', '{x}']); // accords qui peuvent tomber
 let lines = 0;
 for (const f of fs.readdirSync(path.join(D, 'traductions')).filter((x) => x.endsWith('.tsv')).sort()) {
-  for (const [i, line] of fs.readFileSync(path.join(D, 'traductions', f), 'utf8').split('\n').entries()) {
+  for (const [i, line] of fs.readFileSync(path.join(D, 'traductions', f), 'utf8').split(/\r?\n/).entries()) { // fins de ligne Windows comprises
     if (!line.trim()) continue;
     lines++;
     const [id, ...vals] = line.split('\t');

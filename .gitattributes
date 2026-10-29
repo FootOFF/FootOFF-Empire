@@ -1,0 +1,2 @@
+# traductions : toujours en fins de ligne Unix (le dernier champ, l'arabe, ne doit jamais garder de retour chariot)
+scripts/i18n/traductions/*.tsv text eol=lf

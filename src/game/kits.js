@@ -60,7 +60,13 @@ function clash(a, b) {
 const ALTS = [0xf2f2f2, 0x1d2c5e, 0xc0392b, 0x1f8a4c, 0x151515];
 export function matchKitOf(name = '', ours = OURS) {
   const k = teamKitOf(name);
-  if (!clash(k.shirt, ours.shirt)) return k;
-  const shirt = [k.trim, ...ALTS].find((c) => c !== HOME_KIT.trim && !clash(c, ours.shirt)) ?? 0x1d2c5e;
-  return { shirt, trim: shirt === k.trim ? k.shirt : HOME_KIT.trim, keeper: k.keeper };
+  const kit = clash(k.shirt, ours.shirt) ? (() => {
+    const shirt = [k.trim, ...ALTS].find((c) => c !== HOME_KIT.trim && !clash(c, ours.shirt)) ?? 0x1d2c5e;
+    return { shirt, trim: shirt === k.trim ? k.shirt : HOME_KIT.trim, keeper: k.keeper };
+  })() : k;
+  // son gardien ne se confond ni avec nos joueurs, ni avec notre gardien, ni avec ses propres coéquipiers (0.8.15) : un
+  // gardien jaune face à un maillot or, on ne voyait plus qui encaissait
+  const keeper = [kit.keeper, ...KEEPERS].find((c) => !clash(c, ours.shirt) && !clash(c, ours.keeper) && !clash(c, kit.shirt)) ?? kit.keeper;
+  return keeper === kit.keeper ? kit : { ...kit, keeper };
 }
+const KEEPERS = [0x2ecc71, 0xe84393, 0x2980b9, 0x8e44ad, 0xd35400, 0x151515, 0xf2f2f2];

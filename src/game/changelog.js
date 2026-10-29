@@ -5,6 +5,16 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '0.8.15', date: '2026-10-29', title: t('Des temps forts plus vrais'),
+    items: [
+      t('Le hors-jeu est respecté : la défense ne laisse aucun attaquant partir dans son dos avant la passe, et l’attaquant règle sa course sur l’avant-dernier défenseur.'),
+      t('Plus personne ne regarde l’action sans bouger : chacun se démarque, deux coéquipiers proposent une solution au porteur, la défense coulisse et ajuste ses pas, et ça bouge dans la surface sur un corner.'),
+      t('Les gardiens ferment l’angle, sortent quand le ballon est loin et se mettent en position d’attente avant la frappe ; ils plongent bras tendus et gardent le ballon serré contre eux.'),
+      t('Sur une passe au sol, le receveur se place sur la trajectoire et s’étire pour contrôler au lieu de voir le ballon filer ; sur un ballon libre, le coéquipier le plus proche y va.'),
+      t('Pour une tête, les joueurs prennent leur élan bras en avant.'),
+    ],
+  },
+  {
     version: '0.8.14', date: '2026-10-29', title: t('Le jeu en anglais, en espagnol et en arabe'),
     items: [
       t('FootOFF Empire se joue maintenant en français, en anglais, en espagnol et en arabe. La langue proposée est celle du site footoff.media ; l’entrée « Langue » de l’écran titre permet d’en choisir une autre.'),
