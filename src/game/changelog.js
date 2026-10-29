@@ -5,6 +5,13 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '0.8.23', date: '2026-10-29', title: t('La langue au départ, chacun ses couleurs'),
+    items: [
+      t('Nouvelle partie : la langue se choisit juste après, une seule fois par partie. Elle n’est plus proposée à l’écran titre.'),
+      t('Championnats entre amis : chaque club joue à ses couleurs, et le tien garde toujours les siennes, à domicile comme à l’extérieur. En déplacement, ton équipe ne joue plus en tenue de secours face à un adversaire habillé à tes couleurs.'),
+    ],
+  },
+  {
     version: '0.8.22', date: '2026-10-29', title: t('Le direct ne se fige plus'),
     items: [
       t('Le direct ne s’arrête plus avant un temps fort : un événement tombé juste avant (l’occasion de l’autre équipe à la même minute, un carton, un mot du commentateur) figeait l’horloge pour de bon, à ×1 comme à ×4, en solo comme en ligue. Il s’affiche maintenant juste avant le temps fort.'),

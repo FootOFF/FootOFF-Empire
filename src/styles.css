@@ -5309,6 +5309,7 @@ html, body { overscroll-behavior: none; }
 .cm-item.picked .cm-label::after { content: ""; display: inline-block; width: 9px; height: 9px; margin-inline-start: 12px; border-radius: 50%; background: var(--gold); vertical-align: .28em; }
 .cm-item.picked.on .cm-label::after { background: var(--gold-ink); }
 .ts-lang-note { margin: var(--s-3) 0 0; max-width: 46ch; font-size: var(--t-sm); line-height: 1.5; color: var(--text-2); }
+.ts-lang-note.cm-card-warn { color: #f0a097; } /* nouvelle partie : la partie enregistrée sera effacée (0.8.23) */
 .cm-card-list { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
 .cm-card-list li { font-size: var(--t-sm); line-height: 1.5; color: var(--text-2); }
 .crash-links { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }

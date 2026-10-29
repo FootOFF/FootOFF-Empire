@@ -60,7 +60,7 @@ import { createStadiumSound } from './ui/sound';
 import { achievementById, newAchievements } from './game/achievements';
 import { advanceJourney, journeyDue } from './game/journey';
 import { LOCKS, NavContext, SECTION_ENTRY, sectionNear, sectionOf } from './ui/nav';
-import { bootIntent, eur, gameLang, LANG, numLocale, preferredLang, reloadInLang, t, tn } from './i18n/index';
+import { bootIntent, eur, gameLang, LANG, numLocale, reloadInLang, setPreferredLang, t, tn } from './i18n/index';
 
 // three.js et la scène vivent dans un chunk séparé, chargé dès le démarrage (derrière l'écran de chargement).
 const Empire3D = lazy(() => import('./ui/Empire3D'));
@@ -902,12 +902,19 @@ export default function App({ preview = null }) {
     setMatchDay(true);
     setReplay({ ...rp, result });
   };
-  // Nouvelle partie : le club se fonde dans la langue choisie à l'écran titre (src/i18n), le jeu se recharge si elle
+  // Nouvelle partie (0.8.23, demande du PDG) : d'abord la langue de la partie, choisie une seule fois (écran titre, vue
+  // « lang » ; elle n'est plus au menu), puis le club se fonde dans cette langue (src/i18n) ; le jeu se recharge si ce
   // n'est pas celle de la session. La carrière en cours, dans cette langue ou une autre, est d'abord effacée (confirmé).
   const askNewGame = () => {
+    setMenu(false);
+    setScreen('title');
+    setTitleView('lang');
+  };
+  const startNewGame = (l) => {
     const cur = state || foreign;
-    const fresh = () => {
-      if (preferredLang() !== gameLang()) { reloadInLang(preferredLang(), { go: 'create' }); return; }
+    const fresh = () => { // la langue devient la préférence une fois la partie lancée (pas si l'effacement est annulé)
+      setPreferredLang(l);
+      if (l !== gameLang()) { reloadInLang(l, { go: 'create' }); return; }
       setTitleView('create');
     };
     if (!cur) { fresh(); return; }
@@ -996,7 +1003,7 @@ export default function App({ preview = null }) {
               matchDay={matchDay || !!replay}
               live={matchPhase === 'live' || !!replay}
               matchFx={matchFx}
-              matchInfo={replay ? { opp: replay.ctx.opp.name } : matchInfo}
+              matchInfo={replay ? { opp: replay.ctx.opp.name, oppCrest: replay.ctx.opp.crest, home: replay.state.clubName, homeCrest: replay.state.crest, side: replay.side || 'home' } : matchInfo}
               recenter={recenter}
               selectedPlot={inGame ? sel?.plotId || null : null}
               holo={holo}
@@ -1256,6 +1263,7 @@ export default function App({ preview = null }) {
             onContinue={() => { setLeagueHub(null); if (!state && foreign) reloadInLang(foreign.lang, { go: 'continue' }); else setScreen('game'); }}
             liveNote={resumeLive && matchPhase === 'live' ? liveNoteOf(resumeLive) : null}
             onNewGame={askNewGame}
+            onPickLang={startNewGame}
             leagues={leagueOpen() ? { count: myLeagues().length, clubs: myLeagues().map((m) => ({ ...m, progress: leagueClubProgress(m.code) })), onOpen: () => setLeagueHub({}), onPlay: enterLeague } : null}
             onCreate={(name, crest) => { setLeagueHub(null); setForeign(null); setState(createInitialState(name, crest)); setTitleView('menu'); setScreen('game'); }}
           />

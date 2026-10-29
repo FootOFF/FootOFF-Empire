@@ -22,7 +22,7 @@ import { honoursOf } from '../game/honours';
 import { createMatchScene } from '../three/matchplay';
 import { matchFeed } from '../game/matchFeed';
 import { createCrowd } from '../three/crowd';
-import { matchKitOf, ourKit } from '../game/kits';
+import { matchKitOf, ourKit, teamKitOf } from '../game/kits';
 import {
   buildingMesh, padMesh, setProceduralNight, stadiumMesh,
 } from '../three/procedural';
@@ -1211,14 +1211,25 @@ export default function Empire3D({
     const ctx = ctxRef.current;
     if (!ctx || !ready) return;
     const opp = matchInfo?.opp || '';
-    const home = ourKit(); // nos couleurs d'écusson (0.8.8)
-    const away = matchKitOf(opp, home); // tenue de match lisible face à la nôtre (0.8.7)
+    // nos couleurs d'écusson (0.8.8), et une tenue de match lisible face à elles pour l'adversaire (0.8.7). Rejeu de ligue
+    // (0.8.23) : chaque club à ses couleurs, et comme en solo, notre club garde toujours les siennes, l'autre change de
+    // tenue si les deux se confondent. Avant, l'équipe qui reçoit prenait toujours nos couleurs : en visite, on jouait en
+    // tenue de secours face à un adversaire habillé en noir et or.
+    let home = ourKit();
+    let away = matchKitOf(opp, home);
+    if (matchInfo?.home && matchInfo.side === 'away') {
+      away = teamKitOf(opp, matchInfo.oppCrest || undefined);
+      home = matchKitOf(matchInfo.home, away, matchInfo.homeCrest);
+    } else if (matchInfo?.home) {
+      home = teamKitOf(matchInfo.home, matchInfo.homeCrest || undefined);
+      away = matchKitOf(opp, home, matchInfo.oppCrest);
+    }
     ctx.plots.get('t0')?.squad?.setKits(home, away);
     ctx.crowdFill = matchInfo?.capacity ? Math.min(1, (matchInfo.attendance || 0) / matchInfo.capacity) : 0.6;
     ctx.awayColor = away.shirt;
     ctx.postMatch = !!matchInfo?.played;
     ctx.applyMode();
-  }, [matchInfo?.opp, matchInfo?.attendance, matchInfo?.capacity, matchInfo?.played, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [matchInfo?.opp, matchInfo?.home, matchInfo?.side, matchInfo?.attendance, matchInfo?.capacity, matchInfo?.played, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Parcelle sélectionnée (inspecteur ouvert) : contour doré persistant. Quand on la quitte, la caméra revient
   // à la vue d'ensemble.

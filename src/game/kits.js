@@ -41,11 +41,8 @@ let OURS = HOME_KIT;
 export const setOurKit = (crest) => { OURS = kitOfCrest(crest); };
 export const ourKit = () => OURS;
 
-// Tenue d'un autre club : celle qu'un ami a composée (son écusson connu), sinon celle tirée de son nom.
-export const teamKitOf = (name = '') => {
-  const c = knownCrest(name);
-  return c ? kitOfCrest(c) : { ...kitOf(name), trim: HOME_KIT.trim };
-};
+// Tenue d'un autre club : celle qu'un ami a composée (son écusson, connu ou donné), sinon celle tirée de son nom.
+export const teamKitOf = (name = '', crest = knownCrest(name)) => (crest ? kitOfCrest(crest) : { ...kitOf(name), trim: HOME_KIT.trim });
 
 // Tenue de match en 3D (0.8.7, 0.8.8) : les temps forts se jouent de nuit, sous des projecteurs chauds, où le blanc se
 // confond avec l'or, l'orange ou le jaune ; deux maillots trop proches, l'adversaire change de tenue : sa seconde couleur
@@ -58,8 +55,8 @@ function clash(a, b) {
   return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]) < 110 || (light(a) && warm(b)) || (light(b) && warm(a));
 }
 const ALTS = [0xf2f2f2, 0x1d2c5e, 0xc0392b, 0x1f8a4c, 0x151515];
-export function matchKitOf(name = '', ours = OURS) {
-  const k = teamKitOf(name);
+export function matchKitOf(name = '', ours = OURS, crest = undefined) {
+  const k = teamKitOf(name, crest || undefined);
   const kit = clash(k.shirt, ours.shirt) ? (() => {
     const shirt = [k.trim, ...ALTS].find((c) => c !== HOME_KIT.trim && !clash(c, ours.shirt)) ?? 0x1d2c5e;
     return { shirt, trim: shirt === k.trim ? k.shirt : HOME_KIT.trim, keeper: k.keeper };

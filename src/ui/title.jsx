@@ -12,7 +12,7 @@ import { COLOR_KEYS, ClubCrest, ColorValue, colorList } from './crest';
 import { randomClubName } from '../game/names';
 import { DIVISIONS } from '../game/constants';
 import { CREST_EMBLEMS, CREST_GROUNDS, CREST_PATTERNS, CREST_SHAPES, CREST_STYLES, CREST_TEXTS, clubStars, normalizeCrest, randomCrest, withStyle } from '../game/crest';
-import { LANG, LANGS, LANG_NAMES, chooseLang, langName, preferredLang, setPreferredLang, t, tn, tr } from '../i18n/index';
+import { LANGS, LANG_NAMES, langName, preferredLang, t, tn, tr } from '../i18n/index';
 
 // Écran titre, façon jeu de console : le complexe tourne lentement en 3D derrière (mode vitrine d'Empire3D), le
 // menu à gauche (en bas sur téléphone), la carte de l'entrée choisie à droite. Trois vues : menu, réglages,
@@ -39,7 +39,7 @@ function Pillars() {
 }
 
 // Carte de droite (PC) : le détail de l'entrée active du menu.
-function SideCard({ id, state, foreign = null, pref = LANG, settings, leagues = null }) {
+function SideCard({ id, state, foreign = null, settings, leagues = null }) {
   if (id === 'continue' && state) return <ClubCard state={state} eyebrow={t('Continuer la partie')} />;
   if (id === 'continue' && foreign) { // partie fondée dans une autre langue : elle s'ouvre dans la sienne
     return (
@@ -58,16 +58,7 @@ function SideCard({ id, state, foreign = null, pref = LANG, settings, leagues = 
         <p className="cm-card-lead">{tr('Ton club. Ton complexe. <0>Ton empire.</0>', [(c) => <em>{c}</em>])}</p>
         {saved && <p className="cm-card-warn">{tr('Ta partie avec <0/> (saison <1/>) sera effacée.', [saved.clubName, saved.seasonNumber])}</p>}
         <Pillars />
-        <p className="cm-card-note">{t('Langue de la partie : {lang}.', { lang: langName(pref) })}</p>
-      </section>
-    );
-  }
-  if (id === 'lang') {
-    return (
-      <section className="cm-card">
-        <span className="eyebrow">{t('Langue')}</span>
-        <p className="cm-card-lead">{LANG_NAMES[pref]}</p>
-        <p className="cm-card-note">{t('La langue se choisit avant de fonder un club : les noms des joueurs et des clubs sont tirés dans cette langue. Une fois la partie lancée, elle ne change plus.')}</p>
+        <p className="cm-card-note">{t('Première étape : la langue de la partie, choisie une seule fois.')}</p>
       </section>
     );
   }
@@ -142,7 +133,7 @@ const clubProgress = ({ name, code, progress: p }) => {
 
 // Entrées du menu principal : Continuer (s'il y a une partie ; liveNote : un match interrompu qui reprendra à la minute
 // près), Nouvelle partie, Championnats entre amis (leagues, quand ils sont ouverts), Réglages, FootOFF Media.
-function menuItems(state, { onContinue, onNew, onLang, onSettings, onRules, onNews, onMedia }, liveNote = null, leagues = null, foreign = null, pref = LANG) {
+function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews, onMedia }, liveNote = null, leagues = null, foreign = null) {
   const saved = state || foreign; // la carrière enregistrée (foreign : fondée dans une autre langue)
   const div = saved && DIVISIONS[saved.divisionIndex];
   const summary = saved && t('{clubName} · {name} · Saison {seasonNumber}', { clubName: saved.clubName, name: div.name, seasonNumber: saved.seasonNumber });
@@ -151,7 +142,6 @@ function menuItems(state, { onContinue, onNew, onLang, onSettings, onRules, onNe
     { id: 'new', label: t('Nouvelle partie'), sub: saved ? t('Fonder un autre club') : t('Fonde ton club et bâtis ton empire'), onSelect: onNew },
     ...(leagues ? (leagues.clubs || []).map((m) => ({ id: `club-${m.code}`, label: m.club.name, sub: clubProgress(m), onSelect: () => leagues.onPlay(m) })) : []),
     ...(leagues ? [{ id: 'leagues', label: t('Championnats entre amis'), sub: leagues.count ? tn(leagues.count, '{count} championnat · créer, rejoindre, classements', '{count} championnats · créer, rejoindre, classements', { count: leagues.count }, leagues.count > 1) : t('Rejoins tes amis avec leur code'), onSelect: leagues.onOpen }] : []),
-    { id: 'lang', label: t('Langue'), sub: LANG_NAMES[pref], onSelect: onLang },
     { id: 'rules', label: t('Règles du jeu'), sub: t('Matchs, joueurs, mercato, argent, réputation'), onSelect: onRules },
     { id: 'news', label: t('Nouveautés'), sub: t('Version {CURRENT}{v}', { CURRENT, v: unseenNews() ? t(' · à lire') : '' }), badge: unseenNews(), onSelect: onNews },
     { id: 'settings', label: t('Réglages'), sub: t('Son, vibrations, fluidité, sauvegarde, signaler un problème'), onSelect: onSettings },
@@ -261,9 +251,10 @@ function CreateClub({ onCreate, onBack, active }) {
   );
 }
 
-// Langue (demande du PDG, 2026-10-29) : celle de la prochaine partie, proposée d'après la langue du site footoff.media.
-// Chaque langue s'annonce dans sa propre langue ; la langue choisie porte un point doré. La règle est écrite sous la
-// liste : une partie garde la langue de sa fondation, puisque ses noms de joueurs et de clubs y sont tirés.
+// Langue de la partie : la première étape d'une nouvelle partie (0.8.23, demande du PDG : plus à l'écran titre), proposée
+// d'après la langue du site footoff.media. Chaque langue s'annonce dans sa propre langue ; la proposée porte un point
+// doré. La règle est écrite sous la liste : une partie garde la langue de sa fondation, puisque ses noms de joueurs et de
+// clubs y sont tirés. Une partie enregistrée sera effacée (le choix fait, App le fait confirmer).
 const LANG_INVITES = { fr: 'Jouer en français', en: 'Play in English', es: 'Jugar en español', ar: 'العب بالعربية' };
 function LangView({ active, pref, saved, onPick, onBack }) {
   const items = [
@@ -273,25 +264,18 @@ function LangView({ active, pref, saved, onPick, onBack }) {
   const menu = useMenu(items, { initial: Math.max(0, LANGS.indexOf(pref)), onBack, active });
   return (
     <>
-      <MenuList items={items} menu={menu} label={t('Langue')} className="ts-langs" />
-      <p className="ts-lang-note">{t('La langue se choisit avant de fonder un club : les noms des joueurs et des clubs sont tirés dans cette langue. Une fois la partie lancée, elle ne change plus.')}</p>
-      {saved && <p className="ts-lang-note">{t('Ta partie avec {clubName} garde sa langue ({lang}). Ce choix vaudra pour ta prochaine partie.', { clubName: saved.clubName, lang: langName(saved.lang || LANG) })}</p>}
+      <MenuList items={items} menu={menu} label={t('Langue de la partie')} className="ts-langs" />
+      <p className="ts-lang-note">{t('La langue se choisit une seule fois par partie : les noms des joueurs et des clubs sont tirés dans cette langue, et elle ne change plus ensuite.')}</p>
+      {saved && <p className="ts-lang-note cm-card-warn">{tr('Ta partie avec <0/> (saison <1/>) sera effacée.', [saved.clubName, saved.seasonNumber])}</p>}
     </>
   );
 }
 
-export function TitleScreen({ state, foreign = null, view, onView, onContinue, onNewGame, onCreate, settings, blocked = false, liveNote = null, leagues = null }) {
+export function TitleScreen({ state, foreign = null, view, onView, onContinue, onNewGame, onPickLang, onCreate, settings, blocked = false, liveNote = null, leagues = null }) {
   const active = !blocked;
-  const [pref, setPref] = useState(preferredLang); // langue de la prochaine partie
+  const pref = preferredLang(); // langue proposée pour la nouvelle partie
   const saved = state || foreign;
-  // Sans partie : le jeu se recharge aussitôt dans la langue choisie (et rouvre ce choix). Avec une partie : elle garde
-  // la sienne, le choix vaut pour la prochaine.
-  const pickLang = (l) => {
-    if (!saved && l !== LANG) { chooseLang(l, { go: 'lang' }); return; }
-    setPreferredLang(l);
-    setPref(l);
-  };
-  const items = menuItems(state, { onContinue, onNew: onNewGame, onLang: () => onView('lang'), onSettings: () => onView('settings'), onRules: () => onView('rules'), onNews: () => onView('news'), onMedia: () => onView('media') }, liveNote, leagues, foreign, pref);
+  const items = menuItems(state, { onContinue, onNew: onNewGame, onSettings: () => onView('settings'), onRules: () => onView('rules'), onNews: () => onView('news'), onMedia: () => onView('media') }, liveNote, leagues, foreign);
   const menu = useMenu(items, { active: active && view === 'menu' }); // l'entrée active est gardée au retour des réglages
   const current = items[Math.min(menu.cur, items.length - 1)].id;
   const [entered, setEntered] = useState(false); // la première apparition joue l'animation d'entrée complète
@@ -387,9 +371,9 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
         )}
         {view === 'lang' && (
           <div className="ts-main ts-sub">
-            <span className="eyebrow">{t('FootOFF Empire')}</span>
-            <h2>{t('Langue')}</h2>
-            <LangView active={active} pref={pref} saved={saved} onPick={pickLang} onBack={() => onView('menu')} />
+            <span className="eyebrow">{t('Nouvelle partie')}</span>
+            <h2>{t('Langue de la partie')}</h2>
+            <LangView active={active} pref={pref} saved={saved} onPick={onPickLang} onBack={() => onView('menu')} />
           </div>
         )}
         {view === 'media' && (
@@ -399,11 +383,11 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
             <MediaView active={active} onBack={() => onView('menu')} />
           </div>
         )}
-        {view === 'create' && <CreateClub active={active} onCreate={onCreate} onBack={() => onView('menu')} />}
+        {view === 'create' && <CreateClub active={active} onCreate={onCreate} onBack={() => onView('lang')} />}
       </div>
       {!sub && (
         <aside className="ts-side" key={view === 'create' ? 'create' : current}>
-          <SideCard id={view === 'create' ? 'new' : current} state={view === 'create' ? null : state} foreign={view === 'create' ? null : foreign} pref={pref} settings={settings} leagues={leagues} />
+          <SideCard id={view === 'create' ? 'new' : current} state={view === 'create' ? null : state} foreign={view === 'create' ? null : foreign} settings={settings} leagues={leagues} />
         </aside>
       )}
       <footer className="ts-bottom">
