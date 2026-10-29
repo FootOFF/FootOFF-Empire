@@ -15,7 +15,7 @@ import { drawObjectives } from './objectives';
 import { refreshTransfers } from './transfers';
 import { rebuildRecords } from './records';
 import { normalizeCrest } from './crest';
-import { distinctSquad, legacyFace } from './faces';
+import { distinctSquad, drawFace, legacyFace, plausibleSkin } from './faces';
 import { ensureDeals } from './contracts';
 import { gameLang, t } from '../i18n/index';
 
@@ -273,8 +273,11 @@ export function repairSave(s) {
       scaleElite(y); // Élite à l'échelle d'un grand championnat (0.6.0)
       // visages (0.6.1) : un joueur d'avant garde la base de son portrait (teint, cheveux, coiffure, barbe), avec les
       // nouveaux traits ; puis aucun sosie dans l'effectif (de deux sosies, le dernier arrivé change de coupe)
+      // teint invraisemblable pour l'origine du nom (tiré avant la 0.8.20 dans un mélange de toutes les origines) : le
+      // visage est retiré, avec un teint, des cheveux et des yeux qui vont ensemble
       for (const p of [...y.players, ...y.youth, ...(y.scouting?.list || []), ...y.market, ...y.transfers, ...y.alumni]) {
         if (!p.face) p.face = legacyFace(p);
+        if (!plausibleSkin(p)) p.face = drawFace(p);
       }
       distinctSquad(y.players);
       ensureDeals(y); // contrats (0.8.0) : chaque joueur reçoit un contrat au salaire du jour, de deux à quatre saisons

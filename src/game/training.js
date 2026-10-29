@@ -161,11 +161,14 @@ export function suggestFor(s, pos) {
 
 // Choix de la séance pour une ligne : le joueur, sa catégorie et son épreuve, gardés d'une séance à l'autre tant que le
 // joueur a encore de la marge ; à défaut, le joueur dont le programme de signe avance avec la séance (le plus près du
-// but), sinon le joueur conseillé, sur sa catégorie conseillée, avec l'épreuve la plus récente. Le staff fait les
-// séances avec ces mêmes choix (staffSession) : ce que montre l'écran est ce qu'il fera.
+// but), sinon le joueur conseillé, sur sa catégorie conseillée, avec l'épreuve la plus récente. Séances confiées au
+// staff (0.8.20, demande du PDG) : à chaque séance le joueur conseillé du moment (ou celui d'un programme de signe) ;
+// un joueur choisi à la main ne vaut que pour la séance en cours. Le staff fait les séances avec ces mêmes choix
+// (staffSession) : ce que montre l'écran est ce qu'il fera.
 export function pickOf(s, pos) {
   const lvl = Math.max(1, s.buildings.training || 0);
-  const saved = s.training?.picks?.[pos];
+  const kept = s.training?.picks?.[pos];
+  const saved = kept && (!staffOn(s) || kept.key === windowKey(s)) ? kept : null;
   const p = (saved && s.players.find((q) => q.id === saved.id && q.pos === pos && !isInjured(q) && q.pot > playerRating(q) + 0.05))
     || programPlayer(s, pos) || suggestFor(s, pos);
   if (!p) return null;
@@ -311,7 +314,8 @@ export function journalLearned(s, r) {
 export function setPick(s, pos, pick) {
   const p = s.players.find((q) => q.id === pick.id && q.pos === pos);
   if (!p || isInjured(p) || !catsFor(pos)[pick.cat]) return null;
-  s.training = { ...(s.training || {}), picks: { ...(s.training?.picks || {}), [pos]: { id: pick.id, cat: pick.cat, drill: pick.drill } } };
+  // key : la séance du choix (séances confiées au staff : il ne vaut que pour elle, pickOf)
+  s.training = { ...(s.training || {}), picks: { ...(s.training?.picks || {}), [pos]: { id: pick.id, cat: pick.cat, drill: pick.drill, key: windowKey(s) } } };
   return s;
 }
 

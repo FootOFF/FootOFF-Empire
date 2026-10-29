@@ -440,7 +440,7 @@ function PlayerCard({ p, state, refLvl, index, onOpen }) {
           ? <span className={`sqc-strap ${absent.kind}`}>{absent.short}</span>
           : <span className={`sqc-fit ${fitTone(fit)}`} title={t('Condition physique')}><span className="sqc-fit-bar"><i style={{ width: `${fit}%` }} /></span><em>{fit} %</em></span>}
         <span className="sqc-foot">
-          <span>{tr('<0/> ans<1/>', [p.age, pot ? <>{t(' · pot. ')}{fmtRating(pot[0])}–{fmtRating(pot[1])}</> : ''])}</span>
+          <span>{tr('<0/> ans<1/>', [p.age, pot ? <>{t(' · pot. ')}<bdi dir="ltr">{fmtRating(pot[0])}–{fmtRating(pot[1])}</bdi></> : ''])}</span>
           <Form5 form={p.form} />
         </span>
       </button>

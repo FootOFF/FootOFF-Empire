@@ -944,6 +944,13 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const plannedSubs = pairSubs(m.lineup, planned).length; // changements prévus sur le terrain
   const subsLeft = SUBS_MAX - m.subsUsed - plannedSubs; // changements encore possibles
   const boardOpen = phase === 'halftime' || phase === 'subs';
+  // match revu, à la pause : ce que les plans de mi-temps des deux clubs ont changé (remplacements, dispositif, tactique),
+  // déjà joué par le moteur au début de la seconde période
+  const htReplay = !!replay && phase === 'halftime';
+  const htMoves = useMemo(() => (htReplay
+    ? live.eventsOf(2).filter((e) => e.at <= 45.01 && (e.type === 'sub' || e.type === 'info')) : []), [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  // et les faits de la première période (buts, cartons, blessés), dans l'ordre du match
+  const htFacts = useMemo(() => (htReplay ? [...shown].reverse().filter((e) => ['goal', 'yellow', 'red', 'injury'].includes(e.type)) : []), [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   const base = half === 1 ? 45 : 90;
   const minute = Math.max(half === 1 ? 0 : 45, Math.ceil(clock));
   const minuteLabel = minute > base ? `${base}+${minute - base}` : `${minute}`;
@@ -962,7 +969,15 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const odds = useMemo(() => (phase === 'fulltime' ? null
     : live.oddsShown(oddsMinute, shown, boardOpen ? { lineup: planned, tactic: tactic2, formation: form2 } : {})), [oddsMinute, shown, phase, plan, tactic2, form2, lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const st = useMemo(() => statsOf(shown), [shown]);
-  const poss = phase === 'halftime' || phase === 'fulltime' ? m.stats.possession : live.possessionAt(half, minute);
+  const pronoBlock = ( // mi-temps et changement : le pronostic final (match revu : dans la seconde colonne)
+    <div className="ht-block">
+      <span className="ht-label">{tr('Pronostic final<0/>', [phase === 'subs' ? t(' avec ces changements') : ''])}</span>
+      {odds && <OddsBar odds={odds} />}
+    </div>
+  );
+  // match revu : le moteur a déjà joué les deux périodes, la possession de la pause est celle de la première
+  const poss = phase === 'halftime' && replay ? live.possessionAt(1, live.halfEnd)
+    : phase === 'halftime' || phase === 'fulltime' ? m.stats.possession : live.possessionAt(half, minute);
   const div = divisionOf(state)?.name || ''; // championnat entre amis : pas de division (ctx.label)
   const round = ctx.comp === 'league' || !ctx.comp
     ? <><span className="hm-long">{tr('<0/> · Journée', [div])}{' '}</span><span className="hm-short">{div} · {t('J')}</span>{state.round + 1}/{state.schedule.length}</> : ctx.label;
@@ -1010,7 +1025,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const viewNow = view === 'notes' && !tabbedScreen() ? 'stats' : view;
 
   return (
-    <div className={`matchscreen live ${phase !== 'playing' ? 'paused' : ''} ${hl ? 'hl' : ''}`}>
+    <div className={`matchscreen live ${phase !== 'playing' ? 'paused' : ''} ${hl ? 'hl' : ''} ${side === 'away' ? 'ours-away' : ''}`}>
       <div className="lv-centre" aria-hidden={hl ? 'true' : undefined}>
         <header className="lv-board">
           <p className="lv-eyebrow">{round}{m.atHome === false ? t(' · Extérieur') : ''} · {period}</p>
@@ -1127,7 +1142,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
       ))}
 
       {boardOpen && (
-        <div className={`halftime glass ${phase === 'subs' ? 'subs' : ''} ${board ? 'board-open' : 'board-closed'}`}>
+        <div className={`halftime glass ${phase === 'subs' ? 'subs' : ''} ${htReplay ? 'replay' : board ? 'board-open' : 'board-closed'}`}>
           <div className="ht-col">
             <h3 className="pm-sh mark-head">{phase === 'halftime' ? (replay ? t('Mi-temps') : t('Mi-temps · tes consignes')) : t('{minuteLabel}′ · changement', { minuteLabel })}</h3>
             {phase === 'subs' && (
@@ -1139,10 +1154,16 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
               <div><b>{st.shots[0]} - {st.shots[1]}</b><span>{t('Tirs')}</span></div>
               <div><b>{st.on[0]} - {st.on[1]}</b><span>{t('Cadrés')}</span></div>
             </div>
-            <div className="ht-block">
-              <span className="ht-label">{tr('Pronostic final<0/>', [phase === 'subs' ? t(' avec ces changements') : ''])}</span>
-              {odds && <OddsBar odds={odds} />}
-            </div>
+            {htReplay ? ( /* match revu (ligue) : rien à décider à la pause, le résumé de la première période */
+              <>
+                <div className="ht-block ht-b-half">
+                  <span className="ht-label">{t('Première période')}</span>
+                  {htFacts.length
+                    ? <ol className="feed-list ht-moves">{htFacts.map((e) => <EventRow key={keyOf(e)} e={e} />)}</ol>
+                    : <p className="ht-note">{t('Ni but, ni carton, ni blessé en première période.')}</p>}
+                </div>
+              </>
+            ) : pronoBlock}
             {!board && !replay && (
               <CompoCard
                 title={t('Composition et changements')}
@@ -1166,6 +1187,21 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
             </div>}
             {sub?.err && <p className="ht-note warn">{sub.err}</p>}
           </div>
+          {htReplay && ( /* seconde colonne (téléphone : à la suite) : temps forts, pronostic, changements de la pause */
+            <div className="ht-col">
+              <div className="ht-block ht-b-momentum">
+                <Momentum shown={shown} upTo={slotOf(live.halfEnd, 1)} possHalf={m.stats.possHalf} names={[m.home, m.away]} codes={codes} flip={flip} />
+              </div>
+              {pronoBlock}
+              <div className="ht-block ht-b-replay">
+                <span className="ht-label">{t('Changements de la mi-temps')}</span>
+                <p className="ht-note">{t('Prévus dans les plans de mi-temps validés avant le match.')}</p>
+                {htMoves.length
+                  ? <ol className="feed-list ht-moves">{htMoves.map((e) => <EventRow key={keyOf(e)} e={e} />)}</ol>
+                  : <p className="ht-note">{t('Aucun changement à la pause : les mêmes onze et les mêmes consignes en seconde période.')}</p>}
+              </div>
+            </div>
+          )}
           {board && <div className="ht-col ht-board">
             <div className="ht-board-head">
               <span className="ht-label">{t('Ton équipe · pastille : note du match · sous le nom : condition')}</span>

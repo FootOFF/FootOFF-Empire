@@ -613,8 +613,15 @@ function KickoffNote({ at }) {
   const left = useCountdown(at);
   return <span className="lig-kickoff">{left > 0 ? <>{t('tous ont validé · coup d’envoi dans ')}<b>{mmss(left)}</b></> : t('coup d’envoi…')}</span>;
 }
-function RunningLeague({ league, clubs, humans, results, worldBefore, me, kickoff = null, onPlayClub, onReplay, flash }) {
+function RunningLeague({ league, clubs, humans, results: all, worldBefore, me, kickoff = null, onPlayClub, onReplay, flash }) {
   const rounds = leagueRounds(league);
+  // Une journée se découvre en regardant son match (0.8.20, règle du PDG) : celles que ton club n'a pas encore regardées
+  // sur cet appareil restent cachées, scores, classement et palmarès compris.
+  const club = leagueClubProgress(league.code);
+  const seenUpTo = !club || club.season < league.season ? 0 : club.season > league.season ? Infinity : club.round;
+  const results = all.filter((x) => x.round < seenUpTo);
+  const unseen = all.length - results.length;
+  const honours = (league.honours || []).filter((h) => club && (club.season > h.season || (club.season === h.season && club.round >= rounds)));
   const table = leagueTable(clubs, results);
   const fixtures = leagueFixtures(league)[league.round] || [];
   const bySlot = new Map(clubs.map((c) => [c.slot, c]));
@@ -634,6 +641,7 @@ function RunningLeague({ league, clubs, humans, results, worldBefore, me, kickof
             <ClubMark club={opp} className="lig-vs-crest" />
           </div>
           <button type="button" className="btn" onClick={onPlayClub}>{tr('<0/> Jouer mon club', [<IconPlay className="fill" />])}</button>
+          {unseen > 0 && <p className="dir-note lig-unseen">{tn(unseen, 'Une journée jouée t’attend : entre dans ton club et regarde ton match pour découvrir les scores et le classement.', '{n} journées jouées t’attendent : entre dans ton club et regarde ton match pour découvrir les scores et le classement.', { n: unseen }, unseen > 1)}</p>}
           <p className="dir-note">{t('Ton club se gère comme une partie solo : complexe, effectif, entraînement, mercato. « Jouer » valide ton équipe avant l’heure ; une fois la journée jouée, tu regardes ton match.')}</p>
           {(syncOf(league.code).at || leagueClubProgress(league.code)) && <p className="lig-cloud">{cloudNote(league.code).text}</p>}
         </section>
@@ -690,11 +698,11 @@ function RunningLeague({ league, clubs, humans, results, worldBefore, me, kickof
           </tbody>
         </table>
       </section>
-      {league.honours?.length > 0 && (
+      {honours.length > 0 && (
         <section className="lig-block">
           <SectionHead label={t('Palmarès de la ligue')} />
           <ul className="honours">
-            {[...league.honours].reverse().map((h, i) => <li key={i}><span>{tr('Saison <0/>', [h.season])}</span><em>{h.club}</em><b>{h.pseudo || ''}</b></li>)}
+            {[...honours].reverse().map((h, i) => <li key={i}><span>{tr('Saison <0/>', [h.season])}</span><em>{h.club}</em><b>{h.pseudo || ''}</b></li>)}
           </ul>
         </section>
       )}

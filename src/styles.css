@@ -328,7 +328,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .hm-icon { width: 46px; height: 46px; flex-shrink: 0; display: grid; place-items: center; color: var(--gold-light); background: var(--plate-3); clip-path: var(--cut-shape-sm); }
 .hm-icon svg { width: 24px; height: 24px; }
 .hm-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-.hm-eyebrow { font-family: var(--font-disp); font-weight: 600; font-size: 13px; line-height: 1; letter-spacing: .09em; text-transform: uppercase; color: var(--gold-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hm-eyebrow { font-family: var(--font-disp); font-weight: 600; font-size: 13px; line-height: 1.2; letter-spacing: .09em; text-transform: uppercase; color: var(--gold-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hud-match.comp-cup .hm-eyebrow { color: #d3d8e0; } /* Coupe nationale : argent */
 .hud-match.comp-c1 .hm-eyebrow { color: #8fb6f7; } /* Coupe d'Europe : bleu */
 .hm-short { display: none; }
@@ -838,6 +838,12 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .sqc-strap.ban { background: #8a6420; color: #fff1d6; }
 .sqc-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 9px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .sqc-foot > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* arabe (0.8.20, remarque du PDG) : « عامًا · الإمكانات » est plus long que « ans · pot. » ; la fourchette du potentiel
+   était coupée : la ligne passe à la ligne plutôt que de la couper. Le badge « أساسي » (titulaire) : la hauteur de ligne
+   de Cairo, il débordait de son cadre */
+html[lang="ar"] .sqc-foot > span:first-child { white-space: normal; line-height: 1.45; }
+.sqc-foot bdi { white-space: nowrap; } /* la fourchette du potentiel ne se coupe jamais au tiret */
+html[lang="ar"] .sqc-xi { line-height: 1.45; padding: 0 7px; font-size: 12px; }
 .form5 { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; flex-shrink: 0; }
 .form5 i { width: 4px; background: #77746d; }
 .form5 i.g { background: var(--green); }
@@ -1745,6 +1751,8 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .lv-legend i { width: 9px; height: 9px; flex-shrink: 0; }
 .lv-legend i.h, .lv-moment rect.h { background: var(--gold-light); fill: var(--gold-light); }
 .lv-legend i.a, .lv-moment rect.a { background: #7d8aa3; fill: #7d8aa3; }
+.matchscreen.ours-away :is(.lv-legend i.h, .lv-moment rect.h) { background: #7d8aa3; fill: #7d8aa3; } /* notre club en visiteur : à nous l'or */
+.matchscreen.ours-away :is(.lv-legend i.a, .lv-moment rect.a) { background: var(--gold-light); fill: var(--gold-light); }
 .lv-moment-plot { position: relative; margin-top: 10px; height: 64px; }
 .lv-moment svg { display: block; width: 100%; height: 100%; }
 .lv-moment .past { stroke: rgba(255, 255, 255, .16); stroke-width: 1; vector-effect: non-scaling-stroke; }
@@ -1780,6 +1788,14 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .ev-goal .ev-text { font-weight: 600; color: var(--text); }
 .ev-goal.ev-side-away { background: linear-gradient(90deg, rgba(125, 138, 163, .2), rgba(125, 138, 163, .04)); }
 .ev-goal.ev-side-away .ev-min, .ev-goal.ev-side-away .ev-icon { color: #9fb0cc; }
+/* match revu de ligue, notre club en visiteur (0.8.20, revue de marque) : l'or reste à notre club, le bleu-gris à
+   l'adversaire (le moteur appelle « home » celui qui reçoit) */
+.matchscreen.ours-away .ev-goal:not(.ev-side-away) { background: linear-gradient(90deg, rgba(125, 138, 163, .2), rgba(125, 138, 163, .04)); }
+.matchscreen.ours-away .ev-goal:not(.ev-side-away) :is(.ev-min, .ev-icon) { color: #9fb0cc; }
+.matchscreen.ours-away .ev-goal.ev-side-away { background: linear-gradient(90deg, rgba(222, 193, 127, .16), rgba(222, 193, 127, .03)); }
+.matchscreen.ours-away .ev-goal.ev-side-away :is(.ev-min, .ev-icon) { color: var(--gold-light); }
+.matchscreen.ours-away .ev-chance.ev-side-home .ev-icon { color: currentColor; }
+.matchscreen.ours-away .ev-chance.ev-side-away .ev-icon { color: var(--gold); }
 .ev-lead { display: block; margin-bottom: 3px; font-weight: 400; color: var(--text-2); }
 .ev-yellow, .ev-red { color: var(--text); }
 .ev-sub { color: var(--text); }
@@ -1828,6 +1844,8 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .ht-stats b { font-size: 24px; }
 .ht-block { display: flex; flex-direction: column; gap: 10px; }
 .ht-label { font-family: var(--font-disp); font-weight: 600; font-size: 13px; line-height: 1; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+/* mi-temps d'un match revu (ligue) : les changements de la pause, en lignes du fil */
+.ht-moves { flex: none; min-height: auto; overflow: visible; margin: 0; padding: 0; }
 .halftime .odds-legend b { font-size: 34px; }
 
 /* ---- centre du match (0.7, façon FM) : plein écran, opaque — entre deux temps forts, la 3D ne se dessine pas. En
@@ -2468,7 +2486,7 @@ html[data-input="gamepad"] :focus { outline: none !important; }
 /* PC : la composition dépliée fait défiler la carte (810 px de haut) ; « Reprendre » reste collé en bas, visible */
 @media (min-width: 761px), (orientation: landscape) and (max-height: 500px) {
   .halftime { padding-bottom: 0; }
-  .halftime .ht-go { position: sticky; bottom: 0; z-index: 2; margin: 0 -24px; padding: 4px 24px 24px; background: rgba(11, 11, 12, .97); box-shadow: 0 -18px 24px rgba(11, 11, 12, .8); }
+  .halftime .ht-go { position: sticky; bottom: 0; z-index: 2; margin: 0 -24px; padding: 4px 24px 24px; background: var(--plate-solid); box-shadow: 0 -18px 24px rgba(11, 11, 12, .8); } /* opaque : rien ne transparaît sous le bouton */
 }
 @media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .halftime { background: #0b0b0c; padding-bottom: 0; }
@@ -3047,6 +3065,10 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .ht-b-formation { order: 3; }
   .ht-b-tactic { order: 4; }
   .halftime .ht-go { order: 5; }
+  /* en colonne, contenu en haut et « Reprendre » en bas : sur iPhone la carte prend tout l'écran (fit-content n'y
+     limite pas la hauteur) et la grille étirait ses rangées, laissant de grands vides entre les blocs */
+  .halftime { display: flex; flex-direction: column; align-items: stretch; } /* toute la largeur (la grille alignait en haut) */
+  .halftime .ht-go { margin-top: auto; }
   .lu-bmeta { white-space: normal; flex-wrap: wrap; row-gap: 3px; } /* le motif d'absence d'un remplaçant n'est jamais coupé */
 }
 
@@ -3280,7 +3302,39 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ts-profile-mark { width: 24px; height: 24px; flex-shrink: 0; }
-.ts-col { position: absolute; top: 0; bottom: 0; left: 48px; width: min(520px, 44vw); display: flex; flex-direction: column; justify-content: center; gap: 44px; padding: 96px 0 104px; }
+.ts-col { position: absolute; top: 0; bottom: 0; left: 48px; width: min(520px, 44vw); display: flex; flex-direction: column; justify-content: safe center; gap: 44px; padding: 96px 0 104px; }
+/* menu plus haut que la fenêtre (title.jsx, data-tight) : seule l'entrée choisie garde sa ligne d'explication ; puis
+   (data-tight="2") le titre et les écarts se resserrent. « safe » : s'il déborde encore, il part du haut, jamais sur
+   « FootOFF Media présente » */
+.ts-col[data-tight] .cm-item:not(.on) .cm-sub { display: none; }
+.ts-col:is([data-tight="2"], [data-tight="3"], [data-tight="4"]) { gap: 20px; }
+.ts-col:is([data-tight="2"], [data-tight="3"], [data-tight="4"]) .ts-head { gap: var(--s-2); }
+.ts-col:is([data-tight="2"], [data-tight="3"], [data-tight="4"]) .ts-mark .lockup-mark { height: 64px; }
+.ts-col:is([data-tight="2"], [data-tight="3"], [data-tight="4"]) .ts-mark .lockup-name { font-size: 40px; }
+.ts-col:is([data-tight="2"], [data-tight="3"], [data-tight="4"]) .ts-mark .lockup-sub { font-size: 11.5px; margin-top: 8px; } /* logo réduit d'un bloc : nom 0,62 et sous-titre 0,18 du monogramme */
+.ts-col:is([data-tight="2"], [data-tight="3"], [data-tight="4"]) .ts-main { gap: 6px; }
+.ts-col:is([data-tight="2"], [data-tight="3"], [data-tight="4"]) .ts-main .cm-item { min-height: 50px; padding-block: 6px; }
+.ts-col:is([data-tight="2"], [data-tight="3"], [data-tight="4"]) .ts-main .cm-item.on { min-height: 62px; }
+.ts-col:is([data-tight="2"], [data-tight="3"], [data-tight="4"]) .ts-main .cm-label { font-size: 24px; }
+.ts-col:is([data-tight="2"], [data-tight="3"], [data-tight="4"]) .ts-main .cm-item.on .cm-label { font-size: 27px; }
+/* data-tight="3" : plus compact, tout reste visible (remarque du PDG : la dernière entrée se perdait en bas) */
+.ts-col:is([data-tight="3"], [data-tight="4"]) { gap: 14px; }
+.ts-col:is([data-tight="3"], [data-tight="4"]) .ts-tag { display: none; }
+.ts-col:is([data-tight="3"], [data-tight="4"]) .ts-mark .lockup-mark { height: 60px; } /* pas plus petit : « EMPIRE » garde 11 px */
+.ts-col:is([data-tight="3"], [data-tight="4"]) .ts-mark .lockup-name { font-size: 37px; }
+.ts-col:is([data-tight="3"], [data-tight="4"]) .ts-mark .lockup-sub { font-size: 11px; margin-top: 6px; }
+.ts-col:is([data-tight="3"], [data-tight="4"]) .ts-main { gap: 3px; }
+.ts-col:is([data-tight="3"], [data-tight="4"]) .ts-main .cm-item { min-height: 40px; padding-block: 3px; }
+.ts-col:is([data-tight="3"], [data-tight="4"]) .ts-main .cm-item.on { min-height: 52px; }
+.ts-col:is([data-tight="3"], [data-tight="4"]) .ts-main .cm-label { font-size: 21px; }
+.ts-col:is([data-tight="3"], [data-tight="4"]) .ts-main .cm-item.on .cm-label { font-size: 24px; }
+/* data-tight="4" (fenêtre minuscule) : la colonne défile (barre masquée) ; sa marge basse, sous laquelle passent les
+   rappels des touches, reste transparente (--ts-fade, posée par title.jsx) : rien ne s'y superpose. Sa taille ne change
+   pas (pas de boucle de mesure) */
+.ts-col[data-tight="4"] { overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--ts-fade, 104px) - 24px), transparent calc(100% - var(--ts-fade, 104px)));
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--ts-fade, 104px) - 24px), transparent calc(100% - var(--ts-fade, 104px))); }
+.ts-col[data-tight="4"]::-webkit-scrollbar { display: none; }
 .ts-head { padding-left: 16px; }
 @media (min-width: 761px), (orientation: landscape) and (max-height: 500px) { .ts-menu .ts-profile { display: none; } } /* la carte de la partie montre déjà le club */
 .ts-head { display: flex; flex-direction: column; gap: var(--s-4); }
@@ -3427,7 +3481,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 @media (max-height: 760px) and (min-width: 761px), (max-height: 760px) and (orientation: landscape) and (max-height: 500px) { /* écran d'ordinateur portable : tout un peu plus serré */
   .ts-col, .pz-col { padding: 80px 0 88px; gap: 28px; }
   .ts-mark .lockup-mark { height: 80px; }
-  .ts-mark .lockup-name { font-size: clamp(44px, 4vw, 58px); }
+  .ts-mark .lockup-name { font-size: 50px; } /* logo réduit d'un bloc (0.8.20) */
+  .ts-mark .lockup-sub { font-size: 14.5px; margin-top: 10px; }
   .cm-item { min-height: 56px; }
   .cm-item.on { min-height: 68px; }
   .cm-label { font-size: 24px; }
@@ -3438,6 +3493,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 @media (max-height: 860px) and (min-width: 761px) { /* fenêtre d'ordinateur peu haute : les huit entrées du menu tiennent entre la mention du haut et l'aide du bas (0.8.17) */
   .ts-col { padding: 72px 0 80px; gap: 22px; }
   .ts-mark .lockup-mark { height: 76px; }
+  .ts-mark .lockup-name { font-size: 47px; }
+  .ts-mark .lockup-sub { font-size: 14px; margin-top: 9px; }
   .ts .cm-item { min-height: 50px; padding-block: 4px; }
   .ts .cm-item.on { min-height: 62px; }
   .ts .cm-label { font-size: 24px; }
@@ -3483,8 +3540,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .ts-col, .pz-col { padding: 64px 0 72px; gap: 20px; }
   .ts-mark { gap: 16px; }
   .ts-mark .lockup-mark { height: 60px; }
-  .ts-mark .lockup-name { font-size: 40px; }
-  .ts-mark .lockup-sub { font-size: 13px; margin-top: 8px; }
+  .ts-mark .lockup-name { font-size: 37px; }
+  .ts-mark .lockup-sub { font-size: 11px; margin-top: 6px; }
   .ts-tag { display: none; }
   .cm-item { min-height: 46px; }
   .cm-item.on { min-height: 56px; }
@@ -5348,6 +5405,21 @@ html, body { overscroll-behavior: none; }
 .hm-kickoff-label { font-size: var(--t-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .hm-kickoff-row { display: inline-flex; align-items: center; gap: 6px; }
 .hm-kickoff-time { font-family: var(--font-disp); font-weight: 700; font-size: 20px; letter-spacing: .04em; font-variant-numeric: tabular-nums; color: var(--gold-light); }
+/* « Regarder » (0.8.20, demande du PDG) : le match joué attend, le bouton s'illumine. Un reflet doré le traverse toutes
+   les 2,6 s et sa lumière respire, sans halo autour ; immobile si l'appareil demande moins d'animations */
+.btn.hm-watch { position: relative; overflow: hidden; isolation: isolate; animation: hm-watch-breathe 2.6s ease-in-out infinite; }
+.btn.hm-watch::after {
+  content: ''; position: absolute; inset: 0 auto 0 0; width: 45%; z-index: -1; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(240, 222, 170, .75), transparent); /* champagne */
+  transform: translateX(-120%) skewX(-18deg); animation: hm-watch-sheen 2.6s ease-in-out infinite;
+}
+@keyframes hm-watch-sheen { 0%, 38% { transform: translateX(-120%) skewX(-18deg); } 72%, 100% { transform: translateX(260%) skewX(-18deg); } }
+@keyframes hm-watch-breathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.14); } }
+@media (prefers-reduced-motion: reduce) { .btn.hm-watch, .btn.hm-watch::after { animation: none; } }
+/* compte à rebours lancé (0.8.20) : équipes verrouillées, un affichage qui ne réagit ni au survol ni au toucher */
+.btn.hm-kickoff.locked { cursor: default; filter: none; transform: none; }
+@media (hover: hover) { .btn.ghost.hm-kickoff.locked:hover { background: var(--plate-3); color: var(--gold-light); } }
+.hm-kickoff.locked .hm-kickoff-row svg { width: 15px; height: 15px; }
 .lig-kickoff { color: var(--gold-light); }
 .lig-kickoff b { font-variant-numeric: tabular-nums; }
 @keyframes lig-spin { to { transform: rotate(360deg); } }
@@ -5714,6 +5786,8 @@ html[lang="ar"] :not(.ld-words, .ld-words *, .lockup-text, .lockup-text *), html
 @media (max-height: 980px) and (min-width: 761px) {
   html[lang="ar"] .ts-col { padding: 84px 0 92px; gap: 18px; }
   html[lang="ar"] .ts-mark .lockup-mark { height: 72px; }
+  html[lang="ar"] .ts-mark .lockup-name { font-size: 45px; } /* logo réduit d'un bloc (0.8.20) */
+  html[lang="ar"] .ts-mark .lockup-sub { font-size: 13px; margin-top: 9px; }
   html[lang="ar"] .ts-head { gap: var(--s-2); }
   html[lang="ar"] .ts .cm-item { min-height: 48px; padding-block: 4px; }
   html[lang="ar"] .ts .cm-item.on { min-height: 62px; }
@@ -5732,7 +5806,9 @@ html[lang="ar"] .lv-team b { font-size: 20px; line-height: 1.3; }
    et où le cadre coupe ce qui dépasse (relevé écran par écran, au téléphone et sur PC) */
 html[lang="ar"] :is(h1, h2, .btn, .cm-label, .eyebrow, .hud-match-title, .hm-eyebrow, .hm-odds-text, .hud-club-meta, .hud-meta-round,
   .hud-meta-season, .hud-goal-k, .hold-label, .lv-eyebrow, .lv-goal-text b, .pm-tname b, .pm-sh, .sp-next, .sp-prev, .stack dd, .cr-opp,
-  .lu-why, .lu-bname, .lu-name, .tr-body h4, .tr-eyebrow, .sc-date-opp span, .lm-team, .mc-club-name, .mc-name, .sh-tag, .st-opp) { line-height: 1.4; }
+  .lu-why, .lu-bname, .lu-name, .tr-body h4, .tr-eyebrow, .sc-date-opp span, .lm-team, .mc-club-name, .mc-name, .sh-tag, .st-opp, .hm-odds) { line-height: 1.4; }
+/* nom du club du bandeau (0.8.20, remarque du PDG) : rogné par le bas avec la hauteur de ligne du latin */
+html[lang="ar"] :is(.hud-club-name, .hud-club-name.long) { line-height: 1.35; }
 html[lang="ar"] { --font-mono: 'Geist Mono', 'Cairo', ui-monospace, monospace; }
 html[lang="ar"] :is(.ld-step, .ld-tip-label) { font-family: 'Cairo', system-ui, sans-serif; }
 html[lang="ar"] .lv-sb-team b, html[lang="ar"] .lv-sb-team b span { line-height: 1.4; }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FootOFFLockup } from './brand';
 import { ClubCard, Hints, MenuList, SettingsView, uiSound, useMenu, MediaView } from './console';
 import { RulesView } from './rules';
@@ -296,6 +296,46 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
   const current = items[Math.min(menu.cur, items.length - 1)].id;
   const [entered, setEntered] = useState(false); // la première apparition joue l'animation d'entrée complète
   useEffect(() => { const t = setTimeout(() => setEntered(true), 1400); return () => clearTimeout(t); }, []);
+  // Menu plus haut que la fenêtre (partie, clubs de ligue et championnats en plus, 0.8.20) : seule l'entrée choisie
+  // garde sa ligne d'explication (data-tight), puis le titre et les écarts se resserrent (data-tight="2") ; mesuré sans,
+  // avant l'affichage, et à chaque changement de taille. Il débordait sur « FootOFF Media présente » et sur les rappels
+  // des touches.
+  const colRef = useRef(null);
+  useLayoutEffect(() => {
+    const col = colRef.current;
+    if (!col || view !== 'menu') return undefined;
+    // hauteur du contenu face à la place entre les marges (le contenu peut déborder dans la marge basse, sous les
+    // rappels des touches, sans que la colonne défile)
+    // (positions de mise en page : l'animation d'entrée du menu les décale à l'écran sans changer la place prise)
+    const over = () => {
+      const cs = getComputedStyle(col);
+      const room = col.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      const a = col.firstElementChild;
+      const b = col.lastElementChild;
+      return !!a && b.offsetTop + b.offsetHeight - a.offsetTop > room + 1;
+    };
+    const fit = () => {
+      delete col.dataset.tight;
+      if (!over()) return;
+      col.dataset.tight = '';
+      if (!over()) return;
+      col.dataset.tight = '2';
+      if (!over()) return;
+      col.dataset.tight = '3'; // plus compact : sans l'accroche, petit logo, entrées serrées (tout reste visible)
+      if (!over()) return;
+      col.dataset.tight = '4'; // dernier recours (fenêtre minuscule) : le menu défile, sa marge basse reste vide
+      col.style.setProperty('--ts-fade', getComputedStyle(col).paddingBottom);
+    };
+    fit();
+    // la fenêtre, et le contenu (polices chargées après coup, menu qui change) ; fit() rend la même mise en page pour
+    // la même place, sans nouvelle notification
+    const ro = new ResizeObserver(fit);
+    ro.observe(col);
+    for (const el of col.children) ro.observe(el);
+    let live = true;
+    document.fonts?.ready.then(() => { if (live) fit(); });
+    return () => { live = false; ro.disconnect(); };
+  }, [view, items.length]);
   const sub = view === 'settings' || view === 'rules' || view === 'news' || view === 'lang' || view === 'media';
   const hints = sub
     ? [['nav', t('Choisir')], ['select', t('Valider')], ['back', t('Retour')]]
@@ -312,7 +352,7 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
           {!state && foreign && <span className="ts-profile"><ClubCrest crest={foreign.crest} name={foreign.clubName} className="ts-profile-mark" />{foreign.clubName}</span>}
         </div>
       </header>
-      <div className="ts-col">
+      <div className="ts-col" ref={colRef}>
         {view === 'menu' && ( /* le grand titre sur le menu principal ; les sous-écrans ont leur propre en-tête */
           <div className="ts-head">
             <Wordmark />

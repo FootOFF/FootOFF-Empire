@@ -203,7 +203,7 @@ function SessionTab({ state, picks, todo, staff, onStaff, onPick, onChoose, onPl
           <strong>{t('Confier les séances au staff')}</strong>
           <span>
             {staff
-              ? t('Avant chaque match, le staff fait les épreuves que tu n’as pas faites, avec les joueurs choisis ci-dessous (par défaut, les conseillés) : épreuves simulées, gain moyen assuré.')
+              ? t('Avant chaque match, le staff fait les épreuves que tu n’as pas faites avec les joueurs conseillés, ou celui d’un programme de signe : épreuves simulées, gain moyen assuré. Un joueur que tu choisis ne vaut que pour cette séance.')
               : t('Le staff peut faire les séances à ta place avant chaque match, avec les joueurs conseillés. Jouer l’épreuve toi-même rapporte jusqu’à ×1,5.')}
           </span>
         </div>

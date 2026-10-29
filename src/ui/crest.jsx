@@ -317,7 +317,7 @@ function Emblem({ id, initials, cx, cy, s, ink, halo, cut, edge }) {
 // police des écussons une fois chargée (Geist gras, espacement de 0,12 em compris), estimée largement avant : un nom
 // ne perd jamais de lettres au bout d'un ruban (0.8.13).
 const caps = (s) => String(s).toLocaleUpperCase(numLocale());
-const CREST_FONT = '700 100px Geist, Inter, system-ui, sans-serif';
+const CREST_FONT = '700 100px Geist, Inter, Cairo, system-ui, sans-serif'; // Cairo : l'arabe (chargée pour cette langue)
 let fontReady = typeof document === 'undefined' || !document.fonts;
 const fontWaiters = new Set();
 if (!fontReady) {
@@ -342,6 +342,29 @@ const fit = (text, room, max) => Math.min(max, room / Math.max(0.5, textWidth(St
 // l'entoure (« · 2026 »).
 const named = (name, short, room, min, wrap = (n) => n) => (name && fit(caps(wrap(name)), room, 99) >= min ? wrap(name) : wrap(short || name));
 const TEXT_STYLE = { fontFamily: 'var(--font-title)', fontWeight: 700, letterSpacing: '0.12em' };
+
+// Écriture arabe sur un arc (0.8.20, remarque du PDG) : posée sur un textPath, elle perdait ses liaisons et son ordre
+// (lettres détachées, mots retournés, surtout sous Safari). Chaque mot est posé entier, sans espacement, le long du
+// cercle, de droite à gauche ; le latin garde son textPath.
+const RTL_TEXT = /[֐-ࣿיִ-﷿ﹰ-﻿]/;
+const RTL_STYLE = { ...TEXT_STYLE, letterSpacing: 0 };
+function ArcWords({ text, size, fill, r, cx = 50, cy = 60, top }) {
+  const words = String(text).split(/\s+/).filter(Boolean);
+  const w = words.map((x) => textWidth(x) * size);
+  const gap = size * 0.32;
+  const span = (w.reduce((a, b) => a + b, 0) + gap * (words.length - 1)) / r;
+  let at = 0;
+  return words.map((word, i) => {
+    const mid = (at + w[i] / 2) / r;
+    at += w[i] + gap;
+    // en haut, la droite est vers -90° + span/2 et l'on avance vers la gauche ; en bas, vers 90° - span/2, vers la gauche aussi
+    const a = top ? -Math.PI / 2 + span / 2 - mid : Math.PI / 2 - span / 2 + mid;
+    const x = cx + r * Math.cos(a);
+    const y = cy + r * Math.sin(a);
+    const rot = (a * 180) / Math.PI + (top ? 90 : -90);
+    return <text key={i} x={x} y={y} fontSize={size} fill={fill} style={RTL_STYLE} textAnchor="middle" transform={`rotate(${rot.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)})`}>{word}</text>;
+  });
+}
 
 function Grad({ id, stops, x1 = 0, y1 = 0, x2 = 1, y2 = 1, user = false }) {
   return (
@@ -485,9 +508,11 @@ function Ribbon({ text, url, ref_, metal }) {
       <path d="M96.5 95.5l-5 4.5 4.5 4.5-9 1 1.5-13Z" fill="#000" opacity=".35" />
       <path d="M14.5 92.5Q50 101 85.5 92.5L87 105.5Q50 114 13 105.5Z" fill={url('rim')} stroke={metal.edge} strokeWidth=".7" />
       <path id={ref_('rb')} d="M16 102Q50 110.4 84 102" fill="none" />
-      <text fontSize={size} fill={metal.ink} style={TEXT_STYLE}>
-        <textPath href={`#${ref_('rb')}`} startOffset="50%" textAnchor="middle">{t}</textPath>
-      </text>
+      {RTL_TEXT.test(t) /* arabe : droit, au milieu du ruban (la courbe est légère), lettres liées */
+        ? <text x="50" y="106.2" textAnchor="middle" fontSize={size} fill={metal.ink} style={RTL_STYLE}>{t}</text>
+        : <text fontSize={size} fill={metal.ink} style={TEXT_STYLE}>
+          <textPath href={`#${ref_('rb')}`} startOffset="50%" textAnchor="middle">{t}</textPath>
+        </text>}
     </g>
   );
 }
@@ -517,18 +542,18 @@ function Medallion({ spec, body, url, ref_, metal, want, short, name, year, star
       <path d={circle(50, 60, 43.2) + circle(50, 60, 31.3)} fill="none" stroke="rgba(0, 0, 0, .4)" strokeWidth=".6" />
       <path d={circle(50, 60, 30.6)} fill="none" stroke={url('rim')} strokeWidth="2.4" />
       {body}
-      {top && (
+      {top && (RTL_TEXT.test(top) ? <ArcWords text={top} size={topSize} fill={textColor} r={rt} top /> : (
         <>
           <path id={ref_('mt')} d={`M${50 - rt} 60A${rt} ${rt} 0 0 1 ${50 + rt} 60`} fill="none" />
           <text fontSize={topSize} fill={textColor} style={TEXT_STYLE}><textPath href={`#${ref_('mt')}`} startOffset="50%" textAnchor="middle">{top}</textPath></text>
         </>
-      )}
-      {bottom && (
+      ))}
+      {bottom && (RTL_TEXT.test(bottom) ? <ArcWords text={bottom} size={botSize} fill={textColor} r={rb} top={false} /> : (
         <>
           <path id={ref_('mb')} d={`M${50 - rb} 60A${rb} ${rb} 0 0 0 ${50 + rb} 60`} fill="none" />
           <text fontSize={botSize} fill={textColor} style={TEXT_STYLE}><textPath href={`#${ref_('mb')}`} startOffset="50%" textAnchor="middle">{bottom}</textPath></text>
         </>
-      )}
+      ))}
       {(top || bottom) && <path d={star(50 - R, 60, 2.8, 1.15) + star(50 + R, 60, 2.8, 1.15)} fill={textColor} />}
       {stars > 0 && <Stars n={stars} y={6.5} url={url} metal={metal} />}
     </>

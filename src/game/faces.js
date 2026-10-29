@@ -41,16 +41,31 @@ function weighted(r, weights) {
 }
 const ri = (r, a, b) => a + Math.floor(r() * (b - a + 1));
 
-// Teint (du plus clair au plus foncé) selon l'origine du nom ; « mélange » : un joueur sur quatre, toutes origines.
+// Teint (du plus clair au plus foncé) selon l'origine du nom ; « mélange » : un joueur sur quatre, un teint plus libre
+// mais toujours vraisemblable pour l'origine (0.8.20, remarque du PDG : un Abdoulaye Niang au teint le plus clair, tiré
+// dans un mélange de toutes les origines). Les mêmes origines servent aux quatre langues (names-*.js).
 const SKIN_BY_ORIGIN = {
   fr: [0.16, 0.22, 0.22, 0.14, 0.1, 0.07, 0.05, 0.04],
-  ant: [0.01, 0.03, 0.08, 0.14, 0.2, 0.24, 0.18, 0.12],
-  itpt: [0.08, 0.2, 0.26, 0.22, 0.14, 0.06, 0.03, 0.01],
+  ant: [0, 0.03, 0.08, 0.14, 0.2, 0.25, 0.18, 0.12],
+  itpt: [0.08, 0.2, 0.26, 0.22, 0.14, 0.07, 0.03, 0],
   mag: [0.02, 0.07, 0.17, 0.27, 0.25, 0.14, 0.06, 0.02],
-  afr: [0, 0.01, 0.02, 0.05, 0.12, 0.24, 0.3, 0.26],
+  afr: [0, 0, 0, 0.06, 0.12, 0.24, 0.31, 0.27],
 };
-const SKIN_MIX = [0.11, 0.13, 0.14, 0.14, 0.13, 0.13, 0.12, 0.1];
+const SKIN_MIX = [0.11, 0.13, 0.14, 0.14, 0.13, 0.13, 0.12, 0.1]; // nom français : tous les teints
+const MIX_BY_ORIGIN = {
+  fr: SKIN_MIX,
+  ant: [0, 0.02, 0.1, 0.16, 0.2, 0.2, 0.18, 0.14],
+  itpt: [0.12, 0.18, 0.2, 0.2, 0.16, 0.1, 0.04, 0],
+  mag: [0.04, 0.1, 0.18, 0.22, 0.2, 0.14, 0.08, 0.04],
+  afr: [0, 0, 0, 0.08, 0.16, 0.24, 0.28, 0.24],
+};
 export const MIX = 0.25;
+// un teint possible pour l'origine du nom (tirage habituel ou mélange) : sinon le visage est retiré (save.js)
+export const plausibleSkin = (p) => {
+  const o = originOf(p.name);
+  const sk = (p.face || {}).sk;
+  return !Number.isInteger(sk) || (SKIN_BY_ORIGIN[o] || SKIN_MIX)[sk] > 0 || (MIX_BY_ORIGIN[o] || SKIN_MIX)[sk] > 0;
+};
 const tone = (sk) => (sk <= 2 ? 0 : sk <= 4 ? 1 : 2); // clair, mat, foncé
 
 // Texture des cheveux selon le teint, puis coiffures possibles pour chaque texture (toutes restent possibles ailleurs
@@ -122,7 +137,7 @@ export function drawFace(p, seed = null) {
   const age = p.age || 25;
   const origin = originOf(p.name);
   const f = { v: 2 };
-  f.sk = weighted(r, r() < MIX ? SKIN_MIX : SKIN_BY_ORIGIN[origin] || SKIN_MIX);
+  f.sk = weighted(r, r() < MIX ? MIX_BY_ORIGIN[origin] || SKIN_MIX : SKIN_BY_ORIGIN[origin] || SKIN_MIX);
   f.tx = weighted(r, TEXTURE[tone(f.sk)]);
   f.hc = weighted(r, HAIR_BY_SKIN[f.sk]);
   f.hs = weighted(r, STYLES[f.tx]);

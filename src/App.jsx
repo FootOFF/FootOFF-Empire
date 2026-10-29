@@ -457,9 +457,13 @@ export default function App({ preview = null }) {
     setNavKey((k) => k + 1);
     openPanel(a.panel);
   };
+  // ligue : compte à rebours lancé, les équipes sont verrouillées (0.8.20, règle du PDG) ; plus d'avant-match ni d'envoi
+  const leagueLocked = () => !!(state?.league && leagueKickoff && leagueKickoff > Date.now());
+  const lockedNote = () => notify({ kind: 'info', eyebrow: state.league.name, title: t('Équipes verrouillées'), text: t('Tout le monde a validé : le compte à rebours est lancé et le match se joue avec les équipes validées.'), key: 'league-locked' });
   const play = () => { // ouvre l'avant-match, le stade passe en configuration jour de match
     const ctx = matchContext(state);
     if (!ctx) return;
+    if (leagueLocked()) { lockedNote(); return; }
     if (staffOn(state)) run((s) => { staffSession(s); return s; }); // séances confiées au staff : faites avant le match
     // ligue : l'avant-match valide l'équipe de la journée (le match se joue à l'heure, pour tous) ; l'écusson d'un ami
     setMatchCtx(state.league ? { ...ctx, opp: { ...ctx.opp, crest: ctx.opp.human ? ctx.opp.crest : null }, goLabel: state.league.sent ? t('Valider ces changements') : t('Valider mon équipe') } : ctx);
@@ -780,6 +784,11 @@ export default function App({ preview = null }) {
   leagueLiveRef.current = leagueLive;
   // coup d'envoi annoncé (tous ont validé, 0.8.6) : la ligue est relue à l'heure dite, la journée se joue et se regarde
   const leagueKickoff = kickoffAt(leagueLive?.d);
+  // le compte à rebours démarre pendant que l'avant-match de la ligue est ouvert (le dernier ami vient de valider) : il se
+  // ferme, les équipes sont verrouillées
+  useEffect(() => {
+    if (leagueKickoff && leagueKickoff > Date.now() && state?.league && matchPhase === 'prematch') { cancelMatch(); lockedNote(); }
+  }, [leagueKickoff]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!leagueKickoff) return undefined;
     const t = setTimeout(() => leagueTick.current?.(), Math.max(0, leagueKickoff - Date.now()) + 1200);
@@ -867,6 +876,7 @@ export default function App({ preview = null }) {
   const sendLeagueTeam = async (lineup, tactic, formation, plans = state.league.plans) => {
     const { d, m } = leagueLive;
     const key = `${d.league.season}:${d.league.round}`;
+    if (leagueLocked()) { lockedNote(); cancelMatch(); return; } // le dernier ami a validé pendant que l'avant-match était ouvert
     try {
       if (d.league.season !== state.league.season || d.league.round !== state.round) throw new Error('La journée a changé : regarde d’abord le match de la journée précédente.');
       await sendSheet(m, d.league.season, d.league.round, teamSheet(clone(state), { lineup, tactic, formation, plans }));

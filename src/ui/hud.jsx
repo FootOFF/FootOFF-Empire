@@ -11,7 +11,7 @@ import { AnimatedMoney } from './moneyfx';
 import { fmtMoney, roundPercents } from './format';
 import {
   IconCal, IconCheck, IconChevron, IconCoin, IconEmpire, IconMenu, IconMoon, IconPlay, IconStadium, IconStar, IconSun,
-  IconTarget, IconTrophy, IconUsers, IconClock, IconEye, IconCrane, IconStaff, IconClose, IconTransfer, IconShield,
+  IconTarget, IconTrophy, IconUsers, IconClock, IconEye, IconCrane, IconStaff, IconClose, IconTransfer, IconShield, IconLock,
 } from './icons';
 import { sectionOf } from './nav';
 import { clubStars } from '../game/crest';
@@ -217,14 +217,15 @@ export function Dock({ panel, onPanel, badges = {}, keys = false }) {
 // league (partie de championnat entre amis) : { pending : la journée est jouée, notre match est à regarder ; sent : notre
 // équipe est validée ; deadline : l'heure de la journée ; onWatch(skip) ; seasonOver : la ligue est passée à la saison
 // suivante ; kickoff : tous ont validé, coup d'envoi à cette heure (0.8.6) }. « Jouer » ouvre l'avant-match pour valider
-// l'équipe ; une fois tous validés, un compte à rebours de dix minutes remplace « Validée » (l'équipe se retouche encore),
-// puis le match se regarde.
+// l'équipe ; une fois tous validés, un compte à rebours de dix minutes remplace « Validée » : les équipes sont
+// verrouillées (0.8.20, règle du PDG), plus rien ne s'ouvre avant le match, qui se regarde ensuite.
 export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = null }) {
   const ctx = matchContext(state);
   const done = !ctx;
   const watch = !!league?.pending;
   const waitSeason = done && league && !league.seasonOver; // dernière journée appliquée, la ligue n'a pas encore tourné
-  useHudKey(['KeyJ'], () => (watch ? league.onWatch() : done ? (waitSeason ? null : onEndSeason()) : onPlay()), keys); // J : jouer (ou bilan de fin de saison)
+  // J : jouer (ou bilan de fin de saison) ; rien pendant le compte à rebours, les équipes sont verrouillées
+  useHudKey(['KeyJ'], () => (watch ? league.onWatch() : done ? (waitSeason ? null : onEndSeason()) : league?.kickoff ? null : onPlay()), keys);
   const odds = useMemo(() => (ctx ? prematchOdds(state, { oppStrength: ctx.opp.strength, home: ctx.home !== false, away: awayElevenOf(state, ctx) }) : null), [state]); // eslint-disable-line react-hooks/exhaustive-deps
   const titleRef = useFitText(ctx?.opp.name, 17);
   if (watch) { // la journée est jouée : notre match nous attend, comme un direct
@@ -234,9 +235,10 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
         <div className="hm-info">
           <span className="hm-eyebrow">{ctx ? <>{t('J')}{state.round + 1}/{state.schedule.length} · {ctx.home === false ? t('Extérieur') : t('Domicile')}</> : t('Dernière journée')}</span>
           <strong className="hud-match-title" ref={titleRef} title={ctx?.opp.name}>{ctx ? ctx.opp.name : t('Ton match')}</strong>
-          <span className="hm-odds"><button type="button" className="linkbtn" onClick={() => league.onWatch(true)}>{t('Voir le résultat sans le match')}</button></span>
+          {/* le score ne se découvre qu'en regardant le match (0.8.20, règle du PDG) : plus de résultat sans le match */}
+          <span className="hm-odds">{t('Le score t’attend')}</span>
         </div>
-        <button className="btn" onClick={() => league.onWatch()} aria-keyshortcuts="J">{tr('<0/> Regarder<1/>', [<IconPlay className="fill" />, <kbd className="hm-key" aria-hidden="true">J</kbd>])}</button>
+        <button className="btn hm-watch" onClick={() => league.onWatch()} aria-keyshortcuts="J">{tr('<0/> Regarder<1/>', [<IconPlay className="fill" />, <kbd className="hm-key" aria-hidden="true">J</kbd>])}</button>
       </section>
     );
   }
@@ -285,7 +287,7 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
       </div>
       {league ? (
         league.kickoff ? (
-          <KickoffButton at={league.kickoff} onPlay={onPlay} />
+          <KickoffButton at={league.kickoff} />
         ) : league.sent ? (
           <button className="btn ghost" onClick={onPlay} title={t('Équipe validée : le match se joue {deadlineText} au plus tard (J pour la modifier)', { deadlineText: deadlineText(league.deadline) })} aria-keyshortcuts="J">{tr('<0/> Validée<1/>', [<IconCheck />, <kbd className="hm-key" aria-hidden="true">J</kbd>])}</button>
         ) : (
@@ -299,7 +301,7 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
 }
 
 // Compte à rebours du coup d'envoi (0.8.6) : tous ont validé, le match part dans m:ss (libellé « Coup d'envoi » au-dessus,
-// lisible sur téléphone sans infobulle) ; l'équipe se retouche encore (J).
+// lisible sur téléphone sans infobulle). Les équipes sont verrouillées (0.8.20) : un affichage, plus un bouton.
 export function useCountdown(at) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -310,13 +312,13 @@ export function useCountdown(at) {
   return at ? Math.max(0, Math.ceil((at - now) / 1000)) : null;
 }
 export const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-function KickoffButton({ at, onPlay }) {
+function KickoffButton({ at }) {
   const left = useCountdown(at);
   return left > 0 ? (
-    <button className="btn ghost hm-kickoff" onClick={onPlay} title={t('Tout le monde a validé : coup d’envoi à la fin du compte à rebours (J pour retoucher ton équipe)')} aria-keyshortcuts="J" aria-label={t('Coup d’envoi dans {mmss}', { mmss: mmss(left) })}>
+    <div className="btn ghost hm-kickoff locked" role="timer" title={t('Tout le monde a validé : les équipes sont verrouillées, coup d’envoi à la fin du compte à rebours')} aria-label={t('Coup d’envoi dans {mmss} · équipes verrouillées', { mmss: mmss(left) })}>
       <span className="hm-kickoff-label">{t('Coup d’envoi')}</span>
-      <span className="hm-kickoff-row"><IconClock /><span className="hm-kickoff-time">{mmss(left)}</span></span><kbd className="hm-key" aria-hidden="true">J</kbd>
-    </button>
+      <span className="hm-kickoff-row"><IconLock /><span className="hm-kickoff-time">{mmss(left)}</span></span>
+    </div>
   ) : (
     <button className="btn ghost hm-kickoff" disabled title={t('Le match se joue')}>
       <span className="hm-kickoff-label">{t('Coup d’envoi')}</span>
