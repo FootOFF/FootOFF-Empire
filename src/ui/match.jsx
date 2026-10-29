@@ -691,19 +691,23 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const kickoffView = () => !!replay && half === 1;
   const homeNames = () => (kickoffView() ? live.state.startLineup : live.state.lineup).map((id) => state.players.find((p) => p.id === id)?.name || '');
   const awayNames = () => ((kickoffView() && live.state.awayStart) || live.state.awayRoster).map((p) => p.name);
+  // les mêmes onze pour les joueurs 3D : portrait, âge, poste (teint, cheveux, barbe et taille suivent le portrait)
+  const lookOf = (p) => (p ? { id: p.id, name: p.name, age: p.age, pos: p.pos, face: p.face } : null);
+  const homeLooks = () => (kickoffView() ? live.state.startLineup : live.state.lineup).map((id) => lookOf(state.players.find((p) => p.id === id)));
+  const awayLooks = () => ((kickoffView() && live.state.awayStart) || live.state.awayRoster).map(lookOf);
   const formationNow = () => (kickoffView() ? live.state.startFormation || live.state.formation : live.state.formation);
   const awayFormationNow = () => (kickoffView() ? live.state.awayStartFormation || live.state.awayFormation : live.state.awayFormation);
   useEffect(() => {
     Object.assign(matchFeed, {
       active: !preview, ended: false, phase, half, clock: clockRef.current, speed,
-      formation: formationNow(), homeNames: homeNames(), awayNames: awayNames(),
+      formation: formationNow(), homeNames: homeNames(), awayNames: awayNames(), homeLooks: homeLooks(), awayLooks: awayLooks(),
       awayFormation: awayFormationNow(), awayName: live.state.away,
       hl: null, hlAck: 0, hlReveal: 0, hlDone: 0, hlClock: 0, hlPhase: '', show3D: false,
     });
     return () => { Object.assign(matchFeed, { active: false, hl: null, show3D: false }); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    Object.assign(matchFeed, { phase: phase === 'subs' ? 'playing' : phase, half, speed, homeNames: homeNames(), awayNames: awayNames(), formation: formationNow(), awayFormation: awayFormationNow() });
+    Object.assign(matchFeed, { phase: phase === 'subs' ? 'playing' : phase, half, speed, homeNames: homeNames(), awayNames: awayNames(), homeLooks: homeLooks(), awayLooks: awayLooks(), formation: formationNow(), awayFormation: awayFormationNow() });
     if (phase === 'fulltime') matchFeed.ended = true;
   }, [phase, half, events, speed, lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -763,7 +767,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     hlRef.current = { id, e, type, started: performance.now(), revealed: false };
     setHl({ id, type, e, replay: false });
     Object.assign(matchFeed, {
-      hl: { id, e, type, half, replay: true, homeNames: homeNames(), awayNames: awayNames(), awayFormation: awayFormationNow(), formation: formationNow() },
+      hl: { id, e, type, half, replay: true, homeNames: homeNames(), awayNames: awayNames(), homeLooks: homeLooks(), awayLooks: awayLooks(), awayFormation: awayFormationNow(), formation: formationNow() },
       hlAck: 0, hlReveal: 0, hlDone: 0, hlClock: clockRef.current, hlPhase: '', show3D: true,
     });
   };

@@ -17,6 +17,7 @@ export const matchFeed = {
   formation: '433',
   awayFormation: '433',
   homeNames: [], // noms de notre onze, dans l'ordre des postes du dispositif
+  homeLooks: [], // les mêmes joueurs pour la 3D : { id, name, age, pos, face } (awayLooks : l'adversaire)
   awayNames: [], // noms du onze adverse, dans l'ordre des postes de son dispositif
   awayName: '',
   scene: false, // la scène du match existe (WebGL disponible)
@@ -33,6 +34,6 @@ if (import.meta.env?.DEV && typeof window !== 'undefined') window.__matchFeed = 
 
 export function resetFeed() {
   Object.assign(matchFeed, {
-    active: false, phase: 'off', half: 1, clock: 0, speed: 1, homeNames: [], awayNames: [], hl: null, hlAck: 0, hlReveal: 0, hlDone: 0, hlPhase: '', show3D: false,
+    active: false, phase: 'off', half: 1, clock: 0, speed: 1, homeNames: [], awayNames: [], homeLooks: [], awayLooks: [], hl: null, hlAck: 0, hlReveal: 0, hlDone: 0, hlPhase: '', show3D: false,
   });
 }

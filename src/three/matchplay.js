@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Agent, createBallMesh, placeBall } from './motion';
 import { createPlayers } from './players';
+import { createPlayersAuto, identityOf } from './players3d';
 import { formationOf, slotsOf } from '../game/tactics';
 import { matchFeed } from '../game/matchFeed';
 import { hash, rng } from '../game/faces';
@@ -56,7 +57,7 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const anchorsOf = (formation) => formationOf(formation).pitch.map(([x, y]) => [-4.7 + (88 - y) * (6.7 / 73), ((x - 50) / 36) * 2.3]);
 
 export function createMatchScene(parent) {
-  const players = createPlayers(parent, N);
+  const players = createPlayersAuto(parent, N, () => createPlayers(parent, N)); // joueurs réalistes dès qu'ils sont chargés
   const ballMesh = createBallMesh();
   parent.add(ballMesh);
   const warmBalls = [createBallMesh(), createBallMesh()];
@@ -84,6 +85,17 @@ export function createMatchScene(parent) {
   const on = { goal: null, save: null, post: null, miss: null }; // réactions du stade (Empire3D)
   let H = null; // temps fort en cours
   let lastId = 0; // un temps fort ne se joue qu'une fois
+  let looks = [null, null]; // onzes dont les visages 3D sont posés
+  // chaque joueur 3D prend l'identité de son portrait (teint, cheveux, barbe, traits) et une taille selon son poste
+  function applyLooks(spec) {
+    const src = [spec?.homeLooks || matchFeed.homeLooks || [], spec?.awayLooks || matchFeed.awayLooks || []];
+    src.forEach((list, t) => {
+      if (list === looks[t] || !list.length) return;
+      looks[t] = list;
+      const slots = slotsOf(S.formation[t]);
+      for (let k = 0; k < 11; k++) if (list[k]) players.setIdentity(t * 11 + k, identityOf(list[k], k === 0 ? 'G' : list[k].pos || slots[k]));
+    });
+  }
   matchFeed.scene = true;
 
   const active = (i) => !S.out[i];
@@ -871,7 +883,7 @@ export function createMatchScene(parent) {
         rcv.steer(hx, hz, Math.min(SPRINT, Math.hypot(hx - rcv.x, hz - rcv.z) / Math.max(0.15, lead - 0.05) + 0.05), dt, b.x, b.z);
         if (!gather(bt.from, dt)) return; // le passeur doit d'abord avoir le ballon
         // il frappe en finissant de se tourner, quand son receveur est en jeu (il attend son appel, au plus 1,6 s)
-        if (!p.kick && (p.facing(tx, tz) < 1.0 || H.bt > 0.35) && (onside(bt.to) || H.bt > 1.6)) p.kick = 0.001;
+        if (!p.kick && (p.facing(tx, tz) < 1.0 || H.bt > 0.35) && (onside(bt.to) || H.bt > 1.6)) { p.kick = 0.001; p.kickKind = 'pass'; }
         p.steer(p.x, p.z, 0, dt, tx, tz);
         if (p.kick >= KICK_CONTACT) {
           if (!onside(bt.to)) H.offside = (H.offside || 0) + 1; // mesure (banc) : jamais atteint
@@ -901,7 +913,7 @@ export function createMatchScene(parent) {
         rcv.steer(gx, gz, left > 0 ? Math.min(SPRINT, Math.hypot(gx - rcv.x, gz - rcv.z) / Math.max(0.08, tl) + 0.02) : 0.4, dt, b.x, b.z);
       }
       // reprise du pied : l'élan commence avant que le ballon n'arrive ; de la tête : il saute
-      if (firstShot && shot.style !== 'head' && left <= ARMED && !rcv.kick) rcv.kick = 0.001;
+      if (firstShot && shot.style !== 'head' && left <= ARMED && !rcv.kick) { rcv.kick = 0.001; rcv.kickKind = 'shot'; }
       if (headed) {
         const jt = 0.32;
         rcv.lift = left < jt && left > -jt ? 0.07 * Math.max(0, 1 - (left / jt) ** 2) : rcv.lift * 0.8;
@@ -933,7 +945,7 @@ export function createMatchScene(parent) {
       if (!gather(bt.who, dt)) return;
       const [gx, gz] = at(GOAL_X, 0);
       p.steer(p.x, p.z, 0, dt, gx, gz);
-      if (!p.kick) p.kick = 0.001;
+      if (!p.kick) { p.kick = 0.001; p.kickKind = 'shot'; }
       if (p.kick >= KICK_CONTACT) { bt.launched = true; shoot(bt.who, bt.style); }
       return;
     }
@@ -1141,12 +1153,12 @@ export function createMatchScene(parent) {
   }
 
   // --- Ralenti : l'action rejouée depuis son enregistrement ----------------------------------------------------------
-  const REC = 11; // par joueur : x, z, cap, foulée, allure, frappe, plongeon, joie, saut, chute, pose
+  const REC = 12; // par joueur : x, z, cap, foulée, allure, frappe, plongeon, joie, saut, chute, pose, tir (joueurs 3D)
   function record() {
     const a = new Float32Array(N * REC);
     for (let i = 0; i < N; i++) {
       const g = agents[i];
-      a.set([g.x, g.z, g.h, g.phase, g.gait, g.kick, g.lean, g.cheer, g.lift, g.roll, g.pose || 0], i * REC);
+      a.set([g.x, g.z, g.h, g.phase, g.gait, g.kick, g.lean, g.cheer, g.lift, g.roll, g.pose || 0, g.kickKind === 'shot' ? 1 : 0], i * REC);
     }
     H.rec.push({ t: H.t, a, b: [b.x, b.y, b.z], q: ballMesh.quaternion.toArray() });
   }
@@ -1178,6 +1190,7 @@ export function createMatchScene(parent) {
       g.lean = L(f0.a[o + 6], f1.a[o + 6]); g.cheer = L(f0.a[o + 7], f1.a[o + 7]);
       g.lift = L(f0.a[o + 8], f1.a[o + 8]); g.roll = L(f0.a[o + 9], f1.a[o + 9]);
       g.pose = f0.a[o + 10]; // une pose ne s'interpole pas (sa partie entière est son type)
+      g.kickKind = f0.a[o + 11] ? 'shot' : 'pass';
     }
     b.x = L(f0.b[0], f1.b[0]); b.y = L(f0.b[1], f1.b[1]); b.z = L(f0.b[2], f1.b[2]);
     qa.fromArray(f0.q); qb.fromArray(f1.q);
@@ -1216,6 +1229,7 @@ export function createMatchScene(parent) {
       if (!spec && H && H.phase !== 'end') H.phase = 'end'; // passé par le direct
     }
     if (!visible) { players.commit(0); card.visible = false; return null; }
+    applyLooks(S.play === 'live' ? matchFeed.hl : null);
     if (S.play === 'warmup') warmupUpdate(dt);
     let cut = false;
     if (S.play === 'live' && H) {
@@ -1269,6 +1283,7 @@ export function createMatchScene(parent) {
       if (S.out[i]) players.setAgent(i, agents[i], -2, 0.0001);
       else players.setAgent(i, agents[i], S.baseY);
     }
+    players.timeScale = H && H.phase === 'replay' ? REPLAY_SPEED : 1; // joueurs 3D : gestes au ralenti eux aussi
     players.commit(N);
     if (!replay) {
       const mx = b.x - b.prev[0], mz = b.z - b.prev[1];
