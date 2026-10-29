@@ -212,7 +212,7 @@ export function clubInitials(name = '') {
 }
 
 // Nom court d'un club, pour un ruban ou un bandeau : sans les sigles ni les mots de forme (« Union Port-Joli » →
-// « Port-Joli », « Yass FC » → « Yass ») ; le nom entier s'il ne reste rien.
+// « Port-Joli », « Racing Port-Joli FC » → « Port-Joli ») ; le nom entier s'il ne reste rien.
 const FORM_WORDS = /^(fc|as|us|sc|rc|ac|ca|cs|es|js|oc|so|sa|ss|ssc|afc|cf|sporting|racing|olympique|olympia|stade|union|entente|étoile|etoile|avenir|atlas|jeunesse|club|real|royal|inter|dynamo|athletic|rapid|vitoria|ajax|de|des|du|la|le|les|l|d)$/i;
 export function shortName(name = '') {
   const words = name.replace(/[’']/g, ' ').split(/\s+/).filter((w) => w && !FORM_WORDS.test(w));

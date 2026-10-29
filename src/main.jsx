@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import './styles.css';
+import './landscape.css'; // téléphone couché (0.8.13) : après styles.css, pour l'emporter à spécificité égale
 import { installFrenchTypography } from './ui/typography';
 import { installScrollCues } from './ui/scrollcue';
 import ErrorBoundary from './ui/crash';

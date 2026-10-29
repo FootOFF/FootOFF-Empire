@@ -122,7 +122,7 @@ export default function App({ preview = null }) {
   const [matchDay, setMatchDay] = useState(!!boot.ui.matchDay || !!boot.live);
   const [recenter, setRecenter] = useState(0);
   const [showResult, setShowResult] = useState(!!boot.ui.showResult);
-  const [goalCollapsed, setGoalCollapsed] = useState(() => window.innerWidth < 760); // replié sur mobile
+  const [goalCollapsed, setGoalCollapsed] = useState(() => window.innerWidth < 760 || window.innerHeight <= 500); // replié sur mobile, en portrait comme couché
   const [menu, setMenu] = useState(!!boot.ui.menu);
   const [menuFocus, setMenuFocus] = useState(null); // menu pause ouvert sur une entrée des réglages (notification)
   useEffect(() => { if (!menu) setMenuFocus(null); }, [menu]);

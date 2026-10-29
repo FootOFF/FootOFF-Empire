@@ -314,7 +314,7 @@ export function ClubCard({ state, eyebrow, objective = false, head = true }) {
           <div><dt>Forme</dt><dd className="cm-form">{form.map((m, i) => { const o = outcomeOf(m); return <i key={i} className={o}>{LETTER[o]}</i>; })}</dd></div>
         )}
         {ctx ? (
-          <div><dt>Prochain match · {ctx.short || ctx.label}</dt><dd className="cm-opp"><Crest name={ctx.opp.name} className="cm-opp-crest" />{ctx.opp.name}</dd></div>
+          <div><dt>Prochain match · {ctx.short || ctx.label}</dt><dd className="cm-opp"><Crest name={ctx.opp.name} className="cm-opp-crest" /><span>{ctx.opp.name}</span></dd></div>
         ) : (
           <div><dt>Prochain match</dt><dd>Saison terminée, place au bilan</dd></div>
         )}

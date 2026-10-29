@@ -1,7 +1,10 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { haptic } from './haptics';
 
-export const PHONE = '(max-width: 760px)'; // fenêtres en feuilles qui montent du bas
+// Téléphone en portrait : fenêtres en feuilles qui montent du bas. Téléphone couché (0.8.13) : la mise en page de
+// l'ordinateur étroit, resserrée par landscape.css (les mêmes conditions que styles.css).
+export const PHONE = '(max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px)';
+export const LANDSCAPE = '(orientation: landscape) and (max-height: 500px)';
 
 // Condition d'écran suivie en direct (la mise en page change quand la fenêtre passe du format PC au téléphone).
 export function useMedia(query) {

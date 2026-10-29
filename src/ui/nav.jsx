@@ -91,7 +91,9 @@ export function SectionTabs({ section }) {
   useEffect(() => { // téléphone : l'onglet actif reste en vue dans la rangée qui défile
     const row = ref.current;
     const on = row?.querySelector('[aria-current="page"]');
-    if (row && on && row.scrollWidth > row.clientWidth) row.scrollLeft = Math.max(0, on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2);
+    if (row && on && row.scrollWidth > row.clientWidth) { // position de l'onglet dans la rangée, quel que soit ce qui la précède (0.8.13)
+      row.scrollLeft = Math.max(0, row.scrollLeft + on.getBoundingClientRect().left - row.getBoundingClientRect().left - (row.clientWidth - on.offsetWidth) / 2);
+    }
   }, [current]);
   if (!nav || !def || !def.items.length) return null;
   return (

@@ -11,7 +11,7 @@ import { IconCheck, IconChevron, IconClose, IconFast, IconMute, IconPlay, IconSo
 import { IconAssist, IconBall, IconMedic, IconSwap, IconWhistle, RatingBadge, VersusBar } from './kit';
 import { useKeydown } from './presence';
 import { deName } from '../game/names';
-import { PHONE, useSwipe } from './gestures';
+import { LANDSCAPE, PHONE, useSwipe } from './gestures';
 import { SEC_PER_MIN, matchFeed } from '../game/matchFeed';
 import { ClubCrest, Crest } from './crest';
 import { clubStars } from '../game/crest';
@@ -77,7 +77,9 @@ function CompoCard({ title, detail, onOpen }) {
   );
 }
 
-const narrowScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches;
+const narrowScreen = () => typeof window !== 'undefined' && window.matchMedia(PHONE).matches;
+// centre du match en onglets (Stats, Notes, Le fil) : téléphone en portrait, ou couché sur moins de 900 px (0.8.13)
+const tabbedScreen = () => narrowScreen() || (typeof window !== 'undefined' && window.matchMedia(`${LANDSCAPE} and (max-width: 900px)`).matches);
 
 // --- Plans de mi-temps (championnat entre amis, 0.8.3) ---------------------------------------------------------------
 // Le match d'une ligue se joue sans que personne soit connecté : pour chaque score possible à la pause (tu mènes,
@@ -1000,7 +1002,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
       <div className="odds-bar" aria-hidden="true"><i className="w" style={{ flexGrow: odds.win * 100 }} /><i className="d" style={{ flexGrow: odds.draw * 100 }} /><i className="l" style={{ flexGrow: odds.loss * 100 }} /></div>
     </div>
   );
-  const viewNow = view === 'notes' && !narrowScreen() ? 'stats' : view;
+  const viewNow = view === 'notes' && !tabbedScreen() ? 'stats' : view;
 
   return (
     <div className={`matchscreen live ${phase !== 'playing' ? 'paused' : ''} ${hl ? 'hl' : ''}`}>

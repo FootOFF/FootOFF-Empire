@@ -1024,6 +1024,29 @@ ouverte depuis la Direction (panneau étroit) est posée sur tout l'écran. Dur�
 « saison N ». Fiche : bloc Contrat (salaire, fin, clause) et « Prolonger son contrat ». Effectif : fin du contrat sous
 le salaire dans le tableau (PC), « Dernière année de contrat » sur la carte des seuls joueurs concernés.
 
+## Téléphone couché (0.8.13)
+
+Demande du PDG (2026-10-29) : « le jeu doit être jouable sur mobile en paysage aussi ». Réponses : terrain plein écran en
+match, panneaux au bandeau compact, menu à gauche et 3D à droite à l'écran titre, tout en une version.
+- Condition : `(orientation: landscape) and (max-height: 500px)` (`LANDSCAPE`, gestures.js). Tous les téléphones couchés
+  partent de la mise en page de l'ordinateur étroit : dans styles.css, les règles du téléphone (`max-width: 760px`) ne
+  valent plus qu'en portrait ou au-delà de 500 px de haut, et celles de l'ordinateur (`min-width: 761px`) valent aussi
+  couché ; `PHONE` (gestures.js) suit la même règle. `src/landscape.css`, chargé après styles.css, resserre le tout.
+- Écran titre et pause : colonne de gauche (logo réduit, entrées de 38 px, l'aide de l'entrée choisie seulement), la 3D
+  à droite, la version dans le coin. Création : formulaire à gauche (réglages de l'écusson sur deux colonnes),
+  écusson à droite, « Fonder le club » visible sans défiler.
+- Complexe : bandeau du club et ressources sur une ligne (46 px), objectifs repliés à gauche, outils à droite, menu
+  (300 px) et prochain match côte à côte en bas. Fiches d'une parcelle à gauche et aperçu à droite, sur toute la hauteur.
+- Panneaux plein écran, le HUD s'efface ; bandeau compact (titre, onglets qui défilent en largeur, trésorerie,
+  fermer) ; barre des sections fine en bas et glissé d'une section à l'autre (comme au portrait). Composition : terrain
+  couché sur toute la largeur.
+- Match : temps fort en plein écran sous le score façon télé (40 px) ; entre deux (le centre du match, sans 3D), le
+  score sur une ligne ; sous 900 px de large, Stats, Notes et Le fil en onglets. Avant-match sur une ligne d'affiche,
+  mi-temps sous le score sur deux colonnes, après-match qui défile, leurs boutons collés en bas.
+- Écusson (crest.jsx) : le nom écrit tel qu'il a été choisi s'il tient lisible (ruban 5, bandeau 5, anneau 5 unités
+  au moins), sinon le nom court ; largeur mesurée sur la police chargée (Geist gras, espacement compris). Le losange
+  moderne porte le ruban du blason. Pastille de couleur : plus rognée (`.ts-color` sans débordement caché).
+
 ## Missions des recruteurs repensées (0.8.12)
 
 Demande du PDG (2026-10-29) : plus de zones géographiques, un système plus prenant. Réponses : poste et profil seuls,

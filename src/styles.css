@@ -517,7 +517,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
    arrive du côté d'où vient le doigt, l'ancien part de l'autre côté (depuis l'endroit où le doigt l'a lâché). Sur PC
    le menu du bas reste visible : pas de barre. */
 .section-pager { display: none; }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .section-pager {
     display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--s-2); flex-shrink: 0;
     padding: 4px var(--s-2); border-top: 1px solid var(--line); background: #0b0b0c;
@@ -589,7 +589,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .table.standings tr.promo .t-pos { box-shadow: inset 3px 0 0 var(--gold-light); }
 .table.standings tr.europe .t-pos { box-shadow: inset 3px 0 0 var(--comp-c1); }
 .table.standings tr.releg .t-pos { box-shadow: inset 3px 0 0 var(--red); }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .table.standings .t-wdl { display: none; }
   .table.standings td { height: 46px; padding: 0 6px; }
   .table.standings .t-pos { width: 34px; font-size: 18px; }
@@ -830,7 +830,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 @keyframes sqc-in { from { opacity: 0; transform: translateY(10px) scale(.98); } }
 @keyframes sqc-sheen { 0%, 55% { background-position: 130% 0; } 100% { background-position: -130% 0; } }
 @media (prefers-reduced-motion: reduce) { .sqc, .sqc.elite::after { animation: none; } }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .sq-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 12px; }
   .sq-overview > div { padding: 12px 14px; gap: 7px; }
   .sq-overview > div + div { border-left: 0; }
@@ -1006,7 +1006,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .sh-compare svg { width: 20px; height: 20px; }
 @media (hover: hover) { .sh-compare:hover { background: #262a2f; } }
 .sh-compare:active { transform: scale(.95); }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .sh-hero { padding: 20px 16px 16px; column-gap: 10px; }
   .sh-rate b { font-size: 60px; }
   .sh-name b { font-size: 38px; }
@@ -1177,7 +1177,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .post-rep.down { color: var(--red); }
 .ev-icon svg { font-size: 14px; color: var(--text-2); }
 .ev-goal .ev-icon svg { color: var(--gold); }
-@media (max-height: 760px) and (min-width: 761px) {
+@media (max-height: 760px) and (min-width: 761px), (max-height: 760px) and (orientation: landscape) and (max-height: 500px) {
   .post { padding: var(--s-4); }
   .post-head { padding: var(--s-4) var(--s-8) var(--s-4); }
   .post-meta { margin-bottom: var(--s-2); }
@@ -1283,7 +1283,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 @keyframes nt-medal { from { opacity: 0; transform: scale(.3) rotate(-25deg); } 60% { transform: scale(1.14) rotate(4deg); } }
 @keyframes nt-shine { to { transform: translateX(110%); } }
 /* téléphone : par-dessus la barre du haut, comme une notification du système */
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .nt-lane { top: calc(env(safe-area-inset-top, 0px) + 8px); width: calc(100% - 2 * var(--gap)); }
   .nt-card { padding: 10px 14px 12px 10px; }
 }
@@ -1439,7 +1439,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
    rangée, les montants s'alignent en bas, même quand un libellé passe sur deux lignes */
 .cine-facts { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; width: 100%; }
 .cine-facts > div { flex: 0 1 calc((100% - 36px) / 4); min-width: 0; padding: 12px 12px; border-radius: var(--r-md); background: rgba(255, 255, 255, .04); border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between; gap: 2px; }
-@media (max-width: 760px) { .cine-facts > div { flex-basis: calc((100% - 12px) / 2); } }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .cine-facts > div { flex-basis: calc((100% - 12px) / 2); } }
 .cine-facts span { font-family: var(--font-disp); font-weight: 600; font-size: var(--d-xs); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 .cine-facts b { font-family: var(--font-disp); font-weight: 600; font-size: var(--d-lg); }
 .cine-facts b.up { color: var(--gold-light); }
@@ -1575,7 +1575,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .pm-xg { font-size: 13px; color: var(--muted); }
 .pm-xg b { font-family: var(--font-disp); font-weight: 700; font-size: 16px; color: var(--text); }
 .pm-ko { margin-top: -4px; line-height: 1.45; }
-@media (min-width: 761px) and (max-width: 1100px) {
+@media (min-width: 761px) and (max-width: 1100px), (orientation: landscape) and (max-height: 500px) and (max-width: 1100px) {
   .matchscreen.prematch { padding: 22px 24px 28px; }
   .pm-grid { grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; }
   .pm-tname b { font-size: 30px; }
@@ -1931,7 +1931,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 }
 
 /* centre du match sur téléphone : onglets Stats, Notes (une équipe à la fois), Le fil */
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .lv-centre { padding: 12px 12px calc(var(--hud-bottom) + var(--lc-h) + 8px); }
   .lv-centre::before { top: 58%; width: 160vw; transform: translate(-50%, -50%) rotate(90deg); opacity: .028; }
   .lv-board { gap: 7px; margin-bottom: 8px; }
@@ -1971,7 +1971,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
   .matchscreen.live .halftime { top: 118px; }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .matchscreen.prematch { padding: 16px 12px 0; gap: 14px; }
   .pm-eyebrow { font-size: 13px; padding-right: 52px; line-height: 1.3; }
   .pm-top { flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -2077,7 +2077,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 }
 
 /* =========================================================== mobile */
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   :root { --gap: 12px; }
   .hud-icon { width: 36px; height: 36px; }
   .hud-coach { padding: 12px 14px 14px; gap: 6px; }
@@ -2168,12 +2168,12 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .halftime, .fulltime { bottom: calc(84px + var(--hb)); }
 
 /* PC moyen : carte de match et menu un peu plus étroits, le menu reste centré tant qu'il ne touche pas la carte */
-@media (min-width: 761px) and (max-width: 1420px) {
+@media (min-width: 761px) and (max-width: 1420px), (orientation: landscape) and (max-height: 500px) and (max-width: 1420px) {
   .hud-match { width: 380px; }
   .hud-dock button { width: 80px; }
 }
 /* sous 1260 px, le menu centré toucherait la carte de match : il se cale à gauche */
-@media (min-width: 761px) and (max-width: 1260px) {
+@media (min-width: 761px) and (max-width: 1260px), (orientation: landscape) and (max-height: 500px) and (max-width: 1260px) {
   :root { --rail-w: 340px; }
   .hud-dock { left: var(--gap); transform: none; }
   .game.has-panel .hud-dock { left: var(--gap); }
@@ -2183,7 +2183,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 }
 /* tablette et petit PC : les bandeaux se resserrent (la journée passe dans la ligne du club, la barre de notoriété
    s'efface), la carte de match et le menu aussi */
-@media (min-width: 761px) and (max-width: 1100px) {
+@media (min-width: 761px) and (max-width: 1100px), (orientation: landscape) and (max-height: 500px) and (max-width: 1100px) {
   .hud-round, .hud-rep-bar, .hud-rep-next { display: none; }
   .hud-meta-round { display: inline; }
   .hud-match { width: 340px; }
@@ -2193,7 +2193,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 
 /* téléphone : le club et le menu en haut, les ressources dessous avec la colonne d'outils à droite, les objectifs
    repliés en une ligne ; en bas, la carte du prochain match au-dessus du menu */
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   :root { --top-h: 52px; --tool: 54px; --tool-h: 54px; --res-h: 46px; }
   .hud-top { display: grid; grid-template-columns: minmax(0, 1fr) var(--top-h); grid-template-rows: var(--top-h) var(--res-h); gap: 8px; }
   .hud-club { grid-column: 1; grid-row: 1; margin: 0; }
@@ -2271,7 +2271,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 @keyframes fo-slide-out { to { opacity: 0; transform: translateX(24px); } }
 @keyframes fo-down-out { to { opacity: 0; transform: translateY(14px); } }
 @keyframes fo-pop-out { to { opacity: 0; transform: scale(.97); } }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .leaving > .inspector { animation-name: fo-sheet-out !important; }
   @keyframes fo-sheet-out { to { transform: translateY(100%); } }
 }
@@ -2314,7 +2314,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 /* =========================================================== zones tactiles
    Sur écran tactile (et sur téléphone), chaque commande se touche sur au moins 44 × 44 px : une zone invisible
    (::after) déborde autour des petites commandes sans changer leur dessin. */
-@media (pointer: coarse), (max-width: 760px) {
+@media (pointer: coarse), (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   :where(.hud-icon, .chips button, .segmented button, .sq-tabs button, .switch, .linkbtn, .btn, .chipbtn, .lc-sound,
     .live-controls button, .tactics button, .hud-goal-head, .hud-tools button, .tip-main, .tip-close, .p2-chip, .sh-compare)::after {
     content: ''; position: absolute;
@@ -2344,7 +2344,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .leaving [data-swiped="down"] { animation: fo-swipe-out var(--dur-exit) var(--ease-in) forwards !important; }
 @keyframes fo-swipe-out { to { transform: translateY(100%); opacity: .5; } }
 
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .grip { display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--line-strong); margin: var(--s-2) auto 0; flex-shrink: 0; }
   .panel > .grip { margin-bottom: calc(-1 * var(--s-2)); }
   .prematch > .grip { margin: -8px auto -8px; }
@@ -2418,7 +2418,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .fin-past b { font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
 .fin-past b.gain { color: var(--green); }
 .fin-past b.loss { color: var(--red); }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .fin-line { grid-template-columns: minmax(0, 120px) minmax(0, 1fr) auto; }
   .fin-line b { min-width: 72px; }
 }
@@ -2431,7 +2431,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 
 /* libellés longs (PC) ou courts (téléphone) */
 .show-sm { display: none; }
-@media (max-width: 760px) { .show-sm { display: inline; } }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .show-sm { display: inline; } }
 
 /* mi-temps : changements composés sur le terrain, action collée en bas sur téléphone */
 .sub-reset { font-size: var(--t-sm); color: var(--text-2); flex-shrink: 0; }
@@ -2440,11 +2440,11 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .sub-way.in { color: var(--green); background: rgba(124, 196, 151, .14); }
 .ht-go .btn-xl { width: 100%; }
 /* PC : la composition dépliée fait défiler la carte (810 px de haut) ; « Reprendre » reste collé en bas, visible */
-@media (min-width: 761px) {
+@media (min-width: 761px), (orientation: landscape) and (max-height: 500px) {
   .halftime { padding-bottom: 0; }
   .halftime .ht-go { position: sticky; bottom: 0; z-index: 2; margin: 0 -24px; padding: 4px 24px 24px; background: rgba(11, 11, 12, .97); box-shadow: 0 -18px 24px rgba(11, 11, 12, .8); }
 }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .halftime { background: #0b0b0c; padding-bottom: 0; }
   .ht-go { position: sticky; bottom: 0; z-index: 4; margin: 0 -16px; padding: var(--s-3) 16px calc(var(--s-4) + var(--hb)); background: #0b0b0c; box-shadow: 0 -16px 24px rgba(0, 0, 0, .5); }
 }
@@ -2474,7 +2474,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
   scale: 1.08 1.12; transition: scale .22s cubic-bezier(.3, 1.4, .5, 1), background .2s; animation: none;
   background: linear-gradient(180deg, rgba(255, 255, 255, .3), rgba(255, 255, 255, .1));
 }
-@media (max-width: 760px) { .glass-pill { border-radius: 19px; } }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .glass-pill { border-radius: 19px; } }
 .glass-dragging button, .glass-dragging button:active { transform: none !important; transition: color .15s !important; }
 @keyframes glass-stretch {
   0% { scale: 1 1; }
@@ -2580,7 +2580,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .sp-h2h b, .sp-facts b { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; }
 .sp-h2h b.win { color: var(--green); }
 .sp-h2h b.loss { color: var(--red); }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .st-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .st-boards { grid-template-columns: 1fr; }
   .st-match { grid-template-columns: 52px minmax(0, 1fr) auto 14px; }
@@ -2636,7 +2636,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 
 /* téléphone, fiche d'une parcelle ouverte : la fiche est plus basse et l'objectif s'efface, pour laisser voir
    le bâtiment en entier entre la barre du haut et la fiche */
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .inspector { max-height: 54vh; }
   .game.has-sel :is(.hud-left > *, .hud-left > .presence > *) { opacity: 0; pointer-events: none; }
 }
@@ -2682,7 +2682,7 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 .al-list .sq-row-meta { white-space: normal; }
 /* anciens joueurs : la liste en cartes sert à toutes les tailles (sur PC, il n'y a pas de tableau pour eux) */
 .sq-list.al-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .cr-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -2697,7 +2697,7 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 @media (hover: hover) { .formations button:hover:not(.active) { color: var(--text); background: #262a2f; } }
 .formations button.active { background: var(--gold-grad); color: var(--gold-ink); }
 
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .sq-tabs > button { flex: 1 1 auto; padding: 8px 4px; min-width: 0; font-size: 15px; } /* cinq onglets tiennent sur 375 px (largeur selon le mot) */
   .panel-head .section-tabs > button { flex: none; padding: 0 12px; font-size: 16px; } /* onglets de section : à leur taille, la rangée défile en largeur */
   .sq-tab-dot { top: 3px; right: 1px; width: 6px; height: 6px; }
@@ -2950,7 +2950,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 @media (hover: hover) { button.lu-best:hover { background: rgba(222, 193, 127, .18); } }
 .lu-best.done { background: rgba(114, 197, 149, .1); color: var(--green); }
 .lu-rotate b { color: var(--text); } /* nombre de joueurs qui entrent (0.8.5) */
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .lu-acts { gap: 6px; }
   .lu-best { --slant: 6px; height: 34px; font-size: 14px; gap: 6px; }
 }
@@ -2966,7 +2966,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .post-ratings li:has(.post-fit) > :first-child { grid-row: span 2; }
 .post-ratings .post-fit { grid-column: 3; margin-left: 0; font-size: 12px; }
 .post-motm-row .post-fit { display: flex; margin: 4px 0 0; }
-@media (max-width: 760px) { .post-ratings .post-fit { grid-column: 2; } .post-ratings li:has(.post-fit) .pr-name { white-space: normal; } } /* un nom long passe à la ligne plutôt que d'être coupé */
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .post-ratings .post-fit { grid-column: 2; } .post-ratings li:has(.post-fit) .pr-name { white-space: normal; } } /* un nom long passe à la ligne plutôt que d'être coupé */
 .lv-legend.flip { flex-direction: row-reverse; justify-content: flex-end; } /* légende des temps forts dans l'ordre de l'écran, à l'extérieur */
 .lu-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-left: auto; } /* les trois boutons de composition passent à la ligne ensemble */
 
@@ -2989,7 +2989,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ht-board .lu-pitch { --lu-h: 46vh; --lu-hh: clamp(260px, 40vh, 420px); }
 /* PC, composition dépliée en match (mi-temps, changement) : le panneau prend toute la hauteur de l'écran (le score
    reste dans ses chiffres) et le terrain couché tout ce qui reste à droite des consignes */
-@media (min-width: 761px) {
+@media (min-width: 761px), (orientation: landscape) and (max-height: 500px) {
   .matchscreen.live .halftime.board-open { top: var(--gap); bottom: var(--gap); max-width: 1320px; height: auto; max-height: none; grid-template-columns: minmax(250px, 300px) minmax(0, 1fr); }
   .halftime.board-open .ht-board .lu-pitch { --lu-hh: clamp(300px, calc(100vh - 170px), 640px); } /* « Reprendre », collé en bas, ne le couvre pas */
 }
@@ -3005,7 +3005,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ht-changes-foot b.up { color: var(--green); }
 .ht-changes-foot b.down { color: var(--red); }
 
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .lu-editor { grid-template-columns: 1fr; }
   .lu-side { position: static; }
   .lu-main .lu-pitch, .ht-board .lu-pitch { width: 100%; }
@@ -3175,7 +3175,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .cm-club .cm-card-rows { gap: 0; padding: 6px 22px 16px; }
 .cm-club .cm-card-rows div { padding: 11px 0; border-top: 1px solid var(--line); }
 .cm-club .cm-card-rows div:first-child { border-top: 0; }
-.cm-opp { display: inline-flex; align-items: center; gap: 8px; }
+.cm-opp { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; }
+.cm-opp > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; } /* nom long : abrégé, jamais coupé net (0.8.13) */
 .crest.cm-opp-crest { width: 19px; height: 22px; filter: none; }
 .cm-form { display: flex; gap: 4px; }
 .cm-form i {
@@ -3211,7 +3212,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ts-profile-mark { width: 24px; height: 24px; flex-shrink: 0; }
 .ts-col { position: absolute; top: 0; bottom: 0; left: 48px; width: min(520px, 44vw); display: flex; flex-direction: column; justify-content: center; gap: 44px; padding: 96px 0 104px; }
 .ts-head { padding-left: 16px; }
-@media (min-width: 761px) { .ts-menu .ts-profile { display: none; } } /* la carte de la partie montre déjà le club */
+@media (min-width: 761px), (orientation: landscape) and (max-height: 500px) { .ts-menu .ts-profile { display: none; } } /* la carte de la partie montre déjà le club */
 .ts-head { display: flex; flex-direction: column; gap: var(--s-4); }
 /* logo FootOFF Empire (FootOFFLockup : le même que sur l'écran de chargement), à la taille de l'écran titre. Le logo
    ne se modifie jamais (consigne de l'utilisateur) : seule sa taille s'adapte à l'écran. */
@@ -3296,7 +3297,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 /* entrée en jeu : le HUD arrive pendant que la caméra plonge vers la vue d'ensemble */
 .game.playing .hud { animation: fo-fade .6s .5s ease both; }
 
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .ts-top { top: 14px; left: 16px; right: 16px; justify-content: flex-end; }
   .ts-presents { display: none; }
   .ts-profile { max-width: 210px; }
@@ -3336,7 +3337,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .pz-bottom { left: 16px; right: 16px; bottom: calc(16px + var(--hb)); justify-content: center; }
   .pz-bottom .cm-hints { display: none; }
 }
-@media (max-height: 760px) and (min-width: 761px) { /* écran d'ordinateur portable : tout un peu plus serré */
+@media (max-height: 760px) and (min-width: 761px), (max-height: 760px) and (orientation: landscape) and (max-height: 500px) { /* écran d'ordinateur portable : tout un peu plus serré */
   .ts-col, .pz-col { padding: 80px 0 88px; gap: 28px; }
   .ts-mark .lockup-mark { height: 80px; }
   .ts-mark .lockup-name { font-size: clamp(44px, 4vw, 58px); }
@@ -3353,26 +3354,26 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
    reste toujours cliquable en entier. */
 .ts-bottom, .pz-bottom { pointer-events: none; }
 .ts.ts-create .ts-col { overflow-y: auto; overscroll-behavior: contain; }
-@media (min-width: 761px) {
+@media (min-width: 761px), (orientation: landscape) and (max-height: 500px) {
   /* colonne un peu plus large que le formulaire : le halo du bouton choisi n'est pas rogné par le défilement */
   .ts.ts-create .ts-col { justify-content: flex-start; left: 32px; width: calc(min(520px, 44vw) + 48px); padding-left: 24px; padding-right: 24px; }
   .ts.ts-create .ts-form { margin-block: auto; } /* centré s'il tient, sinon calé en haut et la colonne défile */
 }
-@media (max-height: 760px) and (min-width: 761px) {
+@media (max-height: 760px) and (min-width: 761px), (max-height: 760px) and (orientation: landscape) and (max-height: 500px) {
   .ts-form { gap: var(--s-3); }
   .ts-form-lead { display: none; } /* le titre dit déjà tout */
   .crest.ts-crest-art { width: 84px; height: 98px; }
   .ts-pick-arrow { width: 30px; height: 30px; }
   .ts-actions { margin-top: var(--s-2); }
 }
-@media (max-height: 680px) and (min-width: 761px) { /* fenêtre d'ordinateur réduite : tout le formulaire tient encore */
+@media (max-height: 680px) and (min-width: 761px), (max-height: 680px) and (orientation: landscape) and (max-height: 500px) { /* fenêtre d'ordinateur réduite : tout le formulaire tient encore */
   .ts-form > .eyebrow { display: none; }
   .ts-input input { font-size: 24px; padding: 6px 0; }
   .ts-crest-rows { gap: 4px; }
   .ts-pick-arrow { width: 28px; height: 28px; }
   .ts-actions .btn-xl { padding-top: 12px; padding-bottom: 12px; }
 }
-@media (max-height: 560px) and (min-width: 761px) { /* PC peu haut, téléphone à l'horizontale */
+@media (max-height: 560px) and (min-width: 761px), (max-height: 560px) and (orientation: landscape) and (max-height: 500px) { /* PC peu haut, téléphone à l'horizontale */
   .ts-col, .pz-col { padding: 64px 0 72px; gap: 20px; }
   .ts-mark { gap: 16px; }
   .ts-mark .lockup-mark { height: 60px; }
@@ -3398,7 +3399,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .season-cols { display: flex; flex-direction: column; gap: var(--s-3); }
 .season-col { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
 .season-col > .ui-section-head:not(:first-child) { margin-top: var(--s-3); }
-@media (min-width: 761px) {
+@media (min-width: 761px), (orientation: landscape) and (max-height: 500px) {
   .panel.lg .season-stats { flex: 1 1 520px; width: auto; max-width: 620px; }
   .panel.lg .season-tabs { width: 320px; }
   .season-cols { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: var(--s-6); align-items: start; }
@@ -3476,7 +3477,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 
 /* affiche de la date choisie, et bilan à côté (dessous au téléphone) */
 .sc-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
-@media (min-width: 761px) { .sc-main { grid-template-columns: minmax(0, 1fr) 292px; align-items: start; } }
+@media (min-width: 761px), (orientation: landscape) and (max-height: 500px) { .sc-main { grid-template-columns: minmax(0, 1fr) 292px; align-items: start; } }
 .sc-poster {
   --opp: 128, 128, 128;
   position: relative; isolation: isolate; overflow: hidden;
@@ -3631,7 +3632,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .sc-form button:not(.on):hover, .sc-league button:not(.on):hover { filter: brightness(1.25); }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   /* barre du panneau compacte : les quatre repères sur une ligne, sans leur précision (le calendrier la donne) */
   .season-stats { gap: 6px; }
   .season-stats .ui-stat { padding: 8px 10px; gap: 0; }
@@ -3662,7 +3663,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .season-table { padding: var(--s-4) 0 var(--s-4); }
 .season-table > .ui-section-head, .season-table > .zone-legend { padding: 0 var(--s-5); }
 .season-col { gap: 6px; }
-@media (min-width: 761px) { .season-cols { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 6px; } }
+@media (min-width: 761px), (orientation: landscape) and (max-height: 500px) { .season-cols { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 6px; } }
 .sc-race h3 { font-family: var(--font-disp); font-weight: 700; font-size: 26px; line-height: .95; text-transform: uppercase; }
 .sc-race.in h3 { color: var(--gold-light); }
 .sc-race.danger h3 { color: var(--red); }
@@ -3703,7 +3704,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 /* affiche de l'avant-match : écusson devant chaque nom */
 .ms-versus { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 /* téléphone : une équipe par ligne, écussons alignés l'un sous l'autre (le « vs » décalait le second) */
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .ms-versus { flex-direction: column; align-items: flex-start; gap: 8px; }
   .ms-versus em { display: none; }
 }
@@ -3750,7 +3751,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ht-board-close { font-size: var(--t-sm); text-decoration: none; color: var(--gold-light); }
 .halftime.board-open .ht-board { animation: fo-up .35s var(--ease); }
 
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .crest { width: 28px; height: 32px; }
 }
 
@@ -4063,7 +4064,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ng-mini .hud-icon { width: 44px; height: 40px; font-size: 20px; line-height: 1; }
 .ng-mini .hud-icon:disabled { opacity: .35; cursor: not-allowed; }
 .ng-mini output { text-align: center; font-family: var(--font-disp); font-weight: 700; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
-@media (max-width: 760px) { .ng-counter > div { flex-basis: 100%; } .ng-counter .btn { flex-basis: 100%; } }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .ng-counter > div { flex-basis: 100%; } .ng-counter .btn { flex-basis: 100%; } }
 .ng-answer b, .ng-counter .eyebrow { text-wrap: balance; }
 .ng-counter b small { font-family: 'Inter', system-ui, sans-serif; font-weight: 400; font-size: var(--t-sm); color: var(--text-2); }
 .ng-col { display: contents; }
@@ -4133,10 +4134,10 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .sl-club .sl-name { font-weight: 600; font-size: var(--t-md); color: var(--text); overflow-wrap: anywhere; }
 .sl-club em.up { color: var(--green); }
 
-@media (min-width: 761px) {
+@media (min-width: 761px), (orientation: landscape) and (max-height: 500px) {
   .mc-row-actions { flex-basis: auto; }
 }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .mc-filters > .chips { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; margin-inline: calc(-1 * var(--s-4)); padding-inline: var(--s-4); }
   .mc-filters-row .chips { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; margin-left: calc(-1 * var(--s-4)); padding-left: var(--s-4); }
   .mc-filters .chips::-webkit-scrollbar { display: none; }
@@ -4312,7 +4313,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ng-live.low .ng-live-note { color: var(--red); }
 .ng-tries { font-size: 13px; }
 .ls-clubs li { border: 0; border-radius: 0; background: var(--plate-2); }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .mc-layout { display: none; }
   .mc-table-wrap { display: none; }
   .mc-grid-sm { display: grid; }
@@ -4348,7 +4349,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .rp-levels span { font-size: var(--t-sm); }
 .rp-levels li.done { color: var(--text-2); }
 .rp-levels li.on { border-color: var(--gold-line); background: var(--gold-soft); color: var(--gold-light); }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .rp-levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rp-effects li { grid-template-columns: 64px minmax(0, 1fr); }
 }
@@ -4521,7 +4522,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 @keyframes hold-nudge { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
 
 /* tablette en hauteur : la fenêtre se pose en bas à droite, sous la parcelle */
-@media (min-width: 761px) and (max-width: 1100px) and (orientation: portrait) {
+@media (min-width: 761px) and (max-width: 1100px) and (orientation: portrait), (orientation: landscape) and (max-height: 500px) and (max-width: 1100px) and (orientation: portrait) {
   .bw {
     left: calc(var(--gap) + var(--rail-w) + var(--s-3)); width: auto; top: auto; max-height: 48%;
     bottom: calc(var(--hud-bottom) + var(--bar-h) + var(--s-3)); animation-name: fo-up;
@@ -4529,7 +4530,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .bw-hero { max-height: 150px; }
 }
 /* PC étroit : la fenêtre reste au-dessus de la ligne du menu du bas */
-@media (min-width: 761px) and (max-width: 1240px) and (orientation: landscape) {
+@media (min-width: 761px) and (max-width: 1240px) and (orientation: landscape), (orientation: landscape) and (max-height: 500px) and (max-width: 1240px) and (orientation: landscape) {
   .bw { bottom: calc(var(--hud-bottom) + var(--bar-h) + var(--s-3)); width: 320px; }
 }
 
@@ -4543,7 +4544,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .bdetail-hero { font-size: var(--t-sm); color: var(--text-2); margin-top: 2px; }
 .bdetail-hero b { font-family: var(--font-disp); font-weight: 600; color: var(--gold-light); }
 .bdetail .ins-money { margin-top: 0; }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .ins-icon { width: 36px; height: 36px; border-radius: var(--r-sm); }
   .ins-icon svg { width: 19px; height: 19px; }
   .ins-head { grid-template-columns: 36px minmax(0, 1fr); }
@@ -4569,7 +4570,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .bw-foot { padding: var(--s-3) var(--s-4) var(--s-4); }
 }
 .leaving > .bw, .leaving > .presence > .bw { animation: fo-slide-out var(--dur-exit) var(--ease-in) forwards !important; }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .leaving > .bw, .leaving > .presence > .bw { animation-name: fo-sheet-out !important; }
 }
 @media (prefers-reduced-motion: reduce) { .ins-shot.fresh::after, .btn.hold.nudge { animation: none; } }
@@ -4664,7 +4665,7 @@ html, body { overscroll-behavior: none; }
 .med-prev, .med-list { max-width: 760px; }
 .med-head .dir-wage b { color: #f0b3ab; }
 .med-card.cured .med-head .dir-wage b { color: var(--green); }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .dir-card { padding: var(--s-4); }
   .dir-big b { font-size: 22px; }
 }
@@ -4754,7 +4755,7 @@ html, body { overscroll-behavior: none; }
 .ac-plan-text b.ac-slow { color: #f0b3ab; }
 .nt-academy .nt-icon, .nt-training .nt-icon { color: var(--gold-light); border-color: var(--gold-line); }
 
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .ac-empty { padding: var(--s-5) var(--s-4); }
   .ac-level-next > span { min-width: 0; flex-basis: 100%; }
   .ac-level-next .btn { width: 100%; padding: 12px 16px; }
@@ -4868,7 +4869,7 @@ html, body { overscroll-behavior: none; }
   .tr-pick:hover { border-color: var(--line-strong); background: rgba(255, 255, 255, .05); }
   .tr-pick.on:hover { border-color: var(--gold-line); background: var(--gold-soft); }
 }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .tr-lines { grid-template-columns: 1fr; }
   .tr-meter { max-width: none; }
   .tr-lead-cta { width: 100%; }
@@ -4962,7 +4963,7 @@ html, body { overscroll-behavior: none; }
 .drill-summary h2 { color: var(--green); }
 .drill-pause { position: absolute; inset: 0; background: rgba(5, 5, 5, .55); animation: fo-fade .2s; }
 .drill-pause .drill-card { top: 50%; bottom: auto; transform: translate(-50%, -50%); animation: none; }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .drill-hud-left { left: 16px; top: max(14px, env(safe-area-inset-top)); }
   .drill-hud-left strong { font-size: var(--t-lg); }
   .drill-hud-right { right: 16px; top: max(14px, env(safe-area-inset-top)); }
@@ -4990,11 +4991,11 @@ html, body { overscroll-behavior: none; }
 .drill-tablet span::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #e0574a; box-shadow: 0 0 8px rgba(224, 87, 74, .8); animation: drill-rec 1.4s ease-in-out infinite; }
 @keyframes drill-rec { 50% { opacity: .25; } }
 .drill-chrono { font-variant-numeric: tabular-nums; }
-@media (max-width: 760px) { .drill-tablet span { top: auto; bottom: 70px; } }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .drill-tablet span { top: auto; bottom: 70px; } }
 .drill-intro .drill-later { position: absolute; top: 14px; right: 14px; }
 .drill-intro .eyebrow { padding-right: 44px; }
-@media (max-width: 760px) { .tr-lead-cta .btn:last-child { flex: 1.5; } }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .tr-lead-cta .btn:last-child { flex: 1.5; } }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .drill-pips { gap: 4px; }
   .drill-pips i { width: 10px; }
   .drill-hud-left { max-width: calc(100% - 150px); }
@@ -5085,7 +5086,7 @@ html, body { overscroll-behavior: none; }
 .cm-card-list { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
 .cm-card-list li { font-size: var(--t-sm); line-height: 1.5; color: var(--text-2); }
 .crash-links { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-@media (max-width: 760px) { .cm-rules-body { max-height: none; } }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .cm-rules-body { max-height: none; } }
 
 /* journal : rangée des saisons au-dessus des articles */
 .chips.journal-seasons { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; margin: 0 0 14px; padding-bottom: 2px; }
@@ -5223,7 +5224,7 @@ html, body { overscroll-behavior: none; }
 .lig-tname { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
 .lig-tname em { font-style: normal; font-size: var(--t-xs); color: var(--muted); font-weight: 400; }
 .lig-secret { display: block; padding: 10px 12px; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--text); background: rgba(255, 255, 255, .04); box-shadow: inset 0 0 0 1px var(--line-strong); word-break: break-all; -webkit-user-select: all; user-select: all; }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .lig-bigcode { font-size: 36px; }
   .lig-input input { font-size: 22px; }
 }
@@ -5283,7 +5284,7 @@ html, body { overscroll-behavior: none; }
 .lig-rate { display: flex; align-items: baseline; gap: 6px; }
 .lig-rate b { font-family: var(--font-disp); font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
 .lig-rate em { font-style: normal; font-size: var(--t-xs); color: var(--green); font-variant-numeric: tabular-nums; }
-@media (max-width: 760px) { .lig-train-rows li { grid-template-columns: 62px minmax(0, 1fr) auto; } }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .lig-train-rows li { grid-template-columns: 62px minmax(0, 1fr) auto; } }
 
 /* Siège de la Ligue, ton club en onglets : séance, effectif (vente au-dehors), marché commun (offres sous pli fermé),
    offres entre amis ; un enregistrement commun en bas de la carte */
@@ -5325,7 +5326,7 @@ html, body { overscroll-behavior: none; }
 .lig-moves { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--t-xs); color: var(--text-2); }
 .lig-moves li.me { color: var(--gold-light); }
 .lig-save { padding-top: var(--s-2); border-top: 1px solid var(--line); }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .lig-squad li, .lig-market li { grid-template-columns: auto minmax(0, 1fr) auto; }
   .lig-squad .lig-sell, .lig-market li > .btn, .lig-market .lig-bid { grid-column: 2 / -1; justify-self: start; }
   .lig-market li:not(:has(.pos-pill)) .lig-answer { grid-column: 1 / -1; }
@@ -5340,7 +5341,7 @@ html, body { overscroll-behavior: none; }
 .confirm-rows dd { text-align: right; }
 .confirm-rows dd small { display: block; margin-top: 2px; font-family: 'Inter', system-ui, sans-serif; font-weight: 400; font-size: var(--t-xs); letter-spacing: 0; color: var(--muted); }
 .pz-save.wait { color: var(--muted); }
-@media (max-width: 760px) { .pz-save { white-space: normal; } }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .pz-save { white-space: normal; } }
 
 /* Plans de mi-temps (0.8.3, match.jsx HalftimePlans) : dans l'avant-match de la ligue, une ligne par score à la pause ;
    la fenêtre des plans montre les trois situations en onglets, l'équipe de la seconde période sur le terrain à gauche,
@@ -5398,7 +5399,7 @@ html, body { overscroll-behavior: none; }
   .htp-board .lu-bchip { gap: 6px; padding-left: 10px; padding-right: 10px; }
   .htp-board .lu-bchip .pf { display: none; } /* quatre colonnes : la place va au nom, le portrait reste sur le terrain */
 }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .htp-tabs button { padding: 8px; }
   .htp-tabs b { font-size: var(--d-sm); }
   /* le résumé d'un plan passe sous la situation : jamais tronqué sur un téléphone étroit */
@@ -5427,13 +5428,15 @@ html, body { overscroll-behavior: none; }
 .ro-rows .mc-row.muted { opacity: .72; }
 .mc-haggle { flex-wrap: wrap; }
 .mc-haggle .ng-mini { min-width: 210px; }
-/* couleurs du club dans le créateur d'écusson (0.8.8) : la pastille ouvre le sélecteur du système */
-.ts-color { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-width: 0; }
-.ts-color > span { overflow: hidden; text-overflow: ellipsis; }
+/* couleurs du club dans le créateur d'écusson (0.8.8) : la pastille ouvre le sélecteur du système. La case ne rogne
+   rien (0.8.13, remarque du PDG : le liseré de la pastille était coupé en haut et en bas) : seul le nom de la couleur
+   s'abrège s'il est trop long. */
+.ts-color { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-width: 0; overflow: visible; padding-block: 4px; }
+.ts-color > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ts-swatch { position: relative; flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255, 255, 255, .85), 0 0 0 3px rgba(0, 0, 0, .5); cursor: pointer; }
 .ts-swatch input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
 /* négociation entre amis au téléphone : trois réponses sur une ligne, sans déborder du cadre (0.8.8) */
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .mc-row.offer .mc-row-actions { gap: 6px; }
   .mc-row.offer .mc-row-actions .btn-sm { flex: 1 1 auto; min-width: 0; --slant: 6px; padding: 0 calc(6px + var(--slant)); font-size: 15px; }
 }
@@ -5445,7 +5448,7 @@ html, body { overscroll-behavior: none; }
 .hm-odds { min-width: 0; overflow: hidden; }
 .hm-odds .tri { flex: 0 200 78px; min-width: 28px; } /* la jauge cède la place avant le texte */
 .hm-odds-text { flex-shrink: 0; } /* entier tant que la jauge peut céder ; la ligne coupe avant le bouton au pire */
-@media (min-width: 761px) and (max-width: 1420px) {
+@media (min-width: 761px) and (max-width: 1420px), (orientation: landscape) and (max-height: 500px) and (max-width: 1420px) {
   .hud-match { gap: 12px; }
   .hud-match .btn { padding: 0 calc(9px + var(--slant)); font-size: 19px; }
 }
@@ -5501,7 +5504,7 @@ html, body { overscroll-behavior: none; }
 .jr-line li.next .jr-prize b { color: var(--muted); }
 .jr-when { font-family: var(--font-disp); font-weight: 600; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; color: var(--gold-light); white-space: nowrap; }
 .jr-lead { margin: var(--s-4) 0 0; font-size: var(--t-xs); color: var(--muted); }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .jr-hero { grid-template-columns: 1fr; padding: 18px 16px; }
   .jr-hero h4 { font-size: 28px; }
   .jr-hero .jr-prize.hero { grid-column: 1; grid-row: auto; justify-self: start; flex-direction: row; align-items: baseline; gap: 10px; min-width: 0; margin-top: 12px; padding: 8px 18px; }

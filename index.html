@@ -148,7 +148,7 @@
       /* Téléphone : la progression sous le logo, juste sous le rond central (collée au bas de l'écran, la barre
          passait sous la barre d'outils du navigateur ou le trait d'accueil du téléphone) ; l'astuce en bas. Le bloc
          du bas n'est plus positionné : la barre, l'étape et l'astuce se placent chacune par rapport à l'écran. */
-      @media (max-width: 760px) {
+      @media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
         .ld { --ld-mid: 41%; --ld-w: min(320px, calc(100% - 48px)); }
         .ld-center { bottom: 18%; }
         .ld-logo { gap: 14px; } .ld-mono { height: 58px; } .ld-name { font-size: 32px; } .ld-sub { font-size: 12px; margin-top: 7px; }
@@ -160,6 +160,14 @@
         .ld-pct { min-width: 0; }
         .ld-pct b { font-size: 28px; }
         .ld-tip { position: absolute; left: 24px; right: 24px; bottom: calc(28px + env(safe-area-inset-bottom, 0px) + var(--host-badge-h, 0px)); min-height: 92px; font-size: 13px; }
+      }
+      /* téléphone couché (0.8.13) : le logo plus petit, la progression et l'astuce près du bas */
+      @media (orientation: landscape) and (max-height: 500px) {
+        .ld-center { bottom: 22vh; }
+        .ld-logo { gap: 14px; } .ld-mono { height: 54px; } .ld-name { font-size: 30px; } .ld-sub { font-size: 11px; margin-top: 6px; }
+        .ld-bottom { left: 24px; right: 24px; bottom: calc(14px + var(--host-badge-h, 0px)); gap: 20px; }
+        .ld-tip { min-height: 0; font-size: 12px; line-height: 1.45; gap: 4px; }
+        .ld-pct b { font-size: 26px; }
       }
       @media (prefers-reduced-motion: reduce) { .ld-glow, .ld-logo, .ld-bar::after { animation: none; } .ld-spin { animation-duration: 3s; } .ld-bar b { animation-duration: 1ms; } }
       /* navigateur trop ancien, ou jeu qui ne démarre pas : un message à la place de la barre */

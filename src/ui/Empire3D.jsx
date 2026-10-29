@@ -27,6 +27,7 @@ import {
   buildingMesh, padMesh, setProceduralNight, stadiumMesh,
 } from '../three/procedural';
 import { holdCharge } from './charge';
+import { PHONE } from './gestures';
 
 // Le contexte d'essai est rendu tout de suite : sur iPhone, chaque contexte 3D laissé ouvert compte jusqu'au bout.
 function webglAvailable() {
@@ -1171,7 +1172,7 @@ export default function Empire3D({
     }
   }, [holo?.plotId, holo?.key, holo?.lvl, ready]); // eslint-disable-line react-hooks/exhaustive-deps
   // la fenêtre d'aperçu s'ouvre ou se ferme (PC) : la zone libre change, le cadrage suit
-  useEffect(() => { if (ready && holo?.key && window.innerWidth > 760) ctxRef.current?.frameHolo(true); }, [holo?.windowOpen, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (ready && holo?.key && !window.matchMedia(PHONE).matches) ctxRef.current?.frameHolo(true); }, [holo?.windowOpen, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const info = hover === 'parvis' ? parvisInfo(state) : hover && hover !== selectedPlot ? plotInfo(state, hover) : null;
 

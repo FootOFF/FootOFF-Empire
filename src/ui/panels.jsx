@@ -14,7 +14,7 @@ import { clubAfter } from '../game/names';
 import { Portrait } from './portrait';
 import { Presence, useDialogFocus, useKeydown, useLeaving } from './presence';
 import { uiSound } from './uisound';
-import { PHONE, useMedia, useSwipe } from './gestures';
+import { LANDSCAPE, PHONE, useMedia, useSwipe } from './gestures';
 import { SeasonCalendar } from './calendar';
 import { ClubRoster } from './roster';
 import { SECTIONS, SectionPager, SectionTabs, sectionNear, sectionOf, useNav } from './nav';
@@ -66,9 +66,10 @@ export function Panel({ id = null, title, eyebrow, size = 'md', money = null, to
   const headRef = useRef(null);
   const nav = useNav();
   const phone = useMedia(PHONE);
+  const landscape = useMedia(LANDSCAPE); // téléphone couché : on passe aussi d'une section à l'autre au doigt
   const section = sectionOf(id);
-  const pages = phone && !!nav?.step && !!section;
-  const tabsBelow = useTabsBelow(headRef, !!section && size === 'lg' && !phone);
+  const pages = (phone || landscape) && !!nav?.step && !!section;
+  const tabsBelow = useTabsBelow(headRef, !!section && size === 'lg' && !phone && !landscape);
   useDialogFocus(ref);
   useKeydown((e) => { if (e.key === 'Escape') (onEscape || onClose)(); });
   useSwipe(ref, {

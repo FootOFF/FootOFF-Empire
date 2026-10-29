@@ -4,6 +4,16 @@
 
 export const CHANGELOG = [
   {
+    version: '0.8.13', date: '2026-10-29', title: 'Le jeu au téléphone couché',
+    items: [
+      'Le jeu se joue aussi au téléphone couché. Écran titre : le menu à gauche, ton complexe à droite. Complexe : le club et la trésorerie sur une ligne en haut, le menu et le prochain match côte à côte en bas, la 3D dégagée au milieu.',
+      'Équipe, Mercato, Saison et Club s’ouvrent en plein écran sous un bandeau compact : le titre et les onglets sur une ligne, avec la trésorerie quand elle sert. On passe d’une section à l’autre d’un glissé du doigt. La composition se dessine sur un grand terrain couché.',
+      'En match, les temps forts passent en plein écran sous un score façon télé resserré ; entre deux, le centre du match reste compact, avec Stats, Notes et Le fil en onglets sur les petits téléphones. Avant-match, mi-temps et après-match gardent leurs boutons toujours visibles.',
+      'Écusson : le nom s’écrit tel que tu l’as choisi, « FC » compris, tant qu’il reste lisible, sans perdre de lettres au bout du ruban ; le losange moderne porte maintenant un ruban avec le nom, l’année ou les deux.',
+      'Correction : la pastille des couleurs de l’écusson n’est plus rognée en haut et en bas.',
+    ],
+  },
+  {
     version: '0.8.12', date: '2026-10-29', title: 'Recruteurs en mission, nouvelles à chaque repérage',
     items: [
       'Les missions des recruteurs n’ont plus de régions : ils cherchent un poste ou un profil (technique, physique, mental), pendant deux, trois ou quatre repérages.',

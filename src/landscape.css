@@ -1,0 +1,379 @@
+/* Téléphone couché (0.8.13, demande du PDG : « le jeu doit être jouable sur mobile en paysage aussi »). Tout l'écran est
+   peu haut (500 px au plus) et large : ni la mise en page du téléphone en portrait (petits téléphones, moins de 761 px de
+   large) ni celle de l'ordinateur (grands téléphones) n'y tiennent. Réponses du PDG : le menu à gauche et le complexe 3D
+   à droite, des panneaux au bandeau compact (titre, onglets et trésorerie sur une ligne), le match terrain plein écran
+   avec ses statistiques dans un volet. Chargé après styles.css : à spécificité égale, ces règles l'emportent ; le
+   portrait et l'ordinateur ne changent pas. */
+
+@media (orientation: landscape) and (max-height: 500px) {
+  /* --- Écran titre : le menu en colonne à gauche, le complexe à droite, la version dans le coin ---------------------- */
+  .ts-shade { background: linear-gradient(90deg, rgba(5, 5, 6, .92) 0%, rgba(5, 5, 6, .8) 34%, rgba(5, 5, 6, .25) 58%, rgba(5, 5, 6, .06) 100%); }
+  .ts-top { top: 10px; left: auto; right: 20px; justify-content: flex-end; }
+  .ts-presents { display: none; }
+  .ts-profile { max-width: 260px; }
+  .ts-col { left: 24px; right: auto; width: min(380px, 46vw); padding: 12px 0 14px; justify-content: center; gap: 10px; }
+  .ts-head { align-items: flex-start; text-align: left; gap: 4px; padding-left: 14px; }
+  .ts-mark { gap: 12px; }
+  .ts-mark .lockup-mark { height: 40px; }
+  .ts-mark .lockup-name { font-size: 28px; }
+  .ts-mark .lockup-sub { font-size: 10px; margin-top: 4px; }
+  .ts-tag { display: block; font-size: 12px; } /* l'ordinateur peu haut la retire ; ici elle tient */
+  .ts-main { flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+  .ts-main::-webkit-scrollbar { display: none; }
+  .ts-main .cm-list { gap: 2px; }
+  .ts-main .cm-item { min-height: 38px; padding: 4px 14px; }
+  .ts-main .cm-item.on { min-height: 48px; }
+  .ts-main .cm-label { font-size: 17px; }
+  .ts-main .cm-item.on .cm-label { font-size: 22px; }
+  .ts-main .cm-text { gap: 2px; }
+  .ts-main .cm-item:not(.on) .cm-sub { display: none; } /* la ligne d'aide de l'entrée choisie seulement */
+  .ts-main .cm-item.on .cm-sub { display: block; font-size: 11px; }
+  .ts-main .cm-go { width: 18px; height: 18px; margin-right: 8px; }
+  .ts-side { display: none; }
+  .ts-bottom { left: auto; right: 20px; bottom: calc(8px + var(--hb)); justify-content: flex-end; }
+  .ts-bottom .cm-hints { display: none; }
+  .ts-legal { font-size: 10px; }
+
+  /* menu pause : même colonne que l'écran titre, le bilan de la saison à droite */
+  .pz-col { left: 24px; width: min(380px, 46vw); padding: 10px 0 30px; justify-content: center; gap: 10px; }
+  .pz-head { gap: 2px; padding-left: 14px; }
+  .pz-head h2, .pz-head h2.long { font-size: 24px; }
+  .pz-head p { font-size: 12px; }
+  .crest.pz-crest { width: 30px; }
+  .pz-col .cm-list { gap: 2px; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+  .pz-col .cm-item { min-height: 36px; padding: 4px 14px; }
+  .pz-col .cm-item.on { min-height: 46px; }
+  .pz-col .cm-label { font-size: 16px; }
+  .pz-col .cm-item.on .cm-label { font-size: 21px; }
+  .pz-col .cm-text { gap: 2px; }
+  .pz-col .cm-item:not(.on) .cm-sub { display: none; }
+  .pz-col .cm-sub { font-size: 11px; }
+  .pz-side { right: 20px; top: 12px; bottom: calc(30px + var(--hb)); width: min(300px, 42vw); transform: none; overflow-y: auto; scrollbar-width: none; }
+  .pz-bottom { left: 24px; right: 20px; bottom: calc(8px + var(--hb)); }
+  .pz-bottom .cm-hints { display: none; }
+
+  /* sous-écrans (réglages, règles, nouveautés) : une colonne plus large, la liste défile */
+  .ts.ts-settings .ts-col, .ts.ts-rules .ts-col, .ts.ts-news .ts-col { width: min(640px, 74vw); justify-content: flex-start; }
+  .ts-sub h2, .ts-form h2 { font-size: 26px; }
+  .ts-sub .eyebrow, .ts-form .eyebrow { font-size: 10px; }
+  .cm-row { min-height: 46px; padding: 6px var(--s-4) 6px 22px; }
+  .cm-row.back { min-height: 40px; }
+  .cm-row-text strong { font-size: 17px; }
+  .cm-row-text span { font-size: 12px; }
+
+  /* création du club : le formulaire à gauche (les réglages de l'écusson sur deux colonnes), l'écusson à droite ; la
+     colonne défile au-dessus du clavier */
+  .ts.ts-create .ts-col { width: calc(100% - 48px); max-width: 760px; justify-content: flex-start; overflow-y: auto; scrollbar-width: none; padding: 12px 0 16px; }
+  .ts.ts-create .ts-col::-webkit-scrollbar { display: none; }
+  .ts-form { display: grid; grid-template-columns: minmax(0, 1fr) 150px; column-gap: 20px; row-gap: 6px; align-items: start; max-width: none; }
+  .ts-form > * { grid-column: 1; }
+  .ts-form-lead { display: none; }
+  .ts-field { margin-top: 0; gap: 2px; }
+  .ts-input input { font-size: 20px; padding: 4px 0; }
+  .ts-dice { width: 34px; height: 34px; }
+  .ts-crest { display: contents; }
+  .ts-crest-side { grid-column: 2; grid-row: 1 / span 5; align-self: center; justify-self: center; }
+  .crest.ts-crest-art { width: 112px; height: 130px; }
+  .ts-crest-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; }
+  .ts-crest-rows .ts-field-label { grid-column: 1 / -1; margin-bottom: 0; }
+  .ts-pick { grid-template-columns: 64px 26px minmax(0, 1fr) 26px; min-height: 32px; padding: 2px 2px 2px 8px; }
+  .ts-pick-label { font-size: 11px; letter-spacing: .05em; }
+  .ts-pick-value { font-size: 13px; }
+  .ts-pick-arrow { width: 26px; height: 26px; }
+  .ts-pick-arrow svg { width: 15px; height: 15px; }
+  .ts-color { gap: 6px; font-size: 13px; padding-block: 3px; }
+  .ts-swatch { width: 20px; height: 20px; }
+  .ts-actions { flex-direction: row; margin-top: 4px; }
+  .ts-actions .btn-xl { min-height: 44px; font-size: 18px; }
+
+  /* --- Complexe (HUD) : le club et les ressources sur une ligne en haut, les objectifs repliés à gauche, les outils à
+     droite, le menu et le prochain match côte à côte en bas : la 3D garde le milieu de l'écran ----------------------- */
+  :root { --gap: 10px; --top-h: 46px; --res-h: 46px; --tool: 50px; --tool-h: 46px; --rail-w: 300px; --dock-w: 300px; }
+  .hud-top { display: flex; align-items: flex-start; gap: 2px; }
+  .hud-club { margin-right: auto; }
+  .hud-res { height: var(--top-h); clip-path: none; }
+  .hud-menu { width: var(--top-h); padding: 0; clip-path: var(--cut-shape-sm); }
+  .hud-cell { padding: 0 10px; gap: 8px; }
+  .hud-crest { padding: 0 6px 0 8px; }
+  .hud-crest .crest.hud-mark { width: 26px; height: 30px; }
+  .hud-id { gap: 3px; }
+  .hud-club-name { font-size: 18px; }
+  .hud-club-meta { font-size: 10px; }
+  .hud-round, .hud-meta-season, .hud-rep-next { display: none; }
+  .hud-meta-round { display: inline; }
+  .hud-bug .hud-rank { padding: 0 12px 0 10px; }
+  .hud-rank small, .hud-top small { font-size: 10px; }
+  .hud-rank b { font-size: 22px; }
+  .hud-rank sup { font-size: 12px; }
+  .hud-val { font-size: 19px; }
+  .hud-res .hud-stack small { display: none; }
+  .hud-money .hud-stack { gap: 2px; }
+  .hud-avail { font-size: 10px; }
+  .hud-res .hud-cell > svg { width: 18px; height: 18px; }
+  .hud-rep-bar { width: 44px; }
+  .hud-menu svg { width: 20px; height: 20px; }
+
+  .hud-left { display: flex; position: absolute; top: calc(var(--gap) + var(--top-h) + 8px); left: var(--gap); width: var(--rail-w); bottom: calc(var(--hud-bottom) + 64px); }
+  .hud-goal, .hud-coach { position: static; top: auto; left: auto; right: auto; max-width: 100%; }
+  .hud-goal { display: flex; flex-direction: column; max-height: 100%; }
+  .hud-goal.collapsed { max-width: 100%; }
+  .hud-goal.collapsed .hud-goal-head { min-height: 38px; padding: 0 12px; }
+  .hud-goal-head { padding: 10px 12px 2px; }
+  .hud-goal-body { min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 12px 10px; }
+  .hud-goal-k { font-size: 13px; }
+  .hud-goal-max { font-size: 12px; }
+  .hud-goal-max b { font-size: 15px; }
+  .hud-obj { padding: 6px 0 5px; }
+  .hud-tip { position: static; max-height: 100%; overflow-y: auto; }
+  /* tutoriel : la carte tient entre le bandeau et le menu du bas (l'explication « pourquoi » s'efface), sinon elle défile */
+  .hud-coach { max-height: 100%; overflow-y: auto; scrollbar-width: none; padding: 10px 14px 12px; gap: 5px; }
+  .coach-title { font-size: 18px; }
+  .coach-text { font-size: 12px; }
+  .coach-why { display: none; }
+  .coach-reward { font-size: 12px; }
+  .coach-actions .btn-sm { min-height: 34px; }
+  .coach-actions { position: sticky; bottom: -12px; margin: 0 -14px -12px; padding: 8px 14px 12px; background: var(--plate-solid); } /* « Compris » toujours visible */
+
+  .hud-tools { top: calc(var(--gap) + var(--top-h) + 8px); }
+  .hud-tools button { font-size: 10px; gap: 3px; }
+  .hud-tools button svg { width: 18px; height: 18px; }
+  .tools-dot { top: 6px; right: calc(50% - 14px); width: 8px; height: 8px; }
+  .staff-bubble { --nub: 30px; left: auto; right: calc(var(--gap) + var(--tool) + 5px); width: min(340px, 52vw); padding: 12px 22px 12px 14px; top: calc(var(--gap) + var(--top-h) + 8px + var(--row, 0) * var(--tool-h) - 8px); }
+  .staff-title { font-size: 19px; margin-top: 8px; }
+  .staff-text { font-size: 12px; margin-top: 6px; }
+  .staff-actions { margin-top: 10px; }
+
+  .hud-dock { left: var(--gap); right: auto; width: var(--dock-w); transform: none; justify-content: space-between; padding: 4px; border-radius: 20px; }
+  .game.has-panel .hud-dock, .game.has-sel .hud-dock { left: var(--gap); }
+  .hud-dock button { flex: 1; width: auto; min-width: 0; height: 48px; border-radius: 16px; gap: 3px; }
+  .hud-dock button svg { width: 19px; height: 19px; }
+  .hud-dock button span { font-size: 10px; letter-spacing: .05em; }
+  .hud-match { left: auto; right: var(--gap); bottom: var(--hud-bottom); width: min(440px, calc(100% - var(--dock-w) - 3 * var(--gap))); height: 56px; gap: 10px; padding: 0 8px 0 10px; }
+  .hud-match .crest.hm-crest { width: 30px; height: 35px; }
+  .hm-info { gap: 4px; }
+  .hm-eyebrow { font-size: 11px; }
+  .hud-match-title { font-size: 18px; }
+  .hm-odds { font-size: 11px; }
+  .tri { width: 48px; }
+  .hud-match .btn { --slant: 9px; min-height: 40px; padding: 0 calc(8px + var(--slant)); font-size: 17px; }
+  .game.has-sel .hud-match { opacity: 0; pointer-events: none; }
+
+  /* --- Fiches du complexe : la parcelle ou le bâtiment à gauche, l'aperçu (et son action) à droite, chacun sur toute
+     la hauteur entre le bandeau et le bas de l'écran ; le corps défile, l'action reste visible ---------------------- */
+  .inspector { top: calc(var(--gap) + var(--top-h) + 8px); bottom: var(--hud-bottom); width: min(310px, 46vw); max-height: none; }
+  .bw { top: calc(var(--gap) + var(--top-h) + 8px); bottom: var(--hud-bottom); width: min(330px, 46vw); max-height: none; }
+  .ins-head, .bw-head { padding: 8px 10px 8px 14px; gap: 8px; }
+  .ins-head h3, .bw-head h3 { font-size: 18px; }
+  .ins-head .eyebrow, .bw-head .eyebrow { font-size: 10px; }
+  .ins-head .hud-icon, .bw-head .hud-icon, .ins-nav .hud-icon { width: 32px; height: 32px; }
+  .ins-icon { width: 32px; height: 32px; }
+  .ins-icon svg { width: 17px; height: 17px; }
+  .ins-head { grid-template-columns: 32px minmax(0, 1fr); }
+  .inspector.shop .ins-head { grid-template-columns: minmax(0, 1fr); }
+  .ins-body, .bw-body { padding: 10px 14px; gap: 8px; }
+  .ins-foot, .bw-foot { padding: 8px 14px 10px; gap: 4px; }
+  .ins-foot .btn-xl, .bw-foot .btn-xl { --slant: 10px; min-height: 44px; font-size: 18px; }
+  .ins-foot .ins-hint, .bw-foot .ins-hint { font-size: 11px; }
+  .bfilter button { min-height: 30px; font-size: 13px; }
+  .bgrid { gap: 6px; }
+  .bcard { padding: 6px 6px 8px; }
+  .bcard-name { font-size: 14px; }
+  .bcard-hero, .bcard-price { font-size: 12px; }
+  .bw-hero { max-height: 120px; }
+  .bw-blurb { font-size: 12px; }
+  .ins-shot { aspect-ratio: 21 / 9; }
+
+  /* --- Panneaux (Équipe, Mercato, Saison, Club…) : plein écran, le HUD s'efface ; un bandeau compact (titre, onglets
+     et trésorerie sur une ligne), le contenu sur toute la hauteur, la barre des sections en bas, fine ------------- */
+  .game.has-panel :is(.hud > *, .hud-left > *, .hud-left > .presence > *) { opacity: 0; pointer-events: none; }
+  .panel, .panel.lg { top: 6px; right: 6px; bottom: calc(6px + var(--hb)); left: 6px; width: auto; }
+  .panel-head, .panel.lg .panel-head { flex-wrap: nowrap; align-items: center; gap: 12px; row-gap: 0; padding: 6px 10px 6px 16px; border-bottom: 1px solid var(--line); }
+  .panel-head .panel-actions { align-self: center; }
+  .panel-head .panel-title { gap: 1px; flex-shrink: 0; max-width: 34%; }
+  .panel-head .panel-title .eyebrow { font-size: 10px; letter-spacing: .1em; }
+  .panel-title h2, .panel.lg .panel-title h2 { font-size: 22px; }
+  .panel-head .section-tabs, .panel.lg .panel-head .section-tabs, .panel.lg .panel-head.tabs-below .section-tabs { order: 0; flex: 1 1 auto; min-width: 0; margin: 0; padding: 0; overflow-x: auto; scrollbar-width: none; }
+  .panel-head .section-tabs::-webkit-scrollbar { display: none; }
+  .section-tabs.sq-tabs button { min-height: 32px; padding: 0 10px; font-size: 14px; }
+  .panel-actions { gap: 6px; }
+  .panel-money { height: 32px; padding: 0 10px 0 8px; font-size: 16px; }
+  .panel-money svg { width: 14px; height: 14px; }
+  .panel-actions .hud-icon { width: 32px; height: 32px; }
+  .panel-bar { padding: 4px 16px 6px; gap: 10px; }
+  .panel-body { padding: 8px 16px 12px; gap: 8px; }
+  .section-pager {
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; flex-shrink: 0;
+    padding: 0 8px; border-top: 1px solid var(--line); background: #0b0b0c;
+  }
+  .section-pager .sp-prev { justify-self: start; }
+  .section-pager .sp-next { justify-self: end; }
+  .section-pager button {
+    display: inline-flex; align-items: center; gap: 4px; min-width: 0; min-height: 30px; padding: 0 8px;
+    border: 0; background: none; color: var(--muted);
+    font-family: var(--font-disp); font-weight: 600; font-size: 13px; line-height: 1; letter-spacing: .08em; text-transform: uppercase;
+  }
+  .section-pager button svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--gold-light); }
+  .section-pager button:disabled { visibility: hidden; }
+  .sp-dots { display: flex; align-items: center; gap: 5px; }
+  .sp-dots i { width: 6px; height: 6px; border-radius: 3px; background: var(--line-strong); }
+  .sp-dots i.on { width: 18px; background: var(--gold-light); }
+  .game[data-nav="next"]:not(.nav-switch) .panel { animation: fo-page-in-next var(--dur) var(--ease); }
+  .game[data-nav="prev"]:not(.nav-switch) .panel { animation: fo-page-in-prev var(--dur) var(--ease); }
+  .game[data-nav="next"] .leaving > .panel { animation-name: fo-page-out-next !important; }
+  .game[data-nav="prev"] .leaving > .panel { animation-name: fo-page-out-prev !important; }
+
+  /* composition : le terrain couché sur toute la largeur (il se dessine à l'horizontale dès 480 px), dispositif et
+     repères dessous ; chiffres des tuiles resserrés */
+  .lu-editor { grid-template-columns: 1fr; }
+  .lu-side { position: static; }
+  .lu-main .lu-pitch, .ht-board .lu-pitch, .pm-xi .lu-pitch { width: 100%; --lu-h: 300px; --lu-hh: clamp(220px, calc(100vh - 130px), 300px); }
+  .sq-overview > div { padding: 8px 12px; }
+  .sq-overview b { font-size: 22px; }
+
+  /* --- Match en direct : pendant un temps fort, le terrain en plein écran sous un score façon télé et des commandes
+     resserrés ; entre deux, le centre du match compact (le score sur une ligne) ---------------------------------- */
+  .matchscreen.live { --lc-h: 44px; }
+  .lv-centre { padding: 8px 12px calc(var(--hud-bottom) + var(--lc-h) + 6px); }
+  .lv-board { gap: 3px; margin-bottom: 6px; }
+  .lv-board .lv-eyebrow { font-size: 11px; }
+  .lv-sb { gap: 14px; }
+  .lv-sb-team { gap: 10px; }
+  .lv-sb-team b { font-size: 22px; }
+  .crest.lv-sb-crest { width: 30px; height: 35px; }
+  .lv-sb-mid { flex-direction: row; gap: 10px; }
+  .lv-sb-score { --slant: 11px; padding: 2px 18px; font-size: 32px; gap: 8px; }
+  .lv-sb-clock { font-size: 16px; }
+  .lv-sb-facts { gap: 0 60px; max-height: 32px; overflow-y: auto; scrollbar-width: none; }
+  .lv-facts { font-size: 11px; gap: 2px; }
+  .lv-facts svg { width: 11px; height: 11px; }
+  .lv-col, .lv-mid { padding: 10px 12px 4px; }
+  .lv-notes { margin: 0 -12px; padding: 0 12px 8px; }
+  .lv-notes li { min-height: 32px; padding: 3px 0; }
+  .lv-controls button { padding: 0 14px; font-size: 15px; gap: 8px; }
+  .lv-controls button svg { width: 16px; height: 16px; }
+  .lv-controls .lc-speed { min-width: 64px; padding: 0 12px; font-size: 16px; }
+  .lv-bug, .lv-clock { height: 40px; }
+  .lv-team { padding: 0 14px 0 12px; gap: 8px; }
+  .lv-team.away { padding: 0 12px 0 18px; }
+  .lv-team b { font-size: 20px; }
+  .crest.lv-crest { width: 22px; height: 26px; }
+  .lv-score { --slant: 10px; padding: 0 18px; font-size: 28px; gap: 8px; }
+  .lv-clock { padding: 0 12px; font-size: 20px; gap: 8px; }
+  .lv-clock .live-dot { width: 9px; height: 9px; }
+  .lv-hl-tag { height: 34px; padding: 0 12px; gap: 10px; font-size: 13px; }
+  .lv-goal { height: 62px; bottom: calc(var(--hud-bottom) + var(--lc-h) + 10px); max-width: calc(100% - 2 * var(--gap)); }
+  .lv-goal-word { --slant: 14px; padding: 0 30px 0 18px; margin-right: -14px; font-size: 38px; }
+  .lv-goal.theirs .lv-goal-word { font-size: 26px; }
+  .lv-goal-who { gap: 12px; padding: 0 20px 0 26px; }
+  .lv-goal-who .pf { width: 42px; height: 42px; }
+  .lv-goal-text { gap: 4px; }
+  .lv-goal-text b { font-size: 26px; }
+  .lv-goal-text small { font-size: 11px; }
+  .lv-goal-score { --slant: 14px; margin-left: calc(-1px - var(--slant)); padding: 0 calc(10px + var(--slant)); font-size: 30px; }
+  /* mi-temps et changement : la fenêtre sous le score, sur toute la hauteur, ses blocs sur deux colonnes ; « Reprendre »
+     reste collé en bas */
+  .matchscreen.live .halftime, .matchscreen.live .halftime.board-open, .halftime, .fulltime { top: calc(var(--gap) + 48px); bottom: calc(8px + var(--hb)); height: auto; max-height: none; margin: 0 auto; max-width: min(820px, calc(100% - 24px)); padding: 12px 18px 0; }
+  .matchscreen.live .halftime.board-open { max-width: calc(100% - 24px); }
+  .halftime.board-closed .ht-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 18px; align-items: start; }
+  .halftime.board-closed .ht-col > .pm-sh, .halftime.board-closed .ht-col > .ht-note { grid-column: 1 / -1; }
+  .ht-col { gap: 10px; }
+  .ht-stats b { font-size: 20px; }
+  .halftime .odds-legend b { font-size: 26px; }
+  .ht-go { padding: 8px 0 10px; }
+  .halftime .btn-xl, .ht-go .btn-xl, .fulltime .btn-xl { --slant: 10px; min-height: 44px; font-size: 18px; margin-top: 0; }
+
+  /* après-match : toute la carte défile, le score resserré en tête, les boutons collés en bas */
+  .post { padding: 8px; }
+  .post-card { overflow-y: auto; scrollbar-width: none; }
+  .post-card::-webkit-scrollbar { display: none; }
+  .post-head { padding: 8px 24px 8px; }
+  .post-meta { margin-bottom: 2px; }
+  .post-team { gap: 4px; padding-top: 4px; }
+  .crest.post-crest { width: 40px; height: 46px; }
+  .post-team strong { font-size: 20px; }
+  .post-num { height: 46px; margin-top: 4px; font-size: 50px; gap: 12px; }
+  .post-goals { font-size: 12px; }
+  .post-cup { margin-top: 6px; padding: 8px 12px; }
+  .post-body { flex: none; overflow: visible; padding: 12px 24px; gap: 20px; }
+  .post-foot { position: sticky; bottom: 0; z-index: 2; padding: 8px 24px 10px; background: var(--plate-solid); border-top: 1px solid var(--line); }
+  .post-foot .btn-xl { --slant: 10px; min-height: 44px; font-size: 18px; }
+  /* avant-match : l'affiche sur une ligne (deux clubs, puis affluence et recettes), le onze à gauche, le plan de jeu
+     et le coup d'envoi à droite */
+  .matchscreen.prematch { padding: 10px 16px 16px; gap: 8px; }
+  .pm-eyebrow { font-size: 11px; }
+  .pm-top { margin-top: 4px; gap: 10px; }
+  .pm-matchup { flex: 1 1 auto; height: 52px; }
+  .pm-team { flex: 1 1 0; padding: 0 14px; gap: 10px; }
+  .pm-team.away { padding-left: 18px; }
+  .crest.pm-crest { width: 32px; height: 37px; }
+  .pm-tname { gap: 3px; }
+  .pm-tname b { font-size: 18px; }
+  .pm-tname small { font-size: 10px; }
+  .pm-vs { --slant: 10px; width: 48px; font-size: 18px; }
+  .pm-gate { height: 52px; }
+  .pm-gate > div { padding: 0 12px; gap: 3px; }
+  .pm-gate small { font-size: 10px; }
+  .pm-gate b { font-size: 18px; }
+  .pm-gate em { font-size: 12px; }
+  .pm-close { width: 40px; height: 40px; }
+  .pm-grid { grid-template-columns: minmax(0, 1fr) min(340px, 44%); gap: 10px 14px; }
+  .pm-xi { padding: 10px 12px; gap: 8px; }
+  .pm-plan { padding: 10px 12px 12px; }
+  .pm-go { bottom: calc(-16px - var(--hb)); padding-bottom: calc(16px + var(--hb)); margin-bottom: calc(-16px - var(--hb)); }
+  .pm-go .btn-xl { --slant: 10px; min-height: 44px; font-size: 18px; }
+  .pm-odds .odds-legend b, .odds-legend b { font-size: 26px; }
+  .pm-tname b, .pm-tname b.long { display: block; -webkit-line-clamp: unset; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.05; }
+  .pm-tname small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .pm-go, .ht-go { background: var(--plate-solid); box-shadow: 0 -6px 8px var(--plate-solid); } /* rien ne se lit sous le bouton collé en bas */
+
+  /* fiches du mercato (négociation, vente) : en-tête et pied resserrés, la réponse du club se lit au-dessus du pied ;
+     vente conclue calée en haut, elle défile */
+  .ng-foot { padding: 6px var(--px) 8px; gap: 4px; }
+  .ng-foot .btn-xl { --slant: 10px; min-height: 42px; font-size: 18px; }
+  .ng-answer { padding-block: 8px; }
+  .ng-done { justify-content: flex-start; }
+  .ng-win { margin: 0; padding: 8px 0 12px; gap: 6px; }
+  .ng-win-ico { width: 52px; height: 52px; }
+  .ng-win-ico svg { width: 26px; height: 26px; }
+  .ng-win h3 { font-size: 28px; }
+
+  /* académie vide, comparateur, tuiles de chiffres : resserrés pour que l'action tienne */
+  .ac-empty { padding: 12px 14px; gap: 6px; }
+  .ac-empty-ico { width: 38px; height: 38px; }
+  .ac-empty-ico svg { width: 18px; height: 18px; }
+  .cmp-vs { padding-bottom: 8px; gap: 8px; }
+  /* comparateur : le radar à droite des deux joueurs, le pied (prime, offre) sur toute la largeur */
+  .sq-compare { display: grid; grid-template-columns: minmax(0, 1fr) 200px; column-gap: 18px; align-content: start; }
+  .sq-compare > * { grid-column: 1; }
+  .sq-compare > .radar { grid-column: 2; grid-row: 1 / span 4; align-self: start; width: 100%; max-width: 200px; }
+  .sq-compare > .cmp-foot { grid-column: 1 / -1; }
+  .sq-overview span { white-space: normal; line-height: 1.15; }
+  .ui-stat { padding: 6px 10px 6px 12px; gap: 2px; }
+  .ui-stat-value { font-size: 20px; }
+  .cm-card-rows div:has(> .cm-opp) { flex-direction: column; align-items: flex-start; gap: 2px; } /* menu pause : le prochain adversaire sous son libellé */
+  .cm-card-rows div:has(> .cm-opp) dd { max-width: 100%; }
+
+  /* notifications : en bas, au-dessus du menu, pour ne couvrir ni le bandeau ni les objectifs */
+  .nt-lane { top: auto; left: var(--gap); transform: none; bottom: calc(var(--hud-bottom) + 64px); width: min(var(--dock-w), calc(100% - 2 * var(--gap))); }
+  .halftime .ht-go { margin: 0 -18px; padding: 8px 18px 10px; background: var(--plate-solid); }
+}
+/* téléphone couché étroit : Stats, Notes (une équipe à la fois) et Le fil en onglets, comme au téléphone en portrait */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 900px) {
+  .only-sm { display: revert; }
+  .matchscreen.live .lv-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); flex-shrink: 0; width: min(560px, 100%); margin: 0 0 6px; border-bottom: 1px solid var(--line); }
+  .lv-tabs button { position: relative; height: 32px; border: 0; background: none; color: var(--muted); font-family: var(--font-disp); font-weight: 600; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; }
+  .lv-tabs button.on { color: var(--text); }
+  .lv-tabs button.on::after { content: ''; position: absolute; left: 22%; right: 22%; bottom: -1px; height: 3px; background: var(--gold-grad); }
+  .lv-cols { display: flex; flex-direction: column; gap: 0; width: min(560px, 100%); }
+  .lv-col, .lv-mid { flex: 1; padding: 0; background: none; box-shadow: none; clip-path: none; }
+  .lv-col-head, .lv-mid-tabs { display: none; }
+  .lv-cols.view-stats .lv-col, .lv-cols.view-feed .lv-col, .lv-cols.view-notes .lv-mid { display: none; }
+  .lv-cols.view-notes.notes-home .lv-col.away, .lv-cols.view-notes.notes-away .lv-col.home { display: none; }
+  .lv-cols.view-notes .lv-notes-switch { order: -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 6px; }
+  .lv-notes-switch button {
+    height: 30px; min-width: 0; padding: 0 10px; border: 0; background: var(--plate-3); color: var(--text-2); clip-path: var(--cut-shape-sm);
+    font-family: var(--font-disp); font-weight: 600; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .lv-notes-switch button.on { background: var(--text); color: var(--gold-ink); }
+  .lv-notes { margin: 0; padding: 0 0 6px; }
+}

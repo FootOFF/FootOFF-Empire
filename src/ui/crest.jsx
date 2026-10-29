@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React, { useId, useSyncExternalStore } from 'react';
 import { CLUB_BLACK, CLUB_GOLD, CREST_COLORS, clubInitials, colorName, hexLum, knownCrest, normalizeCrest, rivalCrest, shortName } from '../game/crest';
 
 // Dessin des écussons (données : src/game/crest.js). Repère 100 × 116, trois familles :
@@ -312,9 +312,34 @@ function Emblem({ id, initials, cx, cy, s, ink, halo, cut, edge }) {
   );
 }
 
-// Texte en majuscules, à la taille qui tient dans la longueur donnée (unités du repère).
+// Texte en majuscules, à la taille qui tient dans la longueur donnée (unités du repère). La largeur est mesurée sur la
+// police des écussons une fois chargée (Geist gras, espacement de 0,12 em compris), estimée largement avant : un nom
+// ne perd jamais de lettres au bout d'un ruban (0.8.13).
 const caps = (s) => String(s).toLocaleUpperCase('fr-FR');
-const fit = (text, room, max) => Math.min(max, room / Math.max(1, String(text).length * 0.74));
+const CREST_FONT = '700 100px Geist, Inter, system-ui, sans-serif';
+let fontReady = typeof document === 'undefined' || !document.fonts;
+const fontWaiters = new Set();
+if (!fontReady) {
+  document.fonts.load(CREST_FONT).catch(() => {}).finally(() => { fontReady = true; fontWaiters.forEach((f) => f()); });
+}
+const useCrestFont = () => useSyncExternalStore((f) => { fontWaiters.add(f); return () => fontWaiters.delete(f); }, () => fontReady, () => false);
+let measureCtx = null;
+const widths = new Map();
+function textWidth(t) { // largeur pour une taille de 1
+  if (!fontReady || typeof document === 'undefined') return t.length * 0.82;
+  if (!widths.has(t)) {
+    measureCtx ||= document.createElement('canvas').getContext('2d');
+    if (!measureCtx) return t.length * 0.82;
+    measureCtx.font = CREST_FONT;
+    widths.set(t, measureCtx.measureText(t).width / 100 + 0.12 * t.length);
+  }
+  return widths.get(t);
+}
+const fit = (text, room, max) => Math.min(max, room / Math.max(0.5, textWidth(String(text))));
+// Nom écrit à une place donnée (0.8.13, remarque du PDG : un nom en « … FC » perdait son « FC ») : le nom tel qu'il a été
+// choisi s'il y tient lisible (taille min au moins), sinon le nom court, sans sigles ni mots de forme. wrap : ce qui
+// l'entoure (« · 2026 »).
+const named = (name, short, room, min, wrap = (n) => n) => (name && fit(caps(wrap(name)), room, 99) >= min ? wrap(name) : wrap(short || name));
 const TEXT_STYLE = { fontFamily: 'var(--font-title)', fontWeight: 700, letterSpacing: '0.12em' };
 
 function Grad({ id, stops, x1 = 0, y1 = 0, x2 = 1, y2 = 1, user = false }) {
@@ -331,6 +356,7 @@ function Grad({ id, stops, x1 = 0, y1 = 0, x2 = 1, y2 = 1, user = false }) {
 // sur l'écusson (par défaut le nom court d'un club, shortName ; une ligue garde son nom entier).
 export function CrestArt({ spec, initials = '', name = '', className = '', title = null, full = false, stars = 0, short: written = null }) {
   const uid = useId().replace(/:/g, '');
+  useCrestFont(); // la police des écussons chargée : les noms se mesurent pour de bon
   const ref = (k) => `${k}-${uid}`;
   const url = (k) => `url(#${ref(k)})`;
   const metal = spec.metal === 'argent' ? SILVER : GOLD;
@@ -343,6 +369,7 @@ export function CrestArt({ spec, initials = '', name = '', className = '', title
   const edge = spec.ink === 'metal' ? metal.edge : 'rgba(0, 0, 0, .55)';
   const cut = spec.ink === 'dark' ? base : '#141414';
   const short = written || shortName(name);
+  const full_ = written || name; // nom entier, écrit s'il tient (named)
   const year = spec.year;
   const want = full ? spec.text || 'aucune' : 'aucune';
   const pattern = spec.pattern === 'bordure'
@@ -389,9 +416,9 @@ export function CrestArt({ spec, initials = '', name = '', className = '', title
       </defs>
 
       {style === 'medaillon' ? (
-        <Medallion spec={spec} body={body} url={url} ref_={ref} metal={metal} want={want} short={short} name={name} year={year} stars={stars} />
+        <Medallion spec={spec} body={body} url={url} ref_={ref} metal={metal} want={want} short={short} name={full_} year={year} stars={stars} />
       ) : style === 'moderne' ? (
-        <Modern spec={spec} field={field} body={body} url={url} metal={metal} want={want} short={short} year={year} second={second} />
+        <Modern spec={spec} field={field} body={body} url={url} ref_={ref} metal={metal} want={want} short={short} name={full_} year={year} second={second} />
       ) : (
         <>
           <g transform={lift}>
@@ -402,7 +429,7 @@ export function CrestArt({ spec, initials = '', name = '', className = '', title
           </g>
           {spec.crown && <Crown url={url} metal={metal} />}
           {!spec.crown && stars > 0 && <Stars n={stars} y={11} url={url} metal={metal} />}
-          {want !== 'aucune' && <Ribbon text={want === 'annee' ? year : want === 'nom' ? short : `${short} · ${year}`} url={url} ref_={ref} metal={metal} />}
+          {want !== 'aucune' && <Ribbon text={ribbonText(want, full_, short, year)} url={url} ref_={ref} metal={metal} />}
         </>
       )}
     </svg>
@@ -435,10 +462,20 @@ function Stars({ n, y, url, metal }) {
   );
 }
 
-// Ruban au bas du blason : année de fondation ou nom court.
+// Ruban au bas du blason (et du losange) : année de fondation, nom, ou les deux.
+const RIBBON_ROOM = 58;
+// « Nom et année » : le nom entier avec l'année, sinon le nom court avec l'année ; si même cela ne se lirait plus, le
+// nom seul.
+function ribbonText(want, name, short, year) {
+  if (want === 'annee') return String(year);
+  const alone = named(name, short, RIBBON_ROOM, 5);
+  if (want === 'nom') return alone;
+  const both = [name, short].filter(Boolean).map((n) => `${n} · ${year}`).find((t) => fit(caps(t), RIBBON_ROOM, 99) >= 4.6);
+  return both || alone;
+}
 function Ribbon({ text, url, ref_, metal }) {
   const t = caps(text);
-  const size = fit(t, 58, 7.4);
+  const size = fit(t, RIBBON_ROOM, 7.4);
   return (
     <g strokeLinejoin="round">
       <path d="M14.5 92.5 3.5 95.5l5 4.5-4.5 4.5 9 1Z" fill={url('rim')} stroke={metal.edge} strokeWidth=".7" />
@@ -463,7 +500,7 @@ function Medallion({ spec, body, url, ref_, metal, want, short, name, year, star
   const double = spec.shape === 'double';
   const crenel = spec.shape === 'cranelure';
   const R = 37.2; // milieu du bandeau
-  const top = want === 'nom' || want === 'les-deux' ? caps(name.length > 22 ? short : name) : null;
+  const top = want === 'nom' || want === 'les-deux' ? caps(named(name, short, 92, 5)) : null;
   const bottom = want === 'annee' || want === 'les-deux' ? (want === 'annee' ? `FONDÉ EN ${year}` : String(year)) : null;
   const topSize = top ? fit(top, 92, 7.6) : 0;
   const botSize = bottom ? fit(bottom, 70, 7.4) : 0;
@@ -497,10 +534,12 @@ function Medallion({ spec, body, url, ref_, metal, want, short, name, year, star
   );
 }
 
-// Badge moderne : silhouette franche, liseré de métal fin, bandeau du nom court sous le symbole.
-function Modern({ spec, field, body, url, metal, want, short, year, second }) {
-  const banded = want !== 'aucune' && spec.shape !== 'losange';
-  const name = want === 'nom' || want === 'les-deux' ? caps(short) : null;
+// Badge moderne : silhouette franche, liseré de métal fin, bandeau du nom sous le symbole ; le losange, trop étroit
+// pour un bandeau, porte un ruban sur sa pointe (0.8.13 : il n'écrivait rien).
+function Modern({ spec, field, body, url, ref_, metal, want, short, name: clubName, year, second }) {
+  const diamond = spec.shape === 'losange';
+  const banded = want !== 'aucune' && !diamond;
+  const name = want === 'nom' || want === 'les-deux' ? caps(named(clubName, short, 52, 5)) : null;
   const label = banded ? name || String(year) : null;
   const dark = hexLum(spec.second === 'gold' ? '#c7a15a' : spec.second) > 150;
   return (
@@ -514,11 +553,12 @@ function Modern({ spec, field, body, url, metal, want, short, year, second }) {
           <text x="50" y="86.6" textAnchor="middle" fontSize={fit(label, 52, 7.6)} fill={dark ? '#141414' : '#ffffff'} style={TEXT_STYLE}>{label}</text>
         </g>
       )}
-      {name && want === 'les-deux' && (
+      {name && banded && want === 'les-deux' && (
         <text x="50" y="100.5" textAnchor="middle" fontSize="5.6" fill={metal.text} style={TEXT_STYLE}>{year}</text>
       )}
       <path d={field} fill="none" stroke={url('rim')} strokeWidth="4" strokeLinejoin="round" />
       <path d={field} fill="none" stroke="rgba(0, 0, 0, .5)" strokeWidth=".8" strokeLinejoin="round" transform="translate(50 58) scale(.93 .95) translate(-50 -58)" />
+      {diamond && want !== 'aucune' && <Ribbon text={ribbonText(want, clubName, short, year)} url={url} ref_={ref_} metal={metal} />}
     </>
   );
 }
