@@ -44,7 +44,7 @@ const first = {
     'Nasir', 'Rizwan', 'Arjun', 'Rohan', 'Aryan', 'Dev', 'Kiran', 'Ravi', 'Sanjay', 'Vikram', 'Nikhil', 'Rahul',
     'Arun', 'Jaspreet', 'Harpreet', 'Gurdeep', 'Manpreet', 'Amrit', 'Sunil', 'Anil', 'Aman', 'Ishaan', 'Kabir',
     'Neel', 'Raj', 'Sahil', 'Tanvir', 'Shahid', 'Junaid', 'Asif', 'Kamran', 'Nadeem', 'Waqar', 'Haris', 'Usman',
-    'Danyal', 'Rehan', 'Aqib', 'Mustafa', 'Yasin', 'Anwar', 'Jamal', 'Karim', 'Nabil', 'Walid', 'Sami', 'Ziad',
+    'Danyal', 'Rehan', 'Aqib', 'Mustafa', 'Anwar', 'Jamal', 'Karim', 'Nabil', 'Walid', 'Sami', 'Ziad',
     'Hadi', 'Fadi', 'Elias', 'Ammar', 'Adnan', 'Haroon', 'Shan', 'Rafiq', 'Saif', 'Taha', 'Zubair',
   ],
   afr: [ // familles d'Afrique de l'Ouest et de l'Est, et caribéennes
@@ -124,7 +124,7 @@ const last = {
     'Gupta', 'Kumar', 'Mistry', 'Desai', 'Joshi', 'Mehta', 'Parmar', 'Chauhan', 'Solanki', 'Rana', 'Thakur', 'Kaur',
     'Sandhu', 'Gill', 'Dhillon', 'Sidhu', 'Bains', 'Sahota', 'Johal', 'Grewal', 'Uddin', 'Miah', 'Islam', 'Hoque',
     'Chowdhury', 'Talukdar', 'Haddad', 'Mansour', 'Nasser', 'Saleh', 'Hamdan', 'Khoury', 'Aziz-Hart', 'Darwish',
-    'Farah', 'Ghazi', 'Habib', 'Jaber', 'Karam', 'Nassar', 'Rashid', 'Sabri', 'Taheri', 'Yasin', 'Zahir', 'Amrani',
+    'Farah', 'Ghazi', 'Habib', 'Jaber', 'Karam', 'Nassar', 'Rashid', 'Sabri', 'Taheri', 'Zahir', 'Amrani',
   ],
   afr: [ // familles d'Afrique de l'Ouest et de l'Est
     'Mensah', 'Owusu', 'Boateng-Hall', 'Asante', 'Osei', 'Appiah', 'Boakye', 'Amoah', 'Agyeman', 'Darko', 'Ofori',

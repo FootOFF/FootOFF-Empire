@@ -52,11 +52,11 @@ const FIRST_ITPT = [
 ];
 const FIRST_MAG = [
   'Yanis', 'Rayan', 'Ilyes', 'Amine', 'Malik', 'Samy', 'Mehdi', 'Sofiane', 'Bilal', 'Idriss', 'Sami', 'Nabil',
-  'Yacine', 'Ismaël', 'Ryad', 'Walid', 'Anis', 'Hamza', 'Omar', 'Ayoub', 'Younès', 'Naël', 'Abdel', 'Adel', 'Adil',
+  'Ismaël', 'Ryad', 'Walid', 'Anis', 'Hamza', 'Omar', 'Ayoub', 'Younès', 'Naël', 'Abdel', 'Adel', 'Adil',
   'Ali', 'Amir', 'Anouar', 'Ayman', 'Aziz', 'Badr', 'Brahim', 'Djamel', 'Farès', 'Farid', 'Fayçal', 'Fouad', 'Hakim',
   'Hicham', 'Houssem', 'Ilyas', 'Imad', 'Issam', 'Jamel', 'Kamel', 'Karim', 'Khalil', 'Lyes', 'Madjid', 'Mounir',
   'Mourad', 'Nassim', 'Nordine', 'Othmane', 'Rachid', 'Redouane', 'Réda', 'Saïd', 'Salim', 'Selim', 'Slimane',
-  'Soufiane', 'Tarik', 'Wassim', 'Yassine', 'Youssef', 'Zakaria', 'Nadir', 'Akram', 'Chakib', 'Hamid', 'Hassan',
+  'Soufiane', 'Tarik', 'Wassim', 'Youssef', 'Zakaria', 'Nadir', 'Akram', 'Chakib', 'Hamid', 'Hassan',
   'Mustapha', 'Rami', 'Haroun', 'Ishak', 'Ilian', 'Kaïs', 'Marwan', 'Taha', 'Wahid', 'Yahia',
 ];
 const FIRST_AFR = [
@@ -216,7 +216,7 @@ const BLOCK_FR = new Set([
   'Michel Berger', 'Maurice Chevalier', 'Pierre Perret', 'Laurent Garnier', 'Marin Marais', 'Éric Serra',
   'Daniel Lavoie', 'Luc Besson', 'Jean Lefebvre', 'Olivier Marchal', 'Samy Naceri', 'Sami Naceri', 'Yves Rocher',
   'Alexis Carrel', 'Giorgio Parisi', 'Chakib Benmoussa', 'Norbert Zongo', 'Rui Pinto', 'Djamel Zitouni',
-  'Olivier Giraud', 'Charles Perrot', 'Jules Ferri', 'Demba Bah', 'Tidiane Thiam', 'Yassine Salhi', 'Imad Abdelli',
+  'Olivier Giraud', 'Charles Perrot', 'Jules Ferri', 'Demba Bah', 'Tidiane Thiam', 'Imad Abdelli',
   'Alban Lafon', 'Mickaël Sylvestre', 'Tiago Mota', 'Amir Rahmani', 'Pascal Duprat', 'Morgan Samson', 'Anthony Kaci',
   'Christophe Jullien', 'Ousseynou Bah', 'Vittorio Pozzi', 'Kévin Meyer', 'Hugo Humbert', 'Henri Lecomte',
   'Marc Marques', 'Anthony Hubert', 'Frédéric Bousquet', 'Jason Lamy', 'Luc Ferri', 'Christophe Mahé', 'Paul Raynaud',
