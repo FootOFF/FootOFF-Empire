@@ -9,7 +9,7 @@ import { bestSigning } from '../game/advice';
 import { arrivalOf, findOnMarket, moveWhen, offersFor, poolOf, saleBlock, valueOf } from '../game/mercato';
 import { askedWage, clauseOpen, lastYear, renewOpen, yearsLeft } from '../game/contracts';
 import { slotsOf } from '../game/tactics';
-import { fmtMoney, fmtRating } from './format';
+import { fmtMoney, fmtRating, footLabel } from './format';
 import { IconChevron, IconChevronLeft, IconClose, IconRadar } from './icons';
 import { Panel } from './panels';
 import { PlayerCareer, departureText, reasonTag } from './career';
@@ -20,16 +20,16 @@ import { PHONE, useSwipe } from './gestures';
 import { FollowButton, LeagueOffer, ListingSheet, Mercato, Negotiation, SaleNegotiation, SaleToggle, heat } from './mercato';
 import { Portrait } from './portrait';
 import { divRef, tierOf } from './kit';
+import { plural, t, tn, tr } from '../i18n/index';
 
 // Effectif : vue d'ensemble, puis les joueurs en cartes rangées par ligne (teinte du rang pour ta division : bronze,
 // argent, or, élite) ou, sur PC, en tableau d'analyste ; fiche joueur façon magazine FootOFF Media, comparateur
 // radar. Les couleurs des cases disent si une valeur est forte ou faible pour ta division.
 
 const ORDER = { G: 0, D: 1, M: 2, A: 3 };
-const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
-const FILTERS = [['all', 'Tous'], ['G', 'Gardiens'], ['D', 'Défenseurs'], ['M', 'Milieux'], ['A', 'Attaquants']];
+const FILTERS = [['all', t('Tous')], ['G', t('Gardiens')], ['D', t('Défenseurs')], ['M', t('Milieux')], ['A', t('Attaquants')]];
 // tri des cartes : par poste (rangées par ligne), ou d'un seul tenant par niveau, âge ou condition
-const SORTS = [['pos', 'poste'], ['level', 'niveau'], ['age', 'âge'], ['fit', 'condition']];
+const SORTS = [['pos', t('poste')], ['level', t('niveau')], ['age', t('âge')], ['fit', t('condition')]];
 const SORT_FN = {
   level: (a, b) => playerRating(b) - playerRating(a),
   age: (a, b) => a.age - b.age || playerRating(b) - playerRating(a),
@@ -47,17 +47,15 @@ function AbsentTag({ p, long = false }) {
 }
 const onSale = (s, p) => (s.saleList || []).some((x) => x.id === p.id); // mis en vente au mercato
 const VIEW_KEY = 'fo-squad-view';
-const LINES = [['G', 'Gardiens'], ['D', 'Défenseurs'], ['M', 'Milieux'], ['A', 'Attaquants']];
+const LINES = [['G', t('Gardiens')], ['D', t('Défenseurs')], ['M', t('Milieux')], ['A', t('Attaquants')]];
 
 // Pastille d'un joueur mis en vente ou convoité : le nombre de clubs intéressés, sinon « En vente ».
 function SaleTag({ state, p }) {
   const n = (state.offers || []).filter((o) => o.playerId === p.id).length;
   if (!n && !onSale(state, p)) return null;
-  if (!n) return <em className="sq-sale">En vente</em>;
+  if (!n) return <em className="sq-sale">{t('En vente')}</em>;
   return (
-    <em className="sq-sale hot">
-      {n} club{n > 1 ? 's' : ''}<span className="hide-sm"> intéressé{n > 1 ? 's' : ''}</span>
-    </em>
+    <em className="sq-sale hot">{tr('<0/> club<1/><2/>', [n, n > 1 ? 's' : '', <span className="hide-sm">{' '}{tr('intéressé<0/>', [n > 1 ? 's' : ''])}</span>])}</em>
   );
 }
 
@@ -245,17 +243,17 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
     <Panel
       id={mode === 'mercato' ? 'mercato' : 'squad'}
       size="lg"
-      title={tab === 'market' ? 'Mercato' : 'Effectif'}
-      eyebrow={<>{squad.length}/{SQUAD_MAX} joueurs<span className="hide-sm"> · {divisionOf(state).name}</span> · saison {state.seasonNumber}</>}
+      title={tab === 'market' ? t('Mercato') : t('Effectif')}
+      eyebrow={<>{squad.length}/{SQUAD_MAX}{t(' joueurs')}<span className="hide-sm"> · {divisionOf(state).name}</span>{t(' · saison ')}{state.seasonNumber}</>}
       money={state.money}
       onClose={onClose}
       onEscape={onEscape}
       toolbar={(
         <>
         <div className="sq-budget">
-          <div className="sq-budget-top"><span>Salaires</span><b className={forecast.net < 0 ? 'bad' : forecast.wageShare > 0.75 ? 'warn' : ''}>{Math.round(forecast.wageShare * 100)} % des revenus</b></div>
+          <div className="sq-budget-top"><span>{t('Salaires')}</span><b className={forecast.net < 0 ? 'bad' : forecast.wageShare > 0.75 ? 'warn' : ''}>{tr('<0/> % des revenus', [Math.round(forecast.wageShare * 100)])}</b></div>
           <span className="sq-gauge"><i className={forecast.net < 0 ? 'bad' : forecast.wageShare > 0.75 ? 'warn' : ''} style={{ width: `${Math.min(100, forecast.wageShare * 100)}%` }} /></span>
-          <span className="sq-budget-sub">{fmtMoney(wages)} par saison · revenus attendus {fmtMoney(forecast.income)}{onFinances && <> · <button className="linkbtn fin-link" onClick={onFinances}>finances</button></>}</span>
+          <span className="sq-budget-sub">{tr('<0/> par saison · revenus attendus <1/><2/>', [fmtMoney(wages), fmtMoney(forecast.income), onFinances && <> · <button className="linkbtn fin-link" onClick={onFinances}>{t('finances')}</button></>])}</span>
         </div>
         </>
       )}
@@ -271,20 +269,20 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
                 ))}
               </div>
               {view === 'table'
-                ? <span className="sq-legend"><i className="hi" /> fort pour la division <i className="low" /> faible</span>
+                ? <span className="sq-legend">{tr('<0/> fort pour la division <1/> faible', [<i className="hi" />, <i className="low" />])}</span>
                 : <SortMenu value={sort} onChange={setSort} />}
-              <div className="sq-view" role="group" aria-label="Affichage de l’effectif">
-                <button type="button" className={view === 'cards' ? 'on' : ''} aria-pressed={view === 'cards'} onClick={() => pickView('cards')}>Cartes</button>
-                <button type="button" className={view === 'table' ? 'on' : ''} aria-pressed={view === 'table'} onClick={() => pickView('table')}>Tableau</button>
+              <div className="sq-view" role="group" aria-label={t('Affichage de l’effectif')}>
+                <button type="button" className={view === 'cards' ? 'on' : ''} aria-pressed={view === 'cards'} onClick={() => pickView('cards')}>{t('Cartes')}</button>
+                <button type="button" className={view === 'table' ? 'on' : ''} aria-pressed={view === 'table'} onClick={() => pickView('table')}>{t('Tableau')}</button>
               </div>
             </div>
             {view === 'table' && (
               <div className="sq-tables">
                 {shown.some((p) => p.pos === 'G') && (
-                  <PlayerTable title="Gardiens" cols={GK_ATTRS} span={ATTRS.length} players={shown.filter((p) => p.pos === 'G')} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
+                  <PlayerTable title={t('Gardiens')} cols={GK_ATTRS} span={ATTRS.length} players={shown.filter((p) => p.pos === 'G')} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
                 )}
                 {shown.some((p) => p.pos !== 'G') && (
-                  <PlayerTable title="Joueurs de champ" cols={ATTRS} span={ATTRS.length} players={shown.filter((p) => p.pos !== 'G')} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
+                  <PlayerTable title={t('Joueurs de champ')} cols={ATTRS} span={ATTRS.length} players={shown.filter((p) => p.pos !== 'G')} state={state} refLvl={ref} onOpen={(p) => setSheet({ id: p.id })} />
                 )}
               </div>
             )}
@@ -326,11 +324,11 @@ function SquadOverview({ state, squad }) {
   const value = squad.reduce((a, p) => a + valueOf(state, p), 0);
   const fit = squad.reduce((a, p) => a + fitOf(p), 0) / squad.length;
   const tiles = [
-    ['Niveau du onze', fmtRating(teamLevel(state)), 'gold'],
-    ['Condition moyenne', <>{Math.round(fit)} %</>, fitTone(fit)],
-    ['Âge moyen', <>{fmtRating(squad.reduce((a, p) => a + p.age, 0) / squad.length)}<small> ans</small></>],
-    ['Forme', forms.length ? fmtRating(forms.reduce((a, b) => a + b, 0) / forms.length) : '–'],
-    ['Valeur totale', fmtMoney(value)],
+    [t('Niveau du onze'), fmtRating(teamLevel(state)), 'gold'],
+    [t('Condition moyenne'), <>{Math.round(fit)} %</>, fitTone(fit)],
+    [t('Âge moyen'), <>{fmtRating(squad.reduce((a, p) => a + p.age, 0) / squad.length)}<small>{t(' ans')}</small></>],
+    [t('Forme'), forms.length ? fmtRating(forms.reduce((a, b) => a + b, 0) / forms.length) : '–'],
+    [t('Valeur totale'), fmtMoney(value)],
   ];
   return (
     <div className="sq-overview">
@@ -354,11 +352,9 @@ function SortMenu({ value, onChange }) {
   const label = SORTS.find(([id]) => id === value)?.[1];
   return (
     <div className="sq-sorter" ref={ref}>
-      <button type="button" className="sq-sorter-btn" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        Trier par <b>{label}</b><IconChevron />
-      </button>
+      <button type="button" className="sq-sorter-btn" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}>{tr('Trier par <0/><1/>', [<b>{label}</b>, <IconChevron />])}</button>
       {open && (
-        <ul className="sq-sorter-menu" role="listbox" aria-label="Trier les joueurs">
+        <ul className="sq-sorter-menu" role="listbox" aria-label={t('Trier les joueurs')}>
           {SORTS.map(([id, name]) => (
             <li key={id}><button type="button" role="option" aria-selected={value === id} className={value === id ? 'on' : ''} onClick={() => { onChange(id); setOpen(false); }}>{name}</button></li>
           ))}
@@ -389,7 +385,7 @@ function SquadCards({ players, sort = 'pos', state, refLvl, onOpen, className = 
           <section key={pos} className="sq-line">
             <header className="sq-line-head">
               <h3 className="mark-head">{label}</h3>
-              <span className="sq-line-meta">{group.length} · moyenne {fmtRating(avg)}</span>
+              <span className="sq-line-meta">{tr('<0/> · moyenne <1/>', [group.length, fmtRating(avg)])}</span>
             </header>
             <ul className="sqc-grid">
               {group.map((p) => <PlayerCard key={p.id} p={p} state={state} refLvl={refLvl} index={k++} onOpen={() => onOpen(p)} />)}
@@ -407,7 +403,7 @@ function Form5({ form = [] }) {
   const last = form.slice(-5);
   const pad = Array.from({ length: 5 - last.length });
   return (
-    <span className="form5" title={last.length ? `Forme : ${last.map(fmtRating).join(' · ')}` : 'Pas encore joué'}>
+    <span className="form5" title={last.length ? t('Forme : {join}', { join: last.map(fmtRating).join(' · ') }) : t('Pas encore joué')}>
       {pad.map((_, i) => <i key={`p${i}`} className="none" />)}
       {last.map((v, i) => <i key={i} className={v >= 7.5 ? 'g' : v < 5.5 ? 'b' : ''} style={{ height: `${Math.max(3, Math.min(14, (v / 10) * 14))}px` }} />)}
     </span>
@@ -423,28 +419,28 @@ function PlayerCard({ p, state, refLvl, index, onOpen }) {
   const pot = potentialRange(p, state);
   return (
     <li style={{ '--k': Math.min(index, 18) }}>
-      <button type="button" className={`sqc ${tierOf(r, refLvl)} ${absent ? 'out' : ''}`} onClick={onOpen} aria-label={`Fiche de ${p.name}, niveau ${fmtRating(r)}${absent ? `, ${absent.short.toLowerCase()}` : ''}`}>
+      <button type="button" className={`sqc ${tierOf(r, refLvl)} ${absent ? 'out' : ''}`} onClick={onOpen} aria-label={t('Fiche de {name}, niveau {fmtRating}{v}', { name: p.name, fmtRating: fmtRating(r), v: absent ? `, ${absent.short.toLowerCase()}` : '' })}>
         {/* colonne de gauche (note, poste, XI, numéro) à la largeur de « 20,0 », portrait dans la place qui reste :
             une note à deux chiffres ne mord plus sur le médaillon */}
         <span className="sqc-top">
           <span className="sqc-rating">
             <b>{fmtRating(r)}</b>
-            <span className="sqc-tags"><span className={`pos-pill ${p.pos}`}>{p.pos}</span>{starter && <span className="sqc-xi" title="Titulaire">XI</span>}</span>
-            {p.num != null && <em className="sqc-num">n°{p.num}</em>}
+            <span className="sqc-tags"><span className={`pos-pill ${p.pos}`}>{p.pos}</span>{starter && <span className="sqc-xi" title={t('Titulaire')}>{t('XI')}</span>}</span>
+            {p.num != null && <em className="sqc-num">{t('n°')}{p.num}</em>}
           </span>
           <span className="sqc-face"><Portrait p={p} size={96} /></span>
         </span>
         <span className="sqc-name">{rest.length > 0 && <small>{first}</small>}<strong>{rest.length ? rest.join(' ') : first}</strong></span>
-        {lastYear(state, p) && <span className="sqc-end">Dernière année de contrat</span>}
+        {lastYear(state, p) && <span className="sqc-end">{t('Dernière année de contrat')}</span>}
         <SaleTag state={state} p={p} />
         <span className="sqc-stats">
           {topAttrs(p).map((a) => <span key={a.key} className={heat(a.v, refLvl)}><b>{Math.round(a.v)}</b><em>{a.short}</em></span>)}
         </span>
         {absent
           ? <span className={`sqc-strap ${absent.kind}`}>{absent.short}</span>
-          : <span className={`sqc-fit ${fitTone(fit)}`} title="Condition physique"><span className="sqc-fit-bar"><i style={{ width: `${fit}%` }} /></span><em>{fit} %</em></span>}
+          : <span className={`sqc-fit ${fitTone(fit)}`} title={t('Condition physique')}><span className="sqc-fit-bar"><i style={{ width: `${fit}%` }} /></span><em>{fit} %</em></span>}
         <span className="sqc-foot">
-          <span>{p.age} ans{pot ? <> · pot. {fmtRating(pot[0])}–{fmtRating(pot[1])}</> : ''}</span>
+          <span>{tr('<0/> ans<1/>', [p.age, pot ? <>{t(' · pot. ')}{fmtRating(pot[0])}–{fmtRating(pot[1])}</> : ''])}</span>
           <Form5 form={p.form} />
         </span>
       </button>
@@ -474,7 +470,7 @@ function PlayerTable({ title, cols, span = cols.length, players, state, refLvl, 
       key={key}
       className={`${cls} ${sort.key === key ? 'sorted' : ''}`}
       onClick={() => setSort({ key, dir: sort.key === key ? -sort.dir : -1 })}
-      title={`${name} · trier`}
+      title={t('{name} · trier', { name })}
       aria-sort={sort.key === key ? (sort.dir < 0 ? 'descending' : 'ascending') : undefined}
     >
       {label}{sort.key === key && <IconChevron className={`sq-sort ${sort.dir < 0 ? 'down' : 'up'}`} aria-hidden="true" />}
@@ -486,15 +482,15 @@ function PlayerTable({ title, cols, span = cols.length, players, state, refLvl, 
       <table className="sq-table">
         <thead>
           <tr>
-            <th className="c-name">Joueur</th>
-            <th className="c-pos">Poste</th>
-            {th('age', 'Âge', 'c-age')}
-            {th('lvl', 'Niveau', 'c-lvl')}
+            <th className="c-name">{t('Joueur')}</th>
+            <th className="c-pos">{t('Poste')}</th>
+            {th('age', t('Âge'), 'c-age')}
+            {th('lvl', t('Niveau'), 'c-lvl')}
             {cols.map((c) => th(c.key, c.short, 'c-attr', c.name))}
             {pad.map((i) => <th key={`pad${i}`} className="c-attr c-pad" aria-hidden="true" />)}
-            {th('form', 'Forme', 'c-form')}
-            {th('fit', 'Cond.', 'c-fit', 'Condition physique')}
-            {th('wage', 'Salaire', 'c-wage')}
+            {th('form', t('Forme'), 'c-form')}
+            {th('fit', t('Cond.'), 'c-fit', t('Condition physique'))}
+            {th('wage', t('Salaire'), 'c-wage')}
           </tr>
         </thead>
         <tbody>
@@ -509,7 +505,7 @@ function PlayerTable({ title, cols, span = cols.length, players, state, refLvl, 
                     <span className="sq-who-text">
                       <span className="sq-num">{p.num ?? '–'}</span>
                       <span className="sq-name">{p.name}</span>
-                      {starter && <i className="sq-starter" title="Titulaire" />}
+                      {starter && <i className="sq-starter" title={t('Titulaire')} />}
                       <AbsentTag p={p} />
                       <SaleTag state={state} p={p} />
                       {p.traits?.length > 0 && <span className="sq-traits">{p.traits.map((t) => TRAITS[t]?.name).join(' · ')}</span>}
@@ -528,7 +524,7 @@ function PlayerTable({ title, cols, span = cols.length, players, state, refLvl, 
                 <td className={`c-fit ${fitTone(fitOf(p))}`}>{Math.round(fitOf(p))} %</td>
                 <td className="c-wage">
                   {fmtMoney(wageOf(p, state.divisionIndex))}
-                  {p.deal && <small className={`sq-end ${lastYear(state, p) ? 'last' : ''}`}>{lastYear(state, p) ? 'dernière année' : `jusqu’à S${p.deal.until}`}</small>}
+                  {p.deal && <small className={`sq-end ${lastYear(state, p) ? 'last' : ''}`}>{lastYear(state, p) ? t('dernière année') : t('jusqu’à S{until}', { until: p.deal.until })}</small>}
                 </td>
               </tr>
             );
@@ -544,11 +540,11 @@ function PlayerTable({ title, cols, span = cols.length, players, state, refLvl, 
 function Alumni({ state, onOpen }) {
   const list = [...(state.alumni || [])].reverse();
   if (!list.length) {
-    return <p className="sq-hint">Aucun ancien pour l’instant. Les joueurs vendus ou partis à la retraite apparaîtront ici, avec toute leur carrière au club.</p>;
+    return <p className="sq-hint">{t('Aucun ancien pour l’instant. Les joueurs vendus ou partis à la retraite apparaîtront ici, avec toute leur carrière au club.')}</p>;
   }
   return (
     <>
-      <p className="sq-hint">{list.length} {list.length > 1 ? 'anciens joueurs' : 'ancien joueur'}. Choisis un joueur pour revoir sa carrière au club.</p>
+      <p className="sq-hint">{tr('<0/> <1/>. Choisis un joueur pour revoir sa carrière au club.', [list.length, tn(list.length, 'ancien joueur', 'anciens joueurs', {}, list.length > 1)])}</p>
       <ul className="sq-list al-list">
         {list.map((a) => {
           const c = careerOf(state, a.id);
@@ -560,9 +556,9 @@ function Alumni({ state, onOpen }) {
                 <span className="sq-row-main">
                   <span className="sq-row-name">{a.name}<em className={`al-tag ${a.reason}`}>{reasonTag(c)}</em></span>
                   <span className="sq-row-meta">{departureText(c)}</span>
-                  <span className="sq-row-meta">{plural(c.totals.apps, 'match', 'matchs')} · {plural(c.totals.goals, 'but', 'buts')} · {plural(c.totals.assists, 'passe', 'passes')} · homme du match {c.totals.motm} fois · {c.age} ans aujourd’hui</span>
+                  <span className="sq-row-meta">{tr('<0/> · <1/> · <2/> · homme du match <3/> fois · <4/> ans aujourd’hui', [plural(c.totals.apps, 'match', 'matchs'), plural(c.totals.goals, 'but', 'buts'), plural(c.totals.assists, 'passe', 'passes'), c.totals.motm, c.age])}</span>
                 </span>
-                <span className="sq-row-side"><b>{fmtRating(a.rating)}</b><span>au départ</span></span>
+                <span className="sq-row-side"><b>{fmtRating(a.rating)}</b><span>{t('au départ')}</span></span>
               </button>
             </li>
           );
@@ -582,21 +578,21 @@ function ContractBlock({ state, p, onRenew }) {
   return (
     <section className="sh-sec sh-contract">
       <div className="sh-row">
-        <span className="sh-cap">Contrat</span>
-        <span className="sh-pot">Saison en cours : <b>{state.seasonNumber}</b></span>
+        <span className="sh-cap">{t('Contrat')}</span>
+        <span className="sh-pot">{tr('Saison en cours : <0/>', [<b>{state.seasonNumber}</b>])}</span>
       </div>
       <div className="sh-deal">
-        <div><b>{fmtMoney(p.deal.wage)}</b><span>par saison</span></div>
-        <div><b className={last ? 'amber' : ''}>Saison {p.deal.until}</b><span>{last ? <>fin du contrat · <em className="amber">dernière année</em></> : `fin du contrat · encore ${left} ans`}</span></div>
+        <div><b>{fmtMoney(p.deal.wage)}</b><span>{t('par saison')}</span></div>
+        <div><b className={last ? 'amber' : ''}>{tr('Saison <0/>', [p.deal.until])}</b><span>{last ? <>{t('fin du contrat · ')}<em className="amber">{t('dernière année')}</em></> : t('fin du contrat · encore {left} ans', { left })}</span></div>
         {clauseOpen(state) || p.deal.clause
-          ? <div><b>{p.deal.clause ? `+${Math.round(p.deal.clause * 100)} %` : 'Aucune'}</b><span>clause de montée</span></div>
-          : <div><b>Saison {p.deal.since}</b><span>signé en</span></div>}
+          ? <div><b>{p.deal.clause ? `+${Math.round(p.deal.clause * 100)} %` : t('Aucune')}</b><span>{t('clause de montée')}</span></div>
+          : <div><b>{tr('Saison <0/>', [p.deal.since])}</b><span>{t('signé en')}</span></div>}
       </div>
       <p className="sh-empty">
-        {last ? `Sans prolongation, il partira libre à la fin de la saison ${p.deal.until}, sans indemnité. ` : ''}
-        {open ? `Pour prolonger, il demande aujourd’hui ${fmtMoney(ask)} par saison.` : 'Contrat au plus long : rien à prolonger pour l’instant.'}
+        {last ? t('Sans prolongation, il partira libre à la fin de la saison {until}, sans indemnité. ', { until: p.deal.until }) : ''}
+        {open ? t('Pour prolonger, il demande aujourd’hui {ask} par saison.', { ask: fmtMoney(ask) }) : t('Contrat au plus long : rien à prolonger pour l’instant.')}
       </p>
-      {open && <button className="btn sh-renew" type="button" onClick={onRenew}>Prolonger son contrat</button>}
+      {open && <button className="btn sh-renew" type="button" onClick={onRenew}>{t('Prolonger son contrat')}</button>}
     </section>
   );
 }
@@ -616,7 +612,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
   // un grand club ou en négociant)
   const value = market ? marketValue(p, state.divisionIndex) : valueOf(state, p);
   const prev = p.hist?.length ? p.hist[p.hist.length - 1] : null;
-  const role = market ? (p.club ? `${p.club} · contrat ${p.contract} an${p.contract > 1 ? 's' : ''}` : 'Joueur libre') : state.lineup?.includes(p.id) ? 'Titulaire' : 'Remplaçant';
+  const role = market ? (p.club ? tn(p.contract, '{club} · contrat {contract} an', '{club} · contrat {contract} ans', { club: p.club, contract: p.contract }, p.contract > 1) : t('Joueur libre')) : state.lineup?.includes(p.id) ? t('Titulaire') : t('Remplaçant');
   const sale = market ? null : (state.saleList || []).find((x) => x.id === p.id) || null;
   const listed = !!sale;
   // offres reçues pour ce joueur, la meilleure d'abord (mis en vente, les clubs intéressés font aussitôt la leur)
@@ -626,7 +622,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
   const arrival = market ? null : arrivalOf(state, p); // montant, club d'origine et moment de sa signature
   const talks = (market && p.talks) || {};
   const avg = st.apps ? st.sum / st.apps : null;
-  const plural = (n, one, many) => (n > 1 ? many : one);
+  const plural = (n, one, many) => tn(n, one, many, {}, n > 1); // le mot seul, accordé (le nombre est affiché à côté)
   const [nameFirst, ...nameRest] = p.name.split(' ');
   const note = market ? f : avg; // joueur du mercato : sa forme ; joueur du club : sa note moyenne de la saison
   const noteTone = note >= 7 ? 'good' : note !== null && note < 5.5 ? 'low' : '';
@@ -650,15 +646,15 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
 
   return (
     <div className="sq-overlay" onClick={onClose}>
-      <article ref={ref} className="sq-sheet glass" onClick={(e) => e.stopPropagation()} aria-label={`Fiche ${deName(p.name)}`}>
+      <article ref={ref} className="sq-sheet glass" onClick={(e) => e.stopPropagation()} aria-label={t('Fiche {deName}', { deName: deName(p.name) })}>
         <span className="grip" aria-hidden="true" />
         <header className="sh-bar">
           <div className="sh-pager">
-            <button className="hud-icon" onClick={goPrev} aria-label="Joueur précédent"><IconChevronLeft /></button>
+            <button className="hud-icon" onClick={goPrev} aria-label={t('Joueur précédent')}><IconChevronLeft /></button>
             <span>{place}</span>
-            <button className="hud-icon" onClick={goNext} aria-label="Joueur suivant"><IconChevron /></button>
+            <button className="hud-icon" onClick={goNext} aria-label={t('Joueur suivant')}><IconChevron /></button>
           </div>
-          <button className="hud-icon" onClick={onClose} aria-label="Fermer la fiche"><IconClose /></button>
+          <button className="hud-icon" onClick={onClose} aria-label={t('Fermer la fiche')}><IconClose /></button>
         </header>
 
         <section className={`sh-hero ${tierOf(r, refLvl)}`}>
@@ -666,34 +662,34 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
           <div className="sh-id">
             <div className="sh-rate">
               <b>{fmtRating(r)}</b>
-              {!market && p.lastDelta ? <em className={p.lastDelta > 0 ? 'up' : 'down'} title="Progression du dernier été">{p.lastDelta > 0 ? '+' : ''}{fmtRating(p.lastDelta)}</em> : null}
+              {!market && p.lastDelta ? <em className={p.lastDelta > 0 ? 'up' : 'down'} title={t('Progression du dernier été')}>{p.lastDelta > 0 ? '+' : ''}{fmtRating(p.lastDelta)}</em> : null}
             </div>
             <div className="sh-meta">
               <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
-              <span>{POS_LABELS[p.pos]}{p.num ? ` · n°${p.num}` : ''}</span>
+              <span>{POS_LABELS[p.pos]}{p.num ? ` · ${t('n°')}${p.num}` : ''}</span>
             </div>
             <h3 className="sh-name">{nameRest.length > 0 && <small>{nameFirst}</small>}<b>{nameRest.length ? nameRest.join(' ') : nameFirst}</b></h3>
           </div>
           <Portrait p={p} size={136} club={market ? p.club || null : null} free={market && !p.club} className="sh-face" />
           <div className="sh-tags">
-            <span className={`sh-tag ${role === 'Titulaire' ? 'on' : ''}`}>{role}</span>
-            <span className="sh-tag">{p.foot === 'les deux' ? 'Des deux pieds' : `Pied ${p.foot}`}</span>
+            <span className={`sh-tag ${role === t('Titulaire') ? 'on' : ''}`}>{role}</span>
+            <span className="sh-tag">{footLabel(p.foot, true)}</span>
             {!market && <AbsentTag p={p} long />}
-            {!market && p.academy && <span className="sh-tag on">Formé au club</span>}
-            {listed && <span className="sh-tag sale">En vente</span>}
-            {market && p.interest > 0 && <span className="sh-tag warn">Courtisé{p.interest > 1 ? ` par ${p.interest} clubs` : ''}</span>}
-            {p.alt && <span className="sh-tag">Dépanne : {POS_LABELS[p.alt].toLowerCase()} {fmtRating(ratingAt(p, p.alt))}</span>}
+            {!market && p.academy && <span className="sh-tag on">{t('Formé au club')}</span>}
+            {listed && <span className="sh-tag sale">{t('En vente')}</span>}
+            {market && p.interest > 0 && <span className="sh-tag warn">{tr('Courtisé<0/>', [tn(p.interest, '', ' par {interest} clubs', { interest: p.interest }, p.interest > 1)])}</span>}
+            {p.alt && <span className="sh-tag">{tr('Dépanne : <0/> <1/>', [POS_LABELS[p.alt].toLowerCase(), fmtRating(ratingAt(p, p.alt))])}</span>}
           </div>
         </section>
 
         <section className="sh-sec sh-levelsec">
           <div className="sh-row">
-            <span className="sh-cap">Niveau <b className={heat(r, refLvl)}>{fmtRating(r)}</b><small> / 20</small></span>
-            <span className="sh-pot">{pot ? <>Potentiel <b>{fmtRating(pot[0])}–{fmtRating(pot[1])}</b></> : 'Plafond atteint'}</span>
+            <span className="sh-cap">{tr('Niveau <0/><1/>', [<b className={heat(r, refLvl)}>{fmtRating(r)}</b>, <small> / 20</small>])}</span>
+            <span className="sh-pot">{pot ? <>{t('Potentiel ')}<b>{fmtRating(pot[0])}–{fmtRating(pot[1])}</b></> : t('Plafond atteint')}</span>
           </div>
           <div className="sh-scale" aria-hidden="true">
             <i className="now" style={{ width: `${(r / 20) * 100}%` }} />
-            {pot && <i className="pot" style={{ left: `${(pot[0] / 20) * 100}%`, width: `${((pot[1] - pot[0]) / 20) * 100}%` }} />}
+            {pot && <i className="pot" style={{ insetInlineStart: `${(pot[0] / 20) * 100}%`, width: `${((pot[1] - pot[0]) / 20) * 100}%` }} />}
           </div>
           <div className="sh-ticks" aria-hidden="true"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span></div>
         </section>
@@ -701,43 +697,43 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
         {!market && p.deal && <ContractBlock state={state} p={p} onRenew={onRenew} />}
 
         <div className="sh-tiles">
-          <div><span>Âge</span><b>{p.age}<small> ans</small></b></div>
-          {!market && <div><span>Condition</span><b className={fitTone(fitOf(p))}>{Math.round(fitOf(p))} %</b></div>}
-          {!market && <div><span>Saison</span><b>{st.apps || 0}<small> {plural(st.apps || 0, 'match', 'matchs')}</small></b></div>}
-          <div><span>{market ? 'Forme' : 'Note moy.'}</span><b className={noteTone}>{note !== null ? fmtRating(note) : '–'}</b></div>
+          <div><span>{t('Âge')}</span><b>{p.age}<small>{t(' ans')}</small></b></div>
+          {!market && <div><span>{t('Condition')}</span><b className={fitTone(fitOf(p))}>{Math.round(fitOf(p))} %</b></div>}
+          {!market && <div><span>{t('Saison')}</span><b>{st.apps || 0}<small> {plural(st.apps || 0, 'match', 'matchs')}</small></b></div>}
+          <div><span>{market ? t('Forme') : t('Note moy.')}</span><b className={noteTone}>{note !== null ? fmtRating(note) : '–'}</b></div>
         </div>
 
         {!market && (
           <section className="sh-sec sh-arrival">
             <div className="sh-row">
-              <span className="sh-cap">Arrivée au club</span>
-              {arrival && <span className="sh-pot">{arrival.from ? 'Indemnité' : 'Prime'} <b className="gold">{fmtMoney(arrival.fee)}</b></span>}
+              <span className="sh-cap">{t('Arrivée au club')}</span>
+              {arrival && <span className="sh-pot">{arrival.from ? t('Indemnité') : t('Prime')} <b className="gold">{fmtMoney(arrival.fee)}</b></span>}
             </div>
             <p className="sh-empty">
               {arrival
-                ? `${moveWhen(arrival.season, arrival.round)} · ${arrival.from ? `venu ${clubAfter('de ', arrival.from)}` : 'joueur libre'}`
+                ? `${moveWhen(arrival.season, arrival.round)} · ${arrival.from ? `venu ${clubAfter('de ', arrival.from)}` : t('joueur libre')}`
                 : p.academy
-                  ? `Formé au club · en équipe première depuis la saison ${p.joined ?? 1}`
-                  : `Au club depuis la saison ${p.joined ?? 1}${(p.joined ?? 1) === 1 ? ' · effectif de départ' : ''}`}
+                  ? t('Formé au club · en équipe première depuis la saison {v}', { v: p.joined ?? 1 })
+                  : t('Au club depuis la saison {v}{tn}', { v: p.joined ?? 1, tn: tn(p.joined ?? 1, ' · effectif de départ', '', {}, !((p.joined ?? 1) === 1)) })}
             </p>
           </section>
         )}
 
         {!market && (
           <section className="sh-sec">
-            <span className="sh-cap">Saison {state.seasonNumber}</span>
+            <span className="sh-cap">{tr('Saison <0/>', [state.seasonNumber])}</span>
             <div className="sh-stats">
               <div><b>{st.goals || 0}</b><span>{plural(st.goals || 0, 'but', 'buts')}</span></div>
               <div><b>{st.assists || 0}</b><span>{plural(st.assists || 0, 'passe', 'passes')}</span></div>
               <div><b>{(st.yellow || 0) + (st.red || 0)}</b><span>{plural((st.yellow || 0) + (st.red || 0), 'carton', 'cartons')}</span></div>
-              <div className="sh-wrap"><b className={st.motm ? 'gold' : ''}>{st.motm || 0}</b><span>homme du match</span></div>
+              <div className="sh-wrap"><b className={st.motm ? 'gold' : ''}>{st.motm || 0}</b><span>{t('homme du match')}</span></div>
             </div>
-            <button className="btn ghost wide sh-career" onClick={onCareer}>Toute sa carrière au club</button>
+            <button className="btn ghost wide sh-career" onClick={onCareer}>{t('Toute sa carrière au club')}</button>
             {(p.lastDelta !== undefined || prev) && (
               <p className="sh-evo">
-                {p.lastDelta !== undefined && <>Dernier été <b className={p.lastDelta > 0 ? 'up' : p.lastDelta < 0 ? 'down' : ''}>{p.lastDelta > 0 ? '+' : ''}{fmtRating(p.lastDelta)}</b></>}
+                {p.lastDelta !== undefined && <>{t('Dernier été ')}<b className={p.lastDelta > 0 ? 'up' : p.lastDelta < 0 ? 'down' : ''}>{p.lastDelta > 0 ? '+' : ''}{fmtRating(p.lastDelta)}</b></>}
                 {p.lastDelta !== undefined && prev && ' · '}
-                {prev && <>saison {prev.season} : {prev.apps} {plural(prev.apps, 'match', 'matchs')}, {prev.goals} {plural(prev.goals, 'but', 'buts')}{prev.avg ? `, note ${fmtRating(prev.avg)}` : ''}</>}
+                {prev && <>{t('saison ')}{prev.season} : {prev.apps} {plural(prev.apps, 'match', 'matchs')}, {prev.goals} {plural(prev.goals, 'but', 'buts')}{prev.avg ? t(', note {fmtRating}', { fmtRating: fmtRating(prev.avg) }) : ''}</>}
               </p>
             )}
           </section>
@@ -746,24 +742,24 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
         {!market && (
           <section className="sh-sec">
             <div className="sh-row">
-              <span className="sh-cap">Condition physique</span>
+              <span className="sh-cap">{t('Condition physique')}</span>
               <span className="sh-pot"><b className={fitTone(fitOf(p))}>{Math.round(fitOf(p))} %</b></span>
             </div>
             <div className="sh-scale sh-fit" aria-hidden="true"><i className={`now ${fitTone(fitOf(p))}`} style={{ width: `${fitOf(p)}%` }} /></div>
-            <p className="sh-empty">Un match complet lui coûte environ {Math.round(matchCost(p))} points ; d’ici le match suivant, il récupère {Math.round(recoveryRate(p, state.buildings.training || 0) * 100)} % de sa fatigue. Titulaire à chaque match, il se stabilise vers {Math.round(100 + matchCost(p) - matchCost(p) / recoveryRate(p, state.buildings.training || 0))} % : fatigué, il joue moins bien et se blesse plus souvent.</p>
+            <p className="sh-empty">{tr('Un match complet lui coûte environ <0/> points ; d’ici le match suivant, il récupère <1/> % de sa fatigue. Titulaire à chaque match, il se stabilise vers <2/> % : fatigué, il joue moins bien et se blesse plus souvent.', [Math.round(matchCost(p)), Math.round(recoveryRate(p, state.buildings.training || 0) * 100), Math.round(100 + matchCost(p) - matchCost(p) / recoveryRate(p, state.buildings.training || 0))])}</p>
           </section>
         )}
 
         <section className="sh-sec">
           <div className="sh-row">
-            <span className="sh-cap">Forme · notes de match sur 10</span>
-            {f !== null && <span className="sh-pot">moyenne <b>{fmtRating(f)}</b></span>}
+            <span className="sh-cap">{t('Forme · notes de match sur 10')}</span>
+            {f !== null && <span className="sh-pot">{tr('moyenne <0/>', [<b>{fmtRating(f)}</b>])}</span>}
           </div>
           {p.form?.length ? (
             <div className="sh-form">
               {p.form.map((v, i) => <span key={i} className={v >= 7.5 ? 'good' : v < 5.5 ? 'low' : ''}>{fmtRating(v)}</span>)}
             </div>
-          ) : <p className="sh-empty">Pas encore joué{market ? ' pour le club' : ' cette saison'}.</p>}
+          ) : <p className="sh-empty">{tr('Pas encore joué<0/>.', [market ? t(' pour le club') : t(' cette saison')])}</p>}
         </section>
 
         {p.traits?.length > 0 && (
@@ -777,8 +773,8 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
 
         <section className="sh-sec">
           <div className="sh-row">
-            <span className="sh-cap">Attributs</span>
-            <span className="sh-legend"><i className="key" /> clés au poste · <em>or</em> : fort pour ta division</span>
+            <span className="sh-cap">{t('Attributs')}</span>
+            <span className="sh-legend">{tr('<0/> clés au poste · <1>or</1> : fort pour ta division', [<i className="key" />, (c) => <em>{c}</em>])}</span>
           </div>
           <div className={`sh-fams n${fams.length}`}>
             {fams.map((fam) => (
@@ -798,33 +794,33 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
 
         <footer className={`sh-foot ${market ? 'market' : 'own'}`}>
           {market ? (
-            <span>{p.club ? 'Indemnité' : 'Prime'} <b>{fmtMoney(fee)}</b> · salaire demandé <b>{fmtMoney(askedWage(state, p))}</b></span>
+            <span>{tr('<0/> <1/> · salaire demandé <2/>', [p.club ? t('Indemnité') : t('Prime'), <b>{fmtMoney(fee)}</b>, <b>{fmtMoney(askedWage(state, p))}</b>])}</span>
           ) : sale && bid ? (
-            <span key={bid.id} className="sh-bid">En vente à <b>{fmtMoney(sale.price)}</b> · {offers.length} {plural(offers.length, 'club intéressé', 'clubs intéressés')} · meilleure offre <b className="gold">{fmtMoney(bid.amount)}</b></span>
+            <span key={bid.id} className="sh-bid">{tr('En vente à <0/> · <1/> <2/> · meilleure offre <3/>', [<b>{fmtMoney(sale.price)}</b>, offers.length, plural(offers.length, 'club intéressé', 'clubs intéressés'), <b className="gold">{fmtMoney(bid.amount)}</b>])}</span>
           ) : sale ? (
-            <span>En vente à <b>{fmtMoney(sale.price)}</b> · valeur <b>{fmtMoney(value)}</b> · de nouveaux clubs après chaque journée</span>
+            <span>{tr('En vente à <0/> · valeur <1/> · de nouveaux clubs après chaque journée', [<b>{fmtMoney(sale.price)}</b>, <b>{fmtMoney(value)}</b>])}</span>
           ) : bid ? (
-            <span key={bid.id} className="sh-bid">Offre spontanée {clubAfter('de ', bid.club)} : <b className="gold">{fmtMoney(bid.amount)}</b> · valeur <b>{fmtMoney(value)}</b></span>
+            <span key={bid.id} className="sh-bid">{tr('Offre spontanée <0/> : <1/> · valeur <2/>', [clubAfter('de ', bid.club), <b className="gold">{fmtMoney(bid.amount)}</b>, <b>{fmtMoney(value)}</b>])}</span>
           ) : (
-            <span>Salaire <b>{fmtMoney(wageOf(p, state.divisionIndex))}</b> par saison · valeur <b>{fmtMoney(value)}</b></span>
+            <span>{tr('Salaire <0/> par saison · valeur <1/>', [<b>{fmtMoney(wageOf(p, state.divisionIndex))}</b>, <b>{fmtMoney(value)}</b>])}</span>
           )}
           {block && <span className="sh-block">{block.text}</span>}
           <div className="sh-actions">
             {market && <FollowButton state={state} p={p} run={run} />}
-            <button className="sh-compare" onClick={onCompare} aria-label="Comparer" title="Comparer"><IconRadar /></button>
+            <button className="sh-compare" onClick={onCompare} aria-label={t('Comparer')} title={t('Comparer')}><IconRadar /></button>
             {market ? (
               <button
                 className="btn"
                 disabled={(state.players.length >= SQUAD_MAX || talks.closed) && !talks.counter}
                 onClick={onOffer}
-                title={state.players.length >= SQUAD_MAX ? 'Effectif complet' : ''}
+                title={state.players.length >= SQUAD_MAX ? t('Effectif complet') : ''}
               >
-                {talks.fee ? 'Négocier son contrat' : talks.counter ? 'Contre-offre' : talks.closed ? 'Discussions closes' : 'Faire une offre'}
+                {talks.fee ? t('Négocier son contrat') : talks.counter ? t('Contre-offre') : talks.closed ? t('Discussions closes') : t('Faire une offre')}
               </button>
             ) : (
               <>
                 <SaleToggle state={state} p={p} run={run} onList={onList} />
-                {bid && <button className="btn" onClick={onOffers}>{offers.length > 1 ? 'Voir les offres' : 'Voir l’offre'}</button>}
+                {bid && <button className="btn" onClick={onOffers}>{tn(offers.length, 'Voir l’offre', 'Voir les offres', {}, offers.length > 1)}</button>}
               </>
             )}
           </div>
@@ -843,7 +839,7 @@ function Radar({ a, b, axes }) {
   const pt = (i, r) => { const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [cx + Math.cos(ang) * r, cy + Math.sin(ang) * r]; };
   const poly = (vals) => vals.map((v, i) => pt(i, (R * Math.min(v, max)) / max).join(',')).join(' ');
   return (
-    <svg className="radar" viewBox="0 0 300 262" role="img" aria-label={`Comparaison des caractéristiques, échelle de 0 à ${max}`}>
+    <svg className="radar" viewBox="0 0 300 262" role="img" aria-label={t('Comparaison des caractéristiques, échelle de 0 à {max}', { max })}>
       {[0.25, 0.5, 0.75, 1].map((k) => <polygon key={k} points={axes.map((_, i) => pt(i, R * k).join(',')).join(' ')} className="radar-grid" />)}
       {axes.map((ax, i) => { const [x, y] = pt(i, R); return <line key={ax.key} x1={cx} y1={cy} x2={x} y2={y} className="radar-grid" />; })}
       <polygon points={poly(a)} className="radar-a" />
@@ -860,12 +856,12 @@ function ComparePicker({ state, a, b, onPick, onClose }) {
   const rows = (list) => list
     .filter((p) => p.id !== b.id && (p.pos === 'G') === gk)
     .sort((x, y) => ratingAt(y, b.pos) - ratingAt(x, b.pos));
-  const groups = [['Ton effectif', rows(state.players)], ['Mercato', rows(poolOf(state))]].filter(([, l]) => l.length);
+  const groups = [[t('Ton effectif'), rows(state.players)], [t('Mercato'), rows(poolOf(state))]].filter(([, l]) => l.length);
   return (
-    <div className="cmp-list" role="listbox" aria-label="Joueur à comparer">
+    <div className="cmp-list" role="listbox" aria-label={t('Joueur à comparer')}>
       <div className="cmp-list-head">
-        <span className="sh-cap">Comparer {b.name.split(' ').slice(-1)[0]} avec…</span>
-        <button className="linkbtn" onClick={onClose}>Fermer</button>
+        <span className="sh-cap">{tr('Comparer <0/> avec…', [b.name.split(' ').slice(-1)[0]])}</span>
+        <button className="linkbtn" onClick={onClose}>{t('Fermer')}</button>
       </div>
       {groups.map(([title, list]) => (
         <section key={title} className="cmp-list-sec">
@@ -873,7 +869,7 @@ function ComparePicker({ state, a, b, onPick, onClose }) {
           {list.map((p) => (
             <button key={p.id} role="option" aria-selected={p.id === a.id} className={`cmp-opt ${p.id === a.id ? 'on' : ''}`} onClick={() => { onPick(p.id); onClose(); }}>
               <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
-              <span className="cmp-opt-name">{p.name}<em>{p.age} ans{state.lineup?.includes(p.id) ? ' · titulaire' : ''}</em></span>
+              <span className="cmp-opt-name">{p.name}<em>{tr('<0/> ans<1/>', [p.age, state.lineup?.includes(p.id) ? t(' · titulaire') : ''])}</em></span>
               <b>{fmtRating(ratingAt(p, b.pos))}</b>
             </button>
           ))}
@@ -891,7 +887,7 @@ function CompareView({ state, a, b, onPick, onClose, onOffer }) {
   const vb = vals(b);
   const isMarket = !state.players.includes(b);
   const fee = costOf(b, state);
-  const roleOf = (p) => (p.club ? p.club : state.market.includes(p) ? 'Joueur libre' : state.lineup?.includes(p.id) ? 'Titulaire' : 'Remplaçant');
+  const roleOf = (p) => (p.club ? p.club : state.market.includes(p) ? t('Joueur libre') : state.lineup?.includes(p.id) ? t('Titulaire') : t('Remplaçant'));
   const la = ratingAt(a, b.pos);
   const lb = ratingAt(b, b.pos);
   const ref = useRef(null);
@@ -899,26 +895,26 @@ function CompareView({ state, a, b, onPick, onClose, onOffer }) {
   useSwipe(ref, { onDown: onClose, downMedia: PHONE });
   return (
     <div className="sq-overlay center" onClick={onClose}>
-      <div ref={ref} className="sq-compare glass" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Comparaison">
+      <div ref={ref} className="sq-compare glass" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={t('Comparaison')}>
         <span className="grip" aria-hidden="true" />
         <header className="cmp-head">
           <div>
-            <h3>Comparaison</h3>
-            <span>Au poste {/^[aeiouyéh]/i.test(POS_LABELS[b.pos]) ? 'd’' : 'de '}{POS_LABELS[b.pos].toLowerCase()}</span>
+            <h3>{t('Comparaison')}</h3>
+            <span>{tr('Au poste <0/><1/>', [/^[aeiouyéh]/i.test(POS_LABELS[b.pos]) ? 'd’' : t('de '), POS_LABELS[b.pos].toLowerCase()])}</span>
           </div>
-          <button className="hud-icon" onClick={onClose} aria-label="Fermer la comparaison"><IconClose /></button>
+          <button className="hud-icon" onClick={onClose} aria-label={t('Fermer la comparaison')}><IconClose /></button>
         </header>
 
         <div className="cmp-vs">
           <div className="cmp-side a">
             <span className="cmp-role"><i />{roleOf(a)}</span>
-            <button className={`cmp-pick ${picking ? 'open' : ''}`} onClick={() => setPicking(!picking)} aria-expanded={picking} aria-label={`Joueur comparé : ${a.name}. Changer`}>
+            <button className={`cmp-pick ${picking ? 'open' : ''}`} onClick={() => setPicking(!picking)} aria-expanded={picking} aria-label={t('Joueur comparé : {name}. Changer', { name: a.name })}>
               <span className="cmp-name">{a.name}</span>
               <IconChevron />
             </button>
             <b className={la > lb ? 'lead' : ''}>{fmtRating(la)}</b>
           </div>
-          <span className="cmp-x">contre</span>
+          <span className="cmp-x">{t('contre')}</span>
           <div className="cmp-side b">
             <span className="cmp-role"><i />{roleOf(b)}</span>
             <span className="cmp-name">{b.name}</span>
@@ -930,7 +926,7 @@ function CompareView({ state, a, b, onPick, onClose, onOffer }) {
         <Radar a={va} b={vb} axes={axes} />
 
         <section className="cmp-sec">
-          <span className="sh-cap">Écart {deName(b.name.split(' ').slice(-1)[0])} par rapport à {a.name.split(' ').slice(-1)[0]}</span>
+          <span className="sh-cap">{tr('Écart <0/> par rapport à <1/>', [deName(b.name.split(' ').slice(-1)[0]), a.name.split(' ').slice(-1)[0]])}</span>
           <ul className="cmp-deltas">
             {axes.map((x, i) => {
               const d = Math.round(vb[i]) - Math.round(va[i]);
@@ -942,8 +938,8 @@ function CompareView({ state, a, b, onPick, onClose, onOffer }) {
 
         {isMarket && (
           <footer className="cmp-foot">
-            <span>{b.club ? 'Indemnité' : 'Prime'} <b>{fmtMoney(fee)}</b> · salaire demandé <b>{fmtMoney(askedWage(state, b))}</b></span>
-            <button className="btn" disabled={state.players.length >= SQUAD_MAX || (b.talks?.closed && !b.talks?.counter)} onClick={() => onOffer(b)}>{b.talks?.fee ? 'Négocier son contrat' : b.talks?.counter ? 'Contre-offre' : 'Faire une offre'}</button>
+            <span>{tr('<0/> <1/> · salaire demandé <2/>', [b.club ? t('Indemnité') : t('Prime'), <b>{fmtMoney(fee)}</b>, <b>{fmtMoney(askedWage(state, b))}</b>])}</span>
+            <button className="btn" disabled={state.players.length >= SQUAD_MAX || (b.talks?.closed && !b.talks?.counter)} onClick={() => onOffer(b)}>{b.talks?.fee ? t('Négocier son contrat') : b.talks?.counter ? t('Contre-offre') : t('Faire une offre')}</button>
           </footer>
         )}
       </div>

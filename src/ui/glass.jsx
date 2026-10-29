@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { haptic } from './haptics';
 import { uiSound } from './uisound';
+import { t } from '../i18n/index';
 
 // Sélection en verre liquide (façon iOS) : une pastille posée sous l'élément actif, qui glisse vers le nouvel
 // élément choisi en s'étirant, et qu'on peut aussi faire glisser au doigt : elle suit le doigt image par image,

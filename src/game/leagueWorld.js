@@ -4,6 +4,7 @@ import { squadName } from './names';
 import { FORMATION_ORDER, autoLineup, lineupRating, slotsOf } from './tactics';
 import { ELITE_PACE, bestCat, catsFor, collectiveGain, sessionGain, suggestFor } from './training';
 import { pick, rnd } from './utils';
+import { t } from '../i18n/index';
 
 // État d'un championnat entre amis après une journée : chaque club (son budget, ses joueurs), calculé avec les matchs
 // par le jeu qui joue la journée (league.js, roundPayload), à l'identique chez chaque ami, et gardé avec le résultat
@@ -64,7 +65,7 @@ export const unsnapPlayer = (x) => ({
   alt: POS.includes(x?.alt) ? x.alt : null, foot: FEET.includes(x?.ft) ? x.ft : 'droit', age: fin(x?.g, 25), pot: fin(x?.p, 0), a: unpack(x?.a, FIELD),
   ...(x?.k ? { g: unpack(x.k, KEEPER) } : {}), traits: Array.isArray(x?.t) ? x.t.filter((t) => typeof t === 'string') : [],
   num: int(x?.num, null), face: x?.f && typeof x.f === 'object' && !Array.isArray(x.f) ? x.f : null, fit: fin(x?.fit, 100),
-  ...(x?.x ? { injury: { out: 1, total: 1, label: 'Indisponible' } } : {}), form: [], season: freshSeason(), hist: [],
+  ...(x?.x ? { injury: { out: 1, total: 1, label: t('Indisponible') } } : {}), form: [], season: freshSeason(), hist: [],
 });
 // Un joueur de l'état de la ligue (club de l'ordinateur, marché) devenu joueur d'une partie : son identifiant de ligue.
 export const toSnap = (p) => snapPlayer({ ...p, lid: p.lid ?? p.id });

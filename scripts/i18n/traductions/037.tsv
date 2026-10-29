@@ -1,0 +1,74 @@
+2195	Match	Partido	المباراة
+2196	Recentre the view	Recentrar la vista	إعادة توسيط العرض
+2197	Centre	Centrar	توسيط
+2198	Ticket price	Tarifa de las entradas	سعر التذاكر
+2199	<0/> spect.	<0/> espect.	<0/> متفرج
+2200	Per home league match: <0/> spectators<1/>.	Por partido de liga en casa: <0/> espectadores<1/>.	لكل مباراة على أرضنا في الدوري: <0/> متفرج<1/>.
+2201	, {v} left outside	, {v} se quedan fuera	، و{v} يبقون خارج الملعب
+2202	<0/> pricing · <1/> spectators and <2/> expected per home league match.	Tarifa <0/> · <1/> espectadores y <2/> previstos por partido de liga en casa.	تسعيرة <0/> · <1/> متفرج و<2/> متوقعة لكل مباراة على أرضنا في الدوري.
+2203	Change the price · Club board	Cambiar la tarifa · Directiva del club	تغيير السعر · إدارة النادي
+2204	The price is set at the Club board, once it is built.	La tarifa se ajusta en la Directiva del club, una vez construida.	يُضبط السعر في إدارة النادي بعد بنائها.
+2205	Level {lvl} of {max}	Nivel {lvl} de {max}	المستوى {lvl} من {max}
+2207	Previous free plot	Parcela libre anterior	قطعة الأرض الشاغرة السابقة
+2208	Next free plot	Parcela libre siguiente	قطعة الأرض الشاغرة التالية
+2209	{v} · free	{v} · libre	{v} · شاغرة
+2210	All the buildings are already built: this plot stays free.	Todos los edificios ya están construidos: esta parcela queda libre.	جميع المباني مبنية بالفعل: تبقى قطعة الأرض هذه شاغرة.
+2211	Build · <0/>	Construir · <0/>	بناء · <0/>
+2212	Filter the buildings	Filtrar los edificios	تصفية المباني
+2213	All	Todo	الكل
+2214	· Recommended	· Recomendado	· موصى به
+2215	<0/> Preview	<0/> Vista previa	<0/> معاينة
+2216	Preview the levels	Vista previa de los niveles	معاينة المستويات
+2217	Level <0/><1/><2/>	Nivel <0/><1/><2/>	المستوى <0/><1/><2/>
+2218	Level {lvl} under construction	Nivel {lvl} en obras	المستوى {lvl} قيد البناء
+2219	Level <0/> · before / after	Nivel <0/> · antes / después	المستوى <0/> · قبل / بعد
+2220	Currently	Actualmente	حاليًا
+2221	Potential crowd: <0/> spectators per match<1/>	Público potencial: <0/> espectadores por partido<1/>	الجمهور المحتمل: <0/> متفرج لكل مباراة<1/>
+2222	· stadium too small, some supporters are left outside.	· estadio demasiado pequeño, hay aficionados que se quedan fuera.	· الملعب صغير جدًا، وبعض المشجعين يبقون خارجه.
+2223	· {round}% full.	· {round} % de ocupación.	· نسبة الامتلاء {round}%.
+2224	<0/> Preview the levels	<0/> Vista previa de los niveles	<0/> معاينة المستويات
+2225	<0/> Open the transfer market · <1/> players	<0/> Abrir el mercado · <1/> jugadores	<0/> فتح سوق الانتقالات · <1/> لاعبين
+2226	<0/> Open the academy · <1/> / <2/> youngsters	<0/> Abrir la cantera · <1/> / <2/> jóvenes	<0/> فتح الأكاديمية · <1/> / <2/> شبان
+2227	<0/> Training session	<0/> Sesión de entrenamiento	<0/> حصة تدريبية
+2228	<0/> Open the Club board	<0/> Abrir la Directiva del club	<0/> فتح إدارة النادي
+2229	<0/> Open the medical centre · <1/> injured<2/>	<0/> Abrir el centro médico · <1/> lesionado<2/>	<0/> فتح المركز الطبي · <1/> مصاب<2/>
+2230	<0/> Open the League Headquarters	<0/> Abrir la Sede de la Liga	<0/> فتح مقر الدوري
+2231	<0/> See the stadium on match day	<0/> Ver el estadio en día de partido	<0/> عرض الملعب في يوم المباراة
+2232	yellow card	tarjeta amarilla	بطاقة صفراء
+2233	Neighbourhood League	Liga del Barrio	دوري الحي
+2234	Mates’ League	Liga de los Colegas	بطولة الرفاق
+2235	Sunday Trophy	Trofeo del Domingo	كأس الأحد
+2236	Town Square League	Liga de la Plaza	دوري الساحة
+2237	Neighbours’ Cup	Copa de los Vecinos	كأس الجيران
+2238	Friday League	Liga del Viernes	بطولة الجمعة
+2239	Floodlight League	Liga de las Luces	دوري الأضواء
+2240	Old Boys’ League	Liga de los Veteranos	دوري القدامى
+2241	Street Trophy	Trofeo de la Calle	كأس الشارع
+2242	Evening League	Liga de la Noche	دوري المساء
+2243	Logo: {name}	Logo: {name}	الشعار: {name}
+2244	Previous {label}	{label} anterior	{label} السابق
+2245	Next {label}	{label} siguiente	{label} التالي
+2246	Random crest	Escudo al azar	شعار عشوائي
+2247	{label}: another suggestion	{label}: otra propuesta	{label}: اقتراح آخر
+2248	Another suggestion	Otra propuesta	اقتراح آخر
+2249	Your club	Tu club	ناديك
+2250	a brand-new neighbourhood club, on equal terms	un club de barrio nuevo, en igualdad de condiciones	نادي حي جديد، على قدم المساواة
+2251	Your nickname	Tu apodo	لقبك
+2252	What your friends call you	Cómo te conocen tus amigos	كيف يعرفك أصدقاؤك
+2253	This nickname is already taken in this league.	Este apodo ya está cogido en esta liga.	هذا اللقب مستخدم بالفعل في هذا الدوري.
+2254	This nickname is reserved for computer clubs.	Este apodo está reservado a los clubes de la máquina.	هذا اللقب محجوز لأندية الحاسوب.
+2255	Club name	Nombre del club	اسم النادي
+2256	Your club’s name	Nombre de tu club	اسم ناديك
+2257	This club name is already taken in this league.	Este nombre de club ya está cogido en esta liga.	اسم النادي هذا مستخدم بالفعل في هذا الدوري.
+2258	Crest · FootOFF gold and black, or your colours	Escudo · oro y negro FootOFF, o tus colores	الشعار · ذهبي وأسود FootOFF، أو ألوانك
+2259	Crest of {v}	Escudo de {v}	شعار {v}
+2260	your club	tu club	ناديك
+2261	Eight neighbourhood clubs, brand new and on equal terms: yours, your friends’ and the computer in the free places. One matchday a day, everyone runs their own club.	Ocho clubes de barrio, nuevos y en igualdad: el tuyo, los de tus amigos y la máquina en las plazas libres. Una jornada al día, cada uno gestiona su club.	ثمانية أندية أحياء، جديدة ومتساوية: ناديك وأندية أصدقائك والحاسوب في الأماكن الشاغرة. جولة واحدة يوميًا، ويدير كل واحد ناديه.
+2262	No leagues yet	Ninguna liga por ahora	لا دوريات حتى الآن
+2263	Create your own and send the link to your friends, or join theirs with their code.	Crea la tuya y envía el enlace a tus amigos, o únete a la suya con su código.	أنشئ دوريك وأرسل الرابط إلى أصدقائك، أو انضم إلى دورياتهم برموزها.
+2264	A friend gave you a code? Join their league. To create your own, build the League Headquarters in the Elite League.	¿Un amigo te ha dado un código? Únete a su liga. Para crear la tuya, construye la Sede de la Liga en la Liga Élite.	أعطاك صديق رمزًا؟ انضم إلى دوريه. ولإنشاء دوريك، ابنِ مقر الدوري في دوري النخبة.
+2265	Updating…	Actualizando…	جارٍ التحديث…
+2266	Not found: this league has closed	No encontrada: esta liga ha cerrado	غير موجود: أُغلق هذا الدوري
+2267	Offline for now	Sin conexión por ahora	غير متصل حاليًا
+2268	Waiting room · {plural} of {LEAGUE_CLUBS}	Sala de espera · {plural} de {LEAGUE_CLUBS}	غرفة الانتظار · {plural} من {LEAGUE_CLUBS}
+2269	{n} club	{n} club	نادٍ واحد

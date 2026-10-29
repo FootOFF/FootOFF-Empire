@@ -17,6 +17,7 @@ import { uiSound } from './uisound';
 import { clubStars } from '../game/crest';
 import { errorReport } from './errlog';
 import { canFullscreen, setFullscreen, useFullscreen } from './fullscreen';
+import { t, tr } from '../i18n/index';
 
 export { setUiSound, uiSound } from './uisound';
 
@@ -80,7 +81,7 @@ export function MenuList({ items, menu, className = '', label }) {
           <>
             <span className="cm-bar" aria-hidden="true" />
             <span className="cm-text">
-              <span className="cm-label">{it.label}{it.badge && <i className="cm-badge" aria-label="nouveau" />}</span>
+              <span className="cm-label">{it.label}{it.badge && <i className="cm-badge" aria-label={t('nouveau')} />}</span>
               {it.sub && <span className="cm-sub">{it.sub}</span>}
             </span>
             {it.href ? <IconExternal className="cm-go" /> : <IconChevron className="cm-go" />}
@@ -116,7 +117,7 @@ const DPAD = <svg viewBox="0 0 24 24"><path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5
 
 function KeyGlyph({ k }) {
   if (k === 'nav') return <kbd className="cm-key icon">{ARROWS_V}</kbd>;
-  return <kbd className="cm-key">{k === 'select' ? 'Entrée' : 'Échap'}</kbd>;
+  return <kbd className="cm-key">{k === 'select' ? t('Entrée') : t('Échap')}</kbd>;
 }
 
 function PadGlyph({ k }) {
@@ -130,7 +131,7 @@ function PadGlyph({ k }) {
 // Réglages : son, vibrations, puis la sauvegarde (code à copier pour la retrouver sur un autre appareil, code à coller
 // pour restaurer une partie). Le code est copié dans le presse-papiers ; s'il ne peut pas l'être, il s'affiche dans un
 // champ à copier soi-même. Coller un code mène à une confirmation du jeu (App) avant de remplacer la partie.
-const sizeOf = (code) => `${Math.max(1, Math.round(code.length / 1024))} Ko`;
+const sizeOf = (code) => t('{max} Ko', { max: Math.max(1, Math.round(code.length / 1024)) });
 // focus : l'entrée choisie à l'ouverture (« fluid » : la notification « Le jeu rame » mène au réglage lui-même)
 export function SettingsView({ settings, onBack, active = true, focus = null }) {
   const { muted, onToggleSound, vibration, canVibrate, onToggleVibration, fluid = false, onToggleFluid = null, save = null, onExport = null, onImport = null } = settings;
@@ -154,7 +155,7 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
     setCode(c);
     let copied = false;
     try { await navigator.clipboard.writeText(c); copied = true; } catch { /* presse-papiers refusé : le code s'affiche */ }
-    setNote(copied ? `Code copié (${sizeOf(c)}). Colle-le dans les réglages du jeu sur ton autre appareil.` : 'Copie-le toi-même ci-dessous.');
+    setNote(copied ? t('Code copié ({sizeOf}). Colle-le dans les réglages du jeu sur ton autre appareil.', { sizeOf: sizeOf(c) }) : t('Copie-le toi-même ci-dessous.'));
     setMode('export');
   };
   const doImport = async () => {
@@ -168,30 +169,30 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
   // partie en cours (son code de sauvegarde, pour rejouer le problème) : c'est le joueur qui choisit.
   const doReport = async (withSave) => {
     uiSound('select');
-    let text = errorReport(null, save ? `${save.clubName} · saison ${save.season} · ${save.division}` : 'aucune partie');
-    if (withSave && onExport) text += `\n\nPARTIE (code de sauvegarde) :\n${await onExport()}`;
+    let text = errorReport(null, save ? t('{clubName} · saison {season} · {division}', { clubName: save.clubName, season: save.season, division: save.division }) : t('aucune partie'));
+    if (withSave && onExport) text += t('\n\nPARTIE (code de sauvegarde) :\n{v}', { v: await onExport() });
     setCode(text);
     let copied = false;
     try { await navigator.clipboard.writeText(text); copied = true; } catch { /* presse-papiers refusé : le texte s'affiche */ }
-    setNote(copied ? `Rapport copié (${sizeOf(text)}). Colle-le dans ton message, avec ce que tu faisais au moment du problème.` : 'Copie-le toi-même ci-dessous.');
+    setNote(copied ? t('Rapport copié ({sizeOf}). Colle-le dans ton message, avec ce que tu faisais au moment du problème.', { sizeOf: sizeOf(text) }) : t('Copie-le toi-même ci-dessous.'));
     setMode('report-done');
   };
   if (mode === 'report') {
     return (
-      <div className="cm-settings cm-save" role="group" aria-label="Signaler un problème">
-        <p className="cm-save-lead">Le rapport contient la version du jeu, ton navigateur, la taille de l’écran et les vingt dernières erreurs. Avec la partie, il contient aussi son code de sauvegarde : c’est ce qui permet de rejouer exactement ce qui s’est passé. Rien n’est envoyé : tu le colles toi-même dans un message.</p>
+      <div className="cm-settings cm-save" role="group" aria-label={t('Signaler un problème')}>
+        <p className="cm-save-lead">{t('Le rapport contient la version du jeu, ton navigateur, la taille de l’écran et les vingt dernières erreurs. Avec la partie, il contient aussi son code de sauvegarde : c’est ce qui permet de rejouer exactement ce qui s’est passé. Rien n’est envoyé : tu le colles toi-même dans un message.')}</p>
         <div className="cm-save-actions">
-          <button type="button" className="btn ghost" onClick={() => { uiSound('back'); setMode('menu'); }}>Retour</button>
-          <button type="button" className="btn ghost" onClick={() => doReport(false)}>Sans la partie</button>
-          <button type="button" className="btn" disabled={!save || !onExport} onClick={() => doReport(true)}>Avec la partie</button>
+          <button type="button" className="btn ghost" onClick={() => { uiSound('back'); setMode('menu'); }}>{t('Retour')}</button>
+          <button type="button" className="btn ghost" onClick={() => doReport(false)}>{t('Sans la partie')}</button>
+          <button type="button" className="btn" disabled={!save || !onExport} onClick={() => doReport(true)}>{t('Avec la partie')}</button>
         </div>
       </div>
     );
   }
   if (mode !== 'menu') {
     return (
-      <div className="cm-settings cm-save" role="group" aria-label={mode === 'export' ? 'Code de sauvegarde' : 'Restaurer une sauvegarde'}>
-        <p className="cm-save-lead">{mode === 'export' ? `Code de sauvegarde de ${save?.clubName} · saison ${save?.season}` : mode === 'report-done' ? 'Rapport à signaler' : 'Colle ici un code de sauvegarde copié depuis un autre appareil.'}</p>
+      <div className="cm-settings cm-save" role="group" aria-label={mode === 'export' ? t('Code de sauvegarde') : t('Restaurer une sauvegarde')}>
+        <p className="cm-save-lead">{mode === 'export' ? t('Code de sauvegarde de {v} · saison {v2}', { v: save?.clubName, v2: save?.season }) : mode === 'report-done' ? t('Rapport à signaler') : t('Colle ici un code de sauvegarde copié depuis un autre appareil.')}</p>
         <textarea
           className="cm-code"
           value={code}
@@ -201,13 +202,13 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
-          placeholder={mode === 'import' ? 'FOE1:…' : ''}
-          aria-label="Code de sauvegarde"
+          placeholder={mode === 'import' ? t('FOE1:…') : ''}
+          aria-label={t('Code de sauvegarde')}
         />
         {note && <p className={`cm-save-note ${mode === 'import' && note ? 'warn' : ''}`}>{note}</p>}
         <div className="cm-save-actions">
-          <button type="button" className="btn ghost" onClick={() => { uiSound('back'); setMode('menu'); setNote(null); if (mode === 'import') setCode(''); }}>Retour</button>
-          {mode === 'import' && <button type="button" className="btn" disabled={!code.trim()} onClick={doImport}>Restaurer</button>}
+          <button type="button" className="btn ghost" onClick={() => { uiSound('back'); setMode('menu'); setNote(null); if (mode === 'import') setCode(''); }}>{t('Retour')}</button>
+          {mode === 'import' && <button type="button" className="btn" disabled={!code.trim()} onClick={doImport}>{t('Restaurer')}</button>}
         </div>
       </div>
     );
@@ -217,27 +218,27 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
     <button type="button" className={`cm-row back top ${cur === at('back') ? 'on' : ''}`} {...row(at('back'))} onClick={() => { uiSound('back'); onBack(); }}>
       <span className="cm-bar" aria-hidden="true" />
       <IconChevronLeft className="cm-back-icon" />
-      <span className="cm-row-text"><strong>Retour</strong></span>
+      <span className="cm-row-text"><strong>{t('Retour')}</strong></span>
     </button>
-    <div className="cm-settings" role="menu" aria-label="Réglages">
+    <div className="cm-settings" role="menu" aria-label={t('Réglages')}>
       <button type="button" role="menuitemcheckbox" aria-checked={!muted} className={`cm-row ${cur === at('sound') ? 'on' : ''}`} {...row(at('sound'))} onClick={() => { onToggleSound(); uiSound('select'); }}>
         <span className="cm-bar" aria-hidden="true" />
-        <span className="cm-row-text"><strong>Son</strong><span>Ambiance du stade, sifflet, pièces et sons du menu.</span></span>
+        <span className="cm-row-text"><strong>{t('Son')}</strong><span>{t('Ambiance du stade, sifflet, pièces et sons du menu.')}</span></span>
         <span className={`switch ${muted ? '' : 'on'}`} aria-hidden="true"><i /></span>
       </button>
       <button type="button" role="menuitemcheckbox" aria-checked={vibOn} disabled={!canVibrate} className={`cm-row ${cur === at('vibration') ? 'on' : ''}`} {...row(at('vibration'))} onClick={() => { onToggleVibration(); uiSound('select'); }}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">
-          <strong>Vibrations</strong>
-          <span>{canVibrate ? 'But marqué, vente, construction.' : 'Non disponibles sur ce navigateur (c’est le cas sur iPhone).'}</span>
+          <strong>{t('Vibrations')}</strong>
+          <span>{canVibrate ? t('But marqué, vente, construction.') : t('Non disponibles sur ce navigateur (c’est le cas sur iPhone).')}</span>
         </span>
         <span className={`switch ${vibOn ? 'on' : ''}`} aria-hidden="true"><i /></span>
       </button>
       <button type="button" role="menuitemcheckbox" aria-checked={fluid} disabled={!onToggleFluid} className={`cm-row ${cur === at('fluid') ? 'on' : ''}`} {...row(at('fluid'))} onClick={() => { onToggleFluid(); uiSound('select'); }}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">
-          <strong>Fluidité sur appareil lent</strong>
-          <span>Si le jeu rame, la 3D est calculée avec moins de pixels (un peu moins nette) pour redevenir fluide. Sans effet sur un appareil qui suit.</span>
+          <strong>{t('Fluidité sur appareil lent')}</strong>
+          <span>{t('Si le jeu rame, la 3D est calculée avec moins de pixels (un peu moins nette) pour redevenir fluide. Sans effet sur un appareil qui suit.')}</span>
         </span>
         <span className={`switch ${fluid ? 'on' : ''}`} aria-hidden="true"><i /></span>
       </button>
@@ -245,8 +246,8 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
         <button type="button" role="menuitemcheckbox" aria-checked={fullscreen} className={`cm-row ${cur === at('fullscreen') ? 'on' : ''}`} {...row(at('fullscreen'))} onClick={() => { setFullscreen(!fullscreen); uiSound('select'); }}>
           <span className="cm-bar" aria-hidden="true" />
           <span className="cm-row-text">
-            <strong>Plein écran</strong>
-            <span>Le jeu occupe tout l’écran, sans la barre du navigateur. Échap pour en sortir ; allumé, il revient à ton premier clic quand tu rouvres le jeu.</span>
+            <strong>{t('Plein écran')}</strong>
+            <span>{t('Le jeu occupe tout l’écran, sans la barre du navigateur. Échap pour en sortir ; allumé, il revient à ton premier clic quand tu rouvres le jeu.')}</span>
           </span>
           <span className={`switch ${fullscreen ? 'on' : ''}`} aria-hidden="true"><i /></span>
         </button>
@@ -254,22 +255,22 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
       <button type="button" role="menuitem" disabled={!save || !onExport} className={`cm-row ${cur === at('export') ? 'on' : ''}`} {...row(at('export'))} onClick={doExport}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">
-          <strong>Copier le code de sauvegarde</strong>
-          <span>{save ? `${save.clubName} · saison ${save.season}, ${save.division} · pour continuer sur un autre appareil.` : 'Aucune partie en cours.'}</span>
+          <strong>{t('Copier le code de sauvegarde')}</strong>
+          <span>{save ? t('{clubName} · saison {season}, {division} · pour continuer sur un autre appareil.', { clubName: save.clubName, season: save.season, division: save.division }) : t('Aucune partie en cours.')}</span>
         </span>
       </button>
       <button type="button" role="menuitem" disabled={!onImport} className={`cm-row ${cur === at('import') ? 'on' : ''}`} {...row(at('import'))} onClick={() => { uiSound('select'); setCode(''); setNote(null); setMode('import'); }}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">
-          <strong>Restaurer un code de sauvegarde</strong>
-          <span>{save ? 'La partie actuelle sera gardée en copie de secours.' : 'Reprends une partie copiée depuis un autre appareil.'}</span>
+          <strong>{t('Restaurer un code de sauvegarde')}</strong>
+          <span>{save ? t('La partie actuelle sera gardée en copie de secours.') : t('Reprends une partie copiée depuis un autre appareil.')}</span>
         </span>
       </button>
       <button type="button" role="menuitem" className={`cm-row ${cur === at('report') ? 'on' : ''}`} {...row(at('report'))} onClick={() => { uiSound('select'); setMode('report'); setNote(null); }}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">
-          <strong>Signaler un problème</strong>
-          <span>Un rapport à coller dans un message : version, erreurs, et ta partie si tu l’acceptes.</span>
+          <strong>{t('Signaler un problème')}</strong>
+          <span>{t('Un rapport à coller dans un message : version, erreurs, et ta partie si tu l’acceptes.')}</span>
         </span>
       </button>
     </div>
@@ -278,7 +279,7 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
 }
 
 const outcomeOf = (m) => (m.pens ? (m.pens[0] > m.pens[1] ? 'win' : 'loss') : m.gf > m.ga ? 'win' : m.gf < m.ga ? 'loss' : 'draw');
-const LETTER = { win: 'V', draw: 'N', loss: 'D' };
+const LETTER = { win: t('V', undefined, 'résultat'), draw: t('N', undefined, 'résultat'), loss: t('D', undefined, 'résultat') };
 
 // Carte de la partie en cours : club, classement, points, journée, forme, prochain match, objectif, trésorerie.
 // head : en-tête du club (nom, division), inutile quand l'écran l'affiche déjà en grand (pause).
@@ -300,26 +301,26 @@ export function ClubCard({ state, eyebrow, objective = false, head = true }) {
           <div>
             <span className="eyebrow">{eyebrow}</span>
             <strong>{state.clubName}</strong>
-            <span>{div.name} · Saison {state.seasonNumber}</span>
+            <span>{tr('<0/> · Saison <1/>', [div.name, state.seasonNumber])}</span>
           </div>
         </header>
       ) : <span className="eyebrow">{eyebrow}</span>}
       <div className="cm-card-stats">
-        <div><span>Classement</span><b>{me.played ? <>{num}<small>{rank.slice(num.length)}</small></> : '—'}</b></div>
-        <div><span>Points</span><b>{me.pts}</b></div>
-        <div><span>Journées</span><b>{Math.min(state.round, total)}<small>/ {total}</small></b></div>
+        <div><span>{t('Classement')}</span><b>{me.played ? <>{num}<small>{rank.slice(num.length)}</small></> : '—'}</b></div>
+        <div><span>{t('Points')}</span><b>{me.pts}</b></div>
+        <div><span>{t('Journées')}</span><b>{Math.min(state.round, total)}<small>/ {total}</small></b></div>
       </div>
       <dl className="cm-card-rows">
         {form.length > 0 && (
-          <div><dt>Forme</dt><dd className="cm-form">{form.map((m, i) => { const o = outcomeOf(m); return <i key={i} className={o}>{LETTER[o]}</i>; })}</dd></div>
+          <div><dt>{t('Forme')}</dt><dd className="cm-form">{form.map((m, i) => { const o = outcomeOf(m); return <i key={i} className={o}>{LETTER[o]}</i>; })}</dd></div>
         )}
         {ctx ? (
-          <div><dt>Prochain match · {ctx.short || ctx.label}</dt><dd className="cm-opp"><Crest name={ctx.opp.name} className="cm-opp-crest" /><span>{ctx.opp.name}</span></dd></div>
+          <div><dt>{tr('Prochain match · <0/>', [ctx.short || ctx.label])}</dt><dd className="cm-opp"><Crest name={ctx.opp.name} className="cm-opp-crest" /><span>{ctx.opp.name}</span></dd></div>
         ) : (
-          <div><dt>Prochain match</dt><dd>Saison terminée, place au bilan</dd></div>
+          <div><dt>{t('Prochain match')}</dt><dd>{t('Saison terminée, place au bilan')}</dd></div>
         )}
-        {goals && <div className="stack"><dt>Objectifs de la saison · {goals.done}/{goals.list.length}</dt><dd>{goals.list.map((o) => `${o.state === 'done' ? '✓ ' : o.state === 'failed' ? '✗ ' : ''}${o.title}`).join(' · ')}</dd></div>}
-        <div><dt>Trésorerie</dt><dd className={state.money < 0 ? 'neg' : ''}>{fmtMoney(state.money)}</dd></div>
+        {goals && <div className="stack"><dt>{tr('Objectifs de la saison · <0/>/<1/>', [goals.done, goals.list.length])}</dt><dd>{goals.list.map((o) => `${o.state === 'done' ? '✓ ' : o.state === 'failed' ? '✗ ' : ''}${o.title}`).join(' · ')}</dd></div>}
+        <div><dt>{t('Trésorerie')}</dt><dd className={state.money < 0 ? 'neg' : ''}>{fmtMoney(state.money)}</dd></div>
       </dl>
     </section>
   );

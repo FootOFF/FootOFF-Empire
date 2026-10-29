@@ -1,0 +1,76 @@
+1572	Potential	Potencial	الإمكانات
+1573	Progress	Progreso	التطور
+1574	Progress this season	Progreso esta temporada	التطور هذا الموسم
+1575	Strengths	Puntos fuertes	نقاط القوة
+1576	Plan	Plan	الخطة
+1577	Starter level	Nivel de titular	مستوى لاعب أساسي
+1578	Final season	Última temporada	الموسم الأخير
+1579	<0/> yrs · <1/><2/>	<0/> años · <1/><2/>	<0/> عامًا · <1/><2/>
+1580	pot. <0/>	pot. <0/>	الإمكانات <0/>
+1581	final season	última temporada	الموسم الأخير
+1582	<0/> this season	<0/> esta temporada	<0/> هذا الموسم
+1583	in training	en el entrenamiento	في التدريب
+1584	Scouts on a mission: the list is renewed when they return	Ojeadores de misión: la lista se renueva a su regreso	الكشافون في مهمة: تتجدد القائمة عند عودتهم
+1585	{v} · more youngsters {when} · free signing	{v} · más jóvenes {when} · fichaje gratuito	{v} · شبان آخرون {when} · ضم مجاني
+1586	Back from the mission: {tn} among {missionCount}	Regreso de la misión: {tn} entre {missionCount}	العودة من المهمة: {tn} من بين {missionCount}
+1587	the {back} most promising	los {back} más prometedores	{"one":"الأكثر وعدًا","two":"الاثنان الأكثر وعدًا","few":"الـ{back} الأكثر وعدًا","other":"الـ{back} الأكثر وعدًا"}
+1588	Spotted after matchday {since}	Detectados tras la jornada {since}	رُصدوا بعد الجولة {since}
+1589	Spotted for the start of the season	Detectados para el inicio de temporada	رُصدوا لبداية الموسم
+1590	Your youth team is full (<0/> / <1/>): promote or release a youngster to sign another.	Tu equipo juvenil está completo (<0/> / <1/>): sube o libera a un joven para fichar a otro.	فريق شبابك مكتمل (<0/> / <1/>): رقِّ شابًا أو أطلق سراحه لتضم آخر.
+1591	Build the academy so that your youth coaches can spot youngsters.	Construye la cantera para que tus técnicos detecten jóvenes.	ابنِ الأكاديمية ليرصد مدربو الفئات السنية الشبان.
+1592	You have signed all the youngsters spotted. Your youth coaches will suggest {v} more {when}.	Has fichado a todos los jóvenes detectados. Tus técnicos propondrán {v} más {when}.	ضممت جميع الشبان المرصودين. سيقترح مدربو الفئات السنية {v} آخرين {when}.
+1593	Recommended plan	Plan recomendado	الخطة الموصى بها
+1594	Sign	Fichar	تعاقد
+1595	Youth team full	Equipo juvenil completo	فريق الشباب مكتمل
+1596	Sign {name}, free of charge	Fichar a {name}, gratis	ضم {name} مجانًا
+1597	Sign	Fichar	تعاقد
+1598	<0/> yrs<1/>	<0/> años<1/>	<0/> عامًا<1/>
+1599	to sign	por fichar	متاح للضم
+1600	after matchday {round} next season	tras la jornada {round} de la próxima temporada	بعد الجولة {round} من الموسم المقبل
+1601	after matchday {round}	tras la jornada {round}	بعد الجولة {round}
+1602	{v} matchdays	{v} jornadas	{v} جولات
+1603	{n} matchdays	{n} jornadas	{"one":"جولة واحدة","two":"جولتان","few":"{n} جولات","other":"{n} جولة"}
+1604	Recall the scouts?	¿Llamar de vuelta a los ojeadores?	استدعاء الكشافين؟
+1605	The mission stops without bringing back any youngsters; scouting resumes immediately.	La misión se detiene sin traer jóvenes; los ojeos se reanudan enseguida.	تتوقف المهمة دون العودة بأي شبان؛ ويُستأنف الاستكشاف فورًا.
+1606	Recall	Llamar de vuelta	استدعاء
+1607	Let them keep looking	Dejarlos buscar	دعهم يواصلون البحث
+1608	Mission in progress · <0/>	Misión en curso · <0/>	مهمة جارية · <0/>
+1609	Back <0/>, with <1/> of the <2/> youngsters seen.	Regreso <0/>, con <1/> de los <2/> jóvenes vistos.	العودة <0/>، مع <1/> من بين <2/> شابًا شوهدوا.
+1610	Scouting trip {done} of {steps}	Ojeo {done} de {steps}	جولة الاستكشاف {done} من {steps}
+1611	Trip <0/>	Ojeo <0/>	الجولة <0/>
+1612	First news after the next scouting trip.	Primeras noticias tras el próximo ojeo.	أولى الأخبار بعد جولة الاستكشاف المقبلة.
+1613	During the mission, the list of scouted youngsters is not renewed.	Durante la misión, la lista de jóvenes detectados no se renueva.	خلال المهمة، لا تتجدد قائمة الشبان المرصودين.
+1614	Recall the scouts	Llamar de vuelta a los ojeadores	استدعاء الكشافين
+1615	Mission not possible.	Misión imposible.	المهمة غير ممكنة.
+1616	They are looking for {missionTarget}: news after every scouting trip, back {whenText}.	Buscan {missionTarget}: noticias en cada ojeo, regreso {whenText}.	يبحثون عن {missionTarget}: أخبار بعد كل جولة استكشاف، والعودة {whenText}.
+1617	Send them on a mission for a position or a profile. They send news after every scouting trip.	Envíalos de misión en busca de una posición o un perfil. Dan noticias en cada ojeo.	أرسلهم في مهمة بحثًا عن مركز أو ملف. يرسلون الأخبار بعد كل جولة استكشاف.
+1618	Mission target	Objetivo de la misión	هدف المهمة
+1619	Mission length	Duración de la misión	مدة المهمة
+1620	They will see <0/> and bring back <1/> <2/>.	Verán <0/> y traerán <1/> <2/>.	سيشاهدون <0/> ويعودون بـ<1/> <2/>.
+1621	Exact chances	Probabilidades exactas	فرص دقيقة
+1622	A potential of 16 or more among them <0/>	Un potencial de 16 o más entre ellos <0/>	إمكانات 16 أو أكثر بينهم <0/>
+1623	18 or more <0/>	De 18 o más <0/>	18 أو أكثر <0/>
+1624	During the mission, the list of scouted youngsters is not renewed; in exchange, your scouts observe twice as many.	Durante la misión, la lista de jóvenes detectados no se renueva; a cambio, tus ojeadores observan el doble.	خلال المهمة لا تتجدد قائمة الشبان المرصودين؛ وفي المقابل يراقب كشافوك ضعف العدد.
+1625	Start the mission	Lanzar la misión	إطلاق المهمة
+1626	{plural} {v} · potential {v2} to {v3}, rarely {top} · range of {dec} points	{plural} {v} · potencial de {v2} a {v3}, rara vez {top} · margen de {dec} puntos	{plural} {v} · الإمكانات من {v2} إلى {v3}، ونادرًا {top} · نطاق {dec} نقاط
+1627	{n} youngster spotted	{n} joven detectado	شاب واحد مرصود
+1628	{n} youngsters spotted	{n} jóvenes detectados	{"one":"شاب واحد مرصود","two":"شابان مرصودان","few":"{n} شبان مرصودين","other":"{n} شابًا مرصودًا"}
+1629	every two matchdays	cada dos jornadas	كل جولتين
+1630	Academy · level <0/> / <1/>	Cantera · nivel <0/> / <1/>	الأكاديمية · المستوى <0/> / <1/>
+1631	Level <0/>	Nivel <0/>	المستوى <0/>
+1632	<0/> Upgrade · <1/>	<0/> Mejorar · <1/>	<0/> تطوير · <1/>
+1633	Maximum level reached	Nivel máximo alcanzado	بلغ المستوى الأقصى
+1634	Profile of {deName}	Ficha {deName}	بطاقة {deName}
+1635	Previous scouted youngster	Joven detectado anterior	الشاب المرصود السابق
+1636	Previous youngster	Joven anterior	الشاب السابق
+1637	Next scouted youngster	Joven detectado siguiente	الشاب المرصود التالي
+1638	Next youngster	Joven siguiente	الشاب التالي
+1639	Close the profile	Cerrar la ficha	إغلاق البطاقة
+1640	<0/> yrs · <1/>	<0/> años · <1/>	<0/> عامًا · <1/>
+1641	Spotted by your youth coaches	Detectado por tus técnicos	رصده مدربو الفئات السنية
+1642	At the academy since season {v}	En la cantera desde la temporada {v}	في الأكاديمية منذ الموسم {v}
+1643	<0/> at the end of the season	<0/> años al final de la temporada	<0/> عامًا بين الموسمين
+1644	Can cover: <0/> <1/>	De recambio: <0/> <1/>	بديل في مركز: <0/> <1/>
+1645	Level <0/><1/>	Nivel <0/><1/>	المستوى <0/><1/>
+1646	Ceiling reached	Techo alcanzado	بلغ سقفه
+1647	last matchday	última jornada	الجولة الأخيرة

@@ -1,4 +1,5 @@
 import { originOf } from './names';
+import { t } from '../i18n/index';
 
 // Visages des joueurs (0.6.1) : traits tirés une fois, gardés sur le joueur (p.face), dessinés par src/ui/portrait.jsx.
 // Teint, couleur et texture des cheveux, coiffure (une vingtaine), pilosité, forme du visage, yeux et leur couleur,

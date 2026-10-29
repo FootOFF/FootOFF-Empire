@@ -63,6 +63,7 @@
   --font-disp: 'Barlow Condensed', 'Arial Narrow', 'Inter', system-ui, sans-serif;
   --font-title: 'Geist', 'Inter', system-ui, sans-serif; /* écussons des clubs (crest.jsx) */
   --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif; /* texte courant */
   --ease: cubic-bezier(.2, .8, .2, 1);
   --ease-in: cubic-bezier(.4, 0, 1, 1); /* sorties : accélère en partant */
 }
@@ -77,7 +78,7 @@ html, body, #root { margin: 0; padding: 0; height: 100%; }
 html { touch-action: manipulation; } /* pas de zoom au double toucher (le défilement reste) */
 body {
   background: var(--bg); color: var(--text);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: var(--t-md); line-height: 1.5;
+  font-family: var(--font-body); font-size: var(--t-md); line-height: 1.5;
   -webkit-font-smoothing: antialiased; overflow: hidden;
 }
 h1, h2, h3, h4 { font-family: var(--font-disp); font-weight: 600; letter-spacing: .005em; margin: 0; }
@@ -147,9 +148,9 @@ svg.fill { fill: currentColor; } /* icône pleine (triangle de lecture) */
 .lockup-mark { height: 34px; width: auto; flex-shrink: 0; }
 .lockup-sep { width: 1px; align-self: stretch; background: var(--gold-line); margin: 2px; }
 .lockup-text { display: flex; flex-direction: column; line-height: 1; }
-.lockup-name { font-family: 'Inter', sans-serif; font-weight: 500; font-size: var(--t-lg); letter-spacing: -.02em; }
+.lockup-name { font-family: var(--font-body); font-weight: 500; font-size: var(--t-lg); letter-spacing: -.02em; }
 .lockup-name b { font-weight: 500; color: var(--gold); }
-.lockup-sub { font-family: 'Inter', sans-serif; font-weight: 500; font-size: var(--t-xs); letter-spacing: .55em; text-transform: uppercase; color: var(--gold); margin-top: 4px; }
+.lockup-sub { font-family: var(--font-body); font-weight: 500; font-size: var(--t-xs); letter-spacing: .55em; text-transform: uppercase; color: var(--gold); margin-top: 4px; }
 .lockup-lg { gap: 20px; }
 .lockup-lg .lockup-mark { height: 76px; }
 .lockup-lg .lockup-name { font-size: var(--t-3xl); }
@@ -366,7 +367,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .dock-badge {
   position: absolute; top: 5px; left: calc(50% + 7px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
   display: grid; place-items: center; background: var(--live); color: #fff;
-  font-style: normal; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; line-height: 1;
+  font-style: normal; font-family: var(--font-body); font-size: 11px; font-weight: 700; line-height: 1;
 }
 /* raccourcis clavier (PC à la souris) : la touche s'affiche au survol du menu ou de la carte de match */
 .dock-key, .hm-key { display: none; }
@@ -440,7 +441,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .pin-tag svg { width: 16px; height: 16px; stroke-width: 2.2; }
 .pin-tag.dark { background: var(--plate-solid); color: var(--text); padding: 0 12px 0 14px; }
 .pin-tag.dark svg { color: var(--gold-light); stroke-width: 1.8; }
-.pin-tag em { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: grid; place-items: center; font-style: normal; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0; background: var(--gold-light); color: var(--gold-ink); }
+.pin-tag em { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: grid; place-items: center; font-style: normal; font-family: var(--font-body); font-size: 11px; font-weight: 700; letter-spacing: 0; background: var(--gold-light); color: var(--gold-ink); }
 @media (hover: hover) { .pin-tag:hover { filter: brightness(1.12); } }
 .pin-stem { width: 2px; height: 16px; background: linear-gradient(var(--gold-light), rgba(222, 193, 127, .15)); }
 .pin-foot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold-light); box-shadow: 0 0 0 4px rgba(222, 193, 127, .22); }
@@ -913,7 +914,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .sh-meta { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-2); }
 .sh-meta .pos-pill { --slant: 6px; width: 34px; height: 24px; font-size: 17px; }
 .sh-name { margin: 0; display: flex; flex-direction: column; gap: 5px; min-width: 0; text-transform: none; }
-.sh-name small { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: var(--text-2); letter-spacing: 0; }
+.sh-name small { font-family: var(--font-body); font-size: 15px; font-weight: 500; color: var(--text-2); letter-spacing: 0; }
 .sh-name b { font-family: var(--font-disp); font-weight: 700; font-size: 46px; line-height: .86; text-transform: uppercase; overflow-wrap: anywhere; }
 .sh-face { align-self: center; width: 136px; height: 136px; border-radius: 50%; box-shadow: 0 0 0 3px rgba(222, 193, 127, .55), 0 14px 30px rgba(0, 0, 0, .45); }
 .sh-tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
@@ -936,6 +937,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .sh-pot { font-size: 14px; color: var(--muted); white-space: nowrap; }
 .sh-scale { position: relative; height: 10px; background: rgba(255, 255, 255, .08); }
 .sh-scale i { position: absolute; top: 0; bottom: 0; }
+/* jauge : de droite à gauche en arabe (les repères « pot » sont placés en inset-inline-start) */
 .sh-scale i.now { left: 0; background: var(--gold-grad); }
 .sh-scale i.pot { top: -3px; bottom: -3px; background: repeating-linear-gradient(135deg, rgba(222, 193, 127, .5) 0 3px, rgba(222, 193, 127, .12) 3px 6px); box-shadow: inset 0 0 0 1.5px var(--gold-light); }
 .sh-ticks { display: flex; justify-content: space-between; margin-top: -4px; font-family: var(--font-mono); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -1732,6 +1734,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .lv-moment svg { display: block; width: 100%; height: 100%; }
 .lv-moment .past { stroke: rgba(255, 255, 255, .16); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .lv-moment .base { stroke: rgba(255, 255, 255, .22); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+/* rtl:ignore */
 .lv-gdot { position: absolute; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px rgba(12, 13, 15, .8); }
 .lv-prono { display: flex; flex-direction: column; gap: 8px; padding: 10px 0 12px; }
 .lv-prono-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 12px; color: var(--muted); }
@@ -1787,7 +1790,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .lv-controls button svg { width: 19px; height: 19px; }
 .lc-sub em {
   min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; display: grid; place-items: center; font-style: normal;
-  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0; background: var(--gold-light); color: var(--gold-ink);
+  font-family: var(--font-body); font-size: 12px; font-weight: 700; letter-spacing: 0; background: var(--gold-light); color: var(--gold-ink);
 }
 .lv-controls .lc-sound { width: var(--lc-h); padding: 0; }
 .lv-controls .lc-sound[aria-pressed="false"] { color: var(--muted); }
@@ -2456,6 +2459,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 /* position par « translate » et étirement par « scale » : deux propriétés distinctes, pour que l'étirement ne coupe
    pas le glissement (une animation de « transform » l'emportait sur sa transition : la goutte sautait d'un bouton
    à l'autre) et que la loupe du doigt ne déplace pas la goutte (« translate » s'applique après « scale ») */
+/* rtl:ignore */
 .glass-pill {
   position: absolute; left: 0; z-index: 0; border-radius: 20px; pointer-events: none;
   translate: var(--x) 0;
@@ -2820,6 +2824,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 }
 
 /* un joueur du onze : portrait, note au poste (parallélogramme), nom, condition */
+/* rtl:ignore */
 .lu-chip {
   position: absolute; z-index: 1; left: calc(9% + var(--x) * .82); top: calc(5% + var(--y) * .9); transform: translate(-50%, -50%) scale(var(--lu-s, 1));
   width: 104px; padding: 0; border: 0; background: none; color: var(--text);
@@ -2828,7 +2833,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 }
 /* terrain couché (large) : les joueurs d'une même ligne s'empilent ; écart vertical élargi pour que la condition
    (barre et pourcentage) ne passe jamais sous le portrait du voisin (5-3-2, 3-5-2) */
-@container lu (min-width: 480px) { .lu-chip { left: calc(5% + (100% - var(--y)) * .9); top: calc(5% + var(--x) * .9); } }
+@container lu (min-width: 480px) { /* rtl:ignore */ .lu-chip { left: calc(5% + (100% - var(--y)) * .9); top: calc(5% + var(--x) * .9); } }
 .lu-face { position: relative; width: 52px; height: 52px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(12, 13, 15, .9), 0 6px 16px rgba(0, 0, 0, .45); transition: box-shadow .2s, transform .2s var(--ease); }
 .lu-face .pf { display: block; width: 100%; height: 100%; border-radius: 50%; }
 /* marge intérieure = biais + 3 px : les coins en biais ne mordent jamais sur une note à deux chiffres (« 11,6 ») */
@@ -3979,7 +3984,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ng-amount .hud-icon { font-size: 22px; line-height: 1; }
 .ng-amount .hud-icon:disabled { opacity: .35; cursor: not-allowed; }
 .ng-value { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; font-family: var(--font-disp); font-weight: 700; font-size: var(--d-3xl); line-height: 1.05; letter-spacing: .005em; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.ng-value em { margin-top: 4px; font-family: 'Inter', system-ui, sans-serif; font-style: normal; font-weight: 400; font-size: var(--t-xs); letter-spacing: 0; color: var(--muted); white-space: normal; text-align: center; }
+.ng-value em { margin-top: 4px; font-family: var(--font-body); font-style: normal; font-weight: 400; font-size: var(--t-xs); letter-spacing: 0; color: var(--muted); white-space: normal; text-align: center; }
 .ng-range { width: 100%; margin: 0; accent-color: var(--gold); }
 .ng-quick { margin-bottom: 0; }
 .ng-chance { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-4); border-radius: 0; border: 0; background: var(--plate-2); clip-path: var(--cut-shape-sm); }
@@ -4066,7 +4071,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ng-mini output { text-align: center; font-family: var(--font-disp); font-weight: 700; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
 @media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .ng-counter > div { flex-basis: 100%; } .ng-counter .btn { flex-basis: 100%; } }
 .ng-answer b, .ng-counter .eyebrow { text-wrap: balance; }
-.ng-counter b small { font-family: 'Inter', system-ui, sans-serif; font-weight: 400; font-size: var(--t-sm); color: var(--text-2); }
+.ng-counter b small { font-family: var(--font-body); font-weight: 400; font-size: var(--t-sm); color: var(--text-2); }
 .ng-col { display: contents; }
 .sq-overlay.ng-overlay { container-type: inline-size; }
 @media (min-width: 980px) { .sq-overlay.ng-overlay { justify-content: center; align-items: center; padding: 24px; background: rgba(5, 5, 5, .74); } }
@@ -4155,7 +4160,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 /* ---- mercato, habillage Tribune : onglets de la section dans l'en-tête (pastilles : offres à traiter en rouge,
    joueurs suivis en gris), tableau du marché sur PC, cartes à coin coupé et bandeau de rang, filtres en plaques,
    négociation en plaques (montant, curseur, chances d'accord, coût) ---- */
-.sq-tab-count { border-radius: 9px; background: var(--live); color: #fff; font-family: 'Inter', sans-serif; letter-spacing: 0; }
+.sq-tab-count { border-radius: 9px; background: var(--live); color: #fff; font-family: var(--font-body); letter-spacing: 0; }
 .sq-tab-count.muted { background: rgba(255, 255, 255, .14); color: var(--text-2); }
 .sq-tabs button.on .sq-tab-count.muted { background: rgba(18, 15, 8, .2); color: var(--gold-ink); }
 /* onglet actif (fond doré) : ses pastilles passent en foncé, sinon or sur or ou blanc sur or, illisibles (académie :
@@ -4977,6 +4982,7 @@ html, body { overscroll-behavior: none; }
 .drill-mark { position: absolute; transform: translate(-50%, -100%); min-width: 30px; height: 30px; padding: 0 9px; border-radius: 3px; display: grid; place-items: center; pointer-events: none; font-family: var(--font-disp); font-size: var(--d-sm); font-weight: 600; background: rgba(10, 10, 11, .82); border: 1px solid var(--gold-line); color: var(--gold-light); box-shadow: 0 4px 14px rgba(0, 0, 0, .35); transition: background var(--dur-fast), color var(--dur-fast), transform var(--dur-fast); }
 .drill-mark.on { background: var(--gold-grad); color: #1a1408; transform: translate(-50%, -100%) scale(1.15); }
 /* frappes au glissé : une flèche qui monte au-dessus du ballon invite au geste ; un tracé doré suit le doigt */
+/* rtl:ignore */
 .drill-swipe-hint {
   position: absolute; width: 40px; height: 40px; margin: -58px 0 0 -20px; display: grid; place-items: center; pointer-events: none;
   color: var(--gold-light); filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .6)); animation: swipe-hint 1.5s var(--ease) infinite;
@@ -5052,7 +5058,7 @@ html, body { overscroll-behavior: none; }
 .crash-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 6px; }
 .crash-actions .btn-xl { width: 100%; }
 .crash-restore { flex-direction: column; gap: 2px; padding-block: 8px; }
-.crash-restore small { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; white-space: normal; color: var(--text-2); }
+.crash-restore small { font-family: var(--font-body); font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; white-space: normal; color: var(--text-2); }
 .crash-note { margin: 4px 0 0; font-size: var(--t-xs); color: var(--muted); line-height: 1.5; }
 .cm-save { display: flex; flex-direction: column; gap: 12px; }
 .cm-save-lead { margin: 0; font-size: var(--t-sm); color: var(--text-2); line-height: 1.5; }
@@ -5083,6 +5089,10 @@ html, body { overscroll-behavior: none; }
 .news-v li { font-size: var(--t-sm); line-height: 1.55; color: var(--text-2); max-width: 62ch; }
 .cm-badge { display: inline-block; width: 8px; height: 8px; margin-left: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px rgba(199, 161, 90, .7); vertical-align: 2px; }
 .cm-item.on .cm-badge { background: var(--gold-ink); box-shadow: none; } /* entrée choisie (barre dorée) : point foncé, visible */
+/* langue choisie (écran titre, Langue) : un point doré après son nom, foncé sur la barre dorée */
+.cm-item.picked .cm-label::after { content: ""; display: inline-block; width: 9px; height: 9px; margin-inline-start: 12px; border-radius: 50%; background: var(--gold); vertical-align: .28em; }
+.cm-item.picked.on .cm-label::after { background: var(--gold-ink); }
+.ts-lang-note { margin: var(--s-3) 0 0; max-width: 46ch; font-size: var(--t-sm); line-height: 1.5; color: var(--text-2); }
 .cm-card-list { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
 .cm-card-list li { font-size: var(--t-sm); line-height: 1.5; color: var(--text-2); }
 .crash-links { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
@@ -5148,8 +5158,11 @@ html, body { overscroll-behavior: none; }
 .lig .ts-pick { background: var(--plate-2); }
 .lig .ts-pick:focus-visible { background: linear-gradient(90deg, rgba(199, 161, 90, .2), rgba(199, 161, 90, .06)), var(--plate-2); }
 .segmented.lig-seg { grid-template-columns: 1fr 1fr; }
+.segmented.lig-seg.lig-langs { grid-template-columns: repeat(4, 1fr); } /* langue du championnat : les quatre côte à côte */
+.lig-langs button { min-height: 44px; text-transform: none; }
+@media (max-width: 430px) { .segmented.lig-seg.lig-langs { grid-template-columns: 1fr 1fr; } }
 .lig-seg button { display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 52px; }
-.lig-seg button small { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.lig-seg button small { font-family: var(--font-body); font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); }
 .lig-time { display: flex; align-items: center; gap: var(--s-2); }
 .lig-time svg { width: 20px; height: 20px; color: var(--gold-light); }
 .lig-time select {
@@ -5339,7 +5352,7 @@ html, body { overscroll-behavior: none; }
    la fenêtre « Deux appareils », mention du menu pause sur plusieurs lignes au téléphone (sans coche tant qu'elle attend) */
 .lig-cloud { margin: 0; font-size: var(--t-xs); color: var(--muted); }
 .confirm-rows dd { text-align: right; }
-.confirm-rows dd small { display: block; margin-top: 2px; font-family: 'Inter', system-ui, sans-serif; font-weight: 400; font-size: var(--t-xs); letter-spacing: 0; color: var(--muted); }
+.confirm-rows dd small { display: block; margin-top: 2px; font-family: var(--font-body); font-weight: 400; font-size: var(--t-xs); letter-spacing: 0; color: var(--muted); }
 .pz-save.wait { color: var(--muted); }
 @media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .pz-save { white-space: normal; } }
 
@@ -5373,11 +5386,11 @@ html, body { overscroll-behavior: none; }
 .htp-tabs button.active { background: linear-gradient(90deg, rgba(222, 193, 127, .16), rgba(222, 193, 127, .04)); box-shadow: inset 3px 0 0 var(--gold-light); }
 .htp-tabs button.active b { color: var(--gold-light); }
 @media (hover: hover) { .htp-tabs button:hover:not(.active) { background: #1b1e22; } }
-.htp-off { font-family: 'Inter', system-ui, sans-serif; font-style: normal; font-weight: 400; font-size: var(--t-xs); color: var(--red); }
+.htp-off { font-family: var(--font-body); font-style: normal; font-weight: 400; font-size: var(--t-xs); color: var(--red); }
 .ht-swap .htp-off { grid-column: 1 / -1; }
 .htp-col { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
 .htp-set .pm-sh:not(:first-child) { margin-top: var(--s-2); }
-.htp-set .pm-sh small { margin-left: 6px; font-family: 'Inter', system-ui, sans-serif; font-weight: 400; font-size: var(--t-xs); letter-spacing: 0; text-transform: none; color: var(--muted); }
+.htp-set .pm-sh small { margin-left: 6px; font-family: var(--font-body); font-weight: 400; font-size: var(--t-xs); letter-spacing: 0; text-transform: none; color: var(--muted); }
 .htp-board .lu-pitch { --lu-h: 52vh; --lu-hh: clamp(300px, 50vh, 480px); }
 .htp-foot { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-4); padding: var(--s-3) 0 var(--s-4); }
 .htp-foot .btn { min-width: 160px; }
@@ -5525,3 +5538,31 @@ html, body { overscroll-behavior: none; }
 .ac-mission-news li:first-child { color: var(--text); box-shadow: inset 3px 0 0 var(--gold-light); }
 .ac-mission-news li.rare b { color: var(--gold-light); }
 .ac-mission-news b { font-family: var(--font-disp); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: 13px; color: var(--muted); margin-right: 6px; }
+
+
+/* Arabe (0.8.14) : l'écriture arabe en Cairo (chargée seulement pour cette langue, src/i18n), le latin garde ses polices ;
+   aucun espacement entre les lettres (il casse les liaisons de l'écriture arabe) ; les flèches de direction retournées.
+   Les règles orientées (gauche, droite, décalages, découpes) ont leur jumelle inversée (scripts/rtl/postcss-rtl.cjs). */
+html[lang="ar"] {
+  --font-body: 'Inter', 'Cairo', system-ui, sans-serif;
+  --font-disp: 'Barlow Condensed', 'Cairo', 'Arial Narrow', system-ui, sans-serif;
+  --font-title: 'Geist', 'Cairo', system-ui, sans-serif;
+}
+html[lang="ar"] *, html[lang="ar"] *::before, html[lang="ar"] *::after { letter-spacing: normal !important; }
+[dir="rtl"] svg[data-rtl-flip] { scale: -1 1; }
+/* sigles des clubs en arabe : un mot entier (« البستان »), pas trois lettres. Plus petit ; au téléphone, sous l'écusson */
+html[lang="ar"] .lv-team b { font-size: 20px; line-height: 1.3; }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
+  html[lang="ar"] .lv-sb-team { flex-direction: column; gap: 4px; }
+  html[lang="ar"] .lv-sb-team b { font-size: 18px; line-height: 1.3; }
+  html[lang="ar"] .lv-team b { font-size: 16px; }
+}
+/* arabe : un interligne assez haut pour les points au-dessus et au-dessous des lettres, là où le latin condensé se serre
+   et où le cadre coupe ce qui dépasse (relevé écran par écran, au téléphone et sur PC) */
+html[lang="ar"] :is(h1, h2, .btn, .cm-label, .eyebrow, .hud-match-title, .hm-eyebrow, .hm-odds-text, .hud-club-meta, .hud-meta-round,
+  .hud-meta-season, .hud-goal-k, .hold-label, .lv-eyebrow, .lv-goal-text b, .pm-tname b, .pm-sh, .sp-next, .sp-prev, .stack dd, .cr-opp,
+  .lu-why, .lu-bname, .lu-name, .tr-body h4, .tr-eyebrow, .sc-date-opp span, .lm-team, .mc-club-name, .mc-name, .sh-tag, .st-opp) { line-height: 1.4; }
+html[lang="ar"] { --font-mono: 'Geist Mono', 'Cairo', ui-monospace, monospace; }
+html[lang="ar"] :is(.ld-step, .ld-tip-label) { font-family: 'Cairo', system-ui, sans-serif; }
+html[lang="ar"] .lv-sb-team b, html[lang="ar"] .lv-sb-team b span { line-height: 1.4; }
+html[lang="ar"] :is(.compo-card-text b, .lv-facts b) { line-height: 1.4; }

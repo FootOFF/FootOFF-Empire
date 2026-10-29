@@ -2,6 +2,7 @@ import { distinctFace, hash, rng } from './faces';
 import { squadName } from './names';
 import { assignNumber, makePlayer } from './players';
 import { slotsOf } from './tactics';
+import { t } from '../i18n/index';
 
 // Onze adverse (0.7) : de vrais joueurs (noms, postes, numéros, âge, qualités, signes, visages) au niveau de
 // l'adversaire, les mêmes à chaque rencontre avec ce club pendant la saison : ils sont tirés d'une graine (le club et la

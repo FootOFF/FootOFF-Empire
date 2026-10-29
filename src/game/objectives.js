@@ -4,6 +4,7 @@ import { autoLineup, lineupRating } from './tactics';
 import { book } from './ledger';
 import { pushJournal } from './journal';
 import { standingsOf } from './season';
+import { numLocale, ordinal as ordinalText, t, tn } from '../i18n/index';
 
 // Objectifs de la saison : trois défis fixés par le conseil d'administration à chaque début de saison (le président,
 // c'est le joueur ; « objectifs du président » avant la 0.5.1), adaptés au club (force de l'onze face à sa division,
@@ -65,8 +66,8 @@ export function drawObjectives(s) {
   return s;
 }
 
-const RANK_TITLE = (s, t) => (t === 1 ? 'Être champion' : t === 2 ? (s.divisionIndex < DIVISIONS.length - 1 && !s.league ? 'Monter en fin de saison' : 'Finir dans les deux premiers')
-  : t === 4 ? 'Finir dans la première moitié' : s.divisionIndex > 0 && !s.league ? 'Se maintenir' : 'Finir 6e ou mieux');
+const RANK_TITLE = (s, row) => (row === 1 ? t('Être champion') : row === 2 ? (s.divisionIndex < DIVISIONS.length - 1 && !s.league ? t('Monter en fin de saison') : t('Finir dans les deux premiers'))
+  : row === 4 ? t('Finir dans la première moitié') : s.divisionIndex > 0 && !s.league ? t('Se maintenir') : t('Finir 6e ou mieux'));
 
 // Où en est un objectif : titre, texte, avancée (0 à 1), état ('live', 'done' atteint, 'failed' manqué pour de bon),
 // et l'avancée en mots.
@@ -81,30 +82,30 @@ export function progressOf(s, o) {
       const pos = positionOf(s);
       const ok = pos <= o.target;
       return {
-        title: RANK_TITLE(s, o.target), text: o.target === 1 ? 'Finir 1er du championnat.' : `Finir ${o.target}e ou mieux.`,
+        title: RANK_TITLE(s, o.target), text: tn(o.target, 'Finir 1er du championnat.', 'Finir {target}e ou mieux.', { target: o.target }, !(o.target === 1)),
         ratio: played ? clamp((8 - pos + 1) / (8 - o.target + 1), 0, 1) : 0, state: over ? (ok ? 'done' : 'failed') : 'live',
-        now: played ? `${pos === 1 ? '1er' : `${pos}e`} aujourd’hui` : 'pas encore joué',
+        now: played ? t('{v} aujourd’hui', { v: ordinalText(pos) }) : t('pas encore joué'),
       };
     }
     case 'wins': {
       const w = tally((m) => (m.gf > m.ga ? 1 : 0));
-      return { title: `Gagner ${o.target} matchs`, text: 'En championnat.', ratio: clamp(w / o.target, 0, 1), state: w >= o.target ? 'done' : over ? 'failed' : 'live', now: `${w} / ${o.target}` };
+      return { title: t('Gagner {target} matchs', { target: o.target }), text: t('En championnat.'), ratio: clamp(w / o.target, 0, 1), state: w >= o.target ? 'done' : over ? 'failed' : 'live', now: `${w} / ${o.target}` };
     }
     case 'goals': {
       const g = tally((m) => m.gf);
-      return { title: `Marquer ${o.target} buts`, text: 'En championnat.', ratio: clamp(g / o.target, 0, 1), state: g >= o.target ? 'done' : over ? 'failed' : 'live', now: `${g} / ${o.target}` };
+      return { title: t('Marquer {target} buts', { target: o.target }), text: t('En championnat.'), ratio: clamp(g / o.target, 0, 1), state: g >= o.target ? 'done' : over ? 'failed' : 'live', now: `${g} / ${o.target}` };
     }
     case 'defense': {
       const ga = tally((m) => m.ga);
       return {
-        title: `Encaisser ${o.target} buts au plus`, text: 'En championnat, sur toute la saison.', ratio: clamp(1 - ga / (o.target + 1), 0, 1),
-        state: ga > o.target ? 'failed' : over ? 'done' : 'live', now: `${ga} encaissé${ga > 1 ? 's' : ''}`,
+        title: t('Encaisser {target} buts au plus', { target: o.target }), text: t('En championnat, sur toute la saison.'), ratio: clamp(1 - ga / (o.target + 1), 0, 1),
+        state: ga > o.target ? 'failed' : over ? 'done' : 'live', now: tn(ga, '{ga} encaissé', '{ga} encaissés', { ga }, ga > 1),
       };
     }
     case 'clean': {
       const c = tally((m) => (m.ga === 0 ? 1 : 0));
       return {
-        title: o.target > 1 ? `Garder sa cage inviolée ${o.target} fois` : 'Garder sa cage inviolée', text: 'Des matchs de championnat sans encaisser de but.',
+        title: tn(o.target, 'Garder sa cage inviolée', 'Garder sa cage inviolée {target} fois', { target: o.target }, o.target > 1), text: t('Des matchs de championnat sans encaisser de but.'),
         ratio: clamp(c / o.target, 0, 1), state: c >= o.target ? 'done' : over ? 'failed' : 'live', now: `${c} / ${o.target}`,
       };
     }
@@ -112,17 +113,17 @@ export function progressOf(s, o) {
       const start = s.objectives?.startMoney ?? s.money;
       const ok = s.money >= start;
       return {
-        title: 'Finir la saison dans le vert', text: 'Avoir au bilan au moins autant d’argent qu’au début de la saison.', ratio: ok ? 1 : 0,
-        state: over ? (ok ? 'done' : 'failed') : 'live', now: ok ? 'dans le vert' : 'dans le rouge',
+        title: t('Finir la saison dans le vert'), text: t('Avoir au bilan au moins autant d’argent qu’au début de la saison.'), ratio: ok ? 1 : 0,
+        state: over ? (ok ? 'done' : 'failed') : 'live', now: ok ? t('dans le vert') : t('dans le rouge'),
       };
     }
     case 'build': {
       const ok = levelSum(s) > (s.objectives?.startBuildings ?? levelSum(s));
-      return { title: 'Faire grandir le complexe', text: 'Construire ou améliorer un bâtiment.', ratio: ok ? 1 : 0, state: ok ? 'done' : over ? 'failed' : 'live', now: ok ? 'chantier lancé' : 'aucun chantier' };
+      return { title: t('Faire grandir le complexe'), text: t('Construire ou améliorer un bâtiment.'), ratio: ok ? 1 : 0, state: ok ? 'done' : over ? 'failed' : 'live', now: ok ? t('chantier lancé') : t('aucun chantier') };
     }
     case 'youth': {
       const ok = s.players.some((p) => p.academy && p.joined === s.seasonNumber);
-      return { title: 'Lancer un jeune du club', text: 'Faire monter un jeune de l’académie en équipe première.', ratio: ok ? 1 : 0, state: ok ? 'done' : over ? 'failed' : 'live', now: ok ? 'c’est fait' : 'pas encore' };
+      return { title: t('Lancer un jeune du club'), text: t('Faire monter un jeune de l’académie en équipe première.'), ratio: ok ? 1 : 0, state: ok ? 'done' : over ? 'failed' : 'live', now: ok ? t('c’est fait') : t('pas encore') };
     }
     default:
       return { title: '', text: '', ratio: 0, state: 'live', now: '' };
@@ -143,25 +144,25 @@ export function closeSeasonObjectives(s, events) {
   const results = s.objectives.list.map((o) => { const p = progressOf(s, o); return { o, title: p.title, ok: p.state === 'done' }; });
   let reached = 0;
   for (const { o, title, ok } of results) {
-    if (!ok) { events.push(`Objectif manqué : ${title.toLowerCase()}.`); continue; }
+    if (!ok) { events.push(t('Objectif manqué : {toLowerCase}.', { toLowerCase: title.toLowerCase() })); continue; }
     reached += 1;
     const prize = prizeOf(s, o.kind);
     s.money += prize.money;
     book(s, 'bonus', prize.money);
     s.reputation = r1(s.reputation + prize.rep);
-    events.push(`Objectif atteint : ${title.toLowerCase()} (+${prize.money.toLocaleString('fr-FR')} €).`);
+    events.push(t('Objectif atteint : {toLowerCase} (+{toLocaleString} €).', { toLowerCase: title.toLowerCase(), toLocaleString: prize.money.toLocaleString(numLocale()) }));
   }
   if (reached === results.length) {
     const prize = prizeOf(s, 'perfect');
     s.money += prize.money;
     book(s, 'bonus', prize.money);
     s.reputation = r1(s.reputation + prize.rep);
-    events.push(`Saison parfaite : les trois objectifs du conseil sont atteints (+${prize.money.toLocaleString('fr-FR')} €).`);
+    events.push(t('Saison parfaite : les trois objectifs du conseil sont atteints (+{toLocaleString} €).', { toLocaleString: prize.money.toLocaleString(numLocale()) }));
   }
   pushJournal(s, {
     season: s.seasonNumber, kind: 'objectif',
-    title: reached === results.length ? 'Saison parfaite : les trois objectifs atteints' : `Objectifs de la saison : ${reached} sur ${results.length}`,
-    text: results.map((x) => `${x.title} : ${x.ok ? 'atteint' : 'manqué'}`).join(' · '),
+    title: reached === results.length ? t('Saison parfaite : les trois objectifs atteints') : t('Objectifs de la saison : {reached} sur {length}', { reached, length: results.length }),
+    text: results.map((x) => `${x.title} : ${x.ok ? t('atteint') : t('manqué')}`).join(' · '),
   });
   return s;
 }

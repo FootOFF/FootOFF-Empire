@@ -7,60 +7,61 @@
 // le même écusson pour un même club.
 
 import { kitOf } from './kits';
+import { t } from '../i18n/index';
 
-export const CREST_STYLES = [['blason', 'Blason'], ['medaillon', 'Médaillon'], ['moderne', 'Moderne']];
+export const CREST_STYLES = [['blason', t('Blason')], ['medaillon', t('Médaillon')], ['moderne', t('Moderne')]];
 export const CREST_SHAPES = {
-  blason: [['ancien', 'Ancien'], ['espagnol', 'Arrondi'], ['gothique', 'Pointu'], ['crante', 'Cranté']],
-  medaillon: [['cercle', 'Cercle'], ['cranelure', 'Crénelé'], ['double', 'Double cercle']],
-  moderne: [['taille', 'Taillé'], ['hexa', 'Hexagone'], ['losange', 'Losange'], ['capsule', 'Capsule']],
+  blason: [['ancien', t('Ancien')], ['espagnol', t('Arrondi')], ['gothique', t('Pointu')], ['crante', t('Cranté')]],
+  medaillon: [['cercle', t('Cercle')], ['cranelure', t('Crénelé')], ['double', t('Double cercle')]],
+  moderne: [['taille', t('Taillé')], ['hexa', t('Hexagone')], ['losange', t('Losange')], ['capsule', t('Capsule')]],
 };
 export const CREST_PATTERNS = [
-  ['uni', 'Aucun'],
-  ['bandes', 'Bandes'],
-  ['rayures', 'Rayures'],
-  ['parti', 'Parti'],
-  ['coupe', 'Coupé'],
-  ['echarpe', 'Écharpe'],
-  ['chevron', 'Chevron'],
-  ['pal', 'Pal'],
-  ['fasce', 'Fasce'],
-  ['quartiers', 'Quartiers'],
-  ['croix', 'Croix'],
-  ['sautoir', 'Sautoir'],
-  ['damier', 'Damier'],
-  ['rayons', 'Rayons'],
-  ['bordure', 'Bordure'],
+  ['uni', t('Aucun')],
+  ['bandes', t('Bandes')],
+  ['rayures', t('Rayures')],
+  ['parti', t('Parti')],
+  ['coupe', t('Coupé')],
+  ['echarpe', t('Écharpe')],
+  ['chevron', t('Chevron')],
+  ['pal', t('Pal')],
+  ['fasce', t('Fasce')],
+  ['quartiers', t('Quartiers')],
+  ['croix', t('Croix')],
+  ['sautoir', t('Sautoir')],
+  ['damier', t('Damier')],
+  ['rayons', t('Rayons')],
+  ['bordure', t('Bordure')],
 ];
 // Figures héraldiques en silhouette (les têtes d'animaux de face, jugées trop enfantines, ont été retirées) : rares
 // chez les clubs adverses.
-export const CREST_ANIMALS = [['aigle', 'Aigle'], ['coq', 'Coq'], ['cheval', 'Cheval'], ['cerf', 'Cerf']];
+export const CREST_ANIMALS = [['aigle', t('Aigle')], ['coq', t('Coq')], ['cheval', t('Cheval')], ['cerf', t('Cerf')]];
 export const CREST_SYMBOLS = [
-  ['etoile', 'Étoile'], ['etoiles', 'Trois étoiles'], ['couronne', 'Couronne'], ['croix', 'Croix de Malte'],
-  ['lys', 'Lys'], ['hermine', 'Hermine'], ['rose', 'Rose'], ['laurier', 'Laurier'], ['flambeau', 'Flambeau'],
-  ['chateau', 'Château'], ['tour', 'Tour'], ['phare', 'Phare'], ['pont', 'Pont'], ['ballon', 'Ballon'],
-  ['chene', 'Chêne'], ['sapin', 'Sapin'], ['epi', 'Épi'], ['ancre', 'Ancre'], ['navire', 'Navire'],
-  ['vague', 'Vagues'], ['montagne', 'Montagne'], ['soleil', 'Soleil'], ['eclair', 'Éclair'], ['epees', 'Épées'],
-  ['cles', 'Clés'], ['roue', 'Roue'],
+  ['etoile', t('Étoile')], ['etoiles', t('Trois étoiles')], ['couronne', t('Couronne')], ['croix', t('Croix de Malte')],
+  ['lys', t('Lys')], ['hermine', t('Hermine')], ['rose', t('Rose')], ['laurier', t('Laurier')], ['flambeau', t('Flambeau')],
+  ['chateau', t('Château')], ['tour', t('Tour')], ['phare', t('Phare')], ['pont', t('Pont')], ['ballon', t('Ballon')],
+  ['chene', t('Chêne')], ['sapin', t('Sapin')], ['epi', t('Épi')], ['ancre', t('Ancre')], ['navire', t('Navire')],
+  ['vague', t('Vagues')], ['montagne', t('Montagne')], ['soleil', t('Soleil')], ['eclair', t('Éclair')], ['epees', t('Épées')],
+  ['cles', t('Clés')], ['roue', t('Roue')],
 ];
 // « Aucun » : écusson sans symbole (notre club seulement : le nom, l'année ou le motif le portent)
-export const CREST_EMBLEMS = [['aucun', 'Aucun'], ['monogramme', 'Monogramme'], ...CREST_SYMBOLS, ...CREST_ANIMALS];
-export const CREST_TEXTS = [['les-deux', 'Nom et année'], ['nom', 'Nom'], ['annee', 'Année'], ['aucune', 'Aucune']];
+export const CREST_EMBLEMS = [['aucun', t('Aucun')], ['monogramme', t('Monogramme')], ...CREST_SYMBOLS, ...CREST_ANIMALS];
+export const CREST_TEXTS = [['les-deux', t('Nom et année')], ['nom', t('Nom')], ['annee', t('Année')], ['aucune', t('Aucune')]];
 // fond de l'écusson : la couleur secondaire (motifs et symbole à la principale), ou l'inverse. Identifiants d'origine
 // (« noir » : fond secondaire, noir par défaut ; « or » : fond principal, or par défaut), lus tels quels par le serveur.
-export const CREST_GROUNDS = [['noir', 'Secondaire'], ['or', 'Principale']];
+export const CREST_GROUNDS = [['noir', t('Secondaire')], ['or', t('Principale')]];
 
 export const CLUB_BLACK = '#0d0d0e';
 export const CLUB_GOLD = '#c7a15a';
 
 // Nuancier des deux couleurs du club (et toute autre au choix, crest.jsx ColorRow) : l'or et le noir d'abord.
 export const CREST_COLORS = [
-  ['#c7a15a', 'Or'], ['#0d0d0e', 'Noir'], ['#f4f4f2', 'Blanc'], ['#c4c8cc', 'Argent'], ['#8a8f96', 'Gris'],
-  ['#c0392b', 'Rouge'], ['#7b1e3a', 'Grenat'], ['#e05a8a', 'Rose'], ['#e67e22', 'Orange'], ['#f2c94c', 'Jaune'],
-  ['#1f8a4c', 'Vert'], ['#0f5c3a', 'Vert sombre'], ['#6cb4e8', 'Ciel'], ['#2463c9', 'Bleu'], ['#1d2c5e', 'Marine'],
-  ['#6c3fa0', 'Violet'],
+  ['#c7a15a', t('Or')], ['#0d0d0e', t('Noir')], ['#f4f4f2', t('Blanc')], ['#c4c8cc', t('Argent')], ['#8a8f96', t('Gris')],
+  ['#c0392b', t('Rouge')], ['#7b1e3a', t('Grenat')], ['#e05a8a', t('Rose', undefined, 'couleur')], ['#e67e22', t('Orange')], ['#f2c94c', t('Jaune')],
+  ['#1f8a4c', t('Vert')], ['#0f5c3a', t('Vert sombre')], ['#6cb4e8', t('Ciel')], ['#2463c9', t('Bleu')], ['#1d2c5e', t('Marine')],
+  ['#6c3fa0', t('Violet')],
 ];
 export const isHex = (v) => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
-export const colorName = (hex) => CREST_COLORS.find(([h]) => h === hex)?.[1] || 'Sur mesure';
+export const colorName = (hex) => CREST_COLORS.find(([h]) => h === hex)?.[1] || t('Sur mesure');
 
 const ids = (list) => list.map(([id]) => id);
 const thisYear = () => new Date().getFullYear();
@@ -205,9 +206,13 @@ export function knowCrests(list) {
 export const knownCrest = (name) => KNOWN.get(name) || null;
 
 // Monogramme d'un club : initiale du premier et du dernier mot qui comptent (« US des Fontaines » → UF).
+// En arabe, l'article « ال » ne compte pas (« فتح البستان » → ف et ب), et les deux lettres restent séparées (U+200C,
+// anti-liaison) : un monogramme, pas un mot.
 export function clubInitials(name = '') {
-  const words = name.replace(/[’']/g, ' ').split(/[\s-]+/).filter((w) => w && !/^(de|des|du|la|le|les|l|d)$/i.test(w));
+  const words = name.replace(/[’']/g, ' ').split(/[\s-]+/).filter((w) => w && !/^(de|des|du|la|le|les|l|d|del|el|los|las|y|the|of|and)$/i.test(w));
   if (!words.length) return '?';
+  const first = (w) => (/^ال[\u0600-\u06FF]{2,}/.test(w) ? w[2] : w[0]);
+  if (/[\u0600-\u06FF]/.test(words[0])) return words.length > 1 ? `${first(words[0])}\u200c${first(words[words.length - 1])}` : first(words[0]);
   return (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')).toUpperCase();
 }
 

@@ -1,0 +1,72 @@
+2892	under contract until season {until}	con contrato hasta la temporada {until}	مرتبط بعقد حتى الموسم {until}
+2893	per season ·	por temporada ·	في الموسم ·
+2894	{"one":"year","other":"years"}	{"one":"año","other":"años"}	{"one":"سنة","two":"سنتان","few":"سنوات","other":"سنة"}
+2895	·	· aún	· متبقٍ
+2896	left on his contract with his club ·	de contrato con su club ·	في عقده مع ناديه ·
+2897	Free agent · no fee ·	Jugador libre · sin traspaso ·	لاعب حر · دون مقابل انتقال ·
+2898	His profile	Su ficha	بطاقته
+2899	Negotiation stages	Etapas de la negociación	مراحل التفاوض
+2900	<0/>Fee<1/>	<0/>Traspaso<1/>	<0/>مبلغ الانتقال<1/>
+2901	<0/>Player’s contract	<0/>Contrato del jugador	<0/>عقد اللاعب
+2902	Not enough money, or squad full.	Tesorería insuficiente o plantilla completa.	الخزينة غير كافية أو التشكيلة مكتملة.
+2903	Offer refused… but the seller is meeting you halfway	Oferta rechazada… pero el vendedor da un paso	رُفض العرض… لكن البائع يقترب خطوة
+2904	Offer refused: judged too low	Oferta rechazada: considerada demasiado baja	رُفض العرض: اعتُبر منخفضًا جدًا
+2905	You offered <0/>.<1/>	Ofrecías <0/>.<1/>	عرضتَ <0/>.<1/>
+2906	{plural} left today.	Te quedan {plural} hoy.	تبقّت {plural} اليوم.
+2907	{n} attempt	{n} intento	محاولة واحدة
+2908	{n} attempts	{n} intentos	{"one":"محاولة واحدة","two":"محاولتان","few":"{n} محاولات","other":"{n} محاولة"}
+2909	Counter-offer from <0/>	Contraoferta <0/>	عرض مضاد من <0/>
+2910	You are {v} short to accept it.	Te faltan {v} para aceptarla.	ينقصك {v} لقبوله.
+2911	Fee guaranteed at this price, until the next matchday.	Traspaso asegurado a este precio, hasta la próxima jornada.	مبلغ الانتقال مضمون بهذا السعر حتى الجولة المقبلة.
+2912	Accept · <0/>	Aceptar · <0/>	قبول · <0/>
+2913	Fee asked	Traspaso pedido	مبلغ الانتقال المطلوب
+2914	Your offer	Tu oferta	عرضك
+2915	Lower the offer	Bajar la oferta	خفض العرض
+2916	Raise the offer	Subir la oferta	رفع العرض
+2917	Offer amount	Importe de la oferta	قيمة العرض
+2918	What affects his answer	Lo que influye en su respuesta	ما يؤثر في رده
+2919	Wage asked next	Salario pedido después	الراتب المطلوب لاحقًا
+2920	<0/> / season	<0/> / temporada	<0/> / الموسم
+2921	Wages / income	Salarios / ingresos	الرواتب / الإيرادات
+2922	Available	Disponible	المتاح
+2923	With this signing	Con este fichaje	مع هذه الصفقة
+2924	The seller won’t talk again before the next matchday<0/>.	El vendedor no volverá a negociar antes de la próxima jornada<0/>.	لن يعود البائع إلى التفاوض قبل الجولة المقبلة<0/>.
+2925	(his counter-offer still stands)	(su contraoferta sigue en pie)	(عرضه المضاد لا يزال قائمًا)
+2926	Chances of agreement	Probabilidades de acuerdo	فرص الاتفاق
+2927	Offer too low: certain refusal	Oferta demasiado baja: rechazo seguro	العرض منخفض جدًا: الرفض مؤكد
+2928	Agreement guaranteed at this price	Acuerdo asegurado a este precio	الاتفاق مضمون بهذا السعر
+2929	Send the offer · <0/>	Enviar la oferta · <0/>	إرسال العرض · <0/>
+2930	<0/> today · then the player’s contract	<0/> hoy · luego el contrato del jugador	<0/> اليوم · ثم عقد اللاعب
+2931	On to the contract: the fee holds until the next matchday, but the first club in the league to agree a deal signs the player.	Ahora el contrato: el traspaso vale hasta la próxima jornada, pero el primer club de la liga que cierre el acuerdo ficha al jugador.	إلى العقد: يبقى مبلغ الانتقال ساريًا حتى الجولة المقبلة، لكن أول نادٍ في الدوري يتم الصفقة يضم اللاعب.
+2932	On to the contract: the fee is reserved until the next matchday.	Ahora el contrato: el traspaso queda reservado hasta la próxima jornada.	إلى العقد: مبلغ الانتقال محجوز حتى الجولة المقبلة.
+2933	Proposal refused… but his agent is meeting you halfway	Propuesta rechazada… pero su agente da un paso	رُفض الاقتراح… لكن وكيله يقترب خطوة
+2934	Proposal refused: judged too low	Propuesta rechazada: considerada demasiado baja	رُفض الاقتراح: اعتُبر منخفضًا جدًا
+2935	You offered <0/> per season over <1/>.<2/>	Ofrecías <0/> por temporada durante <1/>.<2/>	عرضتَ <0/> في الموسم لمدة <1/>.<2/>
+2936	His agent’s counter-proposal	Contrapropuesta de su agente	اقتراح وكيله المضاد
+2937	Signing guaranteed on these terms, until the next matchday.	Fichaje asegurado en estas condiciones, hasta la próxima jornada.	التوقيع مضمون بهذه الشروط حتى الجولة المقبلة.
+2938	He asks for	Pide	يطلب
+2939	<0/> per season	<0/> por temporada	<0/> في الموسم
+2940	Wage per season	Salario por temporada	الراتب في الموسم
+2941	Lower the wage	Bajar el salario	خفض الراتب
+2942	Raise the wage	Subir el salario	رفع الراتب
+2943	Length	Duración	المدة
+2944	current season: <0/> · ends: season <1/>	temporada en curso: <0/> · fin: temporada <1/>	الموسم الجاري: <0/> · النهاية: الموسم <1/>
+2945	Contract length	Duración del contrato	مدة العقد
+2946	An extension must end after the current contract	Una renovación debe terminar después del contrato actual	يجب أن ينتهي التمديد بعد العقد الحالي
+2947	year	año	سنة
+2948	Signing-on bonus	Prima de fichaje	مكافأة التوقيع
+2949	he expects {bonus}	espera {bonus}	ينتظر {bonus}
+2950	paid once	pagada una vez	تُدفع مرة واحدة
+2951	Lower the bonus	Bajar la prima	خفض المكافأة
+2952	Raise the bonus	Subir la prima	رفع المكافأة
+2953	Promotion clause	Cláusula de ascenso	بند الصعود
+2954	wage rise with every promotion	subida de salario con cada ascenso	زيادة في الراتب مع كل صعود
+2955	<0/> → <1/> / season	<0/> → <1/> / temporada	<0/> ← <1/> / الموسم
+2956	Fee agreed	Traspaso acordado	مبلغ الانتقال المتفق عليه
+2957	Contract cost (<0/>)	Coste del contrato (<0/>)	تكلفة العقد (<0/>)
+2958	With this contract	Con este contrato	مع هذا العقد
+2959	He won’t talk again before the next matchday<0/><1/>.	No volverá a negociar antes de la próxima jornada<0/><1/>.	لن يعود إلى التفاوض قبل الجولة المقبلة<0/><1/>.
+2960	(his agent’s counter-proposal still stands)	(la contrapropuesta de su agente sigue en pie)	(اقتراح وكيله المضاد لا يزال قائمًا)
+2961	; the agreed fee will then lapse	; el traspaso acordado caducará entonces	؛ وسيسقط حينها مبلغ الانتقال المتفق عليه
+2962	Proposal too low: certain refusal	Propuesta demasiado baja: rechazo seguro	الاقتراح منخفض جدًا: الرفض مؤكد
+2963	Signing guaranteed on these terms	Fichaje asegurado en estas condiciones	التوقيع مضمون بهذه الشروط

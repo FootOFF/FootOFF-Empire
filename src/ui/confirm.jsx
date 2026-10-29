@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDialogFocus, useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
+import { t, tr } from '../i18n/index';
 
 // Fenêtre de confirmation du jeu (remplace les boîtes de dialogue du navigateur).
 // Entrée confirme, Échap ou un clic à côté annule. onAlt : deux vrais choix (le bouton de gauche est le second) ; Échap et
@@ -9,7 +10,7 @@ import { PHONE, useSwipe } from './gestures';
 // typed : un mot à taper pour confirmer (suppression définitive) ; le bouton reste inactif tant qu'il ne correspond pas
 // (casse, accents composés, espaces en trop et forme de l'apostrophe ignorés : l'iPhone tape « ’ »).
 const norm = (v) => String(v).normalize('NFC').trim().replace(/\s+/g, ' ').replace(/[’‘ʼ´`]/g, "'").toLocaleLowerCase('fr');
-export default function ConfirmDialog({ title, text, rows = [], confirmLabel = 'Confirmer', cancelLabel = 'Annuler', tone = 'gold', eyebrow = null, autoFocus = true, typed = null, onConfirm, onCancel, onAlt = null }) {
+export default function ConfirmDialog({ title, text, rows = [], confirmLabel = t('Confirmer'), cancelLabel = t('Annuler'), tone = 'gold', eyebrow = null, autoFocus = true, typed = null, onConfirm, onCancel, onAlt = null }) {
   const confirmRef = useRef(null);
   const cancelRef = useRef(null);
   const cardRef = useRef(null);
@@ -32,7 +33,7 @@ export default function ConfirmDialog({ title, text, rows = [], confirmLabel = '
     <div className="scrim confirm-scrim" onClick={onCancel}>
       <div ref={cardRef} className={`confirm-card glass ${tone}`} role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" onClick={(e) => e.stopPropagation()}>
         <span className="grip" aria-hidden="true" />
-        <span className="eyebrow">{eyebrow || (tone === 'danger' ? 'Attention' : 'Confirmation')}</span>
+        <span className="eyebrow">{eyebrow || (tone === 'danger' ? t('Attention') : t('Confirmation'))}</span>
         <h3 id="confirm-title">{title}</h3>
         {text && <p className="confirm-text">{text}</p>}
         {rows.length > 0 && (
@@ -44,10 +45,10 @@ export default function ConfirmDialog({ title, text, rows = [], confirmLabel = '
         )}
         {typed && (
           <label className="confirm-typed">
-            <span>Pour confirmer, tape <b>{typed}</b></span>
+            <span>{tr('Pour confirmer, tape <0/>', [<b>{typed}</b>])}</span>
             <span className="lig-input">
               <input ref={typedRef} value={entry} onChange={(e) => setEntry(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && ready) onConfirm(); }}
-                autoComplete="off" autoCapitalize="off" spellCheck={false} aria-label={`Tape ${typed} pour confirmer`} />
+                autoComplete="off" autoCapitalize="off" spellCheck={false} aria-label={t('Tape {typed} pour confirmer', { typed })} />
             </span>
           </label>
         )}

@@ -4,6 +4,7 @@ import { costOf, playerRating, potentialRange, refWage } from './players';
 import { mercatoRep } from './reputation';
 import { ceilTo, roundKey, stepFor } from './mercato';
 import { clamp, ri } from './utils';
+import { numLocale, t, tn } from '../i18n/index';
 
 // Contrats (0.8.0). Chaque joueur de l'effectif a un contrat (p.deal) : un salaire par saison fixe, sa dernière saison
 // (until), une clause de montée (hausse du salaire à chaque montée, en part du salaire) et sa saison de signature. Le
@@ -69,25 +70,25 @@ export const renewOpen = (s, p) => isOwn(s, p) && !!p.deal && yearsLeft(s, p) < 
 // sans prime), largeur w et raisons, du point de vue du club (down : en ta faveur, up : contre toi).
 export function contractStance(s, p, renew = false) {
   const reasons = [];
-  let t = BASE;
+  let row = BASE;
   const lvl = s.buildings.direction || 0;
-  if (lvl) { t -= (DIRECTION_EASE / 100) * lvl; reasons.push(['down', `Ta Direction mène la discussion (niveau ${lvl}) : −${DIRECTION_EASE * lvl} % sur ses exigences.`]); }
+  if (lvl) { row -= (DIRECTION_EASE / 100) * lvl; reasons.push(['down', t('Ta Direction mène la discussion (niveau {lvl}) : −{v} % sur ses exigences.', { lvl, v: DIRECTION_EASE * lvl })]); }
   const fame = mercatoRep(s.reputation); // notoriété du club (reputation.js)
-  if (fame >= 0.005) { t -= fame; reasons.push(['down', 'Ta notoriété attire : il accepte de gagner un peu moins.']); }
-  else if (fame <= -0.005) { t -= fame; reasons.push(['up', 'Club encore peu connu : il demande un peu plus.']); }
-  if (p.age >= 31) { t -= 0.04; reasons.push(['down', `${p.age} ans : il tient à signer et discute plus volontiers.`]); }
-  if (p.age <= 21 && roomOf(s, p) >= 3) { t += 0.04; reasons.push(['up', 'Jeune à fort potentiel : il sait ce qu’il vaut.']); }
-  if (!renew && p.interest) { t += 0.03 * p.interest; reasons.push(['up', `Courtisé par ${p.interest} club${p.interest > 1 ? 's' : ''} : il a d’autres options.`]); }
+  if (fame >= 0.005) { row -= fame; reasons.push(['down', t('Ta notoriété attire : il accepte de gagner un peu moins.')]); }
+  else if (fame <= -0.005) { row -= fame; reasons.push(['up', t('Club encore peu connu : il demande un peu plus.')]); }
+  if (p.age >= 31) { row -= 0.04; reasons.push(['down', t('{age} ans : il tient à signer et discute plus volontiers.', { age: p.age })]); }
+  if (p.age <= 21 && roomOf(s, p) >= 3) { row += 0.04; reasons.push(['up', t('Jeune à fort potentiel : il sait ce qu’il vaut.')]); }
+  if (!renew && p.interest) { row += 0.03 * p.interest; reasons.push(['up', tn(p.interest, 'Courtisé par {interest} club : il a d’autres options.', 'Courtisé par {interest} clubs : il a d’autres options.', { interest: p.interest }, p.interest > 1)]); }
   if (renew) {
     const left = yearsLeft(s, p);
-    if (left <= 1) { t += 0.03; reasons.push(['up', 'Dernière année : il sait qu’il pourra partir libre.']); }
-    else if (left >= 3) { t -= 0.02; reasons.push(['down', `Encore ${left} ans de contrat : il n’est pas en position de force.`]); }
-    if (p.deal && p.deal.wage < 0.85 * refWageOf(s, p)) { t += 0.03; reasons.push(['up', 'Payé bien moins que son niveau : il veut un vrai rattrapage.']); }
+    if (left <= 1) { row += 0.03; reasons.push(['up', t('Dernière année : il sait qu’il pourra partir libre.')]); }
+    else if (left >= 3) { row -= 0.02; reasons.push(['down', t('Encore {left} ans de contrat : il n’est pas en position de force.', { left })]); }
+    if (p.deal && p.deal.wage < 0.85 * refWageOf(s, p)) { row += 0.03; reasons.push(['up', t('Payé bien moins que son niveau : il veut un vrai rattrapage.')]); }
   }
   const tries = ctalksOf(s, p).tries || 0;
-  if (tries) { t += 0.015 * tries; reasons.push(['up', `${tries} proposition${tries > 1 ? 's' : ''} refusée${tries > 1 ? 's' : ''} : il se braque.`]); }
-  t += ((((p.id || 1) * 6151) % 100) / 100 - 0.5) * 0.06; // chaque joueur a son caractère
-  return { t: clamp(t, 0.85, 1.3), w: W, reasons };
+  if (tries) { row += 0.015 * tries; reasons.push(['up', tn(tries, '{tries} proposition refusée : il se braque.', '{tries} propositions refusées : il se braque.', { tries }, tries > 1)]); }
+  row += ((((p.id || 1) * 6151) % 100) / 100 - 0.5) * 0.06; // chaque joueur a son caractère
+  return { t: clamp(row, 0.85, 1.3), w: W, reasons };
 }
 
 // Valeur d'une offre, en part du salaire de référence.
@@ -139,20 +140,20 @@ export function counterTerms(s, p, terms, renew = false) {
 export function termReasons(s, p, terms) {
   const out = [];
   const wish = wishOf(s, p);
-  const n = (v) => `${Math.round(v).toLocaleString('fr-FR')} €`;
-  const y = (k) => `${k} an${k > 1 ? 's' : ''}`;
-  if (terms.years === wish.years) out.push(['down', `${y(terms.years)} : la durée qu’il souhaitait.`]);
-  else if (wish.young && terms.years > wish.years) out.push(['up', `Jeune et ambitieux : il préfère ${y(wish.years)}, pour se revaloriser vite.`]);
-  else if (!wish.young && terms.years < wish.years) out.push(['up', `Il voulait ${y(wish.years)} : un contrat plus court le refroidit.`]);
-  else out.push(['', `${y(terms.years)} : il voulait plutôt ${y(wish.years)}.`]);
+  const n = (v) => `${Math.round(v).toLocaleString(numLocale())} €`;
+  const y = (k) => tn(k, '{n} an', '{n} ans', { n: k }, k > 1);
+  if (terms.years === wish.years) out.push(['down', t('{y} : la durée qu’il souhaitait.', { y: y(terms.years) })]);
+  else if (wish.young && terms.years > wish.years) out.push(['up', t('Jeune et ambitieux : il préfère {y}, pour se revaloriser vite.', { y: y(wish.years) })]);
+  else if (!wish.young && terms.years < wish.years) out.push(['up', t('Il voulait {y} : un contrat plus court le refroidit.', { y: y(wish.years) })]);
+  else out.push(['', t('{y} : il voulait plutôt {y2}.', { y: y(terms.years), y2: y(wish.years) })]);
   const b0 = bonusWish(s, p);
   if (b0 > 0) {
-    if (terms.bonus >= b0) out.push(['down', 'Joueur libre : la prime qu’il attendait est là.']);
-    else out.push(['up', `Joueur libre : il attend une prime de ${n(b0)}.`]);
-  } else if (terms.bonus > 0) out.push(['down', `Prime de ${n(terms.bonus)} : il accepte un salaire un peu plus bas.`]);
+    if (terms.bonus >= b0) out.push(['down', t('Joueur libre : la prime qu’il attendait est là.')]);
+    else out.push(['up', t('Joueur libre : il attend une prime de {n}.', { n: n(b0) })]);
+  } else if (terms.bonus > 0) out.push(['down', t('Prime de {n} : il accepte un salaire un peu plus bas.', { n: n(terms.bonus) })]);
   if (clauseOpen(s)) {
-    if (terms.clause > 0) out.push(['down', contending(s) ? 'Clause de montée : ton club joue la montée, il y tient.' : 'Clause de montée : il croit au projet du club.']);
-    else if (contending(s)) out.push(['up', 'Ton club joue la montée : sans clause, il y perd.']);
+    if (terms.clause > 0) out.push(['down', contending(s) ? t('Clause de montée : ton club joue la montée, il y tient.') : t('Clause de montée : il croit au projet du club.')]);
+    else if (contending(s)) out.push(['up', t('Ton club joue la montée : sans clause, il y perd.')]);
   }
   return out;
 }
@@ -191,7 +192,7 @@ export function ensureDeals(s) {
 // Montée : les clauses de montée relèvent les salaires. Descente : un salaire au-dessus de celui de son niveau dans la
 // nouvelle division y est ramené. Renvoie la phrase du bilan, ou null.
 export function divisionWages(s, from, to) {
-  const n = (v) => Math.round(v).toLocaleString('fr-FR');
+  const n = (v) => Math.round(v).toLocaleString(numLocale());
   let count = 0;
   let sum = 0;
   if (to > from) {
@@ -202,7 +203,7 @@ export function divisionWages(s, from, to) {
       count++;
       sum += p.deal.wage - before;
     }
-    return count ? `Clauses de montée : ${count} salaire${count > 1 ? 's' : ''} relevé${count > 1 ? 's' : ''} (+${n(sum)} € par saison au total).` : null;
+    return count ? tn(count, 'Clauses de montée : {count} salaire relevé (+{n} € par saison au total).', 'Clauses de montée : {count} salaires relevés (+{n} € par saison au total).', { count, n: n(sum) }, count > 1) : null;
   }
   if (to < from) {
     for (const p of s.players) {
@@ -212,7 +213,7 @@ export function divisionWages(s, from, to) {
       p.deal.wage = cap;
       count++;
     }
-    return count ? `Descente : ${count} salaire${count > 1 ? 's' : ''} ramené${count > 1 ? 's' : ''} au niveau de la ${DIVISIONS[to].name} (−${n(sum)} € par saison au total).` : null;
+    return count ? tn(count, 'Descente : {count} salaire ramené au niveau de la {name} (−{n} € par saison au total).', 'Descente : {count} salaires ramenés au niveau de la {name} (−{n} € par saison au total).', { count, name: DIVISIONS[to].name, n: n(sum) }, count > 1) : null;
   }
   return null;
 }

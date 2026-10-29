@@ -1,0 +1,68 @@
+2270	{n} clubs	{n} clubes	{"one":"نادٍ واحد","two":"ناديان","few":"{n} أندية","other":"{n} ناديًا"}
+2271	Season {season} · matchday {min} / {leagueRounds} · {v}	Temporada {season} · jornada {min} / {leagueRounds} · {v}	الموسم {season} · الجولة {min} / {leagueRounds} · {v}
+2272	team confirmed	equipo confirmado	تم تأكيد الفريق
+2273	team to confirm{v}	equipo por confirmar{v}	الفريق بانتظار التأكيد{v}
+2274	before {deadlineText}	antes de {deadlineText}	قبل {deadlineText}
+2275	<0/> Create a league	<0/> Crear una liga	<0/> إنشاء دوري
+2276	<0/> Join with a code	<0/> Unirse con un código	<0/> الانضمام برمز
+2277	Three leagues at a time at most: leave one to join another.	Tres ligas a la vez como máximo: deja una para unirte a otra.	ثلاثة دوريات في الوقت نفسه على الأكثر: غادر أحدها لتنضم إلى آخر.
+2278	Resume my club on this device (resume code)	Recuperar mi club en este dispositivo (código de recuperación)	استعادة ناديي على هذا الجهاز (رمز الاستعادة)
+2279	League created: send the link to your friends.	Liga creada: envía el enlace a tus amigos.	تم إنشاء الدوري: أرسل الرابط إلى أصدقائك.
+2280	The league	La liga	الدوري
+2281	League name	Nombre de la liga	اسم الدوري
+2282	Your league’s name	Nombre de tu liga	اسم دوريك
+2283	League logo	Logo de la liga	شعار الدوري
+2284	League	Liga	الدوري
+2285	Colours	Colores	الألوان
+2286	Format	Formato	النظام
+2287	Single round	Solo ida	ذهاب فقط
+2288	Home and away	Ida y vuelta	ذهاب وإياب
+2289	<0/> matchdays	<0/> jornadas	<0/> جولة
+2290	Matchday time	Hora de las jornadas	موعد الجولات
+2291	Hour	Hora	الساعة
+2292	{h}:00	{h}:00	{h}:00
+2293	Minutes	Minutos	الدقائق
+2294	Matchdays are played every day at <0/> at the latest (this device’s time). As soon as all the friends have confirmed their team, a ten-minute countdown appears for everyone, then the matches begin. A latecomer plays with a team picked for him.	Las jornadas se juegan cada día a las <0/> como muy tarde (hora de este dispositivo). En cuanto todos los amigos han confirmado su equipo, aparece una cuenta atrás de diez minutos para todos y luego empiezan los partidos. Quien llegue tarde juega con un equipo elegido para él.	تُلعب الجولات كل يوم عند <0/> على أقصى تقدير (بتوقيت هذا الجهاز). وبمجرد أن يؤكد جميع الأصدقاء فرقهم، يظهر للجميع عدّ تنازلي من عشر دقائق ثم تنطلق المباريات. ومن يتأخر يلعب بفريق يُختار له.
+2295	Creating…	Creando…	جارٍ الإنشاء…
+2296	Create the league	Crear la liga	إنشاء الدوري
+2297	Choose your nickname to create the league.	Elige tu apodo para crear la liga.	اختر لقبك لإنشاء الدوري.
+2298	No league with this code. Check it with your friend.	Ninguna liga con este código. Compruébalo con tu amigo.	لا يوجد دوري بهذا الرمز. تحقق منه مع صديقك.
+2299	Done: {name} is waiting for you. The creator will start the season.	Listo: {name} te espera. El creador iniciará la temporada.	تم: {name} بانتظارك. سيُطلق المنشئ الموسم.
+2300	Join a league	Unirse a una liga	الانضمام إلى دوري
+2301	League code	Código de la liga	رمز الدوري
+2303	Six characters, given by your friend (or already in their link).	Seis caracteres, dados por tu amigo (o ya incluidos en su enlace).	ستة رموز يعطيك إياها صديقك (أو موجودة في رابطه).
+2304	Searching…	Buscando…	جارٍ البحث…
+2305	See the league	Ver la liga	عرض الدوري
+2306	<0/> · at <1/> at the latest, the creator’s time	<0/> · a las <1/> como muy tarde, hora del creador	<0/> · عند <1/> على أقصى تقدير، بتوقيت المنشئ
+2307	Single round · 7 matchdays	Solo ida · 7 jornadas	ذهاب فقط · 7 جولات
+2308	Home and away · 14 matchdays	Ida y vuelta · 14 jornadas	ذهاب وإياب · 14 جولة
+2309	The season has already started: ask the creator to invite you to a future league.	La temporada ya ha empezado: pide al creador que te invite a una próxima liga.	بدأ الموسم بالفعل: اطلب من المنشئ أن يدعوك إلى دوري قادم.
+2310	{plural}: the computer will take any still free at kick-off.	{plural}: la máquina ocupará las que queden al saque inicial.	{plural}: سيأخذ الحاسوب ما يتبقى منها عند صافرة البداية.
+2311	{n} free place	{n} plaza libre	مكان شاغر واحد
+2312	{n} free places	{n} plazas libres	{"one":"مكان شاغر واحد","two":"مكانان شاغران","few":"{n} أماكن شاغرة","other":"{n} مكانًا شاغرًا"}
+2313	This league is full.	Esta liga está completa.	هذا الدوري مكتمل.
+2314	You are already in this league, with <0/>.	Ya formas parte de esta liga, con <0/>.	أنت عضو في هذا الدوري بالفعل، مع <0/>.
+2315	Open the league	Abrir la liga	فتح الدوري
+2316	You already play in three leagues: leave one to join this one.	Ya juegas tres ligas: deja una para unirte a esta.	أنت تلعب في ثلاثة دوريات بالفعل: غادر أحدها للانضمام إلى هذا.
+2317	Signing up…	Inscribiendo…	جارٍ التسجيل…
+2318	Join the league	Unirse a la liga	الانضمام إلى الدوري
+2319	Choose your nickname to join the league.	Elige tu apodo para unirte a la liga.	اختر لقبك للانضمام إلى الدوري.
+2320	You already play in three leagues on this device: leave one first.	Ya juegas tres ligas en este dispositivo: deja una primero.	أنت تلعب في ثلاثة دوريات على هذا الجهاز بالفعل: غادر أحدها أولًا.
+2321	{capitalize} {v} back on this device.	{capitalize} {v} de vuelta en este dispositivo.	{v} {capitalize} إلى هذا الجهاز.
+2322	are	están	عاد
+2323	is	está	عاد
+2324	This code doesn’t match any club: check it, or it may have left its league.	Este código no corresponde a ningún club: compruébalo, o puede que haya dejado su liga.	هذا الرمز لا يطابق أي نادٍ: تحقق منه، أو ربما غادر النادي دوريه.
+2325	Resume my club	Recuperar mi club	استعادة ناديي
+2326	On your other device, open your league: its resume code is at the bottom. Paste it here.	En tu otro dispositivo, abre tu liga: su código de recuperación está abajo. Pégalo aquí.	على جهازك الآخر، افتح دوريك: رمز الاستعادة في الأسفل. الصقه هنا.
+2327	Resume code	Código de recuperación	رمز الاستعادة
+2329	This is not a complete resume code.	No es un código de recuperación completo.	هذا ليس رمز استعادة كاملًا.
+2330	Checking…	Comprobando…	جارٍ التحقق…
+2331	{what} copied.	{what} copiado.	تم نسخ {what}.
+2332	Loading the league…	Cargando la liga…	جارٍ تحميل الدوري…
+2333	This league has closed, or your club is no longer part of it.	Esta liga ha cerrado, o tu club ya no forma parte de ella.	أُغلق هذا الدوري، أو لم يعد ناديك جزءًا منه.
+2334	Remove from my leagues	Quitar de mis ligas	الإزالة من دورياتي
+2335	Try again	Reintentar	إعادة المحاولة
+2336	Close the waiting room?	¿Cerrar la sala de espera?	إغلاق غرفة الانتظار؟
+2337	Leave the waiting room?	¿Salir de la sala de espera?	مغادرة غرفة الانتظار؟
+2338	Leave {name}?	¿Dejar {name}?	مغادرة {name}؟
+2339	The league is deleted for everyone: your friends will have to join another one.	La liga se elimina para todos: tus amigos tendrán que unirse a otra.	يُحذف الدوري لدى الجميع: سيتعين على أصدقائك الانضمام إلى دوري آخر.

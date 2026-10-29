@@ -2,6 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
+
+// arabe (écrit de droite à gauche) : chaque règle orientée a sa jumelle inversée sous [dir="rtl"] (scripts/rtl)
+const rtl = createRequire(import.meta.url)('./scripts/rtl/postcss-rtl.cjs');
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
@@ -24,6 +28,7 @@ function serviceWorker() {
 export default defineConfig(({ mode }) => ({
   plugins: [react(), serviceWorker()],
   base: './',
+  css: { postcss: { plugins: [rtl()] } },
   // championnats entre amis en développement : le serveur des ligues du site lancé en local (next dev -p 3130), servi
   // sous la même origine que le jeu, comme en ligne (www.footoff.media/api/ligue) ; en mode « serveur-reel » (npm run
   // dev -- --mode serveur-reel), le vrai serveur en ligne, pour une répétition générale avec des ligues d'essai

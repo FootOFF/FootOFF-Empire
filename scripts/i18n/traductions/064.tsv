@@ -1,0 +1,22 @@
+k:Langue	Language	Idioma	اللغة
+k:Langue de la partie : {lang}.	Game language: {lang}.	Idioma de la partida: {lang}.	لغة اللعبة: {lang}.
+k:La langue se choisit avant de fonder un club : les noms des joueurs et des clubs sont tirés dans cette langue. Une fois la partie lancée, elle ne change plus.	Choose the language before you found a club: player and club names are generated in that language. Once the game has started, it can no longer be changed.	El idioma se elige antes de fundar un club: los nombres de jugadores y clubes se generan en ese idioma. Una vez empezada la partida, ya no se puede cambiar.	تُختار اللغة قبل تأسيس النادي: تُولَّد أسماء اللاعبين والأندية بهذه اللغة. وبعد بدء اللعبة لا يمكن تغييرها.
+k:Partie fondée dans une autre langue ({lang}) : le jeu se recharge dans sa langue pour la reprendre. Les noms des joueurs et des clubs restent ceux de sa fondation.	Game founded in another language ({lang}): the game reloads in its language to resume it. Player and club names stay as they were when it was founded.	Partida fundada en otro idioma ({lang}): el juego se recarga en su idioma para retomarla. Los nombres de jugadores y clubes siguen siendo los de su fundación.	لعبة أُسست بلغة أخرى ({lang}): يُعاد تحميل اللعبة بلغتها لمتابعتها. وتبقى أسماء اللاعبين والأندية كما كانت عند التأسيس.
+k:Ta partie avec {clubName} garde sa langue ({lang}). Ce choix vaudra pour ta prochaine partie.	Your game with {clubName} keeps its language ({lang}). This choice will apply to your next game.	Tu partida con {clubName} conserva su idioma ({lang}). Esta elección valdrá para tu próxima partida.	لعبتك مع {clubName} تحتفظ بلغتها ({lang}). وسيُطبَّق هذا الاختيار على لعبتك القادمة.
+k:Langue du championnat	League language	Idioma del campeonato	لغة الدوري
+k:La même pour tous les amis : les noms des joueurs et des clubs de l’ordinateur y sont tirés, et chacun ouvre le championnat dans cette langue. Elle ne change plus ensuite.	The same for every friend: the names of computer-controlled clubs and players are generated in it, and everyone opens the league in this language. It cannot be changed afterwards.	La misma para todos los amigos: los nombres de los jugadores y de los clubes de la máquina se generan en ella, y cada uno abre el campeonato en este idioma. Después ya no cambia.	هي نفسها لجميع الأصدقاء: تُولَّد بها أسماء لاعبي وأندية الحاسوب، ويفتح كل واحد الدوري بهذه اللغة. ولا يمكن تغييرها بعد ذلك.
+k:Championnat créé en français : le serveur ne garde pas encore la langue choisie. Envoie le lien à tes amis.	League created in French: the server does not keep the chosen language yet. Send the link to your friends.	Campeonato creado en francés: el servidor aún no guarda el idioma elegido. Envía el enlace a tus amigos.	أُنشئ الدوري بالفرنسية: الخادم لا يحفظ اللغة المختارة بعد. أرسل الرابط إلى أصدقائك.
+k:Langue du championnat : {lang}	League language: {lang}	Idioma del campeonato: {lang}	لغة الدوري: {lang}
+k:Langue du championnat : {lang}. Les noms de ses joueurs et de ses clubs y sont tirés, les mêmes pour tous les amis : le jeu se recharge dans cette langue pour l’ouvrir.	League language: {lang}. Its player and club names are generated in it, the same for every friend: the game reloads in this language to open it.	Idioma del campeonato: {lang}. Los nombres de sus jugadores y clubes se generan en él, los mismos para todos los amigos: el juego se recarga en este idioma para abrirlo.	لغة الدوري: {lang}. بها تُولَّد أسماء لاعبيه وأنديته، وهي نفسها لجميع الأصدقاء: يُعاد تحميل اللعبة بهذه اللغة لفتحه.
+k:Ouvrir le championnat	Open the league	Abrir el campeonato	افتح الدوري
+k:résultat|V	W	V	ف
+k:résultat|N	D	E	ت
+k:résultat|D	L	D	خ
+k:but	goal	gol	هدف
+k:buts	goals	goles	{"zero":"هدف","one":"هدف","two":"هدفان","few":"أهداف","many":"هدفًا","other":"هدف"}
+k:passe	assist	asistencia	تمريرة حاسمة
+k:passes	assists	asistencias	{"zero":"تمريرة حاسمة","one":"تمريرة حاسمة","two":"تمريرتان حاسمتان","few":"تمريرات حاسمة","many":"تمريرة حاسمة","other":"تمريرة حاسمة"}
+k:carton	card	tarjeta	بطاقة
+k:cartons	cards	tarjetas	{"zero":"بطاقة","one":"بطاقة","two":"بطاقتان","few":"بطاقات","many":"بطاقة","other":"بطاقة"}
+k:match	match	partido	مباراة
+k:matchs	matches	partidos	{"zero":"مباراة","one":"مباراة","two":"مباراتان","few":"مباريات","many":"مباراة","other":"مباراة"}

@@ -18,6 +18,7 @@ import { PHONE, useSwipe } from './gestures';
 import { ClubCrest, Crest } from './crest';
 import { Portrait } from './portrait';
 import { clubStars } from '../game/crest';
+import { decSep, plural, t, tn, tr } from '../i18n/index';
 
 // Stats : le club (saison et records), tous les matchs, les joueurs (classements saison ou carrière), et pour chaque
 // match une fiche « Stats Pass » au format de footoff.media (en-tête, rapport de forces, fil du match, Note FootOFF,
@@ -25,13 +26,12 @@ import { clubStars } from '../game/crest';
 
 const outcome = (m) => (m.pens ? (m.pens[0] > m.pens[1] ? 'win' : 'loss') : m.gf > m.ga ? 'win' : m.gf < m.ga ? 'loss' : 'draw');
 const mkey = (m) => `${m.season}-${m.round}-${m.comp || 'league'}-${m.stage ?? ''}`;
-const whenOf = (m) => (m.comp === 'cup' ? `Coupe ${STAGES_SHORT[m.stage]}` : m.comp === 'c1' ? `Europe ${STAGES_SHORT[m.stage]}` : `J${m.round}`);
+const whenOf = (m) => (m.comp === 'cup' ? t('Coupe {v}', { v: STAGES_SHORT[m.stage] }) : m.comp === 'c1' ? t('Europe {v}', { v: STAGES_SHORT[m.stage] }) : `${t('J')}${m.round}`);
 const LETTER = { win: 'V', draw: 'N', loss: 'D' };
-const WORD = { win: 'Victoire', draw: 'Match nul', loss: 'Défaite' };
-const pensOf = (m) => (m.pens ? ` (t.a.b. ${m.pens[0]}–${m.pens[1]})` : ''); // coupe : égalité tranchée aux tirs au but
+const WORD = { win: t('Victoire'), draw: t('Match nul'), loss: t('Défaite') };
+const pensOf = (m) => (m.pens ? t(' (t.a.b. {a}–{b})', { a: m.pens[0], b: m.pens[1] }) : ''); // coupe : égalité tranchée aux tirs au but
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 const shortName = (n) => { const [f, ...r] = n.split(' '); return r.length ? `${f[0]}. ${r.join(' ')}` : n; };
-const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 
 function summary(list) {
   const t = { played: list.length, win: 0, draw: 0, loss: 0, gf: 0, ga: 0, clean: 0, poss: 0, shots: 0, onT: 0, shotsA: 0, yellow: 0, red: 0, att: 0, rev: 0 };
@@ -54,11 +54,11 @@ function streak(list, ok) {
 }
 
 function FormPills({ list, onOpen }) {
-  if (!list.length) return <span className="st-muted">Aucun match</span>;
+  if (!list.length) return <span className="st-muted">{t('Aucun match')}</span>;
   return (
     <div className="st-form">
       {list.map((m) => (
-        <button key={mkey(m)} className={`st-pill ${outcome(m)}`} onClick={() => onOpen?.(m)} title={`${whenOf(m)} · ${scoreText(m)}${pensOf(m)} ${m.away ? 'chez' : 'contre'} ${m.opp}`}>
+        <button key={mkey(m)} className={`st-pill ${outcome(m)}`} onClick={() => onOpen?.(m)} title={m.away ? t('{when} · {score}{pens} chez {opp}', { when: whenOf(m), score: scoreText(m), pens: pensOf(m), opp: m.opp }) : t('{when} · {score}{pens} contre {opp}', { when: whenOf(m), score: scoreText(m), pens: pensOf(m), opp: m.opp })}>
           {LETTER[outcome(m)]}
         </button>
       ))}
@@ -69,7 +69,7 @@ function FormPills({ list, onOpen }) {
 // --- Le club : saison choisie, forme, records, saison par saison -------------------------------------------------
 function ClubTab({ state, matches, season, onOpen, onCareer }) {
   const list = matches.filter((m) => m.season === season);
-  const t = summary(list);
+  const row = summary(list);
   const withStats = list.filter((m) => m.stats).length || 1;
   const all = matches;
   const best = (score) => all.reduce((b, m) => (!b || score(m) > score(b) ? m : b), null);
@@ -83,36 +83,36 @@ function ClubTab({ state, matches, season, onOpen, onCareer }) {
   return (
     <>
       <TrophyCase trophies={state.trophies || []} />
-      <SectionHead label={`Saison ${season}`} aside={list[0]?.division || divisionOf(state).name} />
-      {list.length === 0 ? <p className="st-muted">Aucun match enregistré pour cette saison : les statistiques détaillées démarrent au prochain match joué.</p> : (
+      <SectionHead label={t('Saison {season}', { season })} aside={list[0]?.division || divisionOf(state).name} />
+      {list.length === 0 ? <p className="st-muted">{t('Aucun match enregistré pour cette saison : les statistiques détaillées démarrent au prochain match joué.')}</p> : (
         <>
           <div className="st-tiles">
-            <Stat label="Matchs" value={t.played} sub={`${t.win} V · ${t.draw} N · ${t.loss} D`} />
-            <Stat label="Buts" value={`${t.gf} – ${t.ga}`} sub={`diff. ${t.gf - t.ga > 0 ? '+' : ''}${t.gf - t.ga}`} />
-            <Stat label="Possession" value={`${Math.round(t.poss / withStats)} %`} sub="en moyenne" />
-            <Stat label="Cages inviolées" value={t.clean} sub={plural(t.clean, 'match sans encaisser', 'matchs sans encaisser')} />
-            <Stat label="Tirs par match" value={fmtRating(t.shots / withStats)} sub={`${fmtRating(t.shotsA / withStats)} concédés`} />
-            <Stat label="Précision" value={`${pct(t.onT, t.shots)} %`} sub="tirs cadrés" />
-            <Stat label="Efficacité" value={`${pct(t.gf, t.shots)} %`} sub="tirs transformés" />
-            <Stat label="Affluence" value={fmtNum(Math.round(t.att / (t.played || 1)))} sub="par match" />
+            <Stat label={t('Matchs')} value={row.played} sub={`${row.win} V · ${row.draw} N · ${row.loss} D`} />
+            <Stat label={t('Buts')} value={`${row.gf} – ${row.ga}`} sub={t('diff. {v}{v2}', { v: row.gf - row.ga > 0 ? '+' : '', v2: row.gf - row.ga })} />
+            <Stat label={t('Possession')} value={`${Math.round(row.poss / withStats)} %`} sub={t('en moyenne')} />
+            <Stat label={t('Cages inviolées')} value={row.clean} sub={plural(row.clean, 'match sans encaisser', 'matchs sans encaisser')} />
+            <Stat label={t('Tirs par match')} value={fmtRating(row.shots / withStats)} sub={t('{fmtRating} concédés', { fmtRating: fmtRating(row.shotsA / withStats) })} />
+            <Stat label={t('Précision')} value={`${pct(row.onT, row.shots)} %`} sub={t('tirs cadrés')} />
+            <Stat label={t('Efficacité')} value={`${pct(row.gf, row.shots)} %`} sub={t('tirs transformés')} />
+            <Stat label={t('Affluence')} value={fmtNum(Math.round(row.att / (row.played || 1)))} sub={t('par match')} />
           </div>
-          <div className="st-row"><span className="st-cap">Forme</span><FormPills list={list.slice(-7)} onOpen={onOpen} /></div>
-          <div className="st-row"><span className="st-cap">Discipline</span><span>{plural(t.yellow, 'carton jaune', 'cartons jaunes')} · {plural(t.red, 'carton rouge', 'cartons rouges')}</span></div>
-          <div className="st-row"><span className="st-cap">Recettes des matchs</span><b>{fmtMoney(t.rev)}</b></div>
+          <div className="st-row"><span className="st-cap">{t('Forme')}</span><FormPills list={list.slice(-7)} onOpen={onOpen} /></div>
+          <div className="st-row"><span className="st-cap">{t('Discipline')}</span><span>{plural(row.yellow, 'carton jaune', 'cartons jaunes')} · {plural(row.red, 'carton rouge', 'cartons rouges')}</span></div>
+          <div className="st-row"><span className="st-cap">{t('Recettes des matchs')}</span><b>{fmtMoney(row.rev)}</b></div>
         </>
       )}
 
       {all.length > 0 && (
         <>
-          <SectionHead label="Records du club" aside="toutes saisons" />
+          <SectionHead label={t('Records du club')} aside={t('toutes saisons')} />
           <ul className="st-records">
-            {bigWin && bigWin.gf > bigWin.ga && <Record label="Plus large victoire" m={bigWin} value={`${bigWin.gf}–${bigWin.ga}`} onOpen={onOpen} />}
-            {bigLoss && bigLoss.ga > bigLoss.gf && <Record label="Plus lourde défaite" m={bigLoss} value={`${bigLoss.gf}–${bigLoss.ga}`} onOpen={onOpen} />}
-            {goals && <Record label="Match le plus prolifique" m={goals} value={plural(goals.gf + goals.ga, 'but', 'buts')} onOpen={onOpen} />}
-            {crowd && <Record label="Record d’affluence" m={crowd} value={fmtNum(crowd.attendance)} onOpen={onOpen} />}
-            {cash && <Record label="Recette record" m={cash} value={fmtMoney(cash.revenue)} onOpen={onOpen} />}
-            <li><span>Plus longue série sans défaite</span><b>{plural(streak(all, (m) => m.gf >= m.ga), 'match', 'matchs')}</b></li>
-            <li><span>Plus longue série de victoires</span><b>{plural(streak(all, (m) => m.gf > m.ga), 'match', 'matchs')}</b></li>
+            {bigWin && bigWin.gf > bigWin.ga && <Record label={t('Plus large victoire')} m={bigWin} value={`${bigWin.gf}–${bigWin.ga}`} onOpen={onOpen} />}
+            {bigLoss && bigLoss.ga > bigLoss.gf && <Record label={t('Plus lourde défaite')} m={bigLoss} value={`${bigLoss.gf}–${bigLoss.ga}`} onOpen={onOpen} />}
+            {goals && <Record label={t('Match le plus prolifique')} m={goals} value={plural(goals.gf + goals.ga, 'but', 'buts')} onOpen={onOpen} />}
+            {crowd && <Record label={t('Record d’affluence')} m={crowd} value={fmtNum(crowd.attendance)} onOpen={onOpen} />}
+            {cash && <Record label={t('Recette record')} m={cash} value={fmtMoney(cash.revenue)} onOpen={onOpen} />}
+            <li><span>{t('Plus longue série sans défaite')}</span><b>{plural(streak(all, (m) => m.gf >= m.ga), 'match', 'matchs')}</b></li>
+            <li><span>{t('Plus longue série de victoires')}</span><b>{plural(streak(all, (m) => m.gf > m.ga), 'match', 'matchs')}</b></li>
           </ul>
         </>
       )}
@@ -121,9 +121,9 @@ function ClubTab({ state, matches, season, onOpen, onCareer }) {
 
       {seasons.length > 0 && (
         <>
-          <SectionHead label="Saison par saison" />
+          <SectionHead label={t('Saison par saison')} />
           <table className="table st-seasons">
-            <thead><tr><th>Saison</th><th>Division</th><th>Place</th><th>V-N-D</th><th>Buts</th></tr></thead>
+            <thead><tr><th>{t('Saison')}</th><th>{t('Division')}</th><th>{t('Place')}</th><th>{t('V-N-D')}</th><th>{t('Buts')}</th></tr></thead>
             <tbody>
               {seasons.map((n) => {
                 const h = state.history.find((x) => x.season === n);
@@ -133,7 +133,7 @@ function ClubTab({ state, matches, season, onOpen, onCareer }) {
                   <tr key={n}>
                     <td className="t-pos">{n}</td>
                     <td className="t-club">{h?.division || ms[0]?.division || '—'}</td>
-                    <td>{h ? ordinal(h.position, true) : 'en cours'}</td>
+                    <td>{h ? ordinal(h.position, true) : t('en cours')}</td>
                     <td>{ms.length ? `${s2.win}-${s2.draw}-${s2.loss}` : '—'}</td>
                     <td>{ms.length ? `${s2.gf}–${s2.ga}` : '—'}</td>
                   </tr>
@@ -164,18 +164,18 @@ function Legends({ state, matches, onCareer }) {
   for (const m of matches) for (const r of m.players || []) if (r.goals && (!bestGame || r.goals > bestGame.r.goals)) bestGame = { m, r };
   const name = (c) => c.p.name + (c.current ? '' : ' (ancien)');
   const rows = [
-    scorer?.totals.goals ? ['Meilleur buteur de l’histoire', name(scorer), plural(scorer.totals.goals, 'but', 'buts'), scorer.id] : null,
-    passer?.totals.assists ? ['Meilleur passeur', name(passer), plural(passer.totals.assists, 'passe', 'passes'), passer.id] : null,
-    loyal?.totals.apps ? ['Le plus de matchs', name(loyal), plural(loyal.totals.apps, 'match', 'matchs'), loyal.id] : null,
-    star?.totals.motm ? ['Le plus d’hommes du match', name(star), `${star.totals.motm} fois`, star.id] : null,
-    rated ? ['Meilleure note moyenne (10 matchs min.)', name(rated), `${fmtRating(rated.totals.avg)} / 10`, rated.id] : null,
-    keeper?.totals.clean ? ['Le plus de matchs sans encaisser', name(keeper), plural(keeper.totals.clean, 'match', 'matchs'), keeper.id] : null,
-    bestSeason ? ['Record de buts sur une saison', `${name(bestSeason.c)} · Saison ${bestSeason.h.season}`, plural(bestSeason.h.goals, 'but', 'buts'), bestSeason.c.id] : null,
-    bestGame ? ['Record de buts sur un match', `${bestGame.r.name} · contre ${bestGame.m.opp}`, plural(bestGame.r.goals, 'but', 'buts'), bestGame.r.id] : null,
+    scorer?.totals.goals ? [t('Meilleur buteur de l’histoire'), name(scorer), plural(scorer.totals.goals, 'but', 'buts'), scorer.id] : null,
+    passer?.totals.assists ? [t('Meilleur passeur'), name(passer), plural(passer.totals.assists, 'passe', 'passes'), passer.id] : null,
+    loyal?.totals.apps ? [t('Le plus de matchs'), name(loyal), plural(loyal.totals.apps, 'match', 'matchs'), loyal.id] : null,
+    star?.totals.motm ? [t('Le plus d’hommes du match'), name(star), t('{n} fois', { n: star.totals.motm }), star.id] : null,
+    rated ? [t('Meilleure note moyenne (10 matchs min.)'), name(rated), `${fmtRating(rated.totals.avg)} / 10`, rated.id] : null,
+    keeper?.totals.clean ? [t('Le plus de matchs sans encaisser'), name(keeper), plural(keeper.totals.clean, 'match', 'matchs'), keeper.id] : null,
+    bestSeason ? [t('Record de buts sur une saison'), t('{name} · Saison {season}', { name: name(bestSeason.c), season: bestSeason.h.season }), plural(bestSeason.h.goals, 'but', 'buts'), bestSeason.c.id] : null,
+    bestGame ? [t('Record de buts sur un match'), t('{name} · contre {opp}', { name: bestGame.r.name, opp: bestGame.m.opp }), plural(bestGame.r.goals, 'but', 'buts'), bestGame.r.id] : null,
   ].filter(Boolean);
   return (
     <>
-      <SectionHead label="Légendes du club" aside="records individuels" />
+      <SectionHead label={t('Légendes du club')} aside={t('records individuels')} />
       <ul className="st-records">
         {rows.map(([label, who, value, id]) => (
           <li key={label}>
@@ -194,7 +194,7 @@ function Record({ label, m, value, onOpen }) {
   return (
     <li>
       <button className="st-record" onClick={() => onOpen(m)}>
-        <span>{label}<em>S{m.season} · J{m.round} · {m.opp}</em></span>
+        <span>{label}<em>{t('S')}{m.season} · {t('J')}{m.round} · {m.opp}</em></span>
         <b>{value}</b>
       </button>
     </li>
@@ -206,21 +206,21 @@ function MatchesTab({ matches, onOpen }) {
   const seasons = [...new Set(matches.map((m) => m.season))].sort((a, b) => b - a);
   const [season, setSeason] = useState('all');
   const list = (season === 'all' ? matches : matches.filter((m) => m.season === season)).slice().reverse();
-  if (!matches.length) return <p className="st-muted">Aucun match enregistré pour l’instant : chaque match joué apparaîtra ici, avec sa fiche Stats Pass.</p>;
+  if (!matches.length) return <p className="st-muted">{t('Aucun match enregistré pour l’instant : chaque match joué apparaîtra ici, avec sa fiche Stats Pass.')}</p>;
   return (
     <>
       <div className="chips">
-        <button className={season === 'all' ? 'active' : ''} onClick={() => setSeason('all')}>Toutes</button>
-        {seasons.map((n) => <button key={n} className={season === n ? 'active' : ''} onClick={() => setSeason(n)}>Saison {n}</button>)}
+        <button className={season === 'all' ? 'active' : ''} onClick={() => setSeason('all')}>{t('Toutes')}</button>
+        {seasons.map((n) => <button key={n} className={season === n ? 'active' : ''} onClick={() => setSeason(n)}>{tr('Saison <0/>', [n])}</button>)}
       </div>
       <ul className="st-matches">
         {list.map((m) => (
           <li key={mkey(m)}>
             <button className="st-match" onClick={() => onOpen(m)}>
-              <span className={`st-when ${m.comp && m.comp !== 'league' ? `st-comp ${m.comp}` : ''}`}>S{m.season} · {whenOf(m)}{m.away ? ' · ext' : ''}</span>
+              <span className={`st-when ${m.comp && m.comp !== 'league' ? `st-comp ${m.comp}` : ''}`}>{t('S')}{m.season} · {whenOf(m)}{m.away ? t(' · ext') : ''}</span>
               <span className="st-opp">{m.opp}</span>
-              <span className={`st-score ${outcome(m)}`}>{scoreText(m)}{m.pens && <small>t.a.b. {m.pens[0]}–{m.pens[1]}</small>}</span>
-              <span className="st-mini">{formationOf(m.formation).name}{m.stats ? ` · possession ${m.stats.possession} % · ${homeFirst(m, m.stats.shots[0], m.stats.shots[1]).join('–')} tirs` : ''}</span>
+              <span className={`st-score ${outcome(m)}`}>{scoreText(m)}{m.pens && <small>{t('t.a.b.')} {m.pens[0]}–{m.pens[1]}</small>}</span>
+              <span className="st-mini">{formationOf(m.formation).name}{m.stats ? t(' · possession {possession} % · {join} tirs', { possession: m.stats.possession, join: homeFirst(m, m.stats.shots[0], m.stats.shots[1]).join('–') }) : ''}</span>
               <IconChevron />
             </button>
           </li>
@@ -249,21 +249,21 @@ function PlayersTab({ state, onCareer }) {
   const minApps = season ? 3 : 10;
   const minShots = season ? 6 : 15;
   const boards = [
-    ['Buteurs', (r) => r.goals, (r) => plural(r.goals, 'but', 'buts')],
-    ['Passeurs décisifs', (r) => r.assists, (r) => plural(r.assists, 'passe', 'passes')],
-    ['Décisifs (buts + passes)', (r) => r.goals + r.assists, (r) => `${r.goals + r.assists} (${r.goals} + ${r.assists})`],
-    ['Hommes du match', (r) => r.motm, (r) => `${r.motm} fois`],
-    [`Note moyenne (${minApps} matchs min.)`, (r) => (r.apps >= minApps ? r.avg : 0), (r) => `${fmtRating(r.avg)} / 10`],
-    ['Matchs joués', (r) => r.apps, (r) => plural(r.apps, 'match', 'matchs')],
-    ['Minutes jouées', (r) => r.minutes, (r) => `${fmtNum(r.minutes)} min`],
-    ['Tirs cadrés', (r) => r.onTarget, (r) => `${r.onTarget} sur ${r.shots}`],
-    [`Efficacité (${minShots} tirs min.)`, (r) => (r.shots >= minShots ? r.goals / r.shots : 0), (r) => `${pct(r.goals, r.shots)} %`],
-    ['Matchs sans encaisser', (r) => ((r.p.pos === 'G' || r.p.pos === 'D') ? r.clean : 0), (r) => plural(r.clean, 'match', 'matchs')],
-    ['Discipline', (r) => r.yellow + r.red * 3, (r) => `${r.yellow} J · ${r.red} R`],
+    [t('Buteurs'), (r) => r.goals, (r) => plural(r.goals, 'but', 'buts')],
+    [t('Passeurs décisifs'), (r) => r.assists, (r) => plural(r.assists, 'passe', 'passes')],
+    [t('Décisifs (buts + passes)'), (r) => r.goals + r.assists, (r) => `${r.goals + r.assists} (${r.goals} + ${r.assists})`],
+    [t('Hommes du match'), (r) => r.motm, (r) => t('{n} fois', { n: r.motm })],
+    [t('Note moyenne ({minApps} matchs min.)', { minApps }), (r) => (r.apps >= minApps ? r.avg : 0), (r) => `${fmtRating(r.avg)} / 10`],
+    [t('Matchs joués'), (r) => r.apps, (r) => plural(r.apps, 'match', 'matchs')],
+    [t('Minutes jouées'), (r) => r.minutes, (r) => `${fmtNum(r.minutes)} min`],
+    [t('Tirs cadrés'), (r) => r.onTarget, (r) => `${r.onTarget} sur ${r.shots}`],
+    [t('Efficacité ({minShots} tirs min.)', { minShots }), (r) => (r.shots >= minShots ? r.goals / r.shots : 0), (r) => `${pct(r.goals, r.shots)} %`],
+    [t('Matchs sans encaisser'), (r) => ((r.p.pos === 'G' || r.p.pos === 'D') ? r.clean : 0), (r) => plural(r.clean, 'match', 'matchs')],
+    [t('Discipline'), (r) => r.yellow + r.red * 3, (r) => `${r.yellow} J · ${r.red} R`],
   ];
   return (
     <>
-      <Tabs className="segmented st-scope" role="radiogroup" label="Période" items={[['season', `Saison ${state.seasonNumber}`], ['career', 'Histoire du club']]} value={scope} onChange={setScope} />
+      <Tabs className="segmented st-scope" role="radiogroup" label={t('Période')} items={[['season', t('Saison {seasonNumber}', { seasonNumber: state.seasonNumber })], ['career', t('Histoire du club')]]} value={scope} onChange={setScope} />
       <div className="st-boards">
         {boards.map(([title, score, label]) => {
           const top = rows.filter((r) => score(r) > 0).sort((a, b) => score(b) - score(a)).slice(0, 5);
@@ -277,7 +277,7 @@ function PlayersTab({ state, onCareer }) {
                       <button className="st-player" onClick={() => onCareer(r.id)}>
                         <span className="st-rank">{i + 1}</span>
                         <Portrait p={r.p} size={28} />
-                        <span className="st-name">{shortName(r.p.name)}{r.old && <em className="st-old">ancien</em>}</span>
+                        <span className="st-name">{shortName(r.p.name)}{r.old && <em className="st-old">{t('ancien')}</em>}</span>
                         <b>{label(r)}</b>
                       </button>
                     </li>
@@ -288,7 +288,7 @@ function PlayersTab({ state, onCareer }) {
           );
         })}
       </div>
-      <p className="st-muted">{season ? 'Joueurs actuellement au club.' : 'Tous les joueurs passés par le club, anciens compris.'} Choisis un joueur pour ouvrir sa carrière.</p>
+      <p className="st-muted">{tr('<0/> Choisis un joueur pour ouvrir sa carrière.', [season ? t('Joueurs actuellement au club.') : t('Tous les joueurs passés par le club, anciens compris.')])}</p>
     </>
   );
 }
@@ -296,10 +296,10 @@ function PlayersTab({ state, onCareer }) {
 // --- Fiche Stats Pass d'un match ---------------------------------------------------------------------------------
 // --- Détail complet d'un match (onglets du Stats Pass) -------------------------------------------------------
 
-const OUTCOME = { g: 'But', s: 'Arrêté', w: 'À côté', p: 'Sur le poteau' };
+const OUTCOME = { g: t('But'), s: t('Arrêté'), w: t('À côté'), p: t('Sur le poteau') };
 const POS_ORDER = { G: 0, D: 1, M: 2, A: 3 };
 const xgFmt = (v) => fmtRating(v);
-const xgShot = (v) => v.toFixed(2).replace('.', ','); // xG d'un tir : deux décimales
+const xgShot = (v) => v.toFixed(2).replace('.', decSep()); // xG d'un tir : deux décimales
 // minute « 45+2 » → minute de jeu (47) ; tranche de 15 minutes (0 à 5) selon la mi-temps
 const minuteOf = (label) => String(label).split('+').reduce((a, b) => a + Number(b), 0);
 const sliceOf = (shot) => {
@@ -310,7 +310,7 @@ const sliceOf = (shot) => {
 
 function MatchStats({ m }) {
   const st = m.stats;
-  if (!st) return <p className="st-muted">Statistiques indisponibles pour ce match.</p>;
+  if (!st) return <p className="st-muted">{t('Statistiques indisponibles pour ce match.')}</p>;
   const shots = m.shots || [];
   const miss = (i) => st.shots[i] - st.onTarget[i];
   const savePct = (i) => { const conceded = i === 0 ? m.ga : m.gf; const sv = st.saves?.[i] ?? 0; return sv + conceded ? pct(sv, sv + conceded) : 0; };
@@ -318,61 +318,61 @@ function MatchStats({ m }) {
   return (
     <>
       <section className="sh-sec">
-        <span className="sh-cap">Attaque</span>
-        <VersusBar flip={!!m.away} label="Buts" home={m.gf} away={m.ga} />
-        {st.xg && <VersusBar flip={!!m.away} label="Buts attendus (xG)" home={st.xg[0]} away={st.xg[1]} format={xgFmt} />}
-        <VersusBar flip={!!m.away} label="Tirs" home={st.shots[0]} away={st.shots[1]} />
-        {st.big && <VersusBar flip={!!m.away} label="Occasions franches" home={st.big[0]} away={st.big[1]} />}
-        <VersusBar flip={!!m.away} label="Tirs cadrés" home={st.onTarget[0]} away={st.onTarget[1]} />
-        <VersusBar flip={!!m.away} label="Tirs non cadrés" home={miss(0)} away={miss(1)} />
-        {st.post && <VersusBar flip={!!m.away} label="Sur les montants" home={st.post[0]} away={st.post[1]} />}
-        <VersusBar flip={!!m.away} label="Précision" home={pct(st.onTarget[0], st.shots[0])} away={pct(st.onTarget[1], st.shots[1])} suffix=" %" />
-        <VersusBar flip={!!m.away} label="Tirs transformés" home={pct(m.gf, st.shots[0])} away={pct(m.ga, st.shots[1])} suffix=" %" />
-        {st.xg && <p className="sp-note">Buts attendus : la somme des chances de marquer de chaque tir. Au-dessus, l’équipe a été réaliste ; en dessous, elle a manqué d’efficacité.</p>}
+        <span className="sh-cap">{t('Attaque')}</span>
+        <VersusBar flip={!!m.away} label={t('Buts')} home={m.gf} away={m.ga} />
+        {st.xg && <VersusBar flip={!!m.away} label={t('Buts attendus (xG)')} home={st.xg[0]} away={st.xg[1]} format={xgFmt} />}
+        <VersusBar flip={!!m.away} label={t('Tirs')} home={st.shots[0]} away={st.shots[1]} />
+        {st.big && <VersusBar flip={!!m.away} label={t('Occasions franches')} home={st.big[0]} away={st.big[1]} />}
+        <VersusBar flip={!!m.away} label={t('Tirs cadrés')} home={st.onTarget[0]} away={st.onTarget[1]} />
+        <VersusBar flip={!!m.away} label={t('Tirs non cadrés')} home={miss(0)} away={miss(1)} />
+        {st.post && <VersusBar flip={!!m.away} label={t('Sur les montants')} home={st.post[0]} away={st.post[1]} />}
+        <VersusBar flip={!!m.away} label={t('Précision')} home={pct(st.onTarget[0], st.shots[0])} away={pct(st.onTarget[1], st.shots[1])} suffix=" %" />
+        <VersusBar flip={!!m.away} label={t('Tirs transformés')} home={pct(m.gf, st.shots[0])} away={pct(m.ga, st.shots[1])} suffix=" %" />
+        {st.xg && <p className="sp-note">{t('Buts attendus : la somme des chances de marquer de chaque tir. Au-dessus, l’équipe a été réaliste ; en dessous, elle a manqué d’efficacité.')}</p>}
       </section>
       {st.saves && (
         <section className="sh-sec">
-          <span className="sh-cap">Gardiens</span>
-          <VersusBar flip={!!m.away} label="Arrêts" home={st.saves[0]} away={st.saves[1]} />
-          <VersusBar flip={!!m.away} label="Tirs cadrés arrêtés" home={savePct(0)} away={savePct(1)} suffix=" %" />
-          <VersusBar flip={!!m.away} label="Buts encaissés" home={m.ga} away={m.gf} />
+          <span className="sh-cap">{t('Gardiens')}</span>
+          <VersusBar flip={!!m.away} label={t('Arrêts')} home={st.saves[0]} away={st.saves[1]} />
+          <VersusBar flip={!!m.away} label={t('Tirs cadrés arrêtés')} home={savePct(0)} away={savePct(1)} suffix=" %" />
+          <VersusBar flip={!!m.away} label={t('Buts encaissés')} home={m.ga} away={m.gf} />
         </section>
       )}
       <section className="sh-sec">
-        <span className="sh-cap">Possession</span>
-        <VersusBar flip={!!m.away} label="Sur le match" home={st.possession} away={100 - st.possession} suffix=" %" />
-        {st.possHalf?.[0] != null && <VersusBar flip={!!m.away} label="1re mi-temps" home={st.possHalf[0]} away={100 - st.possHalf[0]} suffix=" %" />}
-        {st.possHalf?.[1] != null && <VersusBar flip={!!m.away} label="2de mi-temps" home={st.possHalf[1]} away={100 - st.possHalf[1]} suffix=" %" />}
+        <span className="sh-cap">{t('Possession')}</span>
+        <VersusBar flip={!!m.away} label={t('Sur le match')} home={st.possession} away={100 - st.possession} suffix=" %" />
+        {st.possHalf?.[0] != null && <VersusBar flip={!!m.away} label={t('1re mi-temps')} home={st.possHalf[0]} away={100 - st.possHalf[0]} suffix=" %" />}
+        {st.possHalf?.[1] != null && <VersusBar flip={!!m.away} label={t('2de mi-temps')} home={st.possHalf[1]} away={100 - st.possHalf[1]} suffix=" %" />}
       </section>
       {shots.length > 0 && (
         <section className="sh-sec">
-          <span className="sh-cap">Mi-temps par mi-temps</span>
+          <span className="sh-cap">{t('Mi-temps par mi-temps')}</span>
           {[1, 2].map((h) => {
             const a = half(h, 0);
             const b = half(h, 1);
             return (
               <div key={h} className="sp-half">
-                <span>{h === 1 ? '1re mi-temps' : '2de mi-temps'}</span>
+                <span>{tn(h, '1re mi-temps', '2de mi-temps', {}, !(h === 1))}</span>
                 <b className={a.goals > b.goals ? 'win' : a.goals < b.goals ? 'loss' : ''}>{homeFirst(m, a.goals, b.goals).join(' – ')}</b>
-                <em>tirs {homeFirst(m, a.shots, b.shots).join(' – ')}</em>
+                <em>{tr('tirs <0/>', [homeFirst(m, a.shots, b.shots).join(' – ')])}</em>
               </div>
             );
           })}
         </section>
       )}
       <section className="sh-sec">
-        <span className="sh-cap">Discipline</span>
-        <VersusBar flip={!!m.away} label="Cartons jaunes" home={st.yellow[0]} away={st.yellow[1]} />
-        <VersusBar flip={!!m.away} label="Cartons rouges" home={st.red[0]} away={st.red[1]} />
+        <span className="sh-cap">{t('Discipline')}</span>
+        <VersusBar flip={!!m.away} label={t('Cartons jaunes')} home={st.yellow[0]} away={st.yellow[1]} />
+        <VersusBar flip={!!m.away} label={t('Cartons rouges')} home={st.red[0]} away={st.red[1]} />
       </section>
       <section className="sh-sec">
-        <span className="sh-cap">Le contexte</span>
+        <span className="sh-cap">{t('Le contexte')}</span>
         <ul className="sp-facts">
-          <li><span>Niveau du onze</span><b>{fmtRating(m.myRating || 0)} contre {fmtRating(m.oppStrength || 0)}</b></li>
-          <li><span>Tactique</span><b>{TACTICS[m.tactic]?.name || '—'}</b></li>
-          {st.longShots > 0 && <li><span>Frappes de loin</span><b>{st.longShots}</b></li>}
-          <li><span>Affluence</span><b>{fmtNum(m.attendance || 0)}{m.capacity ? ` · ${pct(m.attendance, m.capacity)} %` : ''}</b></li>
-          <li><span>Recette du jour</span><b>{fmtMoney(m.revenue || 0)}</b></li>
+          <li><span>{t('Niveau du onze')}</span><b>{tr('<0/> contre <1/>', [fmtRating(m.myRating || 0), fmtRating(m.oppStrength || 0)])}</b></li>
+          <li><span>{t('Tactique')}</span><b>{TACTICS[m.tactic]?.name || '—'}</b></li>
+          {st.longShots > 0 && <li><span>{t('Frappes de loin')}</span><b>{st.longShots}</b></li>}
+          <li><span>{t('Affluence')}</span><b>{fmtNum(m.attendance || 0)}{m.capacity ? ` · ${pct(m.attendance, m.capacity)} %` : ''}</b></li>
+          <li><span>{t('Recette du jour')}</span><b>{fmtMoney(m.revenue || 0)}</b></li>
         </ul>
       </section>
     </>
@@ -395,7 +395,7 @@ function MatchPlayers({ m, clubName, onCareer }) {
         <span className="sh-cap">{clubName}</span>
         <div className="sp-table-wrap">
           <table className="sp-table">
-            <thead><tr><th className="l">Joueur</th><th>Note</th><th>Min.</th><th>Buts</th><th>Passes</th><th>Tirs</th><th>Cartons</th></tr></thead>
+            <thead><tr><th className="l">{t('Joueur')}</th><th>{t('Note')}</th><th>{t('Min.')}</th><th>{t('Buts')}</th><th>{t('Passes')}</th><th>{t('Tirs')}</th><th>{t('Cartons')}</th></tr></thead>
             <tbody>
               {players.map((p) => (
                 <tr key={p.id} className={`sp-click ${p.id === m.motm ? 'motm' : ''}`} onClick={() => onCareer?.(p.id)}>
@@ -404,24 +404,24 @@ function MatchPlayers({ m, clubName, onCareer }) {
                   <td>{dash(p.minutes)}</td>
                   <td>{p.goals || '·'}</td>
                   <td>{p.assists || '·'}</td>
-                  <td>{p.shots === undefined ? '–' : p.shots ? `${p.shots} (${p.onTarget} cadré${p.onTarget > 1 ? 's' : ''})` : '·'}</td>
+                  <td>{p.shots === undefined ? '–' : p.shots ? tn(p.onTarget, '{shots} ({onTarget} cadré)', '{shots} ({onTarget} cadrés)', { shots: p.shots, onTarget: p.onTarget }, p.onTarget > 1) : '·'}</td>
                   <td>{p.red ? <i className="card red" /> : p.yellow ? <i className="card yellow" /> : '·'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="sp-note">En or : l’homme du match. Les tirs entre parenthèses sont ceux cadrés. Choisis un joueur pour ouvrir sa carrière.</p>
+        <p className="sp-note">{t('En or : l’homme du match. Les tirs entre parenthèses sont ceux cadrés. Choisis un joueur pour ouvrir sa carrière.')}</p>
       </section>
       <section className="sh-sec">
         <span className="sh-cap">{m.opp}</span>
         {byOpp.length ? (
           <ul className="sp-facts">
-            {byOpp.map((r) => <li key={r.name}><span>{r.name}</span><b>{r.goals ? `${plural(r.goals, 'but', 'buts')} · ` : ''}{plural(r.shots, 'tir', 'tirs')}, {r.on} cadré{r.on > 1 ? 's' : ''}</b></li>)}
+            {byOpp.map((r) => <li key={r.name}><span>{r.name}</span><b>{tr('<0/><1/>, <2/> cadré<3/>', [r.goals ? `${plural(r.goals, 'but', 'buts')} · ` : '', plural(r.shots, 'tir', 'tirs'), r.on, r.on > 1 ? 's' : ''])}</b></li>)}
           </ul>
         ) : oppGoals.length ? (
-          <ul className="sp-facts">{oppGoals.map((e, i) => <li key={i}><span>{e.player}</span><b>but · {e.minute}′</b></li>)}</ul>
-        ) : <p className="st-muted">Aucun tir adverse enregistré.</p>}
+          <ul className="sp-facts">{oppGoals.map((e, i) => <li key={i}><span>{e.player}</span><b>{tr('but · <0/>′', [e.minute])}</b></li>)}</ul>
+        ) : <p className="st-muted">{t('Aucun tir adverse enregistré.')}</p>}
       </section>
     </>
   );
@@ -429,7 +429,7 @@ function MatchPlayers({ m, clubName, onCareer }) {
 
 function MatchTimeline({ m }) {
   const shots = m.shots || [];
-  if (!shots.length) return <p className="st-muted">Le déroulé tir par tir existe pour les matchs joués depuis cette mise à jour.</p>;
+  if (!shots.length) return <p className="st-muted">{t('Le déroulé tir par tir existe pour les matchs joués depuis cette mise à jour.')}</p>;
   const slices = Array.from({ length: 6 }, () => ({ h: 0, a: 0, gh: 0, ga: 0 }));
   for (const x of shots) {
     const sl = slices[sliceOf(x)];
@@ -444,8 +444,8 @@ function MatchTimeline({ m }) {
   return (
     <>
       <section className="sh-sec">
-        <span className="sh-cap">Les temps forts</span>
-        <div className="sp-tl" role="img" aria-label="Tirs par tranche de quinze minutes, club en haut, adversaire en bas">
+        <span className="sh-cap">{t('Les temps forts')}</span>
+        <div className="sp-tl" role="img" aria-label={t('Tirs par tranche de quinze minutes, club en haut, adversaire en bas')}>
           {slices.map((x, i) => (
             <div key={i} className="sp-tl-col">
               <div className="sp-tl-up">{x.gh > 0 && <span className="sp-tl-goal">{'●'.repeat(x.gh)}</span>}<i style={{ height: `${(x.h / max) * 100}%` }} />{x.h > 0 && <em>{x.h}</em>}</div>
@@ -454,16 +454,16 @@ function MatchTimeline({ m }) {
             </div>
           ))}
         </div>
-        <div className="sp-legend"><span><i className="dom" /> tirs du club</span><span><i className="ext" /> tirs adverses</span><span>● but</span></div>
+        <div className="sp-legend"><span>{tr('<0/> tirs du club', [<i className="dom" />])}</span><span>{tr('<0/> tirs adverses', [<i className="ext" />])}</span><span>{t('● but')}</span></div>
       </section>
       <section className="sh-sec">
-        <span className="sh-cap">Tir par tir</span>
+        <span className="sh-cap">{t('Tir par tir')}</span>
         <ul className={`sp-events sp-all ${m.away ? 'flip' : ''}`}>
           {all.map((x, i) => (
             <li key={i} className={`${x.s === 0 ? 'dom' : 'ext'} ${x.kind === 'shot' ? `o-${x.o}` : ''}`}>
               <span className="sp-min">{x.m}′</span>
               <span className="sp-ico">{x.kind === 'shot' ? (x.o === 'g' ? <IconBall /> : <i className={`sp-shot ${x.o}`} />) : <i className={`card ${x.kind}`} />}</span>
-              <span className="sp-who">{x.p}<em> · {x.kind === 'shot' ? `${OUTCOME[x.o]}${x.q === 'pen' ? ' · penalty' : x.q === 'big' ? ' · occasion franche' : x.q === 'hard' ? ' · frappe difficile' : ''}${x.x ? ` · xG ${xgShot(x.x)}` : ''}` : x.kind === 'red' ? 'carton rouge' : 'carton jaune'}</em></span>
+              <span className="sp-who">{x.p}<em> · {x.kind === 'shot' ? `${OUTCOME[x.o]}${x.q === 'pen' ? t(' · penalty') : x.q === 'big' ? t(' · occasion franche') : x.q === 'hard' ? t(' · frappe difficile') : ''}${x.x ? t(' · xG {xgShot}', { xgShot: xgShot(x.x) }) : ''}` : x.kind === 'red' ? t('carton rouge') : t('carton jaune')}</em></span>
             </li>
           ))}
         </ul>
@@ -488,8 +488,8 @@ function MatchLineup({ m, onCareer }) {
           if (!p || !f.pitch[k]) return null;
           const tone = p.rating >= 7.5 ? 'good' : p.rating < 5.5 ? 'bad' : '';
           return (
-            <button key={id} type="button" className={`p2-chip sp-pchip ${tone}`} style={{ left: `${f.pitch[k][0]}%`, top: `${f.pitch[k][1]}%` }} onClick={() => onCareer?.(id)} title={`${p.name} · note ${fmtRating(p.rating)}${out.has(id) ? ' · remplacé' : ''}`}>
-              <span className="p2-num">{fmtRating(p.rating)}{out.has(id) && <i className="sp-subout" aria-label="remplacé" />}</span>
+            <button key={id} type="button" className={`p2-chip sp-pchip ${tone}`} style={{ left: `${f.pitch[k][0]}%`, top: `${f.pitch[k][1]}%` }} onClick={() => onCareer?.(id)} title={t('{name} · note {fmtRating}{v}', { name: p.name, fmtRating: fmtRating(p.rating), v: out.has(id) ? t(' · remplacé') : '' })}>
+              <span className="p2-num">{fmtRating(p.rating)}{out.has(id) && <i className="sp-subout" aria-label={t('remplacé')} />}</span>
               <span className="p2-name">{shortName(p.name)}</span>
             </button>
           );
@@ -500,8 +500,8 @@ function MatchLineup({ m, onCareer }) {
           {m.subs.map((x, i) => (
             <li key={i}>
               <span className="sp-min">{x.minute}′</span>
-              <span className="sub-way in">Entre</span><b>{shortName(nameOf(x.in))}</b>
-              <span className="sub-way out">Sort</span><b>{shortName(nameOf(x.out))}</b>
+              <span className="sub-way in">{t('Entre')}</span><b>{shortName(nameOf(x.in))}</b>
+              <span className="sub-way out">{t('Sort')}</span><b>{shortName(nameOf(x.out))}</b>
             </li>
           ))}
         </ul>
@@ -510,7 +510,7 @@ function MatchLineup({ m, onCareer }) {
   );
 }
 
-const GATE_LABEL = { billetterie: 'Billetterie', buvette: 'Buvette', boutique: 'Boutique', loges: 'Loges', tv: 'Droits TV' };
+const GATE_LABEL = { billetterie: t('Billetterie'), buvette: t('Buvette'), boutique: t('Boutique'), loges: t('Loges'), tv: t('Droits TV') };
 
 // Billetterie du match : formule des billets du jour, prix, affluence, recettes détaillées.
 function MatchGate({ m }) {
@@ -518,13 +518,13 @@ function MatchGate({ m }) {
   const refused = m.demand && m.capacity && m.demand > m.capacity ? m.demand - m.capacity : 0;
   return (
     <ul className="sp-facts">
-      {m.away ? <li><span>Lieu</span><b>À l’extérieur · droits TV seulement</b></li> : <>
-        <li><span>Formule des billets</span><b>{policy ? `${policy.name}${m.ticketPrice ? ` · ${fmtPrice(m.ticketPrice)} le billet` : ''}` : 'Non enregistrée (match ancien)'}</b></li>
-        <li><span>Affluence</span><b>{fmtNum(m.attendance || 0)}{m.capacity ? ` / ${fmtNum(m.capacity)} · ${pct(m.attendance, m.capacity)} %` : ''}</b></li>
+      {m.away ? <li><span>{t('Lieu')}</span><b>{t('À l’extérieur · droits TV seulement')}</b></li> : <>
+        <li><span>{t('Formule des billets')}</span><b>{policy ? `${policy.name}${m.ticketPrice ? t(' · {ticketPrice} le billet', { ticketPrice: fmtPrice(m.ticketPrice) }) : ''}` : t('Non enregistrée (match ancien)')}</b></li>
+        <li><span>{t('Affluence')}</span><b>{fmtNum(m.attendance || 0)}{m.capacity ? ` / ${fmtNum(m.capacity)} · ${pct(m.attendance, m.capacity)} %` : ''}</b></li>
       </>}
-      {refused > 0 && <li><span>Restés aux guichets</span><b>{fmtNum(refused)}</b></li>}
+      {refused > 0 && <li><span>{t('Restés aux guichets')}</span><b>{fmtNum(refused)}</b></li>}
       {m.breakdown && Object.entries(m.breakdown).filter(([, v]) => v > 0).map(([k, v]) => <li key={k}><span>{GATE_LABEL[k] || k}</span><b>{fmtMoney(v)}</b></li>)}
-      <li className="sp-total"><span>Recette du match</span><b>{fmtMoney(m.revenue || 0)}</b></li>
+      <li className="sp-total"><span>{t('Recette du match')}</span><b>{fmtMoney(m.revenue || 0)}</b></li>
     </ul>
   );
 }
@@ -545,33 +545,33 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
   const st = m.stats;
   return (
     <div className="sq-overlay" onClick={onClose}>
-      <article ref={ref} className="sq-sheet glass sp" onClick={(e) => e.stopPropagation()} aria-label={`Stats Pass : ${state.clubName} contre ${m.opp}`}>
+      <article ref={ref} className="sq-sheet glass sp" onClick={(e) => e.stopPropagation()} aria-label={t('Stats Pass : {clubName} contre {opp}', { clubName: state.clubName, opp: m.opp })}>
         <span className="grip" aria-hidden="true" />
         <header className="sh-bar">
           <div className="sh-pager">
-            <button className="hud-icon" onClick={onPrev} aria-label="Match précédent"><IconChevronLeft /></button>
-            <span>Stats Pass</span>
-            <button className="hud-icon" onClick={onNext} aria-label="Match suivant"><IconChevron /></button>
+            <button className="hud-icon" onClick={onPrev} aria-label={t('Match précédent')}><IconChevronLeft /></button>
+            <span>{t('Stats Pass')}</span>
+            <button className="hud-icon" onClick={onNext} aria-label={t('Match suivant')}><IconChevron /></button>
           </div>
-          <button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button>
+          <button className="hud-icon" onClick={onClose} aria-label={t('Fermer')}><IconClose /></button>
         </header>
 
         <section className="sp-card">
-          <span className="sp-meta">{m.label || `Journée ${m.round}`}{m.away ? ' · Extérieur' : ''} · {m.comp === 'c1' ? 'Europe' : m.division} · Saison {m.season}</span>
+          <span className="sp-meta">{tr('<0/><1/> · <2/> · Saison <3/>', [m.label || t('Journée {round}', { round: m.round }), m.away ? t(' · Extérieur') : '', m.comp === 'c1' ? t('Europe') : m.division, m.season])}</span>
           <div className="sp-grid">
             {/* l'équipe qui reçoit à gauche (0.8.1) */}
             <div className="sp-team">{m.away ? <><Crest name={m.opp} className="sp-crest" />{m.opp}</> : <><ClubCrest crest={state.crest} name={state.clubName} className="sp-crest" stars={clubStars(state)} />{state.clubName}</>}</div>
             <div className={`sp-score ${o}`}>{homeFirst(m).map((g, i) => <React.Fragment key={i}>{i ? <i>–</i> : null}{g}</React.Fragment>)}</div>
             <div className="sp-team ext">{m.away ? <>{state.clubName}<ClubCrest crest={state.crest} name={state.clubName} className="sp-crest" stars={clubStars(state)} /></> : <>{m.opp}<Crest name={m.opp} className="sp-crest" /></>}</div>
           </div>
-          <span className={`sp-state ${o}`}>{m.pens ? `${o === 'win' ? 'Qualifié' : 'Éliminé'} aux tirs au but ${m.pens[0]}–${m.pens[1]}` : WORD[o]}</span>
+          <span className={`sp-state ${o}`}>{m.pens ? t('{v} aux tirs au but {v2}–{v3}', { v: o === 'win' ? t('Qualifié') : t('Éliminé'), v2: m.pens[0], v3: m.pens[1] }) : WORD[o]}</span>
           <div className="sp-strip">
-            {m.away ? <span>À l’extérieur · droits TV seulement</span> : <span><b>{fmtNum(m.attendance || 0)}</b> spectateurs{m.capacity ? ` · ${pct(m.attendance, m.capacity)} % de remplissage` : ''}</span>}
-            <span>Recette <b>{fmtMoney(m.revenue || 0)}</b></span>
+            {m.away ? <span>{t('À l’extérieur · droits TV seulement')}</span> : <span>{tr('<0/> spectateurs<1/>', [<b>{fmtNum(m.attendance || 0)}</b>, m.capacity ? t(' · {pct} % de remplissage', { pct: pct(m.attendance, m.capacity) }) : ''])}</span>}
+            <span>{tr('Recette <0/>', [<b>{fmtMoney(m.revenue || 0)}</b>])}</span>
           </div>
         </section>
 
-        <Tabs className="sq-tabs sp-tabs" items={[['resume', 'Résumé'], ['stats', 'Stats'], ['players', 'Joueurs'], ['timeline', 'Déroulé']]} value={view} onChange={setView} />
+        <Tabs className="sq-tabs sp-tabs" items={[['resume', t('Résumé')], ['stats', t('Stats')], ['players', t('Joueurs')], ['timeline', t('Déroulé')]]} value={view} onChange={setView} />
 
         {view === 'stats' && <MatchStats m={m} />}
         {view === 'players' && <MatchPlayers m={m} clubName={state.clubName} onCareer={onCareer} />}
@@ -579,23 +579,23 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
         {view === 'resume' && <>
         {st && (
           <section className="sh-sec">
-            <span className="sh-cap">Le rapport de forces</span>
-            <VersusBar label="Possession" home={st.possession} away={100 - st.possession} suffix=" %" flip={!!m.away} />
-            <VersusBar label="Tirs" home={st.shots[0]} away={st.shots[1]} flip={!!m.away} />
-            <VersusBar label="Tirs cadrés" home={st.onTarget[0]} away={st.onTarget[1]} flip={!!m.away} />
-            <VersusBar label="Cartons" home={st.yellow[0] + st.red[0]} away={st.yellow[1] + st.red[1]} flip={!!m.away} />
+            <span className="sh-cap">{t('Le rapport de forces')}</span>
+            <VersusBar label={t('Possession')} home={st.possession} away={100 - st.possession} suffix=" %" flip={!!m.away} />
+            <VersusBar label={t('Tirs')} home={st.shots[0]} away={st.shots[1]} flip={!!m.away} />
+            <VersusBar label={t('Tirs cadrés')} home={st.onTarget[0]} away={st.onTarget[1]} flip={!!m.away} />
+            <VersusBar label={t('Cartons')} home={st.yellow[0] + st.red[0]} away={st.yellow[1] + st.red[1]} flip={!!m.away} />
             <div className="sp-levels">
-              {m.away && <span>Adversaire <b>{fmtRating(m.oppStrength || 0)}</b></span>}
-              <span>Niveau du onze <b className="dom">{fmtRating(m.myRating || 0)}</b></span>
-              {!m.away && <span>Adversaire <b>{fmtRating(m.oppStrength || 0)}</b></span>}
+              {m.away && <span>{tr('Adversaire <0/>', [<b>{fmtRating(m.oppStrength || 0)}</b>])}</span>}
+              <span>{tr('Niveau du onze <0/>', [<b className="dom">{fmtRating(m.myRating || 0)}</b>])}</span>
+              {!m.away && <span>{tr('Adversaire <0/>', [<b>{fmtRating(m.oppStrength || 0)}</b>])}</span>}
             </div>
-            <button className="btn ghost wide sp-more" onClick={() => setView('stats')}>Toutes les statistiques du match</button>
+            <button className="btn ghost wide sp-more" onClick={() => setView('stats')}>{t('Toutes les statistiques du match')}</button>
           </section>
         )}
 
         <section className="sh-sec">
-          <span className="sh-cap">Le fil du match</span>
-          {events.length === 0 && (m.scorers || []).length === 0 ? <p className="st-muted">Aucun but ni carton.</p> : (
+          <span className="sh-cap">{t('Le fil du match')}</span>
+          {events.length === 0 && (m.scorers || []).length === 0 ? <p className="st-muted">{t('Aucun but ni carton.')}</p> : (
             <ul className={`sp-events ${m.away ? 'flip' : ''}`}>
               {(events.length ? events : (m.scorers || []).map((g) => ({ minute: g.minute, type: 'goal', side: 'home', player: g.name }))).map((e, i) => {
                 const assist = e.type === 'goal' && e.side === 'home' ? (m.scorers || []).find((g) => g.name === e.player && String(g.minute) === String(e.minute).split('+')[0])?.assist : null;
@@ -603,7 +603,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
                   <li key={i} className={e.side === 'home' ? 'dom' : 'ext'}>
                     <span className="sp-min">{e.minute}′</span>
                     <span className="sp-ico">{e.type === 'goal' ? <IconBall /> : <i className={`card ${e.type}`} />}</span>
-                    <span className="sp-who">{e.player}{assist ? <em> · passe {deName(shortName(assist))}</em> : null}</span>
+                    <span className="sp-who">{e.player}{assist ? <em>{' '}{tr('· passe <0/>', [deName(shortName(assist))])}</em> : null}</span>
                   </li>
                 );
               })}
@@ -612,23 +612,23 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
           {m.pens && (
             <ul className={`sp-events ${m.away ? 'flip' : ''}`}>
               <li className={o === 'win' ? 'dom' : 'ext'}>
-                <span className="sp-min">t.a.b.</span>
+                <span className="sp-min">{t('t.a.b.')}</span>
                 <span className="sp-ico"><IconBall /></span>
-                <span className="sp-who">Tirs au but {m.pens[0]}–{m.pens[1]}<em> · {o === 'win' ? state.clubName : m.opp} se qualifie</em></span>
+                <span className="sp-who">{t('Tirs au but ')}{m.pens[0]}–{m.pens[1]}<em>{' '}{tr('· <0/> se qualifie', [o === 'win' ? state.clubName : m.opp])}</em></span>
               </li>
             </ul>
           )}
         </section>
 
         <section className="sh-sec">
-          <span className="sh-cap">Composition · {formationOf(m.formation).name}</span>
-          {m.lineup ? <MatchLineup m={m} onCareer={onCareer} /> : <p className="st-muted">Formation {formationOf(m.formation).name} · le détail du onze n’était pas encore enregistré pour ce match.</p>}
+          <span className="sh-cap">{tr('Composition · <0/>', [formationOf(m.formation).name])}</span>
+          {m.lineup ? <MatchLineup m={m} onCareer={onCareer} /> : <p className="st-muted">{tr('Formation <0/> · le détail du onze n’était pas encore enregistré pour ce match.', [formationOf(m.formation).name])}</p>}
         </section>
 
         {motm && (
           <section className="sh-sec">
-            <span className="sh-cap">Note FootOFF</span>
-            <div className="sp-motm"><RatingBadge value={motm.rating} /><div><b>{motm.name}</b><span>Homme du match{motm.goals ? ` · ${plural(motm.goals, 'but', 'buts')}` : ''}{motm.assists ? ` · ${plural(motm.assists, 'passe déc.', 'passes déc.')}` : ''}</span></div></div>
+            <span className="sh-cap">{t('Note FootOFF')}</span>
+            <div className="sp-motm"><RatingBadge value={motm.rating} /><div><b>{motm.name}</b><span>{tr('Homme du match<0/><1/>', [motm.goals ? ` · ${plural(motm.goals, 'but', 'buts')}` : '', motm.assists ? ` · ${plural(motm.assists, 'passe déc.', 'passes déc.')}` : ''])}</span></div></div>
             {!m.lineup && <div className="sp-lines">
               {lines.filter(([, ps]) => ps.length).map(([pos, ps]) => (
                 <div key={pos} className="sp-line">
@@ -641,30 +641,30 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
         )}
 
         <section className="sh-sec">
-          <span className="sh-cap">La dynamique avant ce match</span>
+          <span className="sh-cap">{t('La dynamique avant ce match')}</span>
           <FormPills list={before} />
         </section>
 
         <section className="sh-sec">
-          <span className="sh-cap">Les dernières confrontations</span>
-          {h2h.length === 0 ? <p className="st-muted">Première rencontre entre les deux clubs.</p> : (
-            <ul className="sp-h2h">{h2h.map((x) => <li key={mkey(x)}><span>Saison {x.season} · {whenOf(x)}{x.away ? ' · ext' : ''}</span><b className={outcome(x)}>{scoreText(x)}{pensOf(x)}</b></li>)}</ul>
+          <span className="sh-cap">{t('Les dernières confrontations')}</span>
+          {h2h.length === 0 ? <p className="st-muted">{t('Première rencontre entre les deux clubs.')}</p> : (
+            <ul className="sp-h2h">{h2h.map((x) => <li key={mkey(x)}><span>{tr('Saison <0/> · <1/><2/>', [x.season, whenOf(x), x.away ? t(' · ext') : ''])}</span><b className={outcome(x)}>{scoreText(x)}{pensOf(x)}</b></li>)}</ul>
           )}
         </section>
 
         <section className="sh-sec">
-          <span className="sh-cap">La billetterie</span>
+          <span className="sh-cap">{t('La billetterie')}</span>
           <MatchGate m={m} />
         </section>
 
         <section className="sh-sec">
-          <span className="sh-cap">Les chiffres</span>
+          <span className="sh-cap">{t('Les chiffres')}</span>
           <ul className="sp-facts">
-            <li><span>Formation</span><b>{formationOf(m.formation).name}</b></li>
-            <li><span>Tactique</span><b>{TACTICS[m.tactic]?.name || '—'}</b></li>
-            {st && <li><span>Efficacité</span><b>{pct(m.gf, st.shots[0])} % des tirs transformés</b></li>}
-            {st && <li><span>Précision</span><b>{pct(st.onTarget[0], st.shots[0])} % de tirs cadrés</b></li>}
-            <li><span>Joueurs utilisés</span><b>{players.length}</b></li>
+            <li><span>{t('Formation')}</span><b>{formationOf(m.formation).name}</b></li>
+            <li><span>{t('Tactique')}</span><b>{TACTICS[m.tactic]?.name || '—'}</b></li>
+            {st && <li><span>{t('Efficacité')}</span><b>{tr('<0/> % des tirs transformés', [pct(m.gf, st.shots[0])])}</b></li>}
+            {st && <li><span>{t('Précision')}</span><b>{tr('<0/> % de tirs cadrés', [pct(st.onTarget[0], st.shots[0])])}</b></li>}
+            <li><span>{t('Joueurs utilisés')}</span><b>{players.length}</b></li>
           </ul>
         </section>
         </>}
@@ -698,12 +698,12 @@ export function StatsPanel({ state, onClose, initialMatch = null, initialTab = n
     <Panel
       id="stats"
       size="lg"
-      title="Statistiques"
+      title={t('Statistiques')}
       eyebrow={`${plural(matches.length, 'match enregistré', 'matchs enregistrés')}`}
       onClose={onClose}
       onEscape={sheetOpen ? () => {} : onEscape}
       toolbar={(
-        <Tabs items={[['club', 'Le club'], ['matches', 'Matchs'], ['players', 'Joueurs']]} value={tab} onChange={pick} />
+        <Tabs items={[['club', t('Le club')], ['matches', t('Matchs')], ['players', t('Joueurs')]]} value={tab} onChange={pick} />
       )}
       overlay={(
         <>
@@ -716,7 +716,7 @@ export function StatsPanel({ state, onClose, initialMatch = null, initialTab = n
       {tab === 'club' && (
         <>
           {seasons.length > 1 && (
-            <div className="chips">{seasons.map((n) => <button key={n} className={season === n ? 'active' : ''} onClick={() => setSeason(n)}>Saison {n}</button>)}</div>
+            <div className="chips">{seasons.map((n) => <button key={n} className={season === n ? 'active' : ''} onClick={() => setSeason(n)}>{tr('Saison <0/>', [n])}</button>)}</div>
           )}
           <ClubTab state={state} matches={matches} season={season} onOpen={setOpen} onCareer={setCareer} />
         </>

@@ -3,6 +3,7 @@ import { TRAITS, WEIGHTS, isInjured, playerRating } from './players';
 import { leagueLength, nextFixture } from './cups';
 import { pushJournal } from './journal';
 import { clamp } from './utils';
+import { t } from '../i18n/index';
 
 // Centre d'entraînement. Entre deux matchs, une séance : quatre joueurs, un par ligne (gardien, défenseur, milieu,
 // attaquant), chacun sur la catégorie de son choix, passent chacun une épreuve, jouée en 3D ou simulée. Simuler donne
@@ -17,14 +18,14 @@ export const LINES = ['G', 'D', 'M', 'A'];
 
 // Catégories des joueurs de champ ; le gardien passe toujours une épreuve de gardien et choisit ce qu'il travaille.
 export const FIELD_CATS = {
-  tech: { label: 'Technique', short: 'Technique', attrs: ['fin', 'pas', 'dri'] },
-  phys: { label: 'Physique', short: 'Physique', attrs: ['vit', 'end', 'pui'] },
-  tac: { label: 'Tactique et mental', short: 'Tactique', attrs: ['pla', 'def', 'sfr'] },
+  tech: { label: t('Technique'), short: t('Technique'), attrs: ['fin', 'pas', 'dri'] },
+  phys: { label: t('Physique'), short: t('Physique'), attrs: ['vit', 'end', 'pui'] },
+  tac: { label: t('Tactique et mental'), short: t('Tactique'), attrs: ['pla', 'def', 'sfr'] },
 };
 export const GK_CATS = {
-  reflexes: { label: 'Réflexes', short: 'Réflexes', attrs: ['ref', 'uns'] },
-  placement: { label: 'Placement et sang-froid', short: 'Placement', attrs: ['gpl', 'gsf'] },
-  relance: { label: 'Relance et jeu aérien', short: 'Relance', attrs: ['rel', 'aer'] },
+  reflexes: { label: t('Réflexes'), short: t('Réflexes'), attrs: ['ref', 'uns'] },
+  placement: { label: t('Placement et sang-froid'), short: t('Placement'), attrs: ['gpl', 'gsf'] },
+  relance: { label: t('Relance et jeu aérien'), short: t('Relance'), attrs: ['rel', 'aer'] },
 };
 export const catsFor = (pos) => (pos === 'G' ? GK_CATS : FIELD_CATS);
 const familyOf = (pos, cat) => (pos === 'G' ? 'gk' : cat);
@@ -188,7 +189,7 @@ export const PROGRAMS = {
   roc: { trait: 'roc', cat: 'tac', pos: ['D'] },
   leader: { trait: 'leader', cat: 'tac', pos: ['D', 'M', 'A'] },
   grandsSoirs: { trait: 'grandsSoirs', cat: 'tac', pos: ['M', 'A'] },
-  calme: { remove: 'sangChaud', cat: 'tac', pos: ['D', 'M', 'A'], label: 'Maîtrise de soi', desc: 'Perd le signe « Sang chaud » : moins de cartons.' },
+  calme: { remove: 'sangChaud', cat: 'tac', pos: ['D', 'M', 'A'], label: t('Maîtrise de soi'), desc: t('Perd le signe « Sang chaud » : moins de cartons.') },
   chat: { trait: 'chat', cat: 'reflexes', pos: ['G'] },
   leaderG: { trait: 'leader', cat: 'placement', pos: ['G'] },
 };
@@ -301,8 +302,8 @@ export function journalLearned(s, r) {
   s.training = { ...(s.training || {}), learned: (s.training?.learned || 0) + 1 }; // compte des signes appris (rappel des programmes, advice.js)
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'entrainement',
-    title: removed ? `${r.name} apprend à se maîtriser` : `${r.name} gagne un signe distinctif : ${programLabel(r.learned)}`,
-    text: `Au bout de son programme au centre d’entraînement. ${programDesc(r.learned)}`,
+    title: removed ? t('{name} apprend à se maîtriser', { name: r.name }) : t('{name} gagne un signe distinctif : {programLabel}', { name: r.name, programLabel: programLabel(r.learned) }),
+    text: t('Au bout de son programme au centre d’entraînement. {programDesc}', { programDesc: programDesc(r.learned) }),
   });
 }
 

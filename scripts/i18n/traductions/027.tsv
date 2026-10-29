@@ -1,0 +1,73 @@
+1499	Injured and suspended players (red: two matches, second yellow or three yellows: one) stay on the bench, greyed out. During a match, “Substitution” stops play at any minute: five substitutions per match.	Los lesionados y sancionados (roja: dos partidos; segunda amarilla o tres amarillas: uno) se quedan en el banquillo, en gris. Durante un partido, «Cambio» detiene el juego en cualquier minuto: cinco cambios por partido.	يبقى المصابون والموقوفون (الحمراء: مباراتان، الإنذار الثاني أو ثلاثة إنذارات: مباراة واحدة) على الدكة بلون رمادي. وأثناء المباراة، يوقف زر «تبديل» اللعب في أي دقيقة: خمسة تبديلات في كل مباراة.
+1500	Got it	Entendido	فهمت
+1501	The board’s objectives	Los objetivos de la directiva	أهداف مجلس الإدارة
+1502	This season, the board of directors expects three things from you: {list}. Each one brings a bonus; their progress is shown at the top left.	Esta temporada, el consejo de administración espera tres cosas de ti: {list}. Cada una trae una prima; su avance aparece arriba a la izquierda.	هذا الموسم، ينتظر منك مجلس الإدارة ثلاثة أمور: {list}. لكل منها مكافأة، ويظهر تقدمها في أعلى الشاشة.
+1503	Every season, the board of directors sets you three objectives, each with its bonus; their progress is shown at the top left.	Cada temporada, el consejo de administración te fija tres objetivos, cada uno con su prima; su avance aparece arriba a la izquierda.	في كل موسم يحدد لك مجلس الإدارة ثلاثة أهداف، لكل منها مكافأتها، ويظهر تقدمها في أعلى الشاشة.
+1504	Reaching all three earns a perfect season bonus: +{money}.	Cumplir los tres vale una prima de temporada perfecta: +{money}.	تحقيق الثلاثة يمنحك مكافأة الموسم المثالي: +{money}.
+1505	Reaching all three earns a perfect season bonus.	Cumplir los tres vale una prima de temporada perfecta.	تحقيق الثلاثة يمنحك مكافأة الموسم المثالي.
+1506	Your next milestone: the stadium	Tu próximo objetivo: el estadio	محطتك المقبلة: الملعب
+1507	For {cost}, your stadium will go up to {toLocaleString} seats: bigger crowds, more income from every match.	Por {cost}, tu estadio pasará a {toLocaleString} localidades: más público, más ingresos en cada partido.	مقابل {cost} ستصبح سعة ملعبك {toLocaleString} مقعد: جمهور أكبر وإيرادات أكثر في كل مباراة.
+1508	The gold dots show what is ready to be upgraded, and the staff button, on the right of the screen, then gives you advice.	Los puntos dorados muestran lo que está listo para mejorarse, y el botón del cuerpo técnico, a la derecha de la pantalla, te aconseja después.	تُظهر النقاط الذهبية ما هو جاهز للتطوير، ثم يقدم لك زر الجهاز الفني على جانب الشاشة النصائح.
+1509	Finish	Terminar	إنهاء
+1510	Free plot	Parcela libre	قطعة أرض شاغرة
+1511	Click to build	Haz clic para construir	انقر للبناء
+1512	Maximum level	Nivel máximo	المستوى الأقصى
+1513	Upgrade: {upgradeCost}	Mejora: {upgradeCost}	التطوير: {upgradeCost}
+1514	Lv. {lvl}/{max}	Niv. {lvl}/{max}	المستوى {lvl}/{max}
+1515	Forecourt	Explanada	الساحة الأمامية
+1516	Trophy room	Sala de trofeos	قاعة الكؤوس
+1517	{plural} on the avenue of honour	{plural} en el paseo de honor	{plural} في ممر الشرف
+1518	{n} trophy	{n} trofeo	كأس واحدة
+1519	{n} trophies	{n} trofeos	{"one":"كأس واحدة","two":"كأسان","few":"{n} كؤوس","other":"{n} كأسًا"}
+1520	No trophies yet	Ningún trofeo por ahora	لا كؤوس حتى الآن
+1521	Training session: {count} drill to play before the match	Sesión de entrenamiento: {count} prueba por jugar antes del partido	حصة تدريبية: تمرين واحد يجب أداؤه قبل المباراة
+1522	Training session: {count} drills to play before the match	Sesión de entrenamiento: {count} pruebas por jugar antes del partido	{"one":"حصة تدريبية: تمرين واحد يجب أداؤه قبل المباراة","two":"حصة تدريبية: تمرينان يجب أداؤهما قبل المباراة","few":"حصة تدريبية: {count} تمارين يجب أداؤها قبل المباراة","other":"حصة تدريبية: {count} تمرينًا يجب أداؤها قبل المباراة"}
+1523	<0/>Session<1/>	<0/>Sesión<1/>	<0/>حصة<1/>
+1524	Construction or upgrade available	Construcción o mejora disponible	بناء أو تطوير متاح
+1525	Build	Construir	بناء
+1526	Lv. <0/>	Niv. <0/>	المستوى <0/>
+1527	for a {toLowerCase}	para un {toLowerCase}	لمركز {toLowerCase}
+1528	Last matchday {plus} · this season {plus2}{v}	Última jornada {plus} · esta temporada {plus2}{v}	الجولة الأخيرة {plus} · هذا الموسم {plus2}{v}
+1529	· last summer {plus}	· último verano {plus}	· الصيف الماضي {plus}
+1530	Academy full: promote or release a youngster.	Cantera completa: sube o libera a un joven.	الأكاديمية ممتلئة: رقِّ شابًا أو أطلق سراحه.
+1531	Signing not possible.	Fichaje imposible.	التعاقد غير ممكن.
+1532	Plan: {toLowerCase}, recommended {forPos}.	Plan {toLowerCase}, recomendado {forPos}.	خطة {toLowerCase}، موصى بها {forPos}.
+1533	Promote {name} to the first team?	¿Subir a {name} al primer equipo?	ترقية {name} إلى الفريق الأول؟
+1534	He joins the professional squad, with a wage, and can never go back to the academy.	Se une a la plantilla profesional, con salario, y ya no podrá volver a la cantera.	ينضم إلى التشكيلة الاحترافية براتب، ولن يتمكن من العودة إلى الأكاديمية.
+1535	Level	Nivel	المستوى
+1536	Estimated potential	Potencial estimado	الإمكانات المقدّرة
+1537	Wage	Salario	الراتب
+1538	{wageOf} / season	{wageOf} / temporada	{wageOf} / الموسم
+1539	Squad	Plantilla	التشكيلة
+1540	{n} → {v} players	{n} → {v} jugadores	{n} ← {v} لاعبين
+1541	Promote	Subir	ترقية
+1542	Not yet	Todavía no	ليس بعد
+1543	Squad full.	Plantilla completa.	التشكيلة مكتملة.
+1544	Trained at the club, he joins your squad.	Formado en el club, se une a tu plantilla.	خريج النادي ينضم إلى تشكيلتك.
+1545	Release {name}?	¿Liberar a {name}?	إطلاق سراح {name}؟
+1546	He leaves the club for good, and his place at the academy becomes free.	Deja el club definitivamente, y su plaza en la cantera queda libre.	يغادر النادي نهائيًا، ويصبح مكانه في الأكاديمية شاغرًا.
+1547	Release	Liberar	إطلاق السراح
+1548	Keep him	Quedárselo	الاحتفاظ به
+1549	{name} has left the academy	{name} ha dejado la cantera	غادر {name} الأكاديمية
+1550	youngsters	jóvenes	شبان
+1551	My youngsters	Mis jóvenes	شباني
+1552	Scouting	Detección	الاستكشاف
+1553	Free, no wages ·	Gratuitas, sin salario ·	مجانية، دون رواتب ·
+1554	building level <0/>	edificio nivel <0/>	المبنى في المستوى <0/>
+1555	· upgrade available	· mejora disponible	· التطوير متاح
+1556	when your scouts return, {whenText}	al regreso de tus ojeadores, {whenText}	عند عودة كشافيك، {whenText}
+1557	at the start of next season	al principio de la próxima temporada	في بداية الموسم المقبل
+1558	after the next league matchday	tras la próxima jornada de liga	بعد الجولة المقبلة في الدوري
+1559	in two league matchdays	dentro de dos jornadas de liga	بعد جولتين في الدوري
+1560	After every league matchday, your youngsters improve, above all in the attributes of their plan, then they make a leap between seasons. They are not paid. At <0/>, a youngster who has not been promoted to the first team leaves the club.	Tras cada jornada de liga, tus jóvenes progresan, sobre todo en las cualidades de su plan, y luego dan un salto entre temporadas. No cobran salario. A los <0/> años, un joven que no ha subido al primer equipo deja el club.	بعد كل جولة في الدوري يتطور شبانك، خاصة في قدرات خطتهم، ثم يحققون قفزة بين الموسمين. ولا يتقاضون رواتب. وفي سن <0/>، يغادر النادي كل شاب لم يُرقَّ إلى الفريق الأول.
+1561	Your youth team is empty	Tu equipo juvenil está vacío	فريق شبابك فارغ
+1562	<0/> places, free of charge: <1/>	<0/> plazas, sin coste: <1/>	<0/> أماكن، دون تكلفة: <1/>
+1563	sign the youngster spotted by your youth coaches.	ficha al joven detectado por tus técnicos.	تعاقد مع الشاب الذي رصده مدربو الفئات السنية.
+1564	sign from the {length} youngsters spotted by your youth coaches.	ficha entre los {length} jóvenes detectados por tus técnicos.	{"one":"تعاقد مع الشاب الذي رصده مدربو الفئات السنية.","two":"تعاقد مع أحد الشابين اللذين رصدهما مدربو الفئات السنية.","few":"تعاقد من بين {length} شبان رصدهم مدربو الفئات السنية.","other":"تعاقد من بين {length} شابًا رصدهم مدربو الفئات السنية."}
+1565	new youngsters will be spotted {nextScouting}.	se detectarán nuevos jóvenes {nextScouting}.	سيُرصد شبان جدد {nextScouting}.
+1566	<0/> <1/> <2/> at the end of the season: promote <3/> to the first team before the season ends, or <4/> the club.	<0/> <1/> <2/> años al final de la temporada: súbe<3/> al primer equipo antes de que acabe la temporada; si no, <4/> el club.	<1/> <0/> <2/> عامًا بين الموسمين: رقِّ<3/> إلى الفريق الأول قبل نهاية الموسم، وإلا <4/> النادي.
+1567	will turn	cumplirá	سيبلغ
+1568	will turn	cumplirán	سيبلغ
+1569	{name} · sort	{name} · ordenar	{name} · ترتيب
+1570	Player	Jugador	اللاعب
+1571	Age	Edad	العمر

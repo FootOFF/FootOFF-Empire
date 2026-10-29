@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { IconChevron, IconChevronLeft, IconLock } from './icons';
 import { uiSound } from './uisound';
+import { isRTL, t } from '../i18n/index';
 
 // Navigation du jeu : cinq sections au menu du bas (Complexe, Équipe, Mercato, Saison, Club). Chaque panneau
 // appartient à une section ; son en-tête porte le nom de la section et, en onglets, les écrans voisins de la même
@@ -9,41 +10,41 @@ import { uiSound } from './uisound';
 
 export const SECTIONS = {
   equipe: {
-    title: 'Équipe',
+    title: t('Équipe'),
     items: [
-      ['squad:players', 'Joueurs'],
-      ['squad:lineup', 'Composition'],
-      ['training', 'Entraînement'],
-      ['academy', 'Académie'],
-      ['medical', 'Médical'],
-      ['squad:alumni', 'Anciens'],
+      ['squad:players', t('Joueurs')],
+      ['squad:lineup', t('Composition')],
+      ['training', t('Entraînement')],
+      ['academy', t('Académie')],
+      ['medical', t('Médical')],
+      ['squad:alumni', t('Anciens')],
     ],
   },
   mercato: {
-    title: 'Mercato',
+    title: t('Mercato'),
     items: [
-      ['mercato:buy', 'Recruter'],
-      ['mercato:watch', 'Suivis'],
-      ['mercato:offers', 'Offres'],
-      ['mercato:log', 'Bilan'],
+      ['mercato:buy', t('Recruter')],
+      ['mercato:watch', t('Suivis')],
+      ['mercato:offers', t('Offres')],
+      ['mercato:log', t('Bilan')],
     ],
   },
   saison: {
-    title: 'Saison',
+    title: t('Saison'),
     items: [
-      ['season:calendar', 'Calendrier'],
-      ['season:table', 'Classement'],
-      ['stats', 'Statistiques'],
-      ['trophies', 'Trophées'],
+      ['season:calendar', t('Calendrier')],
+      ['season:table', t('Classement')],
+      ['stats', t('Statistiques')],
+      ['trophies', t('Trophées')],
     ],
   },
   club: {
-    title: 'Club',
+    title: t('Club'),
     items: [
-      ['finances', 'Finances'],
-      ['journal', 'Journal'],
-      ['reputation', 'Notoriété'],
-      ['direction', 'Direction'],
+      ['finances', t('Finances')],
+      ['journal', t('Journal')],
+      ['reputation', t('Notoriété')],
+      ['direction', t('Direction')],
     ],
   },
 };
@@ -92,12 +93,13 @@ export function SectionTabs({ section }) {
     const row = ref.current;
     const on = row?.querySelector('[aria-current="page"]');
     if (row && on && row.scrollWidth > row.clientWidth) { // position de l'onglet dans la rangée, quel que soit ce qui la précède (0.8.13)
-      row.scrollLeft = Math.max(0, row.scrollLeft + on.getBoundingClientRect().left - row.getBoundingClientRect().left - (row.clientWidth - on.offsetWidth) / 2);
+      const x = row.scrollLeft + on.getBoundingClientRect().left - row.getBoundingClientRect().left - (row.clientWidth - on.offsetWidth) / 2;
+      row.scrollLeft = isRTL() ? Math.min(0, x) : Math.max(0, x); // en arabe, 0 au début (à droite), négatif ensuite
     }
   }, [current]);
   if (!nav || !def || !def.items.length) return null;
   return (
-    <nav ref={ref} className="section-tabs sq-tabs" aria-label={`${def.title} : écrans`}>
+    <nav ref={ref} className="section-tabs sq-tabs" aria-label={t('{title} : écrans', { title: def.title })}>
       {def.items.map(([key, label]) => {
         const on = key === current;
         const lock = LOCKS[key] && !nav.built?.[LOCKS[key]];
@@ -109,13 +111,13 @@ export function SectionTabs({ section }) {
             data-key={key}
             className={`${on ? 'on' : ''} ${lock ? 'locked' : ''}`}
             aria-current={on ? 'page' : undefined}
-            title={lock ? 'À construire dans le complexe' : undefined}
+            title={lock ? t('À construire dans le complexe') : undefined}
             onClick={() => { if (on) return; uiSound('tab'); nav.go(key); }}
           >
             {lock && <IconLock />}
             {label}
-            {badge === 'dot' && <i className="sq-tab-dot" aria-label="à voir" />}
-            {typeof badge === 'number' && <em className="sq-tab-count" aria-label={`${badge} à traiter`}>{badge}</em>}
+            {badge === 'dot' && <i className="sq-tab-dot" aria-label={t('à voir')} />}
+            {typeof badge === 'number' && <em className="sq-tab-count" aria-label={t('{badge} à traiter', { badge })}>{badge}</em>}
             {badge?.n > 0 && <em className={`sq-tab-count ${badge.tone || ''}`} aria-label={badge.label || String(badge.n)}>{badge.n}</em>}
           </button>
         );
@@ -133,14 +135,14 @@ export function SectionPager({ section }) {
   const prev = sectionNear(section, -1);
   const next = sectionNear(section, 1);
   return (
-    <nav className="section-pager" aria-label="Sections">
-      <button type="button" className="sp-prev" disabled={!prev} aria-label={prev ? `Section précédente : ${SECTIONS[prev].title}` : undefined} onClick={() => nav.step(-1)}>
+    <nav className="section-pager" aria-label={t('Sections')}>
+      <button type="button" className="sp-prev" disabled={!prev} aria-label={prev ? t('Section précédente : {title}', { title: SECTIONS[prev].title }) : undefined} onClick={() => nav.step(-1)}>
         <IconChevronLeft />{prev && SECTIONS[prev].title}
       </button>
       <span className="sp-dots" aria-hidden="true">
         {SECTION_ORDER.map((k) => <i key={k} className={k === section ? 'on' : ''} />)}
       </span>
-      <button type="button" className="sp-next" disabled={!next} aria-label={next ? `Section suivante : ${SECTIONS[next].title}` : undefined} onClick={() => nav.step(1)}>
+      <button type="button" className="sp-next" disabled={!next} aria-label={next ? t('Section suivante : {title}', { title: SECTIONS[next].title }) : undefined} onClick={() => nav.step(1)}>
         {next && SECTIONS[next].title}<IconChevron />
       </button>
     </nav>

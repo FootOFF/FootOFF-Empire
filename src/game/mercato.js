@@ -3,6 +3,7 @@ import { absenceOf, costOf, marketValue, playerRating, potentialRange, ratingAt 
 import { slotsOf } from './tactics';
 import { clamp, rnd } from './utils';
 import { mercatoRep } from './reputation';
+import { t, tn } from '../i18n/index';
 
 // Mercato : un seul marché (joueurs libres et joueurs sous contrat), des offres négociées et des ventes aux clubs
 // adverses. Ce module ne contient que des calculs : les actions (offre, signature, vente, enchères) sont dans
@@ -29,7 +30,7 @@ export const lockResale = (s, p) => { p.sellFrom = leagueRounds(s) + RESALE_ROUN
 // championnat). Une recrue ne se revend pas avant le match suivant sa signature.
 export const dateKey = (s) => `${s.seasonNumber}:${s.calIndex || 0}:${s.round}`;
 // Moment d'un transfert, pour le bilan du mercato et la fiche du joueur.
-export const moveWhen = (season, round) => `Saison ${season}${round ? `, après la journée ${round}` : ', avant la 1re journée'}`;
+export const moveWhen = (season, round) => t('Saison {season}{v}', { season, v: round ? t(', après la journée {round}', { round }) : t(', avant la 1re journée') });
 
 // Pourquoi un joueur de l'effectif ne peut pas être vendu maintenant (null : il peut l'être). Blessé ou suspendu, il
 // attend son retour ; arrivé depuis moins de quatre journées de championnat (recrue, jeune monté de l'académie), il
@@ -37,16 +38,16 @@ export const moveWhen = (season, round) => `Saison ${season}${round ? `, après 
 // dure le blocage.
 export function saleBlock(s, p) {
   const a = absenceOf(p);
-  if (a?.kind === 'injury') return { short: 'Blessé', text: 'Blessé : il ne peut pas être vendu avant son retour.' };
-  if (a) return { short: 'Suspendu', text: 'Suspendu : il ne peut pas être vendu avant d’avoir purgé sa suspension.' };
+  if (a?.kind === 'injury') return { short: t('Blessé'), text: t('Blessé : il ne peut pas être vendu avant son retour.') };
+  if (a) return { short: t('Suspendu'), text: t('Suspendu : il ne peut pas être vendu avant d’avoir purgé sa suspension.') };
   const left = (p.sellFrom || 0) - leagueRounds(s);
   if (left > 0) {
-    const wait = `${left} journée${left > 1 ? 's' : ''} de championnat`;
+    const wait = tn(left, '{left} journée de championnat', '{left} journées de championnat', { left }, left > 1);
     return p.signed
-      ? { short: 'Arrivé récemment', text: `Recrue : il pourra être vendu dans ${wait}.` }
-      : { short: 'Monté récemment', text: `Monté de l’académie : il pourra être vendu dans ${wait}.` };
+      ? { short: t('Arrivé récemment'), text: t('Recrue : il pourra être vendu dans {wait}.', { wait }) }
+      : { short: t('Monté récemment'), text: t('Monté de l’académie : il pourra être vendu dans {wait}.', { wait }) };
   }
-  if (p.signed?.date === dateKey(s)) return { short: 'Recruté aujourd’hui', text: 'Recruté aujourd’hui : il ne peut pas être revendu avant le prochain match.' };
+  if (p.signed?.date === dateKey(s)) return { short: t('Recruté aujourd’hui'), text: t('Recruté aujourd’hui : il ne peut pas être revendu avant le prochain match.') };
   return null;
 }
 
@@ -103,30 +104,30 @@ export function tagsOf(s, p) {
 export function stanceOf(s, p) {
   const reasons = [];
   const lvl = s.buildings.transfers || 0;
-  let t;
+  let row;
   if (p.club) {
-    t = 0.86;
+    row = 0.86;
     const c = p.contract || 2;
-    if (c <= 1) { t -= 0.07; reasons.push(['down', 'Dernière année de contrat : son club préfère le vendre maintenant.']); }
-    else if (c === 2) { t -= 0.02; reasons.push(['down', 'Encore 2 ans de contrat : son club peut le céder sans le brader.']); }
-    else { t += c >= 4 ? 0.05 : 0.02; reasons.push(['up', `Encore ${c} ans de contrat : son club ne le brade pas.`]); }
-    if (lvl) { t -= 0.012 * lvl; reasons.push(['down', `Tes recruteurs négocient pour toi (bureau des transferts niveau ${lvl}).`]); }
+    if (c <= 1) { row -= 0.07; reasons.push(['down', t('Dernière année de contrat : son club préfère le vendre maintenant.')]); }
+    else if (c === 2) { row -= 0.02; reasons.push(['down', t('Encore 2 ans de contrat : son club peut le céder sans le brader.')]); }
+    else { row += c >= 4 ? 0.05 : 0.02; reasons.push(['up', t('Encore {c} ans de contrat : son club ne le brade pas.', { c })]); }
+    if (lvl) { row -= 0.012 * lvl; reasons.push(['down', t('Tes recruteurs négocient pour toi (bureau des transferts niveau {lvl}).', { lvl })]); }
   } else {
-    t = 0.9;
-    reasons.push(['', 'Joueur libre : son agent discute la prime à la signature.']);
+    row = 0.9;
+    reasons.push(['', t('Joueur libre : son agent discute la prime à la signature.')]);
   }
-  if (p.age >= 31) { t -= 0.04; reasons.push(['down', `${p.age} ans : le vendeur accepte de discuter.`]); }
-  if (p.age <= 21 && potMid(s, p) - playerRating(p) >= 3) { t += 0.04; reasons.push(['up', 'Jeune à fort potentiel : le vendeur en veut un bon prix.']); }
-  if (p.interest) { t += 0.04 * p.interest; reasons.push(['up', `Courtisé par ${p.interest} club${p.interest > 1 ? 's' : ''} : la concurrence fait monter le prix.`]); }
-  if (p.trend < 0) { t -= 0.02; reasons.push(['down', 'Son prix baisse : le vendeur est prêt à discuter.']); }
-  else if ((p.listedRounds || 0) >= 3 && !p.interest) { t -= 0.02; reasons.push(['down', `Sans preneur depuis ${p.listedRounds} journées : le prix se discute.`]); }
+  if (p.age >= 31) { row -= 0.04; reasons.push(['down', t('{age} ans : le vendeur accepte de discuter.', { age: p.age })]); }
+  if (p.age <= 21 && potMid(s, p) - playerRating(p) >= 3) { row += 0.04; reasons.push(['up', t('Jeune à fort potentiel : le vendeur en veut un bon prix.')]); }
+  if (p.interest) { row += 0.04 * p.interest; reasons.push(['up', tn(p.interest, 'Courtisé par {interest} club : la concurrence fait monter le prix.', 'Courtisé par {interest} clubs : la concurrence fait monter le prix.', { interest: p.interest }, p.interest > 1)]); }
+  if (p.trend < 0) { row -= 0.02; reasons.push(['down', t('Son prix baisse : le vendeur est prêt à discuter.')]); }
+  else if ((p.listedRounds || 0) >= 3 && !p.interest) { row -= 0.02; reasons.push(['down', t('Sans preneur depuis {listedRounds} journées : le prix se discute.', { listedRounds: p.listedRounds })]); }
   const tries = p.talks?.tries || 0;
-  if (tries) { t += 0.015 * tries; reasons.push(['up', `${tries} offre${tries > 1 ? 's' : ''} refusée${tries > 1 ? 's' : ''} : le vendeur se braque.`]); }
+  if (tries) { row += 0.015 * tries; reasons.push(['up', tn(tries, '{tries} offre refusée : le vendeur se braque.', '{tries} offres refusées : le vendeur se braque.', { tries }, tries > 1)]); }
   const fame = mercatoRep(s.reputation); // notoriété du club (reputation.js)
-  if (fame >= 0.005) { t -= fame; reasons.push(['down', 'Ta notoriété attire : le vendeur écoute plus volontiers un club réputé.']); }
-  else if (fame <= -0.005) { t -= fame; reasons.push(['up', 'Club encore peu connu : le vendeur se méfie un peu.']); }
-  t += ((((p.id || 1) * 7919) % 100) / 100 - 0.5) * 0.06; // chaque vendeur a son caractère
-  return { t: clamp(t, 0.6, 1.05), w: SPREAD, reasons };
+  if (fame >= 0.005) { row -= fame; reasons.push(['down', t('Ta notoriété attire : le vendeur écoute plus volontiers un club réputé.')]); }
+  else if (fame <= -0.005) { row -= fame; reasons.push(['up', t('Club encore peu connu : le vendeur se méfie un peu.')]); }
+  row += ((((p.id || 1) * 7919) % 100) / 100 - 0.5) * 0.06; // chaque vendeur a son caractère
+  return { t: clamp(row, 0.6, 1.05), w: SPREAD, reasons };
 }
 
 // Chance que le vendeur accepte une offre (0 à 1).
@@ -151,9 +152,9 @@ export function counterFor(s, p, ask = costOf(p, s)) {
 
 // Ce qui empêche de faire une offre, ou null.
 export function offerBlock(s, p, amount) {
-  if (s.players.length >= SQUAD_MAX) return `Effectif complet (${SQUAD_MAX} joueurs) : vends d’abord un joueur.`;
-  if (p.talks?.closed) return 'Le vendeur ne discutera plus avant la prochaine journée.';
-  if (amount > s.money) return 'Trésorerie insuffisante pour cette offre.';
+  if (s.players.length >= SQUAD_MAX) return t('Effectif complet ({SQUAD_MAX} joueurs) : vends d’abord un joueur.', { SQUAD_MAX });
+  if (p.talks?.closed) return t('Le vendeur ne discutera plus avant la prochaine journée.');
+  if (amount > s.money) return t('Trésorerie insuffisante pour cette offre.');
   return null;
 }
 
@@ -189,13 +190,13 @@ const SPONTANEOUS = 0.2; // pour un joueur qui n'est pas à vendre, un club met 
 // européens (0.6.0) ne regardent que les stars d'un club d'Élite, surtout quand il joue la Coupe d'Europe : ils paient
 // bien plus que la valeur, mais négocient très dur.
 export const BUYERS = {
-  small: { label: 'Petit club', base: 0.84, gap: [0.02, 0.06], hard: 0.01, step: -1 },
-  mid: { label: 'Club ambitieux', base: 0.97, gap: [0.04, 0.1], hard: 0.02, step: 0 },
-  big: { label: 'Grand club', base: 1.12, gap: [0.08, 0.16], hard: 0.03, step: 1 },
-  euro: { label: 'Géant européen', base: 1.3, gap: [0.1, 0.2], hard: 0.04, step: null },
+  small: { label: t('Petit club'), base: 0.84, gap: [0.02, 0.06], hard: 0.01, step: -1 },
+  mid: { label: t('Club ambitieux'), base: 0.97, gap: [0.04, 0.1], hard: 0.02, step: 0 },
+  big: { label: t('Grand club'), base: 1.12, gap: [0.08, 0.16], hard: 0.03, step: 1 },
+  euro: { label: t('Géant européen'), base: 1.3, gap: [0.1, 0.2], hard: 0.04, step: null },
 };
 // Club acheteur d'une offre, en clair : « Grand club · Élite », « Géant européen ».
-export const buyerLine = (o) => (o.tier === 'euro' || o.div == null ? BUYERS[o.tier]?.label || 'Club étranger' : `${BUYERS[o.tier].label} · ${DIVISIONS[o.div].name}`);
+export const buyerLine = (o) => (o.tier === 'euro' || o.div == null ? BUYERS[o.tier]?.label || t('Club étranger') : `${BUYERS[o.tier].label} · ${DIVISIONS[o.div].name}`);
 const isElite = (s) => s.divisionIndex === DIVISIONS.length - 1;
 
 export const formOf = (p) => (p.form?.length >= 2 ? p.form.reduce((a, b) => a + b, 0) / p.form.length : 6);
@@ -211,24 +212,24 @@ export function buyerView(s, p) {
   const f = formOf(p);
   let prem = 0;
   let attract = 0.5;
-  if (f >= 7) { prem += 0.06; attract += 0.15; reasons.push(['good', 'En grande forme : plus de clubs le regardent, et ils paient plus.']); }
-  else if (f < 5.5) { prem -= 0.05; attract -= 0.15; reasons.push(['bad', 'En méforme : moins de clubs le regardent, et ils paient moins.']); }
-  if (p.age <= 23) { prem += 0.06; attract += 0.1; reasons.push(['good', `${p.age} ans : les clubs misent aussi sur sa revente.`]); }
-  else if (p.age >= 31) { prem -= 0.08; attract -= 0.1; reasons.push(['bad', `${p.age} ans : les clubs paient moins un joueur en fin de carrière.`]); }
-  if (p.age <= 21 && potMid(s, p) - playerRating(p) >= 3) { prem += 0.05; reasons.push(['good', 'Fort potentiel : les clubs paient pour l’avenir.']); }
+  if (f >= 7) { prem += 0.06; attract += 0.15; reasons.push(['good', t('En grande forme : plus de clubs le regardent, et ils paient plus.')]); }
+  else if (f < 5.5) { prem -= 0.05; attract -= 0.15; reasons.push(['bad', t('En méforme : moins de clubs le regardent, et ils paient moins.')]); }
+  if (p.age <= 23) { prem += 0.06; attract += 0.1; reasons.push(['good', t('{age} ans : les clubs misent aussi sur sa revente.', { age: p.age })]); }
+  else if (p.age >= 31) { prem -= 0.08; attract -= 0.1; reasons.push(['bad', t('{age} ans : les clubs paient moins un joueur en fin de carrière.', { age: p.age })]); }
+  if (p.age <= 21 && potMid(s, p) - playerRating(p) >= 3) { prem += 0.05; reasons.push(['good', t('Fort potentiel : les clubs paient pour l’avenir.')]); }
   const k = contractValue(s, p); // déjà dans sa valeur : la raison seulement
-  if (k < 0.85) reasons.push(['bad', 'Dernière année de contrat : les clubs paient moins, il pourrait partir libre.']);
-  else if (k < 1) reasons.push(['bad', 'Plus que deux ans de contrat : les clubs paient un peu moins.']);
-  else if (k > 1) reasons.push(['good', 'Long contrat : les clubs paient le prix fort.']);
+  if (k < 0.85) reasons.push(['bad', t('Dernière année de contrat : les clubs paient moins, il pourrait partir libre.')]);
+  else if (k < 1) reasons.push(['bad', t('Plus que deux ans de contrat : les clubs paient un peu moins.')]);
+  else if (k > 1) reasons.push(['good', t('Long contrat : les clubs paient le prix fort.')]);
   const gap = playerRating(p) - divRef(s);
   let weights;
   if (gap >= 1.5 && isElite(s)) {
     // une star de l'Élite : les géants européens la suivent, de plus près quand elle joue la Coupe d'Europe
     weights = s.c1 ? { small: 0.1, mid: 0.3, big: 0.3, euro: 0.3 } : { small: 0.15, mid: 0.4, big: 0.3, euro: 0.15 };
-    reasons.push(['good', s.c1 ? 'Une star de la Coupe d’Europe : les géants européens se l’arrachent.' : 'Une star de l’Élite : les géants européens la suivent.', 'tiers']);
-  } else if (gap >= 1.5) { weights = { small: 0.25, mid: 0.45, big: 0.3 }; reasons.push(['good', 'Fort pour ta division : les grands clubs s’y intéressent.', 'tiers']); }
-  else if (gap < -1) { weights = { small: 0.6, mid: 0.35, big: 0.05 }; reasons.push(['bad', 'Faible pour ta division : surtout des petits clubs.', 'tiers']); }
-  else { weights = { small: 0.45, mid: 0.4, big: 0.15 }; reasons.push(['', 'Du niveau de ta division : petits clubs et clubs ambitieux, parfois un grand.', 'tiers']); }
+    reasons.push(['good', s.c1 ? t('Une star de la Coupe d’Europe : les géants européens se l’arrachent.') : t('Une star de l’Élite : les géants européens la suivent.'), 'tiers']);
+  } else if (gap >= 1.5) { weights = { small: 0.25, mid: 0.45, big: 0.3 }; reasons.push(['good', t('Fort pour ta division : les grands clubs s’y intéressent.'), 'tiers']); }
+  else if (gap < -1) { weights = { small: 0.6, mid: 0.35, big: 0.05 }; reasons.push(['bad', t('Faible pour ta division : surtout des petits clubs.'), 'tiers']); }
+  else { weights = { small: 0.45, mid: 0.4, big: 0.15 }; reasons.push(['', t('Du niveau de ta division : petits clubs et clubs ambitieux, parfois un grand.'), 'tiers']); }
   return { prem, attract: clamp(attract, 0.25, 0.8), weights, reasons };
 }
 
@@ -317,13 +318,13 @@ export const outbidAmount = (o, best) => Math.min(auctionTop(o), ceilTo(best + r
 export function saleReasons(s, o) {
   const p = s.players.find((q) => q.id === o.playerId);
   const reasons = [];
-  if (o.tier === 'euro') reasons.push(['', 'Géant européen : il paie bien plus que la valeur, mais négocie très dur et se braque vite.']);
-  else if (o.tier === 'big') reasons.push(['', 'Grand club : il paie plus, mais négocie dur et se braque vite.']);
-  else if (o.tier === 'small') reasons.push(['', 'Petit club : budget serré, mais il accepte vite.']);
-  else reasons.push(['', 'Club ambitieux : il discute sans trop se braquer.']);
-  if (o.unsolicited) reasons.push(['good', 'Offre spontanée : il tient à ce joueur, qui n’est pas à vendre.']);
+  if (o.tier === 'euro') reasons.push(['', t('Géant européen : il paie bien plus que la valeur, mais négocie très dur et se braque vite.')]);
+  else if (o.tier === 'big') reasons.push(['', t('Grand club : il paie plus, mais négocie dur et se braque vite.')]);
+  else if (o.tier === 'small') reasons.push(['', t('Petit club : budget serré, mais il accepte vite.')]);
+  else reasons.push(['', t('Club ambitieux : il discute sans trop se braquer.')]);
+  if (o.unsolicited) reasons.push(['good', t('Offre spontanée : il tient à ce joueur, qui n’est pas à vendre.')]);
   const tries = o.talks?.tries || 0;
-  if (tries) reasons.push(['bad', `${tries} demande${tries > 1 ? 's' : ''} refusée${tries > 1 ? 's' : ''} : le club se braque.`]);
+  if (tries) reasons.push(['bad', tn(tries, '{tries} demande refusée : le club se braque.', '{tries} demandes refusées : le club se braque.', { tries }, tries > 1)]);
   if (p) reasons.push(...buyerView(s, p).reasons.filter(([tone, , kind]) => tone && kind !== 'tiers')); // ce qui joue sur son plafond
   return reasons;
 }

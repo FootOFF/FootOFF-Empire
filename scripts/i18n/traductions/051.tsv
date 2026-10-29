@@ -1,0 +1,57 @@
+3176	Standings · {name}	Clasificación · {name}	الترتيب · {name}
+3177	after {played} matchday of {leagueLength}	tras {played} jornada de {leagueLength}	بعد جولة واحدة من {leagueLength}
+3178	after {played} matchdays of {leagueLength}	tras {played} jornadas de {leagueLength}	{"one":"بعد جولة واحدة من {leagueLength}","two":"بعد جولتين من {leagueLength}","few":"بعد {played} جولات من {leagueLength}","other":"بعد {played} جولة من {leagueLength}"}
+3179	Last match · {v}	Último partido · {v}	المباراة الأخيرة · {v}
+3180	{v} on penalties {v2}–{v3}	{v} en los penaltis {v2}–{v3}	{v} بركلات الترجيح {v2}–{v3}
+3181	<0/> <1/>, man of the match	<0/> <1/>, jugador del partido	<0/> <1/>، رجل المباراة
+3182	Away · TV rights {revenue}	Fuera · derechos de TV {revenue}	خارج الأرض · حقوق البث {revenue}
+3183	{attendance} spectators · {revenue}	{attendance} espectadores · {revenue}	{attendance} متفرج · {revenue}
+3184	Standings	Clasificaciones	جداول الترتيب
+3185	Avoid the drop	Salvar la categoría	تجنب الهبوط
+3186	Play in Europe	Jugar en Europa	اللعب في أوروبا
+3187	The top club are champions {ofDiv} and enter its roll of honour.	El primero es campeón {ofDiv} y entra en su palmarés.	يتوج الأول بطلًا لـ{ofDiv} ويدخل سجل ألقابه.
+3188	The bottom two go down to the {name}.	Los dos últimos bajan a la {name}.	يهبط الأخيران إلى {name}.
+3189	The top two play in the European Club Cup next season.	Los dos primeros juegan la Copa de Europa de Clubes la próxima temporada.	يشارك الأولان في كأس أوروبا للأندية الموسم المقبل.
+3190	The top two go up to the {name}.	Los dos primeros suben a la {name}.	يصعد الأولان إلى {name}.
+3191	You are <0/>, <1/> ahead of <2/>, <3/>.	Eres <0/>, <1/> más que <2/>, <3/>.	أنت في المركز <0/>، متقدمًا بـ<1/> على <2/>، صاحب المركز <3/>.
+3192	You are <0/>, level on points with <1/>, <2/>: goal difference separates you.	Eres <0/>, empatado a puntos <1/>, <2/>: la diferencia de goles os separa.	أنت في المركز <0/>، متساوٍ في النقاط مع <1/>، صاحب المركز <2/>: فارق الأهداف يحسم بينكما.
+3193	You are <0/>, <1/> behind <2/>, <3/>.	Eres <0/>, a <1/> <2/>, <3/>.	أنت في المركز <0/>، بفارق <1/> عن <2/>، صاحب المركز <3/>.
+3194	The season’s race	La carrera de la temporada	سباق الموسم
+3195	Title race	Carrera por el título	سباق اللقب
+3196	Race for Europe	Carrera por Europa	سباق أوروبا
+3197	Promotion race	Carrera por el ascenso	سباق الصعود
+3198	You are <0/>, <1/> ahead of <2/>.	Eres <0/>, <1/> más que <2/>.	أنت في المركز <0/>، متقدمًا بـ<1/> على <2/>.
+3199	1st	1.º	الأول
+3200	{days} left.	Quedan {days}.	تبقّى {days}.
+3201	The league is over.	La liga ha terminado.	انتهى الدوري.
+3202	Position bonus at your place: <0/>	Prima por clasificación en tu puesto: <0/>	مكافأة الترتيب في مركزك: <0/>
+3203	Best rating{v}	Mejor nota{v}	أفضل تقييم{v}
+3204	· man of the match {motm} times	· {motm} veces jugador del partido	· رجل المباراة {motm} مرات
+3205	Top scorer	Máximo goleador	الهداف
+3206	Clean sheets	Porterías a cero	مباريات بشباك نظيفة
+3207	The club’s best	Los mejores del club	الأفضل في النادي
+3208	Season {seasonNumber}	Temporada {seasonNumber}	الموسم {seasonNumber}
+3209	Still too early: the average rating counts over 3 matches.	Todavía es pronto: la nota media se cuenta sobre 3 partidos.	لا يزال الوقت مبكرًا: يُحتسب متوسط التقييم على 3 مباريات.
+3210	The first matches will pick out the club’s best.	Los primeros partidos señalarán a los mejores del club.	ستحدد المباريات الأولى الأفضل في النادي.
+3211	Still in it · {toLowerCase}	En liza · {toLowerCase}	في السباق · {toLowerCase}
+3212	Europe · budget {budget}	Europa · presupuesto {budget}	أوروبا · الميزانية {budget}
+3213	· next match	· próximo partido	· المباراة المقبلة
+3214	lv. <0/>	niv. <0/>	المستوى <0/>
+k:Finaliste : battu en finale <0/>.	Runners-up: beaten in the final by <0/>.	Finalista: derrotado en la final <0/>.	وصيف: خسر النهائي أمام <0/>.
+k:Éliminé en <0/> <1/> : rendez-vous la saison prochaine.	Knocked out in the <0/> by <1/>: see you next season.	Eliminado en <0/> <1/>: hasta la próxima temporada.	أُقصي في <0/> أمام <1/>: إلى اللقاء الموسم المقبل.
+3218	Trophy cabinet	Vitrina de trofeos	خزانة الكؤوس
+3219	{n} title	{n} título	لقب واحد
+3220	{n} titles	{n} títulos	{"one":"لقب واحد","two":"لقبان","few":"{n} ألقاب","other":"{n} لقبًا"}
+3221	No trophies yet: be champions, or go all the way in the National Cup.	Aún sin trofeos: sé campeón o llega hasta el final de la Copa Nacional.	لا كؤوس بعد: كن بطلًا، أو اذهب حتى النهاية في الكأس الوطنية.
+3222	Buildings	Edificios	المباني
+3223	Objective	Objetivo	هدف
+3224	Matches	Partidos	المباريات
+3225	Season {season} · matchday {round}	Temporada {season} · jornada {round}	الموسم {season} · الجولة {round}
+3226	Season {season}	Temporada {season}	الموسم {season}
+3227	The club journal	El diario del club	يوميات النادي
+3228	FootOFF Media · {v}	FootOFF Media · {v}	FootOFF Media · {v}
+3229	{length} season of history	{length} temporada de historia	موسم واحد من التاريخ
+3230	{length} seasons of history	{length} temporadas de historia	{"one":"موسم واحد من التاريخ","two":"موسمان من التاريخ","few":"{length} مواسم من التاريخ","other":"{length} موسمًا من التاريخ"}
+3231	Nothing in this section for this season.	Nada en esta sección esta temporada.	لا شيء في هذا القسم هذا الموسم.
+3232	The story starts at the first whistle.	La historia empieza con el primer pitido.	تبدأ الحكاية مع الصافرة الأولى.
+3233	Headline	En portada	العنوان الرئيسي

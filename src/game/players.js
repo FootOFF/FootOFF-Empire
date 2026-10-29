@@ -3,6 +3,7 @@ import { YOUTH_GEN } from './constants';
 import { playerName } from './names';
 import { drawFace } from './faces';
 import { scoutingError, signingFor, wageFor } from './economy';
+import { t, tn } from '../i18n/index';
 
 // Joueurs : 9 caractéristiques (1 à 20) pour tous, 6 de plus pour les gardiens, un profil (pied fort,
 // poste de dépannage, signes distinctifs, numéro) et une vie (forme, statistiques de saison, historique).
@@ -10,25 +11,25 @@ import { scoutingError, signingFor, wageFor } from './economy';
 // les affiche arrondies.
 
 export const ATTRS = [
-  { key: 'fin', short: 'FIN', name: 'Finition', fam: 'tech' },
-  { key: 'pas', short: 'PAS', name: 'Passe', fam: 'tech' },
-  { key: 'dri', short: 'DRI', name: 'Dribble', fam: 'tech' },
-  { key: 'vit', short: 'VIT', name: 'Vitesse', fam: 'phys' },
-  { key: 'end', short: 'END', name: 'Endurance', fam: 'phys' },
-  { key: 'pui', short: 'PUI', name: 'Puissance', fam: 'phys' },
-  { key: 'pla', short: 'PLA', name: 'Placement', fam: 'tac' },
-  { key: 'def', short: 'DÉF', name: 'Défense', fam: 'tac' },
-  { key: 'sfr', short: 'SFR', name: 'Sang-froid', fam: 'tac' },
+  { key: 'fin', short: t('FIN'), name: t('Finition'), fam: 'tech' },
+  { key: 'pas', short: t('PAS'), name: t('Passe'), fam: 'tech' },
+  { key: 'dri', short: t('DRI'), name: t('Dribble'), fam: 'tech' },
+  { key: 'vit', short: t('VIT'), name: t('Vitesse'), fam: 'phys' },
+  { key: 'end', short: t('END'), name: t('Endurance'), fam: 'phys' },
+  { key: 'pui', short: t('PUI'), name: t('Puissance'), fam: 'phys' },
+  { key: 'pla', short: t('PLA'), name: t('Placement'), fam: 'tac' },
+  { key: 'def', short: t('DÉF'), name: t('Défense'), fam: 'tac' },
+  { key: 'sfr', short: t('SFR'), name: t('Sang-froid'), fam: 'tac' },
 ];
 export const GK_ATTRS = [
-  { key: 'ref', short: 'RÉF', name: 'Réflexes', fam: 'gk' },
-  { key: 'gpl', short: 'PLA', name: 'Placement', fam: 'gk' },
-  { key: 'aer', short: 'AÉR', name: 'Jeu aérien', fam: 'gk' },
-  { key: 'uns', short: '1C1', name: 'Un contre un', fam: 'gk' },
-  { key: 'rel', short: 'REL', name: 'Relance', fam: 'gk' },
-  { key: 'gsf', short: 'SFR', name: 'Sang-froid', fam: 'gk' },
+  { key: 'ref', short: t('RÉF'), name: t('Réflexes'), fam: 'gk' },
+  { key: 'gpl', short: t('PLA'), name: t('Placement'), fam: 'gk' },
+  { key: 'aer', short: t('AÉR'), name: t('Jeu aérien'), fam: 'gk' },
+  { key: 'uns', short: '1C1', name: t('Un contre un'), fam: 'gk' },
+  { key: 'rel', short: t('REL'), name: t('Relance'), fam: 'gk' },
+  { key: 'gsf', short: t('SFR'), name: t('Sang-froid'), fam: 'gk' },
 ];
-export const FAMILIES = { tech: 'Technique', phys: 'Physique', tac: 'Tactique et mental', gk: 'Gardien de but' };
+export const FAMILIES = { tech: t('Technique'), phys: t('Physique'), tac: t('Tactique et mental'), gk: t('Gardien de but') };
 
 // Poids de chaque caractéristique dans la note d'un poste (somme = 1).
 export const WEIGHTS = {
@@ -41,16 +42,16 @@ export const WEIGHTS = {
 // Signes distinctifs : une touche de personnalité, avec un vrai effet en match (0.8.5 : environ +0,1 point par match là où
 // le signe agit, mesuré ; live.js, TRAIT_FX, et tactics.js, LEADER_BONUS). Les adversaires ont les leurs.
 export const TRAITS = {
-  finisseur: { name: 'Finisseur', desc: 'Transforme 50 % d’occasions de plus que les autres.' },
-  passeur: { name: 'Passeur', desc: 'Son équipe se crée 10 % d’occasions en plus, et il délivre bien plus souvent la passe décisive.' },
-  infatigable: { name: 'Infatigable', desc: 'Se fatigue 40 % moins vite. À partir de la 70e minute, son équipe se crée 40 % d’occasions en plus.' },
-  fleche: { name: 'Flèche', desc: 'Sa vitesse fait la différence : 9 % d’occasions en plus pour son équipe, 15 % en bloc bas.' },
-  roc: { name: 'Roc', desc: 'Gagne ses duels : l’adversaire se crée 10 % d’occasions en moins.' },
-  leader: { name: 'Leader', desc: 'Son onze gagne en sérénité : +0,3 au niveau d’équipe (un seul leader compte).' },
-  sangChaud: { name: 'Sang chaud', desc: 'Engagé dans les duels (3 % d’occasions en plus), mais son équipe prend 40 % de cartons jaunes en plus et 2,2 fois plus de rouges.' },
-  frappe: { name: 'Frappe lointaine', desc: 'Tente souvent sa chance de loin : 9 % d’occasions en plus pour son équipe.' },
-  grandsSoirs: { name: 'Joueur des grands soirs', desc: 'Contre un adversaire plus fort, il transforme 30 % d’occasions de plus, et son équipe s’en crée 6 % de plus.' },
-  chat: { name: 'Chat', desc: 'Réflexes de félin : l’adversaire transforme 12 % d’occasions en moins, et rate plus souvent ses penalties.' },
+  finisseur: { name: t('Finisseur'), desc: t('Transforme 50 % d’occasions de plus que les autres.') },
+  passeur: { name: t('Passeur'), desc: t('Son équipe se crée 10 % d’occasions en plus, et il délivre bien plus souvent la passe décisive.') },
+  infatigable: { name: t('Infatigable'), desc: t('Se fatigue 40 % moins vite. À partir de la 70e minute, son équipe se crée 40 % d’occasions en plus.') },
+  fleche: { name: t('Flèche'), desc: t('Sa vitesse fait la différence : 9 % d’occasions en plus pour son équipe, 15 % en bloc bas.') },
+  roc: { name: t('Roc'), desc: t('Gagne ses duels : l’adversaire se crée 10 % d’occasions en moins.') },
+  leader: { name: t('Leader'), desc: t('Son onze gagne en sérénité : +0,3 au niveau d’équipe (un seul leader compte).') },
+  sangChaud: { name: t('Sang chaud'), desc: t('Engagé dans les duels (3 % d’occasions en plus), mais son équipe prend 40 % de cartons jaunes en plus et 2,2 fois plus de rouges.') },
+  frappe: { name: t('Frappe lointaine'), desc: t('Tente souvent sa chance de loin : 9 % d’occasions en plus pour son équipe.') },
+  grandsSoirs: { name: t('Joueur des grands soirs'), desc: t('Contre un adversaire plus fort, il transforme 30 % d’occasions de plus, et son équipe s’en crée 6 % de plus.') },
+  chat: { name: t('Chat'), desc: t('Réflexes de félin : l’adversaire transforme 12 % d’occasions en moins, et rate plus souvent ses penalties.') },
 };
 
 const r1 = (v) => Math.round(v * 10) / 10;
@@ -291,8 +292,8 @@ export const fitAt = (p, minute, since = 0) => Math.max(0, fitOf(p) - (matchCost
 
 // Blessures : durée en dates du calendrier (matchs du club), tirée au moment de la blessure.
 export const INJURIES = [
-  { out: 1, label: 'Coup reçu', w: 34 }, { out: 2, label: 'Élongation', w: 30 }, { out: 3, label: 'Entorse', w: 16 },
-  { out: 4, label: 'Claquage', w: 10 }, { out: 6, label: 'Déchirure musculaire', w: 7 }, { out: 9, label: 'Fracture', w: 3 },
+  { out: 1, label: t('Coup reçu'), w: 34 }, { out: 2, label: t('Élongation'), w: 30 }, { out: 3, label: t('Entorse'), w: 16 },
+  { out: 4, label: t('Claquage'), w: 10 }, { out: 6, label: t('Déchirure musculaire'), w: 7 }, { out: 9, label: t('Fracture'), w: 3 },
 ];
 export function drawInjury() {
   const total = INJURIES.reduce((a, i) => a + i.w, 0);
@@ -304,11 +305,11 @@ export const isInjured = (p) => (p.injury?.out || 0) > 0;
 export const isBanned = (p) => (p.ban || 0) > 0;
 // disponible pour le prochain match (ni blessé, ni suspendu)
 export const available = (p) => !isInjured(p) && !isBanned(p);
-const matches = (n) => `${n} match${n > 1 ? 's' : ''}`;
+const matches = (n) => tn(n, '{n} match', '{n} matchs', { n }, n > 1);
 // « Blessé · entorse · 3 matchs », « Suspendu · 1 match », ou null
 export function absenceOf(p) {
-  if (isInjured(p)) return { kind: 'injury', label: `Blessé · ${p.injury.label.toLowerCase()} · ${matches(p.injury.out)}`, short: `Blessé · ${matches(p.injury.out)}`, matches: p.injury.out };
-  if (isBanned(p)) return { kind: 'ban', label: `Suspendu · ${matches(p.ban)}`, short: `Suspendu · ${matches(p.ban)}`, matches: p.ban };
+  if (isInjured(p)) return { kind: 'injury', label: t('Blessé · {toLowerCase} · {matches}', { toLowerCase: p.injury.label.toLowerCase(), matches: matches(p.injury.out) }), short: t('Blessé · {matches}', { matches: matches(p.injury.out) }), matches: p.injury.out };
+  if (isBanned(p)) return { kind: 'ban', label: t('Suspendu · {matches}', { matches: matches(p.ban) }), short: t('Suspendu · {matches}', { matches: matches(p.ban) }), matches: p.ban };
   return null;
 }
 

@@ -1,5 +1,6 @@
 import { clamp } from './utils';
 import { available, fitFactor, fitOf, ratingAt } from './players';
+import { t } from '../i18n/index';
 
 // Onze de départ, dispositif (formation) et tactique : décisions d'avant-match ; la tactique se change aussi à la
 // mi-temps. Le onze est une liste de 11 joueurs rangés dans l'ordre des postes du dispositif (gardien, défenseurs,
@@ -13,32 +14,32 @@ import { available, fitFactor, fitOf, ratingAt } from './players';
 export const FORMATIONS = Object.assign(Object.create(null), {
   '433': {
     id: '433', name: '4-3-3', lines: [4, 3, 3], for: 1, against: 1,
-    blurb: 'Trois attaquants, trois milieux : le dispositif de référence, équilibré.',
+    blurb: t('Trois attaquants, trois milieux : le dispositif de référence, équilibré.'),
     pitch: [[50, 90], [14, 66], [37, 71], [63, 71], [86, 66], [27, 45], [50, 50], [73, 45], [20, 19], [50, 13], [80, 19]],
   },
   '442': {
     id: '442', name: '4-4-2', lines: [4, 4, 2], for: 0.96, against: 0.96,
-    blurb: 'Deux lignes de quatre et un duo en pointe : compact, simple, solide.',
+    blurb: t('Deux lignes de quatre et un duo en pointe : compact, simple, solide.'),
     pitch: [[50, 90], [14, 66], [37, 71], [63, 71], [86, 66], [14, 44], [38, 48], [62, 48], [86, 44], [36, 18], [64, 18]],
   },
   '4231': {
     id: '4231', name: '4-2-3-1', lines: [4, 5, 1], for: 0.93, against: 0.93,
-    blurb: 'Deux récupérateurs, trois meneurs, un seul attaquant : on tient le ballon et le match se ferme.',
+    blurb: t('Deux récupérateurs, trois meneurs, un seul attaquant : on tient le ballon et le match se ferme.'),
     pitch: [[50, 90], [14, 66], [37, 71], [63, 71], [86, 66], [37, 52], [63, 52], [18, 32], [50, 28], [82, 32], [50, 10]],
   },
   '352': {
     id: '352', name: '3-5-2', lines: [3, 5, 2], for: 1.04, against: 1.04,
-    blurb: 'Cinq milieux pour dominer l’entrejeu, deux attaquants, mais trois défenseurs seulement.',
+    blurb: t('Cinq milieux pour dominer l’entrejeu, deux attaquants, mais trois défenseurs seulement.'),
     pitch: [[50, 90], [26, 70], [50, 68], [74, 70], [10, 40], [32, 52], [50, 39], [68, 52], [90, 40], [36, 18], [64, 18]],
   },
   '343': {
     id: '343', name: '3-4-3', lines: [3, 4, 3], for: 1.12, against: 1.12,
-    blurb: 'Tout pour l’attaque : beaucoup d’occasions, et beaucoup d’espace laissé derrière.',
+    blurb: t('Tout pour l’attaque : beaucoup d’occasions, et beaucoup d’espace laissé derrière.'),
     pitch: [[50, 90], [26, 70], [50, 68], [74, 70], [14, 46], [38, 50], [62, 50], [86, 46], [20, 20], [50, 13], [80, 20]],
   },
   '532': {
     id: '532', name: '5-3-2', lines: [5, 3, 2], for: 0.86, against: 0.86,
-    blurb: 'Cinq défenseurs et des contres : match fermé, très difficile à battre.',
+    blurb: t('Cinq défenseurs et des contres : match fermé, très difficile à battre.'),
     pitch: [[50, 90], [8, 57], [28, 70], [50, 68], [72, 70], [92, 57], [28, 44], [50, 48], [72, 44], [36, 20], [64, 20]],
   },
 });
@@ -56,16 +57,16 @@ export const SLOTS = slotsOf('433'); // dispositif par défaut (adversaires, anc
 // presque partout, l'équilibrée jamais.
 export const TACTICS = Object.assign(Object.create(null), {
   offensive: {
-    id: 'offensive', name: 'Offensive', for: 1.26, against: 1.30,
-    blurb: 'Pressing haut, latéraux projetés : plus d’occasions des deux côtés.',
+    id: 'offensive', name: t('Offensive'), for: 1.26, against: 1.30,
+    blurb: t('Pressing haut, latéraux projetés : plus d’occasions des deux côtés.'),
   },
   balanced: {
-    id: 'balanced', name: 'Équilibrée', for: 1, against: 1,
-    blurb: 'Bloc médian, transitions maîtrisées.',
+    id: 'balanced', name: t('Équilibrée'), for: 1, against: 1,
+    blurb: t('Bloc médian, transitions maîtrisées.'),
   },
   low: {
-    id: 'low', name: 'Bloc bas', for: 0.70, against: 0.74,
-    blurb: 'Défense regroupée et contres : match fermé, peu d’occasions.',
+    id: 'low', name: t('Bloc bas'), for: 0.70, against: 0.74,
+    blurb: t('Défense regroupée et contres : match fermé, peu d’occasions.'),
   },
 });
 export const TACTIC_ORDER = ['offensive', 'balanced', 'low'];

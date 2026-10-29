@@ -1,5 +1,6 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { haptic } from './haptics';
+import { isRTL, t } from '../i18n/index';
 
 // Téléphone en portrait : fenêtres en feuilles qui montent du bas. Téléphone couché (0.8.13) : la mise en page de
 // l'ordinateur étroit, resserrée par landscape.css (les mêmes conditions que styles.css).
@@ -30,7 +31,8 @@ export function useMedia(query) {
 // revient pas en place : sa sortie, styles.css, repart de la position du doigt).
 export function useSwipe(ref, { onDown, onLeft, onRight, downMedia = null, sideIf = null, sideExit = false } = {}) {
   const cb = useRef({});
-  cb.current = { onDown, onLeft, onRight, sideIf, sideExit };
+  // écriture de droite à gauche (arabe) : le suivant est à gauche, on le tire en glissant vers la droite
+  cb.current = isRTL() ? { onDown, onLeft: onRight, onRight: onLeft, sideIf, sideExit } : { onDown, onLeft, onRight, sideIf, sideExit };
 
   useEffect(() => {
     const el = ref.current;

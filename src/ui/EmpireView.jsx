@@ -2,6 +2,7 @@ import React from 'react';
 import { BUILDINGS } from '../game/constants';
 import { PLOTS, SECTORS, plotBuilding } from '../game/map';
 import { IconAcademy, IconDirection, IconFans, IconLeague, IconMedical, IconPitch, IconPlus, IconSponsor, IconTraining, IconTransfer } from './icons';
+import { t, tr } from '../i18n/index';
 
 const ICONS = { terrain: IconPitch, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor, transfers: IconTransfer, direction: IconDirection, medical: IconMedical, league: IconLeague };
 
@@ -22,8 +23,8 @@ export default function Empire2D({ state, onSelect }) {
               return (
                 <button key={p.id} className={`e2d-plot ${key ? '' : 'empty'}`} onClick={() => onSelect(p.id, sec.id)}>
                   <Icon />
-                  <span>{key ? BUILDINGS[key].name : 'Construire'}</span>
-                  {key && <em>Niv. {state.buildings[key]}</em>}
+                  <span>{key ? BUILDINGS[key].name : t('Construire')}</span>
+                  {key && <em>{tr('Niv. <0/>', [state.buildings[key]])}</em>}
                 </button>
               );
             })}

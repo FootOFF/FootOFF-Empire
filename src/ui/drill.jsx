@@ -9,28 +9,29 @@ import { Portrait } from './portrait';
 import { useInputMode } from './input';
 import { DRILL_TEXT } from './training';
 import { haptic } from './haptics';
+import { decSep, numLocale, t, tn, tr } from '../i18n/index';
 
 // Épreuves du centre d'entraînement, en plein écran : pour chaque joueur de la séance, l'intro (épreuve, joueur,
 // commandes, gain attendu), le compte à rebours, l'épreuve en 3D (src/three/drills, chargé à la première épreuve),
 // le résultat (score, mention, progrès, programme) ; à la fin, le bilan de la séance. Échap (ou B / Start à la
 // manette) met en pause : reprendre, ou arrêter là (une épreuve interrompue n'est pas comptée).
 
-const gainTxt = (g) => `+${(Math.max(0, Math.round(g * 100)) / 100).toFixed(2).replace('.', ',')}`;
-const dec = (v) => (Math.round(v * 100) / 100).toLocaleString('fr-FR');
+const gainTxt = (g) => `+${(Math.max(0, Math.round(g * 100)) / 100).toFixed(2).replace('.', decSep())}`;
+const dec = (v) => (Math.round(v * 100) / 100).toLocaleString(numLocale());
 const GREAT_SCORE = (GREAT - PLAY_MIN) / (PLAY_MAX - PLAY_MIN); // score d'une épreuve très réussie
-const mention = (sc) => (sc >= 0.85 ? 'Exceptionnel' : sc >= GREAT_SCORE ? 'Très réussie' : sc >= 0.45 ? 'Réussie' : sc >= 0.25 ? 'Correcte' : 'Difficile');
+const mention = (sc) => (sc >= 0.85 ? t('Exceptionnel') : sc >= GREAT_SCORE ? t('Très réussie') : sc >= 0.45 ? t('Réussie') : sc >= 0.25 ? t('Correcte') : t('Difficile'));
 const attrName = (p, k) => (p.pos === 'G' ? GK_ATTRS : ATTRS).find((a) => a.key === k)?.name || k;
 
 // commandes de chaque épreuve, selon le moyen utilisé : [touche ou bouton (null au doigt), explication]
 const CONTROLS = {
-  precision: { keyboard: ['Espace', 'deux fois : la direction, puis la hauteur, ou glisse à la souris du ballon vers le but'], touch: [null, 'Glisse du ballon vers le but : il part là où ton doigt se lève. Courbe ton geste pour lui donner de l’effet.'], gamepad: ['A', 'deux fois : la direction, puis la hauteur'] },
-  sprint: { keyboard: ['Espace', 'au signal, puis pour sauter chaque haie'], touch: [null, 'Touche l’écran au signal, puis pour sauter chaque haie.'], gamepad: ['A', 'au signal, puis pour sauter chaque haie'] },
-  lecture: { keyboard: ['1 · 2 · 3', 'ou les flèches puis Espace : la passe choisie'], touch: [null, 'Touche le partenaire à qui faire la passe.'], gamepad: ['Croix puis A', 'pour choisir la passe'] },
-  arrets: { keyboard: ['← → ↑ ↓', 'plonger à gauche ou à droite (avec ↑ pour un tir haut), ↑ seul pour sauter, ↓ pour rester au sol ; ou clique là où part le ballon'], touch: [null, 'Touche l’écran là où part le ballon : en haut pour un tir haut, en bas pour un tir à ras de terre. Plus tu réagis tôt, mieux tu le prends.'], gamepad: ['Croix', 'gauche ou droite pour plonger (avec haut pour un tir haut), haut pour sauter, bas pour rester au sol'] },
-  coupsFrancs: { keyboard: ['Espace', 'deux fois : la direction, puis la hauteur, ou glisse à la souris du ballon vers le but'], touch: [null, 'Glisse du ballon vers le but, au-dessus du mur : courbe ton geste pour enrouler le ballon autour.'], gamepad: ['A', 'deux fois : la direction, puis la hauteur'] },
-  penalties: { keyboard: ['← ↓ →', 'plonger à gauche, rester au centre, plonger à droite'], touch: [null, 'Touche la gauche, le centre ou la droite de l’écran pour plonger.'], gamepad: ['Croix', 'gauche, bas ou droite pour plonger'] },
-  centres: { keyboard: ['Espace', 'pour lancer la course, puis pour sauter'], touch: [null, 'Touche l’écran pour lancer la course, puis pour sauter.'], gamepad: ['A', 'pour lancer la course, puis pour sauter'] },
-  contre: { keyboard: ['← → ↑', 'passe à gauche, passe à droite, tir (ou 1, 2, 3)'], touch: [null, 'Touche le partenaire à servir, ou « Tir ».'], gamepad: ['Croix', 'gauche, droite pour passer, haut pour tirer'] },
+  precision: { keyboard: [t('Espace'), t('deux fois : la direction, puis la hauteur, ou glisse à la souris du ballon vers le but')], touch: [null, t('Glisse du ballon vers le but : il part là où ton doigt se lève. Courbe ton geste pour lui donner de l’effet.')], gamepad: ['A', t('deux fois : la direction, puis la hauteur')] },
+  sprint: { keyboard: [t('Espace'), t('au signal, puis pour sauter chaque haie')], touch: [null, t('Touche l’écran au signal, puis pour sauter chaque haie.')], gamepad: ['A', t('au signal, puis pour sauter chaque haie')] },
+  lecture: { keyboard: ['1 · 2 · 3', t('ou les flèches puis Espace : la passe choisie')], touch: [null, t('Touche le partenaire à qui faire la passe.')], gamepad: [t('Croix puis A'), t('pour choisir la passe')] },
+  arrets: { keyboard: ['← → ↑ ↓', t('plonger à gauche ou à droite (avec ↑ pour un tir haut), ↑ seul pour sauter, ↓ pour rester au sol ; ou clique là où part le ballon')], touch: [null, t('Touche l’écran là où part le ballon : en haut pour un tir haut, en bas pour un tir à ras de terre. Plus tu réagis tôt, mieux tu le prends.')], gamepad: [t('Croix'), t('gauche ou droite pour plonger (avec haut pour un tir haut), haut pour sauter, bas pour rester au sol')] },
+  coupsFrancs: { keyboard: [t('Espace'), t('deux fois : la direction, puis la hauteur, ou glisse à la souris du ballon vers le but')], touch: [null, t('Glisse du ballon vers le but, au-dessus du mur : courbe ton geste pour enrouler le ballon autour.')], gamepad: ['A', t('deux fois : la direction, puis la hauteur')] },
+  penalties: { keyboard: ['← ↓ →', t('plonger à gauche, rester au centre, plonger à droite')], touch: [null, t('Touche la gauche, le centre ou la droite de l’écran pour plonger.')], gamepad: [t('Croix'), t('gauche, bas ou droite pour plonger')] },
+  centres: { keyboard: [t('Espace'), t('pour lancer la course, puis pour sauter')], touch: [null, t('Touche l’écran pour lancer la course, puis pour sauter.')], gamepad: ['A', t('pour lancer la course, puis pour sauter')] },
+  contre: { keyboard: ['← → ↑', t('passe à gauche, passe à droite, tir (ou 1, 2, 3)')], touch: [null, t('Touche le partenaire à servir, ou « Tir ».')], gamepad: [t('Croix'), t('gauche, droite pour passer, haut pour tirer')] },
 };
 
 // Garde-fou : une erreur dans l'épreuve ne doit jamais emporter le jeu ; on referme simplement l'écran.
@@ -130,7 +131,7 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
       const ns = trainPlayer(s, it.pos, { id: it.id, cat: it.cat, drill: it.drill, score });
       got = ns ? ns.training.done[it.pos] : null;
       return ns;
-    }, 'Épreuve impossible.');
+    }, t('Épreuve impossible.'));
     if (got) {
       setResults((r) => [...r, got]);
       if (score !== null) haptic(score >= GREAT_SCORE ? 'goal' : 'tap');
@@ -150,8 +151,8 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
     if (results.length) {
       const learned = results.find((r) => r.learned);
       notify({
-        kind: 'training', eyebrow: results.length > 1 ? 'Séance terminée' : 'Épreuve terminée',
-        title: learned ? `${learned.name} acquiert le signe ${programLabel(learned.learned)}` : `${gainTxt(total)} de niveau`,
+        kind: 'training', eyebrow: tn(results.length, 'Épreuve terminée', 'Séance terminée', {}, results.length > 1),
+        title: learned ? t('{name} acquiert le signe {programLabel}', { name: learned.name, programLabel: programLabel(learned.learned) }) : t('{gainTxt} de niveau', { gainTxt: gainTxt(total) }),
         text: results.map((r) => `${r.name} ${gainTxt(r.gain)}`).join(' · '),
         action: { panel: 'training', tab: 'session' },
       });
@@ -225,7 +226,7 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
       className={`drill drill-${item?.drill || 'none'} ph-${phase}`}
       tabIndex={-1}
       role="dialog"
-      aria-label="Épreuve d’entraînement"
+      aria-label={t('Épreuve d’entraînement')}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -234,16 +235,16 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
     >
       <div ref={canvasRef} className="drill-canvas" />
       <div className="drill-shade" aria-hidden="true" />
-      {!loaded && !failed && <div className="drill-loading"><span className="drill-spinner" aria-hidden="true" />Préparation du terrain…</div>}
+      {!loaded && !failed && <div className="drill-loading">{tr('<0/>Préparation du terrain…', [<span className="drill-spinner" aria-hidden="true" />])}</div>}
       {failed && (
         <div className="drill-card drill-fail">
-          <h3>{failed === 'crash' ? 'L’épreuve s’est interrompue' : 'Épreuve en 3D indisponible'}</h3>
+          <h3>{failed === 'crash' ? t('L’épreuve s’est interrompue') : t('Épreuve en 3D indisponible')}</h3>
           <p>{failed === 'crash'
-            ? 'Une erreur a arrêté l’épreuve en cours. Tu peux la simuler : le gain moyen est assuré.'
-            : 'Ton appareil n’a pas pu afficher le terrain d’entraînement. Tu peux simuler l’épreuve : le gain moyen est assuré.'}</p>
+            ? t('Une erreur a arrêté l’épreuve en cours. Tu peux la simuler : le gain moyen est assuré.')
+            : t('Ton appareil n’a pas pu afficher le terrain d’entraînement. Tu peux simuler l’épreuve : le gain moyen est assuré.')}</p>
           <div className="drill-actions">
-            <button type="button" className="btn ghost" onClick={close}>Fermer</button>
-            {item && phase === 'intro' && <button type="button" className="btn" onClick={() => finish(null)}>Simuler</button>}
+            <button type="button" className="btn ghost" onClick={close}>{t('Fermer')}</button>
+            {item && phase === 'intro' && <button type="button" className="btn" onClick={() => finish(null)}>{t('Simuler')}</button>}
           </div>
         </div>
       )}
@@ -252,14 +253,14 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
       {item && (phase === 'play' || phase === 'count') && (
         <div className="drill-hud" aria-live="polite">
           <div className="drill-hud-left">
-            <span className="eyebrow"><span className="hide-sm">Épreuve {i + 1} / {queue.length} · </span>{cat?.label}</span>
+            <span className="eyebrow"><span className="hide-sm">{tr('Épreuve <0/> / <1/> ·', [i + 1, queue.length])}{' '}</span>{cat?.label}</span>
             <strong>{DRILLS[item.drill].label}</strong>
             <span className="drill-who">{player && <Portrait p={player} size={26} />}{player?.name}</span>
           </div>
           <div className="drill-hud-right">
             {hud.chrono ? <b className="drill-points drill-chrono">{hud.chrono}</b> : <b className="drill-points">{hud.points ?? 0}<small> / {hud.max ?? 0}</small></b>}
             {hud.rounds > 0 && (
-              <span className="drill-pips" aria-label={`Tentative ${hud.round} sur ${hud.rounds}`}>
+              <span className="drill-pips" aria-label={t('Tentative {round} sur {rounds}', { round: hud.round, rounds: hud.rounds })}>
                 {Array.from({ length: hud.rounds }, (_, k) => <i key={k} className={k < (hud.round || 0) - 1 ? 'done' : k === (hud.round || 0) - 1 ? 'on' : ''} />)}
               </span>
             )}
@@ -273,7 +274,7 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
           )}
         </div>
       )}
-      {item?.drill === 'lecture' && phase !== 'summary' && <div className="drill-tablet" aria-hidden="true"><span>Analyse vidéo</span></div>}
+      {item?.drill === 'lecture' && phase !== 'summary' && <div className="drill-tablet" aria-hidden="true"><span>{t('Analyse vidéo')}</span></div>}
       {phase === 'play' && hud.swipe && hud.hint && !trail && (
         <span className="drill-swipe-hint" style={{ left: hud.hint.x, top: hud.hint.y }} aria-hidden="true"><IconArrowUp /></span>
       )}
@@ -281,14 +282,14 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
         <svg className="drill-trail" aria-hidden="true"><polyline points={trail.map(([x, y]) => `${x},${y}`).join(' ')} /></svg>
       )}
       {phase === 'play' && hud.marks?.map((m) => (
-        <span key={m.n} className={`drill-mark ${m.on ? 'on' : ''}`} style={{ left: m.x, top: m.y }} aria-hidden="true">{m.n}</span>
+        <span key={m.n} className={`drill-mark ${m.on ? 'on' : ''}`} style={{ left: m.x, top: m.y }} aria-hidden="true">{typeof m.n === 'string' ? t(m.n) : m.n}</span>
       ))}
       {pops.map((p) => (
         <span key={p.id} className={`drill-pop ${p.tone || ''}`} style={{ left: p.at?.x ?? '50%', top: p.at?.y ?? '40%' }}>
           <b>{p.points}</b><em>{p.text}</em>
         </span>
       ))}
-      {phase === 'count' && <div className="drill-count" key={count}>{count > 0 ? count : 'Go'}</div>}
+      {phase === 'count' && <div className="drill-count" key={count}>{count > 0 ? count : t('Go')}</div>}
 
       {/* intro */}
       {item && player && phase === 'intro' && loaded && !failed && (
@@ -302,12 +303,12 @@ function DrillRunner({ state, queue, run, sound, notify = () => {}, onClose }) {
       {paused && (
         <div className="drill-pause">
           <div className="drill-card">
-            <span className="eyebrow">Pause</span>
+            <span className="eyebrow">{t('Pause')}</span>
             <h3>{DRILLS[item?.drill]?.label}</h3>
-            <p>Si tu t’arrêtes maintenant, cette épreuve n’est pas comptée : tu pourras la refaire avant le match.</p>
+            <p>{t('Si tu t’arrêtes maintenant, cette épreuve n’est pas comptée : tu pourras la refaire avant le match.')}</p>
             <div className="drill-actions">
-              <button type="button" className="btn ghost" onClick={close}>Arrêter là</button>
-              <button type="button" className="btn" autoFocus onClick={() => setPaused(false)}><IconPlay /> Reprendre</button>
+              <button type="button" className="btn ghost" onClick={close}>{t('Arrêter là')}</button>
+              <button type="button" className="btn" autoFocus onClick={() => setPaused(false)}>{tr('<0/> Reprendre', [<IconPlay />])}</button>
             </div>
           </div>
         </div>
@@ -324,28 +325,28 @@ function Intro({ state, item, p, index, total, ctl, onGo, onSim, onQuit }) {
   const pot = potentialRange(p, state);
   return (
     <div className="drill-card drill-intro">
-      <button type="button" className="hud-icon drill-later" onClick={onQuit} aria-label="Plus tard"><IconClose /></button>
-      <span className="eyebrow">Épreuve {index + 1} / {total} · {POS_LABELS[item.pos].toLowerCase()} · {catsFor(item.pos)[item.cat].label.toLowerCase()}</span>
+      <button type="button" className="hud-icon drill-later" onClick={onQuit} aria-label={t('Plus tard')}><IconClose /></button>
+      <span className="eyebrow">{tr('Épreuve <0/> / <1/> · <2/> · <3/>', [index + 1, total, POS_LABELS[item.pos].toLowerCase(), catsFor(item.pos)[item.cat].label.toLowerCase()])}</span>
       <h2>{DRILLS[item.drill].label}</h2>
       <p className="drill-rule">{DRILL_TEXT[item.drill]}</p>
       <div className="drill-player">
         <Portrait p={p} size={48} />
         <span>
           <b>{p.name}</b>
-          <em>{p.age} ans · niveau {fmtRating(playerRating(p))}{pot ? ` · pot. ${fmtRating(pot[0])} – ${fmtRating(pot[1])}` : ''}</em>
+          <em>{tr('<0/> ans · niveau <1/><2/>', [p.age, fmtRating(playerRating(p)), pot ? t(' · pot. {fmtRating} – {fmtRating2}', { fmtRating: fmtRating(pot[0]), fmtRating2: fmtRating(pot[1]) }) : ''])}</em>
         </span>
       </div>
       {ctl && <p className="drill-controls">{ctl[0] && <kbd>{ctl[0]}</kbd>}<span>{ctl[1]}</span></p>}
       <div className="drill-stakes">
-        <div><span>Parfaite</span><b>{gainTxt(pv.max)}</b></div>
-        <div><span>Simulée</span><b>{gainTxt(pv.sim)}</b></div>
-        <div><span>Ratée</span><b>{gainTxt(pv.min)}</b></div>
+        <div><span>{t('Parfaite')}</span><b>{gainTxt(pv.max)}</b></div>
+        <div><span>{t('Simulée')}</span><b>{gainTxt(pv.sim)}</b></div>
+        <div><span>{t('Ratée')}</span><b>{gainTxt(pv.min)}</b></div>
       </div>
-      <p className="drill-attrs">{catsFor(item.pos)[item.cat].attrs.map((k) => `${attrName(p, k)} ${pool[k].toFixed(2).replace('.', ',')} → ${after[k].toFixed(2).replace('.', ',')}`).join(' · ')} <em>(simulée)</em></p>
-      {prog && <p className="drill-prog-line">Programme {programLabel(prog.id)} : {prog.steps} / {programNeed(state, prog)} séances</p>}
+      <p className="drill-attrs">{catsFor(item.pos)[item.cat].attrs.map((k) => `${attrName(p, k)} ${pool[k].toFixed(2).replace('.', decSep())} → ${after[k].toFixed(2).replace('.', decSep())}`).join(' · ')} <em>{t('(simulée)')}</em></p>
+      {prog && <p className="drill-prog-line">{tr('Programme <0/> : <1/> / <2/> séances', [programLabel(prog.id), prog.steps, programNeed(state, prog)])}</p>}
       <div className="drill-actions">
-        <button type="button" className="btn ghost" onClick={onSim}>Simuler</button>
-        <button type="button" className="btn" autoFocus onClick={onGo}><IconPlay /> C’est parti</button>
+        <button type="button" className="btn ghost" onClick={onSim}>{t('Simuler')}</button>
+        <button type="button" className="btn" autoFocus onClick={onGo}>{tr('<0/> C’est parti', [<IconPlay />])}</button>
       </div>
     </div>
   );
@@ -375,19 +376,19 @@ function Result({ r, last, single, onNext }) {
           <b>{shown} %</b>
           <em>{mention(sc)}</em>
         </div>
-      ) : <h2 className="drill-sim">Épreuve simulée</h2>}
+      ) : <h2 className="drill-sim">{t('Épreuve simulée')}</h2>}
       <div className="drill-gain">
         <b>{gainTxt(r.gain)}</b>
-        <span>niveau {fmtRating(r.before)} <IconArrowUp /> {fmtRating(r.after)}</span>
+        <span>{tr('niveau <0/> <1/> <2/>', [fmtRating(r.before), <IconArrowUp />, fmtRating(r.after)])}</span>
       </div>
-      {sc !== null && <p className="drill-factor">Gain ×{dec(factorOf(sc))} par rapport à une épreuve simulée.</p>}
+      {sc !== null && <p className="drill-factor">{tr('Gain ×<0/> par rapport à une épreuve simulée.', [dec(factorOf(sc))])}</p>}
       {r.learned ? (
-        <p className="drill-learned"><IconStar /> Signe distinctif acquis : <b>{programLabel(r.learned)}</b></p>
+        <p className="drill-learned">{tr('<0/> Signe distinctif acquis : <1/>', [<IconStar />, <b>{programLabel(r.learned)}</b>])}</p>
       ) : steps ? (
-        <p className="drill-prog-line">Programme {programLabel(steps[2])} : {steps[0]} / {steps[1]} séances{sc !== null && sc >= GREAT_SCORE ? ' (épreuve très réussie : deux pas)' : ''}</p>
+        <p className="drill-prog-line">{tr('Programme <0/> : <1/> / <2/> séances<3/>', [programLabel(steps[2]), steps[0], steps[1], sc !== null && sc >= GREAT_SCORE ? t(' (épreuve très réussie : deux pas)') : ''])}</p>
       ) : null}
       <div className="drill-actions">
-        <button type="button" className="btn" autoFocus onClick={onNext}>{single ? <><IconCheck /> Terminer</> : last ? <><IconCheck /> Voir le bilan</> : <><IconPlay /> Épreuve suivante</>}</button>
+        <button type="button" className="btn" autoFocus onClick={onNext}>{single ? <><IconCheck />{t(' Terminer')}</> : last ? <><IconCheck />{t(' Voir le bilan')}</> : <><IconPlay />{t(' Épreuve suivante')}</>}</button>
       </div>
     </div>
   );
@@ -397,19 +398,19 @@ function Summary({ results, onClose }) {
   const total = results.reduce((a, r) => a + r.gain, 0);
   return (
     <div className="drill-card drill-summary">
-      <span className="eyebrow">Séance terminée</span>
-      <h2>{gainTxt(total)} de niveau</h2>
+      <span className="eyebrow">{t('Séance terminée')}</span>
+      <h2>{tr('<0/> de niveau', [gainTxt(total)])}</h2>
       <ul>
         {results.map((r, k) => (
           <li key={k}>
             <b>{r.name}</b>
-            <span>{DRILLS[r.drill].label} · {r.score === null ? 'simulée' : `${Math.round(r.score * 100)} %`}{r.learned ? ` · ${programLabel(r.learned)} acquis` : ''}</span>
+            <span>{DRILLS[r.drill].label} · {r.score === null ? t('simulée') : `${Math.round(r.score * 100)} %`}{r.learned ? t(' · {programLabel} acquis', { programLabel: programLabel(r.learned) }) : ''}</span>
             <em>{gainTxt(r.gain)}</em>
           </li>
         ))}
       </ul>
       <div className="drill-actions">
-        <button type="button" className="btn" autoFocus onClick={onClose}><IconCheck /> Retour au centre</button>
+        <button type="button" className="btn" autoFocus onClick={onClose}>{tr('<0/> Retour au centre', [<IconCheck />])}</button>
       </div>
     </div>
   );

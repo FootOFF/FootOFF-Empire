@@ -1,0 +1,61 @@
+1438	{name} (19) leaves the academy: he was not promoted to the first team.	{name} (19 años) deja la cantera: no subió al primer equipo.	{name} (19 عامًا) يغادر الأكاديمية: لم يُرقَّ إلى الفريق الأول.
+1439	winners	campeón	البطل
+1440	knocked out in the {toLowerCase}	eliminado en {toLowerCase}	أُقصي في {toLowerCase}
+1441	Promoted! {clubName} finish {ordinal} {ofDiv}	¡Ascenso! {clubName} termina {ordinal} {ofDiv}	صعود! {clubName} ينهي الموسم في المركز {ordinal} في {ofDiv}
+1442	Relegation: {ordinal} place in the {name}	Descenso: {ordinal} puesto en la {name}	الهبوط: المركز {ordinal} في {name}
+1443	Season {seasonNumber} wrapped up in {ordinal} place	Temporada {seasonNumber} cerrada en el {ordinal} puesto	اختُتم الموسم {seasonNumber} في المركز {ordinal}
+1444	Season {seasonNumber} over: {ordinal} in the {name}.{v} Prize: €{n} · Sponsors: €{n2} · Wages: −€{n3} · Upkeep: −€{n4}.	Temporada {seasonNumber} terminada: {ordinal} en la {name}.{v} Premio: {n} € · Patrocinadores: {n2} € · Salarios: −{n3} € · Mantenimiento: −{n4} €.	انتهى الموسم {seasonNumber}: المركز {ordinal} في {name}.{v} الجائزة: {n} € · الرعاة: {n2} € · الرواتب: −{n3} € · الصيانة: −{n4} €.
+1445	Promoted!	¡Ascenso!	صعود!
+1446	Relegated.	Descenso.	هبوط.
+1447	{name} is promoted to the first team	{name} sube al primer equipo	{name} يُرقّى إلى الفريق الأول
+1448	The squad was falling below {SQUAD_MIN} players: trained at the academy, he is promoted automatically at {age}, wearing number {num}.	La plantilla bajaba de {SQUAD_MIN} jugadores: formado en la cantera, sube automáticamente con {age} años, con el dorsal {num}.	كانت التشكيلة تنزل تحت {SQUAD_MIN} لاعبًا: هذا الخريج من الأكاديمية يُرقّى تلقائيًا في سن {age}، بالرقم {num}.
+1449	Trained at the academy, he joins the professional squad at {age}, wearing number {num}.	Formado en la cantera, se une a la plantilla profesional con {age} años, con el dorsal {num}.	تخرّج من الأكاديمية، وينضم إلى التشكيلة الاحترافية في سن {age}، بالرقم {num}.
+1450	{name} ({age}) is promoted automatically from the academy: the squad never drops below {SQUAD_MIN} players.	{name} ({age} años) sube automáticamente de la cantera: la plantilla nunca baja de {SQUAD_MIN} jugadores.	{name} ({age} عامًا) يُرقّى تلقائيًا من الأكاديمية: لا تقل التشكيلة أبدًا عن {SQUAD_MIN} لاعبًا.
+1451	Emergency amateur: {name} ({age}) completes the squad.	Aficionado de emergencia: {name} ({age} años) completa la plantilla.	لاعب هاوٍ للطوارئ: {name} ({age} عامًا) يكمل التشكيلة.
+1452	Three forwards, three midfielders: the reference formation, balanced.	Tres delanteros, tres centrocampistas: el dibujo de referencia, equilibrado.	ثلاثة مهاجمين وثلاثة لاعبي وسط: الخطة المرجعية المتوازنة.
+1453	Two banks of four and a strike pair: compact, simple, solid.	Dos líneas de cuatro y dos puntas: compacto, sencillo, sólido.	خطان من أربعة لاعبين وثنائي في الهجوم: متماسكة وبسيطة وصلبة.
+1454	Two ball-winners, three playmakers, a lone striker: you keep the ball and the match closes up.	Dos recuperadores, tres organizadores y un solo delantero: se tiene el balón y el partido se cierra.	لاعبا ارتكاز وثلاثة صانعي ألعاب ومهاجم وحيد: الاحتفاظ بالكرة وإغلاق المباراة.
+1455	Five midfielders to dominate the middle, two forwards, but only three defenders.	Cinco centrocampistas para dominar el centro, dos delanteros, pero solo tres defensas.	خمسة لاعبي وسط للسيطرة على منتصف الملعب، ومهاجمان، لكن ثلاثة مدافعين فقط.
+1456	All-out attack: lots of chances, and lots of space left behind.	Todo al ataque: muchas ocasiones y mucho espacio a la espalda.	كل شيء للهجوم: فرص كثيرة، ومساحات كثيرة في الخلف.
+1457	Five defenders and counter-attacks: a closed match, very hard to beat.	Cinco defensas y contragolpes: partido cerrado, muy difícil de batir.	خمسة مدافعين وهجمات مرتدة: مباراة مغلقة يصعب جدًا الفوز فيها.
+1458	Attacking	Ofensiva	هجومي
+1459	High press, full-backs pushed on: more chances at both ends.	Presión alta, laterales incorporados: más ocasiones en las dos áreas.	ضغط عالٍ وظهيران متقدمان: فرص أكثر للطرفين.
+1460	Balanced	Equilibrada	متوازن
+1461	Mid-block, controlled transitions.	Bloque medio, transiciones controladas.	تكتل في الوسط وتحولات محكمة.
+1462	Low block	Bloque bajo	تكتل دفاعي
+1463	A packed defence and counter-attacks: a closed match, few chances.	Defensa replegada y contragolpes: partido cerrado, pocas ocasiones.	دفاع متكتل وهجمات مرتدة: مباراة مغلقة بفرص قليلة.
+1464	Tactical	Táctica	تكتيك
+1465	Positioning and composure	Colocación y temple	التمركز ورباطة الجأش
+1466	Distribution and aerial ability	Saque y juego aéreo	بناء اللعب والكرات الهوائية
+1467	Self-control	Autocontrol	ضبط النفس
+1468	Loses the “Hothead” trait: fewer cards.	Pierde el rasgo «Sangre caliente»: menos tarjetas.	يفقد سمة «العصبي»: بطاقات أقل.
+1469	{name} learns to keep his cool	{name} aprende a controlarse	{name} يتعلم ضبط نفسه
+1470	{name} gains a distinctive trait: {programLabel}	{name} adquiere un rasgo distintivo: {programLabel}	{name} يكتسب سمة مميزة: {programLabel}
+1471	At the end of his programme at the training centre. {programDesc}	Al término de su programa en el centro de entrenamiento. {programDesc}	في ختام برنامجه في مركز التدريب. {programDesc}
+1472	Town hall grant	Subvención del ayuntamiento	منحة البلدية
+1473	First training session	Primer entrenamiento	التدريب الأول
+1474	First signing	Primer fichaje	الصفقة الأولى
+1475	First match	Primer partido	المباراة الأولى
+1476	Welcome, chairman	Bienvenido, presidente	مرحبًا أيها الرئيس
+1477	{clubName} start out in the {name}: a council-owned pitch, {START_MONEY} in the bank and everything to build. I’m your sporting director: I’ll show you the essentials in a few minutes.	{clubName} arranca en la {name}: un campo municipal, {START_MONEY} en caja y todo por construir. Soy tu directora deportiva: te enseño lo esencial en unos minutos.	{clubName} يبدأ في {name}: ملعب بلدي، و{START_MONEY} في الخزينة، وكل شيء ينتظر البناء. أنا مديرتك الرياضية: سأريك الأساسيات في بضع دقائق.
+1478	Your goal: climb division by division to the Elite League, and build the most prestigious complex in the country.	Tu objetivo: subir de división en división hasta la Liga Élite y construir el complejo más prestigioso del país.	هدفك: الصعود من درجة إلى أخرى حتى دوري النخبة، وبناء أعرق مجمّع في البلاد.
+1479	Let’s go	Vamos allá	هيا بنا
+1480	Build your training centre	Construye tu centro de entrenamiento	ابنِ مركز تدريبك
+1481	Tap plot 1 of the complex, then hold “Build”. Cost: {upgradeCost}.	Toca la parcela 1 del complejo y mantén pulsado «Construir». Coste: {upgradeCost}.	المس قطعة الأرض 1 في المجمّع، ثم اضغط مطولًا على «بناء». التكلفة: {upgradeCost}.
+1482	Without it, your players only improve between seasons. With it, they improve between every match.	Sin él, tus jugadores solo progresan entre temporadas. Con él, progresan entre cada partido.	من دونه لا يتطور لاعبوك إلا بين الموسمين. ومعه يتطورون بين كل مباراة وأخرى.
+1483	Your first session	Tu primera sesión	حصتك الأولى
+1484	Open the centre, pick a player and play his drill in 3D: shooting, sprinting, reading the game or goalkeeper saves.	Abre el centro, elige a un jugador y juega su prueba en 3D: disparos, sprint, lectura del juego o paradas del portero.	افتح المركز، واختر لاعبًا، وأدِّ تمرينه بالأبعاد الثلاثية: تسديدات أو عدو أو قراءة اللعب أو تصديات الحارس.
+1485	The better the drill goes, the more the player improves, for good. In a hurry? “Simulate” gives an average gain.	Cuanto mejor salga la prueba, más progresa el jugador, para siempre. ¿Tienes prisa? «Simular» asegura una ganancia media.	كلما نجح التمرين أكثر، تطور اللاعب أكثر وبشكل دائم. مستعجل؟ «محاكاة» تضمن مكسبًا متوسطًا.
+1486	Strengthen your team	Refuerza tu equipo	عزّز فريقك
+1487	{name} ({toLowerCase}) {v} and would strengthen your XI. In the transfer market, he is marked “Recommended”: make him an offer.	{name} ({toLowerCase}) {v} y reforzaría tu once. En el mercado aparece como «Recomendado»: hazle una oferta.	{name} ({toLowerCase}) {v} وسيقوّي تشكيلتك الأساسية. في سوق الانتقالات يحمل علامة «موصى به»: قدّم له عرضًا.
+1488	is for sale ({club})	está en venta ({club})	معروض للبيع ({club})
+1489	is a free agent	está libre	لاعب حر
+1490	The transfer market moves every matchday. Sign a player when he strengthens your XI: he is marked “Recommended”.	El mercado se mueve en cada jornada. Ficha cuando un jugador refuerce tu once: aparece como «Recomendado».	يتحرك سوق الانتقالات في كل جولة. تعاقد مع اللاعب عندما يقوّي تشكيلتك: يحمل علامة «موصى به».
+1491	Before you confirm, the offer gauge shows your real chances of agreement: it’s up to you to judge the price.	Antes de confirmar, el indicador de la oferta muestra tus probabilidades reales de acuerdo: a ti te toca ajustar el precio.	قبل التأكيد، يعرض مؤشر العرض فرصك الحقيقية في الاتفاق: عليك أنت أن تضبط السعر.
+1492	Open the transfer market	Abrir el mercado	فتح سوق الانتقالات
+1493	Play your first match	Juega tu primer partido	العب مباراتك الأولى
+1494	Pick your XI and your tactics, watch the prediction move, then live the match as it happens.	Elige tu once y tu táctica, mira cómo se mueve el pronóstico y vive el partido en directo.	اختر تشكيلتك وتكتيكك، وراقب تغيّر التوقعات، ثم عش المباراة مباشرة.
+1495	Every home match fills the coffers, and every win brings promotion closer.	Cada partido en casa llena la caja, y cada victoria acerca el ascenso.	كل مباراة على أرضك تملأ الخزينة، وكل فوز يقرّبك من الصعود.
+1496	Play the match	Jugar el partido	لعب المباراة
+1497	Look after your squad	Cuida tu plantilla	اعتنِ بتشكيلتك
+1498	Under each player, a bar: his fitness. A match lowers it according to stamina, each fixture brings it back up. A tired player plays worse and gets injured more often: “Fresh XI” fields the best players at 80% condition or more, “Rotate” gives the substitutes a game.	Bajo cada jugador, una barra: su condición física. Un partido la hace bajar según la resistencia y cada fecha la recupera. Un jugador cansado rinde peor y se lesiona más: «Once fresco» alinea a los mejores jugadores con un 80 % de condición o más, «Rotar» da minutos a los suplentes.	تحت كل لاعب شريط: لياقته البدنية. تنخفض بعد المباراة بحسب قدرته على التحمل، وترتفع مع كل موعد. اللاعب المرهق يلعب أسوأ ويُصاب أكثر: «التشكيلة المرتاحة» تُشرك أفضل اللاعبين بلياقة 80% أو أكثر، و«المداورة» تمنح البدلاء فرصة اللعب.

@@ -1,0 +1,61 @@
+3664	Session	Sesión	حصة
+3665	Before: {fixtureShort}	Antes de: {fixtureShort}	قبل: {fixtureShort}
+3666	Shooting at targets: stop the sight at the right moment, as close to the centre as possible.	Tiros a dianas: detén el punto de mira en el momento justo, lo más cerca posible del centro.	تسديد على الأهداف: أوقف المؤشر في اللحظة المناسبة، في أقرب نقطة من المركز.
+3667	Timed hurdles race: jump at the right moment to keep your speed.	Carrera de vallas cronometrada: salta en el momento justo para mantener la velocidad.	سباق حواجز موقوت: اقفز في اللحظة المناسبة لتحافظ على سرعتك.
+3668	On the analyst’s tablet, the move freezes: find the right pass quickly.	En la tableta del analista, la jugada se congela: encuentra rápido el pase bueno.	على لوح المحلل تتجمد اللعبة: اعثر بسرعة على التمريرة الصحيحة.
+3669	Eight shots, low, in the top corner or curled: dive towards the ball, as early as possible.	Ocho tiros, rasos, a la escuadra o con rosca: lánzate hacia el balón lo antes posible.	ثماني تسديدات، أرضية أو في الزاوية العليا أو ملتفة: ارتمِ نحو الكرة بأسرع ما يمكن.
+3670	A wall and a goalkeeper: aim high to clear the wall, far from the keeper, into the top corner.	Una barrera y un portero: apunta alto para superar la barrera, lejos del portero, a la escuadra.	حائط وحارس: صوّب عاليًا لتتجاوز الحائط، بعيدًا عن الحارس، في الزاوية العليا.
+3671	Just before striking, the taker turns towards his side: dive at that moment. Too early, and he sees you go.	Justo antes de golpear, el lanzador se gira hacia su lado: lánzate en ese instante. Demasiado pronto, y te verá moverte.	قبل التسديد مباشرة يلتفت المسدد نحو جهته: ارتمِ في تلك اللحظة. وإن ارتميت مبكرًا رآك تتحرك.
+3672	The winger beats his man and crosses: start your run towards where the ball will drop, then jump to head it.	El extremo desborda y centra: arranca hacia el punto de caída y luego salta para rematar de cabeza.	ينطلق الجناح ويرسل عرضية: ابدأ الركض نحو مكان سقوط الكرة، ثم اقفز لتحويلها برأسك.
+3673	Three against two at full speed: in slow motion, choose the pass or the shot. The defender who steps out frees someone.	Tres contra dos a toda velocidad: a cámara lenta, elige el pase o el tiro. El defensa que sale libera a alguien.	ثلاثة ضد اثنين بأقصى سرعة: بالحركة البطيئة، اختر التمرير أو التسديد. والمدافع الذي يتقدم يحرر زميلًا.
+3674	Session not possible.	Sesión imposible.	الحصة غير ممكنة.
+3675	Session simulated	Sesión simulada	تمت محاكاة الحصة
+3676	Programme not possible.	Programa imposible.	البرنامج غير ممكن.
+3677	{programLabel} programme for {name}	Programa {programLabel} para {name}	برنامج {programLabel} لـ{name}
+3678	{v} sessions in {toLowerCase}.	{v} sesiones de {toLowerCase}.	{v} حصص في {toLowerCase}.
+3679	Stop {name}’s programme?	¿Detener el programa de {name}?	إيقاف برنامج {name}؟
+3680	The sessions already done for this programme will be lost.	Las sesiones ya hechas para este programa se perderán.	ستضيع الحصص التي أُنجزت بالفعل في هذا البرنامج.
+3681	Stop	Detener	إيقاف
+3682	· progress ×<0/> per session<1/>	· progreso ×<0/> por sesión<1/>	· التطور ×<0/> في كل حصة<1/>
+3683	(the Elite League’s packed calendar)	(calendario cargado de la Liga Élite)	(جدول دوري النخبة المزدحم)
+3684	Programmes	Programas	البرامج
+3685	from level 3	desde el nivel 3	ابتداءً من المستوى 3
+3686	Your training centre is not built	Tu centro de entrenamiento no está construido	مركز تدريبك غير مبني
+3687	Build it on a free plot of the complex: between two matches, four of your players will take a drill there.	Constrúyelo en una parcela libre del complejo: entre dos partidos, cuatro de tus jugadores harán allí una prueba.	ابنِه على قطعة أرض شاغرة في المجمّع: بين مباراتين سيؤدي فيه أربعة من لاعبيك تمرينًا.
+3688	Before: {fixtureShort}{v}	Antes de: {fixtureShort}{v}	قبل: {fixtureShort}{v}
+3689	· by the staff	· por el cuerpo técnico	· عبر الجهاز الفني
+3690	Before the end of the season	Antes del final de la temporada	قبل نهاية الموسم
+3691	Four drills	Cuatro pruebas	أربعة تمارين
+3692	{n} drill	{n} prueba	تمرين واحد
+3693	{n} drills	{n} pruebas	{"one":"تمرين واحد","two":"تمرينان","few":"{n} تمارين","other":"{n} تمرينًا"}
+3694	Leave the sessions to the staff	Delegar las sesiones en el cuerpo técnico	تفويض الحصص إلى الجهاز الفني
+3695	Before each match, the staff does the drills you haven’t done, with the players chosen below (by default, the recommended ones): simulated drills, average gain guaranteed.	Antes de cada partido, el cuerpo técnico hace las pruebas que no has hecho, con los jugadores elegidos abajo (por defecto, los recomendados): pruebas simuladas, ganancia media asegurada.	قبل كل مباراة يؤدي الجهاز الفني التمارين التي لم تؤدّها، مع اللاعبين المختارين أدناه (افتراضيًا، الموصى بهم): تمارين محاكاة ومكسب متوسط مضمون.
+3696	The staff can do the sessions in your place before each match, with the recommended players. Playing the drill yourself pays up to ×1.5.	El cuerpo técnico puede hacer las sesiones por ti antes de cada partido, con los jugadores recomendados. Jugar la prueba tú mismo rinde hasta ×1,5.	يمكن للجهاز الفني أداء الحصص بدلًا منك قبل كل مباراة، مع اللاعبين الموصى بهم. وأداء التمرين بنفسك يجلب حتى ×1.5.
+3697	{left}: the staff is handling it	{left}: el cuerpo técnico se encarga	{left}: الجهاز الفني يتولى الأمر
+3698	Four drills before the match	Cuatro pruebas antes del partido	أربعة تمارين قبل المباراة
+3699	{left} to do	{left} por hacer	{left} متبقية
+3700	They will simulate them just before the match. You can still play one yourself: played well, it pays more.	Las simulará justo antes del partido. Aún puedes jugar una tú mismo: bien jugada, rinde más.	سيحاكيها قبل المباراة مباشرة. ولا يزال بإمكانك أداء أحدها بنفسك: إذا أُحسن أداؤه جلب أكثر.
+3701	One drill per line, in 3D, about 25 seconds long. Played well, it pays more than simulated.	Una prueba por línea, en 3D, de unos 25 segundos. Bien jugada, rinde más que simulada.	تمرين واحد لكل خط بالأبعاد الثلاثية، مدته نحو 25 ثانية. وإذا أُحسن أداؤه جلب أكثر من المحاكاة.
+3702	Your players gained	Tus jugadores han ganado	كسب لاعبوك
+3703	in level. Next session after the match.	de nivel. Próxima sesión tras el partido.	في المستوى. الحصة المقبلة بعد المباراة.
+3704	Simulate all	Simularlo todo	محاكاة الكل
+3705	Start the drill	Lanzar la prueba	بدء التمرين
+3706	Start the session	Lanzar la sesión	بدء الحصة
+3707	Progress is permanent and never exceeds the player’s potential; a youngster improves faster than a player in his thirties. A played drill pays from ×<0/> (zero score) to ×<1/> (perfect score) of the simulated gain: a third of the points is enough to do as well. After each match, the players who were not at the session improve a little (group session).	Los progresos son definitivos y nunca superan el potencial del jugador; un joven progresa más rápido que un treintañero. Una prueba jugada rinde de ×<0/> (puntuación nula) a ×<1/> (puntuación perfecta) de la ganancia simulada: basta un tercio de los puntos para igualarla. Tras cada partido, los jugadores que no estuvieron en la sesión progresan un poco (sesión colectiva).	التطور دائم ولا يتجاوز أبدًا إمكانات اللاعب؛ والشاب يتطور أسرع من لاعب في الثلاثينات. ويجلب التمرين المؤدّى من ×<0/> (نتيجة صفر) إلى ×<1/> (نتيجة مثالية) من المكسب المحاكى: ويكفي ثلث النقاط لتحقيق المكسب نفسه. وبعد كل مباراة يتطور قليلًا اللاعبون الذين لم يحضروا الحصة (الحصة الجماعية).
+3708	No <0/> in your squad.	Ningún <0/> en tu plantilla.	لا يوجد <0/> في تشكيلتك.
+3709	Played · {round}%	Jugada · {round} %	مؤدّى · {round}%
+3710	By the staff	Por el cuerpo técnico	عبر الجهاز الفني
+3711	To do	Por hacer	للأداء
+3712	Age <0/> · level <1/> · pot. <2/>	<0/> años · nivel <1/> · pot. <2/>	<0/> عامًا · المستوى <1/> · الإمكانات <2/>
+3713	Change<0/>	Cambiar<0/>	تغيير<0/>
+3714	level <0/> → <1/>	nivel <0/> → <1/>	المستوى <0/> ← <1/>
+3715	Category worked on	Categoría trabajada	الفئة المستهدفة
+3716	Recommended: his level improves fastest there	Recomendada: su nivel progresa más rápido ahí	موصى بها: يتطور فيها مستواه أسرع
+3717	recommended	recomendada	موصى بها
+3718	Drill	Prueba	التمرين
+3719	moves forward with this session, two steps if the drill is very good	avanza con esta sesión, dos pasos si la prueba es muy lograda	يتقدم مع هذه الحصة، وبخطوتين إذا كان التمرين ناجحًا جدًا
+3720	only moves forward in {toLowerCase}	solo avanza en {toLowerCase}	لا يتقدم إلا في {toLowerCase}
+3721	· played	· jugada	· مؤدّى
+3722	Potential reached: no more progress possible	Potencial alcanzado: ya no es posible progresar	بلغ إمكاناته: لا تطور ممكن بعد الآن
+3723	<0/> Play	<0/> Jugar	<0/> أداء
+3724	<0/> programme	Programa <0/>	برنامج <0/>

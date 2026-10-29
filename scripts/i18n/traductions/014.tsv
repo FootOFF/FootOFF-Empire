@@ -1,0 +1,59 @@
+611	Injuries (one to nine fixtures out) and suspensions (straight red: two matches; second yellow or three yellows: one).	Lesiones (de una a nueve fechas de baja) y sanciones (roja directa: dos partidos; segunda amarilla o tres amarillas: uno).	الإصابات (من موعد إلى تسعة مواعيد غياب) والإيقافات (بطاقة حمراء مباشرة: مباراتان؛ إنذار ثانٍ أو ثلاثة إنذارات: مباراة واحدة).
+612	Substitutions at any minute during the live match: the match stops, and line-up, tactics and final prediction can be set; five substitutions per match.	Cambios en cualquier minuto del directo: el partido se detiene y se ajustan alineación, táctica y pronóstico final; cinco cambios por partido.	تبديلات في أي دقيقة أثناء المباراة المباشرة: تتوقف المباراة وتُضبط التشكيلة والتكتيك والتوقع النهائي؛ خمسة تبديلات في كل مباراة.
+613	Reading the game no longer freezes, and an error during a drill offers to simulate it.	Lectura del juego ya no se congela, y un error durante una prueba propone simularla.	لم يعد تمرين قراءة اللعب يتجمد، وأي خطأ أثناء تمرين يقترح محاكاته.
+614	First version	Versión inicial	الإصدار الأول
+615	Club board: TV rights, wages and ticketing to negotiate.	Directiva del club: derechos de TV, salarios y taquilla por negociar.	إدارة النادي: حقوق البث والرواتب والتذاكر للتفاوض.
+616	A seven-step tutorial led by the sporting director, chairman’s objectives every season.	Tutorial en siete pasos guiado por la directora deportiva, objetivos del presidente cada temporada.	دليل تعليمي من سبع خطوات تقوده المديرة الرياضية، وأهداف الرئيس في كل موسم.
+617	A training centre with eight 3D drills, an academy, a negotiated transfer market, the National Cup and the European Cup.	Centro de entrenamiento con ocho pruebas en 3D, cantera, mercado negociado, Copa Nacional y Copa de Europa.	مركز تدريب بثمانية تمارين ثلاثية الأبعاد، وأكاديمية، وسوق انتقالات بالتفاوض، والكأس الوطنية وكأس أوروبا.
+618	County League	Liga Provincial	دوري المقاطعة
+619	Regional League	Liga Regional	الدوري الإقليمي
+620	National League	Liga Nacional	الدوري الوطني
+621	Elite League	Liga Élite	دوري النخبة
+622	Goalkeeper	Portero	حارس مرمى
+623	Defender	Defensa	مدافع
+624	Midfielder	Centrocampista	لاعب وسط
+625	Forward	Delantero	مهاجم
+626	Accuracy	Precisión	الدقة
+627	Sprint and hurdles	Sprint y vallas	العدو والحواجز
+628	Reading the game	Lectura del juego	قراءة اللعب
+629	Reflex saves	Paradas de reflejos	تصديات سريعة
+630	Free kicks	Tiros libres	الركلات الحرة
+631	Penalties	Penaltis	ركلات الجزاء
+632	Crosses	Centros	العرضيات
+633	Counter-attack	Contraataque	الهجمة المرتدة
+634	Stadium	Estadio	الملعب
+635	Training centre	Centro de entrenamiento	مركز التدريب
+636	Academy	Cantera	الأكاديمية
+637	Supporters’ area	Espacio de aficionados	فضاء المشجعين
+638	HQ & partners	Sede y socios	المقر والشركاء
+639	Transfer office	Oficina de traspasos	مكتب الانتقالات
+640	Club board	Directiva del club	إدارة النادي
+641	League Headquarters	Sede de la Liga	مقر الدوري
+642	Your Board leads the talks (level {lvl}): −{v}% on his demands.	Tu Directiva lleva la negociación (nivel {lvl}): −{v} % en sus exigencias.	إدارتك تقود النقاش (المستوى {lvl}): −{v}% من مطالبه.
+643	Your reputation attracts him: he agrees to earn a little less.	Tu notoriedad atrae: acepta ganar un poco menos.	شهرتك تجذبه: يقبل أن يتقاضى أقل قليلًا.
+644	A club still little known: he asks for a little more.	Club todavía poco conocido: pide un poco más.	نادٍ لا يزال قليل الشهرة: يطلب أكثر قليلًا.
+645	{age} years old: he is keen to sign and talks more readily.	{age} años: quiere firmar y negocia de mejor gana.	{age} عامًا: يحرص على التوقيع ويتفاوض بمرونة أكبر.
+646	A young high-potential player: he knows what he’s worth.	Joven con gran potencial: sabe lo que vale.	شاب ذو إمكانات عالية: يعرف قيمته.
+647	Courted by {interest} club: he has other options.	Pretendido por {interest} club: tiene otras opciones.	يغازله نادٍ آخر: لديه خيارات أخرى.
+648	Courted by {interest} clubs: he has other options.	Pretendido por {interest} clubes: tiene otras opciones.	{"one":"يغازله نادٍ آخر: لديه خيارات أخرى.","two":"يغازله ناديان: لديه خيارات أخرى.","few":"تغازله {interest} أندية: لديه خيارات أخرى.","other":"يغازله {interest} ناديًا: لديه خيارات أخرى."}
+649	Final year: he knows he can leave on a free.	Último año: sabe que podrá irse libre.	السنة الأخيرة: يعرف أنه يستطيع الرحيل حرًا.
+650	{left} more years on his contract: he is not in a position of strength.	Le quedan {left} años de contrato: no está en posición de fuerza.	السنوات المتبقية في عقده: {left}. ليس في موقع قوة.
+651	Paid far below his level: he wants a real catch-up.	Cobra mucho menos de lo que vale: quiere una auténtica revalorización.	يتقاضى أقل بكثير من مستواه: يريد تعويضًا حقيقيًا.
+652	{tries} proposal refused: he digs his heels in.	{tries} propuesta rechazada: se cierra en banda.	رُفض اقتراح واحد: أصبح متصلبًا.
+653	{tries} proposals refused: he digs his heels in.	{tries} propuestas rechazadas: se cierra en banda.	{"one":"رُفض اقتراح واحد: أصبح متصلبًا.","two":"رُفض اقتراحان: أصبح متصلبًا.","few":"رُفضت {tries} اقتراحات: أصبح متصلبًا.","other":"رُفض {tries} اقتراحًا: أصبح متصلبًا."}
+654	{n} year	{n} año	سنة واحدة
+655	{n} years	{n} años	{"one":"سنة واحدة","two":"سنتان","few":"{n} سنوات","other":"{n} سنة"}
+656	{y}: the length he wanted.	{y}: la duración que quería.	{y}: المدة التي كان يرغب فيها.
+657	Young and ambitious: he prefers {y}, to raise his value quickly.	Joven y ambicioso: prefiere {y}, para revalorizarse rápido.	شاب وطموح: يفضّل {y} ليرفع قيمته سريعًا.
+658	He wanted {y}: a shorter contract cools him.	Quería {y}: un contrato más corto lo enfría.	كان يريد {y}: العقد الأقصر يفتر حماسه.
+659	{y}: he wanted {y2} instead.	{y}: prefería {y2}.	{y}: كان يفضّل {y2}.
+660	Free agent: the bonus he expected is there.	Jugador libre: la prima que esperaba está ahí.	لاعب حر: المكافأة التي كان ينتظرها موجودة.
+661	Free agent: he expects a bonus of {n}.	Jugador libre: espera una prima de {n}.	لاعب حر: ينتظر مكافأة قدرها {n}.
+662	Bonus of {n}: he accepts a slightly lower wage.	Prima de {n}: acepta un salario algo más bajo.	مكافأة قدرها {n}: يقبل راتبًا أقل قليلًا.
+663	Promotion clause: your club is chasing promotion, he insists on it.	Cláusula de ascenso: tu club lucha por subir y él la exige.	بند الصعود: ناديك ينافس على الصعود، وهو متمسك به.
+664	Promotion clause: he believes in the club’s project.	Cláusula de ascenso: cree en el proyecto del club.	بند الصعود: يؤمن بمشروع النادي.
+665	Your club is chasing promotion: without a clause, he loses out.	Tu club lucha por el ascenso: sin cláusula, sale perdiendo.	ناديك ينافس على الصعود: من دون بند يخسر.
+666	Promotion clauses: {count} wage raised (+€{n} per season in total).	Cláusulas de ascenso: {count} salario aumentado (+{n} € por temporada en total).	بنود الصعود: رُفع راتب واحد (+{n} € في الموسم إجمالًا).
+667	Promotion clauses: {count} wages raised (+€{n} per season in total).	Cláusulas de ascenso: {count} salarios aumentados (+{n} € por temporada en total).	{"one":"بنود الصعود: رُفع راتب واحد (+{n} € في الموسم إجمالًا).","two":"بنود الصعود: رُفع راتبان (+{n} € في الموسم إجمالًا).","few":"بنود الصعود: رُفعت {count} رواتب (+{n} € في الموسم إجمالًا).","other":"بنود الصعود: رُفع {count} راتبًا (+{n} € في الموسم إجمالًا)."}
+668	Relegation: {count} wage brought down to {name} level (−€{n} per season in total).	Descenso: {count} salario ajustado al nivel de la {name} (−{n} € por temporada en total).	الهبوط: خُفّض راتب واحد إلى مستوى {name} (−{n} € في الموسم إجمالًا).
+669	Relegation: {count} wages brought down to {name} level (−€{n} per season in total).	Descenso: {count} salarios ajustados al nivel de la {name} (−{n} € por temporada en total).	{"one":"الهبوط: خُفّض راتب واحد إلى مستوى {name} (−{n} € في الموسم إجمالًا).","two":"الهبوط: خُفّض راتبان إلى مستوى {name} (−{n} € في الموسم إجمالًا).","few":"الهبوط: خُفّضت {count} رواتب إلى مستوى {name} (−{n} € في الموسم إجمالًا).","other":"الهبوط: خُفّض {count} راتبًا إلى مستوى {name} (−{n} € في الموسم إجمالًا)."}

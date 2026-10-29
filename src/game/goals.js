@@ -1,5 +1,6 @@
 import { REP_LEVELS, repLevel } from './reputation';
 import { pushJournal } from './journal';
+import { t } from '../i18n/index';
 
 // Statuts de notoriété (annonce d'un nouveau statut) et statistiques de la saison. Les quatre paliers de la « Grande
 // étape » (jusqu'à la 0.8.10) ont laissé la place au parcours de carrière (journey.js) ; s.goals reste dans les
@@ -31,8 +32,8 @@ export function reputationStatusEvent(s, before) {
       pushJournal(s, {
         season: s.seasonNumber,
         kind: 'club',
-        title: `Nouveau statut : ${lvl.name}`,
-        text: `Avec ${lvl.min} de réputation, ${s.clubName} attire davantage : plus de public, de meilleurs sponsors, des vendeurs plus conciliants.`,
+        title: t('Nouveau statut : {name}', { name: lvl.name }),
+        text: t('Avec {min} de réputation, {clubName} attire davantage : plus de public, de meilleurs sponsors, des vendeurs plus conciliants.', { min: lvl.min, clubName: s.clubName }),
       });
     }
   }

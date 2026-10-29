@@ -7,6 +7,7 @@ import { fmtRating } from './format';
 import { REP_LEVELS, repLevel } from '../game/reputation';
 import { repEffects } from '../game/economy';
 import { clubStars } from '../game/crest';
+import { t, tr } from '../i18n/index';
 
 // Panneau Notoriété (bouton étoile du HUD) : statut du club, ce que la réputation apporte aujourd'hui (comparé à la
 // fondation), les statuts, et comment la faire grandir. Rien n'y est verrouillé : la réputation attire, elle ne
@@ -23,25 +24,25 @@ export function ReputationPanel({ state, onClose }) {
   const fans = state.buildings.fans || 0;
   const mult = 1 + fans * 0.1;
   const effects = [
-    [fx.crowd, 'Public au stade', 'Les gens se déplacent pour un club qui compte.'],
-    [fx.shop, 'Boutique', 'Maillots et écharpes se vendent mieux.'],
-    [fx.sponsors, 'Sponsors', 'Contrats de sponsoring mieux payés chaque saison.'],
-    [fx.mercato, 'Mercato', flat(fx.mercato) ? 'Ni avantage ni handicap pour l’instant : les vendeurs écouteront mieux un club réputé.'
-      : fx.mercato > 0 ? 'Les vendeurs écoutent plus volontiers un club réputé : prix plus bas.' : 'Club encore peu connu : les vendeurs se montrent un peu plus durs.', true],
+    [fx.crowd, t('Public au stade'), t('Les gens se déplacent pour un club qui compte.')],
+    [fx.shop, t('Boutique'), t('Maillots et écharpes se vendent mieux.')],
+    [fx.sponsors, t('Sponsors'), t('Contrats de sponsoring mieux payés chaque saison.')],
+    [fx.mercato, t('Mercato'), flat(fx.mercato) ? t('Ni avantage ni handicap pour l’instant : les vendeurs écouteront mieux un club réputé.')
+      : fx.mercato > 0 ? t('Les vendeurs écoutent plus volontiers un club réputé : prix plus bas.') : t('Club encore peu connu : les vendeurs se montrent un peu plus durs.'), true],
   ];
   return (
-    <Panel id="reputation" title="Notoriété du club" eyebrow={`Réputation ${fmtRating(rep)}`} onClose={onClose}>
+    <Panel id="reputation" title={t('Notoriété du club')} eyebrow={t('Réputation {fmtRating}', { fmtRating: fmtRating(rep) })} onClose={onClose}>
       <section className="rp-head">
         <ClubCrest crest={state.crest} name={state.clubName} className="rp-crest" full stars={clubStars(state)} />
         <div className="rp-score">
           <span className="rp-value"><IconStar /> {fmtRating(rep)}</span>
           <strong>{rl.level.name}</strong>
           <span className="rp-bar"><i style={{ width: `${rl.progress * 100}%` }} /></span>
-          <span className="rp-next">{rl.next ? `Prochain statut : ${rl.next.name}, à ${rl.next.min} de réputation` : 'Le statut le plus haut : ton club est une légende.'}</span>
+          <span className="rp-next">{rl.next ? t('Prochain statut : {name}, à {min} de réputation', { name: rl.next.name, min: rl.next.min }) : t('Le statut le plus haut : ton club est une légende.')}</span>
         </div>
       </section>
 
-      <SectionHead label="Ce qu’elle t’apporte" aside="par rapport à la fondation" />
+      <SectionHead label={t('Ce qu’elle t’apporte')} aside={t('par rapport à la fondation')} />
       <ul className="rp-effects">
         {effects.map(([v, label, hint, price]) => (
           <li key={label}>
@@ -51,7 +52,7 @@ export function ReputationPanel({ state, onClose }) {
         ))}
       </ul>
 
-      <SectionHead label="Les statuts du club" />
+      <SectionHead label={t('Les statuts du club')} />
       <ol className="rp-levels">
         {REP_LEVELS.map((l, i) => (
           <li key={l.name} className={i < rl.index ? 'done' : i === rl.index ? 'on' : ''}>
@@ -60,11 +61,11 @@ export function ReputationPanel({ state, onClose }) {
         ))}
       </ol>
 
-      <SectionHead label="La faire grandir" />
+      <SectionHead label={t('La faire grandir')} />
       <ul className="rp-how">
-        <li><strong>Chaque match</strong><span>Victoire +{fmtRating(mult)} · nul +{fmtRating(0.2 * mult)} · défaite −{fmtRating(0.6 * mult)}{fans ? ` (espace supporters niveau ${fans} : +${fans * 10} %)` : ' (l’espace supporters les augmente)'}. En coupe ×1,2, en Coupe d’Europe ×1,6.</span></li>
-        <li><strong>Fin de saison</strong><span>Montée +4 · titre de champion +3 · descente −3.</span></li>
-        <li><strong>Trophées</strong><span>Coupe nationale +3 · Coupe d’Europe +6.</span></li>
+        <li><strong>{t('Chaque match')}</strong><span>{tr('Victoire +<0/> · nul +<1/> · défaite −<2/><3/>. En coupe ×1,2, en Coupe d’Europe ×1,6.', [fmtRating(mult), fmtRating(0.2 * mult), fmtRating(0.6 * mult), fans ? t(' (espace supporters niveau {fans} : +{v} %)', { fans, v: fans * 10 }) : t(' (l’espace supporters les augmente)')])}</span></li>
+        <li><strong>{t('Fin de saison')}</strong><span>{t('Montée +4 · titre de champion +3 · descente −3.')}</span></li>
+        <li><strong>{t('Trophées')}</strong><span>{t('Coupe nationale +3 · Coupe d’Europe +6.')}</span></li>
       </ul>
     </Panel>
   );

@@ -1,0 +1,138 @@
+## src/App.jsx
+compare 270: Escape
+compare 329: button, a, [role="button"], input, label
+
+## src/game/leagueNet.js
+compare 79: Ordinateur
+
+## src/game/save.js
+compare 193: des milieus
+compare 193: des milieux
+compare 195: des milieux
+compare 270: Elite
+compare 271: Elite
+
+## src/ui/Empire3D.jsx
+compare 44: [Empire3D] emprises qui se chevauchent :
+compare 371: [Empire3D] GLB   indisponible, repli procédural.
+compare 689: [Empire3D] site GLB indisponible, esplanade procédurale cons
+compare 845: (resolution:  dppx)
+
+## src/ui/academy.jsx
+compare 66: .panel [data-id=" "]
+compare 299: Enter
+compare 413: Enter
+compare 607: (prefers-reduced-motion: reduce)
+
+## src/ui/calendar.jsx
+compare 226: (prefers-reduced-motion: reduce)
+
+## src/ui/confirm.jsx
+compare 29: Escape
+compare 50: Enter
+
+## src/ui/console.jsx
+compare 48: ArrowDown
+compare 49: ArrowUp
+compare 50: Escape
+
+## src/ui/crash.jsx
+compare 57: [jeu] erreur de rendu
+
+## src/ui/drill.jsx
+compare 42: [drill] erreur
+compare 89: [drill] 3D indisponible
+compare 103: [drill] épreuve indisponible
+compare 167: Escape
+compare 177: Enter
+compare 179: Enter
+
+## src/ui/format.js
+compare 53: les deux
+
+## src/ui/fullscreen.js
+compare 15: (hover: hover) and (pointer: fine)
+compare 38: Escape
+
+## src/ui/gestures.js
+compare 59: input, select, textarea, [data-noswipe]
+
+## src/ui/glass.jsx
+compare 28: [data-key=" "]
+
+## src/ui/hud.jsx
+compare 364: Escape
+
+## src/ui/input.js
+compare 49: ArrowUp
+compare 49: ArrowDown
+compare 50: ArrowLeft
+compare 50: ArrowRight
+
+## src/ui/inspector.jsx
+compare 131: Escape
+compare 141: ArrowLeft
+compare 141: ArrowRight
+compare 145: .lvstrip .lv:nth-child( )
+compare 149: ArrowUp
+compare 158: ArrowDown
+compare 158: .bw-foot .hold, .ins-foot .hold
+compare 272: Escape
+
+## src/ui/league.jsx
+compare 71: ArrowLeft
+compare 72: ArrowRight
+
+## src/ui/lineup.jsx
+compare 46: .lu-rate, .lu-note
+compare 48: :scope > .lu-name, :scope > .lu-fit
+compare 312: Enter
+
+## src/ui/match.jsx
+compare 83:   and (max-width: 900px)
+compare 138: Escape
+compare 237: Escape
+
+## src/ui/mercato.jsx
+compare 195: Enter
+compare 315: Escape
+compare 1533: Escape
+
+## src/ui/news.jsx
+compare 20: Escape
+
+## src/ui/panels.jsx
+compare 75: Escape
+
+## src/ui/postmatch.jsx
+compare 99: Enter
+compare 100: Escape
+
+## src/ui/roster.jsx
+compare 23: Escape
+
+## src/ui/rules.jsx
+compare 84: Escape
+
+## src/ui/squad.jsx
+compare 155: Escape
+compare 347: Escape
+compare 501: Enter
+compare 639: (prefers-reduced-motion: reduce)
+
+## src/ui/stats.jsx
+compare 695: .panel.lg .panel-body
+
+## src/ui/tips.jsx
+compare 18: (hover: hover) and (pointer: fine)
+
+## src/ui/title.jsx
+compare 171: ArrowLeft
+compare 172: ArrowRight
+
+## src/ui/trophyroom.jsx
+compare 216: .panel.lg .panel-body
+
+## src/ui/updates.js
+compare 25: script[type="module"][src*="assets/"], link[rel="stylesheet"
+compare 49: [maj] service worker refusé

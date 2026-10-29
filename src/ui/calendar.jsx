@@ -15,6 +15,9 @@ import { fmtMoney, fmtNum, fmtPrice, fmtRating, homeFirst, roundPercents, scoreT
 import { useSwipe } from './gestures';
 import { uiSound } from './uisound';
 import { clubStars } from '../game/crest';
+// nombres au format de la langue (1 234)
+const plural = (n, one, many) => pluralRaw(n, one, many, fmtNum(n));
+import { plural as pluralRaw, t, tn, tr } from '../i18n/index';
 
 // Calendrier de la saison (panneau Saison). Trois parties :
 // - la frise : toutes les dates dans l'ordre où elles se jouent (couleur de la compétition en tête : championnat or,
@@ -24,26 +27,25 @@ import { clubStars } from '../game/crest';
 // - le bilan de la saison : victoires, nuls, défaites, forme, et le parcours de chaque compétition.
 // Choisir une date : un clic dans la frise ou dans le bilan, les flèches du clavier, ou un geste sur l'affiche.
 
-const COMP = { league: 'Championnat', cup: 'Coupe nationale', c1: 'Coupe d’Europe' };
+const COMP = { league: t('Championnat'), cup: t('Coupe nationale'), c1: t('Coupe d’Europe') };
 const COMP_ICON = { cup: IconTrophy, c1: IconStar };
-const LETTER = { win: 'V', draw: 'N', loss: 'D' };
-const NEXT_STAGE = ['les quarts', 'la demi-finale', 'la finale']; // après un tour gagné
-const AFTER = ['', 'les huitièmes de finale', 'les quarts de finale', 'la demi-finale']; // tirage du tour suivant
-const plural = (n, one, many) => `${fmtNum(n)} ${n > 1 ? many : one}`;
+const LETTER = { win: t('V', undefined, 'résultat'), draw: t('N', undefined, 'résultat'), loss: t('D', undefined, 'résultat') };
+const NEXT_STAGE = [t('les quarts'), t('la demi-finale'), t('la finale')]; // après un tour gagné
+const AFTER = ['', t('les huitièmes de finale'), t('les quarts de finale'), t('la demi-finale')]; // tirage du tour suivant
 const rgbOf = (hex) => [(hex >> 16) & 255, (hex >> 8) & 255, hex & 255].join(', ');
 // « J4 », « J4 ext » chez l'adversaire (Élite), « Quarts »
-const tagOf = (f) => (f.comp === 'league' ? <>J{f.round}{f.away && <small className="sc-away">ext</small>}</> : STAGES_SHORT[f.stage]);
-const roundOf = (f, total) => (f.comp === 'league' ? `Journée ${f.round} / ${total}` : STAGES[f.stage]);
-const nameOf = (f, r) => `${COMP[f.comp]} · ${f.comp === 'league' ? `journée ${f.round}` : STAGES[f.stage].toLowerCase()}`
-  + `${f.away ? ' · à l’extérieur' : ''}${f.opp?.name ? ` · ${f.opp.name}` : ''}${r ? ` · ${scoreText({ ...r, away: f.away })}` : ''}`;
+const tagOf = (f) => (f.comp === 'league' ? <>{t('J')}{f.round}{f.away && <small className="sc-away">{t('ext')}</small>}</> : STAGES_SHORT[f.stage]);
+const roundOf = (f, total) => (f.comp === 'league' ? t('Journée {round} / {total}', { round: f.round, total }) : STAGES[f.stage]);
+const nameOf = (f, r) => `${COMP[f.comp]} · ${f.comp === 'league' ? t('journée {round}', { round: f.round }) : STAGES[f.stage].toLowerCase()}`
+  + `${f.away ? t(' · à l’extérieur') : ''}${f.opp?.name ? ` · ${f.opp.name}` : ''}${r ? ` · ${scoreText({ ...r, away: f.away })}` : ''}`;
 const minus = (v) => `−${fmtRating(Math.abs(v))}`;
 
 // Issue d'une date jouée : en championnat Victoire / Match nul / Défaite ; en coupe Qualifié / Éliminé / Vainqueur.
 function verdictOf(f, r) {
   const o = outcomeOf(r);
-  if (f.comp === 'league') return { o, text: o === 'win' ? 'Victoire' : o === 'loss' ? 'Défaite' : 'Match nul' };
-  if (o === 'win') return { o, text: f.stage === 3 ? 'Vainqueur' : 'Qualifié' };
-  return { o, text: 'Éliminé' };
+  if (f.comp === 'league') return { o, text: o === 'win' ? t('Victoire') : o === 'loss' ? t('Défaite') : t('Match nul') };
+  if (o === 'win') return { o, text: f.stage === 3 ? t('Vainqueur') : t('Qualifié') };
+  return { o, text: t('Éliminé') };
 }
 
 export function SeasonCalendar({ state, onOpenMatch, onPlay, initialSel = null }) {
@@ -87,11 +89,11 @@ function Rail({ state, fixtures, sel, onPick }) {
   const keyed = useRef(false); // choix au clavier : le focus suit la date choisie
   // la date choisie reste au centre de la frise (téléphone, ou saison à quinze dates)
   useEffect(() => {
-    const t = track.current;
-    const el = t?.querySelector(`[data-i="${sel}"]`);
+    const row = track.current;
+    const el = row?.querySelector(`[data-i="${sel}"]`);
     if (!el) return;
-    const left = el.offsetLeft - (t.clientWidth - el.offsetWidth) / 2;
-    t.scrollTo({ left: Math.max(0, left), behavior: first.current ? 'auto' : 'smooth' });
+    const left = el.offsetLeft - (row.clientWidth - el.offsetWidth) / 2;
+    row.scrollTo({ left: Math.max(0, left), behavior: first.current ? 'auto' : 'smooth' });
     first.current = false;
     if (keyed.current) { keyed.current = false; el.focus({ preventScroll: true }); }
   }, [sel]);
@@ -113,13 +115,13 @@ function Rail({ state, fixtures, sel, onPick }) {
     <section className="sc-rail">
       <div className="sc-rail-head">
         <div className="sc-rail-title">
-          <Eyebrow>Saison {state.seasonNumber}</Eyebrow>
-          <strong>{over ? 'Saison terminée' : `${plural(done, 'date jouée', 'dates jouées')} sur ${games.length}`}</strong>
+          <Eyebrow>{tr('Saison <0/>', [state.seasonNumber])}</Eyebrow>
+          <strong>{over ? t('Saison terminée') : t('{plural} sur {length}', { plural: plural(done, 'date jouée', 'dates jouées'), length: games.length })}</strong>
         </div>
         <ul className="sc-legend">{comps.map((k) => <li key={k} className={k}>{COMP[k]}</li>)}</ul>
       </div>
       <div className="sc-progress" aria-hidden="true"><i style={{ width: `${games.length ? (done / games.length) * 100 : 0}%` }} /></div>
-      <div ref={track} className="sc-track" role="tablist" aria-label="Dates de la saison" onKeyDown={onKey}>
+      <div ref={track} className="sc-track" role="tablist" aria-label={t('Dates de la saison')} onKeyDown={onKey}>
         {fixtures.map((f, k) => <DateChip key={f.index} f={f} k={k} on={f.index === sel} onPick={onPick} />)}
       </div>
     </section>
@@ -135,9 +137,9 @@ function DateChip({ f, k, on, onPick }) {
   const Icon = COMP_ICON[f.comp];
   const name = nameOf(f, r);
   const res = r ? <em className={`sc-res o-${o}`}>{LETTER[o]} {scoreText({ ...r, away: f.away })}</em>
-    : f.status === 'next' ? <em className="sc-res next">À suivre</em>
-      : f.status === 'upcoming' ? <em className="sc-res soon">à venir</em>
-        : f.status === 'tbd' ? <em className="sc-res soon">tirage</em> : null;
+    : f.status === 'next' ? <em className="sc-res next">{t('À suivre')}</em>
+      : f.status === 'upcoming' ? <em className="sc-res soon">{t('à venir')}</em>
+        : f.status === 'tbd' ? <em className="sc-res soon">{t('tirage')}</em> : null;
   return (
     <button
       type="button"
@@ -155,7 +157,7 @@ function DateChip({ f, k, on, onPick }) {
       <span className="sc-date-top" aria-hidden="true">
         {f.opp ? <Crest name={f.opp.name} className="sc-date-crest" /> : f.status === 'out' ? <IconLock className="sc-date-lock" /> : <i className="q">?</i>}
       </span>
-      <span className="sc-date-opp" aria-hidden="true"><span>{f.opp?.name || (f.status === 'out' ? 'Éliminé' : 'À tirer')}</span></span>
+      <span className="sc-date-opp" aria-hidden="true"><span>{f.opp?.name || (f.status === 'out' ? t('Éliminé') : t('À tirer'))}</span></span>
       <span className="sc-date-foot" aria-hidden="true">{res}</span>
     </button>
   );
@@ -180,8 +182,8 @@ function Odds({ odds, qualify }) {
   return (
     <section className="sc-odds">
       <div className="sc-odds-head">
-        <span>Pronostic avec ton onze actuel</span>
-        {qualify != null && <span>Qualification <b>{Math.round(qualify * 100)} %</b></span>}
+        <span>{t('Pronostic avec ton onze actuel')}</span>
+        {qualify != null && <span>{tr('Qualification <0/>', [<b>{Math.round(qualify * 100)} %</b>])}</span>}
       </div>
       <div className="sc-odds-bar" aria-hidden="true">
         <i className="w" style={{ flexGrow: odds.win }} />
@@ -189,9 +191,9 @@ function Odds({ odds, qualify }) {
         <i className="l" style={{ flexGrow: odds.loss }} />
       </div>
       <div className="sc-odds-legend">
-        <span className="w"><b>{w.label}</b>victoire</span>
-        <span className="d"><b>{d.label}</b>nul</span>
-        <span className="l"><b>{l.label}</b>défaite</span>
+        <span className="w">{tr('<0/>victoire', [<b>{w.label}</b>])}</span>
+        <span className="d">{tr('<0/>nul', [<b>{d.label}</b>])}</span>
+        <span className="l">{tr('<0/>défaite', [<b>{l.label}</b>])}</span>
       </div>
     </section>
   );
@@ -207,10 +209,10 @@ function scorersOf(m) {
 // Rapport de force d'une date à venir : écart entre notre onze et l'adversaire.
 function edgeOf(ours, theirs) {
   const e = ours - theirs;
-  if (Math.abs(e) < 0.75) return { text: 'Match équilibré', sub: `écart de ${fmtRating(Math.abs(e))}`, tone: '' };
+  if (Math.abs(e) < 0.75) return { text: t('Match équilibré'), sub: t('écart de {fmtRating}', { fmtRating: fmtRating(Math.abs(e)) }), tone: '' };
   return e > 0
-    ? { text: 'Tu es favori', sub: `+${fmtRating(e)} de niveau`, tone: 'good' }
-    : { text: 'Adversaire favori', sub: `${minus(e)} de niveau`, tone: 'bad' };
+    ? { text: t('Tu es favori'), sub: t('+{fmtRating} de niveau', { fmtRating: fmtRating(e) }), tone: 'good' }
+    : { text: t('Adversaire favori'), sub: t('{minus} de niveau', { minus: minus(e) }), tone: 'bad' };
 }
 
 function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
@@ -236,12 +238,12 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
   const ours = m?.myRating ?? (future ? lineupRating(state.players, state.lineup, state.formation) : null);
   const theirs = m?.oppStrength || opp?.strength || null;
   const oppMeta = [
-    theirs ? `Niveau ${fmtRating(theirs)}` : null,
+    theirs ? t('Niveau {fmtRating}', { fmtRating: fmtRating(theirs) }) : null,
     f.comp === 'league' ? (rank ? `${ordinal(rank)} · ${plural(table[rank - 1].pts, 'point', 'points')}` : null)
-      : opp?.budget ? `Budget ${fmtMoney(opp.budget)}` : opp?.division || null,
+      : opp?.budget ? t('Budget {budget}', { budget: fmtMoney(opp.budget) }) : opp?.division || null,
   ].filter(Boolean).join(' · ');
   const Icon = COMP_ICON[f.comp];
-  const state0 = v ? v.text : { next: 'Prochain match', upcoming: 'À venir', tbd: 'Tirage au sort', out: 'Non disputé' }[f.status] || 'Joué';
+  const state0 = v ? v.text : { next: t('Prochain match'), upcoming: t('À venir'), tbd: t('Tirage au sort'), out: t('Non disputé') }[f.status] || t('Joué');
   const prize = f.comp !== 'league' ? cupPrize(f.comp, f.stage, state.divisionIndex) : 0;
   // en Élite, une journée sur deux se joue chez l'adversaire : pas de billetterie, les droits TV seulement, et
   // l'avantage du terrain passe de l'autre côté (pronostic compris)
@@ -262,53 +264,53 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
     const full = m.capacity && m.attendance >= m.capacity;
     body = (
       <div className="sc-facts">
-        <Fact label={m.scorers?.length > 1 ? 'Buteurs' : 'Buteur'} wide>{m.scorers?.length ? scorersOf(m) : 'Aucun but marqué'}</Fact>
-        {star && <Fact label="Homme du match" sub={`note ${fmtRating(star.rating)}`} tone="gold">{star.name}</Fact>}
+        <Fact label={tn(m.scorers?.length, 'Buteur', 'Buteurs', {}, m.scorers?.length > 1)} wide>{m.scorers?.length ? scorersOf(m) : t('Aucun but marqué')}</Fact>
+        {star && <Fact label={t('Homme du match')} sub={t('note {fmtRating}', { fmtRating: fmtRating(star.rating) })} tone="gold">{star.name}</Fact>}
         {f.away
-          ? <Fact label="Lieu" sub="droits TV seulement">À l’extérieur</Fact>
-          : <Fact label="Affluence" sub={full ? 'stade plein' : m.capacity ? `sur ${fmtNum(m.capacity)} places` : null}>{fmtNum(m.attendance || 0)}</Fact>}
-        <Fact label="Recette">{fmtMoney(m.revenue || 0)}</Fact>
-        <Fact label="Dispositif" sub={TACTICS[m.tactic]?.name}>{formationOf(m.formation).name}</Fact>
-        {played && !f.away && <Fact label="Billets" sub={`formule ${played.name}`}>{m.ticketPrice ? fmtPrice(m.ticketPrice) : played.name}</Fact>}
+          ? <Fact label={t('Lieu')} sub={t('droits TV seulement')}>{t('À l’extérieur')}</Fact>
+          : <Fact label={t('Affluence')} sub={full ? t('stade plein') : m.capacity ? t('sur {capacity} places', { capacity: fmtNum(m.capacity) }) : null}>{fmtNum(m.attendance || 0)}</Fact>}
+        <Fact label={t('Recette')}>{fmtMoney(m.revenue || 0)}</Fact>
+        <Fact label={t('Dispositif')} sub={TACTICS[m.tactic]?.name}>{formationOf(m.formation).name}</Fact>
+        {played && !f.away && <Fact label={t('Billets')} sub={t('formule {name}', { name: played.name })}>{m.ticketPrice ? fmtPrice(m.ticketPrice) : played.name}</Fact>}
       </div>
     );
   } else if (r) {
-    body = <p className="sc-note">Match joué avant que le club n’archive ses fiches de match : seul le score est connu.</p>;
+    body = <p className="sc-note">{t('Match joué avant que le club n’archive ses fiches de match : seul le score est connu.')}</p>;
   } else if (future && opp) {
     body = (
       <>
         {odds && <Odds odds={odds} qualify={qualify} />}
         <div className="sc-facts">
-          {edge && <Fact label="Rapport de force" sub={edge.sub} tone={edge.tone}>{edge.text}</Fact>}
+          {edge && <Fact label={t('Rapport de force')} sub={edge.sub} tone={edge.tone}>{edge.text}</Fact>}
           {f.away ? (
             <>
-              <Fact label="Lieu" sub="pas de billetterie chez l’adversaire">À l’extérieur</Fact>
-              <Fact label="Droits TV attendus">{fmtMoney(gate.revenue)}</Fact>
+              <Fact label={t('Lieu')} sub={t('pas de billetterie chez l’adversaire')}>{t('À l’extérieur')}</Fact>
+              <Fact label={t('Droits TV attendus')}>{fmtMoney(gate.revenue)}</Fact>
             </>
           ) : (
             <>
-              {gate && <Fact label="Affluence attendue" sub={gate.attendance >= gate.capacity ? 'stade plein' : `sur ${fmtNum(gate.capacity)} places`}>{fmtNum(gate.attendance)}</Fact>}
-              {gate && <Fact label="Recette attendue">{fmtMoney(gate.revenue)}</Fact>}
-              <Fact label="Billets" sub={`formule ${policy.name}`}>{fmtPrice(ticketPrice(state, f.comp))}</Fact>
+              {gate && <Fact label={t('Affluence attendue')} sub={gate.attendance >= gate.capacity ? t('stade plein') : t('sur {capacity} places', { capacity: fmtNum(gate.capacity) })}>{fmtNum(gate.attendance)}</Fact>}
+              {gate && <Fact label={t('Recette attendue')}>{fmtMoney(gate.revenue)}</Fact>}
+              <Fact label={t('Billets')} sub={t('formule {name}', { name: policy.name })}>{fmtPrice(ticketPrice(state, f.comp))}</Fact>
             </>
           )}
-          {prize > 0 && <Fact label={f.stage === 3 ? 'Prime du vainqueur' : 'Prime si qualifié'} tone="gold">{fmtMoney(prize)}</Fact>}
+          {prize > 0 && <Fact label={f.stage === 3 ? t('Prime du vainqueur') : t('Prime si qualifié')} tone="gold">{fmtMoney(prize)}</Fact>}
         </div>
       </>
     );
   } else if (f.status === 'tbd') {
     body = (
       <>
-        <p className="sc-note">L’adversaire sera tiré au sort après {AFTER[f.stage] || 'le tour précédent'}.</p>
-        {prize > 0 && <div className="sc-facts"><Fact label={f.stage === 3 ? 'Prime du vainqueur' : 'Prime si qualifié'} tone="gold">{fmtMoney(prize)}</Fact></div>}
+        <p className="sc-note">{tr('L’adversaire sera tiré au sort après <0/>.', [AFTER[f.stage] || t('le tour précédent')])}</p>
+        {prize > 0 && <div className="sc-facts"><Fact label={f.stage === 3 ? t('Prime du vainqueur') : t('Prime si qualifié')} tone="gold">{fmtMoney(prize)}</Fact></div>}
       </>
     );
   } else if (f.status === 'out') {
     body = (
       <p className="sc-note">
         {lost
-          ? `Éliminé en ${STAGES[lost.stage].toLowerCase()} par ${lost.opp} (${lost.gf}–${lost.ga}${lost.pens ? `, t.a.b. ${lost.pens[0]}–${lost.pens[1]}` : ''}) : ce tour ne sera pas disputé.`
-          : 'Ce tour ne sera pas disputé.'}
+          ? t('Éliminé en {toLowerCase} par {opp} ({gf}–{ga}{v}) : ce tour ne sera pas disputé.', { toLowerCase: STAGES[lost.stage].toLowerCase(), opp: lost.opp, gf: lost.gf, ga: lost.ga, v: lost.pens ? `, t.a.b. ${lost.pens[0]}–${lost.pens[1]}` : '' })
+          : t('Ce tour ne sera pas disputé.')}
       </p>
     );
   }
@@ -318,13 +320,13 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
     <div className="sc-team us">
       <span className="sc-slot"><ClubCrest crest={state.crest} name={state.clubName} className="sc-crest" full stars={clubStars(state)} /></span>
       <strong>{state.clubName}</strong>
-      {ours != null && <span>Niveau {fmtRating(ours)}</span>}
+      {ours != null && <span>{tr('Niveau <0/>', [fmtRating(ours)])}</span>}
     </div>
   );
   const themEl = (
     <div className="sc-team them">
       <span className="sc-slot">{opp ? <Crest name={opp.name} className="sc-crest" full /> : <span className="sc-crest-q" aria-hidden="true">{f.status === 'out' ? '—' : '?'}</span>}</span>
-      <strong>{opp?.name || (f.status === 'out' ? 'Aucun adversaire' : 'Adversaire à tirer')}</strong>
+      <strong>{opp?.name || (f.status === 'out' ? t('Aucun adversaire') : t('Adversaire à tirer'))}</strong>
       {oppMeta && <span>{oppMeta}</span>}
     </div>
   );
@@ -336,16 +338,16 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
       aria-label={nameOf(f, r)}
     >
       <header className="sc-top">
-        <span className="sc-comp">{Icon && <Icon aria-hidden="true" />}{COMP[f.comp]}<em>{roundOf(f, leagueLength(state))}{f.away ? ' · Extérieur' : ''}</em></span>
+        <span className="sc-comp">{Icon && <Icon aria-hidden="true" />}{COMP[f.comp]}<em>{roundOf(f, leagueLength(state))}{f.away ? t(' · Extérieur') : ''}</em></span>
       </header>
 
       <div className={`sc-versus ${f.away ? 'ext' : ''}`}>
         {f.away ? themEl : usEl}
         <div className="sc-mid">
-          <div className="sc-slot sc-mid-main">{r ? <div className="sc-score" aria-label={homeFirst({ ...r, away: f.away }).join(' à ')}>{homeFirst({ ...r, away: f.away }).map((g, i) => <React.Fragment key={i}>{i ? <i>–</i> : null}<b>{g}</b></React.Fragment>)}</div> : <span className="sc-vs">VS</span>}</div>
+          <div className="sc-slot sc-mid-main">{r ? <div className="sc-score" aria-label={homeFirst({ ...r, away: f.away }).join(' à ')}>{homeFirst({ ...r, away: f.away }).map((g, i) => <React.Fragment key={i}>{i ? <i>–</i> : null}<b>{g}</b></React.Fragment>)}</div> : <span className="sc-vs">{t('VS')}</span>}</div>
           <span className={`sc-state ${v ? v.o : f.status}`}>{state0}</span>
-          {r?.pens && <span className="sc-pens">t.a.b. {r.pens[0]}–{r.pens[1]}</span>}
-          {r && f.comp !== 'league' && v.o === 'win' && f.stage < 3 && <span className="sc-pens">en route pour {NEXT_STAGE[f.stage]}</span>}
+          {r?.pens && <span className="sc-pens">{t('t.a.b.')} {r.pens[0]}–{r.pens[1]}</span>}
+          {r && f.comp !== 'league' && v.o === 'win' && f.stage < 3 && <span className="sc-pens">{tr('en route pour <0/>', [NEXT_STAGE[f.stage]])}</span>}
         </div>
         {f.away ? usEl : themEl}
       </div>
@@ -353,10 +355,10 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
       {body}
 
       {f.status === 'next' && onPlay && (
-        <div className="sc-actions"><button type="button" className="btn btn-xl" onClick={onPlay}><IconPlay /> Jouer le match</button></div>
+        <div className="sc-actions"><button type="button" className="btn btn-xl" onClick={onPlay}>{tr('<0/> Jouer le match', [<IconPlay />])}</button></div>
       )}
       {m && onOpenMatch && (
-        <div className="sc-actions"><button type="button" className="btn ghost" onClick={() => onOpenMatch(m)}>Voir le Stats Pass <IconChevron /></button></div>
+        <div className="sc-actions"><button type="button" className="btn ghost" onClick={() => onOpenMatch(m)}>{tr('Voir le Stats Pass <0/>', [<IconChevron />])}</button></div>
       )}
     </article>
   );
@@ -382,16 +384,16 @@ function SeasonSide({ state, fixtures, sel, onPick }) {
   const league = fixtures.filter((f) => f.comp === 'league');
   const div = state.divisionIndex;
   const aim = div < DIVISIONS.length - 1
-    ? `Les deux premiers montent en ${DIVISIONS[div + 1].name}${div > 0 ? ', les deux derniers descendent' : ''}.`
-    : 'Les deux premiers jouent la Coupe d’Europe la saison prochaine, les deux derniers descendent.';
+    ? t('Les deux premiers montent en {name}{v}.', { name: DIVISIONS[div + 1].name, v: div > 0 ? t(', les deux derniers descendent') : '' })
+    : t('Les deux premiers jouent la Coupe d’Europe la saison prochaine, les deux derniers descendent.');
   return (
-    <aside className="sc-side" aria-label="Bilan de la saison">
+    <aside className="sc-side" aria-label={t('Bilan de la saison')}>
       <section className="sc-block">
-        <div className="sc-block-head"><Eyebrow>Bilan</Eyebrow><span>{plural(played.length, 'match joué', 'matchs joués')}</span></div>
+        <div className="sc-block-head"><Eyebrow>{t('Bilan')}</Eyebrow><span>{plural(played.length, 'match joué', 'matchs joués')}</span></div>
         <div className="sc-wdl">
-          <div className="win"><b>{tally.win}</b><span>{tally.win > 1 ? 'victoires' : 'victoire'}</span></div>
-          <div className="draw"><b>{tally.draw}</b><span>{tally.draw > 1 ? 'nuls' : 'nul'}</span></div>
-          <div className="loss"><b>{tally.loss}</b><span>{tally.loss > 1 ? 'défaites' : 'défaite'}</span></div>
+          <div className="win"><b>{tally.win}</b><span>{tn(tally.win, 'victoire', 'victoires', {}, tally.win > 1)}</span></div>
+          <div className="draw"><b>{tally.draw}</b><span>{tn(tally.draw, 'nul', 'nuls', {}, tally.draw > 1)}</span></div>
+          <div className="loss"><b>{tally.loss}</b><span>{tn(tally.loss, 'défaite', 'défaites', {}, tally.loss > 1)}</span></div>
         </div>
         {played.length > 0 && (
           <div className="sc-wdl-bar" aria-hidden="true">
@@ -400,12 +402,12 @@ function SeasonSide({ state, fixtures, sel, onPick }) {
             <i className="loss" style={{ flexGrow: tally.loss }} />
           </div>
         )}
-        <p className="sc-goals"><b>{gf}</b> {gf > 1 ? 'buts marqués' : 'but marqué'} · <b>{ga}</b> {ga > 1 ? 'encaissés' : 'encaissé'}</p>
+        <p className="sc-goals"><b>{gf}</b> {tn(gf, 'but marqué', 'buts marqués', {}, gf > 1)} · <b>{ga}</b> {tn(ga, 'encaissé', 'encaissés', {}, ga > 1)}</p>
       </section>
 
       {form.length > 0 && (
         <section className="sc-block">
-          <div className="sc-block-head"><Eyebrow>Forme</Eyebrow><span>{form.length > 1 ? `${form.length} derniers matchs` : 'dernier match'}</span></div>
+          <div className="sc-block-head"><Eyebrow>{t('Forme')}</Eyebrow><span>{tn(form.length, 'dernier match', '{length} derniers matchs', { length: form.length }, form.length > 1)}</span></div>
           <ol className="sc-form">
             {form.map((f) => {
               const r = f.match || f.result;
@@ -421,7 +423,7 @@ function SeasonSide({ state, fixtures, sel, onPick }) {
       )}
 
       <section className="sc-block league">
-        <div className="sc-block-head"><Eyebrow>Championnat</Eyebrow><span>{ordinal(pos)} · {plural(me.pts, 'point', 'points')}</span></div>
+        <div className="sc-block-head"><Eyebrow>{t('Championnat')}</Eyebrow><span>{ordinal(pos)} · {plural(me.pts, 'point', 'points')}</span></div>
         <ol className="sc-league">
           {league.map((f) => {
             const r = f.match || f.result;
@@ -429,7 +431,7 @@ function SeasonSide({ state, fixtures, sel, onPick }) {
             return (
               <li key={f.index}>
                 <button type="button" className={`${f.status} ${o ? `o-${o}` : ''} ${f.index === sel ? 'on' : ''}`} onClick={() => onPick(f.index)} title={nameOf(f, r)} aria-label={nameOf(f, r)}>
-                  {r ? LETTER[o] : `J${f.round}`}
+                  {r ? LETTER[o] : `${t('J')}${f.round}`}
                 </button>
               </li>
             );
@@ -447,7 +449,7 @@ function SeasonSide({ state, fixtures, sel, onPick }) {
 function CupPath({ comp, state, fixtures, sel, onPick }) {
   const c = state.cups[comp];
   const lost = c.results.find((x) => !x.won);
-  const status = c.won ? 'Vainqueur' : c.alive ? `Prochain tour : ${STAGES_SHORT[c.stage].toLowerCase()}` : `Éliminé en ${STAGES_SHORT[lost?.stage ?? 0].toLowerCase()}`;
+  const status = c.won ? t('Vainqueur') : c.alive ? t('Prochain tour : {toLowerCase}', { toLowerCase: STAGES_SHORT[c.stage].toLowerCase() }) : t('Éliminé en {toLowerCase}', { toLowerCase: STAGES_SHORT[lost?.stage ?? 0].toLowerCase() });
   return (
     <section className={`sc-block sc-cup ${comp}`}>
       <div className="sc-block-head"><Eyebrow>{COMP[comp]}</Eyebrow><span>{status}</span></div>

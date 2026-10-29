@@ -1,0 +1,76 @@
+212	A player scores three goals in the same match.	Un jugador marca tres goles en el mismo partido.	يسجل لاعب ثلاثة أهداف في المباراة نفسها.
+213	Golden run	Racha de oro	سلسلة ذهبية
+214	Win five in a row.	Encadenar cinco victorias.	تحقيق خمسة انتصارات متتالية.
+215	Historic run	Racha histórica	سلسلة تاريخية
+216	Win ten in a row.	Encadenar diez victorias.	تحقيق عشرة انتصارات متتالية.
+217	Unbeaten	Invictos	لا هزيمة
+218	Ten competitive matches without defeat.	Diez partidos oficiales sin perder.	عشر مباريات رسمية دون هزيمة.
+219	The wall	El muro	الجدار
+220	Five matches in a row without conceding.	Cinco partidos seguidos sin encajar.	خمس مباريات متتالية دون استقبال أهداف.
+221	Unbeaten season	Temporada invicta	موسم بلا هزيمة
+222	Finish a league season without losing a match.	Terminar una temporada de liga sin perder un partido.	إنهاء موسم الدوري دون خسارة أي مباراة.
+223	Perfect season	Pleno	موسم مثالي
+224	Win all your league matches in one season.	Ganar todos tus partidos de liga en una temporada.	الفوز بجميع مباريات الدوري في موسم واحد.
+225	Win {fmt} competitive matches.	Ganar {fmt} partidos oficiales.	الفوز في {fmt} مباراة رسمية.
+226	Score {fmt} goals in competitive matches.	Marcar {fmt} goles en partidos oficiales.	تسجيل {fmt} هدف في المباريات الرسمية.
+227	Home-grown	De la casa	صناعة محلية
+228	Field a youngster trained at the club in a competitive match.	Alinear en un partido oficial a un joven formado en el club.	إشراك شاب من خريجي النادي في مباراة رسمية.
+229	Golden generation	Generación dorada	الجيل الذهبي
+230	Have five club-trained players in the squad.	Tener cinco jugadores formados en el club en la plantilla.	ضم خمسة لاعبين من خريجي النادي إلى التشكيلة.
+231	The gem	La joya	الجوهرة
+232	A club-trained player reaches level 12.	Un jugador formado en el club alcanza el nivel 12.	يبلغ لاعب من خريجي النادي المستوى 12.
+233	Scorer of the season	Goleador de la temporada	هداف الموسم
+234	A player scores twenty goals in the same season.	Un jugador marca veinte goles en la misma temporada.	يسجل لاعب عشرين هدفًا في الموسم نفسه.
+235	The playmaker	El director de juego	صانع الألعاب
+236	A player provides fifteen assists in the same season.	Un jugador da quince asistencias en la misma temporada.	يقدّم لاعب خمس عشرة تمريرة حاسمة في الموسم نفسه.
+237	Man of the match	Jugador del partido	رجل المباراة
+238	A player is named man of the match five times in the same season.	Un jugador es elegido jugador del partido cinco veces en la misma temporada.	يُختار لاعب رجلَ المباراة خمس مرات في الموسم نفسه.
+239	A gallery of characters	Galería de personajes	معرض الشخصيات
+240	Gather five different distinctive traits in the squad.	Reunir en la plantilla cinco rasgos distintivos diferentes.	جمع خمس سمات مميزة مختلفة في التشكيلة.
+241	Loyal to the shirt	Fiel a la camiseta	وفيّ للقميص
+242	A player plays five seasons in the club’s shirt.	Un jugador disputa cinco temporadas con la camiseta del club.	يخوض لاعب خمسة مواسم بقميص النادي.
+243	A legend	Una leyenda	أسطورة
+244	A player plays a hundred matches in the club’s shirt.	Un jugador disputa cien partidos con la camiseta del club.	يخوض لاعب مئة مباراة بقميص النادي.
+245	A stroke of flair	Golpe de olfato	ضربة معلم
+246	A player signed on a free plays thirty matches for the club.	Un jugador fichado libre disputa treinta partidos con el club.	يخوض لاعب انضم في صفقة حرة ثلاثين مباراة مع النادي.
+247	Capital gain	Plusvalía	ربح من البيع
+248	Sell a player for at least twice what you paid.	Revender a un jugador por al menos el doble de lo que costó.	بيع لاعب بضعف سعر شرائه على الأقل.
+249	Million-euro sale	Venta millonaria	صفقة بيع بالملايين
+250	Sell a player for more than a million euros.	Vender a un jugador por más de un millón de euros.	بيع لاعب بأكثر من مليون يورو.
+251	Marquee signing	Fichaje de relumbrón	صفقة كبرى
+252	Sign a player for more than a million euros.	Fichar a un jugador por más de un millón de euros.	التعاقد مع لاعب بأكثر من مليون يورو.
+253	First project	Primera obra	المشروع الأول
+254	Build a first building at the complex.	Construir un primer edificio en el complejo.	تشييد أول مبنى في المجمّع.
+255	Complete complex	Complejo completo	مجمّع مكتمل
+256	Build every building at the complex.	Construir todos los edificios del complejo.	تشييد جميع مباني المجمّع.
+257	Modern complex	Complejo moderno	مجمّع حديث
+258	Bring every building at the complex to level 3.	Llevar todos los edificios del complejo al nivel 3.	رفع جميع مباني المجمّع إلى المستوى 3.
+259	Prestige partners	Socios de prestigio	شركاء النخبة
+260	Bring the headquarters and the partners to their maximum level.	Llevar la sede y los socios a su nivel máximo.	رفع المقر والشركاء إلى أقصى مستوى.
+261	Sold out	No hay billetes	نفدت التذاكر
+262	Play in a stadium full to the very last seat.	Jugar en un estadio lleno hasta la última localidad.	اللعب في ملعب ممتلئ حتى آخر مقعد.
+263	Welcome {fmt} spectators for a match.	Recibir a {fmt} espectadores en un partido.	استقبال {fmt} متفرج في مباراة واحدة.
+264	The arena	La arena	الأرينا
+265	Build the arena (stadium level 5).	Construir la arena (estadio nivel 5).	تشييد الأرينا (الملعب في المستوى 5).
+266	The ultimate stadium	El estadio definitivo	الملعب المثالي
+267	Bring the stadium to its maximum level.	Llevar el estadio a su nivel máximo.	رفع الملعب إلى أقصى مستوى.
+268	A million on the gate	Taquilla millonaria	مليون من التذاكر
+269	A match brings in more than a million euros.	Un partido genera más de un millón de euros.	تدرّ مباراة واحدة أكثر من مليون يورو.
+270	Season in profit	Temporada con beneficios	موسم رابح
+271	Finish a season with more income than spending.	Terminar una temporada con más ingresos que gastos.	إنهاء موسم بإيرادات تفوق المصاريف.
+272	First million	Primer millón	المليون الأول
+273	10 million	10 millones	10 ملايين
+274	100 million	100 millones	100 مليون
+275	Have €{fmt} in the bank.	Tener {fmt} € en caja.	امتلاك {fmt} € في الخزينة.
+276	A decade	Una década	عقد من الزمن
+277	Play ten seasons.	Disputar diez temporadas.	خوض عشرة مواسم.
+278	Derby boss	Amo del derbi	سيد الديربي
+279	Beat friends five times in the league.	Ganar a tus amigos cinco veces en liga.	هزيمة الأصدقاء خمس مرات في الدوري.
+280	A friendly thrashing	Paliza amistosa	درس ودي
+281	Beat a friend by three goals.	Ganar a un amigo por tres goles de diferencia.	الفوز على صديق بفارق ثلاثة أهداف.
+282	Champion among friends	Campeón entre amigos	بطل بين الأصدقاء
+283	Be crowned league champion.	Proclamarte campeón de la liga.	التتويج بلقب الدوري.
+284	Business among friends	Negocio entre amigos	صفقة بين الأصدقاء
+285	Complete a transfer with a friend.	Cerrar un traspaso con un amigo.	إتمام صفقة انتقال مع صديق.
+286	Negotiator	Negociador	المفاوض
+287	Complete a transfer between friends after a counter-offer.	Cerrar un traspaso entre amigos tras una contraoferta.	إتمام صفقة بين الأصدقاء بعد عرض مضاد.

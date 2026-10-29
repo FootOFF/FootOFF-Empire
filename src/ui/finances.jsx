@@ -8,6 +8,7 @@ import { ordinal } from '../game/utils';
 import { fmtEuros, fmtMoney } from './format';
 import { SectionHead, Stat } from './kit';
 import { Panel } from './panels';
+import { t, tn, tr } from '../i18n/index';
 
 // Finances : où va l'argent du club. La caisse, ce qu'il faudra payer au bilan (salaires et entretien, dus journée après
 // journée et payés en une fois en fin de saison) et ce qui reste réellement disponible ; prévision de fin de saison,
@@ -28,10 +29,10 @@ function Line({ label, value, max, kind }) {
 
 // Trésorerie en fin de saison, saison après saison ; la dernière colonne est la trésorerie d'aujourd'hui.
 function TreasuryChart({ seasons, now }) {
-  const bars = [...seasons.map((p) => ({ label: `S${p.season}`, v: p.end })), { label: 'Auj.', v: now, current: true }];
+  const bars = [...seasons.map((p) => ({ label: `${t('S')}${p.season}`, v: p.end })), { label: t('Auj.'), v: now, current: true }];
   const top = Math.max(1, ...bars.map((b) => Math.abs(b.v)));
   return (
-    <div className="fin-chart" role="img" aria-label={`Trésorerie en fin de saison : ${bars.map((b) => `${b.label} ${fmtMoney(b.v)}`).join(', ')}`}>
+    <div className="fin-chart" role="img" aria-label={t('Trésorerie en fin de saison : {join}', { join: bars.map((b) => `${b.label} ${fmtMoney(b.v)}`).join(', ') })}>
       {bars.map((b) => (
         <div key={b.label} className={`fin-col ${b.current ? 'cur' : ''} ${b.v < 0 ? 'neg' : ''}`} title={`${b.label} : ${fmtMoney(b.v)}`}>
           {b.current && <span className="fin-col-v">{fmtMoney(b.v)}</span>}
@@ -59,47 +60,47 @@ export function FinancesPanel({ state, onClose, onOpenSquad }) {
   return (
     <Panel
       id="finances"
-      title="Finances"
-      eyebrow={`Saison ${state.seasonNumber} · ${divisionOf(state).name}`}
+      title={t('Finances')}
+      eyebrow={t('Saison {seasonNumber} · {name}', { seasonNumber: state.seasonNumber, name: divisionOf(state).name })}
       onClose={onClose}
       toolbar={(
         <div className="season-stats fin-stats">
-          <Stat label="Trésorerie" value={fmtMoney(state.money)} sub={`disponible ${fmtMoney(fc.available)}`} tone={state.money < 0 ? 'down' : ''} />
-          <Stat label="À payer" value={fmtMoney(fc.due)} sub={`fin de saison · ${fmtMoney(fc.owed)} déjà dus`} />
-          <Stat label="Fin de saison" value={fmtMoney(fc.end)} sub="prévision" tone={fc.end < 0 ? 'down' : ''} />
-          <Stat label="Salaires" value={`${Math.round(share * 100)} %`} sub="des revenus" tone={shareTone} />
+          <Stat label={t('Trésorerie')} value={fmtMoney(state.money)} sub={t('disponible {available}', { available: fmtMoney(fc.available) })} tone={state.money < 0 ? 'down' : ''} />
+          <Stat label={t('À payer')} value={fmtMoney(fc.due)} sub={t('fin de saison · {owed} déjà dus', { owed: fmtMoney(fc.owed) })} />
+          <Stat label={t('Fin de saison')} value={fmtMoney(fc.end)} sub={t('prévision')} tone={fc.end < 0 ? 'down' : ''} />
+          <Stat label={t('Salaires')} value={`${Math.round(share * 100)} %`} sub={t('des revenus')} tone={shareTone} />
         </div>
       )}
     >
-      <SectionHead label="Prévision de fin de saison" aside={fc.left ? `${fc.left} match${fc.left > 1 ? 's' : ''} à jouer` : 'saison terminée'} />
+      <SectionHead label={t('Prévision de fin de saison')} aside={fc.left ? tn(fc.left, '{left} match à jouer', '{left} matchs à jouer', { left: fc.left }, fc.left > 1) : t('saison terminée')} />
       <ul className="fin-flow">
-        <li><span>Trésorerie actuelle <em>{fc.owed ? `dont ${fmtEuros(fc.owed)} déjà dus en salaires et entretien · ` : ''}{fc.available < 0 ? `il manque ${fmtEuros(-fc.available)}` : `${fmtEuros(fc.available)} disponibles`}</em></span><b>{fmtEuros(state.money)}</b></li>
+        <li><span>{tr('Trésorerie actuelle <0/>', [<em>{fc.owed ? t('dont {owed} déjà dus en salaires et entretien · ', { owed: fmtEuros(fc.owed) }) : ''}{fc.available < 0 ? t('il manque {v}', { v: fmtEuros(-fc.available) }) : t('{available} disponibles', { available: fmtEuros(fc.available) })}</em>])}</span><b>{fmtEuros(state.money)}</b></li>
         {fc.left > 0 && (
           <li className="in">
-            <span>Matchs restants <em>{fc.homes < fc.left ? `${fc.homes} à domicile, ${fc.left - fc.homes} à l’extérieur (droits TV)` : `${fc.left} × environ ${fmtEuros(fc.perMatch)}`}</em></span>
+            <span>{tr('Matchs restants <0/>', [<em>{fc.homes < fc.left ? t('{homes} à domicile, {v} à l’extérieur (droits TV)', { homes: fc.homes, v: fc.left - fc.homes }) : t('{left} × environ {perMatch}', { left: fc.left, perMatch: fmtEuros(fc.perMatch) })}</em>])}</span>
             <b>{signed(fc.matches)}</b>
           </li>
         )}
-        <li className="in"><span>Sponsors <em>{fc.sponsorsPaid ? `${fmtEuros(state.seasonStats?.sponsors || 0)} reçus à la reprise` : 'versés au bilan'}</em></span><b>{fc.sponsorsPaid ? 'déjà en caisse' : signed(fc.sponsors)}</b></li>
-        <li className="in"><span>Prime de classement <em>à la {ordinal(pos, true)} place</em></span><b>{signed(fc.prize)}</b></li>
-        <li className="out"><span>Salaires de la saison <em>payés au bilan · {fc.left ? `${state.players.length} joueurs · ${fc.left} journée${fc.left > 1 ? 's' : ''} sur ${fc.len} à venir` : `${fc.len} journées`}</em></span><b>{signed(-fc.wages)}</b></li>
-        {fc.upkeep > 0 && <li className="out"><span>Entretien de la saison <em>payé au bilan</em></span><b>{signed(-fc.upkeep)}</b></li>}
-        <li className={`fin-total ${fc.end < 0 ? 'neg' : ''}`}><span>Trésorerie en fin de saison</span><b>{fmtEuros(fc.end)}</b></li>
+        <li className="in"><span>{tr('Sponsors <0/>', [<em>{fc.sponsorsPaid ? t('{v} reçus à la reprise', { v: fmtEuros(state.seasonStats?.sponsors || 0) }) : t('versés au bilan')}</em>])}</span><b>{fc.sponsorsPaid ? t('déjà en caisse') : signed(fc.sponsors)}</b></li>
+        <li className="in"><span>{t('Prime de classement ')}<em>{tr('à la <0/> place', [ordinal(pos, true)])}</em></span><b>{signed(fc.prize)}</b></li>
+        <li className="out"><span>{t('Salaires de la saison ')}<em>{tr('payés au bilan · <0/>', [fc.left ? tn(fc.left, '{length} joueurs · {left} journée sur {len} à venir', '{length} joueurs · {left} journées sur {len} à venir', { length: state.players.length, left: fc.left, len: fc.len }, fc.left > 1) : t('{len} journées', { len: fc.len })])}</em></span><b>{signed(-fc.wages)}</b></li>
+        {fc.upkeep > 0 && <li className="out"><span>{tr('Entretien de la saison <0>payé au bilan</0>', [(c) => <em>{c}</em>])}</span><b>{signed(-fc.upkeep)}</b></li>}
+        <li className={`fin-total ${fc.end < 0 ? 'neg' : ''}`}><span>{t('Trésorerie en fin de saison')}</span><b>{fmtEuros(fc.end)}</b></li>
       </ul>
       {fc.end < 0 ? (
         <div className="fin-advice bad">
-          <p>Il manquera <b>{fmtEuros(-fc.end)}</b> au coup de sifflet final : le conseil vendrait alors tes plus gros salaires. Vends un remplaçant ou allège l’effectif avant.</p>
-          {onOpenSquad && <button className="btn btn-sm ghost" onClick={onOpenSquad}>Voir l’effectif</button>}
+          <p>{tr('Il manquera <0/> au coup de sifflet final : le conseil vendrait alors tes plus gros salaires. Vends un remplaçant ou allège l’effectif avant.', [<b>{fmtEuros(-fc.end)}</b>])}</p>
+          {onOpenSquad && <button className="btn btn-sm ghost" onClick={onOpenSquad}>{t('Voir l’effectif')}</button>}
         </div>
       ) : share > 0.75 ? (
         <div className="fin-advice">
-          <p>Les salaires pèsent <b>{Math.round(share * 100)} %</b> des revenus d’une saison. Au-delà de 75 %, une mauvaise série suffit à finir dans le rouge.</p>
+          <p>{tr('Les salaires pèsent <0/> des revenus d’une saison. Au-delà de 75 %, une mauvaise série suffit à finir dans le rouge.', [<b>{Math.round(share * 100)} %</b>])}</p>
         </div>
       ) : null}
 
-      <SectionHead label="Cette saison" aside={now.income || now.expense ? `résultat ${signed(now.net)}` : null} />
+      <SectionHead label={t('Cette saison')} aside={now.income || now.expense ? t('résultat {signed}', { signed: signed(now.net) }) : null} />
       {income.length === 0 && spent.length === 0 ? (
-        <p className="fin-empty">Rien d’encaissé pour l’instant : billetterie, buvette et boutique tombent à chaque match.</p>
+        <p className="fin-empty">{t('Rien d’encaissé pour l’instant : billetterie, buvette et boutique tombent à chaque match.')}</p>
       ) : (
         <>
           {income.length > 0 && (
@@ -112,20 +113,20 @@ export function FinancesPanel({ state, onClose, onOpenSquad }) {
               {spent.map((x) => <Line key={x.k} label={x.label} value={x.v} max={max} kind="out" />)}
             </ul>
           )}
-          <p className="fin-note">Salaires et entretien se comptent à chaque journée de championnat (un {state.schedule?.length > 7 ? 'quatorzième' : 'septième'} de la saison) et se paient en une fois au bilan.</p>
+          <p className="fin-note">{tr('Salaires et entretien se comptent à chaque journée de championnat (un <0/> de la saison) et se paient en une fois au bilan.', [state.schedule?.length > 7 ? t('quatorzième') : t('septième')])}</p>
         </>
       )}
 
       {l.past.length > 0 && (
         <>
-          <SectionHead label="Saisons précédentes" aside="trésorerie en fin de saison" />
+          <SectionHead label={t('Saisons précédentes')} aside={t('trésorerie en fin de saison')} />
           <TreasuryChart seasons={l.past} now={state.money} />
           <ul className="fin-past">
             {l.past.slice().reverse().map((p) => {
               const t = totals(p.lines);
               return (
                 <li key={p.season}>
-                  <span>Saison {p.season} <em>{p.division}</em></span>
+                  <span>{tr('Saison <0/> <1/>', [p.season, <em>{p.division}</em>])}</span>
                   <b className={t.net < 0 ? 'loss' : 'gain'}>{signed(t.net)}</b>
                   <b>{fmtEuros(p.end)}</b>
                 </li>

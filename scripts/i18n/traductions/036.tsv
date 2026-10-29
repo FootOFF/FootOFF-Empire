@@ -1,0 +1,79 @@
+2113	Two-footed	Ambidiestro	بالقدمين
+2114	two-footed	ambidiestro	بالقدمين
+2115	Left-footed	Zurdo	القدم اليسرى
+2116	left-footed	zurdo	القدم اليسرى
+2117	Right-footed	Diestro	القدم اليمنى
+2118	right-footed	diestro	القدم اليمنى
+2120	First steps · <0/>/<1/>	Primeros pasos · <0/>/<1/>	الخطوات الأولى · <0/>/<1/>
+2121	Your sporting director	Tu directora deportiva	مديرتك الرياضية
+2122	<0/> Step bonus: +€<1/>	<0/> Prima de la etapa: +<1/> €	<0/> مكافأة المرحلة: +<1/> €
+2123	Skip the tutorial	Saltar el tutorial	تخطي الدليل التعليمي
+2124	Staff tip	Consejo del cuerpo técnico	نصيحة الجهاز الفني
+2125	Hide this tip	Ocultar este consejo	إخفاء هذه النصيحة
+2126	Club	Club	النادي
+2127	· Season <0/>	· Temporada <0/>	· الموسم <0/>
+2128	Matchday	Jornada	الجولة
+2129	See the standings	Ver la clasificación	عرض الترتيب
+2130	Standing: {v}, see the standings	Clasificación: {v}, ver la clasificación	الترتيب: {v}، عرض الترتيب
+2131	Standing: no matchday played, see the standings	Clasificación: ninguna jornada jugada, ver la clasificación	الترتيب: لم تُلعب أي جولة، عرض الترتيب
+2132	Resources	Recursos	الموارد
+2133	Bank balance: {total} to pay at the end of the season, including {owed} already owed; {available} available · see the finances	Tesorería: {total} por pagar al final de la temporada, de los que {owed} ya comprometidos; {available} disponibles · ver las finanzas	الخزينة: {total} مستحقة في نهاية الموسم، منها {owed} مستحقة مسبقًا؛ و{available} متاحة · عرض المالية
+2134	Bank balance: {money}; to pay at the end of the season: {total}, including {owed} already owed; available: {available}. See the finances	Tesorería: {money}; por pagar al final de la temporada: {total}, de los que {owed} ya comprometidos; disponible: {available}. Ver las finanzas	الخزينة: {money}؛ المستحق في نهاية الموسم: {total}، منها {owed} مستحقة مسبقًا؛ المتاح: {available}. عرض المالية
+2135	available	disponible	متاح
+2136	avail.	disp.	متاح
+2137	Reputation: {name}, reputation {round}	Notoriedad: {name}, reputación {round}	الشهرة: {name}، السمعة {round}
+2138	{name}{v} · see what it brings	{name}{v} · ver lo que aporta	{name}{v} · عرض ما تجلبه
+2139	· next status: {name} at {min} reputation	· próximo estatus: {name} con {min} de reputación	· المرتبة التالية: {name} عند {min} سمعة
+2140	Menu	Menú	القائمة
+2141	Board objectives	Objetivos de la directiva	أهداف مجلس الإدارة
+2142	Objectives <0/>/<1/>	Objetivos <0/>/<1/>	الأهداف <0/>/<1/>
+2143	at the review	en el balance	في الحصيلة
+2144	up to	hasta	حتى
+2145	missed	fallados	لم تتحقق
+2146	<0/> of <1/>	<0/> de <1/>	<0/> من <1/>
+2147	reached, bonus at the review	cumplido, prima en el balance	تحقق، والمكافأة في الحصيلة
+2148	All three reached: bonus	Los tres cumplidos: prima	تحقيق الثلاثة: مكافأة
+2149	Career · <0/> <1/>	Carrera · <0/> <1/>	المسيرة · <0/> <1/>
+2150	Team	Equipo	الفريق
+2151	Action available	Acción disponible	إجراء متاح
+2152	Alert	Alerta	تنبيه
+2153	{value} to deal with	{value} por atender	{value} بانتظار المعالجة
+2156	Navigation	Navegación	التنقل
+2157	Match to watch	Partido por ver	مباراة للمشاهدة
+2158	Away	Fuera	خارج الأرض
+2159	Home	En casa	على أرضنا
+2160	Final matchday	Última jornada	الجولة الأخيرة
+2161	Your match	Tu partido	مباراتك
+2162	See the result without the match	Ver el resultado sin el partido	عرض النتيجة دون المباراة
+2163	<0/> Watch<1/>	<0/> Ver<1/>	<0/> مشاهدة<1/>
+2164	Season <0/> over	Temporada <0/> terminada	انتهى الموسم <0/>
+2165	The review is coming	Llega el balance	الحصيلة قادمة
+2166	The league is moving on to the next season	La liga pasa a la temporada siguiente	ينتقل الدوري إلى الموسم التالي
+2167	Time for the review	Hora del balance	حان وقت الحصيلة
+2168	<0/> Review<1/>	<0/> Balance<1/>	<0/> الحصيلة<1/>
+2169	Prediction: win {label}, draw {label2}, defeat {label3}	Pronóstico: victoria {label}, empate {label2}, derrota {label3}	التوقعات: فوز {label}، تعادل {label2}، هزيمة {label3}
+2170	<0/> to win	<0/> de victoria	<0/> للفوز
+2171	Team confirmed: the match is played {deadlineText} at the latest (J to change it)	Equipo confirmado: el partido se juega {deadlineText} a más tardar (J para cambiarlo)	تم تأكيد الفريق: تُلعب المباراة {deadlineText} على أقصى تقدير (J لتعديله)
+2172	<0/> Confirmed<1/>	<0/> Confirmado<1/>	<0/> تم التأكيد<1/>
+2173	Prepare and confirm your team (J)	Preparar y confirmar tu equipo (J)	تحضير فريقك وتأكيده (J)
+2174	<0/> Play<1/>	<0/> Jugar<1/>	<0/> العب<1/>
+2175	Play the match (J)	Jugar el partido (J)	لعب المباراة (J)
+2176	Everyone has confirmed: kick-off at the end of the countdown (J to adjust your team)	Todos han confirmado: saque inicial al final de la cuenta atrás (J para retocar tu equipo)	أكد الجميع: صافرة البداية عند انتهاء العد التنازلي (J لتعديل فريقك)
+2177	Kick-off in {mmss}	Saque inicial en {mmss}	صافرة البداية بعد {mmss}
+2178	Kick-off	Saque inicial	صافرة البداية
+2179	The match is being played	Se está jugando el partido	المباراة تُلعب الآن
+2180	Auto	Auto	تلقائي
+2181	Real time (day / night cycle)	Hora real (ciclo día / noche)	الوقت الحقيقي (دورة الليل والنهار)
+2182	Day	Día	نهار
+2183	Always daytime	Siempre de día	نهار دائمًا
+2184	Night	Noche	ليل
+2185	Always night	Siempre de noche	ليل دائمًا
+2186	Hide	Ocultar	إخفاء
+2187	Complex tools	Herramientas del complejo	أدوات المجمّع
+2188	Build · B key	Construir · tecla B	بناء · المفتاح B
+2189	Build	Construir	بناء
+2190	Staff	Cuerpo técnico	الجهاز الفني
+2191	View settings	Ajustes de la vista	إعدادات العرض
+2192	View	Vista	العرض
+2193	{title}: tap to change	{title}: toca para cambiar	{title}: المس للتغيير
+2194	Match day: full stadium, floodlights	Día de partido: estadio lleno, focos	يوم المباراة: ملعب ممتلئ وأضواء كاشفة

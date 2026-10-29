@@ -1,0 +1,72 @@
+3494	W-D-L	G-E-P	ف-ت-خ
+3495	in progress	en curso	جارٍ
+3496	All-time top scorer	Máximo goleador histórico	الهداف التاريخي
+3497	Top assist provider	Máximo asistente	أكثر صانعي الأهداف
+3498	Most appearances	Más partidos	الأكثر خوضًا للمباريات
+3499	Most man of the match awards	Más veces jugador del partido	الأكثر تتويجًا برجل المباراة
+3500	Best average rating (10 matches min.)	Mejor nota media (mín. 10 partidos)	أفضل متوسط تقييم (10 مباريات على الأقل)
+3501	Most clean sheets	Más porterías a cero	الأكثر حفاظًا على نظافة الشباك
+3502	Most goals in a season	Récord de goles en una temporada	الرقم القياسي للأهداف في موسم
+3503	{name} · Season {season}	{name} · Temporada {season}	{name} · الموسم {season}
+3504	Most goals in a match	Récord de goles en un partido	الرقم القياسي للأهداف في مباراة
+3505	{name} · against {opp}	{name} · contra {opp}	{name} · ضد {opp}
+3506	Club legends	Leyendas del club	أساطير النادي
+3507	individual records	récords individuales	أرقام فردية
+3508	No match recorded yet: every match played will appear here, with its Stats Pass sheet.	Ningún partido registrado por ahora: cada partido jugado aparecerá aquí, con su ficha Stats Pass.	لا مباريات مسجلة حتى الآن: ستظهر هنا كل مباراة تُلعب مع بطاقة Stats Pass الخاصة بها.
+3509	All	Todas	الكل
+3510	· away	· fuera	· خارج الأرض
+3511	· possession {possession}% · {join} shots	· posesión {possession} % · {join} tiros	· الاستحواذ {possession}% · {join} تسديدات
+3512	Assist providers	Asistentes	صانعو الأهداف
+3513	Decisive (goals + assists)	Decisivos (goles + asistencias)	الحاسمون (أهداف + تمريرات حاسمة)
+3514	Men of the match	Jugadores del partido	رجال المباراة
+3515	Average rating ({minApps} matches min.)	Nota media (mín. {minApps} partidos)	متوسط التقييم ({minApps} مباريات على الأقل)
+3516	Matches played	Partidos jugados	المباريات الملعوبة
+3517	Minutes played	Minutos jugados	الدقائق الملعوبة
+3518	Efficiency ({minShots} shots min.)	Eficacia (mín. {minShots} tiros)	الفاعلية ({minShots} تسديدات على الأقل)
+3519	Period	Periodo	الفترة
+3520	Club history	Historia del club	تاريخ النادي
+3521	former	ex	سابق
+3522	<0/> Choose a player to open his career.	<0/> Elige a un jugador para abrir su carrera.	<0/> اختر لاعبًا لفتح مسيرته.
+3523	Players currently at the club.	Jugadores actualmente en el club.	اللاعبون الموجودون حاليًا في النادي.
+3524	All the players who have been at the club, former ones included.	Todos los jugadores que han pasado por el club, exjugadores incluidos.	كل اللاعبين الذين مرّوا بالنادي، بمن فيهم السابقون.
+3525	Goal	Gol	هدف
+3526	Saved	Parado	تصدٍّ
+3527	Wide	Fuera	بجانب المرمى
+3528	Off the post	Al poste	في القائم
+3529	Statistics unavailable for this match.	Estadísticas no disponibles para este partido.	الإحصائيات غير متاحة لهذه المباراة.
+3530	Expected goals (xG)	Goles esperados (xG)	الأهداف المتوقعة (xG)
+3531	Clear-cut chances	Ocasiones claras	الفرص المحققة
+3532	Shots off target	Tiros fuera	تسديدات خارج المرمى
+3533	Off the woodwork	A los palos	في القائمين والعارضة
+3534	Shots converted	Tiros convertidos	تسديدات محوّلة
+3535	Expected goals: the sum of the chances of scoring from each shot. Above it, the team was clinical; below it, it lacked efficiency.	Goles esperados: la suma de las probabilidades de marcar de cada tiro. Por encima, el equipo fue eficaz; por debajo, le faltó acierto.	الأهداف المتوقعة: مجموع فرص التسجيل من كل تسديدة. إذا تجاوزها الفريق كان حاسمًا، وإذا قلّ عنها افتقد الفاعلية.
+3536	Shots on target saved	Tiros a puerta parados	تسديدات على المرمى تم التصدي لها
+3537	Goals conceded	Goles encajados	الأهداف المستقبَلة
+3538	Over the match	En el partido	طوال المباراة
+3539	1st half	1.ª parte	الشوط الأول
+3540	2nd half	2.ª parte	الشوط الثاني
+3541	Half by half	Parte a parte	شوطًا بشوط
+3542	shots <0/>	tiros <0/>	تسديدات <0/>
+3543	The context	El contexto	السياق
+3544	<0/> against <1/>	<0/> contra <1/>	<0/> مقابل <1/>
+3545	Long-range shots	Disparos lejanos	التسديدات البعيدة
+3546	Today’s takings	Ingresos del día	إيرادات اليوم
+3547	Min.	Min.	الدقائق
+3548	{shots} ({onTarget} on target)	{shots} ({onTarget} a puerta)	{shots} ({onTarget} على المرمى)
+3549	{shots} ({onTarget} on target)	{shots} ({onTarget} a puerta)	{shots} ({onTarget} على المرمى)
+3550	In gold: the man of the match. The shots in brackets are those on target. Choose a player to open his career.	En dorado: el jugador del partido. Los tiros entre paréntesis son los que fueron a puerta. Elige a un jugador para abrir su carrera.	بالذهبي: رجل المباراة. والتسديدات بين قوسين هي التي كانت على المرمى. اختر لاعبًا لفتح مسيرته.
+3551	<0/><1/>, <2/> on target	<0/><1/>, <2/> a puerta	<0/><1/>، <2/> على المرمى
+3552	{n} shot	{n} tiro	تسديدة واحدة
+3553	{n} shots	{n} tiros	{"one":"تسديدة واحدة","two":"تسديدتان","few":"{n} تسديدات","other":"{n} تسديدة"}
+3554	goal · <0/>′	gol · <0/>′	هدف · <0/>′
+3555	No opposing shots recorded.	Ningún tiro rival registrado.	لا تسديدات مسجلة للخصم.
+3556	The shot-by-shot account exists for matches played since this update.	El desarrollo tiro a tiro existe para los partidos jugados desde esta actualización.	السرد تسديدة بتسديدة متاح للمباريات التي لُعبت منذ هذا التحديث.
+3557	The highlights	Las jugadas destacadas	اللقطات البارزة
+3558	Shots per fifteen-minute period, club at the top, opponent at the bottom	Tiros por tramo de quince minutos, el club arriba y el rival abajo	التسديدات في كل فترة من خمس عشرة دقيقة، النادي في الأعلى والخصم في الأسفل
+3559	<0/> club shots	<0/> tiros del club	<0/> تسديدات النادي
+3560	<0/> opponent shots	<0/> tiros rivales	<0/> تسديدات الخصم
+3561	● goal	● gol	● هدف
+3562	Shot by shot	Tiro a tiro	تسديدة بتسديدة
+3563	· penalty	· penalti	· ركلة جزاء
+3564	· clear-cut chance	· ocasión clara	· فرصة محققة
+3565	· difficult shot	· disparo difícil	· تسديدة صعبة

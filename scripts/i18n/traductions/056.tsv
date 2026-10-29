@@ -1,0 +1,61 @@
+3363	Spending: wages (those of the contracts) and upkeep, counted every league matchday (one seventh of the season, one fourteenth in the Elite League) and paid in one go at the end-of-season review; construction work; signings. A player only costs the matchdays spent at the club. The bank balance shows what will have to be paid at the end of the season and what is really still available; a purchase that would not leave enough to pay is flagged before it is completed.	Gastos: salarios (los de los contratos) y mantenimiento, contados en cada jornada de liga (una séptima parte de la temporada, una catorceava en la Liga Élite) y pagados de una vez en el balance de la temporada; obras; fichajes. Un jugador solo cuesta las jornadas pasadas en el club. La tesorería muestra lo que habrá que pagar al final de la temporada y lo que queda realmente disponible; una compra que no dejaría con qué pagar se señala antes de cerrarse.	المصاريف: الرواتب (رواتب العقود) والصيانة، وتُحتسب في كل جولة من الدوري (سُبع الموسم، وجزء من أربعة عشر في دوري النخبة) وتُدفع دفعة واحدة في حصيلة الموسم؛ والأشغال؛ والصفقات. ولا يكلف اللاعب إلا الجولات التي قضاها في النادي. وتُظهر الخزينة ما يجب دفعه في نهاية الموسم وما يبقى متاحًا فعلًا؛ وأي شراء لا يترك ما يكفي للدفع يُنبَّه إليه قبل إتمامه.
+3364	If the season ends in the red, the board sells your biggest earners to balance the books. The Finances screen forecasts the end of the season and warns you before a risky expense.	Si la temporada termina en números rojos, la directiva vende tus salarios más altos para sanear las cuentas. La pantalla de Finanzas prevé el cierre de la temporada y avisa antes de un gasto arriesgado.	إذا انتهى الموسم بعجز، يبيع مجلس الإدارة أصحاب أعلى الرواتب لتصحيح الحسابات. وتتوقع شاشة المالية نهاية الموسم وتنبّهك قبل أي إنفاق محفوف بالمخاطر.
+3365	Reputation and statuses	Reputación y estatus	السمعة والمراتب
+3366	Every win grows your reputation, more so in the higher divisions, in the cup and with a developed supporters’ area; a defeat lowers it a little. A title, a cup or a promotion makes it leap. Every summer wipes out 12% of it: you have to keep winning to stay big.	Cada victoria hace crecer tu reputación, más en las divisiones altas, en copa y con un espacio de aficionados desarrollado; una derrota la hace bajar un poco. Un título, una copa o un ascenso la disparan. Cada verano borra un 12 %: hay que seguir ganando para seguir siendo grande.	كل فوز يرفع سمعتك، وأكثر في الدرجات العليا وفي الكأس ومع فضاء مشجعين متطور؛ والهزيمة تخفضها قليلًا. واللقب أو الكأس أو الصعود يجعلها تقفز. ويمحو كل صيف 12% منها: عليك أن تواصل الفوز لتبقى كبيرًا.
+3367	It draws people in: bigger crowds and more shop sales, better sponsorship deals, more accommodating sellers in the transfer market, and scouts who suggest bigger names to you.	Atrae: más público y más ventas en la tienda, mejores contratos de patrocinio, vendedores más flexibles en el mercado y ojeadores que te proponen nombres más grandes.	تجذب: جمهورًا أكبر ومبيعات أكثر في المتجر، وعقود رعاية أفضل، وبائعين أكثر مرونة في سوق الانتقالات، وكشافين يقترحون عليك أسماء أكبر.
+3368	Statuses: Neighbourhood club, Rising club (6), Regional club (12), National club (25), Big club (45), Legendary club (80). Four chapters of the career journey depend on them.	Estatus: Club de barrio, Club en ascenso (6), Club regional (12), Club nacional (25), Gran club (45), Club de leyenda (80). De ellos dependen cuatro capítulos del recorrido de carrera.	المراتب: نادي الحي، ونادٍ صاعد (6)، ونادٍ إقليمي (12)، ونادٍ وطني (25)، ونادٍ كبير (45)، ونادٍ أسطوري (80). وتتوقف عليها أربعة فصول من مسار المسيرة.
+3369	Defenders	Defensas	المدافعون
+3370	Midfielders	Centrocampistas	لاعبو الوسط
+3371	Forwards	Delanteros	المهاجمون
+3372	age	edad	العمر
+3373	For sale	En venta	معروض للبيع
+3374	<0/> club<1/><2/>	<0/> club<1/><2/>	مهتمون: <0/>
+3375	interested	interesado<0/>	مهتم
+3376	players	jugadores	لاعبًا
+3377	· season	· temporada	· الموسم
+3378	<0/>% of income	<0/> % de los ingresos	<0/>% من الإيرادات
+3379	<0/> per season · expected income <1/><2/>	<0/> por temporada · ingresos previstos <1/><2/>	<0/> في الموسم · الإيرادات المتوقعة <1/><2/>
+3380	finances	finanzas	المالية
+3381	<0/> strong for the division <1/> weak	<0/> fuerte para la división <1/> flojo	<0/> قوي بالنسبة إلى الدرجة <1/> ضعيف
+3382	Squad display	Vista de la plantilla	عرض التشكيلة
+3383	Outfield players	Jugadores de campo	لاعبو الميدان
+3384	XI level	Nivel del once	مستوى التشكيلة
+3385	Average condition	Condición media	متوسط اللياقة
+3386	Average age	Edad media	متوسط العمر
+3387	Total value	Valor total	القيمة الإجمالية
+3388	Sort by <0/><1/>	Ordenar por <0/><1/>	الترتيب حسب <0/><1/>
+3389	Sort the players	Ordenar a los jugadores	ترتيب اللاعبين
+3390	<0/> · average <1/>	<0/> · media <1/>	<0/> · المتوسط <1/>
+3391	Form: {join}	Forma: {join}	الحالة: {join}
+3392	Not played yet	Aún sin jugar	لم يلعب بعد
+3393	{name}’s profile, level {fmtRating}{v}	Ficha de {name}, nivel {fmtRating}{v}	بطاقة {name}، المستوى {fmtRating}{v}
+3394	Starter	Titular	أساسي
+3395	XI	XI	أساسي
+3396	No.	n.º	#
+3397	Final year of contract	Último año de contrato	السنة الأخيرة من العقد
+3398	Fitness	Condición física	اللياقة البدنية
+3399	· pot.	· pot.	· الإمكانات
+3400	Cond.	Cond.	اللياقة
+3401	until S{until}	hasta T{until}	حتى م{until}
+3402	No former players yet. Players sold or retired will appear here, with their whole career at the club.	Aún no hay exjugadores. Los jugadores vendidos o retirados aparecerán aquí, con toda su carrera en el club.	لا لاعبين سابقين حتى الآن. سيظهر هنا اللاعبون المبيعون أو المعتزلون، مع مسيرتهم الكاملة في النادي.
+3403	<0/> <1/>. Choose a player to look back on his career at the club.	<0/> <1/>. Elige a un jugador para repasar su carrera en el club.	<0/> <1/>. اختر لاعبًا لاستعراض مسيرته في النادي.
+3404	former player	exjugador	لاعب سابق
+3405	former players	exjugadores	لاعبين سابقين
+3406	<0/> · <1/> · <2/> · man of the match <3/> times · age <4/> today	<0/> · <1/> · <2/> · jugador del partido <3/> veces · <4/> años hoy	<0/> · <1/> · <2/> · رجل المباراة <3/> مرات · <4/> عامًا اليوم
+3407	on leaving	al irse	عند الرحيل
+3408	Current season: <0/>	Temporada en curso: <0/>	الموسم الجاري: <0/>
+3409	contract ends ·	fin del contrato ·	نهاية العقد ·
+3410	contract ends · {left} more years	fin del contrato · quedan {left} años	نهاية العقد · السنوات المتبقية: {left}
+3411	promotion clause	cláusula de ascenso	بند الصعود
+3412	signed in	firmado en	وقّع في
+3413	Without an extension, he will leave on a free at the end of season {until}, with no fee.	Sin renovación, se irá libre al final de la temporada {until}, sin traspaso.	من دون تمديد سيرحل حرًا في نهاية الموسم {until}، دون أي مقابل.
+3414	To extend, he is asking for {ask} per season today.	Para renovar, hoy pide {ask} por temporada.	للتمديد، يطلب اليوم {ask} في الموسم.
+3415	Longest possible contract: nothing to extend for now.	Contrato al máximo: nada que renovar por ahora.	أطول عقد ممكن: لا شيء للتمديد حاليًا.
+3416	Extend his contract	Renovar su contrato	تمديد عقده
+3417	{club} · contract {contract} year	{club} · contrato {contract} año	{club} · عقد لسنة واحدة
+3418	{club} · contract {contract} years	{club} · contrato {contract} años	{"one":"{club} · عقد لسنة واحدة","two":"{club} · عقد لسنتين","few":"{club} · عقد لـ{contract} سنوات","other":"{club} · عقد لـ{contract} سنة"}
+3419	Substitute	Suplente	بديل
+3420	Previous player	Jugador anterior	اللاعب السابق
+3421	Next player	Jugador siguiente	اللاعب التالي
+3422	Last summer’s progress	Progreso del último verano	تطور الصيف الماضي
+3423	Trained at the club	Formado en el club	خريج النادي

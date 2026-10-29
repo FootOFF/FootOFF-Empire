@@ -1,0 +1,71 @@
+k:Action inconnue.	Unknown action.	Acción desconocida.	إجراء غير معروف.
+k:Aucun code libre pour l'instant. Réessaie.	No code available right now. Try again.	No hay ningún código libre por ahora. Vuelve a intentarlo.	لا يوجد رمز متاح حاليًا. أعد المحاولة.
+k:C'est à ton ami de répondre.	It's your friend's turn to answer.	Le toca responder a tu amigo.	الرد الآن بيد صديقك.
+k:Ce championnat est complet.	This league is full.	Este campeonato está completo.	هذا الدوري مكتمل.
+k:Ce championnat n'accepte plus d'arrivées.	This league no longer accepts new clubs.	Este campeonato ya no admite incorporaciones.	لم يعد هذا الدوري يقبل أعضاء جددًا.
+k:Ce club n'est pas tenu par l'ordinateur.	This club isn't run by the computer.	Este club no lo dirige la máquina.	هذا النادي لا يديره الحاسوب.
+k:Ce nom de club est déjà pris dans ce championnat.	This club name is already taken in this league.	Ese nombre de club ya está cogido en este campeonato.	اسم النادي هذا مستخدم بالفعل في هذا الدوري.
+k:Ce pseudo est déjà pris dans ce championnat.	This nickname is already taken in this league.	Ese apodo ya está cogido en este campeonato.	هذا الاسم المستعار مستخدم بالفعل في هذا الدوري.
+k:Cet ami a quitté le championnat.	This friend has left the league.	Este amigo ha dejado el campeonato.	غادر هذا الصديق الدوري.
+k:Cette journée est déjà jouée : recharge le championnat.	This matchday has already been played: reload the league.	Esta jornada ya se ha jugado: recarga el campeonato.	لُعبت هذه الجولة بالفعل: أعد تحميل الدوري.
+k:Championnat incomplet.	Incomplete league details.	Campeonato incompleto.	بيانات الدوري غير مكتملة.
+k:Championnat introuvable.	League not found.	Campeonato no encontrado.	الدوري غير موجود.
+k:Contre-offre illisible.	Unreadable counter-offer.	Contraoferta ilegible.	عرض مضاد غير مقروء.
+k:Demande illisible ou trop lourde.	Unreadable or oversized request.	Petición ilegible o demasiado pesada.	طلب غير مقروء أو كبير جدًا.
+k:Demande illisible.	Unreadable request.	Petición ilegible.	طلب غير مقروء.
+k:Format attendu : JSON.	Expected format: JSON.	Formato esperado: JSON.	الصيغة المتوقعة: JSON.
+k:Il faut au moins deux amis pour lancer le championnat.	You need at least two friends to start the league.	Hacen falta al menos dos amigos para empezar el campeonato.	يلزم صديقان على الأقل لبدء الدوري.
+k:Invité introuvable.	Guest not found.	Invitado no encontrado.	الضيف غير موجود.
+k:Joueur cédé illisible.	Unreadable outgoing player.	Jugador cedido ilegible.	بيانات اللاعب المنتقل غير مقروءة.
+k:Journée illisible ou trop lourde.	Unreadable or oversized matchday.	Jornada ilegible o demasiado pesada.	جولة غير مقروءة أو كبيرة جدًا.
+k:Journée inconnue.	Unknown matchday.	Jornada desconocida.	جولة غير معروفة.
+k:L'heure de la journée est passée : ton équipe joue avec sa dernière composition.	The matchday deadline has passed: your team plays with its last line-up.	Ha pasado la hora de la jornada: tu equipo juega con su última alineación.	مرّ موعد الجولة: يلعب فريقك بآخر تشكيلة له.
+k:L'offre vient de changer : relis-la.	The offer has just changed: read it again.	La oferta acaba de cambiar: vuelve a leerla.	تغيّر العرض للتو: أعد قراءته.
+k:La journée n'est pas encore due.	The matchday isn't due yet.	La jornada todavía no toca.	لم يحن موعد الجولة بعد.
+k:La négociation est engagée : réponds à sa contre-offre, ou retire-toi.	The negotiation is under way: answer their counter-offer, or withdraw.	La negociación está en marcha: responde a su contraoferta o retírate.	المفاوضات جارية: ردّ على عرضه المضاد أو انسحب.
+k:La saison a commencé : l'ordinateur reprendra un club inactif.	The season has started: the computer will take over an inactive club.	La temporada ha empezado: la máquina se hará cargo de un club inactivo.	بدأ الموسم: سيتولى الحاسوب أي نادٍ غير نشط.
+k:La saison a déjà commencé : demande au créateur de t'inviter dans un prochain championnat.	The season has already started: ask the creator to invite you to a future league.	La temporada ya ha empezado: pide al creador que te invite a un próximo campeonato.	بدأ الموسم بالفعل: اطلب من المنشئ دعوتك إلى دوري قادم.
+k:Le championnat est déjà lancé, ou il manque un ami.	The league has already started, or a friend is missing.	El campeonato ya ha empezado o falta un amigo.	انطلق الدوري بالفعل، أو ينقص صديق.
+k:Le championnat n'a pas encore commencé.	The league hasn't started yet.	El campeonato todavía no ha empezado.	لم يبدأ الدوري بعد.
+k:Le coup d'envoi est donné : ton équipe ne change plus.	Kick-off has been given: your team can no longer change.	Ya se ha dado el saque inicial: tu equipo ya no cambia.	انطلقت المباراة: لم يعد فريقك يتغير.
+k:Le nom ne correspond pas à ce championnat.	The name doesn't match this league.	El nombre no coincide con este campeonato.	الاسم لا يطابق هذا الدوري.
+k:Mets le jeu à jour pour jouer cette journée.	Update the game to play this matchday.	Actualiza el juego para jugar esta jornada.	حدّث اللعبة لتلعب هذه الجولة.
+k:Offre illisible : fais une contre-offre ou refuse.	Unreadable offer: make a counter-offer or decline.	Oferta ilegible: haz una contraoferta o recházala.	عرض غير مقروء: قدّم عرضًا مضادًا أو ارفض.
+k:Offre illisible.	Unreadable offer.	Oferta ilegible.	عرض غير مقروء.
+k:Offre introuvable, ou déjà répondue.	Offer not found, or already answered.	Oferta no encontrada o ya respondida.	العرض غير موجود، أو تم الرد عليه.
+k:Offre introuvable, retirée ou déjà répondue.	Offer not found, withdrawn or already answered.	Oferta no encontrada, retirada o ya respondida.	العرض غير موجود، أو سُحب، أو تم الرد عليه.
+k:Origine refusée.	Origin refused.	Origen rechazado.	المصدر مرفوض.
+k:Pseudo ou club manquant.	Nickname or club missing.	Falta el apodo o el club.	الاسم المستعار أو النادي ناقص.
+k:Quelqu'un vient de prendre cette place : réessaie.	Someone has just taken this place: try again.	Alguien acaba de coger esta plaza: vuelve a intentarlo.	أخذ أحدهم هذا المكان للتو: أعد المحاولة.
+k:Rien à valider pour l'instant.	Nothing to confirm for now.	Nada que validar por ahora.	لا شيء للتأكيد حاليًا.
+k:Réponse trop lourde.	Response too large.	Respuesta demasiado pesada.	الرد كبير جدًا.
+k:Saison inconnue.	Unknown season.	Temporada desconocida.	موسم غير معروف.
+k:Sauvegarde illisible.	Unreadable save.	Guardado ilegible.	حفظ غير مقروء.
+k:Sauvegarde trop lourde ou illisible.	Save too large or unreadable.	Guardado demasiado pesado o ilegible.	الحفظ كبير جدًا أو غير مقروء.
+k:Seul le créateur lance le championnat.	Only the creator can start the league.	Solo el creador puede empezar el campeonato.	المنشئ وحده يبدأ الدوري.
+k:Seul le créateur peut retirer un invité.	Only the creator can remove a guest.	Solo el creador puede retirar a un invitado.	المنشئ وحده يمكنه إزالة ضيف.
+k:Seul le créateur peut supprimer le championnat.	Only the creator can delete the league.	Solo el creador puede eliminar el campeonato.	المنشئ وحده يمكنه حذف الدوري.
+k:Signature illisible ou trop lourde.	Unreadable or oversized signing.	Fichaje ilegible o demasiado pesado.	تعاقد غير مقروء أو كبير جدًا.
+k:Signature illisible.	Unreadable signing.	Fichaje ilegible.	تعاقد غير مقروء.
+k:Tous les championnats sont occupés. Réessaie plus tard.	All leagues are taken. Try again later.	Todos los campeonatos están ocupados. Vuelve a intentarlo más tarde.	كل الدوريات مشغولة. أعد المحاولة لاحقًا.
+k:Trop d'envois : attends un instant.	Too many uploads: wait a moment.	Demasiados envíos: espera un momento.	إرسالات كثيرة: انتظر لحظة.
+k:Trop d'envois : réessaie dans un moment.	Too many uploads: try again in a moment.	Demasiados envíos: vuelve a intentarlo en un momento.	إرسالات كثيرة: أعد المحاولة بعد قليل.
+k:Trop de championnats créés aujourd'hui. Réessaie demain.	Too many leagues created today. Try again tomorrow.	Demasiados campeonatos creados hoy. Vuelve a intentarlo mañana.	أُنشئت دوريات كثيرة اليوم. أعد المحاولة غدًا.
+k:Trop de championnats créés d'un coup. Réessaie dans un moment.	Too many leagues created at once. Try again in a moment.	Demasiados campeonatos creados de golpe. Vuelve a intentarlo en un momento.	أُنشئت دوريات كثيرة دفعة واحدة. أعد المحاولة بعد قليل.
+k:Trop de demandes : attends un instant.	Too many requests: wait a moment.	Demasiadas peticiones: espera un momento.	طلبات كثيرة: انتظر لحظة.
+k:Trop de demandes : réessaie dans un moment.	Too many requests: try again in a moment.	Demasiadas peticiones: vuelve a intentarlo en un momento.	طلبات كثيرة: أعد المحاولة بعد قليل.
+k:Trop de demandes.	Too many requests.	Demasiadas peticiones.	طلبات كثيرة.
+k:Trop de demandes. Réessaie dans un moment.	Too many requests. Try again in a moment.	Demasiadas peticiones. Vuelve a intentarlo en un momento.	طلبات كثيرة. أعد المحاولة بعد قليل.
+k:Trop de demandes. Réessaie dans une minute.	Too many requests. Try again in a minute.	Demasiadas peticiones. Vuelve a intentarlo en un minuto.	طلبات كثيرة. أعد المحاولة بعد دقيقة.
+k:Trop de sauvegardes : réessaie dans un moment.	Too many saves: try again in a moment.	Demasiados guardados: vuelve a intentarlo en un momento.	عمليات حفظ كثيرة: أعد المحاولة بعد قليل.
+k:Trop de sauvegardes aujourd'hui : ton club reste sur cet appareil jusqu'à demain.	Too many saves today: your club stays on this device until tomorrow.	Demasiados guardados hoy: tu club se queda en este dispositivo hasta mañana.	عمليات حفظ كثيرة اليوم: يبقى ناديك على هذا الجهاز حتى الغد.
+k:Tu ne fais pas partie de ce championnat.	You're not part of this league.	No formas parte de este campeonato.	لست عضوًا في هذا الدوري.
+k:Tu ne fais plus partie de ce championnat.	You're no longer part of this league.	Ya no formas parte de este campeonato.	لم تعد عضوًا في هذا الدوري.
+k:Équipe illisible.	Unreadable team.	Equipo ilegible.	فريق غير مقروء.
+k:Le mercato vient de bouger : la journée se recalcule.	The transfer market has just moved: the matchday is being recalculated.	El mercado acaba de moverse: la jornada se recalcula.	تحرّك سوق الانتقالات للتو: يُعاد حساب الجولة.
+k:Ton club a été sauvegardé depuis un autre appareil.	Your club was saved from another device.	Tu club se guardó desde otro dispositivo.	حُفظ ناديك من جهاز آخر.
+k:Trop tard : un autre club vient de le signer.	Too late: another club has just signed him.	Demasiado tarde: otro club acaba de ficharlo.	فات الأوان: تعاقد معه نادٍ آخر للتو.
+k:La journée vient de changer, ou {n} signatures au plus par journée.	The matchday has just changed, or {n} signings at most per matchday.	La jornada acaba de cambiar, o {n} fichajes como máximo por jornada.	تغيّرت الجولة للتو، أو بلغت الحد الأقصى ({n} تعاقدات في الجولة).
+k:{n} offres en attente au plus.	{n} pending offers at most.	{n} ofertas pendientes como máximo.	الحد الأقصى {n} عروض معلّقة.
+k:Ce joueur vient d'être transféré, ou {n} offres au plus par journée.	This player has just been transferred, or {n} offers at most per matchday.	Este jugador acaba de ser traspasado, o {n} ofertas como máximo por jornada.	انتقل هذا اللاعب للتو، أو بلغت الحد الأقصى ({n} عروض في الجولة).
+k:{n} contre-offres déjà : accepte ou refuse.	{n} counter-offers already: accept or decline.	Ya hay {n} contraofertas: acepta o rechaza.	{n} عروض مضادة بالفعل: اقبل أو ارفض.

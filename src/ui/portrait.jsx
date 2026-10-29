@@ -1,6 +1,7 @@
 import React from 'react';
 import { HOME_KIT, ourKit, teamKitOf } from '../game/kits';
 import { BANDS, EYES, GREY, HAIRS, SKINS, agedFace, faceOf } from '../game/faces';
+import { t } from '../i18n/index';
 
 // Portrait d'un joueur, dessiné (SVG) et toujours le même pour un même joueur (ses traits : src/game/faces.js) : forme
 // du visage, teint, yeux et leur couleur, nez, bouche, sourcils, oreilles, coiffure (une vingtaine), cheveux qui

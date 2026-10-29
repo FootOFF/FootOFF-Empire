@@ -27,10 +27,12 @@ export const IconMenu = I(<path d="M4 7h16M4 12h16M4 17h10" />);
 export const IconTrophy = I(<><path d="M8 4h8v5a4 4 0 0 1-8 0Z" /><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M9.5 17h5" /></>);
 export const IconArrowUp = I(<path d="M12 19V5M6 11l6-6 6 6" />);
 export const IconLock = I(<><rect x="5" y="10.5" width="14" height="9.5" rx="2" /><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /></>);
-export const IconChevron = I(<path d="m9 6 6 6-6 6" />);
+// flèches de direction : retournées en écriture de droite à gauche (styles.css, [data-rtl-flip])
+const flip = (Icon) => (p) => <Icon data-rtl-flip="" {...p} />;
+export const IconChevron = flip(I(<path d="m9 6 6 6-6 6" />));
 export const IconTransfer = I(<><path d="M4 8h15l-4-4M20 16H5l4 4" /></>);
 export const IconStats = I(<><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></>);
-export const IconChevronLeft = I(<path d="m15 6-6 6 6 6" />);
+export const IconChevronLeft = flip(I(<path d="m15 6-6 6 6 6" />));
 export const IconSound = I(<><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4Z" /><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /></>);
 export const IconMute = I(<><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4Z" /><path d="m16 9.5 5 5M21 9.5l-5 5" /></>);
 export const IconRadar = I(<><path d="M12 3 20.5 9.2 17.3 19H6.7L3.5 9.2Z" /><path d="m12 7.5 4.2 3-1.6 4.8H9.4L7.8 10.5Z" /></>);

@@ -1,0 +1,62 @@
+3234	Sound, vibrations, smoothness, save, report a problem	Sonido, vibración, fluidez, guardado, informar de un problema	الصوت والاهتزاز والسلاسة والحفظ والإبلاغ عن مشكلة
+3235	Rules of the game	Reglas del juego	قواعد اللعبة
+3236	Matches, players, transfer market, money, reputation	Partidos, jugadores, mercado, dinero, reputación	المباريات واللاعبون وسوق الانتقالات والمال والسمعة
+3237	Version {CURRENT}{v}	Versión {CURRENT}{v}	الإصدار {CURRENT}{v}
+3238	· to read	· por leer	· للقراءة
+3239	Title screen	Pantalla de inicio	الشاشة الرئيسية
+3240	Unavailable during a match	No disponible durante un partido	غير متاح أثناء المباراة
+3241	Your game stays saved	Tu partida sigue guardada	تبقى لعبتك محفوظة
+3242	New game	Nueva partida	لعبة جديدة
+3243	Erases the game in progress	Borra la partida en curso	يحذف اللعبة الجارية
+3244	FootOFF Media	FootOFF Media	FootOFF Media
+3245	<0/> · Season <1/> · <2/>	<0/> · Temporada <1/> · <2/>	<0/> · الموسم <1/> · <2/>
+3246	matchday {min}/{total}	jornada {min}/{total}	الجولة {min}/{total}
+3247	Pause menu	Menú de pausa	قائمة الإيقاف المؤقت
+3248	Your season	Tu temporada	موسمك
+3249	Choose	Elegir	اختيار
+3250	Confirm	Confirmar	تأكيد
+3251	Autosave	Guardado automático	حفظ تلقائي
+3253	{minute}′ (pen)	{minute}′ (pen.)	{minute}′ (ج)
+3254	Condition: {round}% at the final whistle, {round2}% at the next match	Condición: {round} % al pitido final, {round2} % en el próximo partido	اللياقة: {round}% عند صافرة النهاية، و{round2}% في المباراة المقبلة
+3255	You are top	Vas líder	أنت في الصدارة
+3256	You are {ordinal}	Eres {ordinal}	أنت في المركز {ordinal}
+3257	You stay top	Sigues líder	تبقى في الصدارة
+3258	You stay {ordinal}	Sigues {ordinal}	تبقى في المركز {ordinal}
+3259	You go top	Te pones líder	تعتلي الصدارة
+3260	You climb to {ordinal} place	Subes a la {ordinal} posición	تصعد إلى المركز {ordinal}
+3261	You drop to {ordinal} place	Bajas a la {ordinal} posición	تتراجع إلى المركز {ordinal}
+3262	Standings after the matchday	Clasificación tras la jornada	الترتيب بعد الجولة
+3263	Standings · matchday <0/> / <1/>	Clasificación · jornada <0/> / <1/>	الترتيب · الجولة <0/> / <1/>
+3264	Continue	Continuar	متابعة
+3265	Post-match	Pospartido	ما بعد المباراة
+3266	Matchday {round}	Jornada {round}	الجولة {round}
+3267	· final whistle	· pitido final	· صافرة النهاية
+3268	Winners of the European Club Cup	Campeón de la Copa de Europa de Clubes	بطل كأس أوروبا للأندية
+3269	Winners of the National Cup	Campeón de la Copa Nacional	بطل الكأس الوطنية
+3270	Through to the next round: {v}	Clasificado para la siguiente ronda: {v}	متأهل إلى الدور التالي: {v}
+3271	Bonus of {prize}	Prima de {prize}	مكافأة قدرها {prize}
+3272	No bonus for this round	Sin prima en esta ronda	لا مكافأة في هذا الدور
+3273	· next opponent: {name}	· próximo rival: {name}	· الخصم التالي: {name}
+3274	· the trophy joins the club’s cabinet	· el trofeo entra en la vitrina del club	· تنضم الكأس إلى خزانة النادي
+3275	out of 10	sobre 10	من 10
+3276	Condition at the final whistle, then at the next match.	Condición al pitido final y luego en el próximo partido.	اللياقة عند صافرة النهاية، ثم في المباراة المقبلة.
+3277	<0/> Man of the match	<0/> Jugador del partido	<0/> رجل المباراة
+3278	· {goals} goal	· {goals} gol	· هدف واحد
+3279	· {goals} goals	· {goals} goles	{"one":" · هدف واحد","two":" · هدفان","few":" · {goals} أهداف","other":" · {goals} هدفًا"}
+3280	· {assists} assist	· {assists} asistencia	· تمريرة حاسمة واحدة
+3281	· {assists} assists	· {assists} asistencias	{"one":" · تمريرة حاسمة واحدة","two":" · تمريرتان حاسمتان","few":" · {assists} تمريرات حاسمة","other":" · {assists} تمريرة حاسمة"}
+3282	The match in numbers	El partido en cifras	المباراة بالأرقام
+3283	Cards	Tarjetas	البطاقات
+3284	Match takings	Ingresos del partido	إيرادات المباراة
+3285	Ticketing and takings	Taquilla e ingresos	التذاكر والإيرادات
+3286	away	fuera	خارج الأرض
+3287	{attendance} / {capacity} seats	{attendance} / {capacity} localidades	{attendance} / {capacity} مقعد
+3288	No ticketing at the opponent’s ground: only the TV rights go to the club.	Sin taquilla en casa del rival: solo los derechos de TV van para el club.	لا تذاكر على ملعب الخصم: لا يعود إلى النادي إلا عائد حقوق البث.
+3289	Stadium full: <0/> supporters were left outside.	Estadio lleno: <0/> aficionados se quedaron fuera.	الملعب ممتلئ: عدد المشجعين الذين بقوا خارجه: <0/>.
+3290	Injuries and suspensions	Enfermería y sanciones	الإصابات والإيقافات
+3291	{n} out	{n} baja	غياب واحد
+3292	{n} out	{n} bajas	{"one":"غياب واحد","two":"غيابان","few":"{n} غيابات","other":"{n} غيابًا"}
+3293	<0/> · matches out: <1/> · <3/>	<0/> · <1/> partido<2/> · <3/>	<0/> · مباريات الغياب: <1/> · <3/>
+3294	Reputation <0/><1/><2/>	Reputación <0/><1/><2/>	السمعة <0/><1/><2/>
+3295	· New status: <0/>	· Nuevo estatus: <0/>	· مرتبة جديدة: <0/>
+3296	Match stats	Estadísticas del partido	إحصائيات المباراة

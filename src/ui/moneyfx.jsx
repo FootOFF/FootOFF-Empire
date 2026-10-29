@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { fmtMoney } from './format';
 import { haptic } from './haptics';
+import { t } from '../i18n/index';
 
 // Animation de l'argent, pour tous les mouvements de la trésorerie :
 // - gain : « +1 252 € » doré qui monte depuis le geste du joueur, pièces qui filent vers la trésorerie

@@ -1,4 +1,10 @@
 import { pick } from './utils';
+import { NAMES } from '../i18n/index';
+
+// Langue de la partie (src/i18n, 2026-10-29) : en anglais, en espagnol, en arabe, les noms des joueurs et des clubs sont
+// tirés de listes propres à la langue (names-en.js, names-es.js, names-ar.js : autant de noms, autant d'origines que
+// ci-dessous) ; en français, rien ne change.
+const L = NAMES; // chargées par initI18n avant le jeu
 
 // Noms des joueurs : francophones, courts, faciles à prononcer et à retenir, pour s'attacher à ses joueurs ; de
 // toutes les origines qu'on entend dans le football français (régions de France, Belgique, Suisse, Québec, Maghreb,
@@ -142,25 +148,26 @@ const LAST_AFR = [
   'Sone',
 ];
 
-// origine du nom : [part des joueurs, prénoms, part de prénoms tirés de la liste française, noms]
-const ORIGINS = [
-  [0.55, FIRST_FR, 0, LAST_FR],
-  [0.06, FIRST_FR, 0, LAST_ANT],
-  [0.1, FIRST_ITPT, 0.4, LAST_ITPT],
-  [0.16, FIRST_MAG, 0.2, LAST_MAG],
-  [0.13, FIRST_AFR, 0.3, LAST_AFR],
-];
+// Listes de la langue de la partie, rangées par origine (celle des portraits, faces.js : fr, ant, itpt, mag, afr).
+const P = L || {
+  first: { fr: FIRST_FR, itpt: FIRST_ITPT, mag: FIRST_MAG, afr: FIRST_AFR },
+  last: { fr: LAST_FR, ant: LAST_ANT, itpt: LAST_ITPT, mag: LAST_MAG, afr: LAST_AFR },
+  // origine du nom : [part des joueurs, prénoms, part de prénoms tirés de la liste principale, noms]
+  origins: [[0.55, 'fr', 0, 'fr'], [0.06, 'fr', 0, 'ant'], [0.1, 'itpt', 0.4, 'itpt'], [0.16, 'mag', 0.2, 'mag'], [0.13, 'afr', 0.3, 'afr']],
+};
+const MAIN_FIRST = P.first.fr; // prénoms de la liste principale (les plus portés dans la langue)
+const ORIGINS = P.origins.map(([w, f, mix, l]) => [w, P.first[f], mix, P.last[l]]);
 
-export const FIRST = [...FIRST_FR, ...FIRST_ITPT, ...FIRST_MAG, ...FIRST_AFR];
+export const FIRST = Object.values(P.first).flat();
 const FIRST_SET = new Set(FIRST);
-export const LAST = [...LAST_FR, ...LAST_ANT, ...LAST_ITPT, ...LAST_MAG, ...LAST_AFR];
+export const LAST = Object.values(P.last).flat();
 const LAST_SET = new Set(LAST);
 
 // Un prénom et un nom qui vont ensemble.
 function drawName() {
   let r = Math.random();
   const o = ORIGINS.find(([w]) => (r -= w) < 0) || ORIGINS[0];
-  const first = Math.random() < o[2] ? pick(FIRST_FR) : pick(o[1]);
+  const first = Math.random() < o[2] ? pick(MAIN_FIRST) : pick(o[1]);
   return [first, pick(o[3])];
 }
 
@@ -173,8 +180,9 @@ function echoes(first, last) {
   return l.split('-').includes(f) || l.startsWith(f.slice(0, 4)) || f.startsWith(l.slice(0, 4));
 }
 
-// Combinaisons interdites : de vrais joueurs (ou d'autres personnes connues) que le hasard pourrait recomposer.
-export const BLOCK = new Set([
+// Combinaisons interdites : de vrais joueurs (ou d'autres personnes connues) que le hasard pourrait recomposer ; dans
+// une autre langue, celles de cette langue (vrais joueurs et célébrités de ses pays).
+const BLOCK_FR = new Set([
   'Lucas Chevalier', 'Jérémy Morel', 'Benjamin Lecomte', 'Fabien Lemoine', 'Thibault Moulin', 'Mamadou Thiam',
   'Lamine Gassama', 'Tiago Pinto', 'Nuno Pinto', 'Pierre Bernard', 'Thomas Fontaine', 'Vincent Guérin',
   'Pierre Laurent', 'Jérôme Leroy', 'Éric Bailly', 'Léon Bailly', 'Gabriel Faure', 'Jean Moulin', 'Émile Picard',
@@ -223,6 +231,7 @@ export const BLOCK = new Set([
   'Honoré Mercier', 'Marc Ouellet', 'Stéphane Rousseau', 'Daniel Bélanger', 'Pierre Lapointe', 'Éric Lapointe',
   'Kévin Parent', 'Arthur Lancelot',
 ]);
+export const BLOCK = L ? new Set(L.block) : BLOCK_FR;
 
 // Noms déjà portés dans la partie (registerNames au chargement et à la création) : un nouveau joueur n'en reprend
 // jamais un, et autant que possible pas même le nom de famille.
@@ -233,15 +242,12 @@ const lastOf = (full) => full.split(' ').slice(1).join(' ');
 // Origine d'un nom, d'après la liste de son nom de famille (à défaut, de son prénom) : 'fr' (régions de France,
 // Belgique, Suisse, Québec), 'ant' (Antilles, Réunion), 'itpt' (familles italiennes et portugaises), 'mag' (Maghreb),
 // 'afr' (Afrique de l'Ouest et centrale). Les portraits s'en servent pour un visage qui va avec le nom (faces.js).
-const ORIGIN_OF = new Map([
-  ...LAST_FR.map((x) => [x, 'fr']), ...LAST_ANT.map((x) => [x, 'ant']), ...LAST_ITPT.map((x) => [x, 'itpt']),
-  ...LAST_MAG.map((x) => [x, 'mag']), ...LAST_AFR.map((x) => [x, 'afr']),
-]);
+const ORIGIN_OF = new Map(Object.entries(P.last).flatMap(([o, list]) => list.map((x) => [x, o])));
 export function originOf(full = '') {
   const o = ORIGIN_OF.get(lastOf(full));
   if (o) return o;
   const first = full.split(' ')[0];
-  return FIRST_MAG.includes(first) ? 'mag' : FIRST_AFR.includes(first) ? 'afr' : FIRST_ITPT.includes(first) ? 'itpt' : 'fr';
+  return P.first.mag?.includes(first) ? 'mag' : P.first.afr?.includes(first) ? 'afr' : P.first.itpt?.includes(first) ? 'itpt' : 'fr';
 }
 export function registerNames(names) {
   inUse.clear();
@@ -294,13 +300,14 @@ export function renameRetired(p) {
   return p;
 }
 
-// Noms des clubs : un type (AS, FC, Stade, Entente…) et un lieu imaginaire, francophone.
-const CLUB_TYPES = [
+// Noms des clubs : un type (AS, FC, Stade, Entente…) et un lieu imaginaire, francophone ; dans une autre langue, ses
+// types et ses lieux, dans l'ordre de la langue (« Kingsbridge Rovers », « Real Valdelobos »).
+const CLUB_TYPES_FR = [
   'AS', 'FC', 'US', 'SC', 'RC', 'Olympique', 'Sporting', 'Racing', 'Stade', 'Étoile', 'Union', 'Entente', 'Avenir',
   'Jeunesse', 'Rapid', 'Bleus', 'Jaunes', 'Verts',
 ];
 
-const CLUB_PLACES = [
+const CLUB_PLACES_FR = [
   'du Tilleul', 'de la Plaine', 'Montfleury', 'des Bruyères', 'de la Vallée', 'Saint-Clair',
   'des Trois Rivières', 'de l’Orme', 'Beaumont', 'du Vieux Port', 'des Coteaux', 'de la Prairie',
   'Rocheval', 'des Fontaines', 'Hauts-Bois', 'de la Gare', 'Bellerive', 'Clairval', 'Valmont', 'Roche-Blanche',
@@ -309,6 +316,8 @@ const CLUB_PLACES = [
   'des Peupliers', 'de la Côte', 'du Plateau', 'des Glycines', 'Combe-Noire', 'Fontclaire', 'Vallon-Doré',
   'du Bocage',
 ];
+const CLUB_TYPES = L ? L.clubTypes : CLUB_TYPES_FR;
+const CLUB_PLACES = L ? L.clubPlaces : CLUB_PLACES_FR;
 
 // Article d'un club selon son préfixe : l'AS, le FC, la Jeunesse, les Bleus… (un nom sans préfixe connu reste nu,
 // comme celui que le joueur a choisi). clubAfter contracte avec la préposition : « de le FC » → « du FC ».
@@ -318,10 +327,12 @@ const ARTICLE = {
   Jeunesse: 'la ',
   Jaunes: 'les ', Bleus: 'les ', Verts: 'les ',
 };
-export const withArticle = (name) => (ARTICLE[name.split(' ')[0]] || '') + name;
+const G = L?.grammar;
+export const withArticle = (name) => (G ? G.withArticle(name) : (ARTICLE[name.split(' ')[0]] || '') + name);
 // club au nom pluriel (« les Jaunes ») : le verbe s'accorde
-export const isPluralClub = (name) => ARTICLE[name.split(' ')[0]] === 'les ';
+export const isPluralClub = (name) => (G ? G.isPluralClub(name) : ARTICLE[name.split(' ')[0]] === 'les ');
 export function clubAfter(prep, name) {
+  if (G) return G.clubAfter(prep, name);
   const a = withArticle(name);
   if (prep === 'de ' && a.startsWith('le ')) return `du ${a.slice(3)}`;
   if (prep === 'de ' && a.startsWith('les ')) return `des ${a.slice(4)}`;
@@ -331,13 +342,19 @@ export function clubAfter(prep, name) {
   return prep + a;
 }
 export const capitalize = (t) => t.charAt(0).toUpperCase() + t.slice(1);
-// élision devant un prénom qui commence par une voyelle : « passe décisive d’Adam », « frappe d’Ilyes »
-export const deName = (name) => (/^[AEIOUÉÈÊÂÎÔ]/.test(name) ? 'd’' : 'de ') + name;
+// élision devant un prénom qui commence par une voyelle : « passe décisive d’Adam », « frappe d’Ilyes » (dans une
+// autre langue, le nom seul : la préposition est dans la phrase traduite)
+export const deName = (name) => (G ? G.deName(name) : (/^[AEIOUÉÈÊÂÎÔ]/.test(name) ? 'd’' : 'de ') + name);
+// prépositions qui se contractent avec l'article d'un club dans le commentaire (fr : « de », « à » ; es : « de », « a »)
+export const CLUB_PREPS = G ? G.preps : ['de', 'à'];
 
-const placeOf = (name) => CLUB_PLACES.find((pl) => name.endsWith(` ${pl}`)) || null;
+const placeOf = (name) => CLUB_PLACES.find((pl) => name.endsWith(` ${pl}`) || (L && name.startsWith(`${pl} `))) || null;
+const typeOf = (name) => (L ? CLUB_TYPES.find((tp) => name.startsWith(`${tp} `) || name.endsWith(` ${tp}`)) || name.split(' ')[0] : name.split(' ')[0]);
 
 export function randomClubName() {
-  return `${pick(CLUB_TYPES)} ${pick(CLUB_PLACES)}`;
+  const type = pick(CLUB_TYPES);
+  const place = pick(CLUB_PLACES);
+  return L ? L.clubName(type, place) : `${type} ${place}`;
 }
 
 // Un club qui ne ressemble à aucun des noms donnés : ni le même nom, ni le même lieu (« Rapid de l’Orme » et
@@ -358,7 +375,7 @@ export function leagueClubNames(count, ownName = '') {
   const types = {};
   for (let i = 0; out.length < count && i < 600; i++) {
     const name = distinctClubName([ownName, ...out]);
-    const t = name.split(' ')[0];
+    const t = typeOf(name);
     if ((types[t] || 0) >= 2) continue;
     types[t] = (types[t] || 0) + 1;
     out.push(name);

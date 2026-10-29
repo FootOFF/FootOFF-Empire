@@ -1,0 +1,66 @@
+829	Potential range	Margen del potencial	نطاق الإمكانات
+830	narrower, better judged	más estrecho, mejor calibrado	أضيق وأدق تقديرًا
+831	Youth team	Equipo juvenil	فريق الشباب
+832	free signing, no wages	fichaje gratuito, sin salario	ضم مجاني، دون راتب
+833	Crowd	Público	الجمهور
+834	Crowd +{v}%	Público +{v} %	الجمهور +{v}%
+835	Refreshment stand	Cantina	المقصف
+836	Shop	Tienda	المتجر
+837	Reputation per match	Reputación por partido	السمعة في كل مباراة
+838	Sponsors	Patrocinadores	الرعاة
+839	€{fmt} / season	{fmt} € / temporada	{fmt} € / الموسم
+840	per season, paid at the start of the season	por temporada, pagados al inicio de la temporada	في الموسم، تُصرف في بدايته
+841	Offline income	Ingresos sin conexión	الإيرادات خارج الاتصال
+842	per hour away	por hora de ausencia	لكل ساعة غياب
+843	TV rights	Derechos de TV	حقوق البث
+844	TV rights +{v}%	Derechos de TV +{v} %	حقوق البث +{v}%
+845	local TV: €{fmt} per match	tele local: {fmt} € por partido	التلفزيون المحلي: {fmt} € لكل مباراة
+846	per league match	por partido de liga	لكل مباراة في الدوري
+847	Contracts	Contratos	العقود
+848	on players’ wage demands	en las exigencias salariales de los jugadores	من مطالب اللاعبين في الرواتب
+849	Negotiations	Negociaciones	المفاوضات
+850	TV rights, contracts	derechos de TV, contratos	حقوق البث، العقود
+851	exact chances of agreement	probabilidades de acuerdo exactas	فرص اتفاق دقيقة
+852	Ticketing	Taquilla	التذاكر
+853	4 pricing options	4 tarifas	4 صيغ
+854	projected takings for each	recaudación prevista de cada una	الإيراد المتوقع لكل منها
+855	Treating a minor injury	Tratamiento de una lesión leve	علاج إصابة خفيفة
+856	Treatments succeed {treatPct}% of the time	Tratamientos con éxito al {treatPct} %	نسبة نجاح العلاج {treatPct}%
+857	one match out fewer	un partido de baja menos	مباراة غياب أقل
+858	Treating a fracture	Tratamiento de una fractura	علاج كسر
+859	nine matches out	nueve partidos de baja	تسع مباريات غياب
+860	Injury risk	Riesgo de lesión	خطر الإصابة
+861	in matches, thanks to prevention	en los partidos, gracias a la prevención	في المباريات، بفضل الوقاية
+862	Cost of a treatment	Coste de un tratamiento	تكلفة العلاج
+863	15% of the	15 % del salario	15% من الراتب
+864	annual wage of the treated player	anual del jugador tratado	السنوي للاعب المعالَج
+865	3 at a time	3 a la vez	3 في الوقت نفسه
+866	Leagues with friends	Ligas entre amigos	دوريات الأصدقاء
+867	created or joined	creadas o a las que te has unido	أنشأتها أو انضممت إليها
+868	Clubs per league	Clubes por liga	الأندية في كل دوري
+869	your friends, topped up by the computer	tus amigos, completados por la máquina	أصدقاؤك، ويكمل الحاسوب العدد
+870	Invitation	Invitación	الدعوة
+871	link or code	enlace o código	رابط أو رمز
+872	your friends join for free	tus amigos entran gratis	ينضم أصدقاؤك مجانًا
+873	Upkeep	Mantenimiento	الصيانة
+874	a world apart from your career	un mundo aparte de tu carrera	عالم منفصل عن مسيرتك
+875	Players under contract	Jugadores con contrato	لاعبون مرتبطون بعقود
+876	{officeSize} players tracked	{officeSize} jugadores seguidos	{officeSize} لاعبين قيد المتابعة
+877	in your transfer market	en tu mercado	في سوق انتقالاتك
+878	Fees	Traspasos	مبالغ الانتقال
+879	Sellers	Vendedores	البائعون
+880	more accommodating	más flexibles	أكثر مرونة
+881	Capacity: {fmt} seats{v}.	Aforo: {fmt} localidades{v}.	السعة: {fmt} مقعد{v}.
+882	· {fmt} box seats	· {fmt} localidades en palcos	· {fmt} مقعد في المقصورات
+883	Sessions between matches: progress ×{dec2} · {length} 3D drills · group session after every match{v}.	Sesiones entre partidos: progreso ×{dec2} · {length} pruebas en 3D · sesión colectiva tras cada partido{v}.	حصص بين المباريات: التطور ×{dec2} · {length} تمارين ثلاثية الأبعاد · حصة جماعية بعد كل مباراة{v}.
+884	· distinctive traits learnt in {v} sessions	· rasgos distintivos aprendidos en {v} sesiones	· سمات مميزة تُكتسب في {v} حصص
+885	No training sessions until the centre is built.	No hay sesiones de entrenamiento mientras no se construya el centro.	لا حصص تدريبية ما لم يُبنَ المركز.
+886	No youth team until the academy is built.	No hay equipo juvenil mientras no se construya la cantera.	لا فريق للشباب ما لم تُبنَ الأكاديمية.
+887	Youth team of {YOUTH_PLACES} places · {v} youngsters scouted after every matchday: level {v2} to {v3}, potential {v4} to {v5} (rarely {top}), judged to within {dec} points.	Equipo juvenil de {YOUTH_PLACES} plazas · {v} jóvenes detectados tras cada jornada: nivel de {v2} a {v3}, potencial de {v4} a {v5} (rara vez {top}), calibrado con un margen de {dec} puntos.	فريق شباب من {YOUTH_PLACES} أماكن · {v} شبان يُرصدون بعد كل جولة: المستوى من {v2} إلى {v3}، والإمكانات من {v4} إلى {v5} (نادرًا {top})، بهامش تقدير {dec} نقاط.
+888	Crowd drawn: +{v}% · Refreshment stand +{v2}%, shop +{v3}% · Reputation per match: +{v2}%.	Público atraído: +{v} % · Cantina +{v2} %, tienda +{v3} % · Reputación por partido: +{v2} %.	الجمهور المستقطب: +{v}% · المقصف +{v2}%، المتجر +{v3}% · السمعة في كل مباراة: +{v2}%.
+889	Club negotiations: TV rights +{v}%{v2}, a raise to ask for each season · players’ wage demands −{v3}% (signings and extensions) · ticket pricing.	Negociaciones del club: derechos de TV +{v} %{v2}, subida por pedir cada temporada · exigencias salariales de los jugadores −{v3} % (fichajes y renovaciones) · tarifa de las entradas.	مفاوضات النادي: حقوق البث +{v}%{v2}، وزيادة يُطلب كل موسم · مطالب اللاعبين في الرواتب −{v3}% (الصفقات والتمديدات) · صيغة التذاكر.
+890	(local TV: €{fmt} per match)	(tele local: {fmt} € por partido)	(التلفزيون المحلي: {fmt} € لكل مباراة)
+891	No negotiations until the Club board is built.	No hay negociaciones mientras no se construya la Directiva del club.	لا مفاوضات ما لم تُبنَ إدارة النادي.
+892	Treating injured players: one per player per fixture, successful {treatPct}% of the time for a minor injury, {treatPct2}% for a fracture · injury risk in matches −{v}%.	Tratamiento de lesionados: uno por jugador y por fecha, con éxito al {treatPct} % para una lesión leve, al {treatPct2} % para una fractura · riesgo de lesión en partido −{v} %.	علاج المصابين: علاج واحد لكل لاعب في كل موعد، ينجح بنسبة {treatPct}% للإصابة الخفيفة، و{treatPct2}% للكسر · خطر الإصابة في المباراة −{v}%.
+893	No treatment until the medical centre is built: an injured player waits to recover.	No hay tratamientos mientras no se construya el centro médico: un lesionado espera a curarse.	لا علاج ما لم يُبنَ المركز الطبي: ينتظر المصاب شفاءه.
+894	Leagues with friends: up to 3 at a time, 8 clubs each, your friends invited by a link or a code. A world apart from your career, with no upkeep.	Ligas entre amigos: hasta 3 a la vez, 8 clubes cada una, tus amigos invitados con un enlace o un código. Un mundo aparte de tu carrera, sin mantenimiento.	دوريات الأصدقاء: حتى 3 في الوقت نفسه، بثمانية أندية لكل منها، ويُدعى أصدقاؤك عبر رابط أو رمز. عالم منفصل عن مسيرتك، دون صيانة.

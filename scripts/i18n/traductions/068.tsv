@@ -1,0 +1,12 @@
+k:Défaite	Loss		
+k:<0/>Défaite	<0/>Loss		
+k:défaite	loss		
+k:défaites	losses		
+k:Pronostic : victoire {label}, nul {label2}, défaite {label3}	Prediction: win {label}, draw {label2}, loss {label3}		
+k:Chances de victoire, de nul et de défaite à la fin du match, calculées sur le moteur à partir de ce que le direct a montré	Chances of a win, a draw or a loss at the end of the match, calculated on the engine from what the live match has shown		
+k:Victoire +<0/> · nul +<1/> · défaite −<2/><3/>. En coupe ×1,2, en Coupe d’Europe ×1,6.	Win +<0/> · draw +<1/> · loss −<2/><3/>. In the cup ×1.2, in the European Cup ×1.6.		
+k:{label} : +{amount}	{label}: +{amount}	{label}: +{amount}	{label}: +{amount}
+k:français	French	francés	الفرنسية
+k:anglais	English	inglés	الإنجليزية
+k:espagnol	Spanish	español	الإسبانية
+k:arabe	Arabic	árabe	العربية

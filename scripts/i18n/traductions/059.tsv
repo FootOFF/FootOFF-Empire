@@ -1,0 +1,50 @@
+3566	· xG {xgShot}	· xG {xgShot}	· xG {xgShot}
+3567	{name} · rating {fmtRating}{v}	{name} · nota {fmtRating}{v}	{name} · التقييم {fmtRating}{v}
+3568	· substituted	· sustituido	· استُبدل
+3569	substituted	sustituido	استُبدل
+3570	Boxes	Palcos	المقصورات
+3571	Away · TV rights only	Fuera · solo derechos de TV	خارج الأرض · حقوق البث فقط
+3572	Ticket pricing	Tarifa de las entradas	صيغة التذاكر
+3573	· {ticketPrice} per ticket	· {ticketPrice} la entrada	· {ticketPrice} للتذكرة
+3574	Not recorded (old match)	No registrada (partido antiguo)	غير مسجلة (مباراة قديمة)
+3575	Turned away at the gates	Se quedaron en taquilla	بقوا عند الشبابيك
+3576	Match takings	Recaudación del partido	إيرادات المباراة
+3577	Stats Pass: {clubName} against {opp}	Stats Pass: {clubName} contra {opp}	Stats Pass: {clubName} ضد {opp}
+3578	Previous match	Partido anterior	المباراة السابقة
+3579	Stats Pass	Stats Pass	Stats Pass
+3580	Next match	Partido siguiente	المباراة التالية
+3581	<0/><1/> · <2/> · Season <3/>	<0/><1/> · <2/> · Temporada <3/>	<0/><1/> · <2/> · الموسم <3/>
+3582	{v} on penalties {v2}–{v3}	{v} en los penaltis {v2}–{v3}	{v} بركلات الترجيح {v2}–{v3}
+3583	<0/> spectators<1/>	<0/> espectadores<1/>	<0/> متفرج<1/>
+3584	· {pct}% full	· {pct} % de ocupación	· نسبة الامتلاء {pct}%
+3585	Takings <0/>	Recaudación <0/>	الإيرادات <0/>
+3586	Summary	Resumen	الملخص
+3587	Timeline	Desarrollo	المجريات
+3588	The balance of power	La relación de fuerzas	موازين القوى
+3589	Opponent <0/>	Rival <0/>	الخصم <0/>
+3590	XI level <0/>	Nivel del once <0/>	مستوى التشكيلة <0/>
+3591	All the match statistics	Todas las estadísticas del partido	كل إحصائيات المباراة
+3592	The match feed	El directo del partido	مجريات المباراة
+3593	No goals or cards.	Ni goles ni tarjetas.	لا أهداف ولا بطاقات.
+3594	· assist <0/>	· pase <0/>	· تمريرة من <0/>
+3595	Penalties	Penaltis	ركلات الترجيح
+3596	· <0/> go through	· <0/> se clasifica	· يتأهل <0/>
+3597	Line-up · <0/>	Alineación · <0/>	التشكيلة · <0/>
+3598	Formation <0/> · the details of the XI were not yet recorded for this match.	Dibujo <0/> · el detalle del once aún no se registraba en este partido.	الخطة <0/> · لم تكن تفاصيل التشكيلة تُسجَّل بعد في هذه المباراة.
+3599	FootOFF rating	Nota FootOFF	تقييم FootOFF
+3600	Man of the match<0/><1/>	Jugador del partido<0/><1/>	رجل المباراة<0/><1/>
+3601	{n} assist	{n} asistencia	تمريرة حاسمة واحدة
+3602	{n} assists	{n} asistencias	{"one":"تمريرة حاسمة واحدة","two":"تمريرتان حاسمتان","few":"{n} تمريرات حاسمة","other":"{n} تمريرة حاسمة"}
+3603	Momentum before this match	La dinámica antes de este partido	الزخم قبل هذه المباراة
+3604	Recent meetings	Los últimos enfrentamientos	المواجهات الأخيرة
+3605	First meeting between the two clubs.	Primer enfrentamiento entre los dos clubes.	أول مواجهة بين الناديين.
+3606	Season <0/> · <1/><2/>	Temporada <0/> · <1/><2/>	الموسم <0/> · <1/><2/>
+3607	Ticketing	La taquilla	التذاكر
+3608	The figures	Las cifras	الأرقام
+3609	Formation	Dibujo	الخطة
+3610	<0/>% of shots converted	<0/> % de tiros convertidos	<0/>% من التسديدات محوّلة
+3611	<0/>% of shots on target	<0/> % de tiros a puerta	<0/>% من التسديدات على المرمى
+3612	Players used	Jugadores utilizados	اللاعبون المستخدمون
+3613	{n} match recorded	{n} partido registrado	مباراة واحدة مسجلة
+3614	{n} matches recorded	{n} partidos registrados	{"one":"مباراة واحدة مسجلة","two":"مباراتان مسجلتان","few":"{n} مباريات مسجلة","other":"{n} مباراة مسجلة"}
+3615	The club	El club	النادي

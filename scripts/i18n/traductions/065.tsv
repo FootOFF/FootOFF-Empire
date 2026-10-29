@@ -1,0 +1,62 @@
+k:Plonge vers le ballon	Dive towards the ball	Lánzate hacia el balón	ارتمِ نحو الكرة
+k:Lis la course du tireur	Read the taker's run-up	Lee la carrera del lanzador	اقرأ اندفاع المسدِّد
+k:Capté	Held	Blocado	أمسكها
+k:Claqué	Parried	Rechazado	أبعدها
+k:Du bout des gants	Fingertip save	Con la punta de los guantes	بأطراف القفازين
+k:Bien placé	Well positioned	Bien colocado	تمركز جيد
+k:Bien deviné	Good guess	Bien adivinado	توقع صائب
+k:Mauvais côté	Wrong side	Lado equivocado	الجهة الخطأ
+k:Trop tôt : il t’a vu partir	Too early: he saw you go	Demasiado pronto: te vio venir	مبكر جدًا: رآك تتحرك
+k:Panenka arrêtée	Panenka saved	Panenka detenido	صدّ ركلة بانينكا
+k:Lu à la perfection	Read perfectly	Leído a la perfección	قراءة مثالية
+k:Bien senti	Good instinct	Buen instinto	إحساس جيد
+k:Réflexe parfait	Perfect reflex	Reflejo perfecto	رد فعل مثالي
+k:Arrêt	Save	Parada	تصدٍّ
+k:Lance ta course	Start your run	Arranca tu carrera	انطلق في ركضك
+k:Saute pour reprendre le centre	Jump to meet the cross	Salta para rematar el centro	اقفز لتلعب العرضية
+k:Pas de course	No run	Sin carrera	لم تنطلق
+k:But de la tête	Headed goal	Gol de cabeza	هدف بالرأس
+k:Arrêté par le gardien	Saved by the keeper	Detenido por el portero	تصدّى له الحارس
+k:Reprise manquée	Missed the finish	Remate fallido	تسديدة مباشرة ضائعة
+k:Qui est libre ?	Who's free?	¿Quién está libre?	من غير مراقَب؟
+k:Passe ou tir ?	Pass or shoot?	¿Pase o tiro?	تمرير أم تسديد؟
+k:Contre-attaque !	Counter-attack!	¡Contraataque!	هجمة مرتدة!
+k:Bien vu	Well spotted	Bien visto	رؤية جيدة
+k:Passe interceptée	Pass intercepted	Pase interceptado	اعتُرضت التمريرة
+k:Ballon perdu	Ball lost	Balón perdido	كرة ضائعة
+k:Frappe décisive	Decisive strike	Disparo decisivo	تسديدة حاسمة
+k:Passe décisive	Assist	Pase decisivo	تمريرة حاسمة
+k:Tir contré	Shot blocked	Tiro bloqueado	صُدّت التسديدة
+k:Passe coupée	Pass cut out	Pase cortado	قُطعت التمريرة
+k:Trouve la bonne passe	Find the right pass	Encuentra el pase correcto	اعثر على التمريرة الصحيحة
+k:Lecture parfaite	Perfect read	Lectura perfecta	قراءة مثالية
+k:Bonne lecture	Good read	Buena lectura	قراءة جيدة
+k:Receveur marqué	Receiver marked	Receptor marcado	المستقبِل مراقَب
+k:Glisse plus franchement vers le but	Swipe more firmly towards goal	Desliza con más decisión hacia la portería	اسحب بقوة أكبر نحو المرمى
+k:Glisse du ballon vers le but	Swipe from the ball towards goal	Desliza desde el balón hacia la portería	اسحب من الكرة نحو المرمى
+k:Direction : arrête la ligne	Direction: stop the line	Dirección: detén la línea	الاتجاه: أوقف الخط
+k:Hauteur : au-dessus du mur	Height: over the wall	Altura: por encima de la barrera	الارتفاع: فوق الحائط
+k:Hauteur : arrête la ligne	Height: stop the line	Altura: detén la línea	الارتفاع: أوقف الخط
+k:Dans le mur	Into the wall	A la barrera	في الحائط
+k:Pleine lucarne	Top corner	Por la escuadra	في الزاوية العليا
+k:En plein cœur	Dead centre	En pleno centro	في المنتصف تمامًا
+k:Très bien	Very good	Muy bien	جيد جدًا
+k:Cible touchée	Target hit	Diana	أصبت المنطقة
+k:Sur le montant	Off the post	Al poste	في القائم
+k:But, hors cible	Goal, off target	Gol, fuera de la diana	هدف، خارج المنطقة
+k:Cadré, hors cible	On frame, off target	A puerta, fuera de la diana	على المرمى، خارج المنطقة
+k:Haie touchée	Hurdle clipped	Valla tocada	لمستَ الحاجز
+k:Chute évitée de justesse	Fall narrowly avoided	Caída evitada por poco	نجوت من السقوط بأعجوبة
+k:À vos marques… Prêt…	On your marks… Set…	Preparados… Listos…	خذ مكانك… استعد…
+k:Faux départ	False start	Salida en falso	انطلاقة خاطئة
+k:Saute dans la zone dorée	Jump in the gold zone	Salta en la zona dorada	اقفز في المنطقة الذهبية
+k:Départ canon	Rocket start	Salida fulgurante	انطلاقة صاروخية
+k:Partez	Go	Ya	انطلق
+k:Partez !	Go!	¡Ya!	انطلق!
+k:Tir	Shot	Tiro	تسديد
+k:Transferts	Transfers	Traspasos	الانتقالات
+k:Arrivées	Arrivals	Llegadas	الوافدون
+k:Départs	Departures	Salidas	المغادرون
+k:Première : saison {first} · dernière : saison {last}	First: season {first} · latest: season {last}	Primera: temporada {first} · última: temporada {last}	الأول: الموسم {first} · الأخير: الموسم {last}
+k:titre	title	título	لقب
+k:titres	titles	títulos	{"zero":"لقب","one":"لقب","two":"لقبان","few":"ألقاب","many":"لقبًا","other":"لقب"}

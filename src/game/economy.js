@@ -5,6 +5,7 @@ import { clamp, rnd } from './utils';
 import { isAwayRound, leagueLength } from './cups';
 import { REP_START, mercatoRep, sponsorRep } from './reputation';
 import { localTv, tvPerMatch } from './direction';
+import { eur, LANG, numLocale, t } from '../i18n/index';
 
 // Direction du club : chaque niveau baisse de 2 % les exigences de salaire des joueurs (contracts.js).
 export const DIRECTION_EASE = 2;
@@ -24,10 +25,10 @@ export const capacity = (lvl) => STADIUM_CAPACITY[clamp(lvl, 1, 6)];
 // Politique tarifaire (inspecteur du stade) : prix du billet et effet sur le public. Quand le stade refuse du
 // monde, des billets plus chers remplissent quand même l'enceinte et rapportent davantage.
 export const TICKET_POLICIES = {
-  popular: { id: 'popular', name: 'Populaire', price: 0.75, demand: 1.12, blurb: 'Billets à prix doux : plus de monde, ambiance garantie.' },
-  standard: { id: 'standard', name: 'Normal', price: 1, demand: 1, blurb: 'Le tarif de la division.' },
-  premium: { id: 'premium', name: 'Premium', price: 1.35, demand: 0.84, blurb: 'Plus cher : un peu moins de monde, plus de recettes si le stade est plein.' },
-  prestige: { id: 'prestige', name: 'Prestige', price: 1.8, demand: 0.64, blurb: 'Places de luxe : rentable seulement quand la demande dépasse largement la capacité.' },
+  popular: { id: 'popular', name: t('Populaire'), price: 0.75, demand: 1.12, blurb: t('Billets à prix doux : plus de monde, ambiance garantie.') },
+  standard: { id: 'standard', name: t('Normal'), price: 1, demand: 1, blurb: t('Le tarif de la division.') },
+  premium: { id: 'premium', name: t('Premium'), price: 1.35, demand: 0.84, blurb: t('Plus cher : un peu moins de monde, plus de recettes si le stade est plein.') },
+  prestige: { id: 'prestige', name: t('Prestige'), price: 1.8, demand: 0.64, blurb: t('Places de luxe : rentable seulement quand la demande dépasse largement la capacité.') },
 };
 export const TICKET_ORDER = ['popular', 'standard', 'premium', 'prestige'];
 export const policyOf = (s) => TICKET_POLICIES[s.ticketPolicy] || TICKET_POLICIES.standard;
@@ -265,87 +266,87 @@ export function academyTalent(a) {
 // Incertitude sur le potentiel d'un joueur qu'on découvre (demi-largeur de la fourchette affichée, en points de
 // note ; potentialRange, players.js) : les éducateurs d'une académie développée savent mieux juger.
 export const scoutingError = (academyLvl = 0) => clamp(2.5 - 0.35 * academyLvl, 0.75, 3);
-const dec = (v) => (Math.round(v * 10) / 10).toLocaleString('fr-FR');
-const dec2 = (v) => (Math.round(v * 100) / 100).toLocaleString('fr-FR');
+const dec = (v) => (Math.round(v * 10) / 10).toLocaleString(numLocale());
+const dec2 = (v) => (Math.round(v * 100) / 100).toLocaleString(numLocale());
 
 // Centre d'entraînement à un niveau (training.js) : épreuves ouvertes, la dernière débloquée.
 const drillsAt = (lvl) => Object.values(DRILLS).filter((d) => d.level <= lvl);
 const newDrill = (lvl) => Object.values(DRILLS).find((d) => d.level === lvl && lvl > 1);
 
 // Famille d'un bâtiment (vitrine de construction) : ce qu'il apporte d'abord.
-export const BUILDING_KIND = { terrain: 'Revenus', training: 'Sport', academy: 'Sport', fans: 'Revenus', sponsor: 'Revenus', transfers: 'Mercato', direction: 'Revenus', medical: 'Sport', league: 'Prestige' };
+export const BUILDING_KIND = { terrain: t('Revenus'), training: t('Sport'), academy: t('Sport'), fans: t('Revenus'), sponsor: t('Revenus'), transfers: t('Mercato'), direction: t('Revenus'), medical: t('Sport'), league: t('Prestige') };
 
 // Effets d'un bâtiment à un niveau, en chiffres (vitrine et fenêtre d'aperçu) : le premier est l'effet phare, celui
 // que montre la carte ; les suivants détaillent. Mêmes formules que buildingEffect.
 export function buildingStats(key, lvl, s) {
-  const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n);
+  const fmt = (n) => new Intl.NumberFormat(numLocale()).format(n);
   switch (key) {
     case 'terrain': {
       const loges = LOGES_SHARE[lvl] ? Math.round(capacity(lvl) * LOGES_SHARE[lvl]) : 0;
       return [
-        { label: 'Places', value: fmt(capacity(lvl)), short: `${fmt(capacity(lvl))} places` },
-        ...(loges ? [{ label: 'Places en loges', value: fmt(loges) }] : []),
+        { label: t('Places'), value: fmt(capacity(lvl)), short: t('{fmt} places', { fmt: fmt(capacity(lvl)) }) },
+        ...(loges ? [{ label: t('Places en loges'), value: fmt(loges) }] : []),
       ];
     }
     case 'training': {
       const fresh = newDrill(lvl);
       return [
-        { label: 'Progrès par séance', value: `×${dec2(TRAINING_MULT[lvl])}`, short: 'Séances entre les matchs', sub: 'quatre joueurs entre deux matchs' },
-        { label: 'Épreuves en 3D', value: fmt(drillsAt(lvl).length), sub: fresh ? `nouvelle : ${fresh.label.toLowerCase()}` : 'une par catégorie' },
-        { label: 'Séance collective', value: `${dec(TRAINING_COLLECTIVE[lvl] * 100)} %`, sub: 'de la marge de progrès, après chaque match' },
-        { label: 'Programmes de signes', value: PROGRAM_STEPS[lvl] ? `${PROGRAM_STEPS[lvl]} séances` : 'au niveau 3', sub: 'un signe distinctif appris' },
+        { label: t('Progrès par séance'), value: `×${dec2(TRAINING_MULT[lvl])}`, short: t('Séances entre les matchs'), sub: t('quatre joueurs entre deux matchs') },
+        { label: t('Épreuves en 3D'), value: fmt(drillsAt(lvl).length), sub: fresh ? t('nouvelle : {toLowerCase}', { toLowerCase: fresh.label.toLowerCase() }) : t('une par catégorie') },
+        { label: t('Séance collective'), value: `${dec(TRAINING_COLLECTIVE[lvl] * 100)} %`, sub: t('de la marge de progrès, après chaque match') },
+        { label: t('Programmes de signes'), value: PROGRAM_STEPS[lvl] ? t('{v} séances', { v: PROGRAM_STEPS[lvl] }) : t('au niveau 3'), sub: t('un signe distinctif appris') },
       ];
     }
     case 'academy': {
-      const t = academyTalent(lvl);
+      const row = academyTalent(lvl);
       return [
-        { label: 'Potentiel des jeunes', value: `${t.pot[0]} à ${t.pot[1]}`, short: `Potentiel ${t.pot[0]} à ${t.pot[1]}`, sub: `huit sur dix · rarement ${t.top}` },
-        { label: 'Jeunes repérés', value: fmt(SCOUTED[lvl]), sub: 'après chaque journée' },
-        { label: 'Niveau à leur arrivée', value: `${t.level[0]} à ${t.level[1]}` },
-        { label: 'Fourchette du potentiel', value: `${dec(2 * scoutingError(lvl))} points`, sub: 'plus étroite, mieux cernée' },
-        { label: 'Équipe de jeunes', value: `${YOUTH_PLACES} places`, sub: 'recrutement gratuit, sans salaire' },
+        { label: t('Potentiel des jeunes'), value: t('{v} à {v2}', { v: row.pot[0], v2: row.pot[1] }), short: t('Potentiel {v} à {v2}', { v: row.pot[0], v2: row.pot[1] }), sub: t('huit sur dix · rarement {top}', { top: row.top }) },
+        { label: t('Jeunes repérés'), value: fmt(SCOUTED[lvl]), sub: t('après chaque journée') },
+        { label: t('Niveau à leur arrivée'), value: t('{v} à {v2}', { v: row.level[0], v2: row.level[1] }) },
+        { label: t('Fourchette du potentiel'), value: t('{dec} points', { dec: dec(2 * scoutingError(lvl)) }), sub: t('plus étroite, mieux cernée') },
+        { label: t('Équipe de jeunes'), value: t('{fmt} places', { fmt: YOUTH_PLACES }), sub: t('recrutement gratuit, sans salaire') },
       ];
     }
     case 'fans':
       return [
-        { label: 'Public', value: `+${lvl * 7} %`, short: `Public +${lvl * 7} %` },
-        { label: 'Buvette', value: `+${lvl * 10} %` },
-        { label: 'Boutique', value: `+${lvl * 12} %` },
-        { label: 'Réputation par match', value: `+${lvl * 10} %` },
+        { label: t('Public'), value: `+${lvl * 7} %`, short: t('Public +{v} %', { v: lvl * 7 }) },
+        { label: t('Buvette'), value: `+${lvl * 10} %` },
+        { label: t('Boutique'), value: `+${lvl * 12} %` },
+        { label: t('Réputation par match'), value: `+${lvl * 10} %` },
       ];
     case 'sponsor': {
       const year = sponsorIncome(lvl, s.divisionIndex, s.reputation);
       return [
-        { label: 'Sponsors', value: `${fmt(year)} €`, short: `${fmt(year)} € / saison`, sub: 'par saison, versés à la reprise' },
-        { label: 'Revenus hors ligne', value: `${fmt(offlinePerHour(lvl, s.divisionIndex))} €`, sub: 'par heure d’absence' },
+        { label: t('Sponsors'), value: LANG !== 'fr' ? eur(year) : `${fmt(year)} €`, short: t('{fmt} € / saison', { fmt: fmt(year) }), sub: t('par saison, versés à la reprise') },
+        { label: t('Revenus hors ligne'), value: LANG !== 'fr' ? eur(offlinePerHour(lvl, s.divisionIndex)) : `${fmt(offlinePerHour(lvl, s.divisionIndex))} €`, sub: t('par heure d’absence') },
       ];
     }
     case 'direction':
       return [
-        { label: 'Droits TV', value: `+${lvl * 8} %`, short: `Droits TV +${lvl * 8} %`, sub: s && !DIVISIONS[s.divisionIndex].tv ? `télé locale : ${fmt(localTv(lvl))} € par match` : 'par match de championnat' },
-        { label: 'Contrats', value: `−${lvl * DIRECTION_EASE} %`, sub: 'sur les exigences de salaire des joueurs' },
-        { label: 'Négociations', value: 'droits TV, contrats', sub: 'chances d’accord exactes' },
-        { label: 'Billetterie', value: '4 formules', sub: 'recette prévue de chacune' },
+        { label: t('Droits TV'), value: `+${lvl * 8} %`, short: t('Droits TV +{v} %', { v: lvl * 8 }), sub: s && !DIVISIONS[s.divisionIndex].tv ? t('télé locale : {fmt} € par match', { fmt: fmt(localTv(lvl)) }) : t('par match de championnat') },
+        { label: t('Contrats'), value: `−${lvl * DIRECTION_EASE} %`, sub: t('sur les exigences de salaire des joueurs') },
+        { label: t('Négociations'), value: t('droits TV, contrats'), sub: t('chances d’accord exactes') },
+        { label: t('Billetterie'), value: t('4 formules'), sub: t('recette prévue de chacune') },
       ];
     case 'medical':
       return [
-        { label: 'Soin d’une blessure légère', value: `${treatPct(lvl, 1)} %`, short: `Soins réussis à ${treatPct(lvl, 1)} %`, sub: 'un match d’absence en moins' },
-        { label: 'Soin d’une fracture', value: `${treatPct(lvl, 9)} %`, sub: 'neuf matchs d’absence' },
-        { label: 'Risque de blessure', value: `−${lvl * 8} %`, sub: 'en match, grâce à la prévention' },
-        { label: 'Coût d’un soin', value: '15 % du salaire', sub: 'annuel du joueur soigné' },
+        { label: t('Soin d’une blessure légère'), value: `${treatPct(lvl, 1)} %`, short: t('Soins réussis à {treatPct} %', { treatPct: treatPct(lvl, 1) }), sub: t('un match d’absence en moins') },
+        { label: t('Soin d’une fracture'), value: `${treatPct(lvl, 9)} %`, sub: t('neuf matchs d’absence') },
+        { label: t('Risque de blessure'), value: `−${lvl * 8} %`, sub: t('en match, grâce à la prévention') },
+        { label: t('Coût d’un soin'), value: t('15 % du salaire'), sub: t('annuel du joueur soigné') },
       ];
     case 'league':
       return [
-        { label: 'Championnats entre amis', value: '3 à la fois', short: 'Ligues entre amis', sub: 'créés ou rejoints' },
-        { label: 'Clubs par championnat', value: '8', sub: 'tes amis, complétés par l’ordinateur' },
-        { label: 'Invitation', value: 'lien ou code', sub: 'tes amis entrent gratuitement' },
-        { label: 'Entretien', value: 'aucun', sub: 'un monde à part de ta carrière' },
+        { label: t('Championnats entre amis'), value: t('3 à la fois'), short: t('Ligues entre amis'), sub: t('créés ou rejoints') },
+        { label: t('Clubs par championnat'), value: '8', sub: t('tes amis, complétés par l’ordinateur') },
+        { label: t('Invitation'), value: t('lien ou code'), sub: t('tes amis entrent gratuitement') },
+        { label: t('Entretien'), value: t('aucun'), sub: t('un monde à part de ta carrière') },
       ];
     case 'transfers':
       return [
-        { label: 'Joueurs sous contrat', value: fmt(officeSize(lvl)), short: `${officeSize(lvl)} joueurs suivis`, sub: 'sur ton mercato' },
-        { label: 'Indemnités', value: `−${lvl * 3} %` },
-        { label: 'Vendeurs', value: 'plus conciliants' },
+        { label: t('Joueurs sous contrat'), value: fmt(officeSize(lvl)), short: t('{officeSize} joueurs suivis', { officeSize: officeSize(lvl) }), sub: t('sur ton mercato') },
+        { label: t('Indemnités'), value: `−${lvl * 3} %` },
+        { label: t('Vendeurs'), value: t('plus conciliants') },
       ];
     default:
       return [];
@@ -354,39 +355,39 @@ export function buildingStats(key, lvl, s) {
 
 // Effet d'un bâtiment à un niveau donné (inspecteur).
 export function buildingEffect(key, lvl, divIndex, rep = REP_START) {
-  const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n);
+  const fmt = (n) => new Intl.NumberFormat(numLocale()).format(n);
   switch (key) {
     case 'terrain':
-      return `Capacité d’accueil : ${fmt(capacity(lvl))} places${LOGES_SHARE[lvl] ? ` · ${fmt(Math.round(capacity(lvl) * LOGES_SHARE[lvl]))} places en loges` : ''}.`;
+      return t('Capacité d’accueil : {fmt} places{v}.', { fmt: fmt(capacity(lvl)), v: LOGES_SHARE[lvl] ? t(' · {fmt} places en loges', { fmt: fmt(Math.round(capacity(lvl) * LOGES_SHARE[lvl])) }) : '' });
     case 'training':
       return lvl > 0
-        ? `Séances entre les matchs : progrès ×${dec2(TRAINING_MULT[lvl])} · ${drillsAt(lvl).length} épreuves en 3D · séance collective après chaque match${PROGRAM_STEPS[lvl] ? ` · signes distinctifs appris en ${PROGRAM_STEPS[lvl]} séances` : ''}.`
-        : 'Pas de séances d’entraînement tant que le centre n’est pas construit.';
+        ? t('Séances entre les matchs : progrès ×{dec2} · {length} épreuves en 3D · séance collective après chaque match{v}.', { dec2: dec2(TRAINING_MULT[lvl]), length: drillsAt(lvl).length, v: PROGRAM_STEPS[lvl] ? t(' · signes distinctifs appris en {v} séances', { v: PROGRAM_STEPS[lvl] }) : '' })
+        : t('Pas de séances d’entraînement tant que le centre n’est pas construit.');
     case 'academy': {
-      if (lvl <= 0) return 'Pas d’équipe de jeunes tant que l’académie n’est pas construite.';
-      const t = academyTalent(lvl);
-      return `Équipe de jeunes de ${YOUTH_PLACES} places · ${SCOUTED[lvl]} jeunes repérés après chaque journée : niveau ${t.level[0]} à ${t.level[1]}, potentiel ${t.pot[0]} à ${t.pot[1]} (rarement ${t.top}), cerné à ${dec(2 * scoutingError(lvl))} points près.`;
+      if (lvl <= 0) return t('Pas d’équipe de jeunes tant que l’académie n’est pas construite.');
+      const row = academyTalent(lvl);
+      return t('Équipe de jeunes de {YOUTH_PLACES} places · {v} jeunes repérés après chaque journée : niveau {v2} à {v3}, potentiel {v4} à {v5} (rarement {top}), cerné à {dec} points près.', { YOUTH_PLACES, v: SCOUTED[lvl], v2: row.level[0], v3: row.level[1], v4: row.pot[0], v5: row.pot[1], top: row.top, dec: dec(2 * scoutingError(lvl)) });
     }
     case 'fans':
-      return `Public attiré : +${lvl * 7} % · Buvette +${lvl * 10} %, boutique +${lvl * 12} % · Réputation par match : +${lvl * 10} %.`;
+      return t('Public attiré : +{v} % · Buvette +{v2} %, boutique +{v3} % · Réputation par match : +{v2} %.', { v: lvl * 7, v2: lvl * 10, v3: lvl * 12 });
     case 'direction':
       return lvl > 0
-        ? `Négociations du club : droits TV +${lvl * 8} %${DIVISIONS[divIndex].tv ? '' : ` (télé locale : ${fmt(localTv(lvl))} € par match)`}, hausse à demander chaque saison · exigences de salaire des joueurs −${lvl * DIRECTION_EASE} % (recrues et prolongations) · formule des billets.`
-        : 'Pas de négociations tant que la Direction du club n’est pas construite.';
+        ? t('Négociations du club : droits TV +{v} %{v2}, hausse à demander chaque saison · exigences de salaire des joueurs −{v3} % (recrues et prolongations) · formule des billets.', { v: lvl * 8, v2: DIVISIONS[divIndex].tv ? '' : t(' (télé locale : {fmt} € par match)', { fmt: fmt(localTv(lvl)) }), v3: lvl * DIRECTION_EASE })
+        : t('Pas de négociations tant que la Direction du club n’est pas construite.');
     case 'medical':
       return lvl > 0
-        ? `Soins des blessés : un par joueur et par date, réussis à ${treatPct(lvl, 1)} % pour une blessure légère, ${treatPct(lvl, 9)} % pour une fracture · risque de blessure en match −${lvl * 8} %.`
-        : 'Pas de soins tant que le centre médical n’est pas construit : un blessé attend sa guérison.';
+        ? t('Soins des blessés : un par joueur et par date, réussis à {treatPct} % pour une blessure légère, {treatPct2} % pour une fracture · risque de blessure en match −{v} %.', { treatPct: treatPct(lvl, 1), treatPct2: treatPct(lvl, 9), v: lvl * 8 })
+        : t('Pas de soins tant que le centre médical n’est pas construit : un blessé attend sa guérison.');
     case 'league':
       return lvl > 0
-        ? 'Championnats entre amis : jusqu’à 3 à la fois, 8 clubs chacun, tes amis invités par un lien ou un code. Un monde à part de ta carrière, sans entretien.'
-        : 'Pas de championnat entre amis tant que le Siège de la Ligue n’est pas construit.';
+        ? t('Championnats entre amis : jusqu’à 3 à la fois, 8 clubs chacun, tes amis invités par un lien ou un code. Un monde à part de ta carrière, sans entretien.')
+        : t('Pas de championnat entre amis tant que le Siège de la Ligue n’est pas construit.');
     case 'transfers':
       return lvl > 0
-        ? `Réseau de recruteurs : ${officeSize(lvl)} joueurs sous contrat sur ton mercato · indemnités −${lvl * 3} % · vendeurs plus conciliants · potentiel mieux cerné.`
-        : `Sans bureau, ton mercato ne montre que ${officeSize(0)} joueurs sous contrat listés publiquement, en plus des joueurs libres.`;
+        ? t('Réseau de recruteurs : {officeSize} joueurs sous contrat sur ton mercato · indemnités −{v} % · vendeurs plus conciliants · potentiel mieux cerné.', { officeSize: officeSize(lvl), v: lvl * 3 })
+        : t('Sans bureau, ton mercato ne montre que {officeSize} joueurs sous contrat listés publiquement, en plus des joueurs libres.', { officeSize: officeSize(0) });
     case 'sponsor':
-      return `Sponsors : ${fmt(sponsorIncome(lvl, divIndex, rep))} € par saison, versés à la reprise · ${fmt(offlinePerHour(lvl, divIndex))} € par heure, même hors ligne.`;
+      return t('Sponsors : {fmt} € par saison, versés à la reprise · {fmt2} € par heure, même hors ligne.', { fmt: fmt(sponsorIncome(lvl, divIndex, rep)), fmt2: fmt(offlinePerHour(lvl, divIndex)) });
     default:
       return '';
   }

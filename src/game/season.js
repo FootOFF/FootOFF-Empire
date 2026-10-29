@@ -20,6 +20,7 @@ import { collectiveSession, staffSession, tidyTraining, windowKey } from './trai
 import { leagueSeasonStart, officialTable } from './leagueSeason';
 import { divisionWages, ensureDeals, lastYear } from './contracts';
 import { ensureSquadMin } from './squadFloor';
+import { minuteLabel, numLocale, t, tn } from '../i18n/index';
 
 export function roundRobin(n) {
   const rounds = [];
@@ -45,8 +46,8 @@ function announceLastYear(s) {
   const many = last.length > 1;
   pushJournal(s, {
     season: s.seasonNumber, kind: 'club',
-    title: many ? `${last.length} joueurs entament leur dernière année de contrat` : `${last[0].name} entame sa dernière année de contrat`,
-    text: `${many ? `${last.slice(0, -1).map((p) => p.name).join(', ')} et ${last.at(-1).name}` : last[0].name} : sans prolongation, ${many ? 'ils partiront' : 'il partira'} libre${many ? 's' : ''} à la fin de la saison, sans indemnité.`,
+    title: many ? t('{length} joueurs entament leur dernière année de contrat', { length: last.length }) : t('{name} entame sa dernière année de contrat', { name: last[0].name }),
+    text: t('{v} : sans prolongation, {v2} libre{v3} à la fin de la saison, sans indemnité.', { v: many ? t('{join} et {name}', { join: last.slice(0, -1).map((p) => p.name).join(', '), name: last.at(-1).name }) : last[0].name, v2: many ? t('ils partiront') : t('il partira'), v3: many ? 's' : '' }),
   });
 }
 
@@ -93,8 +94,8 @@ export function startSeason(s) {
     s.money += C1_ENTRY;
     book(s, 'cups', C1_ENTRY);
     pushJournal(s, {
-      season: s.seasonNumber, kind: 'club', title: `${s.clubName} dispute la Coupe d’Europe des clubs`,
-      text: `Grand soir européen en vue : premier tour face ${clubAfter('à ', s.cups.c1.opp.name)}. Prime de participation : ${C1_ENTRY.toLocaleString('fr-FR')} €.`,
+      season: s.seasonNumber, kind: 'club', title: t('{clubName} dispute la Coupe d’Europe des clubs', { clubName: s.clubName }),
+      text: t('Grand soir européen en vue : premier tour face {clubAfter}. Prime de participation : {toLocaleString} €.', { clubAfter: clubAfter('à ', s.cups.c1.opp.name), toLocaleString: C1_ENTRY.toLocaleString(numLocale()) }),
     });
   }
   if (s.seasonNumber > 1) paySponsors(s);
@@ -111,8 +112,8 @@ function paySponsors(s) {
   s.seasonStats.sponsors = amount;
   s.sponsorsPaid = s.seasonNumber;
   pushJournal(s, {
-    season: s.seasonNumber, kind: 'club', title: `Sponsors de la saison : ${n(amount)} €`,
-    text: `Les partenaires du club signent pour la saison ${s.seasonNumber} ${ofDiv(DIVISIONS[s.divisionIndex].name)} et paient leur contrat à la reprise.`,
+    season: s.seasonNumber, kind: 'club', title: t('Sponsors de la saison : {n} €', { n: n(amount) }),
+    text: t('Les partenaires du club signent pour la saison {seasonNumber} {ofDiv} et paient leur contrat à la reprise.', { seasonNumber: s.seasonNumber, ofDiv: ofDiv(DIVISIONS[s.divisionIndex].name) }),
   });
 }
 export const sponsorsPaid = (s) => s.sponsorsPaid === s.seasonNumber;
@@ -223,7 +224,7 @@ function cupResult(s, ctx, res) {
   const note = { comp: ctx.comp, stage, won, trophy: false, prize: 0, next: null, text: '' };
   if (!won) {
     c.alive = false;
-    note.text = `L’aventure s’arrête en ${STAGES[stage].toLowerCase()}.`;
+    note.text = t('L’aventure s’arrête en {toLowerCase}.', { toLowerCase: STAGES[stage].toLowerCase() });
     return note;
   }
   const prize = cupPrize(ctx.comp, stage, s.divisionIndex);
@@ -236,13 +237,13 @@ function cupResult(s, ctx, res) {
     note.trophy = true;
     s.trophies = [...(s.trophies || []), { comp: ctx.comp, season: s.seasonNumber, division: DIVISIONS[s.divisionIndex].name, opp: res.oppName }];
     s.reputation = Math.round((s.reputation + (ctx.comp === 'c1' ? 6 : 3)) * 10) / 10;
-    note.text = `Le trophée rejoint la vitrine du club. Prime : ${prize.toLocaleString('fr-FR')} €.`;
+    note.text = t('Le trophée rejoint la vitrine du club. Prime : {toLocaleString} €.', { toLocaleString: prize.toLocaleString(numLocale()) });
     return note;
   }
   c.stage = stage + 1;
   c.opp = drawOpponent(s, ctx.comp, c.stage);
   note.next = c.opp;
-  note.text = `Prime : ${prize.toLocaleString('fr-FR')} €. Prochain tour (${STAGES[c.stage].toLowerCase()}) : ${c.opp.name}${c.opp.division && c.opp.division !== 'Europe' ? `, ${c.opp.division}` : ''}.`;
+  note.text = t('Prime : {toLocaleString} €. Prochain tour ({toLowerCase}) : {name}{v}.', { toLocaleString: prize.toLocaleString(numLocale()), toLowerCase: STAGES[c.stage].toLowerCase(), name: c.opp.name, v: c.opp.division && c.opp.division !== t('Europe') ? `, ${c.opp.division}` : '' });
   return note;
 }
 
@@ -250,37 +251,37 @@ function reportText(s, res) {
   const att = res.attendance;
   const opp = (prep = '') => clubAfter(prep, res.oppName); // « contre l’AS… », « face au FC… »
   const buts = res.gf
-    ? `Buts : ${res.scorers.map((x) => `${x.name} ${ordinal(x.minute, true)}`).join(', ')}.`
-    : `${s.clubName} n’a pas trouvé la faille.`;
-  const money = new Intl.NumberFormat('fr-FR').format(res.revenue);
+    ? t('Buts : {join}.', { join: res.scorers.map((x) => `${x.name} ${minuteLabel(x.minute)}`).join(', ') })
+    : t('{clubName} n’a pas trouvé la faille.', { clubName: s.clubName });
+  const money = new Intl.NumberFormat(numLocale()).format(res.revenue);
   if (res.away) { // à l'extérieur (Élite) : ni public à nous, ni billetterie, seulement les droits TV
     const intro = res.gf > res.ga
-      ? pick([`Victoire à l’extérieur : ${s.clubName} fait taire le stade ${opp('de ')}.`, `${s.clubName} s’impose chez ${clubAfter('', res.oppName)} : trois points précieux loin de ses bases.`])
+      ? pick([t('Victoire à l’extérieur : {clubName} fait taire le stade {opp}.', { clubName: s.clubName, opp: opp('de ') }), t('{clubName} s’impose chez {clubAfter} : trois points précieux loin de ses bases.', { clubName: s.clubName, clubAfter: clubAfter('', res.oppName) })])
       : res.gf === res.ga
-        ? pick([`Point arraché chez ${clubAfter('', res.oppName)}.`, `Match nul à l’extérieur face ${opp('à ')} : un point pris loin de chez soi.`])
-        : pick([`Défaite à l’extérieur : ${s.clubName} cède chez ${clubAfter('', res.oppName)}.`, `Soirée difficile dans le stade ${opp('de ')} : ${s.clubName} repart bredouille.`]);
-    return `${intro} ${buts} Droits TV : ${money} €.`;
+        ? pick([t('Point arraché chez {clubAfter}.', { clubAfter: clubAfter('', res.oppName) }), t('Match nul à l’extérieur face {opp} : un point pris loin de chez soi.', { opp: opp('à ') })])
+        : pick([t('Défaite à l’extérieur : {clubName} cède chez {clubAfter}.', { clubName: s.clubName, clubAfter: clubAfter('', res.oppName) }), t('Soirée difficile dans le stade {opp} : {clubName} repart bredouille.', { opp: opp('de '), clubName: s.clubName })]);
+    return t('{intro} {buts} Droits TV : {money} €.', { intro, buts, money });
   }
   let intro;
   if (res.gf > res.ga) {
     intro = pick([
-      `Devant ${att} spectateurs, ${s.clubName} a fait le métier contre ${opp()}.`,
-      `Soirée propre : ${s.clubName} maîtrise ${opp()} et repart avec les trois points.`,
-      `Le projet avance. ${s.clubName} a construit son succès sur un bloc solide, devant ${att} spectateurs.`,
+      t('Devant {att} spectateurs, {clubName} a fait le métier contre {opp}.', { att, clubName: s.clubName, opp: opp() }),
+      t('Soirée propre : {clubName} maîtrise {opp} et repart avec les trois points.', { clubName: s.clubName, opp: opp() }),
+      t('Le projet avance. {clubName} a construit son succès sur un bloc solide, devant {att} spectateurs.', { clubName: s.clubName, att }),
     ]);
   } else if (res.gf === res.ga) {
     intro = pick([
-      `${s.clubName} et ${opp()} se sont neutralisés (${att} spectateurs). Un point de plus, mais on en voulait trois.`,
-      `Match serré face ${opp('à ')} : aucune équipe n’a trouvé la faille décisive.`,
+      t('{clubName} et {opp} se sont neutralisés ({att} spectateurs). Un point de plus, mais on en voulait trois.', { clubName: s.clubName, opp: opp(), att }),
+      t('Match serré face {opp} : aucune équipe n’a trouvé la faille décisive.', { opp: opp('à ') }),
     ]);
   } else {
     intro = pick([
-      `Frustration au coup de sifflet final : ${s.clubName} s’incline contre ${opp()}.`,
-      `Soirée difficile devant ${att} spectateurs — ${s.clubName} a manqué de tranchant dans la surface.`,
-      `Rien ne fonctionne ce soir. Défaite logique face ${opp('à ')}.`,
+      t('Frustration au coup de sifflet final : {clubName} s’incline contre {opp}.', { clubName: s.clubName, opp: opp() }),
+      t('Soirée difficile devant {att} spectateurs — {clubName} a manqué de tranchant dans la surface.', { att, clubName: s.clubName }),
+      t('Rien ne fonctionne ce soir. Défaite logique face {opp}.', { opp: opp('à ') }),
     ]);
   }
-  return `${intro} ${buts} Recettes : ${money} €.`;
+  return t('{intro} {buts} Recettes : {money} €.', { intro, buts, money });
 }
 
 // Contexte du prochain match : adversaire, lieu (home : à domicile ; les coupes se jouent toujours à domicile, le
@@ -366,8 +367,8 @@ export function applyMatchResult(s, live) {
     if (res.ga === 0 && (st.pos === 'G' || st.pos === 'D') && (st.minutes ?? 90) >= 60) p.season.clean = (p.season.clean || 0) + 1;
     p.form = [...(p.form || []), st.rating].slice(-5);
     // suspensions : un rouge direct vaut deux matchs, un second jaune un ; trois jaunes dans la saison, un match
-    if (st.red) { p.ban = (p.ban || 0) + (st.yellow ? 1 : 2); absences.push({ id: p.id, name: p.name, kind: 'ban', matches: p.ban, why: st.yellow ? 'second carton jaune' : 'carton rouge' }); }
-    else if (st.yellow && p.season.yellow % 3 === 0) { p.ban = (p.ban || 0) + 1; absences.push({ id: p.id, name: p.name, kind: 'ban', matches: p.ban, why: 'trois cartons jaunes' }); }
+    if (st.red) { p.ban = (p.ban || 0) + (st.yellow ? 1 : 2); absences.push({ id: p.id, name: p.name, kind: 'ban', matches: p.ban, why: st.yellow ? t('second carton jaune') : t('carton rouge') }); }
+    else if (st.yellow && p.season.yellow % 3 === 0) { p.ban = (p.ban || 0) + 1; absences.push({ id: p.id, name: p.name, kind: 'ban', matches: p.ban, why: t('trois cartons jaunes') }); }
     // condition physique : le match coûte selon le temps de jeu et l'endurance
     p.fit = Math.max(0, Math.round((fitOf(p) - (matchCost(p) * (st.minutes ?? 90)) / 90) * 10) / 10);
     fitness[p.id] = [p.fit]; // condition au coup de sifflet final (après-match)
@@ -407,8 +408,8 @@ export function applyMatchResult(s, live) {
   if (absences.length) {
     pushJournal(s, {
       season: s.seasonNumber, round: s.round, kind: 'club',
-      title: absences.length > 1 ? `${absences.length} absents après le match` : absences[0].kind === 'injury' ? `${absences[0].name} blessé` : `${absences[0].name} suspendu`,
-      text: absences.map((a) => `${a.name} : ${a.kind === 'injury' ? 'blessé' : 'suspendu'} ${a.matches} match${a.matches > 1 ? 's' : ''} (${a.why})`).join(' · ') + '.',
+      title: absences.length > 1 ? t('{length} absents après le match', { length: absences.length }) : absences[0].kind === 'injury' ? t('{name} blessé', { name: absences[0].name }) : t('{name} suspendu', { name: absences[0].name }),
+      text: absences.map((a) => tn(a.matches, '{name} : {v} {matches} match ({why})', '{name} : {v} {matches} matchs ({why})', { name: a.name, v: a.kind === 'injury' ? t('blessé') : t('suspendu'), matches: a.matches, why: a.why }, a.matches > 1)).join(' · ') + '.',
     });
   }
   ensureLineup(s); // blessés et suspendus quittent le onze du prochain match
@@ -421,16 +422,16 @@ export function applyMatchResult(s, live) {
   if (!league) {
     pushJournal(s, {
       season: s.seasonNumber, round: s.round, kind: 'match',
-      title: cupNote.trophy ? `${s.clubName} remporte ${cupNote.comp === 'c1' ? 'la Coupe d’Europe des clubs' : 'la Coupe nationale'} !`
-        : cupNote.won ? `${COMPS[ctx.comp].short} : qualification contre ${clubAfter('', res.oppName)} (${score})`
-          : `${COMPS[ctx.comp].short} : élimination face ${clubAfter('à ', res.oppName)} (${score})`,
+      title: cupNote.trophy ? t('{clubName} remporte {v} !', { clubName: s.clubName, v: cupNote.comp === 'c1' ? t('la Coupe d’Europe des clubs') : t('la Coupe nationale') })
+        : cupNote.won ? t('{short} : qualification contre {clubAfter} ({score})', { short: COMPS[ctx.comp].short, clubAfter: clubAfter('', res.oppName), score })
+          : t('{short} : élimination face {clubAfter} ({score})', { short: COMPS[ctx.comp].short, clubAfter: clubAfter('à ', res.oppName), score }),
       text: `${ctx.label}. ${cupNote.text}`,
     });
     return s;
   }
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'match',
-    title: res.gf > res.ga ? `Victoire ${score} face ${clubAfter('à ', res.oppName)}` : res.gf === res.ga ? `Match nul ${score} contre ${clubAfter('', res.oppName)}` : `Défaite ${score} face ${clubAfter('à ', res.oppName)}`,
+    title: res.gf > res.ga ? t('Victoire {score} face {clubAfter}', { score, clubAfter: clubAfter('à ', res.oppName) }) : res.gf === res.ga ? t('Match nul {score} contre {clubAfter}', { score, clubAfter: clubAfter('', res.oppName) }) : t('Défaite {score} face {clubAfter}', { score, clubAfter: clubAfter('à ', res.oppName) }),
     text: reportText(s, res),
   });
   return s;
@@ -455,7 +456,7 @@ export function nextOpponent(s) {
   return matchContext(s)?.opp || null;
 }
 
-const n = (v) => new Intl.NumberFormat('fr-FR').format(v);
+const n = (v) => new Intl.NumberFormat(numLocale()).format(v);
 
 export function endSeason(s) {
   if (!s.league) for (let guard = 0; nextFixture(s) && guard < 40; guard++) playRound(s); // dates restantes jouées d'un bloc (22 en Élite)
@@ -489,12 +490,12 @@ export function endSeason(s) {
     s.money += titleBonus;
     book(s, 'titles', titleBonus);
     s.trophies = [...(s.trophies || []), { comp: 'league', season: s.seasonNumber, division: div.name }];
-    events.unshift(`Champion ${ofDiv(div.name)} ! Le trophée rejoint la vitrine et rapporte ${n(titleBonus)} € de primes de titre.`);
+    events.unshift(t('Champion {ofDiv} ! Le trophée rejoint la vitrine et rapporte {n} € de primes de titre.', { ofDiv: ofDiv(div.name), n: n(titleBonus) }));
   }
   // Coupe d'Europe : les deux premiers de l'Élite la disputent la saison suivante
   if (!s.league && s.divisionIndex === DIVISIONS.length - 1 && position <= 2) {
     s.c1Next = true;
-    events.push(`Qualifié pour la Coupe d’Europe des clubs : ${n(C1_ENTRY)} € de prime de participation dès la reprise.`);
+    events.push(t('Qualifié pour la Coupe d’Europe des clubs : {n} € de prime de participation dès la reprise.', { n: n(C1_ENTRY) }));
   }
   // Plan de redressement : saison bouclée dans le rouge → le conseil vend les plus gros salaires.
   while (s.money < 0 && s.players.length > SQUAD_MIN + 2) {
@@ -506,7 +507,7 @@ export function endSeason(s) {
     s.money += fee;
     book(s, 'sales', fee);
     logMove(s, 'out', p, fee, club, true); // bilan du mercato
-    events.push(`Plan de redressement : comptes dans le rouge, le conseil vend ${p.name} (${n(fee)} €).`);
+    events.push(t('Plan de redressement : comptes dans le rouge, le conseil vend {name} ({n} €).', { name: p.name, n: n(fee) }));
   }
   const repBefore = s.reputation;
   // l'intersaison efface une part de la notoriété (on oublie vite) ; montée, titre et descente comptent ensuite
@@ -524,14 +525,14 @@ export function endSeason(s) {
   const staying = [];
   for (const p of s.players) {
     if (wantsRetirement(p)) {
-      events.push(`${p.name} (${p.age} ans) raccroche les crampons.`);
+      events.push(t('{name} ({age} ans) raccroche les crampons.', { name: p.name, age: p.age }));
       archivePlayer(s, p, { reason: 'retraite' });
     } else staying.push(p);
   }
   // fins de contrat : sans prolongation, le joueur part libre, sans indemnité (contracts.js)
   s.players = staying.filter((p) => {
     if (!lastYear(s, p)) return true;
-    events.push(`${p.name} (${p.age} ans) part libre : son contrat est arrivé à son terme.`);
+    events.push(t('{name} ({age} ans) part libre : son contrat est arrivé à son terme.', { name: p.name, age: p.age }));
     archivePlayer(s, p, { reason: 'libre' });
     logMove(s, 'out', p, 0, null);
     return false;
@@ -546,7 +547,7 @@ export function endSeason(s) {
   const leaving = youthSeasonEnd(s);
   const floor = ensureSquadMin(s, { joined: s.seasonNumber + 1, extra: leaving });
   events.push(...floor.lines);
-  for (const y of leaving) if (!floor.raised.includes(y)) events.push(`${y.name} (19 ans) quitte l’académie : il n’est pas monté en équipe première.`);
+  for (const y of leaving) if (!floor.raised.includes(y)) events.push(t('{name} (19 ans) quitte l’académie : il n’est pas monté en équipe première.', { name: y.name }));
   // salaires à la montée (clauses de montée) ou à la descente (ramenés au niveau de la nouvelle division)
   const nextIndex = clamp(s.divisionIndex + (promoted ? 1 : relegated ? -1 : 0), 0, 3);
   const wageNote = divisionWages(s, s.divisionIndex, nextIndex);
@@ -559,7 +560,7 @@ export function endSeason(s) {
   const trophies = (s.trophies || []).filter((t) => t.season === s.seasonNumber);
   const cupRuns = ['cup', 'c1'].filter((k) => s.cups?.[k]).map((k) => {
     const c = s.cups[k];
-    return { comp: k, won: c.won, reached: c.won ? 'vainqueur' : `éliminé en ${STAGES[Math.max(0, (c.results.at(-1)?.stage ?? 0))].toLowerCase()}` };
+    return { comp: k, won: c.won, reached: c.won ? t('vainqueur') : t('éliminé en {toLowerCase}', { toLowerCase: STAGES[Math.max(0, (c.results.at(-1)?.stage ?? 0))].toLowerCase() }) };
   });
   s.seasonReview = {
     position, division: div.name, matchday, prize, sponsors, sponsorsUpfront: upfront, wages, upkeep, promoted, relegated, events, nextDivision: nextDivName,
@@ -570,8 +571,8 @@ export function endSeason(s) {
   pushJournal(s, {
     season: s.seasonNumber,
     kind: 'saison',
-    title: promoted ? `Montée ! ${s.clubName} termine ${ordinal(position)} ${ofDiv(div.name)}` : relegated ? `Descente : ${ordinal(position, true)} place en ${div.name}` : `Saison ${s.seasonNumber} bouclée à la ${ordinal(position, true)} place`,
-    text: `Saison ${s.seasonNumber} terminée : ${ordinal(position)} en ${div.name}.${promoted ? ' Montée !' : relegated ? ' Descente.' : ''} Prime : ${n(prize)} € · Sponsors : ${n(sponsors)} € · Salaires : −${n(wages)} € · Entretien : −${n(upkeep)} €.`,
+    title: promoted ? t('Montée ! {clubName} termine {ordinal} {ofDiv}', { clubName: s.clubName, ordinal: ordinal(position), ofDiv: ofDiv(div.name) }) : relegated ? t('Descente : {ordinal} place en {name}', { ordinal: ordinal(position, true), name: div.name }) : t('Saison {seasonNumber} bouclée à la {ordinal} place', { seasonNumber: s.seasonNumber, ordinal: ordinal(position, true) }),
+    text: t('Saison {seasonNumber} terminée : {ordinal} en {name}.{v} Prime : {n} € · Sponsors : {n2} € · Salaires : −{n3} € · Entretien : −{n4} €.', { seasonNumber: s.seasonNumber, ordinal: ordinal(position), name: div.name, v: promoted ? t(' Montée !') : relegated ? t(' Descente.') : '', n: n(prize), n2: n(sponsors), n3: n(wages), n4: n(upkeep) }),
   });
 
   closeLedger(s, div.name); // comptes de la saison bouclés (primes d'objectif comprises)

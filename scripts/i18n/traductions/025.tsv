@@ -1,0 +1,66 @@
+1371	Big-game player	Jugador de las grandes noches	رجل المواعيد الكبرى
+1372	Against a stronger opponent, he converts 30% more chances, and his team creates 6% more.	Contra un rival más fuerte, convierte un 30 % más de ocasiones, y su equipo genera un 6 % más.	أمام خصم أقوى يحوّل فرصًا أكثر بنسبة 30%، ويصنع فريقه فرصًا أكثر بنسبة 6%.
+1373	Cat	Gato	القط
+1374	Cat-like reflexes: the opponent converts 12% fewer chances, and misses penalties more often.	Reflejos felinos: el rival convierte un 12 % menos de ocasiones y falla más penaltis.	ردود فعل كالقطط: يحوّل الخصم فرصًا أقل بنسبة 12%، ويهدر ركلات الجزاء أكثر.
+1375	Knock	Golpe	كدمة
+1376	Strain	Elongación	شد عضلي
+1377	Sprain	Esguince	التواء
+1378	Pulled muscle	Rotura fibrilar	تمزق عضلي
+1379	Torn muscle	Desgarro muscular	تمزق عضلي حاد
+1380	Fracture	Fractura	كسر
+1381	{n} match	{n} partido	مباراة واحدة
+1382	{n} matches	{n} partidos	{"one":"مباراة واحدة","two":"مباراتان","few":"{n} مباريات","other":"{n} مباراة"}
+1383	Injured · {toLowerCase} · {matches}	Lesionado · {toLowerCase} · {matches}	مصاب · {toLowerCase} · {matches}
+1384	Injured · {matches}	Lesionado · {matches}	مصاب · {matches}
+1385	Suspended · {matches}	Sancionado · {matches}	موقوف · {matches}
+1386	Neighbourhood club	Club de barrio	نادي الحي
+1388	Scouting mission	Misión de los ojeadores	مهمة الكشافين
+1389	{length} players are starting the final year of their contract	{length} jugadores empiezan su último año de contrato	{length} لاعبين يبدؤون السنة الأخيرة من عقودهم
+1390	{name} is starting the final year of his contract	{name} empieza su último año de contrato	{name} يبدأ السنة الأخيرة من عقده
+1391	{v}: without an extension, {v2} for free at the end of the season, with no fee.	{v}: sin renovación, {v2} libre{v3} al final de la temporada, sin traspaso.	{v}: من دون تمديد، {v2} مجانًا في نهاية الموسم، دون مقابل.
+1392	{join} and {name}	{join} y {name}	{join} و{name}
+1393	{clubName} play in the European Club Cup	{clubName} disputa la Copa de Europa de Clubes	{clubName} يشارك في كأس أوروبا للأندية
+1394	A big European night ahead: first round against {clubAfter}. Participation bonus: €{toLocaleString}.	Gran noche europea a la vista: primera ronda frente {clubAfter}. Prima por participar: {toLocaleString} €.	ليلة أوروبية كبرى في الأفق: الدور الأول أمام {clubAfter}. مكافأة المشاركة: {toLocaleString} €.
+1395	Season sponsorship: €{n}	Patrocinadores de la temporada: {n} €	رعاة الموسم: {n} €
+1396	The club’s partners sign up for season {seasonNumber} {ofDiv} and pay their contract at the start of the season.	Los socios del club firman para la temporada {seasonNumber} {ofDiv} y pagan su contrato al inicio de la temporada.	يوقّع شركاء النادي للموسم {seasonNumber} في {ofDiv} ويدفعون قيمة عقودهم في بداية الموسم.
+1397	The adventure ends in the {toLowerCase}.	La aventura termina en {toLowerCase}.	تتوقف المغامرة في {toLowerCase}.
+1398	The trophy joins the club’s cabinet. Bonus: €{toLocaleString}.	El trofeo entra en la vitrina del club. Prima: {toLocaleString} €.	تنضم الكأس إلى خزانة النادي. المكافأة: {toLocaleString} €.
+1399	Bonus: €{toLocaleString}. Next round ({toLowerCase}): {name}{v}.	Prima: {toLocaleString} €. Próxima ronda ({toLowerCase}): {name}{v}.	المكافأة: {toLocaleString} €. الدور التالي ({toLowerCase}): {name}{v}.
+1400	Goals: {join}.	Goles: {join}.	الأهداف: {join}.
+1401	{clubName} couldn’t find a way through.	{clubName} no encontró el hueco.	لم يجد {clubName} الثغرة.
+1402	Away win: {clubName} silence the stadium of {opp}.	Victoria fuera: {clubName} silencia el estadio {opp}.	فوز خارج الأرض: {clubName} يُسكت ملعب {opp}.
+1403	{clubName} win at {clubAfter}: three precious points away from home.	{clubName} se impone ante {clubAfter}: tres puntos valiosos lejos de casa.	{clubName} يفوز على ملعب {clubAfter}: ثلاث نقاط ثمينة بعيدًا عن الديار.
+1404	A point snatched at {clubAfter}.	Punto arrancado ante {clubAfter}.	نقطة منتزعة على ملعب {clubAfter}.
+1405	Away draw against {opp}: a point taken far from home.	Empate fuera frente {opp}: un punto lejos de casa.	تعادل خارج الأرض أمام {opp}: نقطة بعيدًا عن الديار.
+1406	Away defeat: {clubName} go down at {clubAfter}.	Derrota fuera: {clubName} cae ante {clubAfter}.	هزيمة خارج الأرض: {clubName} يسقط على ملعب {clubAfter}.
+1407	A tough evening at {opp}’s stadium: {clubName} leave empty-handed.	Noche difícil en el estadio {opp}: {clubName} se va de vacío.	أمسية صعبة على ملعب {opp}: {clubName} يعود خالي الوفاض.
+1408	{intro} {buts} TV rights: €{money}.	{intro} {buts} Derechos de TV: {money} €.	{intro} {buts} حقوق البث: {money} €.
+1409	In front of {att} spectators, {clubName} did the job against {opp}.	Ante {att} espectadores, {clubName} cumplió contra {opp}.	أمام {att} متفرج، أدى {clubName} المهمة أمام {opp}.
+1410	A clean evening: {clubName} control {opp} and take the three points.	Noche redonda: {clubName} se impone con autoridad ante {opp} y se lleva los tres puntos.	أمسية نظيفة: {clubName} يسيطر على {opp} ويحصد النقاط الثلاث.
+1411	The project is moving forward. {clubName} built their success on a solid block, in front of {att} spectators.	El proyecto avanza. {clubName} construyó su éxito sobre un bloque sólido, ante {att} espectadores.	المشروع يتقدم. بنى {clubName} نجاحه على كتلة متماسكة، أمام {att} متفرج.
+1412	{clubName} and {opp} cancelled each other out ({att} spectators). One more point, but we wanted three.	{clubName} y {opp} se neutralizaron ({att} espectadores). Un punto más, pero queríamos tres.	تعادل {clubName} و{opp} ({att} متفرج). نقطة إضافية، لكننا أردنا ثلاثًا.
+1413	A tight match against {opp}: neither team found the decisive opening.	Partido igualado frente {opp}: ningún equipo encontró el hueco decisivo.	مباراة متقاربة أمام {opp}: لم يجد أي فريق الثغرة الحاسمة.
+1414	Frustration at the final whistle: {clubName} lose to {opp}.	Frustración al pitido final: {clubName} cae ante {opp}.	إحباط مع صافرة النهاية: {clubName} يخسر أمام {opp}.
+1415	A tough evening in front of {att} spectators — {clubName} lacked a cutting edge in the box.	Noche difícil ante {att} espectadores: a {clubName} le faltó pegada en el área.	أمسية صعبة أمام {att} متفرج: افتقد {clubName} الحسم داخل المنطقة.
+1416	Nothing worked tonight. A logical defeat against {opp}.	Nada funcionó esta noche. Derrota lógica frente {opp}.	لم ينجح شيء الليلة. هزيمة منطقية أمام {opp}.
+1417	{intro} {buts} Takings: €{money}.	{intro} {buts} Recaudación: {money} €.	{intro} {buts} الإيرادات: {money} €.
+1418	second yellow card	segunda tarjeta amarilla	إنذار ثانٍ
+1419	red card	tarjeta roja	بطاقة حمراء
+1420	three yellow cards	tres tarjetas amarillas	ثلاث بطاقات صفراء
+1421	{length} out after the match	{length} bajas tras el partido	{length} غيابات بعد المباراة
+1422	{name} injured	{name} lesionado	{name} مصاب
+1423	{name}: {v} for {matches} match ({why})	{name}: {v} para {matches} partido ({why})	{name}: {v} لمباراة واحدة ({why})
+1424	{name}: {v} for {matches} matches ({why})	{name}: {v} para {matches} partidos ({why})	{"one":"{name}: {v} لمباراة واحدة ({why})","two":"{name}: {v} لمباراتين ({why})","few":"{name}: {v} لـ{matches} مباريات ({why})","other":"{name}: {v} لـ{matches} مباراة ({why})"}
+1425	{clubName} win {v}!	¡{clubName} gana {v}!	{clubName} يتوج بـ{v}!
+1426	the European Club Cup	la Copa de Europa de Clubes	كأس أوروبا للأندية
+1427	the National Cup	la Copa Nacional	الكأس الوطنية
+1428	{short}: through against {clubAfter} ({score})	{short}: clasificación contra {clubAfter} ({score})	{short}: تأهل أمام {clubAfter} ({score})
+1429	{short}: knocked out by {clubAfter} ({score})	{short}: eliminación frente {clubAfter} ({score})	{short}: إقصاء أمام {clubAfter} ({score})
+1430	{score} win against {clubAfter}	Victoria {score} frente {clubAfter}	فوز {score} على {clubAfter}
+1431	{score} draw against {clubAfter}	Empate {score} contra {clubAfter}	تعادل {score} مع {clubAfter}
+1432	{score} defeat against {clubAfter}	Derrota {score} frente {clubAfter}	هزيمة {score} أمام {clubAfter}
+1433	Champions {ofDiv}! The trophy joins the cabinet and brings in €{n} in title bonuses.	¡Campeón {ofDiv}! El trofeo entra en la vitrina y aporta {n} € en primas por título.	بطل {ofDiv}! تنضم الكأس إلى الخزانة وتدرّ {n} € من مكافآت اللقب.
+1434	Qualified for the European Club Cup: €{n} participation bonus from the start of the season.	Clasificado para la Copa de Europa de Clubes: {n} € de prima por participar desde el inicio de la temporada.	تأهل إلى كأس أوروبا للأندية: {n} € مكافأة مشاركة منذ بداية الموسم.
+1435	Recovery plan: accounts in the red, the board sells {name} (€{n}).	Plan de saneamiento: cuentas en números rojos, la directiva vende a {name} ({n} €).	خطة إنقاذ: الحسابات في العجز، ومجلس الإدارة يبيع {name} ({n} €).
+1436	{name} ({age}) hangs up his boots.	{name} ({age} años) cuelga las botas.	{name} ({age} عامًا) يعتزل اللعب.
+1437	{name} ({age}) leaves on a free: his contract has run out.	{name} ({age} años) se va libre: su contrato ha llegado a su fin.	{name} ({age} عامًا) يرحل حرًا: انتهى عقده.

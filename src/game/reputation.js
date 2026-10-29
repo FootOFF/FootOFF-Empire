@@ -1,4 +1,5 @@
 import { clamp } from './utils';
+import { t } from '../i18n/index';
 
 // Notoriété du club. La réputation ne ferme plus rien : toutes les parcelles sont ouvertes dès la fondation, et
 // chaque bâtiment se pose où l'on veut. Elle attire, sans rien imposer : des bonus doux, comptés par rapport à
@@ -14,12 +15,12 @@ export const REP_START = 5;
 // Une victoire rapporte selon la division (REP_DIVISION), et chaque intersaison efface une part de la notoriété
 // (REP_DECAY) : un club de Départementale plafonne autour de 25, la légende (80) se bâtit par des titres en Élite.
 export const REP_LEVELS = [
-  { min: 0, name: 'Club de quartier' },
-  { min: 6, name: 'Club qui monte' },
-  { min: 12, name: 'Club régional' },
-  { min: 25, name: 'Club national' },
-  { min: 45, name: 'Grand club' },
-  { min: 80, name: 'Club de légende' },
+  { min: 0, name: t('Club de quartier') },
+  { min: 6, name: t('Club qui monte') },
+  { min: 12, name: t('Club régional') },
+  { min: 25, name: t('Club national') },
+  { min: 45, name: t('Grand club') },
+  { min: 80, name: t('Club de légende') },
 ];
 export const REP_DIVISION = [0.35, 0.55, 0.8, 1];
 export const REP_DECAY = 0.12;

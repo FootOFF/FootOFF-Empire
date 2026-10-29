@@ -24,6 +24,7 @@ import { book, ensureLedger } from './ledger';
 import { addSigning, emptyRecords, rebuildRecords } from './records';
 import { normalizeCrest } from './crest';
 import { journalLearned, setPick, setStaff, staffSession, startProgram, stopProgram, tidyTraining, trainLine } from './training';
+import { gameLang, numLocale, t, tn } from '../i18n/index';
 
 export { playRound, endSeason };
 export { applyMatchResult, matchContext } from './season';
@@ -35,6 +36,7 @@ export function createInitialState(clubName, crest = null) {
     version: 4,
     eliteScale: ELITE_SCALE, // économie de l'Élite à l'échelle d'un grand championnat (0.6.0, save.js)
     clubName,
+    lang: gameLang(), // langue de la partie (src/i18n) : fixée à la fondation, les noms en dépendent
     crest: normalizeCrest(crest), // écusson composé à la fondation, toujours noir et or (crest.js)
     createdAt: Date.now(),
     lastSeen: Date.now(),
@@ -85,8 +87,8 @@ export function createInitialState(clubName, crest = null) {
   pushJournal(s, {
     season: 1,
     kind: 'club',
-    title: `Le projet ${clubName} est lancé`,
-    text: `${clubName} entame sa première saison en ${DIVISIONS[0].name}. Le terrain est modeste, l’ambition immense.`,
+    title: t('Le projet {clubName} est lancé', { clubName }),
+    text: t('{clubName} entame sa première saison en {name}. Le terrain est modeste, l’ambition immense.', { clubName, name: DIVISIONS[0].name }),
   });
   ensureLedger(s);
   return s;
@@ -120,8 +122,8 @@ export function build(s, where, key) {
   if (key === 'transfers') refreshTransfers(s, 'grow'); // les recruteurs livrent leur première liste
   if (key === 'academy') refreshScouting(s); // premiers jeunes repérés, tout de suite
   pushJournal(s, {
-    season: s.seasonNumber, kind: 'infra', title: `${BUILDINGS[key].name} : premier coup de pioche`,
-    text: `Le club investit ${upgradeCost(key, 1).toLocaleString('fr-FR')} € dans un nouveau bâtiment.`,
+    season: s.seasonNumber, kind: 'infra', title: t('{name} : premier coup de pioche', { name: BUILDINGS[key].name }),
+    text: t('Le club investit {toLocaleString} € dans un nouveau bâtiment.', { toLocaleString: upgradeCost(key, 1).toLocaleString(numLocale()) }),
   });
   return s;
 }
@@ -143,8 +145,8 @@ export function upgrade(s, key) {
   if (key === 'transfers') refreshTransfers(s, 'grow'); // liste allongée tout de suite
   if (key === 'academy') refreshScouting(s); // des jeunes repérés en plus, tout de suite
   pushJournal(s, {
-    season: s.seasonNumber, kind: 'infra', title: `${BUILDINGS[key].name} : cap sur le niveau ${lvl + 1}`,
-    text: `Travaux d’amélioration engagés pour ${cost.toLocaleString('fr-FR')} €.`,
+    season: s.seasonNumber, kind: 'infra', title: t('{name} : cap sur le niveau {v}', { name: BUILDINGS[key].name, v: lvl + 1 }),
+    text: t('Travaux d’amélioration engagés pour {toLocaleString} €.', { toLocaleString: cost.toLocaleString(numLocale()) }),
   });
   return s;
 }
@@ -160,8 +162,8 @@ export function signYouth(s, id) {
   Object.assign(p, { academy: true, plan: advisedPlan(p), youthSince: s.seasonNumber, gain: { round: 0, season: 0, summer: null } });
   s.youth = [...(s.youth || []), p];
   pushJournal(s, {
-    season: s.seasonNumber, round: s.round, kind: 'academie', title: `${p.name} rejoint l’académie`,
-    text: `${POS_LABELS[p.pos]} de ${p.age} ans, repéré par les éducateurs du club.`,
+    season: s.seasonNumber, round: s.round, kind: 'academie', title: t('{name} rejoint l’académie', { name: p.name }),
+    text: t('{v} de {age} ans, repéré par les éducateurs du club.', { v: POS_LABELS[p.pos], age: p.age }),
   });
   return s;
 }
@@ -180,7 +182,7 @@ export function releaseYouth(s, id) {
   const p = (s.youth || []).find((q) => q.id === id);
   if (!p) return null;
   s.youth = s.youth.filter((q) => q !== p);
-  pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'academie', title: `${p.name} quitte l’académie`, text: `Libéré à ${p.age} ans.` });
+  pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'academie', title: t('{name} quitte l’académie', { name: p.name }), text: t('Libéré à {age} ans.', { age: p.age }) });
   return s;
 }
 
@@ -226,8 +228,8 @@ export function sellPlayer(s, id, fee = null, club = null) {
   tidyTraining(s); // son programme au centre d'entraînement s'arrête
   ensureLineup(s);
   pushJournal(s, {
-    season: s.seasonNumber, kind: 'mercato', title: `${p.name} quitte le club`,
-    text: `Le joueur rejoint ${withArticle(to)} pour ${amount.toLocaleString('fr-FR')} €.`,
+    season: s.seasonNumber, kind: 'mercato', title: t('{name} quitte le club', { name: p.name }),
+    text: t('Le joueur rejoint {withArticle} pour {toLocaleString} €.', { withArticle: withArticle(to), toLocaleString: amount.toLocaleString(numLocale()) }),
   });
   return s;
 }
@@ -258,13 +260,13 @@ function completeSigning(s, p, fee, terms) {
   s.signings = (s.signings || 0) + 1;
   logMove(s, 'in', p, paid, from);
   s.shortlist = (s.shortlist || []).filter((x) => x.id !== p.id);
-  const years = `${terms.years} an${terms.years > 1 ? 's' : ''}`;
-  const eur = (v) => `${v.toLocaleString('fr-FR')} €`;
+  const years = tn(terms.years, '{n} an', '{n} ans', { n: terms.years }, terms.years > 1);
+  const eur = (v) => `${v.toLocaleString(numLocale())} €`;
   pushJournal(s, {
     season: s.seasonNumber, kind: 'mercato', title: `${p.name} rejoint ${s.clubName}`,
     text: from
-      ? `Transfert conclu : il arrive ${clubAfter('de ', from)} pour ${eur(fee)}, à ${p.age} ans. Contrat de ${years} à ${eur(terms.wage)} par saison.`
-      : `À ${p.age} ans, il s’engage pour ${years} à ${eur(terms.wage)} par saison${terms.bonus ? `, avec une prime de ${eur(terms.bonus)}` : ''}.`,
+      ? t('Transfert conclu : il arrive {clubAfter} pour {fee}, à {age} ans. Contrat de {years} à {wage} par saison.', { clubAfter: clubAfter('de ', from), fee: eur(fee), age: p.age, years, wage: eur(terms.wage) })
+      : t('À {age} ans, il s’engage pour {years} à {wage} par saison{v}.', { age: p.age, years, wage: eur(terms.wage), v: terms.bonus ? t(', avec une prime de {bonus}', { bonus: eur(terms.bonus) }) : '' }),
   });
   return s;
 }
@@ -275,7 +277,7 @@ function completeSigning(s, p, fee, terms) {
 export function signLeagueRecruit(s, item) {
   let p = findOnMarket(s, item.id);
   if (!p) {
-    p = { ...unsnapPlayer(item.pl), id: item.id, club: item.kind === 'a' ? item.club || 'Club de la ligue' : null };
+    p = { ...unsnapPlayer(item.pl), id: item.id, club: item.kind === 'a' ? item.club || t('Club de la ligue') : null };
     s.transfers = [...(s.transfers || []), p];
   }
   return completeSigning(s, p, item.kind === 'a' ? item.fee : 0, item.terms);
@@ -333,17 +335,17 @@ export function acceptCounter(s, id) {
 // Ce qui empêche de proposer ce contrat, ou null : effectif complet, indemnité pas encore convenue, trésorerie (indemnité
 // et prime), discussions closes pour la journée, prolongation impossible.
 export function contractBlock(s, p, terms) {
-  if (ctalksOf(s, p).closed) return 'Il ne discutera plus avant la prochaine journée.';
-  if (!s.players.includes(p) && s.league?.outbox?.some((x) => x.k === 'sign')) return 'Une signature attend la réponse de la ligue.';
+  if (ctalksOf(s, p).closed) return t('Il ne discutera plus avant la prochaine journée.');
+  if (!s.players.includes(p) && s.league?.outbox?.some((x) => x.k === 'sign')) return t('Une signature attend la réponse de la ligue.');
   if (s.players.includes(p)) {
-    if (!renewOpen(s, p)) return 'Son contrat court déjà sur cinq ans : impossible de le prolonger.';
-    if (terms.bonus > s.money) return 'Trésorerie insuffisante pour cette prime.';
+    if (!renewOpen(s, p)) return t('Son contrat court déjà sur cinq ans : impossible de le prolonger.');
+    if (terms.bonus > s.money) return t('Trésorerie insuffisante pour cette prime.');
     return null;
   }
-  if (s.players.length >= SQUAD_MAX) return `Effectif complet (${SQUAD_MAX} joueurs) : vends d’abord un joueur.`;
-  if (p.club && !p.talks?.fee) return 'Convenir d’abord de l’indemnité avec son club.';
+  if (s.players.length >= SQUAD_MAX) return t('Effectif complet ({SQUAD_MAX} joueurs) : vends d’abord un joueur.', { SQUAD_MAX });
+  if (p.club && !p.talks?.fee) return t('Convenir d’abord de l’indemnité avec son club.');
   const fee = p.club ? p.talks.fee : 0;
-  if (fee + terms.bonus > s.money) return fee ? 'Trésorerie insuffisante pour l’indemnité et la prime.' : 'Trésorerie insuffisante pour cette prime.';
+  if (fee + terms.bonus > s.money) return fee ? t('Trésorerie insuffisante pour l’indemnité et la prime.') : t('Trésorerie insuffisante pour cette prime.');
   return null;
 }
 
@@ -368,8 +370,8 @@ function sealContract(s, p, terms, renew) {
   s.money -= terms.bonus;
   book(s, 'wages', terms.bonus);
   pushJournal(s, {
-    season: s.seasonNumber, round: s.round, kind: 'club', title: `${p.name} prolonge jusqu’à la saison ${p.deal.until}`,
-    text: `Nouveau contrat à ${terms.wage.toLocaleString('fr-FR')} € par saison (${before.toLocaleString('fr-FR')} € jusqu’ici)${terms.bonus ? `, prime de ${terms.bonus.toLocaleString('fr-FR')} €` : ''}${terms.clause ? `, clause de montée de +${Math.round(terms.clause * 100)} %` : ''}.`,
+    season: s.seasonNumber, round: s.round, kind: 'club', title: t('{name} prolonge jusqu’à la saison {until}', { name: p.name, until: p.deal.until }),
+    text: t('Nouveau contrat à {toLocaleString} € par saison ({toLocaleString2} € jusqu’ici){v}{v2}.', { toLocaleString: terms.wage.toLocaleString(numLocale()), toLocaleString2: before.toLocaleString(numLocale()), v: terms.bonus ? t(', prime de {toLocaleString} €', { toLocaleString: terms.bonus.toLocaleString(numLocale()) }) : '', v2: terms.clause ? t(', clause de montée de +{round} %', { round: Math.round(terms.clause * 100) }) : '' }),
   });
   s.lastContract = { id: p.id, name: p.name, result: 'accepted', renew, terms, before, at: Date.now() };
   return s;

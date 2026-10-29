@@ -1,10 +1,11 @@
 import { clamp, pick, ri } from './utils';
-import { capitalize, clubAfter, deName, isPluralClub } from './names';
+import { CLUB_PREPS, capitalize, clubAfter, deName, isPluralClub } from './names';
 import { penaltySkills, shootout, shootoutWinChance } from './cups';
 import { FORMATIONS, TACTICS, expectedGoals, formationOf, lineupRating, slotsOf } from './tactics';
 import { available, fitAt, fitFactor, ratingAt } from './players';
 import { injuryCut } from './medical';
 import { opponentEleven } from './opponents';
+import { t, tn } from '../i18n/index';
 
 // Match en direct : simulation minute par minute, au fil de l'horloge du direct (advanceTo), avec une avance de
 // quelques minutes pour préparer les temps forts en 3D. Un changement ou une nouvelle tactique peut se décider à toute
@@ -54,100 +55,100 @@ const PASS_KINDS = new Set(['through', 'counter', 'cutback', 'cross', 'combo', '
 // a la phrase de son type d'action et de son issue ; un but se commente selon le score.
 const T = {
   kickoff: [
-    'Coup d’envoi ! {home} et {away} lancent la partie.',
-    'C’est parti ! Le stade est debout pour le coup d’envoi.',
-    'L’arbitre siffle : {home} engage, {away} attend{n} dans son camp.',
-    'Coup d’envoi sous les encouragements du public : {home} donne le ton d’entrée.',
+    t('Coup d’envoi ! {home} et {away} lancent la partie.'),
+    t('C’est parti ! Le stade est debout pour le coup d’envoi.'),
+    t('L’arbitre siffle : {home} engage, {away} attend{n} dans son camp.'),
+    t('Coup d’envoi sous les encouragements du public : {home} donne le ton d’entrée.'),
   ],
   chance: {
     home: {
-      through: ['Ouverture lumineuse dans la profondeur : {p} file seul vers le but…', '{p} part dans le dos de la défense et se présente face au gardien…', 'Passe en profondeur parfaite, {p} est lancé…'],
-      counter: ['Contre éclair de {home}, {p} déboule dans l’axe…', 'Récupération et projection rapide : {p} est lancé…', '{home} part en contre à toute vitesse, {p} conclut l’action…'],
-      cutback: ['Débordement jusqu’à la ligne, remise en retrait pour {p}…', 'Centre en retrait, {p} arrive lancé au point de penalty…'],
-      cross: ['Centre millimétré, {p} place sa tête…', '{p} reprend de volée un centre venu de la gauche…', 'Centre de la droite, {p} s’élève plus haut que tout le monde…'],
-      combo: ['Belle combinaison de {home}, {p} arme sa frappe…', 'Une-deux dans la surface, {p} se retrouve face au gardien…', 'Remise en retrait, {p} frappe du plat du pied…'],
-      scramble: ['Cafouillage dans la surface, {p} a le ballon au point de penalty…', 'Le ballon traîne dans les six mètres, {p} est le plus prompt…'],
-      solo: ['{p} élimine son vis-à-vis et tente sa chance…', '{p} s’infiltre côté gauche et frappe…', '{p} pivote dans la surface et déclenche…'],
-      corner: ['Corner de {home} : {p} monte plus haut que tout le monde…', 'Corner rentrant, {p} surgit au premier poteau…'],
-      press: ['{p} récupère haut et frappe en première intention…', 'Pressing de {home}, {p} chipe le ballon et frappe aussitôt…'],
-      long: ['{p} arme une frappe lointaine…', 'De loin, {p} tente sa chance…', 'À trente mètres, {p} voit le gardien avancé et frappe…', '{p} n’hésite pas : frappe puissante de l’extérieur de la surface…'],
-      freekick: ['Coup franc excentré, {p} tente sa chance directement…', 'Coup franc à vingt-cinq mètres, {p} enroule au-dessus du mur…'],
-      penalty: ['Faute dans la surface : penalty pour {home} ! {p} s’élance…', 'Penalty pour {home} ! {p} prend ses responsabilités…'],
+      through: [t('Ouverture lumineuse dans la profondeur : {p} file seul vers le but…'), t('{p} part dans le dos de la défense et se présente face au gardien…'), t('Passe en profondeur parfaite, {p} est lancé…')],
+      counter: [t('Contre éclair de {home}, {p} déboule dans l’axe…'), t('Récupération et projection rapide : {p} est lancé…'), t('{home} part en contre à toute vitesse, {p} conclut l’action…')],
+      cutback: [t('Débordement jusqu’à la ligne, remise en retrait pour {p}…'), t('Centre en retrait, {p} arrive lancé au point de penalty…')],
+      cross: [t('Centre millimétré, {p} place sa tête…'), t('{p} reprend de volée un centre venu de la gauche…'), t('Centre de la droite, {p} s’élève plus haut que tout le monde…')],
+      combo: [t('Belle combinaison de {home}, {p} arme sa frappe…'), t('Une-deux dans la surface, {p} se retrouve face au gardien…'), t('Remise en retrait, {p} frappe du plat du pied…')],
+      scramble: [t('Cafouillage dans la surface, {p} a le ballon au point de penalty…'), t('Le ballon traîne dans les six mètres, {p} est le plus prompt…')],
+      solo: [t('{p} élimine son vis-à-vis et tente sa chance…'), t('{p} s’infiltre côté gauche et frappe…'), t('{p} pivote dans la surface et déclenche…')],
+      corner: [t('Corner de {home} : {p} monte plus haut que tout le monde…'), t('Corner rentrant, {p} surgit au premier poteau…')],
+      press: [t('{p} récupère haut et frappe en première intention…'), t('Pressing de {home}, {p} chipe le ballon et frappe aussitôt…')],
+      long: [t('{p} arme une frappe lointaine…'), t('De loin, {p} tente sa chance…'), t('À trente mètres, {p} voit le gardien avancé et frappe…'), t('{p} n’hésite pas : frappe puissante de l’extérieur de la surface…')],
+      freekick: [t('Coup franc excentré, {p} tente sa chance directement…'), t('Coup franc à vingt-cinq mètres, {p} enroule au-dessus du mur…')],
+      penalty: [t('Faute dans la surface : penalty pour {home} ! {p} s’élance…'), t('Penalty pour {home} ! {p} prend ses responsabilités…')],
     },
     away: {
-      through: ['Long ballon dans le dos de la défense, {p} est parti…', '{p} file seul vers le but après une ouverture de {away}…'],
-      counter: ['{away} contre{n} vite, {p} se présente face au but…', 'Perte de balle au milieu : {p} file au but…', 'Contre rapide de {away} : {p} choisit la frappe…'],
-      cutback: ['Débordement de {away} jusqu’à la ligne, remise en retrait pour {p}…', 'Centre en retrait de {away}, {p} arrive lancé…'],
-      cross: ['Centre de la droite, {p} reprend de la tête…', '{p} reprend de volée un centre venu de la gauche…', 'Centre fort devant le but, {p} s’élève…'],
-      combo: ['{p} s’infiltre entre deux défenseurs et frappe…', 'Combinaison de {away} aux abords de la surface, {p} frappe…'],
-      scramble: ['{p} profite d’un cafouillage dans la surface…', 'Le ballon traîne dans les six mètres, {p} est le plus prompt…'],
-      solo: ['{p} fixe la défense et déclenche à l’entrée de la surface…', '{p} élimine un défenseur et tente sa chance…'],
-      corner: ['Corner pour {away}, {p} surgit au premier poteau…', 'Sur corner, {p} s’élève dans la surface…'],
-      press: ['{p} intercepte une relance hasardeuse et frappe aussitôt…', 'Pressing de {away}, {p} récupère et frappe…'],
-      long: ['Frappe lointaine de {p}…', 'De loin, {p} tente sa chance…'],
-      freekick: ['Coup franc dangereux pour {away}, {p} s’élance…', 'Coup franc à vingt-cinq mètres, {p} enroule au-dessus du mur…'],
-      penalty: ['Faute dans la surface : penalty pour {away}. {p} s’élance…', 'Penalty pour {away} : {p} face au gardien…'],
+      through: [t('Long ballon dans le dos de la défense, {p} est parti…'), t('{p} file seul vers le but après une ouverture de {away}…')],
+      counter: [t('{away} contre{n} vite, {p} se présente face au but…'), t('Perte de balle au milieu : {p} file au but…'), t('Contre rapide de {away} : {p} choisit la frappe…')],
+      cutback: [t('Débordement de {away} jusqu’à la ligne, remise en retrait pour {p}…'), t('Centre en retrait de {away}, {p} arrive lancé…')],
+      cross: [t('Centre de la droite, {p} reprend de la tête…'), t('{p} reprend de volée un centre venu de la gauche…'), t('Centre fort devant le but, {p} s’élève…')],
+      combo: [t('{p} s’infiltre entre deux défenseurs et frappe…'), t('Combinaison de {away} aux abords de la surface, {p} frappe…')],
+      scramble: [t('{p} profite d’un cafouillage dans la surface…'), t('Le ballon traîne dans les six mètres, {p} est le plus prompt…')],
+      solo: [t('{p} fixe la défense et déclenche à l’entrée de la surface…'), t('{p} élimine un défenseur et tente sa chance…')],
+      corner: [t('Corner pour {away}, {p} surgit au premier poteau…'), t('Sur corner, {p} s’élève dans la surface…')],
+      press: [t('{p} intercepte une relance hasardeuse et frappe aussitôt…'), t('Pressing de {away}, {p} récupère et frappe…')],
+      long: [t('Frappe lointaine de {p}…'), t('De loin, {p} tente sa chance…')],
+      freekick: [t('Coup franc dangereux pour {away}, {p} s’élance…'), t('Coup franc à vingt-cinq mètres, {p} enroule au-dessus du mur…')],
+      penalty: [t('Faute dans la surface : penalty pour {away}. {p} s’élance…'), t('Penalty pour {away} : {p} face au gardien…')],
     },
   },
   saved: [
-    'arrêt du gardien !', 'parade décisive !', 'le gardien capte sans trembler.', 'détourné en corner du bout des gants !',
-    'claqué au-dessus par le gardien !', 'le portier se couche bien et bloque.', 'repoussé des poings !', 'le gardien gagne son face-à-face !',
+    t('arrêt du gardien !'), t('parade décisive !'), t('le gardien capte sans trembler.'), t('détourné en corner du bout des gants !'),
+    t('claqué au-dessus par le gardien !'), t('le portier se couche bien et bloque.'), t('repoussé des poings !'), t('le gardien gagne son face-à-face !'),
   ],
   wide: [
-    'à côté !', 'au-dessus de la barre.', 'ça frôle le poteau, mais c’est dehors.', 'dévissé, loin du cadre.',
-    'dans les tribunes…', 'contré par un défenseur, en corner.', 'juste à côté du montant !', 'trop croisé, ça sort.',
+    t('à côté !'), t('au-dessus de la barre.'), t('ça frôle le poteau, mais c’est dehors.'), t('dévissé, loin du cadre.'),
+    t('dans les tribunes…'), t('contré par un défenseur, en corner.'), t('juste à côté du montant !'), t('trop croisé, ça sort.'),
   ],
-  post: ['sur le poteau !', 'la barre transversale tremble encore !', 'le poteau sauve le gardien !', 'sur la barre, puis dégagé en catastrophe !'],
+  post: [t('sur le poteau !'), t('la barre transversale tremble encore !'), t('le poteau sauve le gardien !'), t('sur la barre, puis dégagé en catastrophe !')],
   // penalty manqué
   pen: {
-    saved: ['le gardien devine le bon côté et repousse !', 'arrêté ! Le gardien a lu dans le jeu du tireur !'],
-    wide: ['à côté ! Le penalty est manqué.', 'au-dessus ! Il manque complètement son penalty.'],
-    post: ['sur le poteau ! Le penalty n’est pas transformé.', 'sur la barre ! Le penalty est manqué.'],
+    saved: [t('le gardien devine le bon côté et repousse !'), t('arrêté ! Le gardien a lu dans le jeu du tireur !')],
+    wide: [t('à côté ! Le penalty est manqué.'), t('au-dessus ! Il manque complètement son penalty.')],
+    post: [t('sur le poteau ! Le penalty n’est pas transformé.'), t('sur la barre ! Le penalty est manqué.')],
   },
   // but du club selon le score après le but (nous − adversaire) et, en fin de match, selon la minute
   goalHome: {
-    level: ['BUT ! {p} égalise, imparable !', 'BUT ! {p} remet {home} à hauteur, le stade exulte !', 'ÉGALISATION ! {p} trompe le gardien !'],
-    lead: ['BUT ! {p} trompe le gardien et donne l’avantage à {home} !', 'BUT ! Quel geste de {p} ! {home} passe devant !', 'BUT ! {p} fait trembler les filets, {home} mène !'],
-    more: ['BUT ! {p} creuse l’écart !', 'BUT ! {p} enfonce le clou, {home} se met à l’abri !', 'ENCORE ! {p} alourdit la marque !'],
-    back: ['BUT ! {p} réduit l’écart, {home} y croit encore !', 'BUT ! {p} relance le match pour {home} !', 'BUT ! {p} redonne espoir à {home} !'],
-    late: ['BUT DANS LES ARRÊTS DE JEU ! {p} fait chavirer le stade !', 'BUT ! {p} à la dernière minute, le public n’en revient pas !'],
+    level: [t('BUT ! {p} égalise, imparable !'), t('BUT ! {p} remet {home} à hauteur, le stade exulte !'), t('ÉGALISATION ! {p} trompe le gardien !')],
+    lead: [t('BUT ! {p} trompe le gardien et donne l’avantage à {home} !'), t('BUT ! Quel geste de {p} ! {home} passe devant !'), t('BUT ! {p} fait trembler les filets, {home} mène !')],
+    more: [t('BUT ! {p} creuse l’écart !'), t('BUT ! {p} enfonce le clou, {home} se met à l’abri !'), t('ENCORE ! {p} alourdit la marque !')],
+    back: [t('BUT ! {p} réduit l’écart, {home} y croit encore !'), t('BUT ! {p} relance le match pour {home} !'), t('BUT ! {p} redonne espoir à {home} !')],
+    late: [t('BUT DANS LES ARRÊTS DE JEU ! {p} fait chavirer le stade !'), t('BUT ! {p} à la dernière minute, le public n’en revient pas !')],
   },
   // but adverse, selon l'écart après le but (adversaire − nous)
   goalAway: {
-    level: ['Égalisation : {p} remet {away} à hauteur.', '{p} égalise pour {away}.', 'Le stade se tait : {p} égalise pour {away}.'],
-    lead: ['But de {away} : {p} donne l’avantage aux siens.', 'Coup dur : {p} marque pour {away}.', '{p} ouvre le score pour {away}, silence dans les tribunes.'],
-    more: ['{p} creuse l’écart pour {away}.', 'Coup dur : {p} enfonce le clou pour {away}.', '{p} encore pour {away}, la soirée se complique.'],
-    back: ['{p} réduit l’écart pour {away}.', 'But de {away} : {p} relance le suspense.', '{p} marque pour {away} : il va falloir tenir.'],
-    late: ['But de {away} dans les arrêts de jeu : {p} glace le stade.', 'Dernière minute : {p} marque pour {away}, cruel.'],
+    level: [t('Égalisation : {p} remet {away} à hauteur.'), t('{p} égalise pour {away}.'), t('Le stade se tait : {p} égalise pour {away}.')],
+    lead: [t('But de {away} : {p} donne l’avantage aux siens.'), t('Coup dur : {p} marque pour {away}.'), t('{p} ouvre le score pour {away}, silence dans les tribunes.')],
+    more: [t('{p} creuse l’écart pour {away}.'), t('Coup dur : {p} enfonce le clou pour {away}.'), t('{p} encore pour {away}, la soirée se complique.')],
+    back: [t('{p} réduit l’écart pour {away}.'), t('But de {away} : {p} relance le suspense.'), t('{p} marque pour {away} : il va falloir tenir.')],
+    late: [t('But de {away} dans les arrêts de jeu : {p} glace le stade.'), t('Dernière minute : {p} marque pour {away}, cruel.')],
   },
   yellow: [
-    'Carton jaune pour {p} ({team}) après une faute tactique.', 'Avertissement : {p} ({team}) est sanctionné.',
-    '{p} ({team}) arrive en retard : carton jaune.', 'Jaune pour {p} ({team}), qui a protesté un peu trop fort.',
-    'Semelle de {p} ({team}) : l’arbitre sort le jaune.', '{p} ({team}) stoppe un contre de la main : avertissement.',
+    t('Carton jaune pour {p} ({team}) après une faute tactique.'), t('Avertissement : {p} ({team}) est sanctionné.'),
+    t('{p} ({team}) arrive en retard : carton jaune.'), t('Jaune pour {p} ({team}), qui a protesté un peu trop fort.'),
+    t('Semelle de {p} ({team}) : l’arbitre sort le jaune.'), t('{p} ({team}) stoppe un contre de la main : avertissement.'),
   ],
-  red: ['CARTON ROUGE ! {p} ({team}) est expulsé !', 'ROUGE DIRECT ! {p} ({team}) est renvoyé aux vestiaires !', 'Expulsion ! {p} ({team}) a fauché le dernier défenseur !'],
-  secondYellow: ['Second carton jaune pour {p} ({team}) : expulsion !', '{p} ({team}) prend un second jaune : il sort !'],
+  red: [t('CARTON ROUGE ! {p} ({team}) est expulsé !'), t('ROUGE DIRECT ! {p} ({team}) est renvoyé aux vestiaires !'), t('Expulsion ! {p} ({team}) a fauché le dernier défenseur !')],
+  secondYellow: [t('Second carton jaune pour {p} ({team}) : expulsion !'), t('{p} ({team}) prend un second jaune : il sort !')],
   injury: [
-    'Blessure : {p} reste au sol et ne peut pas continuer.', '{p} se tient la cuisse : il doit sortir.',
-    'Coup dur pour {home} : {p} est blessé et quitte le terrain.', '{p} grimace, le staff médical entre : il ne peut pas reprendre.',
+    t('Blessure : {p} reste au sol et ne peut pas continuer.'), t('{p} se tient la cuisse : il doit sortir.'),
+    t('Coup dur pour {home} : {p} est blessé et quitte le terrain.'), t('{p} grimace, le staff médical entre : il ne peut pas reprendre.'),
   ],
   ambience: [
-    'Possession patiente de {home} au milieu de terrain.',
-    '{away} resserre{n} les lignes et laisse{n} venir.',
-    'Le public pousse derrière {home} !',
-    'Duel âpre au milieu, l’arbitre laisse jouer.',
-    'Temps faible pour {home}, {away} confisque{n} le ballon.',
-    'Corner pour {home}… dégagé par la défense.',
-    'Récupération haute de {home}, mais la passe est trop longue.',
-    'Touche pour {away} dans sa moitié : le rythme retombe.',
-    'Hors-jeu signalé contre {away}, à raison.',
-    '{home} fait tourner, la défense adverse recule.',
-    'Le capitaine de {home} replace ses coéquipiers.',
-    'Le banc de {away} s’agite : consignes criées depuis la ligne.',
-    'Faute sans gravité au milieu, coup franc indirect pour {home}.',
-    'Les supporters entonnent le chant du club.',
-    'Chaleur dans les duels : {away} ne lâche{n} rien.',
-    'Le gardien de {home} relance court, patiemment.',
+    t('Possession patiente de {home} au milieu de terrain.'),
+    t('{away} resserre{n} les lignes et laisse{n} venir.'),
+    t('Le public pousse derrière {home} !'),
+    t('Duel âpre au milieu, l’arbitre laisse jouer.'),
+    t('Temps faible pour {home}, {away} confisque{n} le ballon.'),
+    t('Corner pour {home}… dégagé par la défense.'),
+    t('Récupération haute de {home}, mais la passe est trop longue.'),
+    t('Touche pour {away} dans sa moitié : le rythme retombe.'),
+    t('Hors-jeu signalé contre {away}, à raison.'),
+    t('{home} fait tourner, la défense adverse recule.'),
+    t('Le capitaine de {home} replace ses coéquipiers.'),
+    t('Le banc de {away} s’agite : consignes criées depuis la ligne.'),
+    t('Faute sans gravité au milieu, coup franc indirect pour {home}.'),
+    t('Les supporters entonnent le chant du club.'),
+    t('Chaleur dans les duels : {away} ne lâche{n} rien.'),
+    t('Le gardien de {home} relance court, patiemment.'),
   ],
 };
 
@@ -156,35 +157,38 @@ const T = {
 const T_AWAY = {
   ...T,
   kickoff: [
-    'Coup d’envoi ! {away} reçoi{v} {home} devant son public.',
-    'C’est parti chez {away} : {home} devra faire taire le stade.',
-    'L’arbitre siffle : {away} engage{n} sous les encouragements de ses supporters.',
-    'Coup d’envoi dans un stade bouillant : {home} est attendu de pied ferme.',
+    t('Coup d’envoi ! {away} reçoi{v} {home} devant son public.'),
+    t('C’est parti chez {away} : {home} devra faire taire le stade.'),
+    t('L’arbitre siffle : {away} engage{n} sous les encouragements de ses supporters.'),
+    t('Coup d’envoi dans un stade bouillant : {home} est attendu de pied ferme.'),
   ],
   ambience: [
     ...T.ambience.filter((t) => !/public|supporters/.test(t)),
-    'Le public de {away} pousse derrière les siens.',
-    'Dans le parcage visiteurs, les supporters de {home} donnent de la voix.',
-    'Sifflets du public adverse à chaque ballon touché par {home}.',
+    t('Le public de {away} pousse derrière les siens.'),
+    t('Dans le parcage visiteurs, les supporters de {home} donnent de la voix.'),
+    t('Sifflets du public adverse à chaque ballon touché par {home}.'),
   ],
   goalHome: {
     ...T.goalHome,
-    level: ['BUT ! {p} égalise, imparable !', 'BUT ! {p} remet {home} à hauteur et fait taire le stade !', 'ÉGALISATION ! {p} trompe le gardien !'],
-    late: ['BUT DANS LES ARRÊTS DE JEU ! {p} crucifie le stade adverse !', 'BUT ! {p} à la dernière minute, le parcage visiteurs explose !'],
+    level: [t('BUT ! {p} égalise, imparable !'), t('BUT ! {p} remet {home} à hauteur et fait taire le stade !'), t('ÉGALISATION ! {p} trompe le gardien !')],
+    late: [t('BUT DANS LES ARRÊTS DE JEU ! {p} crucifie le stade adverse !'), t('BUT ! {p} à la dernière minute, le parcage visiteurs explose !')],
   },
   goalAway: {
-    level: ['Égalisation : {p} remet {away} à hauteur.', '{p} égalise pour {away}.', 'Le stade exulte : {p} égalise pour {away}.'],
-    lead: ['But de {away} : {p} donne l’avantage aux siens.', 'Coup dur : {p} marque pour {away}.', '{p} ouvre le score pour {away}, le stade explose.'],
-    more: ['{p} creuse l’écart pour {away}.', 'Coup dur : {p} enfonce le clou pour {away}.', '{p} encore pour {away}, la soirée se complique.'],
-    back: ['{p} réduit l’écart pour {away}.', 'But de {away} : {p} relance le suspense.', '{p} marque pour {away} : il va falloir tenir.'],
-    late: ['But de {away} dans les arrêts de jeu : {p} fait chavirer le stade.', 'Dernière minute : {p} marque pour {away}, cruel.'],
+    level: [t('Égalisation : {p} remet {away} à hauteur.'), t('{p} égalise pour {away}.'), t('Le stade exulte : {p} égalise pour {away}.')],
+    lead: [t('But de {away} : {p} donne l’avantage aux siens.'), t('Coup dur : {p} marque pour {away}.'), t('{p} ouvre le score pour {away}, le stade explose.')],
+    more: [t('{p} creuse l’écart pour {away}.'), t('Coup dur : {p} enfonce le clou pour {away}.'), t('{p} encore pour {away}, la soirée se complique.')],
+    back: [t('{p} réduit l’écart pour {away}.'), t('But de {away} : {p} relance le suspense.'), t('{p} marque pour {away} : il va falloir tenir.')],
+    late: [t('But de {away} dans les arrêts de jeu : {p} fait chavirer le stade.'), t('Dernière minute : {p} marque pour {away}, cruel.')],
   },
 };
 
 // noms de clubs avec leur article (« pour l’US du Tilleul », « du FC des Bruyères »), élision devant un prénom
 // (« frappe d’Ilyes »), majuscule en tête de phrase. Le club entre parenthèses ({team}) reste nu.
 const CLUB_KEYS = new Set(['home', 'away']);
-const fill = (tpl, v) => capitalize(tpl.replace(/((?<!\p{L})(?:de|à) )?\{(\w+)\}/gu, (_, prep = '', k) => (
+// Prépositions qui se lient au club dans la langue de la partie (CLUB_PREPS : « de », « à » ; en espagnol « de », « a » ;
+// aucune en anglais ni en arabe, où la phrase traduite porte la sienne).
+const FILL_RE = new RegExp(`${CLUB_PREPS.length ? `((?<!\\p{L})(?:${CLUB_PREPS.join('|')}) )?` : '()?'}\\{(\\w+)\\}`, 'gu');
+const fill = (tpl, v) => capitalize(tpl.replace(FILL_RE, (_, prep = '', k) => (
   CLUB_KEYS.has(k) ? clubAfter(prep, v[k] ?? '') : prep === 'de ' ? deName(v[k] ?? '') : prep + (v[k] ?? '')
 )));
 
@@ -722,7 +726,7 @@ export function createLiveMatch(s, ctx, saved = null) {
       - (m.oppPlan?.tactic === 'offensive' ? 6 : m.oppPlan?.tactic === 'low' ? -9 : 0); // son plan de jeu, en miroir du nôtre
     m.stats.possHalf[half - 1] = Math.round(clamp(50 + diff * 3 + tilt + (Math.random() - 0.5) * 6, 28, 74));
     if (half === 1) push(0, 'kickoff', null, fill(pick(TX.kickoff), vars()));
-    else push(45, 'kickoff', null, 'Reprise de la seconde période !');
+    else push(45, 'kickoff', null, t('Reprise de la seconde période !'));
   }
   const halfEnd = () => (m.half === 1 ? m.halfLength[0] : 45 + m.halfLength[1]);
 
@@ -736,7 +740,7 @@ export function createLiveMatch(s, ctx, saved = null) {
     // chaque minute s'ajoute à la suite de la précédente, ce qui permet de reprendre le fil à une minute donnée)
     const baseEnd = m.half === 1 ? 45 : 90;
     const extra = halfEnd() - baseEnd;
-    if (minute === baseEnd + 1 && extra > 0) events().push(make(minute - 0.95, 'info', null, `${extra} minute${extra > 1 ? 's' : ''} de temps additionnel.`));
+    if (minute === baseEnd + 1 && extra > 0) events().push(make(minute - 0.95, 'info', null, tn(extra, '{extra} minute de temps additionnel.', '{extra} minutes de temps additionnel.', { extra }, extra > 1)));
     const c = chancesNow(minute);
     const at = minute - Math.random() * 0.9;
     for (const [side, lam] of [['home', c.lamH], ['away', c.lamA]]) {
@@ -783,7 +787,7 @@ export function createLiveMatch(s, ctx, saved = null) {
         const late = at >= 89 || (m.half === 1 && at >= 44.5); // arrêts de jeu : un commentaire sur deux le souligne
         const poolOf = (G, g) => (late && G.late && Math.random() < 0.5 ? G.late : g === 0 ? G.level : g === 1 ? G.lead : g > 1 ? G.more : G.back);
         let text = fill(pick(home ? poolOf(TX.goalHome, -gap) : poolOf(TX.goalAway, gap)), vars({ p: p.name }));
-        if (assist) text += ` Passe décisive ${deName(assist.name)}.`;
+        if (assist) text += t(' Passe décisive {deName}.', { deName: deName(assist.name) });
         if (home) {
           perf(p.id).goals++;
           if (assist) perf(assist.id).assists++;
@@ -862,15 +866,13 @@ export function createLiveMatch(s, ctx, saved = null) {
       const { home: homeSkill, away: awaySkill } = penaltySkills(playersOn());
       const so = shootout(homeSkill, awaySkill);
       m.pens = [so.home, so.away];
-      push(end - 0.02, 'info', null, `Égalité au bout du temps réglementaire : place aux tirs au but !`);
+      push(end - 0.02, 'info', null, t('Égalité au bout du temps réglementaire : place aux tirs au but !'));
       push(end - 0.01, 'pens', so.home > so.away ? 'home' : 'away',
-        so.home > so.away ? `Tirs au but : ${m.home} l’emporte ${so.home}–${so.away} et se qualifie !` : `Tirs au but : ${m.away} s’impose ${so.away}–${so.home}. ${m.home} est éliminé.`,
+        so.home > so.away ? t('Tirs au but : {home} l’emporte {home2}–{away} et se qualifie !', { home: m.home, home2: so.home, away: so.away }) : t('Tirs au but : {away} s’impose {away2}–{home}. {home2} est éliminé.', { away: m.away, away2: so.away, home: so.home, home2: m.home }),
         { kicks: so.kicks });
     }
     m.stats.possession = possessionAt(half, end);
-    push(end, half === 1 ? 'halftime' : 'fulltime', null, half === 1
-      ? `Mi-temps : ${m.home} ${m.score.home} – ${m.score.away} ${m.away}.`
-      : `Coup de sifflet final ! ${m.home} ${m.score.home} – ${m.score.away} ${m.away}${m.pens ? ` (${m.pens[0]}–${m.pens[1]} aux tirs au but)` : ''}.`);
+    push(end, half === 1 ? 'halftime' : 'fulltime', null, tn(half, 'Mi-temps : {home} {home2} – {away} {away2}.', 'Coup de sifflet final ! {home3} {home4} – {away3} {away4}{v}.', { home: m.home, home2: m.score.home, away: m.score.away, away2: m.away, home3: m.home, home4: m.score.home, away3: m.score.away, away4: m.away, v: m.pens ? t(' ({v}–{v2} aux tirs au but)', { v: m.pens[0], v2: m.pens[1] }) : '' }, !(half === 1)));
     m.simTo = end + 1; // mi-temps close
   }
   const halfDone = () => m.simTo > halfEnd();
@@ -1000,15 +1002,15 @@ export function createLiveMatch(s, ctx, saved = null) {
   function lineupBlock(next) {
     const before = m.lineup;
     const named = Array.isArray(next) ? next.filter((id) => id !== null) : [];
-    if (!Array.isArray(next) || next.length !== before.length || new Set(named).size !== named.length) return 'Onze incomplet.';
-    if (before.some((id) => m.sent.home.has(id) && !next.includes(id))) return 'Un expulsé ne peut pas être remplacé.';
+    if (!Array.isArray(next) || next.length !== before.length || new Set(named).size !== named.length) return t('Onze incomplet.');
+    if (before.some((id) => m.sent.home.has(id) && !next.includes(id))) return t('Un expulsé ne peut pas être remplacé.');
     const ins = named.filter((id) => !before.includes(id));
-    if (ins.length > SUBS_MAX - m.subsUsed) return 'Plus de changement disponible.';
+    if (ins.length > SUBS_MAX - m.subsUsed) return t('Plus de changement disponible.');
     for (const id of ins) {
       const p = s.players.find((q) => q.id === id);
-      if (!p) return 'Joueur inconnu.';
-      if (m.gone.has(id) || m.out.has(id)) return `${p.name} est déjà sorti.`;
-      if (!available(p)) return `${p.name} n’est pas disponible.`;
+      if (!p) return t('Joueur inconnu.');
+      if (m.gone.has(id) || m.out.has(id)) return t('{name} est déjà sorti.', { name: p.name });
+      if (!available(p)) return t('{name} n’est pas disponible.', { name: p.name });
     }
     return null;
   }
@@ -1024,8 +1026,8 @@ export function createLiveMatch(s, ctx, saved = null) {
     if (block) return block;
     const atBreak = halftime || !m.half;
     if (!atBreak) {
-      if (minute > halfEnd()) return 'Trop tard pour cette mi-temps : attends la pause.';
-      if (m.simTo >= minute) { const snap = m.snaps.get(minute); if (!snap) return 'Trop tard pour revenir à cette minute.'; restore(snap); }
+      if (minute > halfEnd()) return t('Trop tard pour cette mi-temps : attends la pause.');
+      if (m.simTo >= minute) { const snap = m.snaps.get(minute); if (!snap) return t('Trop tard pour revenir à cette minute.'); restore(snap); }
       if (m.simTo < minute - 1) advanceTo(minute - 1);
     }
     const half = atBreak ? 2 : m.half;
@@ -1041,19 +1043,19 @@ export function createLiveMatch(s, ctx, saved = null) {
       m.subsUsed++;
       m.subsList.push({ in: inId, out: outId, minute });
       const text = staff && m.out.has(outId)
-        ? `Changement pour ${m.home} : le staff fait entrer ${nameOf(inId)} à la place ${deName(nameOf(outId))}, blessé.`
-        : `Changement pour ${m.home} : ${nameOf(inId)} remplace ${nameOf(outId)}.`;
+        ? t('Changement pour {home} : le staff fait entrer {nameOf} à la place {deName}, blessé.', { home: m.home, nameOf: nameOf(inId), deName: deName(nameOf(outId)) })
+        : t('Changement pour {home} : {nameOf} remplace {nameOf2}.', { home: m.home, nameOf: nameOf(inId), nameOf2: nameOf(outId) });
       target.push({ ...make(at, 'sub', 'home', text), half, inId, outId });
     }
     const moved = next.filter((id, k) => before.includes(id) && before[k] !== id).length;
     m.lineup = [...next];
     if (FORMATIONS[formation] && formation !== m.formation) {
       m.formation = formation;
-      target.push({ ...make(at, 'info', 'home', `Changement de dispositif : ${m.home} passe en ${formationOf(formation).name}.`), half, formation, lineup: [...next] });
-    } else if (moved) target.push({ ...make(at, 'info', 'home', `${m.home} réorganise son équipe.`), half, lineup: [...next] });
+      target.push({ ...make(at, 'info', 'home', t('Changement de dispositif : {home} passe en {name}.', { home: m.home, name: formationOf(formation).name })), half, formation, lineup: [...next] });
+    } else if (moved) target.push({ ...make(at, 'info', 'home', t('{home} réorganise son équipe.', { home: m.home })), half, lineup: [...next] });
     if (tactic && TACTICS[tactic] && tactic !== m.tactic) {
       m.tactic = tactic;
-      target.push({ ...make(at, 'info', 'home', `Changement tactique : ${m.home} passe en ${TACTICS[tactic].name.toLowerCase()}.`), half });
+      target.push({ ...make(at, 'info', 'home', t('Changement tactique : {home} passe en {toLowerCase}.', { home: m.home, toLowerCase: TACTICS[tactic].name.toLowerCase() })), half });
     }
     return null;
   }
@@ -1067,18 +1069,18 @@ export function createLiveMatch(s, ctx, saved = null) {
     m.awayStartFormation ||= m.oppPlan?.formation || m.awayFormation;
     for (const [out, inn] of subs) {
       m.form[`o:${inn.name}`] ??= Math.round((Math.random() - 0.5) * 120) / 100;
-      target.push({ ...make(45, 'sub', 'away', `Changement pour ${m.away} : ${inn.name} remplace ${out.name}.`), half: 2, inName: inn.name, outName: out.name });
+      target.push({ ...make(45, 'sub', 'away', t('Changement pour {away} : {name} remplace {name2}.', { away: m.away, name: inn.name, name2: out.name })), half: 2, inName: inn.name, outName: out.name });
     }
     if (eleven) awayRoster.splice(0, awayRoster.length, ...eleven);
     const plan = { tactic: m.oppPlan?.tactic || 'balanced', formation: m.oppPlan?.formation || m.awayFormation };
     if (FORMATIONS[formation] && formation !== plan.formation) {
       plan.formation = formation;
       m.awayFormation = formation;
-      target.push({ ...make(45, 'info', 'away', `Changement de dispositif : ${m.away} passe en ${formationOf(formation).name}.`), half: 2, formation });
+      target.push({ ...make(45, 'info', 'away', t('Changement de dispositif : {away} passe en {name}.', { away: m.away, name: formationOf(formation).name })), half: 2, formation });
     }
     if (TACTICS[tactic] && tactic !== plan.tactic) {
       plan.tactic = tactic;
-      target.push({ ...make(45, 'info', 'away', `Changement tactique : ${m.away} passe en ${TACTICS[tactic].name.toLowerCase()}.`), half: 2 });
+      target.push({ ...make(45, 'info', 'away', t('Changement tactique : {away} passe en {toLowerCase}.', { away: m.away, toLowerCase: TACTICS[tactic].name.toLowerCase() })), half: 2 });
     }
     m.oppPlan = plan;
     if (Number.isFinite(strength)) m.oppStrength = strength;

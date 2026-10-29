@@ -1,6 +1,7 @@
 import { DIVISIONS } from './constants';
 import { distinctClubName } from './names';
 import { clamp, pick, rnd } from './utils';
+import { LANG, t } from '../i18n/index';
 
 // Coupes : la Coupe nationale (tous les clubs du pays, à élimination directe) et la Coupe d'Europe des clubs
 // (réservée aux deux premiers de l'Élite la saison précédente ; identifiant interne « c1 »). Quatre tours chacune, matchs à
@@ -8,12 +9,12 @@ import { clamp, pick, rnd } from './utils';
 // du championnat ; un club éliminé saute simplement les dates restantes.
 
 export const COMPS = {
-  league: { id: 'league', name: 'Championnat', short: 'Championnat' },
-  cup: { id: 'cup', name: 'Coupe nationale', short: 'Coupe' },
-  c1: { id: 'c1', name: 'Coupe d’Europe des clubs', short: 'Coupe d’Europe' },
+  league: { id: 'league', name: t('Championnat'), short: t('Championnat') },
+  cup: { id: 'cup', name: t('Coupe nationale'), short: t('Coupe') },
+  c1: { id: 'c1', name: t('Coupe d’Europe des clubs'), short: t('Coupe d’Europe') },
 };
-export const STAGES = ['Huitièmes de finale', 'Quarts de finale', 'Demi-finale', 'Finale'];
-export const STAGES_SHORT = ['8es', 'Quarts', 'Demies', 'Finale'];
+export const STAGES = [t('Huitièmes de finale'), t('Quarts de finale'), t('Demi-finale'), t('Finale')];
+export const STAGES_SHORT = [t('8es'), t('Quarts'), t('Demies'), t('Finale')];
 
 // ordre de la saison : championnat, puis les tours de coupe glissés entre les journées ; en Élite, quatorze journées
 // (aller-retour), deux journées entre deux tours de coupe
@@ -44,9 +45,9 @@ const C1_WIN = [10000000, 12000000, 18000000, 30000000];
 export const cupPrize = (comp, stage, divIndex) => (comp === 'c1' ? C1_WIN[stage] : Math.round(DIVISIONS[divIndex].prize * CUP_SHARE[stage]));
 
 // Clubs européens fictifs (aucun vrai club) : un préfixe et une ville imaginaire.
-const EURO_PREFIX = ['Real', 'Inter', 'Sporting', 'Dynamo', 'Athletic', 'Union', 'Olympia', 'Rapid', 'Vitoria', 'Royal'];
-const EURO_CITY = ['Valmora', 'Castellano', 'Lisvar', 'Kravets', 'Norrhavn', 'Melithi', 'Bergamonte', 'Aldenburg', 'Zurvic',
-  'Halmstrand', 'Corvina', 'Ostrava Nova', 'Belmira', 'Sankt Arlen', 'Varnacci', 'Tirelli', 'Doruva', 'Lindhaven'];
+const EURO_PREFIX = [t('Real'), t('Inter'), t('Sporting'), t('Dynamo'), t('Athletic'), t('Union'), t('Olympia'), t('Rapid'), t('Vitoria'), t('Royal')];
+const EURO_CITY = [t('Valmora'), t('Castellano'), t('Lisvar'), t('Kravets'), t('Norrhavn'), t('Melithi'), t('Bergamonte'), t('Aldenburg'), t('Zurvic'),
+  t('Halmstrand'), t('Corvina'), t('Ostrava Nova'), t('Belmira'), t('Sankt Arlen'), t('Varnacci'), t('Tirelli'), t('Doruva'), t('Lindhaven')];
 export const euroName = (taken = []) => {
   let name = '';
   for (let k = 0; k < 20 && (!name || taken.includes(name)); k++) name = `${pick(EURO_PREFIX)} ${pick(EURO_CITY)}`;
@@ -62,13 +63,13 @@ export function drawOpponent(s, comp, stage) {
   if (comp === 'c1') {
     const strength = Math.round(clamp(15.9 + stage * 0.6 + rnd(-0.8, 0.8), 14, 19) * 10) / 10;
     const budget = Math.round(clamp(220 + (strength - 15.9) * 160 + rnd(-40, 40), 150, 800) / 10) * 10 * 1e6;
-    return { name: euroName(), strength, division: 'Europe', budget };
+    return { name: euroName(), strength, division: t('Europe'), budget };
   }
   const di = clamp(s.divisionIndex + pick([-1, 0, 0, 0, 1]) + (stage >= 2 && Math.random() < 0.4 ? 1 : 0), 0, 3);
   const d = DIVISIONS[di];
-  const t = clamp(0.45 + stage * 0.12 + rnd(-0.3, 0.3), 0, 1);
+  const row = clamp(0.45 + stage * 0.12 + rnd(-0.3, 0.3), 0, 1);
   const name = distinctClubName([s.clubName, ...(s.rivals || []).map((r) => r.name)]); // ni un club de la division, ni son lieu
-  return { name, strength: Math.round((d.oppMin + (d.oppMax - d.oppMin) * t) * 10) / 10, division: d.name };
+  return { name, strength: Math.round((d.oppMin + (d.oppMax - d.oppMin) * row) * 10) / 10, division: d.name };
 }
 
 // Calendrier et parcours en coupe d'une nouvelle saison.
@@ -97,18 +98,19 @@ export function nextFixture(s) {
 // Libellé d'un match : « Journée 3 / 7 » (« / 14 » en Élite), « Coupe nationale · Quarts de finale », « Coupe d'Europe ·
 // Finale ».
 export function fixtureLabel(f, round, total = 7) {
-  if (!f || f.comp === 'league') return `Journée ${round} / ${total}`;
-  return `${f.comp === 'c1' ? 'Coupe d’Europe' : 'Coupe nationale'} · ${STAGES[f.stage]}`;
+  if (!f || f.comp === 'league') return t('Journée {round} / {total}', { round, total });
+  return `${f.comp === 'c1' ? t('Coupe d’Europe') : t('Coupe nationale')} · ${STAGES[f.stage]}`;
 }
 // Version courte (bouton « Jouer », petits espaces) : « Coupe · 8es de finale », « Coupe d'Europe · Finale ».
-const STAGES_MID = ['8es de finale', 'Quarts', 'Demies', 'Finale'];
+const STAGES_MID = [t('8es de finale'), t('Quarts'), t('Demies'), t('Finale')];
 export function fixtureShort(f, round, total = 7) {
-  if (!f || f.comp === 'league') return `Journée ${round} / ${total}`;
-  return `${f.comp === 'c1' ? 'Europe' : 'Coupe'} · ${STAGES_MID[f.stage]}`;
+  if (!f || f.comp === 'league') return t('Journée {round} / {total}', { round, total });
+  return `${f.comp === 'c1' ? t('Europe') : t('Coupe')} · ${STAGES_MID[f.stage]}`;
 }
 // « de Nationale », « d'Élite » : élision devant une voyelle ; le nom d'une ligue entre amis prend son article (« de la
 // Ligue du Soir », « du Trophée du Dimanche »)
-export const ofDiv = (name) => (/^(Ligue|Coupe)/.test(name) ? `de la ${name}` : /^(Championnat|Trophée|Tournoi)/.test(name) ? `du ${name}`
+export const ofDiv = (name) => (LANG !== 'fr' ? (LANG === 'es' && /^Trofeo/.test(name) ? `del ${name}` : t('de la {name}', { name }))
+  : /^(Ligue|Coupe)/.test(name) ? t('de la {name}', { name }) : /^(Championnat|Trophée|Tournoi)/.test(name) ? `du ${name}`
   : /^[AEIOUÉÈÊ]/i.test(name) ? `d’${name}` : `de ${name}`);
 
 // Réussite aux tirs au but : la nôtre selon la finition de nos cinq meilleurs tireurs (joueurs de champ sur le

@@ -1,0 +1,68 @@
+k:<0/> rejoint <1/> pour <2/>.	<0/> joins <1/> for <2/>.	<0/> ficha por <1/> por <2/>.	ينضم <0/> إلى <1/> مقابل <2/>.
+k:Offre <0/> pour <1/> refusée : le club se retire.	Offer from <0/> for <1/> refused: the club withdraws.	Oferta <0/> por <1/> rechazada: el club se retira.	رُفض عرض <0/> لضم <1/>: النادي ينسحب.
+k:<0/> <1/> (<2/>).	<0/> <1/> (<2/>).	<0/> <1/> (<2/>).	<0/> <1/> (<2/>).
+k:<0/> <1/> ta demande de <2/> pour <3/> : à toi de vendre ou de refuser.	<0/> <1/> your asking price of <2/> for <3/>: it’s up to you to sell or refuse.	<0/> <1/> tu petición de <2/> por <3/>: te toca vender o rechazar.	<0/> <1/> طلبك البالغ <2/> مقابل <3/>: القرار لك، بِع أو ارفض.
+k:<0/> <1/> à <2/> pour <3/> : c’est <4/> dernier mot.	<0/> <1/> to <2/> for <3/>: that’s <4/> final word.	<0/> <1/> a <2/> por <3/>: es <4/> última palabra.	<0/> <1/> إلى <2/> مقابل <3/>، وهذه كلمت<4/> الأخيرة.
+k:<0/> <1/> offre de <2/> pour <3/> : c’est <4/> dernier mot.	<0/> <1/> offer of <2/> for <3/>: that’s <4/> final word.	<0/> <1/> oferta de <2/> por <3/>: es <4/> última palabra.	<0/> <1/> البالغ <2/> مقابل <3/>، وهذه كلمت<4/> الأخيرة.
+k:Enchères pour <0/> :	Bidding for <0/>:	Subasta por <0/>:	مزايدة على <0/>:
+k:<0/> <1/> à <2/>	<0/> <1/> to <2/>	<0/> <1/> a <2/>	<0/> <1/> إلى <2/>
+k:Meilleure offre : <0/>.	Best offer: <0/>.	Mejor oferta: <0/>.	أفضل عرض: <0/>.
+k:<0/> <1/> la meilleure offre (<2/>).	<0/> <1/> the best offer (<2/>).	<0/> <1/> la mejor oferta (<2/>).	<0/> <1/>أفضل عرض (<2/>).
+2754	find your asking price excessive and pull out	considera excesiva tu petición y se retira	يرى طلبك مبالغًا فيه وينسحب
+2755	find your asking price excessive and pull out	consideran excesiva tu petición y se retiran	يرون طلبك مبالغًا فيه وينسحبون
+2756	accept	acepta	يقبل
+2757	accept	aceptan	يقبلون
+2760	go up	sube	يرفع عرضه
+2761	go up	suben	يرفعون عرضهم
+2762	to	a	إلى
+2764	their	su	هم
+2766	stand by their	mantiene su	يتمسك بعرضه
+2767	stand by their	mantienen su	يتمسكون بعرضهم
+2770	pull out	se retira	ينسحب
+2771	pull out	se retiran	ينسحبون
+2773	keep	mantiene	يحتفظ ب
+2774	keep	mantienen	يحتفظون ب
+2776	Sell {name} to {clubAfter}?	¿Vender a {name} {clubAfter}?	بيع {name} إلى {clubAfter}؟
+2777	{name} (age {age}, {toLowerCase}, rating {fmtRating}) will join {withArticle}.{v}	{name} ({age} años, {toLowerCase}, nota {fmtRating}) se unirá {withArticle}.{v}	سينضم {name} ({age} عامًا، {toLowerCase}، التقييم {fmtRating}) إلى {withArticle}.{v}
+2778	He is a starter: your XI will be reshuffled.	Es titular: tu once se recompondrá.	إنه لاعب أساسي: ستُعاد تشكيلة فريقك.
+2779	Transfer fee	Importe del traspaso	مبلغ الانتقال
+2780	Wage saved	Salario ahorrado	الراتب الموفَّر
+2781	Sell · {amount}	Vender · {amount}	بيع · {amount}
+2782	Squad at the minimum ({SQUAD_MIN} players).	Plantilla al mínimo ({SQUAD_MIN} jugadores).	التشكيلة عند الحد الأدنى ({SQUAD_MIN} لاعبًا).
+2783	Start a bidding war for {name}?	¿Hacer subir la puja por {name}?	إطلاق مزايدة على {name}؟
+2784	{Club} {agree} offer of {amount}. Every other club must beat it, or pull out. Only once per matchday.	{Club} {agree} oferta de {amount}. Cada uno de los demás clubes debe superarla o retirarse. Solo una vez por jornada.	{Club} {agree} البالغ {amount}. على كل نادٍ آخر أن يتجاوزه وإلا انسحب. مرة واحدة فقط في كل جولة.
+2785	keep their	mantiene su	يحتفظ بعرضه
+2786	keep their	mantienen su	يحتفظون بعرضهم
+2787	{c}% to beat it	{c} % de superarla	{c}% لتجاوزه
+2788	Start the bidding	Lanzar la puja	إطلاق المزايدة
+2789	To be completed before the next matchday	Por cerrar antes de la próxima jornada	يجب إتمامها قبل الجولة المقبلة
+2790	View	Ver	عرض
+2791	Offers received	Ofertas recibidas	العروض الواردة
+2792	No offers yet. List a player for sale, at your price: interested clubs make their offer straight away, others follow after each matchday, and a player in great form can also receive an unsolicited offer. An offer holds until the following matchday.	Ninguna oferta por ahora. Pon a un jugador en venta, a tu precio: los clubes interesados hacen su oferta enseguida, otros llegan tras cada jornada, y un jugador en gran forma también puede recibir una oferta espontánea. Una oferta vale hasta la jornada siguiente.	لا عروض حتى الآن. اعرض لاعبًا للبيع بسعرك: تقدّم الأندية المهتمة عروضها فورًا، وتتبعها أخرى بعد كل جولة، وقد يتلقى اللاعب في قمة مستواه عرضًا مفاجئًا. ويبقى العرض ساريًا حتى الجولة التالية.
+2793	Valid until the next matchday. “Negotiate”: you set your asking price, with your exact chance of agreement. “Start a bidding war”: each club tries to beat the best offer, or pulls out.	Válidas hasta la próxima jornada. «Negociar»: fijas tu petición, con tu probabilidad exacta de acuerdo. «Hacer subir la puja»: cada club intenta superar la mejor oferta o se retira.	سارية حتى الجولة المقبلة. «تفاوض»: تحدد طلبك مع فرصتك الدقيقة في الاتفاق. «إطلاق مزايدة»: يحاول كل نادٍ تجاوز أفضل عرض أو ينسحب.
+2794	For sale at {price}	En venta por {price}	معروض للبيع بـ{price}
+2795	Not for sale	No está en venta	غير معروض للبيع
+2796	· value	· valor	· القيمة
+2797	· unsolicited offer	· oferta espontánea	· عرض مفاجئ
+2798	deal at your price	acuerdo a tu precio	اتفاق بسعرك
+2799	final word	última palabra	الكلمة الأخيرة
+2800	Squad at the minimum ({SQUAD_MIN} players)	Plantilla al mínimo ({SQUAD_MIN} jugadores)	التشكيلة عند الحد الأدنى ({SQUAD_MIN} لاعبًا)
+2801	Accept	Aceptar	قبول
+2802	Negotiate	Negociar	تفاوض
+2803	Refuse	Rechazar	رفض
+2804	Bidding already started today	Puja ya lanzada hoy	أُطلقت المزايدة اليوم بالفعل
+2805	No club can beat the best offer	Ningún club puede superar la mejor oferta	لا يستطيع أي نادٍ تجاوز أفضل عرض
+2806	Start a bidding war · {length} clubs	Hacer subir la puja · {length} clubes	إطلاق مزايدة · {length} أندية
+2807	My players for sale	Mis jugadores en venta	لاعبيّ المعروضون للبيع
+2808	Choose players	Elegir jugadores	اختيار اللاعبين
+2809	{short}: sale not possible	{short}: venta imposible	{short}: البيع غير ممكن
+2810	yrs · value	años · valor	عامًا · القيمة
+2811	· starter	· titular	· أساسي
+2812	{name} for sale	{name} en venta	{name} معروض للبيع
+2813	No players for sale. Choose some here or from a squad player’s profile: you set your price, and interested clubs make their offer straight away.	Ningún jugador en venta. Elígelos aquí o desde la ficha de un jugador de la plantilla: fijas tu precio y los clubes interesados hacen su oferta enseguida.	لا لاعبين معروضين للبيع. اخترهم هنا أو من بطاقة أحد لاعبي التشكيلة: تحدد سعرك، وتقدّم الأندية المهتمة عروضها فورًا.
+2814	For sale at <0/> · <1/>	En venta por <0/> · <1/>	معروض للبيع بـ<0/> · <1/>
+2815	{toLowerCase}: clubs will come back when he returns	{toLowerCase}: los clubes volverán a su regreso	{toLowerCase}: ستعود الأندية عند عودته
+2816	{n} interested club	{n} club interesado	نادٍ واحد مهتم
+2817	{n} interested clubs	{n} clubes interesados	{"one":"نادٍ واحد مهتم","two":"ناديان مهتمان","few":"{n} أندية مهتمة","other":"{n} ناديًا مهتمًا"}
+2818	more clubs after the matchday	más clubes tras la jornada	أندية أخرى بعد الجولة
+2819	League transfers	Traspasos de la liga	صفقات الدوري

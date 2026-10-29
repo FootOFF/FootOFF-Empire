@@ -1,0 +1,81 @@
+3094	waiting for their reply	esperando su respuesta	بانتظار رده
+3095	Break off	Romper	قطع التفاوض
+3096	My offers in progress	Mis ofertas en curso	عروضي الجارية
+3097	No offers in progress. Negotiate on the shared market or with a computer club, or make an offer for a friend’s player.	Ninguna oferta en curso. Negocia en el mercado común o con un club de la máquina, o haz una oferta por el jugador de un amigo.	لا عروض جارية. فاوِض في السوق المشتركة أو مع نادٍ للحاسوب، أو قدّم عرضًا لضم لاعب صديق.
+3098	Agreement reached · waiting for the league	Acuerdo alcanzado · esperando a la liga	تم الاتفاق · بانتظار الدوري
+3099	fee, excluding bonus	traspaso, sin prima	مبلغ الانتقال دون المكافأة
+3100	fee	traspaso	مبلغ الانتقال
+3101	{club} · {v}: you can make another one	{club} · {v}: puedes hacer otra	{club} · {v}: يمكنك تقديم عرض آخر
+3102	negotiation broken off	negociación rota	قُطع التفاوض
+3103	offer refused	oferta rechazada	رُفض العرض
+3104	· waiting for their reply	· esperando su respuesta	· بانتظار رده
+3105	Players	Jugadores	اللاعبون
+3106	Training	Entrenamiento	التدريب
+3107	Medical	Médico	الطبي
+3108	Former players	Exjugadores	اللاعبون السابقون
+3109	Calendar	Calendario	الجدول
+3110	Trophies	Trofeos	الكؤوس
+3111	Journal	Diario	اليوميات
+3112	Reputation	Notoriedad	الشهرة
+3113	Board	Directiva	الإدارة
+3114	{title}: screens	{title}: pantallas	{title}: الشاشات
+3115	To be built in the complex	Por construir en el complejo	يجب بناؤه في المجمّع
+3116	to see	por ver	للاطلاع
+3117	{badge} to deal with	{badge} por atender	{badge} بانتظار المعالجة
+3118	Sections	Secciones	الأقسام
+3119	Previous section: {title}	Sección anterior: {title}	القسم السابق: {title}
+3120	Next section: {title}	Sección siguiente: {title}	القسم التالي: {title}
+3121	What’s new	Novedades	المستجدات
+3122	<0/> Back	<0/> Volver	<0/> رجوع
+3123	Champions <0/>!	¡Campeón <0/>!	بطل <0/>!
+3124	Season review	Balance de la temporada	حصيلة الموسم
+3125	of 8 · <0/>	de 8 · <0/>	من 8 · <0/>
+3126	Promoted to the <0/>	Ascenso a la <0/>	صعود إلى <0/>
+3127	Relegated to the <0/>	Descenso a la <0/>	هبوط إلى <0/>
+3128	Title retained in the Elite League	Título revalidado en la Liga Élite	الاحتفاظ باللقب في دوري النخبة
+3129	Stayed up	Permanencia	البقاء
+3130	On the podium	En el podio	على منصة التتويج
+3131	Match takings	Ingresos de los partidos	إيرادات المباريات
+3132	Prize	Prima	الجائزة
+3133	Sponsors<0/>	Patrocinadores<0/>	الرعاة<0/>
+3134	(at the start of the season)	(al inicio de la temporada)	(في بداية الموسم)
+3135	Season <0/> · <1/>	Temporada <0/> · <1/>	الموسم <0/> · <1/>
+3136	While you were away	Durante tu ausencia	أثناء غيابك
+3137	Your partners stayed loyal: {OFFLINE_CAP} h of income banked, the maximum for one absence.	Tus socios han sido fieles: {OFFLINE_CAP} h de ingresos cobrados, el máximo durante una ausencia.	بقي شركاؤك أوفياء: {OFFLINE_CAP} ساعة من الإيرادات حُصّلت، وهو الحد الأقصى خلال الغياب.
+3138	Your partners stayed loyal: income banked over {duration}.	Tus socios han sido fieles: ingresos cobrados en {duration}.	بقي شركاؤك أوفياء: إيرادات حُصّلت خلال {duration}.
+3140	promotion	ascenso	الصعود
+3141	Movement	Evolución	التطور
+3142	Won	Ganados	فوز
+3143	Drawn	Empatados	تعادل
+3144	Lost	Perdidos	خسارة
+3145	{v} {n} place	{v} {n} puesto	{v} مركزًا واحدًا
+3146	{v} {n} places	{v} {n} puestos	{"one":"{v} مركزًا واحدًا","two":"{v} مركزين","few":"{v} {n} مراكز","other":"{v} {n} مركزًا"}
+3147	up	sube	يتقدم
+3148	down	baja	يتراجع
+3149	same place	mismo puesto	المركز نفسه
+3150	See {name}’s squad	Ver la plantilla de {name}	عرض تشكيلة {name}
+3151	, <0/> zone	, zona de <0/>	، منطقة <0/>
+3152	<0/>Promotion to the <1/>	<0/>Ascenso a la <1/>	<0/>الصعود إلى <1/>
+3153	<0/>European Club Cup next season	<0/>Copa de Europa de Clubes la próxima temporada	<0/>كأس أوروبا للأندية الموسم المقبل
+3154	<0/>Relegation to the <1/>	<0/>Descenso a la <1/>	<0/>الهبوط إلى <1/>
+3155	The European Club Cup is played from the Elite League: its top two qualify.	La Copa de Europa de Clubes se juega desde la Liga Élite: se clasifican sus dos primeros.	تُلعب كأس أوروبا للأندية انطلاقًا من دوري النخبة: يتأهل إليها الأولان.
+3156	{n} pt {what}	{n} pt {what}	نقطة واحدة {what}
+3157	{n} pts {what}	{n} pts {what}	{"one":"نقطة واحدة {what}","two":"نقطتان {what}","few":"{n} نقاط {what}","other":"{n} نقطة {what}"}
+3158	Level on points with 2nd place	Empatado a puntos con el 2.º	متساوٍ في النقاط مع الثاني
+3159	off promotion	del ascenso	عن الصعود
+3160	In the promotion zone	En zona de ascenso	في منطقة الصعود
+3161	Top of the league	Líder de la liga	متصدر الدوري
+3162	−{v} on the leader	{v} pt{v2} del líder	بفارق {v} عن المتصدر
+3163	Top of the Elite League	Líder de la Liga Élite	متصدر دوري النخبة
+3164	European place	Plaza europea	مركز أوروبي
+3165	off Europe	de Europa	عن أوروبا
+3166	In the relegation zone	En zona de descenso	في منطقة الهبوط
+3167	{name} · Season {seasonNumber} · {v}	{name} · Temporada {seasonNumber} · {v}	{name} · الموسم {seasonNumber} · {v}
+3168	matchday {min} / {leagueLength}	jornada {min} / {leagueLength}	الجولة {min} / {leagueLength}
+3169	Position	Posición	المركز
+3170	of 8	de 8	من 8
+3171	GD	Dif.	الفارق
+3172	Ambition	Ambición	الطموح
+3173	Title	Título	اللقب
+3174	Top 2	Top 2	أول اثنين
+3175	{ofDiv} table	Clasificación {ofDiv}	ترتيب {ofDiv}

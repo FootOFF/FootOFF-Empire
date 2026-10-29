@@ -1,3 +1,4 @@
+import { fmtNum, t } from '../../i18n/index';
 import * as THREE from 'three';
 import { BALL_R, GOAL, KITS, PITCH } from './stage';
 import { agent, bezier, clamp01, cones, easeOut, rnd, walkTo } from './kit';
@@ -21,8 +22,8 @@ const MEET = LINE - 0.065; // le ballon rencontre les gants à 65 cm devant le g
 const EYE_FRAME = { v: 48, h: 40 }; // vue subjective : le tireur et la surface ; sur un écran en hauteur, pas de grand angle
 const REACH = { left: 0.24, right: 0.24, center: 0.12 }; // temps qu'il faut pour couvrir la zone (s)
 const MODES = {
-  reflexes: { shots: 8, prompt: 'Plonge vers le ballon' },
-  penalties: { shots: 6, prompt: 'Lis la course du tireur' },
+  reflexes: { shots: 8, prompt: t('Plonge vers le ballon') },
+  penalties: { shots: 6, prompt: t('Lis la course du tireur') },
 };
 // arrêts réflexes : plongeon vers un point (x en travers, y en hauteur, dans le plan des gants)
 const REST_Y = 0.115; // mains au repos, à 1,15 m
@@ -184,12 +185,12 @@ function createKeeper(stage, ctx, mode) {
     // dans les mains : capté ; près des mains ou sur le corps (bras, buste) : repoussé ; au bout des doigts : détourné
     let kind = dist <= CATCH ? 'catch' : dist <= PARRY || bodyDist(h) <= 0.05 ? 'parry' : dist <= TIPS ? 'tips' : 'goal';
     let pts = { catch: 100, parry: 80, tips: 60, goal: 0 }[kind];
-    let text = { catch: 'Capté', parry: 'Claqué', tips: 'Du bout des gants', goal: 'But' }[kind];
-    if (pts && !d) text = 'Bien placé';
-    else if (pts && react < 0) { pts = Math.round(pts * 0.6); text = 'Bien deviné'; } else if (!pts && d && Math.sign(d.ax) === Math.sign(s.to.x) && react > 0) text = 'Trop tard';
-    if (!pts && d && Math.sign(d.ax) !== Math.sign(s.to.x) && Math.abs(d.ax) > 0.06) text = 'Mauvais côté';
+    let text = { catch: t('Capté'), parry: t('Claqué'), tips: t('Du bout des gants'), goal: t('But') }[kind];
+    if (pts && !d) text = t('Bien placé');
+    else if (pts && react < 0) { pts = Math.round(pts * 0.6); text = t('Bien deviné'); } else if (!pts && d && Math.sign(d.ax) === Math.sign(s.to.x) && react > 0) text = t('Trop tard');
+    if (!pts && d && Math.sign(d.ax) !== Math.sign(s.to.x) && Math.abs(d.ax) > 0.06) text = t('Mauvais côté');
     const tone = pts >= 100 ? 'gold' : pts > 0 ? 'good' : 'bad';
-    const rtxt = pts && react !== null && react >= 0 ? ` · ${react.toFixed(2).replace('.', ',')} s` : '';
+    const rtxt = pts && react !== null && react >= 0 ? ` · ${fmtNum(react, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} s` : '';
     s.out = { pts, save: pts > 0, kind };
     s.points += pts;
     const side = Math.sign(s.to.x) || 1;
@@ -234,17 +235,17 @@ function createKeeper(stage, ctx, mode) {
     const right = d && d.zone === s.zone;
     const late = d && r > s.dur - REACH[s.zone];
     let pts = 0;
-    let text = 'But';
+    let text = t('But');
     let tone = 'bad';
     if (pens) {
-      if (s.early) text = 'Trop tôt : il t’a vu partir';
-      else if (s.zone === 'center' && (!d || d.zone === 'center')) { pts = 100; text = 'Panenka arrêtée'; tone = 'gold'; } else if (s.zone === 'center') text = 'Panenka';
-      else if (right && !late) { pts = r >= -TELL - 0.02 ? 100 : 75; text = pts === 100 ? 'Lu à la perfection' : 'Bien senti'; tone = pts === 100 ? 'gold' : 'good'; } else if (right && late) text = 'Trop tard';
-    } else if (!d && s.zone === 'center') { pts = 60; text = 'Bien placé'; tone = 'good'; } else if (right && r < 0) { pts = 50; text = 'Bien deviné'; tone = 'good'; } else if (right && !late) {
+      if (s.early) text = t('Trop tôt : il t’a vu partir');
+      else if (s.zone === 'center' && (!d || d.zone === 'center')) { pts = 100; text = t('Panenka arrêtée'); tone = 'gold'; } else if (s.zone === 'center') text = 'Panenka';
+      else if (right && !late) { pts = r >= -TELL - 0.02 ? 100 : 75; text = pts === 100 ? t('Lu à la perfection') : t('Bien senti'); tone = pts === 100 ? 'gold' : 'good'; } else if (right && late) text = t('Trop tard');
+    } else if (!d && s.zone === 'center') { pts = 60; text = t('Bien placé'); tone = 'good'; } else if (right && r < 0) { pts = 50; text = t('Bien deviné'); tone = 'good'; } else if (right && !late) {
       pts = Math.round(60 + 40 * clamp01(1 - r / Math.max(0.05, s.dur - REACH[s.zone])));
-      text = pts >= 90 ? 'Réflexe parfait' : 'Arrêt';
+      text = pts >= 90 ? t('Réflexe parfait') : t('Arrêt');
       tone = pts >= 90 ? 'gold' : 'good';
-    } else if (right && late) text = 'Trop tard';
+    } else if (right && late) text = t('Trop tard');
     s.out = { pts, save: pts > 0 };
     s.points += pts;
     if (pts > 0) {

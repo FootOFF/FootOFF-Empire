@@ -7,7 +7,7 @@ import { BUILDINGS, DIVISIONS, upgradeCost } from './game/constants';
 import { fmtMoney } from './ui/format';
 import { clubAfter, withArticle } from './game/names';
 import { dealOnScreen, leagueNote } from './ui/mercato';
-import { clearGame, clearLive, decodeCode, exportCode, importSave, lastLoad, loadGame, loadLive, saveGame } from './game/save';
+import { clearGame, clearLive, decodeCode, exportCode, importForeign, importSave, langOf, lastLoad, loadGame, loadLive, saveGame } from './game/save';
 import { LIVE_VERSION, liveKeyOf } from './game/live';
 import { applyUpdate } from './ui/updates';
 import { CrashScreen } from './ui/crash';
@@ -33,7 +33,7 @@ import { CoachCard, StaffTip } from './ui/guide';
 import { DirectionView } from './ui/direction';
 import { MedicalView } from './ui/medical';
 import { LeagueView } from './ui/league';
-import { deadlineText, leagueOpen } from './game/league';
+import { deadlineText, leagueLang, leagueOpen } from './game/league';
 import { LeagueError, kickoffAt, leagueResults, myLeagues, pulseUrgent, refreshLeague, sendMove, sendSheet, takeInvite, userActive, watchPulse } from './game/leagueNet';
 import { applyLeagueRound, closeGoneDeals, createLeagueClub, leagueClubProgress, leagueRequest, loadLeagueClub, myReplay, readLeagueClub, saveLeagueClub, settleLeague, syncLeagueClub, teamSheet } from './game/leagueClub';
 import { adoptPulled, cloudNote, cloudPlan, isPushing, markUnreadable, playedPrint, pullClub, pushClub, savedWhen, stageOf, syncOf } from './game/leagueCloud';
@@ -60,6 +60,7 @@ import { createStadiumSound } from './ui/sound';
 import { achievementById, newAchievements } from './game/achievements';
 import { advanceJourney, journeyDue } from './game/journey';
 import { LOCKS, NavContext, SECTION_ENTRY, sectionNear, sectionOf } from './ui/nav';
+import { bootIntent, eur, gameLang, LANG, numLocale, preferredLang, reloadInLang, t, tn } from './i18n/index';
 
 // three.js et la scène vivent dans un chunk séparé, chargé dès le démarrage (derrière l'écran de chargement).
 const Empire3D = lazy(() => import('./ui/Empire3D'));
@@ -89,18 +90,20 @@ function liveNoteOf(rec) {
   const { half, clock, phase } = rec.ui;
   const base = half === 1 ? 45 : 90;
   const mm = Math.max(half === 1 ? 1 : 46, Math.ceil(clock));
-  const when = phase === 'halftime' ? 'mi-temps' : `${mm > base ? `${base}+${mm - base}` : mm}e minute`;
-  return `Match en cours · ${when} contre ${rec.ctx.opp.name}`;
+  const when = phase === 'halftime' ? t('mi-temps') : t('{v}e minute', { v: mm > base ? `${base}+${mm - base}` : mm });
+  return t('Match en cours · {when} contre {name}', { when, name: rec.ctx.opp.name });
 }
 
 // preview : nom d'un écran à afficher d'emblée avec une partie fictive (galerie), sans sauvegarde ni 3D.
 export default function App({ preview = null }) {
-  if (preview === 'erreur') return <CrashScreen error={new Error('TypeError: Cannot read properties of null (reading \'C\')')} summary="FootOFF FC · saison 3 · Régionale" preview />;
+  if (preview === 'erreur') return <CrashScreen error={new Error('TypeError: Cannot read properties of null (reading \'C\')')} summary={t('FootOFF FC · saison 3 · Régionale')} preview />;
   if (preview === 'visages') return <FacesSheet />; // planche de visages (galerie)
   const [boot] = useState(() => {
     if (!preview) {
       const st = loadGame();
-      return { state: st, ui: {}, live: pendingLive(st) };
+      // foreign : la carrière fondée dans une autre langue, qui ne s'ouvre que dans la sienne (game/save.js) ; intent : ce
+      // que le rechargement dans une langue devait faire (reprendre la partie, fonder un club, rouvrir Langue, une ligue)
+      return { state: st, ui: {}, live: pendingLive(st), foreign: lastLoad.foreign, intent: bootIntent() };
     }
     const st = previewState(preview);
     return { state: st, ui: previewUi(preview, st) };
@@ -108,8 +111,10 @@ export default function App({ preview = null }) {
   const [state, setState] = useState(boot.state);
   knowCrests(state?.league ? state.rivals : null); // écussons des amis, sur tous les écrans (game/crest.js)
   setOurKit(state?.crest); // notre tenue aux couleurs de l'écusson : 3D, portraits (game/kits.js)
-  const [screen, setScreen] = useState(boot.ui.screen || (preview ? 'game' : 'title')); // 'title' | 'game'
-  const [titleView, setTitleView] = useState(boot.ui.titleView || 'menu'); // menu, réglages, création du club
+  const [foreign, setForeign] = useState(boot.foreign || null);
+  const go = boot.intent?.go;
+  const [screen, setScreen] = useState(boot.ui.screen || (preview || (go === 'continue' && boot.state) ? 'game' : 'title')); // 'title' | 'game'
+  const [titleView, setTitleView] = useState(boot.ui.titleView || (go === 'create' || go === 'lang' ? go : 'menu')); // menu, réglages, langue, création du club
   const [booted, setBooted] = useState(!!preview); // écran de chargement terminé (barre à 100 %)
   const demo = useRef(null); // complexe de départ montré derrière l'écran titre avant la création du club
   const [panel, setPanel] = useState(boot.ui.panel || null);
@@ -155,7 +160,8 @@ export default function App({ preview = null }) {
   const [leagueHub, setLeagueHub] = useState(() => {
     if (preview || !leagueOpen()) return null;
     const code = takeInvite();
-    return code ? { invite: code } : null;
+    if (code) return { invite: code };
+    return boot.intent?.hub ? { open: boot.intent.hub } : null; // championnat rouvert dans sa langue (league.jsx)
   });
   const [squadTab, setSquadTab] = useState(boot.ui.squadTab && boot.ui.squadTab !== 'market' ? boot.ui.squadTab : 'players'); // onglet de l'Effectif (joueurs, composition, anciens)
   const [seasonTab, setSeasonTab] = useState(boot.ui.seasonTab || 'calendar'); // onglet de la Saison (calendrier, classement)
@@ -217,12 +223,12 @@ export default function App({ preview = null }) {
     if (preview) return undefined;
     // la sauvegarde principale était illisible : la copie de secours de la dernière session a pris le relais
     if (lastLoad.source === 'backup') {
-      notify({ kind: 'warn', eyebrow: 'Sauvegarde', title: 'Partie restaurée depuis la copie de secours', text: 'Ta sauvegarde était illisible. Tu reprends là où tu en étais à l’ouverture de ta dernière session.' });
+      notify({ kind: 'warn', eyebrow: t('Sauvegarde'), title: t('Partie restaurée depuis la copie de secours'), text: t('Ta sauvegarde était illisible. Tu reprends là où tu en étais à l’ouverture de ta dernière session.') });
     } else if (lastLoad.corrupt) {
-      notify({ kind: 'warn', eyebrow: 'Sauvegarde', title: 'Sauvegarde illisible', text: 'Elle a été mise de côté, sans copie de secours disponible. Fonde un nouveau club, ou colle un code de sauvegarde dans les réglages.' });
+      notify({ kind: 'warn', eyebrow: t('Sauvegarde'), title: t('Sauvegarde illisible'), text: t('Elle a été mise de côté, sans copie de secours disponible. Fonde un nouveau club, ou colle un code de sauvegarde dans les réglages.') });
     }
     // une nouvelle version du jeu est prête (service worker) : un bandeau propose de recharger
-    const onUpdate = () => notify({ kind: 'info', eyebrow: 'Nouvelle version', title: 'FootOFF Empire a été mis à jour', text: 'Recharge pour en profiter : ta partie est sauvegardée.', action: { kind: 'update' } });
+    const onUpdate = () => notify({ kind: 'info', eyebrow: t('Nouvelle version'), title: t('FootOFF Empire a été mis à jour'), text: t('Recharge pour en profiter : ta partie est sauvegardée.'), action: { kind: 'update' } });
     window.addEventListener('fo-update', onUpdate);
     return () => window.removeEventListener('fo-update', onUpdate);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -239,9 +245,9 @@ export default function App({ preview = null }) {
     const list = fresh.map(([id]) => achievementById(id));
     notify({
       kind: 'achievement',
-      eyebrow: list.length > 1 ? `${list.length} succès débloqués` : 'Succès débloqué',
+      eyebrow: tn(list.length, 'Succès débloqué', '{length} succès débloqués', { length: list.length }, list.length > 1),
       title: list[0].title,
-      text: list.length > 1 ? `Et aussi : ${list.slice(1).map((a) => a.title).join(' · ')}` : list[0].desc,
+      text: list.length > 1 ? t('Et aussi : {join}', { join: list.slice(1).map((a) => a.title).join(' · ') }) : list[0].desc,
       action: { panel: 'trophies', tab: 'achievements', ids: fresh.map(([id]) => id) },
     });
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -255,7 +261,7 @@ export default function App({ preview = null }) {
     setState((s) => { if (!s) return s; const n = clone(s); advanceJourney(n); return n; });
     if (done) {
       notify({
-        kind: 'achievement', eyebrow: 'Carrière · chapitre accompli', title: done.title, text: `${done.goal} Récompense : ${done.reward.label}.`,
+        kind: 'achievement', eyebrow: t('Carrière · chapitre accompli'), title: done.title, text: t('{goal} Récompense : {label}.', { goal: done.goal, label: done.reward.label }),
         action: { panel: 'trophies', tab: 'career' },
       });
     }
@@ -341,11 +347,11 @@ export default function App({ preview = null }) {
     const base = clone(state);
     if (base?.tutorial) base.tutorial.just = []; // seules les primes gagnées par cette action s'annoncent, une fois
     const ns = fn(base);
-    if (!ns) { notify({ kind: 'warn', title: failMsg || 'Action impossible.' }); return false; }
+    if (!ns) { notify({ kind: 'warn', title: failMsg || t('Action impossible.') }); return false; }
     if (ns.league) closeGoneDeals(ns); // un joueur parti autrement rompt ses négociations entre amis
     setState(advanceTutorial(ns)); // une étape du tutoriel se valide dès que son objectif est atteint
     for (const r of ns.tutorial?.just || []) { // et sa prime s'annonce
-      notify({ kind: 'success', eyebrow: 'Étape réussie', title: `${r.label} : +${r.money.toLocaleString('fr-FR')} €`, text: 'La prime est versée au club.' });
+      notify({ kind: 'success', eyebrow: t('Étape réussie'), title: t('{label} : +{amount}', { label: r.label, amount: LANG !== 'fr' ? eur(r.money) : `${r.money.toLocaleString(numLocale())} €` }), text: t('La prime est versée au club.') });
     }
     return true;
   };
@@ -379,7 +385,7 @@ export default function App({ preview = null }) {
     const [id, tab] = key.split(':');
     const need = LOCKS[id];
     if (need && !state.buildings[need]) {
-      notify({ kind: 'info', eyebrow: 'Complexe', title: `${BUILDINGS[need].name} : à construire`, text: 'Bâtis-le sur une parcelle libre du complexe (bouton Bâtir) pour ouvrir cet écran.' });
+      notify({ kind: 'info', eyebrow: t('Complexe'), title: t('{name} : à construire', { name: BUILDINGS[need].name }), text: t('Bâtis-le sur une parcelle libre du complexe (bouton Bâtir) pour ouvrir cet écran.') });
       return;
     }
     if (id === 'squad') setSquadTab(tab || 'players');
@@ -435,7 +441,7 @@ export default function App({ preview = null }) {
     if (!ctx) return;
     if (staffOn(state)) run((s) => { staffSession(s); return s; }); // séances confiées au staff : faites avant le match
     // ligue : l'avant-match valide l'équipe de la journée (le match se joue à l'heure, pour tous) ; l'écusson d'un ami
-    setMatchCtx(state.league ? { ...ctx, opp: { ...ctx.opp, crest: ctx.opp.human ? ctx.opp.crest : null }, goLabel: state.league.sent ? 'Valider ces changements' : 'Valider mon équipe' } : ctx);
+    setMatchCtx(state.league ? { ...ctx, opp: { ...ctx.opp, crest: ctx.opp.human ? ctx.opp.crest : null }, goLabel: state.league.sent ? t('Valider ces changements') : t('Valider mon équipe') } : ctx);
     setPanel(null); setSel(null); setMenu(false);
     setMatchDay(true);
     setMatchPhase('prematch');
@@ -463,23 +469,23 @@ export default function App({ preview = null }) {
     if (leaving.length && !matchContext(state)) {
       const many = leaving.length > 1;
       notify({
-        kind: 'academy', eyebrow: 'Académie · fin de saison',
-        title: many ? `${leaving.length} jeunes vont quitter le club` : `${leaving[0].name} va quitter le club`,
-        text: `Fais-${many ? 'les' : 'le'} monter en équipe première avant de terminer la saison, sinon ${many ? 'ils partiront' : 'il partira'}.`,
+        kind: 'academy', eyebrow: t('Académie · fin de saison'),
+        title: many ? t('{length} jeunes vont quitter le club', { length: leaving.length }) : t('{name} va quitter le club', { name: leaving[0].name }),
+        text: t('Fais-{v} monter en équipe première avant de terminer la saison, sinon {v2}.', { v: many ? t('les') : t('le'), v2: many ? t('ils partiront') : t('il partira') }),
         action: { panel: 'academy', tab: 'youth', ids: leaving.map((p) => p.id) },
       });
     }
     // mission en cours (0.8.12) : la nouvelle du repérage de cette journée
     const news = state.mission?.news?.at(-1);
     if (news && state.lastMatch?.comp === 'league' && news.season === state.seasonNumber && news.round === state.round) {
-      notify({ kind: 'academy', eyebrow: `Académie · mission en cours, repérage ${news.step} sur ${state.mission.steps}`, title: news.up && news.best === 'rare' ? 'Un talent rare repéré' : 'Nouvelles des recruteurs', text: news.up && news.best === 'rare' ? news.text.replace(/ : un talent rare\.$/, '.') : news.text, action: { panel: 'academy', tab: 'scout' } });
+      notify({ kind: 'academy', eyebrow: t('Académie · mission en cours, repérage {step} sur {steps}', { step: news.step, steps: state.mission.steps }), title: news.up && news.best === 'rare' ? t('Un talent rare repéré') : t('Nouvelles des recruteurs'), text: news.up && news.best === 'rare' ? news.text.replace(new RegExp(`\\s?:\\s?${t('un talent rare').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.$`), '.') : news.text, action: { panel: 'academy', tab: 'scout' } });
     }
     // retour de mission des recruteurs, après cette journée : la liste ramenée est à voir à l'académie
     const back = state.scouting?.mission;
     if (back && state.lastMatch?.comp === 'league' && back.season === state.seasonNumber && back.round === state.round) {
       notify({
-        kind: 'academy', eyebrow: 'Académie · retour de mission', title: back.back > 1 ? `${back.back} jeunes à voir` : 'Un jeune à voir',
-        text: `${back.back > 1 ? 'Les plus prometteurs' : 'Le plus prometteur'} parmi les ${missionCount(back, back.seen)} vus par tes recruteurs.`,
+        kind: 'academy', eyebrow: t('Académie · retour de mission'), title: tn(back.back, 'Un jeune à voir', '{back} jeunes à voir', { back: back.back }, back.back > 1),
+        text: t('{tn} parmi les {missionCount} vus par tes recruteurs.', { tn: tn(back.back, 'Le plus prometteur', 'Les plus prometteurs', {}, back.back > 1), missionCount: missionCount(back, back.seen) }),
         action: { panel: 'academy', tab: 'scout' },
       });
     }
@@ -488,9 +494,9 @@ export default function App({ preview = null }) {
     if (abs.length) {
       const one = abs[0];
       notify({
-        kind: 'warn', eyebrow: abs.length > 1 ? `${abs.length} absents pour la suite` : one.kind === 'injury' ? 'Blessure' : 'Suspension',
-        title: abs.length > 1 ? abs.map((a) => a.name).join(', ') : `${one.name} : ${one.kind === 'injury' ? 'blessé' : 'suspendu'} ${one.matches} match${one.matches > 1 ? 's' : ''}`,
-        text: abs.length > 1 ? abs.map((a) => `${a.name} ${a.matches} match${a.matches > 1 ? 's' : ''}`).join(' · ') : one.why[0].toUpperCase() + one.why.slice(1) + '.',
+        kind: 'warn', eyebrow: abs.length > 1 ? t('{length} absents pour la suite', { length: abs.length }) : one.kind === 'injury' ? t('Blessure') : t('Suspension'),
+        title: abs.length > 1 ? abs.map((a) => a.name).join(', ') : tn(one.matches, '{name} : {v} {matches} match', '{name} : {v} {matches} matchs', { name: one.name, v: one.kind === 'injury' ? t('blessé') : t('suspendu'), matches: one.matches }, one.matches > 1),
+        text: abs.length > 1 ? abs.map((a) => tn(a.matches, '{name} {n} match', '{name} {n} matchs', { name: a.name, n: a.matches }, a.matches > 1)).join(' · ') : one.why[0].toUpperCase() + one.why.slice(1) + '.',
         // centre médical construit et un blessé : la notification mène aux soins
         action: state.buildings.medical > 0 && abs.some((a) => a.kind === 'injury') ? { panel: 'medical' } : { panel: 'squad', tab: 'players' },
       });
@@ -500,11 +506,11 @@ export default function App({ preview = null }) {
     if (!n || n.key !== roundKey(state) || n.season) return;
     const gone = n.followedGone || [];
     const bits = [];
-    if (n.offers) bits.push(`${n.offers} offre${n.offers > 1 ? 's' : ''} reçue${n.offers > 1 ? 's' : ''} pour tes joueurs`);
-    if (gone.length) bits.push(`${gone.join(', ')} ${gone.length > 1 ? 'ont' : 'a'} signé ailleurs`);
+    if (n.offers) bits.push(tn(n.offers, '{offers} offre reçue pour tes joueurs', '{offers} offres reçues pour tes joueurs', { offers: n.offers }, n.offers > 1));
+    if (gone.length) bits.push(t('{join} {tn} signé ailleurs', { join: gone.join(', '), tn: tn(gone.length, 'a', 'ont', {}, gone.length > 1) }));
     if (bits.length) {
       notify({
-        kind: 'mercato', eyebrow: 'Mercato · pendant la journée', title: bits[0][0].toUpperCase() + bits[0].slice(1), text: bits[1],
+        kind: 'mercato', eyebrow: t('Mercato · pendant la journée'), title: bits[0][0].toUpperCase() + bits[0].slice(1), text: bits[1],
         action: { panel: 'mercato', view: n.offers ? 'offers' : 'watch' },
       });
     }
@@ -528,29 +534,29 @@ export default function App({ preview = null }) {
     setConfirm({
       title,
       tone: 'danger',
-      text: 'Avec cette dépense, la saison finirait dans le rouge. Au coup de sifflet final, le conseil vendrait tes plus gros salaires pour redresser les comptes.',
+      text: t('Avec cette dépense, la saison finirait dans le rouge. Au coup de sifflet final, le conseil vendrait tes plus gros salaires pour redresser les comptes.'),
       rows: [
-        ['Coût', `−${fmtMoney(cost)}`, 'down'],
-        ['Entretien en plus', `${fmtMoney(upkeep)} / saison`, 'down'],
-        ['Fin de saison prévue', `${fmtMoney(end)} → ${fmtMoney(after)}`, 'down'],
+        [t('Coût'), `−${fmtMoney(cost)}`, 'down'],
+        [t('Entretien en plus'), t('{upkeep} / saison', { upkeep: fmtMoney(upkeep) }), 'down'],
+        [t('Fin de saison prévue'), `${fmtMoney(end)} → ${fmtMoney(after)}`, 'down'],
       ],
-      confirmLabel: 'Dépenser quand même',
-      cancelLabel: 'Renoncer',
+      confirmLabel: t('Dépenser quand même'),
+      cancelLabel: t('Renoncer'),
       onConfirm: go,
     });
   };
-  const onBuild = (plotId, key) => guardSpend(upgradeCost(key, 1), `Construire : ${BUILDINGS[key].name} ?`, () => {
-    if (run((s) => build(s, plotId, key), 'Fonds insuffisants.')) {
+  const onBuild = (plotId, key) => guardSpend(upgradeCost(key, 1), t('Construire : {name} ?', { name: BUILDINGS[key].name }), () => {
+    if (run((s) => build(s, plotId, key), t('Fonds insuffisants.'))) {
       haptic('build');
       uiSound('build');
-      notify({ kind: 'build', eyebrow: 'Chantier lancé', title: BUILDINGS[key].name });
+      notify({ kind: 'build', eyebrow: t('Chantier lancé'), title: BUILDINGS[key].name });
     }
   });
-  const onUpgrade = (key) => guardSpend(upgradeCost(key, state.buildings[key] + 1), `${BUILDINGS[key].name} : passer au niveau ${state.buildings[key] + 1} ?`, () => {
-    if (run((s) => upgrade(s, key), 'Fonds insuffisants ou niveau maximum.')) {
+  const onUpgrade = (key) => guardSpend(upgradeCost(key, state.buildings[key] + 1), t('{name} : passer au niveau {v} ?', { name: BUILDINGS[key].name, v: state.buildings[key] + 1 }), () => {
+    if (run((s) => upgrade(s, key), t('Fonds insuffisants ou niveau maximum.'))) {
       haptic('build');
       uiSound('build');
-      notify({ kind: 'build', eyebrow: 'Amélioration', title: `${BUILDINGS[key].name} · niveau ${state.buildings[key] + 1}` });
+      notify({ kind: 'build', eyebrow: t('Amélioration'), title: t('{name} · niveau {v}', { name: BUILDINGS[key].name, v: state.buildings[key] + 1 }) });
     }
   });
 
@@ -558,7 +564,7 @@ export default function App({ preview = null }) {
   // fois, la notification mène au réglage lui-même (menu pause, Réglages).
   const onLag = () => {
     try { if (localStorage.getItem('fo-fluid-hint')) return; localStorage.setItem('fo-fluid-hint', '1'); } catch { return; }
-    notify({ kind: 'info', eyebrow: 'Fluidité', title: 'Le jeu rame sur cet appareil', text: 'Active « Fluidité sur appareil lent » dans les réglages : la 3D sera un peu moins nette, mais fluide.', action: { kind: 'settings', row: 'fluid' } });
+    notify({ kind: 'info', eyebrow: t('Fluidité'), title: t('Le jeu rame sur cet appareil'), text: t('Active « Fluidité sur appareil lent » dans les réglages : la 3D sera un peu moins nette, mais fluide.'), action: { kind: 'settings', row: 'fluid' } });
   };
 
   // Réglages partagés par l'écran titre et le menu pause ; code de sauvegarde à copier (d'un appareil à l'autre) ou à
@@ -575,23 +581,25 @@ export default function App({ preview = null }) {
     onExport: state ? () => exportCode(state) : null,
     onImport: async (code) => {
       const raw = await decodeCode(code);
-      if (!raw) return 'Ce code n’est pas une sauvegarde FootOFF Empire.';
+      if (!raw) return t('Ce code n’est pas une sauvegarde FootOFF Empire.');
+      const cur = state || foreign;
       const apply = () => {
+        if (langOf(raw) !== gameLang()) { if (importForeign(raw)) reloadInLang(langOf(raw), { go: 'continue' }); return; }
         const next = importSave(raw);
         if (!next) return;
-        setState(next);
+        setState(next); setForeign(null);
         setMenu(false); setSel(null); setPanel(null); setMatchDay(false); setShowResult(false); setMatchPhase(null); setResumeLive(null);
         setTitleView('menu');
         setScreen('game');
-        notify({ kind: 'success', eyebrow: 'Sauvegarde', title: `${next.clubName} : partie restaurée`, text: `Saison ${next.seasonNumber}, ${DIVISIONS[next.divisionIndex].name}. L’ancienne partie est gardée en copie de secours.` });
+        notify({ kind: 'success', eyebrow: t('Sauvegarde'), title: t('{clubName} : partie restaurée', { clubName: next.clubName }), text: t('Saison {seasonNumber}, {name}. L’ancienne partie est gardée en copie de secours.', { seasonNumber: next.seasonNumber, name: DIVISIONS[next.divisionIndex].name }) });
       };
-      if (!state) { apply(); return null; }
+      if (!cur) { apply(); return null; }
       setConfirm({
         tone: 'danger',
-        title: `Remplacer ${state.clubName} par ${raw.clubName} ?`,
-        text: `La partie actuelle (saison ${state.seasonNumber}, ${DIVISIONS[state.divisionIndex].name}) sera mise en copie de secours, et ${raw.clubName} (saison ${raw.seasonNumber}, ${DIVISIONS[raw.divisionIndex].name}) prendra sa place.`,
-        confirmLabel: 'Restaurer cette partie',
-        cancelLabel: 'Garder ma partie',
+        title: t('Remplacer {clubName} par {clubName2} ?', { clubName: cur.clubName, clubName2: raw.clubName }),
+        text: t('La partie actuelle (saison {seasonNumber}, {name}) sera mise en copie de secours, et {clubName} (saison {seasonNumber2}, {name2}) prendra sa place.', { seasonNumber: cur.seasonNumber, name: DIVISIONS[cur.divisionIndex].name, clubName: raw.clubName, seasonNumber2: raw.seasonNumber, name2: DIVISIONS[raw.divisionIndex].name }),
+        confirmLabel: t('Restaurer cette partie'),
+        cancelLabel: t('Garder ma partie'),
         onConfirm: apply,
       });
       return null;
@@ -602,7 +610,7 @@ export default function App({ preview = null }) {
     setMenu(false); setSel(null); setPanel(null); setMatchDay(false);
     if (state?.league) { // la carrière reprend sa place ; le club de ligue part d'abord en ligne (un choix éventuel attendra l'entrée suivante)
       cloudSave({ quiet: true });
-      prevMoney.current = null; setState(loadGame()); setLeagueLive(null);
+      prevMoney.current = null; setState(loadGame()); setForeign(lastLoad.foreign); setLeagueLive(null);
     }
     setTitleView('menu');
     setScreen('title');
@@ -612,23 +620,36 @@ export default function App({ preview = null }) {
   // Entrer dans son club de ligue : la partie de l'appareil, ou sa copie en ligne (nouvel appareil, partie avancée sur un
   // autre : leagueCloud.js), ou une nouvelle (première visite, comme une nouvelle partie solo) ; relue avec la ligue. Tout le
   // jeu passe à ce club (complexe, HUD, écrans), la carrière reste sauvegardée à côté.
-  const enterLeague = async (m) => {
+  // again : déjà rechargé dans la langue du championnat (une seconde fois serait une boucle)
+  const enterLeague = async (m, again = false) => {
     try {
       const d = await refreshLeague(m);
-      if (d.league.status !== 'running') { notify({ kind: 'info', eyebrow: d.league.name, title: 'La saison n’a pas commencé', text: 'Le créateur lancera la saison depuis le Siège de la Ligue.' }); return; }
+      if (d.league.status !== 'running') { notify({ kind: 'info', eyebrow: d.league.name, title: t('La saison n’a pas commencé'), text: t('Le créateur lancera la saison depuis le Siège de la Ligue.') }); return; }
+      // un championnat se joue dans sa langue, la même pour tous les amis : le jeu se recharge, puis ouvre le club
+      if (leagueLang(d.league) !== gameLang()) {
+        if (!again) { reloadInLang(leagueLang(d.league), { league: m.code }); return; }
+        notify({ kind: 'warn', eyebrow: d.league.name, title: t('Club non repris'), text: t('Réessaie dans un moment.') });
+        return;
+      }
       const local = loadLeagueClub(m.code);
       const plan = cloudPlan(m.code, local, d.save);
       if (plan === 'blocked') {
-        notify({ kind: 'warn', eyebrow: d.league.name, title: 'Navigateur trop ancien', text: 'Ton club est sauvegardé en ligne, mais ce navigateur ne peut pas l’ouvrir : mets-le à jour ou joue sur ton autre appareil.' });
+        notify({ kind: 'warn', eyebrow: d.league.name, title: t('Navigateur trop ancien'), text: t('Ton club est sauvegardé en ligne, mais ce navigateur ne peut pas l’ouvrir : mets-le à jour ou joue sur ton autre appareil.') });
       } else if (plan === 'conflict') askCloudChoice(m, d, local, d.save, true);
       else if (plan === 'pull') await openPulled(m, d, local);
       else await openLeagueClub(m, d, local);
     } catch (x) {
       notify(x instanceof LeagueError
-        ? { kind: 'warn', eyebrow: 'Championnat entre amis', title: 'Serveur des ligues injoignable', text: x.message }
-        : { kind: 'warn', eyebrow: 'Championnat entre amis', title: 'Club non repris', text: 'Réessaie dans un moment.' });
+        ? { kind: 'warn', eyebrow: t('Championnat entre amis'), title: t('Serveur des ligues injoignable'), text: x.message }
+        : { kind: 'warn', eyebrow: t('Championnat entre amis'), title: t('Club non repris'), text: t('Réessaie dans un moment.') });
     }
   };
+  // Rechargé dans la langue d'un championnat pour y entrer : on y entre dès la fin de l'écran de chargement.
+  useEffect(() => {
+    if (!booted || !boot.intent?.league) return;
+    const m = myLeagues().find((x) => x.code === boot.intent.league);
+    if (m) enterLeague(m, true);
+  }, [booted]); // eslint-disable-line react-hooks/exhaustive-deps
   // La partie choisie (celle de l'appareil, la copie en ligne, ou une nouvelle), relue avec la ligue, à l'écran. restored :
   // la fiche de la copie en ligne reprise (son empreinte est prise sur la partie relue : rien à renvoyer ensuite) ;
   // replaced : la partie de l'appareil qu'elle remplace, gardée à côté.
@@ -642,7 +663,7 @@ export default function App({ preview = null }) {
     setLeagueHub(null); setPanel(null); setSel(null); setMenu(false); setMatchDay(false); setShowResult(false); setMatchPhase(null); setReplay(null);
     setTitleView('menu');
     setScreen('game');
-    if (restored) notify({ kind: 'success', eyebrow: d.league.name, title: 'Club repris', text: `Tu reprends ta partie sauvegardée en ligne ${savedWhen(restored.at)} : ${stageOf(restored.season, restored.round)}.` });
+    if (restored) notify({ kind: 'success', eyebrow: d.league.name, title: t('Club repris'), text: t('Tu reprends ta partie sauvegardée en ligne {savedWhen} : {stageOf}.', { savedWhen: savedWhen(restored.at), stageOf: stageOf(restored.season, restored.round) }) });
   };
   // La copie en ligne devient la partie de l'appareil (l'ancienne est gardée à côté, au cas où). Illisible ici : retenue
   // comme telle (plus redemandée), la partie de l'appareil continue.
@@ -659,8 +680,8 @@ export default function App({ preview = null }) {
     if (!s) {
       markUnreadable(m.code, got.card?.version);
       notify(local
-        ? { kind: 'warn', eyebrow: d.league.name, title: 'Sauvegarde en ligne illisible', text: 'Tu continues avec la partie de cet appareil.' }
-        : { kind: 'warn', eyebrow: d.league.name, title: 'Club non repris', text: 'Ta sauvegarde en ligne n’a pas pu être lue.' });
+        ? { kind: 'warn', eyebrow: d.league.name, title: t('Sauvegarde en ligne illisible'), text: t('Tu continues avec la partie de cet appareil.') }
+        : { kind: 'warn', eyebrow: d.league.name, title: t('Club non repris'), text: t('Ta sauvegarde en ligne n’a pas pu être lue.') });
       if (local) await openLeagueClub(m, d, local);
       return;
     }
@@ -676,25 +697,25 @@ export default function App({ preview = null }) {
     const here = entering ? local : latest.current;
     const ahead = (card.season - here.seasonNumber) || (card.round - (here.round || 0)); // > 0 : la version en ligne est plus avancée
     const online = {
-      label: 'Reprendre la version en ligne',
-      run: () => openPulled(m, d, entering ? local : latest.current).catch((x) => notify({ kind: 'warn', eyebrow: d.league.name, title: 'Club non repris', text: x instanceof LeagueError ? x.message : 'Réessaie dans un moment.' })),
+      label: t('Reprendre la version en ligne'),
+      run: () => openPulled(m, d, entering ? local : latest.current).catch((x) => notify({ kind: 'warn', eyebrow: d.league.name, title: t('Club non repris'), text: x instanceof LeagueError ? x.message : t('Réessaie dans un moment.') })),
     };
     const device = {
-      label: 'Garder la version de cet appareil',
+      label: t('Garder la version de cet appareil'),
       run: () => {
         pushClub(m, entering ? local : latest.current, { force: true }).then(() => setCloudTick((n) => n + 1)).catch(() => { /* renvoyée à la prochaine occasion */ });
         if (entering) openLeagueClub(m, d, local).catch(() => {});
       },
     };
     const [main, alt] = ahead < 0 ? [device, online] : [online, device];
-    const row = (label, season, round, when, best) => [best ? `${label} · la plus avancée` : label, <>{cap(stageOf(season, round))}<small>{when}</small></>, best ? 'up' : ''];
+    const row = (label, season, round, when, best) => [best ? t('{label} · la plus avancée', { label }) : label, <>{cap(stageOf(season, round))}<small>{when}</small></>, best ? 'up' : ''];
     setConfirm({
-      eyebrow: 'Deux appareils',
-      title: 'Quelle version de ton club garder ?',
-      text: 'Ton club a aussi été joué sur un autre appareil depuis ta dernière partie ici. La version que tu ne gardes pas sera remplacée.',
+      eyebrow: t('Deux appareils'),
+      title: t('Quelle version de ton club garder ?'),
+      text: t('Ton club a aussi été joué sur un autre appareil depuis ta dernière partie ici. La version que tu ne gardes pas sera remplacée.'),
       rows: [
-        row('En ligne', card.season, card.round, `sauvegardée ${savedWhen(card.at)}`, ahead > 0),
-        row('Sur cet appareil', here.seasonNumber, here.round || 0, `jouée ici ${savedWhen(entering ? local.lastSeen : Date.now())}`, ahead < 0),
+        row(t('En ligne'), card.season, card.round, t('sauvegardée {savedWhen}', { savedWhen: savedWhen(card.at) }), ahead > 0),
+        row(t('Sur cet appareil'), here.seasonNumber, here.round || 0, t('jouée ici {savedWhen}', { savedWhen: savedWhen(entering ? local.lastSeen : Date.now()) }), ahead < 0),
       ],
       confirmLabel: main.label,
       cancelLabel: alt.label,
@@ -791,25 +812,25 @@ export default function App({ preview = null }) {
       setState((s) => (s?.league?.code === m.code ? settleLeague(clone(s), item, res) : s));
       if (item.k === 'sign' && dealOnScreen.id !== item.id) { // la fenêtre de négociation ouverte le dit déjà
         notify(res?.id
-          ? { kind: 'success', eyebrow: state.league.name, title: 'Accord conclu', text: `${item.n} rejoint ton effectif.`, key: 'league-sign' }
-          : { kind: 'warn', eyebrow: state.league.name, title: res?.taken ? 'Trop tard' : 'Signature non confirmée', text: res?.taken ? `Un autre club de la ligue a signé ${item.n} juste avant toi.` : leagueNote(res?.error, 'sign'), key: 'league-sign' });
+          ? { kind: 'success', eyebrow: state.league.name, title: t('Accord conclu'), text: t('{n} rejoint ton effectif.', { n: item.n }), key: 'league-sign' }
+          : { kind: 'warn', eyebrow: state.league.name, title: res?.taken ? t('Trop tard') : t('Signature non confirmée'), text: res?.taken ? t('Un autre club de la ligue a signé {n} juste avant toi.', { n: item.n }) : leagueNote(res?.error, 'sign'), key: 'league-sign' });
       }
       if (item.k === 'answer' && res?.status === 'done') {
         const fee = Number.isSafeInteger(res.fee) ? res.fee : item.fee;
         if (item.role === 'b') {
           const from = state.league.clubs.find((c) => c.slot === item.s)?.name;
-          notify({ kind: 'success', eyebrow: state.league.name, title: 'Transfert conclu', text: `${item.n || 'Le joueur'} arrive ${from ? clubAfter('de ', from) : 'du club de ton ami'} : ${fmtMoney(fee)} versés.`, key: 'league-sale' });
+          notify({ kind: 'success', eyebrow: state.league.name, title: t('Transfert conclu'), text: t('{v} arrive {v2} : {fee} versés.', { v: item.n || t('Le joueur'), v2: from ? clubAfter('de ', from) : t('du club de ton ami'), fee: fmtMoney(fee) }), key: 'league-sale' });
         } else {
-          const who = state.players.find((p) => p.lid === item.lid)?.name || 'Le joueur';
+          const who = state.players.find((p) => p.lid === item.lid)?.name || t('Le joueur');
           const to = state.league.clubs.find((c) => c.slot === item.b)?.name;
-          notify({ kind: 'success', eyebrow: state.league.name, title: 'Transfert conclu', text: `${who} rejoint ${to ? withArticle(to) : 'le club de ton ami'} : ${fmtMoney(fee)} arrivent sur ton compte.`, key: 'league-sale' });
+          notify({ kind: 'success', eyebrow: state.league.name, title: t('Transfert conclu'), text: t('{who} rejoint {v} : {fee} arrivent sur ton compte.', { who, v: to ? withArticle(to) : t('le club de ton ami'), fee: fmtMoney(fee) }), key: 'league-sale' });
         }
       }
       if (item.k !== 'sign' && res?.error) {
         notify({
           kind: 'warn', eyebrow: state.league.name, key: 'league-move',
-          title: item.k === 'answer' ? 'Réponse non prise en compte' : item.k === 'withdraw' ? 'Retrait non pris en compte' : 'Offre non envoyée',
-          text: item.k === 'withdraw' ? 'Ton offre n’a pas pu être retirée : elle reste en attente. Réessaie dans un moment.' : leagueNote(res.error, item.k === 'answer' ? 'answer' : 'offer'),
+          title: item.k === 'answer' ? t('Réponse non prise en compte') : item.k === 'withdraw' ? t('Retrait non pris en compte') : t('Offre non envoyée'),
+          text: item.k === 'withdraw' ? t('Ton offre n’a pas pu être retirée : elle reste en attente. Réessaie dans un moment.') : leagueNote(res.error, item.k === 'answer' ? 'answer' : 'offer'),
         });
       }
     }, () => { outboxBusy.current = false; });
@@ -829,9 +850,9 @@ export default function App({ preview = null }) {
       if (d.league.season !== state.league.season || d.league.round !== state.round) throw new Error('La journée a changé : regarde d’abord le match de la journée précédente.');
       await sendSheet(m, d.league.season, d.league.round, teamSheet(clone(state), { lineup, tactic, formation, plans }));
       run((s) => { s.lineup = lineup; s.tactic = tactic; s.formation = formation; s.league.plans = plans || {}; s.league.sent = key; return s; });
-      notify({ kind: 'success', eyebrow: state.league.name, title: 'Équipe validée', text: `Journée ${d.league.round + 1} : coup d’envoi dix minutes après la validation de la dernière équipe, au plus tard ${deadlineText(d.league.deadline)}.`, key: 'league-sent' });
+      notify({ kind: 'success', eyebrow: state.league.name, title: t('Équipe validée'), text: t('Journée {v} : coup d’envoi dix minutes après la validation de la dernière équipe, au plus tard {deadlineText}.', { v: d.league.round + 1, deadlineText: deadlineText(d.league.deadline) }), key: 'league-sent' });
     } catch (x) {
-      notify({ kind: 'warn', eyebrow: state.league.name, title: 'Équipe non envoyée', text: x.message });
+      notify({ kind: 'warn', eyebrow: state.league.name, title: t('Équipe non envoyée'), text: x.message });
     }
     cancelMatch();
   };
@@ -850,20 +871,27 @@ export default function App({ preview = null }) {
     setMatchDay(true);
     setReplay({ ...rp, result });
   };
+  // Nouvelle partie : le club se fonde dans la langue choisie à l'écran titre (src/i18n), le jeu se recharge si elle
+  // n'est pas celle de la session. La carrière en cours, dans cette langue ou une autre, est d'abord effacée (confirmé).
   const askNewGame = () => {
-    if (!state) { setTitleView('create'); return; }
+    const cur = state || foreign;
+    const fresh = () => {
+      if (preferredLang() !== gameLang()) { reloadInLang(preferredLang(), { go: 'create' }); return; }
+      setTitleView('create');
+    };
+    if (!cur) { fresh(); return; }
     setConfirm({
       tone: 'danger',
-      title: 'Recommencer une nouvelle aventure ?',
-      text: `La sauvegarde de ${state.clubName} (saison ${state.seasonNumber}, ${DIVISIONS[state.divisionIndex].name}) sera effacée définitivement.`,
-      confirmLabel: 'Effacer et recommencer',
-      cancelLabel: 'Garder ma partie',
+      title: t('Recommencer une nouvelle aventure ?'),
+      text: t('La sauvegarde de {clubName} (saison {seasonNumber}, {name}) sera effacée définitivement.', { clubName: cur.clubName, seasonNumber: cur.seasonNumber, name: DIVISIONS[cur.divisionIndex].name }),
+      confirmLabel: t('Effacer et recommencer'),
+      cancelLabel: t('Garder ma partie'),
       onConfirm: () => {
-        clearGame();
-        setState(null);
+        clearGame({ withBackup: true });
+        setState(null); setForeign(null);
         setMenu(false); setSel(null); setPanel(null); setMatchDay(false); setShowResult(false); setMatchPhase(null); setResumeLive(null);
-        setTitleView('create');
         setScreen('title');
+        fresh();
       },
     });
   };
@@ -889,7 +917,7 @@ export default function App({ preview = null }) {
     if (tutoStep === 'welcome') setTuto('build');
     else if (tutoStep === 'squad') setTuto('goals');
     else if (tutoStep === 'goals') setTuto('stadium');
-    else if (tutoStep === 'stadium') { setTuto('done'); notify({ kind: 'success', title: 'À toi de jouer, président !' }); }
+    else if (tutoStep === 'stadium') { setTuto('done'); notify({ kind: 'success', title: t('À toi de jouer, président !') }); }
     else doAction(tuto.action);
   };
   const tip = state && !tuto && !sel && !panel ? staffTip(state) : null;
@@ -915,7 +943,7 @@ export default function App({ preview = null }) {
   const holo = inGame && sel && buildView?.holo && buildView.plotId === sel.plotId
     ? { plotId: buildView.plotId, key: buildView.key, lvl: buildView.lvl, windowOpen: !!buildView.window } : null;
   // avant la création du club, la scène montre le complexe de départ
-  const sceneState = state || (demo.current ||= createInitialState('FootOFF FC'));
+  const sceneState = state || (demo.current ||= createInitialState(t('FootOFF FC')));
 
   // la fiche (et ce qu'elle ouvre : carrière, comparaison, mise en vente) posée sur le panneau en cours ; elle se retire
   // d'elle-même une fois tout refermé (SquadView mode « sheet »)
@@ -970,7 +998,7 @@ export default function App({ preview = null }) {
               content={tuto}
               onPrimary={onCoachPrimary}
               onSecondary={() => { doAction(tuto.secondary?.action); setTuto('done'); }}
-              onSkip={() => { setTuto('done'); notify({ kind: 'info', title: 'Tutoriel passé', text: 'Le staff continuera de te conseiller.' }); }}
+              onSkip={() => { setTuto('done'); notify({ kind: 'info', title: t('Tutoriel passé'), text: t('Le staff continuera de te conseiller.') }); }}
             />
           ) : (
             <ObjectiveWidget state={state} collapsed={goalCollapsed} onToggle={() => setGoalCollapsed((c) => !c)} />
@@ -1107,6 +1135,7 @@ export default function App({ preview = null }) {
             state={state}
             ask={setConfirm}
             invite={screen === 'title' ? leagueHub?.invite : null}
+            openCode={screen === 'title' ? leagueHub?.open : null}
             overTitle={screen === 'title'}
             replaying={!!replay}
             onReplay={setReplay}
@@ -1187,15 +1216,16 @@ export default function App({ preview = null }) {
         {screen === 'title' && booted && (
           <TitleScreen
             state={state}
+            foreign={state ? null : foreign}
             view={titleView}
             onView={setTitleView}
             settings={settings}
             blocked={!!confirm || !!leagueHub}
-            onContinue={() => { setLeagueHub(null); setScreen('game'); }}
+            onContinue={() => { setLeagueHub(null); if (!state && foreign) reloadInLang(foreign.lang, { go: 'continue' }); else setScreen('game'); }}
             liveNote={resumeLive && matchPhase === 'live' ? liveNoteOf(resumeLive) : null}
             onNewGame={askNewGame}
             leagues={leagueOpen() ? { count: myLeagues().length, clubs: myLeagues().map((m) => ({ ...m, progress: leagueClubProgress(m.code) })), onOpen: () => setLeagueHub({}), onPlay: enterLeague } : null}
-            onCreate={(name, crest) => { setLeagueHub(null); setState(createInitialState(name, crest)); setTitleView('menu'); setScreen('game'); }}
+            onCreate={(name, crest) => { setLeagueHub(null); setForeign(null); setState(createInitialState(name, crest)); setTitleView('menu'); setScreen('game'); }}
           />
         )}
       </Presence>

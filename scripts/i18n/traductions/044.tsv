@@ -1,0 +1,62 @@
+2689	Offer	Oferta	عرض
+2690	New season: the market is renewed	Nueva temporada: el mercado se renueva	موسم جديد: تجدّد السوق
+2691	{n} arrival	{n} llegada	وصول لاعب واحد
+2692	{n} arrivals	{n} llegadas	{"one":"وصول لاعب واحد","two":"وصول لاعبين","few":"وصول {n} لاعبين","other":"وصول {n} لاعبًا"}
+2693	{n} player gone elsewhere	{n} jugador se ha ido a otro club	لاعب واحد رحل إلى نادٍ آخر
+2694	{n} players gone elsewhere	{n} jugadores se han ido a otros clubes	{"one":"لاعب واحد رحل إلى نادٍ آخر","two":"لاعبان رحلا إلى أندية أخرى","few":"{n} لاعبين رحلوا إلى أندية أخرى","other":"{n} لاعبًا رحلوا إلى أندية أخرى"}
+2695	{n} offer received	{n} oferta recibida	عرض واحد وارد
+2696	{n} offers received	{n} ofertas recibidas	{"one":"عرض واحد وارد","two":"عرضان واردان","few":"{n} عروض واردة","other":"{n} عرضًا واردًا"}
+2697	Since the last matchday	Desde la última jornada	منذ الجولة الأخيرة
+2698	<0/> <1/> leaving before the next matchday.	<0/> <1/> de irse antes de la próxima jornada.	<0/> <1/> الرحيل قبل الجولة المقبلة.
+2699	is being courted and could be	está pretendido y corre el riesgo	مطلوب وقد يقرر
+2700	are being courted and could be	están pretendidos y corren el riesgo	مطلوبون وقد يقررون
+2701	<0/> <1/> signed elsewhere.	<0/> <1/> fichado por otro club.	<1/> وقّع <0/> لنادٍ آخر.
+2702	How the transfer market works	Cómo funciona el mercado	كيف يعمل سوق الانتقالات
+2703	Scout	Explora	استكشف
+2704	The shared market and the computer clubs are the same for the whole league; new free agents arrive every matchday.	El mercado común y los clubes de la máquina son los mismos para toda la liga; cada jornada llegan nuevos jugadores libres.	السوق المشتركة وأندية الحاسوب واحدة لكل الدوري؛ ويصل لاعبون أحرار جدد في كل جولة.
+2705	Negotiate	Negocia	فاوِض
+2706	As in solo play: the fee with the player’s club, then his contract. The first club in the league to agree a deal wins. For a friend’s player, it is your friend who answers your offer.	Como en solitario: el traspaso con el club del jugador y luego su contrato. Gana el primer club de la liga que cierre el acuerdo. Para el jugador de un amigo, es tu amigo quien responde a tu oferta.	كما في اللعب الفردي: مبلغ الانتقال مع نادي اللاعب ثم عقده. ويفوز أول نادٍ في الدوري يتم الصفقة. أما لاعب الصديق فصديقك هو من يرد على عرضك.
+2707	Sell	Vende	بِع
+2708	List players for sale: some clubs make their offers straight away, others after each matchday. Your friends can make you offers too.	Pon jugadores en venta: algunos clubes hacen sus ofertas enseguida, otros tras cada jornada. Tus amigos también pueden hacerte ofertas.	اعرض لاعبين للبيع: بعض الأندية تقدّم عروضها فورًا، وأخرى بعد كل جولة. ويمكن لأصدقائك أيضًا تقديم عروض لك.
+2709	Filter, sort, track players with the star: their price moves every matchday.	Filtra, ordena y sigue a los jugadores con la estrella: su precio se mueve en cada jornada.	صفِّ ورتّب وتابع اللاعبين بالنجمة: تتغير أسعارهم في كل جولة.
+2710	Make an offer: the gauge shows your real chances. If refused, it may bring a counter-offer.	Haz una oferta: el indicador muestra tus probabilidades reales. Si la rechazan, puede llegar una contraoferta.	قدّم عرضًا: يعرض المؤشر فرصك الحقيقية. وإن رُفض فقد يأتي عرض مضاد.
+2711	List players for sale: clubs make their offers after each matchday.	Pon jugadores en venta: los clubes hacen sus ofertas tras cada jornada.	اعرض لاعبين للبيع: تقدّم الأندية عروضها بعد كل جولة.
+2712	Scouting network · office level <0/>	Red de ojeadores · oficina nivel <0/>	شبكة الكشافين · المكتب في المستوى <0/>
+2713	{n} player under contract tracked	{n} jugador con contrato seguido	لاعب واحد مرتبط بعقد قيد المتابعة
+2714	{n} players under contract tracked	{n} jugadores con contrato seguidos	{"one":"لاعب واحد مرتبط بعقد قيد المتابعة","two":"لاعبان مرتبطان بعقود قيد المتابعة","few":"{n} لاعبين مرتبطين بعقود قيد المتابعة","other":"{n} لاعبًا مرتبطًا بعقد قيد المتابعة"}
+2715	by your scouts · fees −	por tus ojeadores · traspasos −	من كشافيك · مبالغ الانتقال −
+2716	% · more accommodating sellers · potential better judged.	% · vendedores más flexibles · potencial mejor calibrado.	% · بائعون أكثر مرونة · تقدير أدق للإمكانات.
+2717	<0>Want more choice?</0>Without a scouting network, only <1/> players under contract are publicly listed. The Transfer office (on any free plot) tracks <2/> from level 1 and lowers fees.	<0>¿Quieres más opciones?</0>Sin red de ojeadores, solo <1/> jugadores con contrato aparecen públicamente. La Oficina de traspasos (en cualquier parcela libre) sigue a <2/> desde el nivel 1 y rebaja los traspasos.	<0>تريد خيارات أكثر؟</0>من دون شبكة كشافين، لا يُعرض علنًا سوى <1/> لاعبين مرتبطين بعقود. ويتابع مكتب الانتقالات (على أي قطعة أرض شاغرة) <2/> منذ المستوى 1 ويخفض مبالغ الانتقال.
+2718	Sort	Ordenar	ترتيب
+2719	Sort by	Ordenar por	الترتيب حسب
+2720	Search for a player or a club	Buscar un jugador o un club	ابحث عن لاعب أو نادٍ
+2721	Clear the search	Borrar la búsqueda	مسح البحث
+2722	All statuses	Todos los estados	كل الحالات
+2723	Within my means	A mi alcance	في حدود إمكاناتي
+2724	Strengthens my XI	Refuerza mi once	يقوّي تشكيلتي
+2725	Gems	Joyas	الجواهر
+2726	Market display	Vista del mercado	عرض السوق
+2727	Cards	Cartas	البطاقات
+2728	Table	Tabla	الجدول
+2729	<0/> · <1/>, <2/> under contract · the market moves every matchday	<0/> · <1/>, <2/> con contrato · el mercado se mueve en cada jornada	<0/> · <1/>، <2/> مرتبطون بعقود · تتحرك السوق في كل جولة
+2730	{n} player	{n} jugador	لاعب واحد
+2731	{n} players	{n} jugadores	{"one":"لاعب واحد","two":"لاعبان","few":"{n} لاعبين","other":"{n} لاعبًا"}
+2732	{length} of {length2} players	{length} de {length2} jugadores	{length} من {length2} لاعبًا
+2733	{n} free agent	{n} libre	لاعب حر واحد
+2734	{n} free agents	{n} libres	{"one":"لاعب حر واحد","two":"لاعبان حران","few":"{n} لاعبين أحرار","other":"{n} لاعبًا حرًا"}
+2735	No player matches these filters for now.	Ningún jugador coincide con estos filtros por ahora.	لا يوجد لاعب يطابق هذه المرشحات حاليًا.
+2736	<0/> Track a player with the star on his card: his price, the other clubs’ interest and any departure will show here.	<0/> Sigue a un jugador con la estrella de su carta: su precio, el interés de otros clubes y su posible salida aparecerán aquí.	<0/> تابع لاعبًا بالنجمة على بطاقته: سيظهر هنا سعره واهتمام الأندية الأخرى به ورحيله المحتمل.
+2737	<0/><1/> · the price change is counted from the day you started tracking him	<0/><1/> · la variación de precio se cuenta desde el día en que empezaste a seguirlo	<0/><1/> · يُحتسب فارق السعر منذ يوم بدء متابعته
+2738	{n} player tracked	{n} jugador seguido	لاعب واحد قيد المتابعة
+2739	{n} players tracked	{n} jugadores seguidos	{"one":"لاعب واحد قيد المتابعة","two":"لاعبان قيد المتابعة","few":"{n} لاعبين قيد المتابعة","other":"{n} لاعبًا قيد المتابعة"}
+2740	· {plural} elsewhere	· {plural} a otro club	· {plural} إلى نادٍ آخر
+2741	{n} gone	{n} se ha ido	رحل واحد
+2742	{n} gone	{n} se han ido	{"one":"رحل واحد","two":"رحل اثنان","few":"رحل {n}","other":"رحل {n}"}
+2743	{pct} since you started tracking	{pct} desde que lo sigues	{pct} منذ بدء المتابعة
+2744	Price stable since you started tracking	Precio estable desde que lo sigues	السعر مستقر منذ بدء المتابعة
+2745	<0/> has signed for <1/>.	<0/> se ha ido <1/>.	وقّع <0/> لـ<1/>.
+2746	somewhere else	a otro club	نادٍ آخر
+2747	{pct} on his value	{pct} sobre su valor	{pct} مقارنة بقيمته
+2748	your price	tu precio	سعرك
+2749	{d}% above your price	{d} % por encima de tu precio	أعلى من سعرك بنسبة {d}%
+2750	{d}% below your price	{d} % por debajo de tu precio	أقل من سعرك بنسبة {d}%

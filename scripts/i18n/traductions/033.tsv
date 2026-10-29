@@ -1,0 +1,47 @@
+1938	{report}\n\nGAME (save code):\n{v}	{report}\n\nPARTIDA (código de guardado):\n{v}	{report}\n\nاللعبة (رمز الحفظ):\n{v}
+1939	The game ran into a problem	El juego ha encontrado un problema	واجهت اللعبة مشكلة
+1940	Sorry	Lo sentimos	عذرًا
+1941	Your game is intact: it is saved at every action. Pick up where you were; if the problem comes back every time, return to the backup copy taken when this session began.	Tu partida está intacta: se guarda en cada acción. Retoma donde estabas; si el problema vuelve cada vez, vuelve a la copia de seguridad tomada al abrir esta sesión.	لعبتك سليمة: تُحفظ عند كل إجراء. استأنف من حيث كنت؛ وإذا تكررت المشكلة في كل مرة، فارجع إلى النسخة الاحتياطية التي أُخذت عند بدء هذه الجلسة.
+1942	Unknown error	Error desconocido	خطأ غير معروف
+1943	Resume	Reanudar	استئناف
+1944	Backup copy	Copia de seguridad	النسخة الاحتياطية
+1945	<0/>, season <1/><2/>	<0/>, temporada <1/><2/>	<0/>، الموسم <1/><2/>
+1946	Report copied	Informe copiado	تم نسخ التقرير
+1947	Copy the report	Copiar el informe	نسخ التقرير
+1948	Report and game copied	Informe y partida copiados	تم نسخ التقرير واللعبة
+1949	Copy the report with the game	Copiar el informe con la partida	نسخ التقرير مع اللعبة
+1950	The report contains the game version, your browser and the error; “with the game”, it adds your save code so the problem can be replayed. Nothing is sent: paste it into a message to report it.	El informe contiene la versión del juego, tu navegador y el error; «con la partida», añade el código de tu partida guardada para reproducir el problema. No se envía nada: pégalo en un mensaje para informar.	يتضمن التقرير إصدار اللعبة ومتصفحك والخطأ؛ و«مع اللعبة» يضيف رمز حفظك لإعادة إنتاج المشكلة. لا يُرسل أي شيء: الصقه في رسالة للإبلاغ عنه.
+1958	FOUNDED IN {year}	FUNDADO EN {year}	تأسس عام {year}
+1959	{label}: any colour	{label}: cualquier color	{label}: أي لون
+1960	{label}: choose a colour	{label}: elegir un color	{label}: اختيار لون
+1961	Chance of agreement	Probabilidad de acuerdo	فرصة الاتفاق
+1962	Season <0/> contract	Contrato de la temporada <0/>	عقد الموسم <0/>
+1963	Granted: +{pct} on the rights	Concedido: +{pct} en los derechos	تمت الموافقة: +{pct} على الحقوق
+1964	Refused: the basic contract is renewed	Rechazado: se renueva el contrato básico	مرفوض: يُجدَّد العقد الأساسي
+1965	<0/> per league match	<0/> por partido de liga	<0/> لكل مباراة في الدوري
+1966	Next negotiation at the start of season <0/>.	Próxima negociación al inicio de la temporada <0/>.	التفاوض المقبل في بداية الموسم <0/>.
+1967	The broadcaster agrees to +{pct}	La televisión acepta +{pct}	الجهة الناقلة توافق على +{pct}
+1968	The broadcaster refuses the increase	La televisión rechaza la subida	الجهة الناقلة ترفض الزيادة
+1969	Negotiation not possible.	Negociación imposible.	التفاوض غير ممكن.
+1970	TV rights · season <0/>	Derechos de TV · temporada <0/>	حقوق البث · الموسم <0/>
+1971	Local TV	Tele local	التلفزيون المحلي
+1972	Division broadcaster	Televisión de la división	الجهة الناقلة للدرجة
+1973	Basic contract: <0/> per league match<1/><2/>. A single request per season: well judged, it is added to every match.	Contrato básico: <0/> por partido de liga<1/><2/>. Una sola petición por temporada: bien medida, se suma en cada partido.	العقد الأساسي: <0/> لكل مباراة في الدوري<1/><2/>. طلب واحد فقط في الموسم: إذا أُحسن تقديره أُضيف إلى كل مباراة.
+1974	, including +{pct} thanks to the Board	, de los que +{pct} gracias a la Directiva	، منها +{pct} بفضل الإدارة
+1975	(no national TV in the {name}: {localTv} from local TV)	(no hay televisión nacional en la {name}: {localTv} de la tele local)	(لا تلفزيون وطني في {name}: {localTv} من التلفزيون المحلي)
+1976	Increase requested <0/>	Subida pedida <0/>	الزيادة المطلوبة <0/>
+1977	Increase requested	Subida pedida	الزيادة المطلوبة
+1978	<0/> per match if the broadcaster accepts	<0/> por partido si la televisión acepta	<0/> لكل مباراة إذا وافقت الجهة الناقلة
+1979	Propose to the broadcaster	Proponer a la televisión	الاقتراح على الجهة الناقلة
+1980	Current season: <0/>.	Temporada en curso: <0/>.	الموسم الجاري: <0/>.
+1981	The squad’s contracts, those closest to ending first. Without an extension, a player in his final year leaves on a free between seasons, with no fee.	Los contratos de la plantilla, primero los más cercanos a su fin. Sin renovación, un jugador en su último año se va libre entre temporadas, sin traspaso.	عقود التشكيلة، الأقرب إلى الانتهاء أولًا. ومن دون تمديد يرحل اللاعب في سنته الأخيرة حرًا بين الموسمين، دون أي مقابل.
+1982	At level {lvl}, your Board lowers players’ wage demands by {v}%.	En el nivel {lvl}, tu Directiva rebaja un {v} % las exigencias salariales de los jugadores.	في المستوى {lvl}، تخفض إدارتك مطالب اللاعبين في الرواتب بنسبة {v}%.
+1983	Build the Board to lower players’ wage demands.	Construye la Directiva para rebajar las exigencias salariales de los jugadores.	ابنِ الإدارة لتخفيض مطالب اللاعبين في الرواتب.
+1984	<0/> · level <1/> · age <2/>	<0/> · nivel <1/> · <2/> años	<0/> · المستوى <1/> · <2/> عامًا
+1985	final year	último año	السنة الأخيرة
+1986	until season {until}	hasta la temporada {until}	حتى الموسم {until}
+1987	per season	por temporada	في الموسم
+1988	Longest possible contract	Contrato al máximo	أطول عقد ممكن
+1989	Extend	Renovar	تمديد
+1990	The chairman’s office: the chances shown are the ones that decide.<0/>	El despacho del presidente: las probabilidades mostradas son las que deciden.<0/>	مكتب الرئيس: الفرص المعروضة هي التي تحسم الأمر.<0/>
+1991	building	edificio	المبنى

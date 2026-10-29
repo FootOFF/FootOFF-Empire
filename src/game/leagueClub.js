@@ -15,6 +15,7 @@ import { officialTable, perspectiveResult, refreshRivals } from './leagueSeason'
 import { clone } from './utils';
 import { ensureDeals, setDeal } from './contracts';
 import { ensureSquadMin } from './squadFloor';
+import { numLocale, t } from '../i18n/index';
 
 // Partie de championnat entre amis : une partie solo à part entière (même moteur, mêmes écrans : complexe, bâtiments,
 // entraînement, académie, finances), gardée sur l'appareil de chaque ami, à côté de sa carrière. La ligue lui donne ses
@@ -254,25 +255,25 @@ function depart(s, p, fee, to) {
   s.money += fee;
   book(s, 'sales', fee);
   logMove(s, 'out', p, fee, to);
-  pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: `${p.name} quitte le club`, text: `Transfert conclu avec ${to} pour ${fee.toLocaleString('fr-FR')} €.` });
+  pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: t('{name} quitte le club', { name: p.name }), text: t('Transfert conclu avec {to} pour {toLocaleString} €.', { to, toLocaleString: fee.toLocaleString(numLocale()) }) });
   ensureLineup(s);
 }
 
 // Mouvements gardés avec une journée (avant la 0.8.3 : recrue du marché commun, transfert conclu avec un ami).
 function applyMoves(s, moves) {
   const L = s.league;
-  const name = (slot) => L.clubs.find((c) => c.slot === slot)?.name || 'un club';
+  const name = (slot) => L.clubs.find((c) => c.slot === slot)?.name || t('un club');
   for (const mv of moves) {
     if (mv.k === 'buy' && mv.s === L.slot && mv.pl) {
       const p = expandPlayer([], mv.pl);
       if (!p) continue;
       p.lid = mv.i;
-      arrive(s, p, mv.x, 'Marché commun');
-      pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: `${p.name} signe au club`, text: `Remporté sur le marché commun de la ligue pour ${mv.x.toLocaleString('fr-FR')} €.` });
+      arrive(s, p, mv.x, t('Marché commun'));
+      pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: t('{name} signe au club', { name: p.name }), text: t('Remporté sur le marché commun de la ligue pour {toLocaleString} €.', { toLocaleString: mv.x.toLocaleString(numLocale()) }) });
     } else if (mv.k === 'deal' && mv.b === L.slot && mv.pl) {
       const p = unsnapPlayer(mv.pl);
       arrive(s, p, mv.x, name(mv.s));
-      pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: `${p.name} signe au club`, text: `Transfert conclu avec ${name(mv.s)} pour ${mv.x.toLocaleString('fr-FR')} €.` });
+      pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: t('{name} signe au club', { name: p.name }), text: t('Transfert conclu avec {name} pour {toLocaleString} €.', { name: name(mv.s), toLocaleString: mv.x.toLocaleString(numLocale()) }) });
     } else if (mv.k === 'deal' && mv.s === L.slot) {
       const p = s.players.find((q) => q.lid === mv.l);
       if (p) depart(s, p, mv.x, name(mv.b));
@@ -373,7 +374,7 @@ export function applyLeagueMoves(s, d) {
   const L = s.league;
   if (!L.me) return s;
   const done = new Set(L.done || []);
-  const name = (id) => L.clubs.find((c) => c.member === id)?.name || 'un club';
+  const name = (id) => L.clubs.find((c) => c.member === id)?.name || t('un club');
   for (const x of d.moves || []) {
     if (x.status !== 'done' || done.has(x.id) || !x.data) continue;
     // un mouvement illisible (envoyé piégé par un autre appareil) est passé, jamais il ne bloque la relecture de la ligue
@@ -382,7 +383,7 @@ export function applyLeagueMoves(s, d) {
       if (x.buyer === L.me && x.kind === 'f' && x.data.pl?.l === x.pid && Number.isSafeInteger(x.fee)) {
         const p = unsnapPlayer(x.data.pl);
         arrive(s, p, x.fee, name(x.seller));
-        pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: `${p.name} signe au club`, text: `Transfert conclu avec ${name(x.seller)} pour ${x.fee.toLocaleString('fr-FR')} €.` });
+        pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: t('{name} signe au club', { name: p.name }), text: t('Transfert conclu avec {name} pour {toLocaleString} €.', { name: name(x.seller), toLocaleString: x.fee.toLocaleString(numLocale()) }) });
       } else if (x.buyer === L.me && x.kind !== 'f' && x.data.pl && x.data.t) {
         if (!s.players.some((q) => q.lid === x.pid)) {
           const item = (L.outbox || []).find((o) => o.k === 'sign' && o.pid === x.pid) || { id: x.data.pl.i, kind: x.kind, pid: x.pid, fee: x.fee, terms: x.data.t, pl: x.data.pl, club: x.data.c || null };
@@ -499,13 +500,13 @@ export function settleLeague(s, item, res) {
   }
   if (res?.status === 'done' && !(L.done || []).includes(item.id)) {
     if (talks.length > 1) s.feats = { ...(s.feats || {}), haggle: true }; // conclu après une contre-offre : succès « Négociateur »
-    const club = (slot) => L.clubs.find((c) => c.slot === slot)?.name || 'un club';
+    const club = (slot) => L.clubs.find((c) => c.slot === slot)?.name || t('un club');
     if (buyer) {
       // l'acheteur conclut : le joueur arrive avec ce que le vendeur a envoyé de lui (sa dernière contre-offre)
       try {
         const p = unsnapPlayer(res.data.pl);
         arrive(s, p, fee, club(item.s));
-        pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: `${p.name} signe au club`, text: `Transfert conclu avec ${club(item.s)} pour ${fee.toLocaleString('fr-FR')} €.` });
+        pushJournal(s, { season: s.seasonNumber, round: s.round, kind: 'mercato', title: t('{name} signe au club', { name: p.name }), text: t('Transfert conclu avec {club} pour {toLocaleString} €.', { club: club(item.s), toLocaleString: fee.toLocaleString(numLocale()) }) });
       } catch { /* joueur illisible : il arrivera avec la relecture de la ligue (applyLeagueMoves) */ }
     } else {
       const p = s.players.find((q) => q.lid === item.lid);

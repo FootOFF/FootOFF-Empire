@@ -1,0 +1,39 @@
+895	No league with friends until the League Headquarters is built.	No hay liga entre amigos mientras no se construya la Sede de la Liga.	لا دوري مع الأصدقاء ما لم يُبنَ مقر الدوري.
+896	Scouting network: {officeSize} players under contract in your transfer market · fees −{v}% · more accommodating sellers · potential better judged.	Red de ojeadores: {officeSize} jugadores con contrato en tu mercado · traspasos −{v} % · vendedores más flexibles · potencial mejor calibrado.	شبكة الكشافين: {officeSize} لاعبين مرتبطين بعقود في سوق انتقالاتك · مبالغ الانتقال −{v}% · بائعون أكثر مرونة · تقدير أدق للإمكانات.
+897	Without an office, your transfer market only shows {officeSize} publicly listed players under contract, on top of the free agents.	Sin oficina, tu mercado solo muestra {officeSize} jugadores con contrato anunciados públicamente, además de los jugadores libres.	من دون مكتب، لا يعرض سوق انتقالاتك سوى {officeSize} لاعبين مرتبطين بعقود ومعروضين علنًا، إضافة إلى اللاعبين الأحرار.
+898	Sponsors: €{fmt} per season, paid at the start of the season · €{fmt2} per hour, even offline.	Patrocinadores: {fmt} € por temporada, pagados al inicio de la temporada · {fmt2} € por hora, incluso sin conexión.	الرعاة: {fmt} € في الموسم، تُصرف في بدايته · {fmt2} € في الساعة، حتى خارج الاتصال.
+899	The {clubName} project is under way	Arranca el proyecto {clubName}	انطلاق مشروع {clubName}
+900	{clubName} begins its first season in the {name}. The ground is modest, the ambition immense.	{clubName} empieza su primera temporada en la {name}. El campo es modesto; la ambición, inmensa.	يبدأ {clubName} موسمه الأول في {name}. الملعب متواضع والطموح هائل.
+901	{name}: ground broken	{name}: primera piedra	{name}: أول ضربة معول
+902	The club invests €{toLocaleString} in a new building.	El club invierte {toLocaleString} € en un nuevo edificio.	يستثمر النادي {toLocaleString} € في مبنى جديد.
+903	{name}: heading for level {v}	{name}: rumbo al nivel {v}	{name}: نحو المستوى {v}
+904	Upgrade work started for €{toLocaleString}.	Obras de mejora iniciadas por {toLocaleString} €.	انطلقت أشغال التطوير بتكلفة {toLocaleString} €.
+905	{name} joins the academy	{name} se une a la cantera	ينضم {name} إلى الأكاديمية
+906	{v}, {age}, spotted by the club’s youth coaches.	{v} de {age} años, detectado por los técnicos del club.	{v} يبلغ {age} عامًا، رصده مدربو الفئات السنية في النادي.
+907	{name} leaves the academy	{name} deja la cantera	يغادر {name} الأكاديمية
+908	Released at {age}.	Liberado con {age} años.	أُطلق سراحه في سن {age}.
+909	{name} leaves the club	{name} deja el club	يغادر {name} النادي
+910	The player joins {withArticle} for €{toLocaleString}.	El jugador se une {withArticle} por {toLocaleString} €.	ينضم اللاعب إلى {withArticle} مقابل {toLocaleString} €.
+911	Transfer completed: he arrives from {clubAfter} for {fee}, aged {age}. Contract for {years} at {wage} per season.	Traspaso cerrado: llega {clubAfter} por {fee}, con {age} años. Contrato de {years} a {wage} por temporada.	تمت الصفقة: يصل من {clubAfter} مقابل {fee}، وعمره {age} عامًا. عقد لمدة {years} براتب {wage} في الموسم.
+912	At {age}, he commits for {years} at {wage} per season{v}.	A sus {age} años, firma por {years} a {wage} por temporada{v}.	في سن {age} يلتزم لمدة {years} براتب {wage} في الموسم{v}.
+913	, with a bonus of {bonus}	, con una prima de {bonus}	، مع مكافأة قدرها {bonus}
+914	League club	Club de la liga	نادٍ في الدوري
+915	He won’t talk again before the next matchday.	No volverá a negociar antes de la próxima jornada.	لن يعود إلى التفاوض قبل الجولة المقبلة.
+916	A signing is waiting for the league’s reply.	Un fichaje espera la respuesta de la liga.	صفقة بانتظار رد الدوري.
+917	His contract already runs for five years: it cannot be extended.	Su contrato ya dura cinco años: imposible renovarlo.	عقده يمتد أصلًا خمس سنوات: لا يمكن تمديده.
+918	Not enough money for this bonus.	Tesorería insuficiente para esta prima.	الخزينة لا تكفي لهذه المكافأة.
+919	Squad full ({SQUAD_MAX} players): sell a player first.	Plantilla completa ({SQUAD_MAX} jugadores): vende antes a un jugador.	التشكيلة مكتملة ({SQUAD_MAX} لاعبًا): بِع لاعبًا أولًا.
+920	Agree the fee with his club first.	Acuerda antes el traspaso con su club.	اتفق أولًا على مبلغ الانتقال مع ناديه.
+921	Not enough money for the fee and the bonus.	Tesorería insuficiente para el traspaso y la prima.	الخزينة لا تكفي لمبلغ الانتقال والمكافأة.
+922	{name} extends until season {until}	{name} renueva hasta la temporada {until}	يمدد {name} حتى الموسم {until}
+923	New contract at €{toLocaleString} per season (€{toLocaleString2} until now){v}{v2}.	Nuevo contrato de {toLocaleString} € por temporada ({toLocaleString2} € hasta ahora){v}{v2}.	عقد جديد براتب {toLocaleString} € في الموسم ({toLocaleString2} € حتى الآن){v}{v2}.
+924	, bonus of €{toLocaleString}	, prima de {toLocaleString} €	، مكافأة قدرها {toLocaleString} €
+925	, promotion clause of +{round}%	, cláusula de ascenso de +{round} %	، بند صعود بنسبة +{round}%
+926
+927	New status: {name}	Nuevo estatus: {name}	مرتبة جديدة: {name}
+928	With {min} reputation, {clubName} draws more: bigger crowds, better sponsors, more accommodating sellers.	Con {min} de reputación, {clubName} atrae más: más público, mejores patrocinadores, vendedores más flexibles.	بسمعة قدرها {min}، يجذب {clubName} أكثر: جمهور أكبر ورعاة أفضل وبائعون أكثر مرونة.
+929	District Cup	Copa del Distrito	كأس المقاطعة
+930	League Trophy	Trofeo de la Liga	كأس الرابطة
+931	National Plate	Bandeja Nacional	الدرع الوطني
+932	Elite Trophy	Trofeo Élite	كأس النخبة
+933	Champion {ofDiv}	Campeón {ofDiv}	بطل {ofDiv}

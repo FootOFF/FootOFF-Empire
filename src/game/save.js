@@ -17,6 +17,7 @@ import { rebuildRecords } from './records';
 import { normalizeCrest } from './crest';
 import { distinctSquad, legacyFace } from './faces';
 import { ensureDeals } from './contracts';
+import { gameLang, t } from '../i18n/index';
 
 // Sauvegarde : un emplacement principal (SAVE_KEY) et une copie de secours (BACKUP_KEY), prise au chargement de chaque
 // session (la partie telle qu'elle était quand on a ouvert le jeu). Au chargement, une sauvegarde illisible ou
@@ -24,7 +25,12 @@ import { ensureDeals } from './contracts';
 // sauvegarde (exportCode / importCode : JSON compressé en base64, préfixe FOE1) permet de copier la partie d'un appareil
 // à l'autre ; importer une partie range l'ancienne en copie de secours, rien n'est jamais effacé sans trace.
 export const BACKUP_KEY = `${SAVE_KEY}.backup`;
-export const lastLoad = { source: null, corrupt: false }; // d'où vient la partie chargée : 'main' | 'backup' | null
+export const lastLoad = { source: null, corrupt: false, foreign: null }; // d'où vient la partie chargée : 'main' | 'backup' | null
+// Langue d'une partie (src/i18n) : fixée à la fondation ; une partie d'avant les langues est en français. Une partie ne
+// s'ouvre que dans sa langue (loadGame) : réparée dans une autre, ses joueurs seraient renommés avec d'autres listes.
+export const langOf = (s) => s?.lang || 'fr';
+// Résumé d'une partie d'une autre langue (écran titre : « Continuer » recharge le jeu dans sa langue)
+const foreignOf = (s) => ({ clubName: s.clubName, crest: s.crest, seasonNumber: s.seasonNumber, divisionIndex: s.divisionIndex, lang: langOf(s) });
 
 // Match en direct en cours (0.5.1) : un emplacement à part, écrit pendant le direct (match.jsx, LiveMatch) ; si l'app se
 // ferme, le match reprend à la minute près à la réouverture (App.jsx). key : le match concerné (live.js, liveKeyOf) ;
@@ -115,6 +121,14 @@ export async function decodeCode(code) {
     return validSave(s) ? s : null;
   } catch { return null; }
 }
+// Partie importée d'une autre langue : rangée telle quelle (l'ancienne devient la copie de secours), elle sera réparée au
+// chargement, une fois le jeu rechargé dans sa langue.
+export function importForeign(raw) {
+  if (!validSave(raw)) return false;
+  backupSave();
+  clearLive();
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...raw, lang: langOf(raw) })); return true; } catch { return false; }
+}
 // Installe une partie importée : l'ancienne sauvegarde devient la copie de secours. Renvoie la partie réparée.
 export function importSave(raw) {
   if (!validSave(raw)) return null;
@@ -183,12 +197,13 @@ export function repairSave(s) {
       y.crest = normalizeCrest(y.crest); // écusson du club (ajouté après coup : écusson par défaut, noir et or)
       y.alumni ||= []; // anciens joueurs (archivés à partir de cette version)
       y.ticketPolicy ||= 'standard';
+      y.lang ||= 'fr'; // langue de la partie (src/i18n) : toutes les parties d'avant les langues sont en français
       if (!y.objectives) drawObjectives(y); // objectifs du conseil (ajoutés après coup) : tirés pour la saison en cours
       y.records ||= rebuildRecords(y); // records du club : reconstitués depuis l'historique des matchs
       // missions sans régions (0.8.12) : les jeunes repérés dans une région gardent une note de mission ordinaire
       // et « des milieus » s'écrit « des milieux » (notes de mission et journal)
       for (const p of [...(y.youth || []), ...(y.scouting?.list || [])]) {
-        if (p.scoutNote?.startsWith('Repéré ')) p.scoutNote = 'Mission des recruteurs';
+        if (p.scoutNote?.startsWith(t('Repéré '))) p.scoutNote = t('Mission des recruteurs');
         else if (p.scoutNote?.includes('des milieus')) p.scoutNote = p.scoutNote.replace('des milieus', 'des milieux');
       }
       for (const j of y.journal || []) if (j.text?.includes('des milieus')) j.text = j.text.replace(/des milieus/g, 'des milieux');
@@ -266,8 +281,8 @@ export function repairSave(s) {
       // « Elite » s'écrit « Élite » (0.8.2) : les noms de division gardés dans la partie suivent
       const accent = (o) => {
         if (!o) return;
-        if (o.division === 'Elite') o.division = 'Élite';
-        if (o.nextDivision === 'Elite') o.nextDivision = 'Élite';
+        if (o.division === 'Elite') o.division = t('Élite');
+        if (o.nextDivision === 'Elite') o.nextDivision = t('Élite');
       };
       for (const x of [...(y.history || []), ...(y.trophies || []), ...(y.matches || []), ...(y.ledger?.past || []), y.seasonReview]) accent(x);
       for (const p of [...y.players, ...y.alumni]) for (const h of p.hist || []) accent(h);
@@ -285,6 +300,7 @@ export function repairSave(s) {
 export function loadGame() {
   lastLoad.source = null;
   lastLoad.corrupt = false;
+  lastLoad.foreign = null;
   let main = null;
   try { main = localStorage.getItem(SAVE_KEY); } catch { return null; }
   const attempt = (raw) => {
@@ -292,6 +308,7 @@ export function loadGame() {
     try {
       const s = JSON.parse(raw);
       if (!validSave(s)) return null;
+      if (langOf(s) !== gameLang()) { lastLoad.foreign = foreignOf(s); return null; } // ni réparée ni réécrite ici
       const fixed = repairSave(s);
       return validSave(fixed) ? fixed : null;
     } catch { return null; }
@@ -302,6 +319,7 @@ export function loadGame() {
     backupSave(); // la partie telle qu'elle est à l'ouverture de la session
     return fromMain;
   }
+  if (lastLoad.foreign) return null; // la partie est intacte, dans une autre langue : surtout pas la copie de secours
   if (main) lastLoad.corrupt = true; // il y avait une sauvegarde, elle est illisible
   let backup = null;
   try { backup = localStorage.getItem(BACKUP_KEY); } catch { return null; }
@@ -312,12 +330,16 @@ export function loadGame() {
     saveGame(fromBackup);
     return fromBackup;
   }
+  if (!main) lastLoad.foreign = null; // pas de partie : la copie de secours d'une autre langue n'est pas à reprendre
   return null;
 }
 
-export function clearGame() {
+// withBackup : effacement voulu par le joueur (« Effacer et recommencer ») : la copie de secours part aussi, la partie
+// effacée ne revient pas au chargement suivant (le jeu peut se recharger dans la langue du nouveau club).
+export function clearGame({ withBackup = false } = {}) {
   try {
     localStorage.removeItem(SAVE_KEY);
+    if (withBackup) localStorage.removeItem(BACKUP_KEY);
   } catch {
     /* rien à nettoyer */
   }

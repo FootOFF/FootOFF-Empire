@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { t } from '../i18n/index';
 
 // Animations de sortie. <Presence> garde le dernier contenu affiché le temps de son animation de sortie
 // (classe « leaving », voir styles.css), puis le retire. Le contenu reste au même endroit de l'arbre React :

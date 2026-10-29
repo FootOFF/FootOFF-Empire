@@ -1,8 +1,9 @@
+import { isRTL, t, tn } from '../i18n/index';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { instantiateModel } from './assets';
 import { resolveProp } from './manifest';
-import { honoursOf, plural } from '../game/honours';
+import { honoursOf } from '../game/honours';
 
 // Allée d'honneur du parvis : un socle et une réplique monumentale par compétition gagnée, posés à la première
 // victoire. Les trophées s'alignent dans l'ordre de leurs premières victoires, en alternant les côtés de l'axe depuis
@@ -51,29 +52,33 @@ function drawPlaque(h, c1) {
   g.strokeStyle = 'rgba(250, 226, 170, 0.35)';
   g.lineWidth = 2;
   g.strokeRect(24, 24, W - 48, H - 48);
-  const font = (w, px) => `${w} ${px}px Inter, system-ui, sans-serif`;
+  const font = (w, px) => `${w} ${px}px Inter, Cairo, system-ui, sans-serif`;
+  // en arabe, la plaque se lit de droite à gauche : le chiffre à droite, le texte aligné à droite
+  const rtl = isRTL();
+  const X = (v) => (rtl ? W - v : v);
+  g.direction = rtl ? 'rtl' : 'ltr';
   // chiffre
   const big = Math.round(H * (c1 ? 0.62 : 0.58));
   g.font = font(800, big);
   g.textAlign = 'center';
   g.textBaseline = 'alphabetic';
   const cx = c1 ? 150 : 170;
-  raised(() => g.fillText(String(h.count), cx, H * (c1 ? 0.69 : 0.66)));
+  raised(() => g.fillText(String(h.count), X(cx), H * (c1 ? 0.69 : 0.66)));
   g.font = font(700, Math.round(H * (c1 ? 0.1 : 0.085)));
-  raised(() => g.fillText((h.count > 1 ? `${h.unit}s` : h.unit).toUpperCase(), cx, H * (c1 ? 0.88 : 0.85)));
+  raised(() => g.fillText(tn(h.count, h.unit, `${h.unit}s`, {}, h.count > 1).toUpperCase(), X(cx), H * (c1 ? 0.88 : 0.85)));
   // séparateur, compétition, saisons
   g.fillStyle = 'rgba(32, 20, 8, 0.7)';
-  g.fillRect(cx + (c1 ? 130 : 150), H * 0.2, 3, H * 0.6);
-  g.textAlign = 'left';
+  g.fillRect(rtl ? W - (cx + (c1 ? 130 : 150)) - 3 : cx + (c1 ? 130 : 150), H * 0.2, 3, H * 0.6);
+  g.textAlign = rtl ? 'right' : 'left';
   const x = cx + (c1 ? 165 : 185);
-  const name = (c1 ? 'Coupe d’Europe des clubs' : h.name).toUpperCase();
+  const name = (c1 ? t('Coupe d’Europe des clubs') : h.name).toUpperCase();
   let size = Math.round(H * (c1 ? 0.21 : 0.15));
   g.font = font(800, size);
   while (g.measureText(name).width > W - x - 50 && size > 18) { size -= 2; g.font = font(800, size); }
-  raised(() => g.fillText(name, x, H * (c1 ? 0.48 : 0.45)));
+  raised(() => g.fillText(name, X(x), H * (c1 ? 0.48 : 0.45)));
   g.font = font(600, Math.round(H * (c1 ? 0.13 : 0.1)));
-  const seasons = h.count > 1 ? `Première : saison ${h.first} · dernière : saison ${h.last}` : `Saison ${h.first}`;
-  raised(() => g.fillText(seasons, x, H * (c1 ? 0.75 : 0.66)));
+  const seasons = h.count > 1 ? t('Première : saison {first} · dernière : saison {last}', { first: h.first, last: h.last }) : t('Saison {season}', { season: h.first });
+  raised(() => g.fillText(seasons, X(x), H * (c1 ? 0.75 : 0.66)));
   return cv;
 }
 

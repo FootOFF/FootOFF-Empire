@@ -1,0 +1,71 @@
+1218	Your complex: the stadium in the centre, eight plots around it, to build in any order you like.	Tu complejo: el estadio en el centro y ocho parcelas alrededor, para construir en el orden que quieras.	مجمّعك: الملعب في الوسط وثماني قطع أرض حوله، تبنيها بالترتيب الذي تريده.
+1219	Ground	Recinto	الملعب
+1220	Plot 1	Parcela 1	قطعة الأرض 1
+1221	Plot 2	Parcela 2	قطعة الأرض 2
+1222	Plot 3	Parcela 3	قطعة الأرض 3
+1223	Plot 4	Parcela 4	قطعة الأرض 4
+1224	Plot 5	Parcela 5	قطعة الأرض 5
+1225	Plot 6	Parcela 6	قطعة الأرض 6
+1226	Plot 7	Parcela 7	قطعة الأرض 7
+1227	Plot 8	Parcela 8	قطعة الأرض 8
+1228	Treatment successful: {name} is back one match sooner	Tratamiento con éxito: {name} vuelve un partido antes	علاج ناجح: يعود {name} قبل موعده بمباراة
+1229	{name} has recovered	{name} está recuperado	تعافى {name}
+1230	Still {out} match out instead of {before}.	Aún {out} partido de baja en lugar de {before}.	لا يزال غائبًا لمباراة واحدة بدلًا من {before}.
+1231	Still {out} matches out instead of {before}.	Aún {out} partidos de baja en lugar de {before}.	{"one":"لا يزال غائبًا لمباراة واحدة بدلًا من {before}.","two":"لا يزال غائبًا لمباراتين بدلًا من {before}.","few":"لا يزال غائبًا لـ{out} مباريات بدلًا من {before}.","other":"لا يزال غائبًا لـ{out} مباراة بدلًا من {before}."}
+1232	The medical centre has got him back on his feet: he is available for the next match.	El centro médico lo ha puesto a punto: está disponible para el próximo partido.	أعاده المركز الطبي إلى الجاهزية: إنه متاح للمباراة المقبلة.
+1233	Season {season}{v}	Temporada {season}{v}	الموسم {season}{v}
+1234	, after matchday {round}	, tras la jornada {round}	، بعد الجولة {round}
+1235	, before matchday 1	, antes de la 1.ª jornada	، قبل الجولة الأولى
+1236	Injured	Lesionado	مصاب
+1237	Injured: he cannot be sold before he returns.	Lesionado: no puede venderse antes de su vuelta.	مصاب: لا يمكن بيعه قبل عودته.
+1238	Suspended	Sancionado	موقوف
+1239	Suspended: he cannot be sold before serving his suspension.	Sancionado: no puede venderse antes de cumplir su sanción.	موقوف: لا يمكن بيعه قبل أن يقضي فترة إيقافه.
+1240	{left} league matchday	{left} jornada de liga	جولة واحدة في الدوري
+1241	{left} league matchdays	{left} jornadas de liga	{"one":"جولة واحدة في الدوري","two":"جولتين في الدوري","few":"{left} جولات في الدوري","other":"{left} جولة في الدوري"}
+1242	Recently arrived	Llegado hace poco	وصل حديثًا
+1243	New signing: he can be sold in {wait}.	Fichaje reciente: podrá venderse dentro de {wait}.	صفقة جديدة: يمكن بيعه بعد {wait}.
+1244	Recently promoted	Subido hace poco	رُقّي حديثًا
+1245	Promoted from the academy: he can be sold in {wait}.	Subido de la cantera: podrá venderse dentro de {wait}.	رُقّي من الأكاديمية: يمكن بيعه بعد {wait}.
+1246	Signed today	Fichado hoy	تعاقد اليوم
+1247	Signed today: he cannot be resold before the next match.	Fichado hoy: no puede revenderse antes del próximo partido.	تعاقد اليوم: لا يمكن إعادة بيعه قبل المباراة المقبلة.
+1248	Final year of contract: his club would rather sell him now.	Último año de contrato: su club prefiere venderlo ahora.	السنة الأخيرة من العقد: يفضّل ناديه بيعه الآن.
+1249	2 more years on his contract: his club can let him go without a fire sale.	Le quedan 2 años de contrato: su club puede traspasarlo sin malvenderlo.	تبقّت سنتان في عقده: يستطيع ناديه التخلي عنه دون بيعه بثمن بخس.
+1250	{c} more years on his contract: his club won’t sell him cheap.	Le quedan {c} años de contrato: su club no lo malvende.	السنوات المتبقية في عقده: {c}. لن يبيعه ناديه بثمن بخس.
+1251	Your scouts negotiate for you (transfer office level {lvl}).	Tus ojeadores negocian por ti (oficina de traspasos nivel {lvl}).	كشافوك يتفاوضون نيابة عنك (مكتب الانتقالات، المستوى {lvl}).
+1252	Free agent: his agent is negotiating the signing-on bonus.	Jugador libre: su agente negocia la prima de fichaje.	لاعب حر: وكيله يتفاوض على مكافأة التوقيع.
+1253	{age} years old: the seller is willing to talk.	{age} años: el vendedor acepta negociar.	{age} عامًا: البائع مستعد للتفاوض.
+1254	A young high-potential player: the seller wants a good price.	Joven con gran potencial: el vendedor quiere un buen precio.	شاب ذو إمكانات عالية: البائع يريد سعرًا جيدًا.
+1255	Courted by {interest} club: the competition pushes the price up.	Pretendido por {interest} club: la competencia hace subir el precio.	يغازله نادٍ آخر: المنافسة ترفع السعر.
+1256	Courted by {interest} clubs: the competition pushes the price up.	Pretendido por {interest} clubes: la competencia hace subir el precio.	{"one":"يغازله نادٍ آخر: المنافسة ترفع السعر.","two":"يغازله ناديان: المنافسة ترفع السعر.","few":"تغازله {interest} أندية: المنافسة ترفع السعر.","other":"يغازله {interest} ناديًا: المنافسة ترفع السعر."}
+1257	His price is falling: the seller is ready to talk.	Su precio baja: el vendedor está dispuesto a negociar.	سعره ينخفض: البائع مستعد للتفاوض.
+1258	No takers for {listedRounds} matchdays: the price is negotiable.	Sin comprador desde hace {listedRounds} jornadas: el precio se puede negociar.	بلا مشترٍ منذ {listedRounds} جولات: السعر قابل للتفاوض.
+1259	{tries} offer refused: the seller digs his heels in.	{tries} oferta rechazada: el vendedor se cierra en banda.	رُفض عرض واحد: البائع أصبح متصلبًا.
+1260	{tries} offers refused: the seller digs his heels in.	{tries} ofertas rechazadas: el vendedor se cierra en banda.	{"one":"رُفض عرض واحد: البائع أصبح متصلبًا.","two":"رُفض عرضان: البائع أصبح متصلبًا.","few":"رُفضت {tries} عروض: البائع أصبح متصلبًا.","other":"رُفض {tries} عرضًا: البائع أصبح متصلبًا."}
+1261	Your reputation helps: the seller listens more readily to a well-known club.	Tu notoriedad atrae: el vendedor escucha de mejor gana a un club con renombre.	شهرتك تساعدك: البائع يصغي أكثر إلى نادٍ ذي سمعة.
+1262	A club still little known: the seller is a little wary.	Club todavía poco conocido: el vendedor desconfía un poco.	نادٍ لا يزال قليل الشهرة: البائع حذر قليلًا.
+1263	The seller won’t talk again before the next matchday.	El vendedor no volverá a negociar antes de la próxima jornada.	لن يعود البائع إلى التفاوض قبل الجولة المقبلة.
+1264	Not enough money for this offer.	Tesorería insuficiente para esta oferta.	الخزينة لا تكفي لهذا العرض.
+1265	Small club	Club pequeño	نادٍ صغير
+1266	Ambitious club	Club ambicioso	نادٍ طموح
+1267	European giant	Gigante europeo	عملاق أوروبي
+1268	Foreign club	Club extranjero	نادٍ أجنبي
+1269	In great form: more clubs are watching him, and they pay more.	En gran forma: más clubes lo siguen, y pagan más.	في قمة مستواه: أندية أكثر تتابعه، وتدفع أكثر.
+1270	Out of form: fewer clubs are watching him, and they pay less.	En mala forma: menos clubes lo siguen, y pagan menos.	في تراجع: أندية أقل تتابعه، وتدفع أقل.
+1271	{age} years old: clubs are also betting on reselling him.	{age} años: los clubes también piensan en revenderlo.	{age} عامًا: الأندية تراهن أيضًا على إعادة بيعه.
+1272	{age} years old: clubs pay less for a player near the end of his career.	{age} años: los clubes pagan menos por un jugador al final de su carrera.	{age} عامًا: الأندية تدفع أقل للاعب في نهاية مسيرته.
+1273	High potential: clubs are paying for the future.	Gran potencial: los clubes pagan por el futuro.	إمكانات عالية: الأندية تدفع من أجل المستقبل.
+1274	Final year of contract: clubs pay less, he could leave on a free.	Último año de contrato: los clubes pagan menos, podría irse libre.	السنة الأخيرة من العقد: الأندية تدفع أقل، فقد يرحل حرًا.
+1275	Only two years left on his contract: clubs pay a little less.	Solo le quedan dos años de contrato: los clubes pagan algo menos.	لم يتبقّ في عقده سوى سنتين: الأندية تدفع أقل قليلًا.
+1276	Long contract: clubs pay top price.	Contrato largo: los clubes pagan el precio máximo.	عقد طويل: الأندية تدفع السعر الكامل.
+1277	A European Cup star: Europe’s giants are fighting over him.	Una estrella de la Copa de Europa: los gigantes europeos se lo rifan.	نجم في كأس أوروبا: عمالقة أوروبا يتهافتون عليه.
+1278	An Elite League star: Europe’s giants are watching him.	Una estrella de la Liga Élite: los gigantes europeos lo siguen.	نجم في دوري النخبة: عمالقة أوروبا يتابعونه.
+1279	Strong for your division: the big clubs are interested.	Fuerte para tu división: los grandes clubes se interesan.	قوي بالنسبة إلى درجتك: الأندية الكبرى مهتمة به.
+1280	Weak for your division: mostly small clubs.	Flojo para tu división: sobre todo clubes pequeños.	ضعيف بالنسبة إلى درجتك: أندية صغيرة في الغالب.
+1281	At your division’s level: small clubs and ambitious clubs, sometimes a big one.	Del nivel de tu división: clubes pequeños y ambiciosos, a veces uno grande.	بمستوى درجتك: أندية صغيرة وأخرى طموحة، وأحيانًا نادٍ كبير.
+1282	European giant: pays well above the value, but negotiates very hard and quickly digs in.	Gigante europeo: paga muy por encima del valor, pero negocia muy duro y se cierra enseguida.	عملاق أوروبي: يدفع أكثر بكثير من القيمة، لكنه يفاوض بقسوة ويتصلب بسرعة.
+1283	Big club: pays more, but negotiates hard and quickly digs in.	Gran club: paga más, pero negocia duro y se cierra enseguida.	نادٍ كبير: يدفع أكثر، لكنه يفاوض بشدة ويتصلب بسرعة.
+1284	Small club: tight budget, but accepts quickly.	Club pequeño: presupuesto ajustado, pero acepta rápido.	نادٍ صغير: ميزانية محدودة، لكنه يقبل بسرعة.
+1285	Ambitious club: talks without digging in too much.	Club ambicioso: negocia sin cerrarse demasiado.	نادٍ طموح: يتفاوض دون تصلب كبير.
+1286	Unsolicited offer: he is keen on this player, who is not for sale.	Oferta espontánea: le interesa mucho este jugador, que no está en venta.	عرض مفاجئ: يتمسك بهذا اللاعب غير المعروض للبيع.
+1287	{tries} request refused: the club digs its heels in.	{tries} petición rechazada: el club se cierra en banda.	رُفض طلب واحد: النادي أصبح متصلبًا.
+1288	{tries} requests refused: the club digs its heels in.	{tries} peticiones rechazadas: el club se cierra en banda.	{"one":"رُفض طلب واحد: النادي أصبح متصلبًا.","two":"رُفض طلبان: النادي أصبح متصلبًا.","few":"رُفضت {tries} طلبات: النادي أصبح متصلبًا.","other":"رُفض {tries} طلبًا: النادي أصبح متصلبًا."}

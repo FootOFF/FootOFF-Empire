@@ -8,7 +8,10 @@ import { euroName, leagueLength } from '../game/cups';
 import { matchContext, startSeason } from '../game/season';
 import { assignNumber, costOf, makePlayer, playerRating } from '../game/players';
 import { BUYERS, counterFor, dateKey, lastWordOf, outbidChance, poolOf, roundKey, roundTo, valueOf } from '../game/mercato';
-import { distinctClubName } from '../game/names';
+import { clubAfter, distinctClubName, withArticle } from '../game/names';
+import { t, tn } from '../i18n/index';
+import { fmtMoney, fmtRating } from './format';
+import { POS_LABELS } from '../game/constants';
 import { advanceJourney } from '../game/journey';
 import { counterTerms, demandOf } from '../game/contracts';
 
@@ -180,9 +183,9 @@ export function previewState(screen) {
   if (screen.startsWith('medical')) { // centre médical niveau 2 : trois blessés, dont un soigné aujourd'hui avec succès
     s.money = 1e6; build(s, 't4', 'medical'); upgrade(s, 'medical'); s.money = 42000;
     const [a, b, c] = [...s.players].filter((p) => p.pos !== 'G').sort((x, y) => playerRating(y) - playerRating(x));
-    a.injury = { out: 3, total: 3, label: 'Entorse' };
-    b.injury = { out: 6, total: 6, label: 'Déchirure musculaire' };
-    c.injury = { out: 1, total: 2, label: 'Élongation' };
+    a.injury = { out: 3, total: 3, label: t('Entorse') };
+    b.injury = { out: 6, total: 6, label: t('Déchirure musculaire') };
+    c.injury = { out: 1, total: 2, label: t('Élongation') };
     c.treated = { at: dateKey(s), ok: true, before: 2 };
   }
   if (screen.startsWith('direction')) { s.money = 1e6; build(s, 't3', 'direction'); upgrade(s, 'direction'); s.money = 42000; } // Direction du club, niveau 2
@@ -193,7 +196,7 @@ export function previewState(screen) {
       const r = s.seasonReview;
       Object.assign(r, { position: 1, champion: true, promoted: true, titleBonus: 9000, cups: 4200 });
       r.trophies = [{ comp: 'league', season: 1, division: r.division }, { comp: 'cup', season: 1, division: r.division }];
-      r.cupRuns = [{ comp: 'cup', won: true, reached: 'vainqueur' }];
+      r.cupRuns = [{ comp: 'cup', won: true, reached: t('vainqueur') }];
       s.trophies = [...r.trophies];
     }
   }
@@ -433,8 +436,8 @@ export function previewUi(screen, s) {
     case 'menu': return { menu: true };
     case 'notification': return {
       notes: [
-        { kind: 'achievement', eyebrow: 'Succès débloqué', title: 'Première victoire', text: 'Gagner un premier match officiel.', action: { panel: 'trophies', tab: 'achievements', ids: ['first_win'] } },
-        { kind: 'mercato', eyebrow: 'Mercato · pendant la journée', title: '2 offres reçues pour tes joueurs', action: { panel: 'mercato', view: 'offers' } },
+        { kind: 'achievement', eyebrow: t('Succès débloqué'), title: t('Première victoire'), text: t('Gagner un premier match officiel.'), action: { panel: 'trophies', tab: 'achievements', ids: ['first_win'] } },
+        { kind: 'mercato', eyebrow: t('Mercato · pendant la journée'), title: tn(2, '{offers} offre reçue pour tes joueurs', '{offers} offres reçues pour tes joueurs', { offers: 2 }, true), action: { panel: 'mercato', view: 'offers' } },
       ],
     };
     case 'chargement': return { loading: 0.42 };
@@ -442,10 +445,10 @@ export function previewUi(screen, s) {
       const p = s.players[s.players.length - 1];
       return {
         confirm: {
-          title: `Vendre ${p.name} ?`,
-          text: `${p.name} (${p.age} ans) rejoindra un autre club.`,
-          rows: [['Montant de la vente', '+2 564 €', 'up'], ['Salaire économisé', '2 137 € / saison', 'up']],
-          confirmLabel: 'Vendre · 2 564 €',
+          title: t('Vendre {name} {clubAfter} ?', { name: p.name, clubAfter: clubAfter('à ', s.rivals[0].name) }),
+          text: t('{name} ({age} ans, {toLowerCase}, note {fmtRating}) rejoindra {withArticle}.{v}', { name: p.name, age: p.age, toLowerCase: POS_LABELS[p.pos].toLowerCase(), fmtRating: fmtRating(playerRating(p)), withArticle: withArticle(s.rivals[0].name), v: '' }),
+          rows: [[t('Montant du transfert'), `+${fmtMoney(2564)}`, 'up'], [t('Salaire économisé'), t('{wageOf} / saison', { wageOf: fmtMoney(2137) }), 'up']],
+          confirmLabel: t('Vendre · {amount}', { amount: fmtMoney(2564) }),
           onConfirm: () => {},
         },
       };

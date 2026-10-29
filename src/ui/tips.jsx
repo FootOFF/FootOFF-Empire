@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { t } from '../i18n/index';
 
 // Infobulles du jeu (PC, à la souris) : remplacent celles du navigateur, lentes et sans style. Tout élément qui
 // porte un title (ou data-tip) en profite : au survol, son texte s'affiche au-dessus de lui après un court instant,

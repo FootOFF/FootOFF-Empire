@@ -10,6 +10,7 @@ import {
 import { assignNumber, available, makePlayer } from './players';
 import { FORMATIONS, TACTICS, autoLineup, lineupRating, repairLineup } from './tactics';
 import { clone } from './utils';
+import { LANGS, numLocale, t } from '../i18n/index';
 
 // Championnats entre amis (Siège de la Ligue). Le serveur des ligues (site footoff.media, /api/ligue ; leagueNet.js)
 // garde chaque ligue, ses membres, les équipes validées et les résultats officiels. Le jeu calcule le reste à
@@ -35,22 +36,28 @@ export const cleanCode = (raw) => String(raw || '').toUpperCase().replace(/[^A-Z
 
 // Couleurs du logo de la ligue, choisies par le créateur : le noir et or FootOFF, ou deux couleurs bien contrastées.
 export const LEAGUE_COLORS = [
-  ['noir-or', 'Noir et or', []],
-  ['marine', 'Marine et ciel', ['#1d2c5e', '#9fd0f5']],
-  ['rouge', 'Rouge et blanc', ['#c0392b', '#ffffff']],
-  ['bleu', 'Bleu et blanc', ['#2463c9', '#ffffff']],
-  ['vert', 'Vert et blanc', ['#1f8a4c', '#ffffff']],
-  ['grenat', 'Grenat et ciel', ['#7b1e3a', '#9fd0f5']],
-  ['violet', 'Violet et jaune', ['#6c3fa0', '#f2c94c']],
-  ['orange', 'Orange et noir', ['#e67e22', '#151515']],
-  ['blanc', 'Blanc et noir', ['#f2f2f2', '#151515']],
+  ['noir-or', t('Noir et or'), []],
+  ['marine', t('Marine et ciel'), ['#1d2c5e', '#9fd0f5']],
+  ['rouge', t('Rouge et blanc'), ['#c0392b', '#ffffff']],
+  ['bleu', t('Bleu et blanc'), ['#2463c9', '#ffffff']],
+  ['vert', t('Vert et blanc'), ['#1f8a4c', '#ffffff']],
+  ['grenat', t('Grenat et ciel'), ['#7b1e3a', '#9fd0f5']],
+  ['violet', t('Violet et jaune'), ['#6c3fa0', '#f2c94c']],
+  ['orange', t('Orange et noir'), ['#e67e22', '#151515']],
+  ['blanc', t('Blanc et noir'), ['#f2f2f2', '#151515']],
 ];
 
 // Les huit clubs de la ligue, place par place : les amis (club, écusson, pseudo), puis l'ordinateur aux places restées
 // libres au coup d'envoi (avant, en salle d'attente : des places libres). Un ami parti a rendu son club à l'ordinateur
 // (pseudo « Ordinateur », refusé à l'inscription : human faux) ; son club garde son nom et son écusson. Un ami absent
 // depuis 7 jours (active faux) reste membre : l'ordinateur fait seulement jouer son club en attendant son retour.
-export const AI_PSEUDO = 'Ordinateur';
+export const AI_PSEUDO = 'Ordinateur'; // identifiant des places de l'ordinateur, le même pour tous (serveur) : jamais traduit
+export const AI_LABEL = t('Ordinateur');
+// Langue d'un championnat (0.8.14) : choisie par le créateur, la même pour tous les amis. Les clubs et les joueurs de
+// l'ordinateur, tirés de la graine, y prennent leurs noms : chaque ami ouvre le championnat dans cette langue (App.jsx),
+// pour que tous voient les mêmes. Un championnat d'avant les langues, ou d'un serveur qui ne la garde pas, est en français.
+export const leagueLang = (league) => (LANGS.includes(league?.settings?.lang) ? league.settings.lang : 'fr');
+
 export function leagueClubs(league, members) {
   const bySlot = new Map(members.map((m) => [m.slot, m]));
   const free = [...Array(LEAGUE_CLUBS).keys()].filter((k) => !bySlot.has(k));
@@ -108,8 +115,8 @@ export function leagueSquads(league) {
   if (!squadsMemo.has(key)) {
     squadsMemo.set(key, seeded(hash(`${key}|effectifs`), () => {
       const template = [
-        ...STARTERS.map((pos) => makePlayer({ level: 0.55, pos, name: 'Gabarit Commun' })),
-        ...RESERVES.map((pos) => makePlayer({ level: 0.28, pos, name: 'Gabarit Commun' })),
+        ...STARTERS.map((pos) => makePlayer({ level: 0.55, pos, name: t('Gabarit Commun') })),
+        ...RESERVES.map((pos) => makePlayer({ level: 0.28, pos, name: t('Gabarit Commun') })),
       ];
       const taken = new Set();
       return [...Array(LEAGUE_CLUBS).keys()].map(() => {
@@ -424,7 +431,7 @@ export function replayOf(league, clubs, round, x, season = league.season) {
   const { live, state, ctx } = leagueMatch(league, season, round, side(x.h, home, x.sh, x.md), side(x.a, away, x.sa));
   if (live.state.score.home !== x.hg || live.state.score.away !== x.ag) return null;
   live.state.half = 1; // le direct montre la première période d'abord (la seconde est déjà jouée)
-  return { live, state, ctx: { ...ctx, label: `${league.name} · journée ${round + 1}` } };
+  return { live, state, ctx: { ...ctx, label: t('{name} · journée {v}', { name: league.name, v: round + 1 }) } };
 }
 
 // Ce que le jeu envoie pour une journée due : ses matchs et l'état de la ligue qui suit, et à la dernière journée le
@@ -471,14 +478,14 @@ export function deviceZone(now = Date.now()) {
 
 // Échéance d'une journée, à l'heure de l'appareil : « ce soir à 21 h », « demain à 21 h 30 », « jeudi 30 à 21 h ».
 export function deadlineText(iso, now = Date.now()) {
-  const t = Date.parse(iso);
-  if (!Number.isFinite(t)) return '';
-  const d = new Date(t);
+  const row = Date.parse(iso);
+  if (!Number.isFinite(row)) return '';
+  const d = new Date(row);
   const hour = hourText(d.getHours(), d.getMinutes());
   const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const gap = Math.round((day(d) - day(new Date(now))) / 86400000);
-  if (gap === 0) return `${d.getHours() >= 18 ? 'ce soir' : 'aujourd’hui'} à ${hour}`;
-  if (gap === 1) return `demain à ${hour}`;
-  return `${d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' })} à ${hour}`;
+  if (gap === 0) return t('{when} à {hour}', { when: d.getHours() >= 18 ? t('ce soir') : t('aujourd’hui'), hour });
+  if (gap === 1) return t('demain à {hour}', { hour });
+  return t('{when} à {hour}', { when: d.toLocaleDateString(numLocale(), { weekday: 'long', day: 'numeric' }), hour });
 }
 export const hourText = (h, m = 0) => `${h}\u00a0h${m ? `\u00a0${String(m).padStart(2, '0')}` : ''}`; // espaces insécables : « 21 h » jamais coupé

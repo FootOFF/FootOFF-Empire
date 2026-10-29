@@ -13,9 +13,10 @@ import { usePanelSound } from './panels';
 import { uiSound } from './uisound';
 import { haptic } from './haptics';
 import { BuildCard, BuildWindow, HoldButton, Payoff, StatRows, imgOf, spendHint } from './build';
+import { t, tn, tr } from '../i18n/index';
 
 const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor, transfers: IconTransfer, direction: IconDirection, medical: IconMedical, league: IconLeague };
-const KINDS = ['Sport', 'Revenus', 'Mercato'];
+const KINDS = [t('Sport'), t('Revenus'), t('Mercato')];
 
 // Tarifs des billets (Direction du club, onglet Billetterie : seul endroit où ils se règlent) : le joueur voit tout de
 // suite le public et les recettes attendus à chaque match.
@@ -25,16 +26,16 @@ export function TicketPricing({ state, onChange }) {
   const g = at(current);
   return (
     <div className="ins-effect ins-pricing">
-      <Eyebrow muted>Tarif des billets</Eyebrow>
-      <Tabs className="segmented tp-tabs" role="radiogroup" label="Tarif des billets" items={TICKET_ORDER.map((id) => [id, TICKET_POLICIES[id].name])} value={current} onChange={onChange} />
+      <Eyebrow muted>{t('Tarif des billets')}</Eyebrow>
+      <Tabs className="segmented tp-tabs" role="radiogroup" label={t('Tarif des billets')} items={TICKET_ORDER.map((id) => [id, TICKET_POLICIES[id].name])} value={current} onChange={onChange} />
       <p>{TICKET_POLICIES[current].blurb}</p>
       <ul className="tp-compare">
         {TICKET_ORDER.map((id) => {
           const x = at(id);
-          return <li key={id} className={id === current ? 'on' : ''}><span>{TICKET_POLICIES[id].name}</span><em>{fmtNum(x.attendance)} spect.</em><b>{fmtMoney(x.revenue)}</b></li>;
+          return <li key={id} className={id === current ? 'on' : ''}><span>{TICKET_POLICIES[id].name}</span><em>{tr('<0/> spect.', [fmtNum(x.attendance)])}</em><b>{fmtMoney(x.revenue)}</b></li>;
         })}
       </ul>
-      <p className="ins-hint">Par match de championnat à domicile : {fmtNum(g.attendance)} spectateurs{g.demand > g.capacity ? `, ${fmtNum(g.demand - g.capacity)} restent dehors` : ''}.</p>
+      <p className="ins-hint">{tr('Par match de championnat à domicile : <0/> spectateurs<1/>.', [fmtNum(g.attendance), g.demand > g.capacity ? t(', {v} restent dehors', { v: fmtNum(g.demand - g.capacity) }) : ''])}</p>
     </div>
   );
 }
@@ -44,18 +45,18 @@ function TicketSummary({ state, onTickets }) {
   const g = expectedGate(state, null);
   return (
     <div className="ins-effect ins-tickets">
-      <Eyebrow muted>Billetterie</Eyebrow>
-      <p>Tarif {TICKET_POLICIES[state.ticketPolicy || 'standard'].name.toLowerCase()} · {fmtNum(g.attendance)} spectateurs et {fmtMoney(g.revenue)} attendus par match de championnat à domicile.</p>
+      <Eyebrow muted>{t('Billetterie')}</Eyebrow>
+      <p>{tr('Tarif <0/> · <1/> spectateurs et <2/> attendus par match de championnat à domicile.', [TICKET_POLICIES[state.ticketPolicy || 'standard'].name.toLowerCase(), fmtNum(g.attendance), fmtMoney(g.revenue)])}</p>
       {onTickets
-        ? <button type="button" className="btn ghost wide" onClick={onTickets}>Changer le tarif · Direction du club</button>
-        : <p className="ins-hint">Le tarif se règle à la Direction du club, une fois construite.</p>}
+        ? <button type="button" className="btn ghost wide" onClick={onTickets}>{t('Changer le tarif · Direction du club')}</button>
+        : <p className="ins-hint">{t('Le tarif se règle à la Direction du club, une fois construite.')}</p>}
     </div>
   );
 }
 
 function Pips({ lvl, max }) {
   return (
-    <div className="pips" aria-label={`Niveau ${lvl} sur ${max}`}>
+    <div className="pips" aria-label={t('Niveau {lvl} sur {max}', { lvl, max })}>
       {Array.from({ length: max }, (_, i) => <span key={i} className={i < lvl ? 'on' : ''} />)}
     </div>
   );
@@ -76,7 +77,7 @@ function Shell({ eyebrow, title, Icon, nav = null, onClose, foot = null, classNa
           <h3>{title}</h3>
         </div>
         {nav}
-        <button type="button" className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button>
+        <button type="button" className="hud-icon" onClick={onClose} aria-label={t('Fermer')}><IconClose /></button>
       </header>
       <div className="ins-body">{children}</div>
       {foot && <footer className="ins-foot">{foot}</footer>}
@@ -163,15 +164,15 @@ function FreePlot({ state, sel, onClose, onBuild, onPreview, onSwitchPlot }) {
   const pi = plots.indexOf(sel.plotId);
   const nav = plots.length > 1 && pi !== -1 ? (
     <div className="ins-nav">
-      <button type="button" className="hud-icon" onClick={() => onSwitchPlot(plots[(pi - 1 + plots.length) % plots.length])} aria-label="Parcelle libre précédente" title="Parcelle libre précédente"><IconChevronLeft /></button>
-      <button type="button" className="hud-icon" onClick={() => onSwitchPlot(plots[(pi + 1) % plots.length])} aria-label="Parcelle libre suivante" title="Parcelle libre suivante"><IconChevron /></button>
+      <button type="button" className="hud-icon" onClick={() => onSwitchPlot(plots[(pi - 1 + plots.length) % plots.length])} aria-label={t('Parcelle libre précédente')} title={t('Parcelle libre précédente')}><IconChevronLeft /></button>
+      <button type="button" className="hud-icon" onClick={() => onSwitchPlot(plots[(pi + 1) % plots.length])} aria-label={t('Parcelle libre suivante')} title={t('Parcelle libre suivante')}><IconChevron /></button>
     </div>
   ) : null;
 
   if (!k) {
     return (
-      <Shell eyebrow={`${PLOT_LABELS[sel.plotId]} · libre`} title="Parcelle libre" Icon={IconCrane} onClose={onClose}>
-        <p className="ins-text">Tous les bâtiments sont déjà construits : cette parcelle reste libre.</p>
+      <Shell eyebrow={t('{v} · libre', { v: PLOT_LABELS[sel.plotId] })} title={t('Parcelle libre')} Icon={IconCrane} onClose={onClose}>
+        <p className="ins-text">{t('Tous les bâtiments sont déjà construits : cette parcelle reste libre.')}</p>
       </Shell>
     );
   }
@@ -185,13 +186,13 @@ function FreePlot({ state, sel, onClose, onBuild, onPreview, onSwitchPlot }) {
       <Shell
         className="shop"
         eyebrow={PLOT_LABELS[sel.plotId]}
-        title="Construire"
+        title={t('Construire')}
         Icon={IconCrane}
         nav={nav}
         onClose={onClose}
         foot={phone ? (
           <>
-            <HoldButton k={k} onConfirm={doBuild} disabled={state.money < cost}>Construire · {fmtMoney(cost)}</HoldButton>
+            <HoldButton k={k} onConfirm={doBuild} disabled={state.money < cost}>{tr('Construire · <0/>', [fmtMoney(cost)])}</HoldButton>
             <span className={`ins-hint ${hint.tone}`}>{hint.text}</span>
           </>
         ) : null}
@@ -200,8 +201,8 @@ function FreePlot({ state, sel, onClose, onBuild, onPreview, onSwitchPlot }) {
           <Tabs
             className="segmented bfilter"
             role="radiogroup"
-            label="Filtrer les bâtiments"
-            items={[['all', 'Tout'], ...kinds.map((x) => [x, x])]}
+            label={t('Filtrer les bâtiments')}
+            items={[['all', t('Tout')], ...kinds.map((x) => [x, x])]}
             value={filter}
             onChange={(f) => {
               setFilter(f);
@@ -217,10 +218,10 @@ function FreePlot({ state, sel, onClose, onBuild, onPreview, onSwitchPlot }) {
           <div className="bdetail">
             <div className="bdetail-head">
               <div className="panel-title">
-                <Eyebrow>{BUILDING_KIND[k]}{k === rec ? ' · Conseillé' : ''}</Eyebrow>
+                <Eyebrow>{BUILDING_KIND[k]}{k === rec ? t(' · Conseillé') : ''}</Eyebrow>
                 <strong>{BUILDINGS[k].name}</strong>
               </div>
-              <button type="button" className="btn ghost btn-sm" onClick={() => setWin(true)}><IconExpand /> Aperçu</button>
+              <button type="button" className="btn ghost btn-sm" onClick={() => setWin(true)}>{tr('<0/> Aperçu', [<IconExpand />])}</button>
             </div>
             <p className="bdetail-hero">{hero.label} : <b>{hero.value}</b>{hero.sub ? ` ${hero.sub}` : ''}</p>
             <Payoff state={state} k={k} target={1} compact />
@@ -286,59 +287,56 @@ function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTra
         onClose={onClose}
         foot={maxed || side ? null : (
           <>
-            <HoldButton k={k} onConfirm={() => onUpgrade(k)} disabled={state.money < cost}><IconArrowUp /> Améliorer · {fmtMoney(cost)}</HoldButton>
+            <HoldButton k={k} onConfirm={() => onUpgrade(k)} disabled={state.money < cost}>{tr('<0/> Améliorer · <1/>', [<IconArrowUp />, fmtMoney(cost)])}</HoldButton>
             <span className={`ins-hint ${hint.tone}`}>{hint.text}</span>
           </>
         )}
       >
-        <button type="button" className={`ins-shot ${fresh ? 'fresh' : ''}`} onClick={() => !maxed && setWin(true)} disabled={maxed} aria-label={maxed ? b.name : 'Aperçu des niveaux'}>
+        <button type="button" className={`ins-shot ${fresh ? 'fresh' : ''}`} onClick={() => !maxed && setWin(true)} disabled={maxed} aria-label={maxed ? b.name : t('Aperçu des niveaux')}>
           <img src={imgOf(k, lvl)} alt="" draggable="false" />
-          <span className="ins-shot-lvl">Niveau {lvl}<i> / {b.max}</i><Pips lvl={lvl} max={b.max} /></span>
-          {fresh && <span className="ins-shot-ribbon">{lvl === 1 ? 'Chantier lancé' : `Niveau ${lvl} en chantier`}</span>}
+          <span className="ins-shot-lvl">{tr('Niveau <0/><1/><2/>', [lvl, <i> / {b.max}</i>, <Pips lvl={lvl} max={b.max} />])}</span>
+          {fresh && <span className="ins-shot-ribbon">{tn(lvl, 'Chantier lancé', 'Niveau {lvl} en chantier', { lvl }, !(lvl === 1))}</span>}
         </button>
         {!maxed ? (
           <div className="ins-effect next">
-            <Eyebrow>Niveau {lvl + 1} · avant / après</Eyebrow>
+            <Eyebrow>{tr('Niveau <0/> · avant / après', [lvl + 1])}</Eyebrow>
             <StatRows state={state} k={k} lvl={lvl + 1} base={lvl} />
             <Payoff state={state} k={k} target={lvl + 1} />
           </div>
         ) : (
           <>
             <div className="ins-effect">
-              <Eyebrow muted>Actuellement</Eyebrow>
+              <Eyebrow muted>{t('Actuellement')}</Eyebrow>
               <StatRows state={state} k={k} lvl={lvl} />
             </div>
-            <div className="ins-max">Niveau maximum atteint</div>
+            <div className="ins-max">{t('Niveau maximum atteint')}</div>
           </>
         )}
         {gate && (
-          <p className={`ins-demand ${gate.demand > gate.capacity ? 'full' : ''}`}>
-            Public potentiel : {fmtNum(gate.demand)} spectateurs par match
-            {gate.demand > gate.capacity ? ' · stade trop petit, des supporters restent dehors.' : ` · ${Math.round((gate.demand / gate.capacity) * 100)} % de remplissage.`}
-          </p>
+          <p className={`ins-demand ${gate.demand > gate.capacity ? 'full' : ''}`}>{tr('Public potentiel : <0/> spectateurs par match<1/>', [fmtNum(gate.demand), gate.demand > gate.capacity ? t(' · stade trop petit, des supporters restent dehors.') : t(' · {round} % de remplissage.', { round: Math.round((gate.demand / gate.capacity) * 100) })])}</p>
         )}
-        {!maxed && !side && <button type="button" className="btn ghost wide" onClick={() => setWin(true)}><IconEye /> Aperçu des niveaux</button>}
+        {!maxed && !side && <button type="button" className="btn ghost wide" onClick={() => setWin(true)}>{tr('<0/> Aperçu des niveaux', [<IconEye />])}</button>}
         {k === 'transfers' && onTransfers && (
-          <button type="button" className="btn ghost wide" onClick={onTransfers}><IconTransfer /> Ouvrir le mercato · {(state.market || []).length + (state.transfers || []).length} joueurs</button>
+          <button type="button" className="btn ghost wide" onClick={onTransfers}>{tr('<0/> Ouvrir le mercato · <1/> joueurs', [<IconTransfer />, (state.market || []).length + (state.transfers || []).length])}</button>
         )}
         {k === 'academy' && onAcademy && (
-          <button type="button" className="btn ghost wide" onClick={onAcademy}><IconAcademy /> Ouvrir l’académie · {(state.youth || []).length} / {YOUTH_PLACES} jeunes</button>
+          <button type="button" className="btn ghost wide" onClick={onAcademy}>{tr('<0/> Ouvrir l’académie · <1/> / <2/> jeunes', [<IconAcademy />, (state.youth || []).length, YOUTH_PLACES])}</button>
         )}
         {k === 'training' && onTraining && (
-          <button type="button" className="btn ghost wide" onClick={onTraining}><IconTraining /> Séance d’entraînement</button>
+          <button type="button" className="btn ghost wide" onClick={onTraining}>{tr('<0/> Séance d’entraînement', [<IconTraining />])}</button>
         )}
         {k === 'direction' && onDirection && (
-          <button type="button" className="btn ghost wide" onClick={onDirection}><IconDirection /> Ouvrir la Direction du club</button>
+          <button type="button" className="btn ghost wide" onClick={onDirection}>{tr('<0/> Ouvrir la Direction du club', [<IconDirection />])}</button>
         )}
         {k === 'medical' && onMedical && (
-          <button type="button" className="btn ghost wide" onClick={onMedical}><IconMedical /> Ouvrir le centre médical · {state.players.filter((p) => p.injury?.out > 0).length} blessé{state.players.filter((p) => p.injury?.out > 0).length > 1 ? 's' : ''}</button>
+          <button type="button" className="btn ghost wide" onClick={onMedical}>{tr('<0/> Ouvrir le centre médical · <1/> blessé<2/>', [<IconMedical />, state.players.filter((p) => p.injury?.out > 0).length, state.players.filter((p) => p.injury?.out > 0).length > 1 ? 's' : ''])}</button>
         )}
         {k === 'league' && onLeague && (
-          <button type="button" className="btn ghost wide" onClick={onLeague}><IconLeague /> Ouvrir le Siège de la Ligue</button>
+          <button type="button" className="btn ghost wide" onClick={onLeague}>{tr('<0/> Ouvrir le Siège de la Ligue', [<IconLeague />])}</button>
         )}
         {k === 'terrain' && <TicketSummary state={state} onTickets={state.buildings.direction > 0 ? onTickets : null} />}
         {k === 'terrain' && onMatchDay && (
-          <button type="button" className="btn ghost wide" onClick={onMatchDay}><IconStadium /> Voir le stade en jour de match</button>
+          <button type="button" className="btn ghost wide" onClick={onMatchDay}>{tr('<0/> Voir le stade en jour de match', [<IconStadium />])}</button>
         )}
       </Shell>
       <Presence>

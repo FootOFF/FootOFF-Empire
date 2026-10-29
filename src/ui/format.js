@@ -1,18 +1,20 @@
-const euros = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+import { decSep, eur, LANG, numLocale, t } from '../i18n/index';
+const euros = new Intl.NumberFormat(numLocale(), { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 
 // Montants complets jusqu'à 100 000 €, puis compacts (125 k€, 1,25 M€) pour rester lisibles.
 export const fmtMoney = (n) => {
   const a = Math.abs(n);
   if (a < 100000) return euros.format(n);
+  if (LANG !== 'fr') return eur(n, { compact: true, digits: a < 1e7 ? 2 : 1 }); // « €125k », « 1,25 M € »
   const sign = n < 0 ? '-' : '';
   if (a < 1e6) return `${sign}${Math.round(a / 1000)}\u00a0k€`;
-  return `${sign}${(a / 1e6).toLocaleString('fr-FR', { maximumFractionDigits: a < 1e7 ? 2 : 1 })}\u00a0M€`;
+  return `${sign}${(a / 1e6).toLocaleString(numLocale(), { maximumFractionDigits: a < 1e7 ? 2 : 1 })}\u00a0M€`;
 };
 
-export const fmtNum = (n) => new Intl.NumberFormat('fr-FR').format(n);
+export const fmtNum = (n) => new Intl.NumberFormat(numLocale()).format(n);
 
 // Prix d'un billet, au centime quand il n'est pas rond : 6 €, 4,50 €.
-const price = [0, 2].map((d) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: d, maximumFractionDigits: d }));
+const price = [0, 2].map((d) => new Intl.NumberFormat(numLocale(), { style: 'currency', currency: 'EUR', minimumFractionDigits: d, maximumFractionDigits: d }));
 export const fmtPrice = (n) => price[Number.isInteger(Math.round(n * 100) / 100) ? 0 : 1].format(n);
 
 // Montant complet, sans abréviation (écran Finances : une colonne de chiffres se lit à l'euro près).
@@ -24,7 +26,7 @@ export const fmtEuros = (n) => euros.format(n);
 // eux » (score, tirs).
 export const homeFirst = (m, ours = m.gf, theirs = m.ga) => (m?.away ? [theirs, ours] : [ours, theirs]);
 export const scoreText = (m, sep = '–') => homeFirst(m).join(sep);
-export const fmtRating = (v) => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',');
+export const fmtRating = (v) => (Math.round(v * 10) / 10).toFixed(1).replace('.', decSep());
 
 // Pourcentages qui tombent juste (pronostic victoire / nul / défaite) : arrondis par la méthode du plus fort reste,
 // leur somme fait toujours 100. Honnêtes aux extrêmes : 0 % seulement pour une issue réellement impossible et
@@ -46,3 +48,8 @@ export function roundPercents(values) {
   }
   return whole.map((n) => ({ value: n, label: `${n} %` }));
 }
+
+// Pied fort d'un joueur : la valeur gardée dans la partie (« droit », « gauche », « les deux ») ne change jamais ;
+// son libellé suit la langue. cap : en début de phrase.
+export const footLabel = (foot, cap = false) => (foot === 'les deux' ? (cap ? t('Des deux pieds') : t('des deux pieds'))
+  : foot === 'gauche' ? (cap ? t('Pied gauche') : t('pied gauche')) : (cap ? t('Pied droit') : t('pied droit')));

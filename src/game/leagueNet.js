@@ -1,4 +1,5 @@
 import { LEAGUE_ENGINE, MAX_MY_LEAGUES, isLeagueCode, roundPayload } from './league';
+import { LANG, t } from '../i18n/index';
 
 // Le serveur des ligues (site footoff.media, app/api/ligue) : même origine que le jeu en ligne
 // (www.footoff.media/footoffempire/), et en développement le relais de Vite (vite.config.js) vers le site lancé en
@@ -7,6 +8,19 @@ import { LEAGUE_ENGINE, MAX_MY_LEAGUES, isLeagueCode, roundPayload } from './lea
 const API = '/api/ligue';
 
 // data : la réponse du serveur (une sauvegarde refusée y porte la fiche de la copie du serveur, conflict)
+// Messages du serveur des ligues (écrits en français) : traduits à l'affichage. Un nombre dans le message (« 3 offres en
+// attente au plus ») passe par {n} dans le dictionnaire.
+function serverText(msg) {
+  if (LANG === 'fr' || typeof msg !== 'string') return msg;
+  const direct = t(msg);
+  if (direct !== msg) return direct;
+  const n = msg.match(/\d+/)?.[0];
+  if (!n) return msg;
+  const key = msg.replace(/\d+/, '{n}');
+  const out = t(key, { n });
+  return out === key.replace('{n}', n) ? msg : out;
+}
+
 export class LeagueError extends Error {
   constructor(message, status, data = null) {
     super(message);
@@ -34,13 +48,13 @@ async function call(path, { method = 'GET', body, auth, keepalive = false } = {}
       method, headers, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'omit', cache: 'no-store', keepalive,
     });
   } catch {
-    throw new LeagueError('Serveur des ligues injoignable : vérifie ta connexion.', 0);
+    throw new LeagueError(t('Serveur des ligues injoignable : vérifie ta connexion.'), 0);
   }
   let data = null;
   try { data = await res.json(); } catch { /* réponse vide ou qui n'est pas du JSON */ }
   if (!res.ok) {
-    const fallback = res.status === 429 ? 'Trop de demandes : réessaie dans un moment.' : 'Le serveur des ligues ne répond pas comme prévu. Réessaie.';
-    throw new LeagueError(data?.error || fallback, res.status, data);
+    const fallback = res.status === 429 ? t('Trop de demandes : réessaie dans un moment.') : t('Le serveur des ligues ne répond pas comme prévu. Réessaie.');
+    throw new LeagueError(data?.error ? serverText(data.error) : fallback, res.status, data);
   }
   return data;
 }

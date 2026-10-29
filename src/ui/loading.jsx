@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FOMonogram } from './brand';
+import { t, tr } from '../i18n/index';
 
 // Écran de chargement, façon jeu de console : logo au centre, astuce en bas à gauche, étape et pourcentage en bas
 // à droite, fine barre dorée sur toute la largeur. La même mise en page existe en HTML pur dans index.html (où
@@ -15,20 +16,20 @@ import { FOMonogram } from './brand';
 // graphique : elle vit même quand le processeur est occupé à décoder un modèle.
 
 const TIPS = [
-  'Un stade plus grand accueille plus de spectateurs : billetterie, buvette et boutique en profitent.',
-  'Former un jeune puis le revendre une fois progressé rapporte ; une recrue ne se revend qu’après quatre journées de championnat.',
-  'Les deux premiers montent, les deux derniers descendent : chaque point compte.',
-  'À la mi-temps, change de tactique ou fais entrer un remplaçant pour renverser le match.',
-  'L’espace supporters remplit mieux le stade et augmente la réputation gagnée à chaque match.',
-  'Le siège des partenaires rapporte même quand tu n’es pas là.',
-  'L’académie révèle un jeune talent à fort potentiel à chaque fin de saison.',
-  'Surveille la part des salaires dans tes revenus : c’est elle qui fait basculer une saison dans le rouge.',
-  'Avant le match, « Onze frais » aligne d’un geste tes meilleurs joueurs à 80 % de condition ou plus.',
-  'Le bureau des transferts ouvre un marché de joueurs sous contrat, avec des indemnités négociées.',
-  'Échap (ou Start à la manette) met le jeu en pause à tout moment.',
+  t('Un stade plus grand accueille plus de spectateurs : billetterie, buvette et boutique en profitent.'),
+  t('Former un jeune puis le revendre une fois progressé rapporte ; une recrue ne se revend qu’après quatre journées de championnat.'),
+  t('Les deux premiers montent, les deux derniers descendent : chaque point compte.'),
+  t('À la mi-temps, change de tactique ou fais entrer un remplaçant pour renverser le match.'),
+  t('L’espace supporters remplit mieux le stade et augmente la réputation gagnée à chaque match.'),
+  t('Le siège des partenaires rapporte même quand tu n’es pas là.'),
+  t('L’académie révèle un jeune talent à fort potentiel à chaque fin de saison.'),
+  t('Surveille la part des salaires dans tes revenus : c’est elle qui fait basculer une saison dans le rouge.'),
+  t('Avant le match, « Onze frais » aligne d’un geste tes meilleurs joueurs à 80 % de condition ou plus.'),
+  t('Le bureau des transferts ouvre un marché de joueurs sous contrat, avec des indemnités négociées.'),
+  t('Échap (ou Start à la manette) met le jeu en pause à tout moment.'),
 ];
 
-const stepOf = (p, done) => (done && p >= 1 ? 'Prêt' : p < 0.18 ? 'Démarrage du moteur' : p < 0.5 ? 'Chargement du complexe' : p < 0.84 ? 'Mise en place du décor' : 'Réglage des projecteurs');
+const stepOf = (p, done) => (done && p >= 1 ? t('Prêt') : p < 0.18 ? t('Démarrage du moteur') : p < 0.5 ? t('Chargement du complexe') : p < 0.84 ? t('Mise en place du décor') : t('Réglage des projecteurs'));
 
 function targetOf(info, done, now, marks) {
   if (done) return 1;
@@ -118,17 +119,17 @@ export function LoadingScreen({ info = null, done = false, fixed = null, onFinis
   // animation en cours la ferait sauter)
   const [style] = useState(() => ({ '--ld-delay': `${-Math.round(performance.now() - t0)}ms` }));
   return (
-    <div className="ld" style={style} data-live={info || fixed != null ? '' : undefined} role="status" aria-label="Chargement de FootOFF Empire">
+    <div className="ld" style={style} data-live={info || fixed != null ? '' : undefined} role="status" aria-label={t('Chargement de FootOFF Empire')}>
       <div className="ld-glow" aria-hidden="true" />
       <div className="ld-center">
         <div className="ld-logo">
           <FOMonogram className="ld-mono" />
           <span className="ld-sep" aria-hidden="true" />
-          <span className="ld-words"><span className="ld-name">Foot<b>OFF</b></span><span className="ld-sub">Empire</span></span>
+          <span className="ld-words"><span className="ld-name">{tr('Foot<0>OFF</0>', [(c) => <b>{c}</b>])}</span><span className="ld-sub">{t('Empire')}</span></span>
         </div>
       </div>
       <div className="ld-bottom">
-        <p className="ld-tip" key={tip}><span className="ld-tip-label">Astuce</span><span className="ld-tip-text">{TIPS[tip]}</span></p>
+        <p className="ld-tip" key={tip}><span className="ld-tip-label">{t('Astuce')}</span><span className="ld-tip-text">{TIPS[tip]}</span></p>
         <div className="ld-status">
           <svg className="ld-spin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /></svg>
           <span className="ld-step" ref={step} />

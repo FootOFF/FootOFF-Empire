@@ -1,0 +1,64 @@
+3030	Sell · <0/>	Vender · <0/>	بيع · <0/>
+3031	Out of their reach: the club will pull out	Fuera de su alcance: el club se retirará	بعيد عن متناوله: سينسحب النادي
+3032	Ask · <0/>	Pedir · <0/>	طلب · <0/>
+3033	<0/> · the offer holds until the next matchday	<0/> · la oferta vale hasta la próxima jornada	<0/> · يبقى العرض ساريًا حتى الجولة المقبلة
+3034	Take off the market	Retirar de la venta	سحب من البيع
+3035	List for sale	Poner en venta	عرض للبيع
+3036	Withdrawing	Retirando	جارٍ السحب
+3037	Withdrawing your offer…	Retirando tu oferta…	جارٍ سحب عرضك…
+3038	Sending	Enviando	جارٍ الإرسال
+3039	Sending your reply…	Enviando tu respuesta…	جارٍ إرسال ردك…
+3040	Counter-offer from {clubAfter}: {x}	Contraoferta {clubAfter}: {x}	عرض مضاد من {clubAfter}: {x}
+3041	Final word: accept their price or refuse.	Última palabra: acepta su precio o rechaza.	الكلمة الأخيرة: اقبل سعره أو ارفض.
+3042	Your move: accept their price, make a counter-offer ({v} left) or refuse.	Te toca: acepta su precio, haz una contraoferta (queda {v}) o rechaza.	دورك: اقبل سعره، أو قدّم عرضًا مضادًا (متبقٍ {v})، أو ارفض.
+3043	Your move: accept their price, make a counter-offer ({v} left) or refuse.	Te toca: acepta su precio, haz una contraoferta (quedan {v}) o rechaza.	دورك: اقبل سعره، أو قدّم عرضًا مضادًا (متبقٍ {v})، أو ارفض.
+3044	Waiting for your friend’s reply	Esperando la respuesta de tu amigo	بانتظار رد صديقك
+3045	{v} sent{v2}: {withArticle} has not replied yet.	{v} enviada{v2}: {withArticle} aún no ha respondido.	{v} أُرسل{v2}: لم يرد {withArticle} بعد.
+3046	Your counter-offer of {x}	Tu contraoferta de {x}	عرضك المضاد البالغ {x}
+3047	Offer of {x}	Oferta de {x}	عرض بقيمة {x}
+3048	have not	no han	لم
+3049	Negotiation broken off	Negociación rota	قُطع التفاوض
+3050	No agreement with {withArticle} on {x}.	Sin acuerdo con {withArticle} sobre {x}.	لا اتفاق مع {withArticle} على {x}.
+3051	Offer for {name}	Oferta por {name}	عرض لضم {name}
+3052	Offer to <0/>	Oferta <0/>	عرض إلى <0/>
+3053	<0/><1/> · age <2/>	<0/><1/> · <2/> años	<0/><1/> · <2/> عامًا
+3054	Their price	Su precio	سعره
+3055	Your counter-offer	Tu contraoferta	عرضك المضاد
+3056	How it works	Cómo funciona	كيف يجري الأمر
+3057	Your offer goes out at once: your friend accepts it, makes a counter-offer or refuses from their transfer market. Three counter-offers at most, on both sides; then accept or refuse.	Tu oferta sale al instante: tu amigo la acepta, hace una contraoferta o la rechaza desde su mercado. Tres contraofertas como máximo, por ambas partes; luego aceptar o rechazar.	يُرسل عرضك فورًا: يقبله صديقك أو يقدّم عرضًا مضادًا أو يرفضه من سوق انتقالاته. ثلاثة عروض مضادة على الأكثر للطرفين؛ ثم القبول أو الرفض.
+3058	Once accepted, the transfer is completed on the spot: the player joins your squad, the fee leaves your account.	Aceptada, el traspaso se cierra en el acto: el jugador se une a tu plantilla y el traspaso sale de tu cuenta.	بمجرد القبول تتم الصفقة على الفور: ينضم اللاعب إلى تشكيلتك ويُخصم مبلغ الانتقال من حسابك.
+3059	Three pending offers at most; an offer left unanswered lapses at the end of the matchday.	Tres ofertas pendientes como máximo; una oferta sin respuesta caduca al final de la jornada.	ثلاثة عروض معلّقة على الأكثر؛ ويسقط العرض الذي لا يُرد عليه في نهاية الجولة.
+3060	Already promised in your other offers: <0/>.	Ya comprometido en tus otras ofertas: <0/>.	ملتزم به مسبقًا في عروضك الأخرى: <0/>.
+3061	Squad full ({SQUAD_MAX})	Plantilla completa ({SQUAD_MAX})	التشكيلة مكتملة ({SQUAD_MAX})
+3062	You are {short} short	Te faltan {short}	ينقصك {short}
+3063	Accept their price · {x}	Aceptar su precio · {x}	قبول سعره · {x}
+3064	You are {v} short	Te faltan {v}	ينقصك {v}
+3065	Counter-offer · {offer}	Contraoferta · {offer}	عرض مضاد · {offer}
+3066	Three offers already pending	Ya hay tres ofertas pendientes	ثلاثة عروض معلّقة بالفعل
+3067	Change my offer · {offer}	Cambiar mi oferta · {offer}	تعديل عرضي · {offer}
+3068	Make this offer · {offer}	Hacer esta oferta · {offer}	تقديم هذا العرض · {offer}
+3069	Withdraw my offer	Retirar mi oferta	سحب عرضي
+3070	<0/> left	Quedan <0/>	متبقٍ <0/>
+3071	{n} offer possible	{n} oferta posible	عرض واحد ممكن
+3072	{n} offers possible	{n} ofertas posibles	{"one":"عرض واحد ممكن","two":"عرضان ممكنان","few":"{n} عروض ممكنة","other":"{n} عرضًا ممكنًا"}
+3073	Lower the counter-offer	Bajar la contraoferta	خفض العرض المضاد
+3074	Raise the counter-offer	Subir la contraoferta	رفع العرض المضاد
+3075	Send · {v}	Enviar · {v}	إرسال · {v}
+3076	{name} (age {age}, {toLowerCase}, rating {fmtRating}) will join {withArticle}, your friend’s club. The sale is completed at once.{v}	{name} ({age} años, {toLowerCase}, nota {fmtRating}) se unirá {withArticle}, el club de tu amigo. La venta se cierra al instante.{v}	سينضم {name} ({age} عامًا، {toLowerCase}، التقييم {fmtRating}) إلى {withArticle}، نادي صديقك. وتتم عملية البيع فورًا.{v}
+3077	Sell · {x}	Vender · {x}	بيع · {x}
+3078	Sign {v} for {x}?	¿Fichar a {v} por {x}?	التعاقد مع {v} مقابل {x}؟
+3079	You accept the price from {clubAfter}: the transfer is completed at once, the player joins your squad.	Aceptas el precio {clubAfter}: el traspaso se cierra al instante y el jugador se une a tu plantilla.	تقبل سعر {clubAfter}: تتم الصفقة فورًا وينضم اللاعب إلى تشكيلتك.
+3080	{wage} / season	{wage} / temporada	{wage} / الموسم
+3081	Sign · {x}	Fichar · {x}	تعاقد · {x}
+3082	{n} counter-offer possible	{n} contraoferta posible	عرض مضاد واحد ممكن
+3083	{n} counter-offers possible	{n} contraofertas posibles	{"one":"عرض مضاد واحد ممكن","two":"عرضان مضادان ممكنان","few":"{n} عروض مضادة ممكنة","other":"{n} عرضًا مضادًا ممكنًا"}
+3084	final word: accept or refuse	última palabra: aceptar o rechazar	الكلمة الأخيرة: قبول أو رفض
+3085	Offers from your friends	Ofertas de tus amigos	عروض أصدقائك
+3086	No offers from a friend yet. For each offer: accept (the transfer is completed at once), make a counter-offer or refuse.	Ninguna oferta de un amigo por ahora. Ante cada oferta: aceptar (el traspaso se cierra al instante), hacer una contraoferta o rechazar.	لا عروض من صديق حتى الآن. مع كل عرض: القبول (تتم الصفقة فورًا)، أو تقديم عرض مضاد، أو الرفض.
+3087	want	quieren	يريدون
+3088	want	quiere	يريد
+3089	to sign him	ficharlo	ضمه
+3090	· squad at the minimum ({SQUAD_MIN} players): sign before you sell	· plantilla al mínimo ({SQUAD_MIN} jugadores): ficha antes de vender	· التشكيلة عند الحد الأدنى ({SQUAD_MIN} لاعبًا): تعاقد قبل أن تبيع
+3091	Your counter-offer ·	Tu contraoferta ·	عرضك المضاد ·
+3092	to reply	le toca responder	عليه الرد
+3093	sending…	enviando…	جارٍ الإرسال…

@@ -3,6 +3,7 @@ import { leagueLength } from './cups';
 import { pushJournal } from './journal';
 import { ATTRS, SUMMER, WEIGHTS, makePlayer, playerRating, seasonGain } from './players';
 import { clamp, ri, rnd } from './utils';
+import { t, tn } from '../i18n/index';
 
 // Académie : l'équipe de jeunes du club, six places. On recrute quand on veut, gratuitement, parmi les jeunes repérés
 // (renouvelés après chaque journée de championnat, toutes les deux en Élite ; plus nombreux et plus doués quand
@@ -16,9 +17,9 @@ import { clamp, ri, rnd } from './utils';
 
 export { SCOUTED, YOUTH_LEAVE_AGE, YOUTH_PLACES };
 export const PLANS = {
-  tech: { label: 'Technique', fam: 'tech', gk: ['rel', 'aer'] },
-  phys: { label: 'Physique', fam: 'phys', gk: ['ref', 'uns'] },
-  mental: { label: 'Mental', fam: 'tac', gk: ['gpl', 'gsf'] },
+  tech: { label: t('Technique'), fam: 'tech', gk: ['rel', 'aer'] },
+  phys: { label: t('Physique'), fam: 'phys', gk: ['ref', 'uns'] },
+  mental: { label: t('Mental'), fam: 'tac', gk: ['gpl', 'gsf'] },
 };
 const FOCUS = 2.4; // part d'entraînement des qualités travaillées par le plan : quatre fois celle des autres
 const REST = 0.6;
@@ -168,23 +169,23 @@ export function refreshScouting(s) {
 // donnent des nouvelles (s.mission.news) ; au retour, les plus prometteurs de tous ceux qu'ils ont vus, d'après leur
 // vrai potentiel. Les chances (exactes, missionPlan) restent celles des potentiels réalistes de la 0.5.0 : la mission
 // voit davantage de jeunes, elle n'en fait pas naître de meilleurs.
-export const MISSION_KINDS = { pos: 'Poste', plan: 'Profil' };
+export const MISSION_KINDS = { pos: t('Poste'), plan: t('Profil') };
 export const PROFILES = { tech: 'technique', phys: 'physique', mental: 'mental' };
 export const MISSION_STEPS = [2, 3, 4];
 export const MISSION_BOOST = 2;
-const POS_NOUNS = { G: ['gardien', 'gardiens'], D: ['défenseur', 'défenseurs'], M: ['milieu', 'milieux'], A: ['attaquant', 'attaquants'] };
+const POS_NOUNS = { G: [t('gardien'), t('gardiens')], D: [t('défenseur'), t('défenseurs')], M: [t('milieu'), t('milieux')], A: [t('attaquant'), t('attaquants')] };
 // Ce qu'une mission cherche, en clair : « des gardiens », « des milieux », « un profil technique » ; « des jeunes » pour
 // une mission d'avant la 0.8.12 partie dans une région.
 export function missionTarget(m) {
   if (m.kind === 'pos') return `des ${POS_NOUNS[m.value][1]}`;
-  if (m.kind === 'plan') return `un profil ${PROFILES[m.value]}`;
-  return 'des jeunes';
+  if (m.kind === 'plan') return t('un profil {v}', { v: PROFILES[m.value] });
+  return t('des jeunes');
 }
 // Les jeunes d'une mission, comptés et accordés : « 12 attaquants », « 12 jeunes au profil technique », « 1 gardien ».
 export function missionCount(m, n) {
   if (m.kind === 'pos') return `${n} ${POS_NOUNS[m.value][n > 1 ? 1 : 0]}`;
-  const y = `${n} jeune${n > 1 ? 's' : ''}`;
-  return m.kind === 'plan' ? `${y} au profil ${PROFILES[m.value]}` : y;
+  const y = tn(n, '{n} jeune', '{n} jeunes', { n }, n > 1);
+  return m.kind === 'plan' ? t('{y} au profil {v}', { y, v: PROFILES[m.value] }) : y;
 }
 // Jeunes ramenés d'une mission : autant que de repérages, plus ceux d'un repérage ordinaire.
 const missionBackCount = (per, steps) => per + steps;
@@ -257,8 +258,8 @@ export function startMission(s, { kind, value, steps }) {
   if (!lvl || s.mission || !ok || !MISSION_STEPS.includes(steps)) return null;
   s.mission = { kind, value, steps, left: steps, per: SCOUTED[lvl] || 0, season: s.seasonNumber, round: s.round, seen: [], news: [] };
   pushJournal(s, {
-    season: s.seasonNumber, round: s.round, kind: 'academie', title: 'Les recruteurs partent en mission',
-    text: `Ils cherchent ${missionTarget(s.mission)}, ${steps > 1 ? `pendant ${steps} repérages` : 'le temps d’un repérage'}.`,
+    season: s.seasonNumber, round: s.round, kind: 'academie', title: t('Les recruteurs partent en mission'),
+    text: t('Ils cherchent {missionTarget}, {tn}.', { missionTarget: missionTarget(s.mission), tn: tn(steps, 'le temps d’un repérage', 'pendant {steps} repérages', { steps }, steps > 1) }),
   });
   return s;
 }
@@ -283,9 +284,9 @@ function missionCandidate(s, m) {
 }
 const byPromise = (a, b) => b.pot - a.pot || playerRating(b) - playerRating(a);
 // Ce que disent les recruteurs d'un jeune, sans dévoiler son potentiel : leur impression, d'après lui.
-export const promiseWord = (p) => (p.pot >= 16 ? 'un talent rare' : p.pot >= 13.5 ? 'un beau potentiel' : 'un bon élément');
-const youthWord = (p) => `un ${POS_NOUNS[p.pos][0]} de ${p.age} ans`;
-const NUM_WORDS = ['Aucun', 'Un', 'Deux', 'Trois', 'Quatre', 'Cinq', 'Six', 'Sept', 'Huit'];
+export const promiseWord = (p) => (p.pot >= 16 ? t('un talent rare') : p.pot >= 13.5 ? t('un beau potentiel') : t('un bon élément'));
+const youthWord = (p) => t('un {v} de {age} ans', { v: POS_NOUNS[p.pos][0], age: p.age });
+const NUM_WORDS = [t('Aucun'), t('Un'), t('Deux'), t('Trois'), t('Quatre'), t('Cinq'), t('Six'), t('Sept'), t('Huit')];
 
 const tierOf = (p) => (p.pot >= 16 ? 'rare' : p.pot >= 13.5 ? 'fine' : 'solid');
 
@@ -299,12 +300,12 @@ function missionStep(s, m) {
   const best = m.seen[0];
   const who = youthWord(best);
   const up = best !== before;
-  const lead = !up ? `Le plus prometteur reste ${who}, ${promiseWord(best)}.`
-    : tierOf(best) === 'solid' ? `Le plus prometteur pour l’instant : ${who}, ${promiseWord(best)}.`
-      : `${who[0].toUpperCase()}${who.slice(1)} sort du lot : ${promiseWord(best)}.`;
+  const lead = !up ? t('Le plus prometteur reste {who}, {promiseWord}.', { who, promiseWord: promiseWord(best) })
+    : tierOf(best) === 'solid' ? t('Le plus prometteur pour l’instant : {who}, {promiseWord}.', { who, promiseWord: promiseWord(best) })
+      : t('{toUpperCase}{slice} sort du lot : {promiseWord}.', { toUpperCase: who[0].toUpperCase(), slice: who.slice(1), promiseWord: promiseWord(best) });
   const k = m.steps - m.left;
   const n = fresh.length;
-  m.news = [...(m.news || []), { step: k, season: s.seasonNumber, round: s.round, n, best: tierOf(best), up, text: `${NUM_WORDS[n] || n} jeune${n > 1 ? 's' : ''} observé${n > 1 ? 's' : ''}. ${lead}` }].slice(-6);
+  m.news = [...(m.news || []), { step: k, season: s.seasonNumber, round: s.round, n, best: tierOf(best), up, text: tn(n, '{v} jeune observé. {lead}', '{v} jeunes observés. {lead}', { v: NUM_WORDS[n] || n, lead }, n > 1) }].slice(-6);
 }
 
 // Retour de mission : les candidats vus (de la cible), les plus prometteurs ramenés.
@@ -319,15 +320,15 @@ function missionBack(s, m) {
   const list = cands.slice(0, back);
   for (const p of list) {
     p.id = s.nextId++;
-    p.scoutNote = `Mission des recruteurs : ${missionTarget(m)}`;
+    p.scoutNote = t('Mission des recruteurs : {missionTarget}', { missionTarget: missionTarget(m) });
   }
   s.scouting.list = list;
   s.scouting.drawn = SCOUTED[lvl] || 0; // ce repérage-là, c'est la mission
   s.scouting.mission = { kind: m.kind, value: m.value, steps: m.steps, seen, back: list.length, season: s.seasonNumber, round: s.round };
   s.mission = null;
   pushJournal(s, {
-    season: s.seasonNumber, round: s.round, kind: 'academie', title: 'Retour de mission des recruteurs',
-    text: `Ils ont vu ${missionCount(m, seen)} et ramènent ${list.length > 1 ? `les ${list.length} plus prometteurs` : 'le plus prometteur'} : ${list.map((p) => p.name).join(', ')}.`,
+    season: s.seasonNumber, round: s.round, kind: 'academie', title: t('Retour de mission des recruteurs'),
+    text: t('Ils ont vu {missionCount} et ramènent {tn} : {join}.', { missionCount: missionCount(m, seen), tn: tn(list.length, 'le plus prometteur', 'les {length} plus prometteurs', { length: list.length }, list.length > 1), join: list.map((p) => p.name).join(', ') }),
   });
 }
 

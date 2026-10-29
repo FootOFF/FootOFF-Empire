@@ -5,6 +5,7 @@ import { lockResale } from './mercato';
 import { distinctFace } from './faces';
 import { pushJournal } from './journal';
 import { formationOf } from './tactics';
+import { t } from '../i18n/index';
 
 // Effectif minimum (0.8.4, demande du PDG) : jamais moins de SQUAD_MIN joueurs (13). Vendre ou libérer un joueur est
 // refusé à 13 ; si l'effectif tombe malgré tout en dessous (fins de contrat, retraites, vente d'un ami, ancienne partie),
@@ -24,10 +25,10 @@ export function raiseYouth(s, p, { auto = false, joined = s.seasonNumber } = {})
   distinctFace(s.players, p); // aucun sosie dans l'effectif
   s.players.push(p);
   pushJournal(s, {
-    season: s.seasonNumber, round: s.round, kind: 'academie', title: `${p.name} monte en équipe première`,
+    season: s.seasonNumber, round: s.round, kind: 'academie', title: t('{name} monte en équipe première', { name: p.name }),
     text: auto
-      ? `L’effectif tombait sous ${SQUAD_MIN} joueurs : formé à l’académie, il monte d’office à ${p.age} ans, avec le numéro ${p.num}.`
-      : `Formé à l’académie, il rejoint l’effectif professionnel à ${p.age} ans, avec le numéro ${p.num}.`,
+      ? t('L’effectif tombait sous {SQUAD_MIN} joueurs : formé à l’académie, il monte d’office à {age} ans, avec le numéro {num}.', { SQUAD_MIN, age: p.age, num: p.num })
+      : t('Formé à l’académie, il rejoint l’effectif professionnel à {age} ans, avec le numéro {num}.', { age: p.age, num: p.num }),
   });
   return p;
 }
@@ -65,7 +66,7 @@ export function ensureSquadMin(s, { joined = s.seasonNumber, extra = [] } = {}) 
       left = left.filter((q) => q !== y);
       raiseYouth(s, y, { auto: true, joined });
       raised.push(y);
-      lines.push(`${y.name} (${y.age} ans) monte d’office de l’académie : l’effectif ne descend jamais sous ${SQUAD_MIN} joueurs.`);
+      lines.push(t('{name} ({age} ans) monte d’office de l’académie : l’effectif ne descend jamais sous {SQUAD_MIN} joueurs.', { name: y.name, age: y.age, SQUAD_MIN }));
       continue;
     }
     const pos = thinnestLine(s) || ['G', 'D', 'M', 'A'][s.players.length % 4];
@@ -76,7 +77,7 @@ export function ensureSquadMin(s, { joined = s.seasonNumber, extra = [] } = {}) 
     distinctFace(s.players, p); // aucun sosie dans l'effectif
     s.players.push(p);
     setDeal(s, p, { wage: refWage(p, s.divisionIndex), years: 2 + joined - s.seasonNumber }); // deux saisons pour faire ses preuves
-    lines.push(`Amateur de secours : ${p.name} (${p.age} ans) complète l’effectif.`);
+    lines.push(t('Amateur de secours : {name} ({age} ans) complète l’effectif.', { name: p.name, age: p.age }));
   }
   return { lines, raised };
 }

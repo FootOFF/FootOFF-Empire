@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { t } from '../i18n/index';
 
 // Commandes : souris et clavier, toucher, manette. La manette est traduite en touches du clavier (flèches, Échap)
 // et son bouton A appuie sur l'élément qui a le focus : tout menu piloté au clavier l'est aussi à la manette, sans

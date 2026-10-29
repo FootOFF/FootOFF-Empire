@@ -1,0 +1,64 @@
+1873	Goals	Goles	الأهداف
+1874	Assists	Asist.	التمريرات الحاسمة
+1875	MotM	MVP	رجل م.
+1876	Rating	Nota	التقييم
+1877	S	T	م
+1878	· in progress	· en curso	· جارٍ
+1879	His biggest matches	Sus partidos más grandes	أكبر مبارياته
+1880	<0/>–<1/><2/> against <3/>	<0/>–<1/><2/> contra <3/>	<0/>–<1/><2/> ضد <3/>
+1881	Season <0/> · <1/><2/><3/><4/>	Temporada <0/> · <1/><2/><3/><4/>	الموسم <0/> · <1/><2/><3/><4/>
+1882	{n} assist	{n} asistencia	تمريرة حاسمة واحدة
+1883	{n} assists	{n} asistencias	{"one":"تمريرة حاسمة واحدة","two":"تمريرتان حاسمتان","few":"{n} تمريرات حاسمة","other":"{n} تمريرة حاسمة"}
+1884	· man of the match	· jugador del partido	· رجل المباراة
+1885	Honours	Distinciones	الأوسمة
+1886	No honours yet.	Aún sin distinciones.	لا أوسمة بعد.
+1887	Confirm	Confirmar	تأكيد
+1888	Cancel	Cancelar	إلغاء
+1889	Warning	Atención	تنبيه
+1890	Confirmation	Confirmación	تأكيد
+1891	To confirm, type <0/>	Para confirmar, escribe <0/>	للتأكيد، اكتب <0/>
+1892	Type {typed} to confirm	Escribe {typed} para confirmar	اكتب {typed} للتأكيد
+1893	Enter	Intro	إدخال
+1894	Esc	Esc	خروج
+1895	{max} KB	{max} KB	{max} ك.ب
+1896	Code copied ({sizeOf}). Paste it into the game settings on your other device.	Código copiado ({sizeOf}). Pégalo en los ajustes del juego en tu otro dispositivo.	تم نسخ الرمز ({sizeOf}). الصقه في إعدادات اللعبة على جهازك الآخر.
+1897	Copy it yourself below.	Cópialo tú mismo abajo.	انسخه بنفسك أدناه.
+1898	{clubName} · season {season} · {division}	{clubName} · temporada {season} · {division}	{clubName} · الموسم {season} · {division}
+1899	no game	ninguna partida	لا توجد لعبة
+1900	GAME (save code):\n{v}	PARTIDA (código de guardado):\n{v}	اللعبة (رمز الحفظ):\n{v}
+1901	Report copied ({sizeOf}). Paste it into your message, along with what you were doing when the problem happened.	Informe copiado ({sizeOf}). Pégalo en tu mensaje, junto con lo que hacías cuando ocurrió el problema.	تم نسخ التقرير ({sizeOf}). الصقه في رسالتك مع ما كنت تفعله لحظة حدوث المشكلة.
+1902	Report a problem	Informar de un problema	الإبلاغ عن مشكلة
+1903	The report contains the game version, your browser, the screen size and the last twenty errors. With the game, it also contains its save code: that is what allows exactly what happened to be replayed. Nothing is sent: you paste it into a message yourself.	El informe contiene la versión del juego, tu navegador, el tamaño de la pantalla y los veinte últimos errores. Con la partida, contiene también su código de guardado: es lo que permite reproducir exactamente lo que pasó. No se envía nada: lo pegas tú mismo en un mensaje.	يتضمن التقرير إصدار اللعبة ومتصفحك وحجم الشاشة وآخر عشرين خطأ. ومع اللعبة يتضمن أيضًا رمز حفظها: وهذا ما يسمح بإعادة ما حدث بدقة. لا يُرسل أي شيء: أنت من يلصقه في رسالة.
+1904	Back	Volver	رجوع
+1905	Without the game	Sin la partida	دون اللعبة
+1906	With the game	Con la partida	مع اللعبة
+1907	Save code	Código de guardado	رمز الحفظ
+1908	Restore a save	Restaurar una partida guardada	استعادة حفظ
+1909	Save code for {v} · season {v2}	Código de guardado de {v} · temporada {v2}	رمز حفظ {v} · الموسم {v2}
+1910	Report to send	Informe para enviar	تقرير للإبلاغ
+1911	Paste here a save code copied from another device.	Pega aquí un código de guardado copiado desde otro dispositivo.	الصق هنا رمز حفظ منسوخًا من جهاز آخر.
+1913	Restore	Restaurar	استعادة
+1914	Settings	Ajustes	الإعدادات
+1915	Sound	Sonido	الصوت
+1916	Stadium atmosphere, whistle, coins and menu sounds.	Ambiente del estadio, silbato, monedas y sonidos del menú.	أجواء الملعب والصافرة والعملات وأصوات القائمة.
+1917	Vibrations	Vibración	الاهتزاز
+1918	Goal scored, sale, construction.	Gol marcado, venta, construcción.	هدف مسجل، بيع، بناء.
+1919	Not available on this browser (that is the case on iPhone).	No disponible en este navegador (es el caso del iPhone).	غير متاح على هذا المتصفح (كما هو الحال على iPhone).
+1920	If the game struggles, the 3D is rendered with fewer pixels (slightly less sharp) to become smooth again. No effect on a device that keeps up.	Si el juego va lento, el 3D se calcula con menos píxeles (algo menos nítido) para volver a ir fluido. Sin efecto en un dispositivo que sigue el ritmo.	إذا تباطأت اللعبة، تُحسب الصورة ثلاثية الأبعاد بعدد أقل من البكسلات (أقل دقة بقليل) لتعود سلسة. ولا أثر لذلك على جهاز يواكب اللعبة.
+1921	Full screen	Pantalla completa	ملء الشاشة
+1922	The game fills the whole screen, without the browser bar. Esc to leave it; when on, it comes back at your first click when you reopen the game.	El juego ocupa toda la pantalla, sin la barra del navegador. Esc para salir; activado, vuelve con tu primer clic al reabrir el juego.	تشغل اللعبة الشاشة كلها، من دون شريط المتصفح. اضغط Esc للخروج؛ وإذا كان مفعّلًا يعود مع أول نقرة عند إعادة فتح اللعبة.
+1923	Copy the save code	Copiar el código de guardado	نسخ رمز الحفظ
+1924	{clubName} · season {season}, {division} · to continue on another device.	{clubName} · temporada {season}, {division} · para seguir en otro dispositivo.	{clubName} · الموسم {season}، {division} · للمتابعة على جهاز آخر.
+1925	No game in progress.	Ninguna partida en curso.	لا توجد لعبة جارية.
+1926	Restore a save code	Restaurar un código de guardado	استعادة رمز حفظ
+1927	The current game will be kept as a backup copy.	La partida actual se guardará como copia de seguridad.	ستُحفظ اللعبة الحالية كنسخة احتياطية.
+1928	Pick up a game copied from another device.	Retoma una partida copiada desde otro dispositivo.	استأنف لعبة منسوخة من جهاز آخر.
+1929	A report to paste into a message: version, errors, and your game if you agree.	Un informe para pegar en un mensaje: versión, errores y tu partida si lo aceptas.	تقرير تلصقه في رسالة: الإصدار والأخطاء، ولعبتك إن وافقت.
+1930	<0/> · Season <1/>	<0/> · Temporada <1/>	<0/> · الموسم <1/>
+1931	Standing	Clasificación	الترتيب
+1932	Points	Puntos	النقاط
+1933	Matchdays	Jornadas	الجولات
+1934	Next match · <0/>	Próximo partido · <0/>	المباراة المقبلة · <0/>
+1935	Season over, time for the review	Temporada terminada, toca el balance	انتهى الموسم، حان وقت الحصيلة
+1936	Season objectives · <0/>/<1/>	Objetivos de la temporada · <0/>/<1/>	أهداف الموسم · <0/>/<1/>
+1937	Bank balance	Tesorería	الخزينة

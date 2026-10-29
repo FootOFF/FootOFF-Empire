@@ -1,0 +1,83 @@
+3725	<0/> / <1/> sessions	<0/> / <1/> sesiones	<0/> / <1/> حصص
+3726	Choose the {toLowerCase}	Elegir el {toLowerCase}	اختيار {toLowerCase}
+3727	Session · <0/>	Sesión · <0/>	حصة · <0/>
+3728	Who is training?	¿Quién entrena?	من يتدرب؟
+3729	Age <0/> · pot. <1/> · <2/><3/>	<0/> años · pot. <1/> · <2/><3/>	<0/> عامًا · الإمكانات <1/> · <2/><3/>
+3730	· {programLabel} programme	· programa {programLabel}	· برنامج {programLabel}
+3731	maxed out	al máximo	في الحد الأقصى
+3732	Distinctive trait programmes	Programas de rasgos distintivos	برامج السمات المميزة
+3733	At level 3 of the centre, a player can learn a distinctive trait (Finisher, Rock, Leader, Cat…) in<0/>sessions in the right category; <1/> only at level 5.	En el nivel 3 del centro, un jugador puede aprender un rasgo distintivo (Rematador, Roca, Líder, Gato…) en<0/>sesiones de la categoría adecuada; <1/> solo en el nivel 5.	في المستوى 3 من المركز يمكن للاعب أن يتعلم سمة مميزة (القنّاص، الصخرة، القائد، القط…) في<0/>حصص من الفئة المناسبة؛ و<1/> فقط في المستوى 5.
+3734	<0/> See the building · level <1/>	<0/> Ver el edificio · nivel <1/>	<0/> عرض المبنى · المستوى <1/>
+3735	A programme moves forward with each of the player’s sessions in the trait’s category; a very good drill (two thirds of the points) counts double. At the end, the trait is gained for good (<0/> sessions at your level, three traits at most per player).	Un programa avanza con cada sesión del jugador en la categoría del rasgo; una prueba muy lograda (dos tercios de los puntos) cuenta doble. Al final, el rasgo se adquiere para siempre (<0/> sesiones a tu nivel, tres rasgos como máximo por jugador).	يتقدم البرنامج مع كل حصة يؤديها اللاعب في فئة السمة؛ والتمرين الناجح جدًا (ثلثا النقاط) يُحتسب مرتين. وفي النهاية تُكتسب السمة إلى الأبد (<0/> حصص في مستواك، وثلاث سمات على الأكثر لكل لاعب).
+3736	In progress	En curso	جارٍ
+3737	sessions in {toLowerCase} · {programDesc}	sesiones de {toLowerCase} · {programDesc}	حصص في {toLowerCase} · {programDesc}
+3738	New programme	Nuevo programa	برنامج جديد
+3739	Every player is already following a programme or has all the traits he can learn.	Cada jugador ya sigue un programa o tiene todos los rasgos que puede aprender.	كل لاعب يتبع برنامجًا بالفعل أو اكتسب كل السمات التي يمكنه تعلمها.
+3740	{name}’s programme	Programa de {name}	برنامج {name}
+3741	Programme · <0/> sessions	Programa · <0/> sesiones	البرنامج · <0/> حصص
+3742	Current traits:	Rasgos actuales:	السمات الحالية:
+3743	Sessions in <0/>	Sesiones de <0/>	حصص في <0/>
+3744	Start	Empezar	بدء
+3745	drills this season	pruebas esta temporada	تمارين هذا الموسم
+3746	level gained	de nivel ganado	مكسب في المستوى
+3747	average score played	puntuación media jugada	متوسط النتيجة المؤداة
+3748	After the last match, group session: <0/> improved, <1/> of level in all.	Tras el último partido, sesión colectiva: <0/> progresado, <1/> de nivel en total.	بعد المباراة الأخيرة، الحصة الجماعية: <0/> تطورًا، و<1/> في المستوى إجمالًا.
+3749	{n} player	{n} jugador ha	حقق لاعب واحد
+3750	{n} players	{n} jugadores han	{"one":"حقق لاعب واحد","two":"حقق لاعبان","few":"حقق {n} لاعبين","other":"حقق {n} لاعبًا"}
+3751	played, {round}%{v}	jugada, {round} %{v}	مؤدّى، {round}%{v}
+3752	· very good	· muy lograda	· ناجح جدًا
+3753	· {programLabel} trait gained	· rasgo {programLabel} adquirido	· اكتُسبت سمة {programLabel}
+3754	No drills this season yet.	Ninguna prueba esta temporada por ahora.	لا تمارين هذا الموسم حتى الآن.
+3755	Level <0/> / <1/>	Nivel <0/> / <1/>	المستوى <0/> / <1/>
+3756	Each level makes the sessions stronger; trait programmes open at level 3.<0/>	Cada nivel hace más fuertes las sesiones; los programas de rasgos se abren en el nivel 3.<0/>	كل مستوى يجعل الحصص أقوى؛ وتُفتح برامج السمات في المستوى 3.<0/>
+3757	In the Elite League, twice as many matchdays: each session counts for two thirds there.	En la Liga Élite, el doble de jornadas: cada sesión cuenta allí dos tercios.	في دوري النخبة ضعف عدد الجولات: تُحتسب كل حصة بثلثيها.
+3758	New drill	Nueva prueba	تمرين جديد
+3759	4 basic	4 básicas	4 أساسية
+3760	<0/>% of the room to improve	<0/> % del margen	<0/>% من الهامش
+3761	: progress ×	: progreso ×	: التطور ×
+3762	per session	por sesión	في كل حصة
+3763	, new drill: {toLowerCase}	, nueva prueba: {toLowerCase}	، تمرين جديد: {toLowerCase}
+3764	, distinctive trait programmes	, programas de rasgos distintivos	، برامج السمات المميزة
+3766	· matchday {round}	· jornada {round}	· الجولة {round}
+3767	National Cup · {v}	Copa Nacional · {v}	الكأس الوطنية · {v}
+3768	European Cup · {v}	Copa de Europa · {v}	كأس أوروبا · {v}
+3769	against {opp} ·	contra {opp} ·	ضد {opp} ·
+3770	{compLabel} (season {season})	{compLabel} (temporada {season})	{compLabel} (الموسم {season})
+3771	Finish top of the County League.	Terminar primero en la Liga Provincial.	إنهاء دوري المقاطعة في المركز الأول.
+3772	Finish top of the Regional League.	Terminar primero en la Liga Regional.	إنهاء الدوري الإقليمي في المركز الأول.
+3773	Finish top of the National League.	Terminar primero en la Liga Nacional.	إنهاء الدوري الوطني في المركز الأول.
+3774	Finish top of the Elite League.	Terminar primero en la Liga Élite.	إنهاء دوري النخبة في المركز الأول.
+3775	Go all the way in the National Cup.	Llegar hasta el final de la Copa Nacional.	الذهاب حتى النهاية في الكأس الوطنية.
+3776	Win the European Club Cup.	Ganar la Copa de Europa de Clubes.	الفوز بكأس أوروبا للأندية.
+3777	Honours	Palmarés	سجل الألقاب
+3778	{n} win	{n} victoria	فوز واحد
+3779	{n} wins	{n} victorias	{"one":"فوز واحد","two":"فوزان","few":"{n} انتصارات","other":"{n} فوزًا"}
+3780	empty cabinet	vitrina vacía	خزانة فارغة
+3781	The forecourt is waiting for its first trophy: every competition won takes its place there, on its plinth.	La explanada espera su primer trofeo: cada competición ganada ocupa allí su lugar, sobre su pedestal.	تنتظر الساحة الأمامية أول كأس لها: كل مسابقة يُفاز بها تأخذ مكانها هناك على قاعدتها.
+3782	Last final won against <0/>	Última final ganada contra <0/>	آخر نهائي فاز به أمام <0/>
+3783	Career journey	Recorrido de carrera	مسار المسيرة
+3784	{n} / {length} chapters	{n} / {length} capítulos	{n} / {length} فصول
+3785	Chapter in progress: {title}	Capítulo en curso: {title}	الفصل الجاري: {title}
+3786	Chapter <0/> · in progress	Capítulo <0/> · en curso	الفصل <0/> · جارٍ
+3787	Journey completed	Recorrido cumplido	اكتمل المسار
+3788	Every chapter has been written	Todos los capítulos están escritos	كُتبت كل الفصول
+3789	The club has climbed every step of its career.	El club ha subido todos los peldaños de su carrera.	صعد النادي كل درجات مسيرته.
+3790	Achieved	Conseguido	مُنجز
+3791	Every chapter pays its bonus as soon as it is completed. The board’s objectives, for their part, are played season by season.	Cada capítulo paga su prima en cuanto se cumple. Los objetivos de la directiva, en cambio, se juegan temporada a temporada.	يصرف كل فصل مكافأته فور إنجازه. أما أهداف مجلس الإدارة فتُلعب موسمًا بموسم.
+3792	Achievements	Logros	الإنجازات
+3793	To unlock	Por desbloquear	بانتظار الفتح
+3794	Longest run without conceding	Racha más larga sin encajar	أطول سلسلة دون استقبال أهداف
+3795	Top scorer in a season	Máximo goleador en una temporada	أفضل هداف في موسم
+3796	Most capped	Más partidos	الأكثر مشاركة
+3797	Biggest sale	Mayor venta	أكبر صفقة بيع
+3798	{name}{v} · Season {left}	{name}{v} · Temporada {left}	{name}{v} · الموسم {left}
+3799	· to {club}	· al {club}	· إلى {club}
+3800	Biggest purchase	Mayor compra	أكبر صفقة شراء
+3801	All-time record	Balance histórico	الحصيلة الكاملة
+3802	Wins	Victorias	الانتصارات
+3803	{round}% of matches	{round} % de los partidos	{round}% من المباريات
+3804	No match played yet.	Ningún partido jugado por ahora.	لم تُلعب أي مباراة حتى الآن.
+3805	Avenue of honour · {plural}	Paseo de honor · {plural}	ممر الشرف · {plural}
+3806	Avenue of honour	Paseo de honor	ممر الشرف
+3807	Career	Carrera	المسيرة
+3808	Records	Récords	الأرقام القياسية

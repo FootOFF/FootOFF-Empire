@@ -1,0 +1,83 @@
+1710	Levels	Niveles	المستويات
+1711	after level {v}	tras el nivel {v}	بعد المستوى {v}
+1712	Level {l} · {label}	Nivel {l} · {label}	المستوى {l} · {label}
+1713	new	nuevo	جديد
+1714	Keep your finger pressed	Mantén el dedo pulsado	أبقِ إصبعك مضغوطًا
+1715	Upgrade	Mejorar	تطوير
+1716	<0/> Level <1/>: <2/>, after level <3/>	<0/> Nivel <1/>: <2/>, tras el nivel <3/>	<0/> المستوى <1/>: <2/>، بعد المستوى <3/>
+1717	Back to level <0/>	Volver al nivel <0/>	العودة إلى المستوى <0/>
+1718	<0/> Level <1/> built<2/>	<0/> Nivel <1/> construido<2/>	<0/> المستوى <1/> مبني<2/>
+1719	· current level	· nivel actual	· المستوى الحالي
+1720	Preview: {name}	Vista previa: {name}	معاينة: {name}
+1721	· Recommended by the staff	· Recomendado por el cuerpo técnico	· يوصي به الجهاز الفني
+1722	Close the preview	Cerrar la vista previa	إغلاق المعاينة
+1723	{name}, level {shown}	{name}, nivel {shown}	{name}، المستوى {shown}
+1724	the quarter-finals	los cuartos	ربع النهائي
+1725	the semi-final	la semifinal	نصف النهائي
+1726	the final	la final	النهائي
+1727	the round of 16	los octavos de final	ثمن النهائي
+1728	the quarter-finals	los cuartos de final	ربع النهائي
+1729	MD	J	ج
+1730	away	fuera	خارج
+1731	matchday {round}	jornada {round}	الجولة {round}
+1732	· away	· fuera	· خارج الأرض
+1733	Win	Victoria	فوز
+1734	Defeat	Derrota	هزيمة
+1735	Draw	Empate	تعادل
+1736	Winners	Campeón	البطل
+1737	Through	Clasificado	متأهل
+1738	Knocked out	Eliminado	مُقصى
+1740	Season <0/>	Temporada <0/>	الموسم <0/>
+1741	Season over	Temporada terminada	انتهى الموسم
+1742	{plural} of {length}	{plural} de {length}	{plural} من {length}
+1743	{n} fixture played	{n} fecha jugada	موعد واحد لُعب
+1744	{n} fixtures played	{n} fechas jugadas	{"one":"موعد واحد لُعب","two":"موعدان لُعبا","few":"{n} مواعيد لُعبت","other":"{n} موعدًا لُعب"}
+1745	Season fixtures	Fechas de la temporada	مواعيد الموسم
+1746	Up next	A continuación	التالي
+1747	to come	por jugar	قادمة
+1748	draw	sorteo	القرعة
+1749	To be drawn	Por sortear	في انتظار القرعة
+1750	Prediction with your current XI	Pronóstico con tu once actual	التوقعات بتشكيلتك الحالية
+1751	Qualification <0/>	Clasificación <0/>	التأهل <0/>
+1752	<0/>win	<0/>victoria	<0/>فوز
+1753	<0/>draw	<0/>empate	<0/>تعادل
+1754	<0/>loss	<0/>derrota	<0/>خسارة
+1755	Even match	Partido igualado	مباراة متكافئة
+1756	gap of {fmtRating}	diferencia de {fmtRating}	فارق {fmtRating}
+1757	You are favourites	Eres favorito	أنت المرشح الأوفر حظًا
+1758	+{fmtRating} level	+{fmtRating} de nivel	+{fmtRating} في المستوى
+1759	Opponent favourite	Rival favorito	الخصم هو المرشح
+1760	{minus} level	{minus} de nivel	{minus} في المستوى
+1761	Level {fmtRating}	Nivel {fmtRating}	المستوى {fmtRating}
+1762	{n} point	{n} punto	نقطة واحدة
+1763	{n} points	{n} puntos	{"one":"نقطة واحدة","two":"نقطتان","few":"{n} نقاط","other":"{n} نقطة"}
+1764	Budget {budget}	Presupuesto {budget}	الميزانية {budget}
+1765	Next match	Próximo partido	المباراة المقبلة
+1766	Upcoming	Próximamente	قادمة
+1767	Draw to come	Sorteo pendiente	القرعة
+1768	Not played	No disputado	لم تُلعب
+1769	Played	Jugado	لُعبت
+1770	Scorer	Goleador	المسجل
+1771	Scorers	Goleadores	المسجلون
+1772	No goals scored	Ningún gol marcado	لم يُسجل أي هدف
+1773	rating {fmtRating}	nota {fmtRating}	التقييم {fmtRating}
+1774	Venue	Lugar	المكان
+1775	TV rights only	solo derechos de TV	حقوق البث فقط
+1776	Away	Fuera	خارج الأرض
+1777	Attendance	Asistencia	الحضور
+1778	stadium full	estadio lleno	الملعب ممتلئ
+1779	of {capacity} seats	de {capacity} localidades	من {capacity} مقعد
+1780	Takings	Recaudación	الإيرادات
+1781	Formation	Dibujo	الخطة
+1782	Tickets	Entradas	التذاكر
+1783	{name} pricing	tarifa {name}	تسعيرة {name}
+1784	Match played before the club archived its match sheets: only the score is known.	Partido jugado antes de que el club archivara sus fichas de partido: solo se conoce el marcador.	مباراة لُعبت قبل أن يؤرشف النادي أوراق مبارياته: لا تُعرف سوى النتيجة.
+1785	Balance of power	Relación de fuerzas	موازين القوى
+1786	no ticketing at the opponent’s ground	sin taquilla en casa del rival	لا تذاكر على ملعب الخصم
+1787	Expected TV rights	Derechos de TV previstos	حقوق البث المتوقعة
+1788	Expected attendance	Asistencia prevista	الحضور المتوقع
+1789	Expected takings	Recaudación prevista	الإيرادات المتوقعة
+1790	Winner’s prize	Prima del campeón	مكافأة البطل
+1791	Prize if through	Prima si se clasifica	المكافأة عند التأهل
+1792	The opponent will be drawn after <0/>.	El rival se sorteará tras <0/>.	سيُحدد الخصم بالقرعة بعد <0/>.
+1793	the previous round	la ronda anterior	الدور السابق

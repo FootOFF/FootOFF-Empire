@@ -1,4 +1,5 @@
 import { DIVISIONS } from './constants';
+import { numLocale, t } from '../i18n/index';
 
 // Direction du club : le bureau du président, où se négocient les contrats du club. Son niveau (0 à 5) pèse dans
 // chaque négociation, et les chances affichées sont celles qui décident (tirage au moment de la réponse).
@@ -45,8 +46,8 @@ export function negotiateTv(s, ask) {
   s.tvDeal = { season: s.seasonNumber, ask: a, ok };
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'club',
-    title: ok ? `Droits TV : le diffuseur accepte +${Math.round(a * 100)} %` : 'Droits TV : le diffuseur refuse la hausse',
-    text: ok ? `Chaque match de championnat rapportera ${tvPerMatch(s).toLocaleString('fr-FR')} € de droits TV cette saison.` : 'Le contrat de base est reconduit pour la saison.',
+    title: ok ? t('Droits TV : le diffuseur accepte +{round} %', { round: Math.round(a * 100) }) : t('Droits TV : le diffuseur refuse la hausse'),
+    text: ok ? t('Chaque match de championnat rapportera {toLocaleString} € de droits TV cette saison.', { toLocaleString: tvPerMatch(s).toLocaleString(numLocale()) }) : t('Le contrat de base est reconduit pour la saison.'),
   });
   return s;
 }

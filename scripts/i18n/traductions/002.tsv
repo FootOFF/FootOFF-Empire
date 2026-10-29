@@ -1,0 +1,60 @@
+69	Upgrade	Mejora	تطوير
+70	{name} · level {v}	{name} · nivel {v}	{name} · المستوى {v}
+71	Smoothness	Fluidez	السلاسة
+72	The game is struggling on this device	El juego va lento en este dispositivo	اللعبة بطيئة على هذا الجهاز
+73	Turn on “Smooth on slow devices” in the settings: the 3D will be slightly less sharp, but smooth.	Activa «Fluidez en dispositivos lentos» en los ajustes: el 3D será algo menos nítido, pero fluido.	فعّل «السلاسة على الأجهزة البطيئة» في الإعدادات: ستكون الصورة ثلاثية الأبعاد أقل دقة بقليل، لكنها سلسة.
+74	This code is not a FootOFF Empire save.	Este código no es una partida guardada de FootOFF Empire.	هذا الرمز ليس حفظًا من FootOFF Empire.
+75	{clubName}: game restored	{clubName}: partida restaurada	{clubName}: تمت استعادة اللعبة
+76	Season {seasonNumber}, {name}. Your previous game is kept as a backup copy.	Temporada {seasonNumber}, {name}. La partida anterior se guarda como copia de seguridad.	الموسم {seasonNumber}، {name}. اللعبة السابقة محفوظة كنسخة احتياطية.
+77	Replace {clubName} with {clubName2}?	¿Sustituir {clubName} por {clubName2}?	استبدال {clubName} بـ{clubName2}؟
+78	Your current game (season {seasonNumber}, {name}) will be kept as a backup copy, and {clubName} (season {seasonNumber2}, {name2}) will take its place.	La partida actual (temporada {seasonNumber}, {name}) pasará a ser la copia de seguridad, y {clubName} (temporada {seasonNumber2}, {name2}) ocupará su lugar.	ستُحفظ اللعبة الحالية (الموسم {seasonNumber}، {name}) كنسخة احتياطية، وسيحل {clubName} (الموسم {seasonNumber2}، {name2}) محلها.
+79	Restore this game	Restaurar esta partida	استعادة هذه اللعبة
+80	Keep my game	Conservar mi partida	الاحتفاظ بلعبتي
+81	The season hasn’t started	La temporada no ha empezado	لم يبدأ الموسم بعد
+82	The creator will start the season from the League Headquarters.	El creador iniciará la temporada desde la Sede de la Liga.	سيُطلق المنشئ الموسم من مقر الدوري.
+83	Browser too old	Navegador demasiado antiguo	المتصفح قديم جدًا
+84	Your club is saved online, but this browser cannot open it: update it or play on your other device.	Tu club está guardado en línea, pero este navegador no puede abrirlo: actualízalo o juega en tu otro dispositivo.	ناديك محفوظ على الإنترنت، لكن هذا المتصفح لا يستطيع فتحه: حدّثه أو العب على جهازك الآخر.
+85	League with friends	Liga entre amigos	دوري الأصدقاء
+86	League server unreachable	Servidor de ligas inaccesible	تعذّر الوصول إلى خادم الدوريات
+87	Club not resumed	Club no recuperado	لم تتم استعادة النادي
+88	Try again in a moment.	Vuelve a intentarlo en un momento.	أعد المحاولة بعد قليل.
+89	Club resumed	Club recuperado	تمت استعادة النادي
+90	You pick up your game saved online {savedWhen}: {stageOf}.	Retomas tu partida guardada en línea {savedWhen}: {stageOf}.	تستأنف لعبتك المحفوظة على الإنترنت {savedWhen}: {stageOf}.
+91	Unreadable online save	Partida en línea ilegible	تعذّرت قراءة الحفظ على الإنترنت
+92	You carry on with the game on this device.	Sigues con la partida de este dispositivo.	ستواصل باللعبة الموجودة على هذا الجهاز.
+93	Your online save could not be read.	No se ha podido leer tu partida guardada en línea.	تعذّرت قراءة حفظك على الإنترنت.
+94	Resume the online version	Recuperar la versión en línea	استئناف النسخة المحفوظة على الإنترنت
+95	Keep the version on this device	Conservar la versión de este dispositivo	الاحتفاظ بنسخة هذا الجهاز
+96	{label} · the furthest along	{label} · la más avanzada	{label} · الأكثر تقدمًا
+97	Two devices	Dos dispositivos	جهازان
+98	Which version of your club do you keep?	¿Qué versión de tu club quieres conservar?	أي نسخة من ناديك تريد الاحتفاظ بها؟
+99	Your club has also been played on another device since your last game here. The version you don’t keep will be replaced.	Tu club también se ha jugado en otro dispositivo desde tu última partida aquí. La versión que no conserves será sustituida.	لُعب بناديك أيضًا على جهاز آخر منذ آخر مرة لعبت فيها هنا. ستُستبدل النسخة التي لا تحتفظ بها.
+100	Online	En línea	على الإنترنت
+101	saved {savedWhen}	guardada {savedWhen}	حُفظت {savedWhen}
+102	On this device	En este dispositivo	على هذا الجهاز
+103	played here {savedWhen}	jugada aquí {savedWhen}	لُعبت هنا {savedWhen}
+104	Deal agreed	Acuerdo cerrado	تم الاتفاق
+105	{n} joins your squad.	{n} se une a tu plantilla.	ينضم {n} إلى تشكيلتك.
+106	Too late	Demasiado tarde	فات الأوان
+107	Signing not confirmed	Fichaje no confirmado	لم يتم تأكيد التعاقد
+108	Another club in the league signed {n} just before you.	Otro club de la liga ha fichado a {n} justo antes que tú.	تعاقد نادٍ آخر في الدوري مع {n} قبلك بلحظات.
+109	Transfer completed	Traspaso cerrado	تمت الصفقة
+110	{v} arrives from {v2}: {fee} paid.	{v} llega {v2}: {fee} pagados.	{v} قادم من {v2}: دُفع {fee}.
+111	The player	El jugador	اللاعب
+112	your friend’s club	del club de tu amigo	نادي صديقك
+113	{who} joins {v}: {fee} goes into your account.	{who} se une {v}: {fee} entran en tu cuenta.	ينضم {who} إلى {v}: يدخل {fee} إلى حسابك.
+114	your friend’s club	al club de tu amigo	نادي صديقك
+115	Reply not registered	Respuesta no registrada	لم يتم تسجيل الرد
+116	Withdrawal not registered	Retirada no registrada	لم يتم تسجيل السحب
+117	Offer not sent	Oferta no enviada	لم يُرسل العرض
+118	Your offer could not be withdrawn: it is still pending. Try again in a moment.	No se ha podido retirar tu oferta: sigue pendiente. Vuelve a intentarlo en un momento.	تعذّر سحب عرضك: لا يزال معلّقًا. أعد المحاولة بعد قليل.
+119	Team confirmed	Equipo confirmado	تم تأكيد الفريق
+120	Matchday {v}: kick-off ten minutes after the last team is confirmed, {deadlineText} at the latest.	Jornada {v}: el saque inicial llega diez minutos después de que se confirme el último equipo, a más tardar {deadlineText}.	الجولة {v}: تنطلق المباراة بعد عشر دقائق من تأكيد آخر فريق، وفي موعد أقصاه {deadlineText}.
+121	Team not sent	Equipo no enviado	لم يُرسل الفريق
+122	Start a new adventure?	¿Empezar una nueva aventura?	بدء مغامرة جديدة؟
+123	The save for {clubName} (season {seasonNumber}, {name}) will be erased for good.	La partida de {clubName} (temporada {seasonNumber}, {name}) se borrará definitivamente.	سيُحذف حفظ {clubName} (الموسم {seasonNumber}، {name}) نهائيًا.
+124	Erase and start over	Borrar y empezar de nuevo	الحذف والبدء من جديد
+125	Over to you, chairman!	¡Te toca, presidente!	حان دورك أيها الرئيس!
+126	FootOFF FC	FootOFF FC	FootOFF FC
+127	Tutorial skipped	Tutorial omitido	تم تخطي الدليل التعليمي
+128	The staff will keep advising you.	El cuerpo técnico seguirá aconsejándote.	سيواصل الجهاز الفني تقديم النصائح لك.

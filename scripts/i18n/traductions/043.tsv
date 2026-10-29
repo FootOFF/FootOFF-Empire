@@ -1,0 +1,73 @@
+2616	Substitutions	Cambios	التبديلات
+2617	Second-half formation	Dibujo de la segunda parte	خطة الشوط الثاني
+2618	Second-half tactics	Táctica de la segunda parte	تكتيك الشوط الثاني
+2619	Your team · badge: match rating · under the name: condition	Tu equipo · indicador: nota del partido · bajo el nombre: condición	فريقك · الشارة: تقييم المباراة · تحت الاسم: اللياقة
+2620	<0/> Resume the second half	<0/> Reanudar la segunda parte	<0/> استئناف الشوط الثاني
+2621	The club infirmary: the chances shown are the ones that decide.<0/>	La enfermería del club: las probabilidades mostradas son las que deciden.<0/>	عيادة النادي: الفرص المعروضة هي التي تحسم الأمر.<0/>
+2622	Prevention	Prevención	الوقاية
+2623	<0/> injury risk in matches	<0/> de riesgo de lesión en los partidos	<0/> من خطر الإصابة في المباريات
+2624	Physios, conditioning and recovery: the bigger the centre, the fewer injuries your players suffer, especially when tired.	Fisios, preparación y recuperación: cuanto más crece el centro, menos se lesionan tus jugadores, sobre todo cansados.	أخصائيو العلاج الطبيعي والإعداد والاستشفاء: كلما كبر المركز قلّت إصابات لاعبيك، خاصة عند الإرهاق.
+2625	No injuries: the whole squad is available. After a match, injured players appear here, with the exact chance of treating them.	Ningún lesionado: toda la plantilla está disponible. Tras un partido, los lesionados aparecen aquí, con la probabilidad exacta de tratarlos.	لا مصابين: التشكيلة كلها متاحة. وبعد المباراة يظهر المصابون هنا، مع الفرصة الدقيقة لعلاجهم.
+2626	<0/> · level <1/>	<0/> · nivel <1/>	<0/> · المستوى <1/>
+2627	Recovered	Recuperado	متعافٍ
+2628	Treatment successful: {first} is back one match sooner	Tratamiento con éxito: {first} vuelve un partido antes	علاج ناجح: يعود {first} قبل موعده بمباراة
+2629	{first} has recovered	{first} está recuperado	تعافى {first}
+2630	Treatment had no effect	Tratamiento sin efecto	لم يُجدِ العلاج
+2631	Still {matches} out instead of {before}.	Aún {matches} de baja en lugar de {before}.	لا يزال غائبًا {matches} بدلًا من {before}.
+2632	Available for the next match.	Disponible para el próximo partido.	متاح للمباراة المقبلة.
+2633	The injury runs its course: {matches} out. A new treatment is possible after the next match.	La lesión sigue su curso: {matches} de baja. Nuevo tratamiento posible tras el próximo partido.	تأخذ الإصابة مجراها: غياب {matches}. ويمكن محاولة علاج جديد بعد المباراة المقبلة.
+2634	<0/> for the treatment · <1/>	<0/> el tratamiento · <1/>	<0/> للعلاج · <1/>
+2635	fit for the next match	recuperado para el próximo partido	جاهز للمباراة المقبلة
+2636	Chance of success	Probabilidad de éxito	فرصة النجاح
+2637	Treatment not possible.	Tratamiento imposible.	العلاج غير ممكن.
+2638	{v} short	Faltan {v}	ينقصك {v}
+2639	Treat {first}	Tratar a {first}	علاج {first}
+2640	One treatment per injured player per fixture, costing 15% of his annual wage. The chance rises with the centre’s level and falls with the severity of the injury.	Un tratamiento por lesionado y por fecha, pagado al 15 % de su salario anual. La probabilidad sube con el nivel del centro y baja con la gravedad de la lesión.	علاج واحد لكل مصاب في كل موعد، بتكلفة 15% من راتبه السنوي. وترتفع الفرصة مع مستوى المركز وتنخفض مع خطورة الإصابة.
+2641	All	Todos	الكل
+2642	Goalkeepers	Porteros	حراس المرمى
+2643	Attack	Ataque	الهجوم
+2644	Free agents	Libres	أحرار
+2645	Under contract	Con contrato	مرتبطون بعقود
+2646	For my XI	Para mi once	لتشكيلتي
+2647	Price	Precio	السعر
+2648	New	Nuevo	جديد
+2649	Gem	Joya	جوهرة
+2650	Bargain	Ganga	صفقة رابحة
+2651	Price falling	Precio a la baja	السعر في انخفاض
+2652	Price rising	Precio al alza	السعر في ارتفاع
+2653	End of contract	Fin de contrato	نهاية العقد
+2654	at the asking price	al precio pedido	بالسعر المطلوب
+2655	{d}% {v} the asking price	{d} % {v} precio pedido	{d}% {v} السعر المطلوب
+2656	below	por debajo del	أقل من
+2657	above	por encima del	أعلى من
+2658	<0/>, the season would end in the red: the board would then sell your biggest earners.	<0/>, la temporada acabaría en números rojos: la directiva vendería entonces tus salarios más altos.	<0/>، سينتهي الموسم بعجز: وسيبيع مجلس الإدارة حينها أصحاب أعلى الرواتب.
+2659	<0/>, your funds would no longer cover the <1/> already owed in wages and upkeep: the takings from the remaining matches will have to make up the difference before the review.	<0/>, tu caja ya no cubriría los <1/> ya comprometidos en salarios y mantenimiento: la recaudación de los partidos restantes tendrá que completarlos antes del balance.	<0/>، لن تغطي خزينتك <1/> المستحقة مسبقًا للرواتب والصيانة: يجب أن تكمل إيرادات المباريات المتبقية الفارق قبل الحصيلة.
+2660	{name}’s profile	Ficha de {name}	بطاقة {name}
+2661	Free agent	Jugador libre	لاعب حر
+2662	Age <0/> · <1/> · wage asked <2/>	<0/> años · <1/> · salario pedido <2/>	<0/> عامًا · <1/> · الراتب المطلوب <2/>
+2663	Stop tracking	Dejar de seguir	إلغاء المتابعة
+2664	Track this player	Seguir a este jugador	متابعة هذا اللاعب
+2665	Stop tracking {name}	Dejar de seguir a {name}	إلغاء متابعة {name}
+2666	Track {name}	Seguir a {name}	متابعة {name}
+2667	Compare	Comparar	مقارنة
+2668	Compare {name}	Comparar a {name}	مقارنة {name}
+2669	reached	alcanzado	بلغه
+2670	Recommended	Recomendado	موصى به
+2671	Gain over the weakest starter in his position	Ganancia sobre el titular más flojo de su posición	المكسب مقارنة بأضعف أساسي في مركزه
+2672	XI +<0/>	Once +<0/>	التشكيلة +<0/>
+2673	Courted<0/>	Pretendido<0/>	مطلوب<0/>
+2674	by {interest} clubs	por {interest} clubes	{"one":"","two":" من ناديين","few":" من {interest} أندية","other":" من {interest} ناديًا"}
+2675	price rising	precio al alza	السعر في ارتفاع
+2676	price falling	precio a la baja	السعر في انخفاض
+2677	fee · contract {plural}	traspaso · contrato {plural}	مبلغ الانتقال · عقد {plural}
+2678	signing-on bonus	prima de fichaje	مكافأة التوقيع
+2679	Squad full	Plantilla completa	التشكيلة مكتملة
+2680	The seller won’t talk again before the next matchday	El vendedor no volverá a negociar antes de la próxima jornada	لن يعود البائع إلى التفاوض قبل الجولة المقبلة
+2681	Negotiate his contract	Negociar su contrato	التفاوض على عقده
+2682	Counter-offer	Contraoferta	عرض مضاد
+2683	Talks closed	Negociación cerrada	المحادثات مغلقة
+2684	Make an offer	Hacer una oferta	تقديم عرض
+2685	XI	Once	التشكيلة
+2686	Actions	Acciones	الإجراءات
+2687	Contract	Contrato	العقد
+2688	Closed	Cerrada	مغلقة

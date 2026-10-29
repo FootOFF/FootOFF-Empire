@@ -1,0 +1,71 @@
+2340	Your place becomes free. You can come back with the code as long as the season hasn’t started.	Tu plaza queda libre. Podrás volver con el código mientras la temporada no haya empezado.	يصبح مكانك شاغرًا. يمكنك العودة بالرمز ما دام الموسم لم يبدأ.
+2341	The computer takes over {withArticle} until the end. Your access is erased: you won’t be able to come back to this league.	La máquina se hace cargo {withArticle} hasta el final. Tu acceso se borra: no podrás volver a esta liga.	يتولى الحاسوب إدارة {withArticle} حتى النهاية. ويُحذف وصولك: لن تتمكن من العودة إلى هذا الدوري.
+2342	Close the room	Cerrar la sala	إغلاق الغرفة
+2343	Leave	Salir	مغادرة
+2344	Stay	Quedarse	البقاء
+2345	The {name} league is closed.	La liga {name} está cerrada.	أُغلق دوري {name}.
+2346	You have left the {name} league.	Has dejado la liga {name}.	غادرت دوري {name}.
+2347	Permanent deletion	Eliminación definitiva	حذف نهائي
+2348	Delete {name} for everyone?	¿Eliminar {name} para todos?	حذف {name} لدى الجميع؟
+2349	Your club, {v}the standings and the honours of this league disappear. {v2}Nothing can be recovered.	Tu club, {v}la clasificación y el palmarés de esta liga desaparecen. {v2}No se podrá recuperar nada.	يختفي ناديك و{v}الترتيب وسجل ألقاب هذا الدوري. {v2}لا يمكن استرجاع أي شيء.
+2350	your friend’s,	el de tu amigo,	نادي صديقك، و
+2351	{"zero":"","one":"","other":"your {friends} friends’ clubs, "}	{"zero":"","one":"","other":"los de tus {friends} amigos, "}	{"zero":"","one":"","two":"ناديا صديقيك، و","few":"أندية أصدقائك الـ{friends}، و","other":"أندية أصدقائك الـ{friends}، و"}
+2352	Your friend will see that it has closed.	Tu amigo verá que ha cerrado.	سيرى صديقك أنه أُغلق.
+2353	{"zero":"","one":"","other":"Your friends will see that it has closed. "}	{"zero":"","one":"","other":"Tus amigos verán que ha cerrado. "}	{"zero":"","one":"","other":"سيرى أصدقاؤك أنه أُغلق. "}
+2354	Delete	Eliminar	حذف
+2355	Keep	Conservar	الاحتفاظ
+2356	The {name} league has been deleted.	La liga {name} ha sido eliminada.	حُذف دوري {name}.
+2357	Start {name}?	¿Lanzar {name}?	إطلاق {name}؟
+2358	No one else will be able to sign up{v}. Matchday 1 will be played ten minutes after everyone has confirmed their team, at {hourText} at the latest.	Nadie más podrá inscribirse{v}. La 1.ª jornada se jugará diez minutos después de que todos hayan confirmado su equipo, a las {hourText} como muy tarde.	لن يتمكن أحد بعد الآن من التسجيل{v}. وستُلعب الجولة الأولى بعد عشر دقائق من تأكيد الجميع لفرقهم، عند {hourText} على أقصى تقدير.
+2359	, and {tn} to the computer	, y {tn} a la máquina	، و{tn} إلى الحاسوب
+2360	the free place will go	la plaza libre irá	سيذهب المكان الشاغر
+2361	the {free} free places will go	las {free} plazas libres irán	{"one":"سيذهب المكان الشاغر","two":"سيذهب المكانان الشاغران","few":"ستذهب الأماكن الشاغرة الـ{free}","other":"ستذهب الأماكن الشاغرة الـ{free}"}
+2362	Start the season	Lanzar la temporada	إطلاق الموسم
+2363	Wait a little longer	Esperar un poco más	الانتظار قليلًا
+2364	The season has started.	La temporada ha comenzado.	انطلق الموسم.
+2365	Remove {pseudo}?	¿Quitar a {pseudo}?	إزالة {pseudo}؟
+2366	{capitalize} {v} the waiting room. {pseudo} can come back with the code.	{capitalize} {v} la sala de espera. {pseudo} podrá volver con el código.	{v} {capitalize} غرفة الانتظار. يمكن لـ{pseudo} العودة بالرمز.
+2367	leave	dejan	يغادر
+2368	leaves	deja	يغادر
+2369	Remove	Quitar	إزالة
+2370	<0/> · code<1/><2/>	<0/> · código<1/><2/>	<0/> · الرمز<1/><2/>
+2371	Waiting room	Sala de espera	غرفة الانتظار
+2372	Season {season} · matchday {min} / {rounds}	Temporada {season} · jornada {min} / {rounds}	الموسم {season} · الجولة {min} / {rounds}
+2373	<0/> · matchdays at <1/> at the latest, the creator’s time	<0/> · jornadas a las <1/> como muy tarde, hora del creador	<0/> · الجولات عند <1/> على أقصى تقدير، بتوقيت المنشئ
+2374	Refresh the league	Actualizar la liga	تحديث الدوري
+2375	Refresh	Actualizar	تحديث
+2376	Invite your friends	Invita a tus amigos	ادعُ أصدقاءك
+2377	Code {join}	Código {join}	الرمز {join}
+2378	Invitation link	Enlace de invitación	رابط الدعوة
+2379	Copy the link	Copiar el enlace	نسخ الرابط
+2380	{name} · FootOFF Empire	{name} · FootOFF Empire	{name} · FootOFF Empire
+2381	Join my league {name} on FootOFF Empire (code {code}).	Únete a mi liga {name} en FootOFF Empire (código {code}).	انضم إلى دوريي {name} على FootOFF Empire (الرمز {code}).
+2382	Share	Compartir	مشاركة
+2383	Code	Código	الرمز
+2384	Copy the code	Copiar el código	نسخ الرمز
+2385	The clubs	Los clubes	الأندية
+2386	at least two friends to start	al menos dos amigos para lanzar	صديقان على الأقل للإطلاق
+2387	Free place	Plaza libre	مكان شاغر
+2388	the computer will take it at kick-off	la máquina la ocupará al saque inicial	سيأخذه الحاسوب عند صافرة البداية
+2389	· creator	· creador	· المنشئ
+2390	· you	· tú	· أنت
+2391	Waiting for at least one friend.	Esperando a al menos un amigo.	بانتظار صديق واحد على الأقل.
+2392	The creator will start the season when everyone is here.	El creador lanzará la temporada cuando estén todos.	سيُطلق المنشئ الموسم عندما يحضر الجميع.
+2393	A waiting room that is never started closes by itself after 48 hours.	Una sala de espera que nunca se lanza se cierra sola a las 48 horas.	غرفة الانتظار التي لا تُطلق تُغلق تلقائيًا بعد 48 ساعة.
+2394	To find your club again on another device. Keep it to yourself: it gives control of your club.	Para recuperar tu club en otro dispositivo. Guárdalo para ti: da el control de tu club.	لاستعادة ناديك على جهاز آخر. احتفظ به لنفسك: فهو يمنح التحكم في ناديك.
+2395	Show	Mostrar	إظهار
+2396	Copy	Copiar	نسخ
+2397	Close the waiting room	Cerrar la sala de espera	إغلاق غرفة الانتظار
+2398	Leave the waiting room	Salir de la sala de espera	مغادرة غرفة الانتظار
+2399	Leave this league	Dejar esta liga	مغادرة هذا الدوري
+2400	Delete the league	Eliminar la liga	حذف الدوري
+2401	all confirmed · kick-off in	todos han confirmado · saque inicial en	أكد الجميع · صافرة البداية بعد
+2402	kick-off…	saque inicial…	صافرة البداية…
+2403	team to confirm	equipo por confirmar	الفريق بانتظار التأكيد
+2404	At home	En casa	على أرضنا
+2405	Opponent · <0/><1/>	Rival · <0/><1/>	الخصم · <0/><1/>
+2406	<0/> Play my club	<0/> Jugar con mi club	<0/> اللعب بناديي
+2407	Your club is run like a solo game: complex, squad, training, transfer market. “Play” confirms your team before the deadline; once the matchday has been played, you watch your match.	Tu club se gestiona como una partida en solitario: complejo, plantilla, entrenamiento, mercado. «Jugar» confirma tu equipo antes de la hora; una vez jugada la jornada, ves tu partido.	يُدار ناديك كلعبة فردية: المجمّع والتشكيلة والتدريب وسوق الانتقالات. يؤكد زر «العب» فريقك قبل الموعد؛ وبعد أن تُلعب الجولة تشاهد مباراتك.
+2408	Matchday {min} / {rounds}	Jornada {min} / {rounds}	الجولة {min} / {rounds}
+2409	{deadlineText} at the latest	{deadlineText} como muy tarde	{deadlineText} على أقصى تقدير
+2410	to confirm	por confirmar	بانتظار التأكيد

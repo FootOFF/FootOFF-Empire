@@ -1,6 +1,7 @@
 // Palette FootOFF Media : or #C7A15A, noir #090909, blanc cassé #F3F2EE.
 import * as THREE from 'three';
 import { PLOT_SIZE } from './layout';
+import { t } from '../i18n/index';
 
 // Modèles procéduraux : repli tant qu'un GLB n'existe pas pour (bâtiment, niveau).
 // Géométries et matériaux sont mis en cache et partagés : ne jamais les disposer individuellement
@@ -260,11 +261,11 @@ const boardTex = () => canvasTexture('board', 512, 256, (g2, w, h) => {
   g2.fillStyle = '#0b0b0c'; g2.fillRect(0, 0, w, h);
   drawMonogram(g2, 70, 70, 96);
   g2.fillStyle = goldGrad(g2, 0, 0, w, 0);
-  g2.font = '600 46px Inter, Arial, sans-serif';
-  g2.fillText('TRANSFERTS', 130, 86);
+  g2.font = '600 46px Inter, Cairo, Arial, sans-serif';
+  g2.fillText(t('Transferts').toUpperCase(), 130, 86);
   g2.fillStyle = 'rgba(243,242,238,.85)';
-  g2.font = '500 28px Inter, Arial, sans-serif';
-  ['⇄  ARRIVÉES', '⇄  DÉPARTS', '⇄  MERCATO'].forEach((t, i) => g2.fillText(t, 40, 150 + i * 36));
+  g2.font = '500 28px Inter, Cairo, Arial, sans-serif';
+  [t('Arrivées'), t('Départs'), t('Mercato')].forEach((x, i) => g2.fillText(`⇄  ${x.toUpperCase()}`, 40, 150 + i * 36));
   g2.fillStyle = '#C7A15A'; g2.fillRect(0, h - 10, w, 10);
 });
 const logoMat = () => {
@@ -564,8 +565,8 @@ const leagueTex = () => canvasTexture('leagueBoard', 512, 640, (g2, w, h) => {
   g2.fillStyle = '#0b0b0c'; g2.fillRect(0, 0, w, h);
   drawMonogram(g2, 66, 66, 88);
   g2.fillStyle = goldGrad(g2, 0, 0, w, 0);
-  g2.font = '700 54px Inter, Arial, sans-serif';
-  g2.fillText('LIGUE', 124, 84);
+  g2.font = '700 54px Inter, Cairo, Arial, sans-serif';
+  g2.fillText(t('Ligue').toUpperCase(), 124, 84);
   g2.fillRect(28, 118, w - 56, 4);
   [21, 19, 16, 15, 12, 10, 7, 4].forEach((pts, i) => {
     const y = 142 + i * 60;

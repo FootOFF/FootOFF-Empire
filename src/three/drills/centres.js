@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index';
 import * as THREE from 'three';
 import { BALL_R, GOAL, KITS } from './stage';
 import { agent, bezier, clamp01, cones, easeOut, rnd, stride, walkTo } from './kit';
@@ -47,7 +48,7 @@ export function createCrosses(stage, ctx) {
 
   function hud() {
     const live = s.phase === 'wing' || s.phase === 'kickoff' || s.phase === 'cross';
-    const prompt = live ? (s.runAt === null ? 'Lance ta course' : 'Saute pour reprendre le centre') : '';
+    const prompt = live ? (s.runAt === null ? t('Lance ta course') : t('Saute pour reprendre le centre')) : '';
     ctx.hud({ round: Math.max(1, s.k + 1), rounds: CROSSES, points: s.points, max: CROSSES_MAX, prompt, action: !!prompt });
   }
 
@@ -77,11 +78,11 @@ export function createCrosses(stage, ctx) {
     const dj = peak === null ? 1 : Math.abs(peak - s.ballAt);
     let q;
     let text;
-    if (late > 0.12) { q = 0; text = s.runAt === null ? 'Pas de course' : 'Trop tard'; } else {
+    if (late > 0.12) { q = 0; text = s.runAt === null ? t('Pas de course') : t('Trop tard'); } else {
       const early = Math.max(0, -late - 0.35); // arrivé bien avant le ballon : reprise à l'arrêt
       q = clamp01(1 - dj / 0.24) * (1 - Math.min(0.45, early * 0.6));
       if (s.jumpAt === null) q = 0.15;
-      text = q >= 0.8 ? 'But de la tête' : q >= 0.5 ? 'But' : q >= 0.2 ? 'Arrêté par le gardien' : 'Reprise manquée';
+      text = q >= 0.8 ? t('But de la tête') : q >= 0.5 ? t('But') : q >= 0.2 ? t('Arrêté par le gardien') : t('Reprise manquée');
     }
     const pts = q >= 0.8 ? 100 : q >= 0.5 ? 70 : q >= 0.2 ? 30 : 0;
     const goal = q >= 0.5;

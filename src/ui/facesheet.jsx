@@ -4,6 +4,7 @@ import { createInitialState } from '../game/engine';
 import { faceOf, silhouetteOf } from '../game/faces';
 import { POS_LABELS } from '../game/constants';
 import { Portrait } from './portrait';
+import { t, tr } from '../i18n/index';
 
 // Planche de visages (galerie : ?ecran=visages), pour juger la variété d'un coup d'œil : 40 joueurs tirés comme sur le
 // marché (18 à 36 ans), les mêmes en petit (taille des listes), un effectif de départ (aucun sosie) et des jeunes de
@@ -18,7 +19,7 @@ export function FacesSheet() {
       return p;
     };
     const crowdList = Array.from({ length: 40 }, (_, k) => mk({ level: 2 + (k % 5) }, 18 + ((k * 7) % 19)));
-    const s = createInitialState('FootOFF FC');
+    const s = createInitialState(t('FootOFF FC'));
     const youthList = Array.from({ length: 8 }, () => mk({ youth: true, academy: 3 }));
     return { crowd: crowdList, squad: s.players, youth: youthList };
   }, []);
@@ -35,21 +36,21 @@ export function FacesSheet() {
   const head = { font: '700 15px var(--font-disp)', letterSpacing: '.08em', textTransform: 'uppercase', color: '#c7a15a', margin: '18px 0 10px' };
   return (
     <div style={{ position: 'fixed', inset: 0, overflowY: 'auto', background: '#0d0d10', padding: '16px 16px 40px' }}>
-      <div style={head}>Visages · marché (96 px)</div>
+      <div style={head}>{t('Visages · marché (96 px)')}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         {crowd.map((p) => (
           <div key={p.id} style={cell}>
             <Portrait p={p} size={96} />
             <span style={name}>{p.name}</span>
-            <span style={sub}>{p.age} ans · {POS_LABELS[p.pos]}</span>
+            <span style={sub}>{tr('<0/> ans · <1/>', [p.age, POS_LABELS[p.pos]])}</span>
           </div>
         ))}
       </div>
-      <div style={head}>Les mêmes en petit (34 px)</div>
+      <div style={head}>{t('Les mêmes en petit (34 px)')}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {crowd.map((p) => <Portrait key={p.id} p={p} size={34} />)}
       </div>
-      <div style={head}>Effectif de départ (52 px) · {twins.size ? `${twins.size} sosies` : 'aucun sosie'}</div>
+      <div style={head}>{tr('Effectif de départ (52 px) · <0/>', [twins.size ? t('{size} sosies', { size: twins.size }) : t('aucun sosie')])}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         {squad.map((p) => (
           <div key={p.id} style={{ ...cell, width: 76 }}>
@@ -58,12 +59,12 @@ export function FacesSheet() {
           </div>
         ))}
       </div>
-      <div style={head}>Académie (64 px)</div>
+      <div style={head}>{t('Académie (64 px)')}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         {youth.map((p) => (
           <div key={p.id} style={{ ...cell, width: 84 }}>
-            <Portrait p={p} size={64} club="Racing de Montfleury" />
-            <span style={sub}>{p.name} · {p.age} ans</span>
+            <Portrait p={p} size={64} club={t('Racing de Montfleury')} />
+            <span style={sub}>{tr('<0/> · <1/> ans', [p.name, p.age])}</span>
           </div>
         ))}
       </div>

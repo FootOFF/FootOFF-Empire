@@ -1,0 +1,60 @@
+288	Your goalkeeper	Tu portero	حارس مرماك
+289	Your defence	Tu defensa	دفاعك
+290	Your midfield	Tu centro del campo	خط وسطك
+291	Your attack	Tu ataque	هجومك
+292	{followedCount} players tracked	{followedCount} jugadores seguidos	{followedCount} لاعبين قيد المتابعة
+293	Season heading into the red	Temporada rumbo a los números rojos	الموسم يتجه نحو العجز
+294	Forecast: −{v} after wages ({wages}). Sell a substitute or avoid expensive signings.	Previsión: −{v} tras los salarios ({wages}). Vende a un suplente o evita los fichajes caros.	التوقعات: −{v} بعد الرواتب ({wages}). بِع لاعبًا بديلًا أو تجنّب الصفقات المكلفة.
+295	See the finances	Ver las finanzas	عرض المالية
+296	Wage bill too heavy	Masa salarial demasiado alta	كتلة الرواتب ثقيلة جدًا
+297	Wages ({wages}) exceed what the season should bring in. Sell a substitute, or let a player go at the end of his contract.	Los salarios ({wages}) superan lo que debería generar la temporada. Vende a un suplente o deja marchar a un jugador al final de su contrato.	تتجاوز الرواتب ({wages}) ما يُتوقع أن يدرّه الموسم. بِع لاعبًا بديلًا، أو اترك لاعبًا يرحل عند نهاية عقده.
+298
+299	{length} contracts end this season	{length} contratos terminan esta temporada	{length} عقود تنتهي هذا الموسم
+300	{name}: final year of contract	{name}: último año de contrato	{name}: السنة الأخيرة من العقد
+301	{v} for free at the end of the season, with no fee. {v3} before the season ends.	{v} libre{v2} al final de la temporada, sin traspaso. {v3} antes de que acabe la temporada.	{v} مجانًا بين الموسمين، دون مقابل. {v3} قبل نهاية الموسم.
+302	{names} will leave	{names} se irán	سيرحل {names}
+303	He will leave	Se irá	سيرحل
+304	Extend them from their profile or the Board’s Contracts tab, or sell them	Renuévalos desde su ficha o la pestaña Contratos de la Directiva, o véndelos	مدّد عقودهم من بطاقاتهم أو من تبويب العقود في الإدارة، أو بِعهم
+305	Extend him from his profile or the Board’s Contracts tab, or sell him	Renuévalo desde su ficha o la pestaña Contratos de la Directiva, o véndelo	مدّد عقده من بطاقته أو من تبويب العقود في الإدارة، أو بِعه
+306	See the squad	Ver la plantilla	عرض التشكيلة
+307	See his profile	Ver su ficha	عرض بطاقته
+308	{length} youngsters in their final season	{length} jóvenes en su última temporada	{length} شبان في موسمهم الأخير
+309	{name}: final season at the academy	{name}: última temporada en la cantera	{name}: الموسم الأخير في الأكاديمية
+310	{v} {YOUTH_LEAVE_AGE} at the end of the season. Promote {v2} to the first team before the season ends, or {v3} the club.	{v} {YOUTH_LEAVE_AGE} años al final de la temporada. Súbe{v2} al primer equipo antes de que acabe la temporada; si no, {v3} el club.	{v} {YOUTH_LEAVE_AGE} عامًا بين الموسمين. رقِّ{v2} إلى الفريق الأول قبل نهاية الموسم، وإلا {v3} النادي.
+311	{names} will turn	{names} cumplirán	سيبلغ {names}
+312	He will turn	Cumplirá	سيبلغ
+313	they will leave	dejarán	سيغادرون
+314	he will leave	dejará	سيغادر
+315	See the academy	Ver la cantera	عرض الأكاديمية
+316	Negotiate this season’s TV rights	Negocia los derechos de TV de la temporada	فاوِض على حقوق البث لهذا الموسم
+317	Once a season, your Board can ask the broadcaster for higher TV rights. The raise applies to the matches that follow: the sooner you ask, the more it brings in.	Una vez por temporada, tu Directiva puede pedir a la televisión una subida de los derechos. Se aplica a los partidos siguientes: cuanto antes la pidas, más rinde.	يمكن لإدارتك مرة واحدة في الموسم أن تطلب من الجهة الناقلة زيادة حقوق البث. تسري الزيادة على المباريات التالية: كلما طلبتها مبكرًا زاد مردودها.
+318	Go to the Board	Ir a la Directiva	الذهاب إلى الإدارة
+319	{name} can be treated	{name} puede ser tratado	يمكن علاج {name}
+320	{length} injured players to treat	{length} lesionados por tratar	{"one":"لاعب مصاب واحد بحاجة إلى العلاج","two":"لاعبان مصابان بحاجة إلى العلاج","few":"{length} لاعبين مصابين بحاجة إلى العلاج","other":"{length} لاعبًا مصابًا بحاجة إلى العلاج"}
+321	The medical centre can attempt a treatment before the next match: if it works, he’s back one match sooner.	El centro médico puede intentar un tratamiento antes del próximo partido: si sale bien, volverá un partido antes.	يمكن للمركز الطبي محاولة علاجه قبل المباراة المقبلة: إن نجح العلاج عاد قبل موعده بمباراة.
+322	The medical centre can attempt to treat {names} before the next match: each successful treatment brings an injured player back one match sooner.	El centro médico puede intentar tratar a {names} antes del próximo partido: cada tratamiento con éxito adelanta un partido la vuelta de un lesionado.	يمكن للمركز الطبي محاولة علاج {names} قبل المباراة المقبلة: كل علاج ناجح يعيد مصابًا قبل موعده بمباراة.
+323	Go to the medical centre	Ir al centro médico	الذهاب إلى المركز الطبي
+324	Your XI could do better	Tu once puede rendir más	تشكيلتك الأساسية قادرة على الأفضل
+325	Some substitutes are stronger or fresher than certain starters. Choose “Fresh XI” or “Rotate” in the pre-match.	Algunos suplentes están más fuertes o más frescos que ciertos titulares. Elige «Once fresco» o «Rotar» en la previa.	بعض البدلاء أقوى أو أكثر جاهزية من بعض الأساسيين. اختر «التشكيلة المرتاحة» أو «المداورة» في ما قبل المباراة.
+326	Prepare the match	Preparar el partido	التحضير للمباراة
+327	Training session before the match	Sesión de entrenamiento antes del partido	حصة تدريبية قبل المباراة
+328	Training session to finish	Sesión de entrenamiento por terminar	حصة تدريبية يجب إكمالها
+329	{tn}, to play in 3D, simulate or leave to the staff (training centre setting).	{tn}, para jugar en 3D, simular o dejar en manos del cuerpo técnico (ajuste del centro).	{tn}، تُلعب بالأبعاد الثلاثية أو تُحاكى أو تُترك للجهاز الفني (إعداد المركز).
+330	One player can still improve before the next match: one drill	Un jugador aún puede progresar antes del próximo partido: una prueba	لا يزال بإمكان لاعب واحد التطور قبل المباراة المقبلة: تمرين واحد
+331	{length} players can still improve before the next match: one drill each	{length} jugadores aún pueden progresar antes del próximo partido: una prueba cada uno	{"one":"لا يزال بإمكان لاعب واحد التطور قبل المباراة المقبلة: تمرين واحد","two":"لا يزال بإمكان لاعبَين التطور قبل المباراة المقبلة: تمرين لكل منهما","few":"لا يزال بإمكان {length} لاعبين التطور قبل المباراة المقبلة: تمرين لكل منهم","other":"لا يزال بإمكان {length} لاعبًا التطور قبل المباراة المقبلة: تمرين لكل منهم"}
+332	Go to training	Ir al entrenamiento	الذهاب إلى التدريب
+333
+334	Start a trait programme	Lanza un programa de rasgos	أطلق برنامجًا للسمات
+335	{tn} learn a distinctive trait at the training centre (Finisher, Provider, Rock…): no programme is running, and each one moves forward with every session.	{tn} aprender un rasgo distintivo en el centro de entrenamiento (Rematador, Pasador, Roca…): no hay ningún programa en curso, y cada uno avanza con cada sesión.	{tn} تعلّم سمة مميزة في مركز التدريب (القنّاص، الممرّر، الصخرة…): لا يوجد أي برنامج جارٍ، وكل برنامج يتقدم مع كل حصة.
+336	One player can	Un jugador puede	يمكن للاعب واحد
+337	{eligible} players can	{eligible} jugadores pueden	{"one":"يمكن للاعب واحد","two":"يمكن للاعبَين","few":"يمكن لـ{eligible} لاعبين","other":"يمكن لـ{eligible} لاعبًا"}
+338	See the programmes	Ver los programas	عرض البرامج
+339	Your stadium is sold out	Tu estadio cuelga el cartel de completo	ملعبك ممتلئ عن آخره
+340	{n} supporters are left outside. Switch to Premium or Prestige pricing: the ground stays full and every ticket brings in more.	{n} aficionados se quedan fuera. Pasa a la tarifa Premium o Prestigio: el estadio sigue lleno y cada entrada rinde más.	{n} مشجعًا يبقون خارج الملعب. انتقل إلى التسعيرة المميزة أو الفاخرة: يبقى الملعب ممتلئًا وتدرّ كل تذكرة أكثر.
+341	Set ticket prices	Ajustar las tarifas	ضبط أسعار التذاكر
+342	Expand your stadium	Amplía tu estadio	وسّع ملعبك
+343	{n} supporters are left outside at every home match. Level {v} offers {n2} seats, and you have the funds.	{n} aficionados se quedan fuera en cada partido en casa. El nivel {v} ofrece {n2} localidades, y tienes los fondos.	{n} مشجعًا يبقون خارج الملعب في كل مباراة على أرضك. يوفر المستوى {v} {n2} مقعد، ولديك الأموال اللازمة.
+344	See the stadium	Ver el estadio	عرض الملعب
+345	Your academy has spotted a youngster	Tu cantera ha detectado a un joven	رصدت أكاديميتك شابًا موهوبًا
+346	Your academy has spotted some youngsters	Tu cantera ha detectado a varios jóvenes	رصدت أكاديميتك شبانًا موهوبين
+347	{tn} for free, and {tn2} in your youth team. The list changes at the next scouting trip.	{tn} gratis, y {tn2} en tu equipo juvenil. La lista cambia en el próximo ojeo.	{tn} مجانًا، و{tn2} في فريق الشباب. تتغير القائمة في جولة الاستكشاف المقبلة.

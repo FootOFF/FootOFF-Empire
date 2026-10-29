@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index';
 import * as THREE from 'three';
 import { BALL_R, GOAL, KITS } from './stage';
 import { agent, bezier, clamp01, cones, pingPong, rnd } from './kit';
@@ -173,8 +174,8 @@ function createShooting(stage, ctx, cfg) {
   }
 
   function hud(extra = {}) {
-    const prompt = s.phase === 'aim' ? (s.retry ? 'Glisse plus franchement vers le but' : 'Glisse du ballon vers le but')
-      : s.phase === 'aimX' ? 'Direction : arrête la ligne' : s.phase === 'aimY' ? (cfg.wall ? 'Hauteur : au-dessus du mur' : 'Hauteur : arrête la ligne') : '';
+    const prompt = s.phase === 'aim' ? (s.retry ? t('Glisse plus franchement vers le but') : t('Glisse du ballon vers le but'))
+      : s.phase === 'aimX' ? t('Direction : arrête la ligne') : s.phase === 'aimY' ? (cfg.wall ? t('Hauteur : au-dessus du mur') : t('Hauteur : arrête la ligne')) : '';
     const aim = s.phase === 'aim';
     ctx.hud({
       round: Math.max(1, s.k + 1), rounds: SHOTS.length, points: s.points, max: MAX, prompt, action: s.phase === 'aimX' || s.phase === 'aimY',
@@ -220,9 +221,9 @@ function createShooting(stage, ctx, cfg) {
   function judge(x, y, off = 0) {
     const shot = SHOTS[s.k];
     const w = wallCheck(x, y, off);
-    if (w?.blocked) return { pts: 0, wall: true, text: 'Dans le mur', tone: 'bad' };
+    if (w?.blocked) return { pts: 0, wall: true, text: t('Dans le mur'), tone: 'bad' };
     const inGoal = Math.abs(x) < GOAL.w / 2 - BALL_R * 0.3 && y < GOAL.h - BALL_R * 0.3;
-    if (keeper && inGoal && Math.abs(x - s.keeperX) <= 0.13 && y <= 0.205) return { pts: 10, saved: true, text: 'Arrêté par le gardien', tone: 'meh' };
+    if (keeper && inGoal && Math.abs(x - s.keeperX) <= 0.13 && y <= 0.205) return { pts: 10, saved: true, text: t('Arrêté par le gardien'), tone: 'meh' };
     let best = null;
     for (const i of shot.on) {
       const t = targets[i];
@@ -235,11 +236,11 @@ function createShooting(stage, ctx, cfg) {
       const q = best.d / R;
       const pts = q <= 0.34 ? 100 : q <= 0.67 ? 75 : 50;
       const lucarne = cfg.wall && best.t.y > 0.15;
-      return { pts, target: best.t, inGoal, text: pts === 100 ? (lucarne ? 'Pleine lucarne' : 'En plein cœur') : pts === 75 ? 'Très bien' : 'Cible touchée', tone: pts === 100 ? 'gold' : 'good' };
+      return { pts, target: best.t, inGoal, text: pts === 100 ? (lucarne ? t('Pleine lucarne') : t('En plein cœur')) : pts === 75 ? t('Très bien') : t('Cible touchée'), tone: pts === 100 ? 'gold' : 'good' };
     }
-    if (onFrame) return { pts: 0, frame: true, text: 'Sur le montant', tone: 'bad' };
-    if (inGoal) return cfg.keeper ? { pts: 30, inGoal, text: 'But, hors cible', tone: 'good' } : { pts: 15, inGoal, text: 'Cadré, hors cible', tone: 'meh' };
-    return { pts: 0, text: y > GOAL.h ? 'Au-dessus' : 'À côté', tone: 'bad' };
+    if (onFrame) return { pts: 0, frame: true, text: t('Sur le montant'), tone: 'bad' };
+    if (inGoal) return cfg.keeper ? { pts: 30, inGoal, text: t('But, hors cible'), tone: 'good' } : { pts: 15, inGoal, text: t('Cadré, hors cible'), tone: 'meh' };
+    return { pts: 0, text: y > GOAL.h ? 'Au-dessus' : t('À côté'), tone: 'bad' };
   }
 
   function shoot() { // le ballon part une fraction de seconde après l'appui (le temps de la frappe)

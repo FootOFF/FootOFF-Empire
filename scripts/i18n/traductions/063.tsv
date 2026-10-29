@@ -1,0 +1,28 @@
+k:mi-temps	half-time	descanso	الاستراحة
+k:gardien	goalkeeper	portero	حارس مرمى
+k:gardiens	goalkeepers	porteros	حراس مرمى
+k:milieu	midfielder	centrocampista	لاعب وسط
+k:milieux	midfielders	centrocampistas	لاعبي وسط
+k:attaquant	forward	delantero	مهاجم
+k:attaquants	forwards	delanteros	مهاجمين
+k:{fmt} victoires	{fmt} wins	{fmt} victorias	{fmt} انتصار
+k:{fmt} buts	{fmt} goals	{fmt} goles	{fmt} هدف
+k:{fmt} spectateurs	{fmt} spectators	{fmt} espectadores	{fmt} متفرج
+k:8es	R16	Octavos	ثمن
+k:{fmt} places	{fmt} seats	{fmt} localidades	{fmt} مقعد
+k:{v} à {v2}	{v} to {v2}	{v} a {v2}	{v} إلى {v2}
+k:{dec} points	{dec} points	{dec} puntos	{dec} نقاط
+k:aucun	none	ninguno	لا شيء
+k:{name} suspendu	{name} suspended	{name} sancionado	{name} موقوف
+k:construit	built	construido	مبني
+k:· t.a.b. {a}-{b}	· pens {a}-{b}	· pen. {a}-{b}	· ترجيح {a}-{b}
+k:· t.a.b. {a}–{b}	· pens {a}–{b}	· pen. {a}–{b}	· ترجيح {a}–{b}
+k:pour	for	por	مقابل
+k:{v} pour {name}	{v} for {name}	{v} por {name}	{v} بشأن {name}
+k:descente	relegation	descenso	الهبوط
+k:poste	position	posición	المركز
+k:niveau	level	nivel	المستوى
+k:condition	condition	condición	اللياقة
+k:{n} fois	{n} times	{n} veces	{n} مرات
+k:{draw} N · {loss} D	{draw} D · {loss} L	{draw} E · {loss} D	{draw} ت · {loss} خ
+k:<0/> <1/>	<0/> <1/>	<0/> <1/>	<0/> <1/>

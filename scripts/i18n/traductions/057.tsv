@@ -1,0 +1,70 @@
+3424	Condition	Condición	اللياقة
+3425	Avg rating	Nota media	متوسط التقييم
+3426	Joined the club	Llegada al club	الانضمام إلى النادي
+3427	Fee	Traspaso	مبلغ الانتقال
+3428	Trained at the club · in the first team since season {v}	Formado en el club · en el primer equipo desde la temporada {v}	خريج النادي · في الفريق الأول منذ الموسم {v}
+3429	At the club since season {v}{tn}	En el club desde la temporada {v}{tn}	في النادي منذ الموسم {v}{tn}
+3430	· original squad	· plantilla inicial	· تشكيلة البداية
+3431	{n} card	{n} tarjeta	بطاقة واحدة
+3432	{n} cards	{n} tarjetas	{"one":"بطاقة واحدة","two":"بطاقتان","few":"{n} بطاقات","other":"{n} بطاقة"}
+3433	man of the match	jugador del partido	رجل المباراة
+3434	His whole career at the club	Toda su carrera en el club	مسيرته الكاملة في النادي
+3435	Last summer	Último verano	الصيف الماضي
+3436	season	temporada	الموسم
+3437	, rating {fmtRating}	, nota {fmtRating}	، التقييم {fmtRating}
+3438	A full match costs him about <0/> points; by the next match, he recovers <1/>% of his fatigue. A starter in every match, he settles at around <2/>%: tired, he plays worse and gets injured more often.	Un partido completo le cuesta unos <0/> puntos; hasta el partido siguiente, recupera un <1/> % de su cansancio. Titular en cada partido, se estabiliza en torno al <2/> %: cansado, rinde peor y se lesiona más a menudo.	تكلفه المباراة الكاملة نحو <0/> نقطة؛ وحتى المباراة التالية يستعيد <1/>% من إرهاقه. وإذا لعب أساسيًا في كل مباراة استقرت لياقته عند نحو <2/>%: وإن أُرهق لعب أسوأ وأُصيب أكثر.
+3439	Form · match ratings out of 10	Forma · notas de partido sobre 10	الحالة · تقييمات المباريات من 10
+3440	average <0/>	media <0/>	المتوسط <0/>
+3441	Not played yet<0/>.	Aún sin jugar<0/>.	لم يلعب بعد<0/>.
+3442	for the club	con el club	مع النادي
+3443	{n} Distinctive trait	{n} Rasgo distintivo	سمة مميزة
+3444	{n} Distinctive traits	{n} Rasgos distintivos	السمات المميزة
+3445	<0/> key for the position · <1>gold</1>: strong for your division	<0/> clave para el puesto · <1>oro</1>: fuerte para tu división	<0/> أساسية للمركز · <1>ذهبي</1>: قوي بالنسبة إلى درجتك
+3446	<0/> <1/> · wage asked <2/>	<0/> <1/> · salario pedido <2/>	<0/> <1/> · الراتب المطلوب <2/>
+3447	For sale at <0/> · <1/> <2/> · best offer <3/>	En venta por <0/> · <1/> <2/> · mejor oferta <3/>	معروض للبيع بـ<0/> · <1/> <2/> · أفضل عرض <3/>
+3448	For sale at <0/> · value <1/> · new clubs after every matchday	En venta por <0/> · valor <1/> · nuevos clubes tras cada jornada	معروض للبيع بـ<0/> · القيمة <1/> · أندية جديدة بعد كل جولة
+3449	Unsolicited offer from <0/>: <1/> · value <2/>	Oferta espontánea <0/>: <1/> · valor <2/>	عرض مفاجئ من <0/>: <1/> · القيمة <2/>
+3450	Wage <0/> per season · value <1/>	Salario <0/> por temporada · valor <1/>	الراتب <0/> في الموسم · القيمة <1/>
+3451	Attribute comparison, scale from 0 to {max}	Comparación de atributos, escala de 0 a {max}	مقارنة القدرات، على مقياس من 0 إلى {max}
+3452	Your squad	Tu plantilla	تشكيلتك
+3453	Player to compare	Jugador para comparar	اللاعب المراد مقارنته
+3454	Compare <0/> with…	Comparar a <0/> con…	مقارنة <0/> مع…
+3455	Comparison	Comparación	المقارنة
+3456	In position: <1/>	En el puesto <0/><1/>	في مركز <1/>
+3457		de
+3458	Close the comparison	Cerrar la comparación	إغلاق المقارنة
+3459	Player compared: {name}. Change	Jugador comparado: {name}. Cambiar	اللاعب المقارَن: {name}. تغيير
+3460	Gap between <0/> and <1/>	Diferencia <0/> respecto a <1/>	الفارق بين <0/> و<1/>
+3461	Cup {v}	Copa {v}	الكأس {v}
+3462	Europe {v}	Europa {v}	أوروبا {v}
+3463	(pens {a}–{b})	(pen. {a}–{b})	(ترجيح {a}–{b})
+3464	No matches	Ningún partido	لا مباريات
+3465	{when} · {score}{pens} at {opp}	{when} · {score}{pens} en casa del {opp}	{when} · {score}{pens} على ملعب {opp}
+3466	{when} · {score}{pens} against {opp}	{when} · {score}{pens} contra {opp}	{when} · {score}{pens} ضد {opp}
+3467	No match recorded for this season: detailed statistics start with the next match played.	Ningún partido registrado esta temporada: las estadísticas detalladas empiezan con el próximo partido jugado.	لا مباراة مسجلة لهذا الموسم: تبدأ الإحصائيات المفصلة مع المباراة المقبلة.
+3468	diff. {v}{v2}	dif. {v}{v2}	الفارق {v}{v2}
+3469	on average	de media	في المتوسط
+3470	Clean sheets	Porterías a cero	الشباك النظيفة
+3471	{n} match without conceding	{n} partido sin encajar	مباراة واحدة دون استقبال أهداف
+3472	{n} matches without conceding	{n} partidos sin encajar	{"one":"مباراة واحدة دون استقبال أهداف","two":"مباراتان دون استقبال أهداف","few":"{n} مباريات دون استقبال أهداف","other":"{n} مباراة دون استقبال أهداف"}
+3473	Shots per match	Tiros por partido	التسديدات في المباراة
+3474	{fmtRating} conceded	{fmtRating} concedidos	{fmtRating} مستقبَلة
+3475	shots on target	tiros a puerta	تسديدات على المرمى
+3476	Efficiency	Eficacia	الفاعلية
+3477	per match	por partido	في المباراة
+3478	Discipline	Disciplina	الانضباط
+3479	{n} yellow card	{n} tarjeta amarilla	بطاقة صفراء واحدة
+3480	{n} yellow cards	{n} tarjetas amarillas	{"zero":"لا بطاقات صفراء","one":"بطاقة صفراء واحدة","two":"بطاقتان صفراوان","few":"{n} بطاقات صفراء","other":"{n} بطاقة صفراء"}
+3481	{n} red card	{n} tarjeta roja	بطاقة حمراء واحدة
+3482	{n} red cards	{n} tarjetas rojas	{"zero":"لا بطاقات حمراء","one":"بطاقة حمراء واحدة","two":"بطاقتان حمراوان","few":"{n} بطاقات حمراء","other":"{n} بطاقة حمراء"}
+3483	Club records	Récords del club	أرقام النادي القياسية
+3484	all seasons	todas las temporadas	كل المواسم
+3485	Biggest win	Victoria más amplia	أكبر فوز
+3486	Heaviest defeat	Derrota más abultada	أثقل هزيمة
+3487	Highest-scoring match	Partido con más goles	المباراة الأغزر أهدافًا
+3488	Record attendance	Récord de asistencia	الرقم القياسي للحضور
+3489	Record takings	Recaudación récord	الإيرادات القياسية
+3490	Longest unbeaten run	Racha más larga sin perder	أطول سلسلة دون هزيمة
+3491	Longest winning run	Racha más larga de victorias	أطول سلسلة انتصارات
+3492	Division	División	الدرجة
+3493	Position	Puesto	المركز

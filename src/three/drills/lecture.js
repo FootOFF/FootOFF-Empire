@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index';
 import * as THREE from 'three';
 import { KITS } from './stage';
 import { agent, clamp01, easeInOut, rnd } from './kit';
@@ -146,7 +147,7 @@ export function createReading(stage, ctx) {
     const live = s.phase === 'choose';
     ctx.hud({
       round: Math.max(1, s.k + 1), rounds: SITUATIONS, points: s.points, max: LECTURE_MAX,
-      prompt: live ? 'Trouve la bonne passe' : '', action: live, timer: live ? clamp01(1 - s.t / LIMIT) : null, ...extra,
+      prompt: live ? t('Trouve la bonne passe') : '', action: live, timer: live ? clamp01(1 - s.t / LIMIT) : null, ...extra,
     });
   }
   function marks() { // numéros des partenaires, à l'écran (au-dessus de leur tête)
@@ -189,7 +190,7 @@ export function createReading(stage, ctx) {
         stop = { x: C.x + dx * t, z: C.z + dz * t };
       } else stop = { x: R.x + (d.x - R.x) * 0.5, z: R.z + (d.z - R.z) * 0.5 };
     }
-    s.anim = { t: 0, from: { x: C.x, z: C.z - 0.035 }, stop, thief, right, text: right ? (pts >= 90 ? 'Lecture parfaite' : 'Bonne lecture') : trap?.kind === 'lane' ? 'Passe interceptée' : 'Receveur marqué', pts };
+    s.anim = { t: 0, from: { x: C.x, z: C.z - 0.035 }, stop, thief, right, text: right ? (pts >= 90 ? t('Lecture parfaite') : t('Bonne lecture')) : trap?.kind === 'lane' ? t('Passe interceptée') : t('Receveur marqué'), pts };
     s.phase = 'pass';
     s.t = 0;
     lanes[i].material.uniforms.uColor.value.set(right ? 0xdec17f : 0xe07a6f);
@@ -246,7 +247,7 @@ export function createReading(stage, ctx) {
         if (Math.floor(s.t * 10) !== Math.floor((s.t - dt) * 10)) hud({ marks: marks() });
         if (s.t >= LIMIT) { // temps écoulé : passe perdue
           s.phase = 'pass';
-          s.anim = { t: 0, from: null, timeout: true, text: 'Trop tard', pts: 0 };
+          s.anim = { t: 0, from: null, timeout: true, text: t('Trop tard'), pts: 0 };
           s.t = 0;
           hud({ marks: [] });
         }

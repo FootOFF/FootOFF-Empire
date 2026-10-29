@@ -1,0 +1,78 @@
+751	League	Liga	الدوري
+752	National Cup	Copa Nacional	الكأس الوطنية
+753	Cup	Copa	الكأس
+754	European Club Cup	Copa de Europa de Clubes	كأس أوروبا للأندية
+755	European Cup	Copa de Europa	كأس أوروبا
+756	Round of 16	Octavos de final	ثمن النهائي
+757	Quarter-finals	Cuartos de final	ربع النهائي
+758	Semi-final	Semifinal	نصف النهائي
+759	Final	Final	النهائي
+760	QF	Cuartos	الربع
+761	SF	Semis	النصف
+762	Real	Real	ريال
+763	Inter	Inter	إنتر
+764	Sporting	Sporting	سبورتينغ
+765	Dynamo	Dinamo	دينامو
+766	Athletic	Athletic	أتلتيك
+767	Union	Unión	يونيون
+768	Olympia	Olympia	أولمبيا
+769	Rapid	Rapid	رابيد
+770	Vitoria	Vitoria	فيتوريا
+771	Royal	Royal	رويال
+772	Valmora	Valmora	فالمورا
+773	Castellano	Castellano	كاستيانو
+774	Lisvar	Lisvar	ليسفار
+775	Kravets	Kravets	كرافيتس
+776	Norrhavn	Norrhavn	نورهافن
+777	Melithi	Melithi	ميليثي
+778	Bergamonte	Bergamonte	بيرغامونتي
+779	Aldenburg	Aldenburg	ألدنبورغ
+780	Zurvic	Zurvic	زورفيتش
+781	Halmstrand	Halmstrand	هالمستراند
+782	Corvina	Corvina	كورفينا
+783	Ostrava Nova	Ostrava Nova	أوسترافا نوفا
+784	Belmira	Belmira	بلميرا
+785	Sankt Arlen	Sankt Arlen	سانكت آرلن
+786	Varnacci	Varnacci	فارناتشي
+787	Tirelli	Tirelli	تيريلي
+788	Doruva	Doruva	دوروفا
+789	Lindhaven	Lindhaven	ليندهافن
+790	Europe	Europa	أوروبا
+791	Matchday {round} / {total}	Jornada {round} / {total}	الجولة {round} / {total}
+792	Round of 16	Octavos	ثمن النهائي
+793	of the {name}	de la {name}	{name}
+794	TV rights: the broadcaster agrees to +{round}%	Derechos de TV: la televisión acepta +{round} %	حقوق البث: الجهة الناقلة توافق على +{round}%
+795	TV rights: the broadcaster refuses the increase	Derechos de TV: la televisión rechaza la subida	حقوق البث: الجهة الناقلة ترفض الزيادة
+796	Each league match will bring in €{toLocaleString} in TV rights this season.	Cada partido de liga generará {toLocaleString} € en derechos de TV esta temporada.	ستدرّ كل مباراة في الدوري {toLocaleString} € من حقوق البث هذا الموسم.
+797	The basic contract is renewed for the season.	El contrato básico se renueva para la temporada.	يُجدَّد العقد الأساسي للموسم.
+798	Popular	Popular	شعبي
+799	Cheap tickets: a bigger crowd, atmosphere guaranteed.	Entradas a precio suave: más público, ambiente garantizado.	تذاكر بأسعار زهيدة: جمهور أكبر وأجواء مضمونة.
+800	Standard	Normal	عادي
+801	The division’s price.	La tarifa de la división.	سعر الدرجة.
+802	Premium	Premium	مميز
+803	Dearer: a slightly smaller crowd, more income if the stadium is full.	Más caro: algo menos de público, más ingresos si el estadio se llena.	أغلى: جمهور أقل قليلًا، وإيرادات أكبر إذا امتلأ الملعب.
+804	Prestige	Prestigio	فاخر
+805	Luxury seats: only profitable when demand far exceeds capacity.	Localidades de lujo: solo rentables cuando la demanda supera con creces el aforo.	مقاعد فاخرة: مربحة فقط عندما يفوق الطلب السعة بكثير.
+806	Income	Ingresos	الإيرادات
+807	Sport	Deporte	الرياضة
+808	Transfers	Mercado	الانتقالات
+809	Seats	Localidades	المقاعد
+810	Box seats	Localidades en palcos	مقاعد المقصورات
+811	Progress per session	Progreso por sesión	التطور في كل حصة
+812	Sessions between matches	Sesiones entre partidos	حصص بين المباريات
+813	four players between two matches	cuatro jugadores entre dos partidos	أربعة لاعبين بين مباراتين
+814	3D drills	Pruebas en 3D	تمارين ثلاثية الأبعاد
+815	new: {toLowerCase}	nueva: {toLowerCase}	جديد: {toLowerCase}
+816	one per category	una por categoría	واحد لكل فئة
+817	Group session	Sesión colectiva	الحصة الجماعية
+818	of the room to improve, after every match	del margen de progreso, tras cada partido	من هامش التطور، بعد كل مباراة
+819	Trait programmes	Programas de rasgos	برامج السمات
+820	{v} sessions	{v} sesiones	{v} حصص
+821	at level 3	en el nivel 3	في المستوى 3
+822	one distinctive trait learnt	un rasgo distintivo aprendido	سمة مميزة واحدة مكتسبة
+823	Youngsters’ potential	Potencial de los jóvenes	إمكانات الشبان
+824	Potential {v} to {v2}	Potencial de {v} a {v2}	الإمكانات من {v} إلى {v2}
+825	eight in ten · rarely {top}	ocho de cada diez · rara vez {top}	ثمانية من كل عشرة · نادرًا {top}
+826	Youngsters scouted	Jóvenes detectados	الشبان المرصودون
+827	after every matchday	tras cada jornada	بعد كل جولة
+828	Level on arrival	Nivel a su llegada	المستوى عند الوصول

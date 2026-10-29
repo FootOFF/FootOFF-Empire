@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index';
 import * as THREE from 'three';
 import { GOAL, KITS } from './stage';
 import { agent, clamp01, easeInOut, rnd, walkTo } from './kit';
@@ -47,7 +48,7 @@ export function createCounter(stage, ctx) {
     const live = s.phase === 'dec';
     ctx.hud({
       round: Math.max(1, s.k + 1), rounds: ATTACKS, points: s.points, max: COUNTER_MAX,
-      prompt: live ? (s.decision === 1 ? 'Qui est libre ?' : 'Passe ou tir ?') : s.phase === 'run' ? 'Contre-attaque !' : '',
+      prompt: live ? (s.decision === 1 ? t('Qui est libre ?') : t('Passe ou tir ?')) : s.phase === 'run' ? t('Contre-attaque !') : '',
       action: live, timer: live ? clamp01(1 - s.decT / LIMIT) : null, marks: live ? marks() : [], ...extra,
     });
   }
@@ -102,11 +103,11 @@ export function createCounter(stage, ctx) {
     if (s.decision === 1) {
       const free = s.cfg.press === 0 ? 'left' : 'right'; // le défenseur sorti a laissé son partenaire seul
       right = o.kind === 'pass' && o.key === free;
-      text = right ? 'Bien vu' : o.kind === 'pass' ? 'Passe interceptée' : 'Ballon perdu';
+      text = right ? t('Bien vu') : o.kind === 'pass' ? t('Passe interceptée') : t('Ballon perdu');
     } else {
       const axial = 1; // l'attaquant de l'axe
       right = s.cfg.close ? (o.kind === 'pass' && o.to === axial) : o.kind === 'shoot';
-      text = right ? (o.kind === 'shoot' ? 'Frappe décisive' : 'Passe décisive') : o.kind === 'shoot' ? 'Tir contré' : 'Passe coupée';
+      text = right ? (o.kind === 'shoot' ? t('Frappe décisive') : t('Passe décisive')) : o.kind === 'shoot' ? t('Tir contré') : t('Passe coupée');
     }
     const speed = clamp01(1 - s.decT / LIMIT);
     const pts = right ? Math.round(50 * (0.7 + 0.3 * speed)) : 0;
@@ -208,13 +209,13 @@ export function createCounter(stage, ctx) {
         if (Math.floor(s.decT * 8) !== Math.floor((s.decT - rawDt) * 8)) hud();
         lanes.forEach((l) => { l.material.uniforms.uTime.value = stage.time; });
         if (s.decT >= LIMIT) { // trop tard : le porteur est pris
-          s.choice = { right: false, text: 'Trop tard', pts: 0 };
+          s.choice = { right: false, text: t('Trop tard'), pts: 0 };
           s.anim = null;
           s.phase = 'play';
           s.t = 0;
           s.slow = 1;
           lanes.forEach((l) => { l.visible = false; });
-          ctx.pop({ text: 'Trop tard', points: '0', tone: 'bad', at: stage.toScreen(tmp.set(c.x, 0.22, c.z)) });
+          ctx.pop({ text: t('Trop tard'), points: '0', tone: 'bad', at: stage.toScreen(tmp.set(c.x, 0.22, c.z)) });
           ctx.sfx('bad');
           hud();
         }

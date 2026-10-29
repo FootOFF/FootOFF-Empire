@@ -1,5 +1,6 @@
 import React, { useId, useSyncExternalStore } from 'react';
 import { CLUB_BLACK, CLUB_GOLD, CREST_COLORS, clubInitials, colorName, hexLum, knownCrest, normalizeCrest, rivalCrest, shortName } from '../game/crest';
+import { numLocale, t } from '../i18n/index';
 
 // Dessin des écussons (données : src/game/crest.js). Repère 100 × 116, trois familles :
 // - blason : bouclier sur un liseré de métal, couronne (ou étoiles de titres) au-dessus, ruban en bas ;
@@ -315,7 +316,7 @@ function Emblem({ id, initials, cx, cy, s, ink, halo, cut, edge }) {
 // Texte en majuscules, à la taille qui tient dans la longueur donnée (unités du repère). La largeur est mesurée sur la
 // police des écussons une fois chargée (Geist gras, espacement de 0,12 em compris), estimée largement avant : un nom
 // ne perd jamais de lettres au bout d'un ruban (0.8.13).
-const caps = (s) => String(s).toLocaleUpperCase('fr-FR');
+const caps = (s) => String(s).toLocaleUpperCase(numLocale());
 const CREST_FONT = '700 100px Geist, Inter, system-ui, sans-serif';
 let fontReady = typeof document === 'undefined' || !document.fonts;
 const fontWaiters = new Set();
@@ -501,7 +502,7 @@ function Medallion({ spec, body, url, ref_, metal, want, short, name, year, star
   const crenel = spec.shape === 'cranelure';
   const R = 37.2; // milieu du bandeau
   const top = want === 'nom' || want === 'les-deux' ? caps(named(name, short, 92, 5)) : null;
-  const bottom = want === 'annee' || want === 'les-deux' ? (want === 'annee' ? `FONDÉ EN ${year}` : String(year)) : null;
+  const bottom = want === 'annee' || want === 'les-deux' ? (want === 'annee' ? t('FONDÉ EN {year}', { year }) : String(year)) : null;
   const topSize = top ? fit(top, 92, 7.6) : 0;
   const botSize = bottom ? fit(bottom, 70, 7.4) : 0;
   const rt = 34.4;
@@ -610,13 +611,13 @@ export function AnyCrest({ name = '', state, className = '', full = false }) {
 // Couleurs du club dans le créateur d'écusson (0.8.8) : le nuancier se parcourt aux flèches comme les autres lignes, et
 // la pastille ouvre le sélecteur du système pour toute autre couleur. colorList : le nuancier, plus la couleur en cours
 // si elle est sur mesure.
-export const colorList = (v) => (CREST_COLORS.some(([h]) => h === v) ? CREST_COLORS : [...CREST_COLORS, [v, 'Sur mesure']]);
+export const colorList = (v) => (CREST_COLORS.some(([h]) => h === v) ? CREST_COLORS : [...CREST_COLORS, [v, t('Sur mesure')]]);
 export const COLOR_KEYS = ['primary', 'secondary'];
 export function ColorValue({ value, label, onPick }) {
   return (
     <span className="ts-pick-value ts-color">
-      <label className="ts-swatch" style={{ background: value }} title={`${label} : toute couleur`}>
-        <input type="color" value={value} tabIndex={-1} onChange={(e) => onPick(e.target.value.toLowerCase())} aria-label={`${label} : choisir une couleur`} />
+      <label className="ts-swatch" style={{ background: value }} title={t('{label} : toute couleur', { label })}>
+        <input type="color" value={value} tabIndex={-1} onChange={(e) => onPick(e.target.value.toLowerCase())} aria-label={t('{label} : choisir une couleur', { label })} />
       </label>
       <span>{colorName(value)}</span>
     </span>

@@ -1,26 +1,27 @@
+import { t } from '../i18n/index';
 // Livre de comptes du club (écran Finances) : chaque mouvement d'argent est rangé par poste pour la saison en
 // cours ; une saison bouclée garde ses totaux par poste et sa trésorerie de début et de fin (12 dernières).
 
 export const INCOME = [
-  ['billetterie', 'Billetterie'],
-  ['buvette', 'Buvette'],
-  ['boutique', 'Boutique'],
-  ['loges', 'Loges et hospitalités'],
-  ['tv', 'Droits TV'],
-  ['sponsors', 'Sponsors'],
-  ['prize', 'Prime de classement'],
-  ['cups', 'Primes de coupes'],
-  ['titles', 'Primes de titre'],
-  ['bonus', 'Primes d’objectif'],
-  ['sales', 'Ventes de joueurs'],
-  ['offline', 'Revenus en ton absence'],
+  ['billetterie', t('Billetterie')],
+  ['buvette', t('Buvette')],
+  ['boutique', t('Boutique')],
+  ['loges', t('Loges et hospitalités')],
+  ['tv', t('Droits TV')],
+  ['sponsors', t('Sponsors')],
+  ['prize', t('Prime de classement')],
+  ['cups', t('Primes de coupes')],
+  ['titles', t('Primes de titre')],
+  ['bonus', t('Primes d’objectif')],
+  ['sales', t('Ventes de joueurs')],
+  ['offline', t('Revenus en ton absence')],
 ];
 export const EXPENSE = [
-  ['wages', 'Salaires'],
-  ['upkeep', 'Entretien'],
-  ['works', 'Travaux'],
-  ['signings', 'Recrutements'],
-  ['medical', 'Soins médicaux'],
+  ['wages', t('Salaires')],
+  ['upkeep', t('Entretien')],
+  ['works', t('Travaux')],
+  ['signings', t('Recrutements')],
+  ['medical', t('Soins médicaux')],
 ];
 
 const fresh = (season, money) => ({ season, start: money, lines: {}, points: [money] });

@@ -18,7 +18,7 @@ import { plantSpots } from '../three/forest';
 import { createFrameRenderer } from '../three/render';
 import { momentAt } from '../three/sky';
 import { PARVIS, createTrophies } from '../three/trophies';
-import { honoursOf, plural } from '../game/honours';
+import { honoursOf } from '../game/honours';
 import { createMatchScene } from '../three/matchplay';
 import { matchFeed } from '../game/matchFeed';
 import { createCrowd } from '../three/crowd';
@@ -28,6 +28,7 @@ import {
 } from '../three/procedural';
 import { holdCharge } from './charge';
 import { PHONE } from './gestures';
+import { plural, t, tn, tr } from '../i18n/index';
 
 // Le contexte d'essai est rendu tout de suite : sur iPhone, chaque contexte 3D laissé ouvert compte jusqu'au bout.
 function webglAvailable() {
@@ -172,19 +173,19 @@ function plotInfo(s, plotId) {
   const plot = PLOTS.find((p) => p.id === plotId);
   const sec = SECTORS.find((x) => x.id === plot.sector);
   const key = plotBuilding(s, plotId);
-  if (!key) return { eyebrow: `${sec.short} · ${PLOT_LABELS[plotId]}`, title: 'Parcelle libre', detail: 'Cliquer pour construire' };
+  if (!key) return { eyebrow: `${sec.short} · ${PLOT_LABELS[plotId]}`, title: t('Parcelle libre'), detail: t('Cliquer pour construire') };
   const b = BUILDINGS[key];
   const lvl = s.buildings[key];
-  const detail = lvl >= b.max ? 'Niveau maximum' : `Amélioration : ${fmtMoney(upgradeCost(key, lvl + 1))}`;
-  return { eyebrow: sec.short || sec.name, title: b.name, level: `Niv. ${lvl}/${b.max}`, detail };
+  const detail = lvl >= b.max ? t('Niveau maximum') : t('Amélioration : {upgradeCost}', { upgradeCost: fmtMoney(upgradeCost(key, lvl + 1)) });
+  return { eyebrow: sec.short || sec.name, title: b.name, level: t('Niv. {lvl}/{max}', { lvl, max: b.max }), detail };
 }
 
 // Étiquette de survol du parvis : l'allée d'honneur mène à la salle des trophées.
 function parvisInfo(s) {
   const n = honoursOf(s).length;
   return {
-    eyebrow: 'Parvis', title: 'Salle des trophées', level: null,
-    detail: n ? `${plural(n, 'trophée')} sur l’allée d’honneur` : 'Aucun trophée pour l’instant',
+    eyebrow: t('Parvis'), title: t('Salle des trophées'), level: null,
+    detail: n ? t('{plural} sur l’allée d’honneur', { plural: plural(n, 'trophée') }) : t('Aucun trophée pour l’instant'),
   };
 }
 
@@ -1190,12 +1191,10 @@ export default function Empire3D({
         >
           <span className="pin-tags">
             {session?.plotId === id && (
-              <button className="pin-tag dark" onClick={() => onSession?.()} aria-label={`Séance d’entraînement : ${session.count} épreuve${session.count > 1 ? 's' : ''} à jouer avant le match`}>
-                <IconTraining />Séance<em>{session.count}</em>
-              </button>
+              <button className="pin-tag dark" onClick={() => onSession?.()} aria-label={tn(session.count, 'Séance d’entraînement : {count} épreuve à jouer avant le match', 'Séance d’entraînement : {count} épreuves à jouer avant le match', { count: session.count }, session.count > 1)}>{tr('<0/>Séance<1/>', [<IconTraining />, <em>{session.count}</em>])}</button>
             )}
             {badges.includes(id) && (
-              <button className="pin-tag" onClick={() => selectRef.current(id, PLOTS.find((p) => p.id === id).sector, { pin: true })} aria-label="Construction ou amélioration disponible">
+              <button className="pin-tag" onClick={() => selectRef.current(id, PLOTS.find((p) => p.id === id).sector, { pin: true })} aria-label={t('Construction ou amélioration disponible')}>
                 <IconArrowUp />
               </button>
             )}

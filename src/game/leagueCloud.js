@@ -1,4 +1,5 @@
 import { fetchSave, sendSave } from './leagueNet';
+import { numLocale, t, tn } from '../i18n/index';
 
 // Sauvegarde du club de ligue sur le serveur (son « casier », table ligue_saves du site) : la partie de l'appareil
 // (leagueClub.js), compressée (gzip, puis base64url derrière « gz1: »), envoyée après chaque journée et chaque saison,
@@ -156,22 +157,22 @@ export async function pushClub(m, s, { force = false, keepalive = false } = {}) 
 export const isPushing = (code) => busy.has(code);
 
 // Où en est une partie (fenêtres, bandeaux) : « saison 2 · 3 journées jouées ».
-export const stageOf = (season, round) => `saison ${season} · ${round ? `${round} journée${round > 1 ? 's' : ''} jouée${round > 1 ? 's' : ''}` : 'avant la 1re journée'}`;
+export const stageOf = (season, round) => t('saison {season} · {v}', { season, v: round ? tn(round, '{round} journée jouée', '{round} journées jouées', { round }, round > 1) : t('avant la 1re journée') });
 // « le 28 octobre à 21 h 04 », à l'heure de l'appareil
 export function savedWhen(at) {
   const d = new Date(at);
-  if (Number.isNaN(d.getTime())) return 'récemment';
-  return `le ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à ${d.getHours()} h ${String(d.getMinutes()).padStart(2, '0')}`;
+  if (Number.isNaN(d.getTime())) return t('récemment');
+  return t('le {toLocaleDateString} à {getHours} h {padStart}', { toLocaleDateString: d.toLocaleDateString(numLocale(), { day: 'numeric', month: 'long' }), getHours: d.getHours(), padStart: String(d.getMinutes()).padStart(2, '0') });
 }
 
 // Mention pour le joueur (menu pause, Siège) : où en est la sauvegarde en ligne de son club ; ok : elle est faite.
 export function cloudNote(code, at = Date.now()) {
-  if (!cloudReady()) return { ok: false, text: 'Sauvegarde en ligne indisponible sur ce navigateur' };
+  if (!cloudReady()) return { ok: false, text: t('Sauvegarde en ligne indisponible sur ce navigateur') };
   const { at: when } = syncOf(code);
-  if (!when) return { ok: false, text: 'En attente de sauvegarde en ligne' };
+  if (!when) return { ok: false, text: t('En attente de sauvegarde en ligne') };
   const min = Math.max(0, Math.round((at - Date.parse(when)) / 60000));
   const h = Math.round(min / 60);
-  const ago = min < 1 ? 'à l’instant' : min < 60 ? `il y a ${min} min` : h < 24 ? `il y a ${h} h`
-    : `le ${new Date(when).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`;
-  return { ok: true, text: `Club sauvegardé en ligne ${ago}` };
+  const ago = min < 1 ? t('à l’instant') : min < 60 ? t('il y a {min} min', { min }) : h < 24 ? t('il y a {h} h', { h })
+    : `le ${new Date(when).toLocaleDateString(numLocale(), { day: 'numeric', month: 'long' })}`;
+  return { ok: true, text: t('Club sauvegardé en ligne {ago}', { ago }) };
 }

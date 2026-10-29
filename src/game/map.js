@@ -1,4 +1,5 @@
 import { BUILDINGS, DIVISIONS, LEAGUE_OPEN } from './constants';
+import { t } from '../i18n/index';
 
 export { buildingEffect } from './economy';
 
@@ -10,10 +11,10 @@ export { buildingEffect } from './economy';
 export const SECTORS = [
   {
     id: 'main',
-    name: 'Complexe',
-    short: 'Complexe',
+    name: t('Complexe'),
+    short: t('Complexe'),
     repNeeded: 0,
-    blurb: 'Ton complexe : le stade au centre, huit parcelles autour, à bâtir dans l’ordre que tu veux.',
+    blurb: t('Ton complexe : le stade au centre, huit parcelles autour, à bâtir dans l’ordre que tu veux.'),
   },
 ];
 
@@ -30,15 +31,15 @@ export const PLOTS = [
 ];
 
 export const PLOT_LABELS = {
-  t0: 'Enceinte',
-  t1: 'Parcelle 1',
-  t2: 'Parcelle 2',
-  t3: 'Parcelle 3',
-  t4: 'Parcelle 4',
-  t5: 'Parcelle 5',
-  t6: 'Parcelle 6',
-  t7: 'Parcelle 7',
-  t8: 'Parcelle 8',
+  t0: t('Enceinte'),
+  t1: t('Parcelle 1'),
+  t2: t('Parcelle 2'),
+  t3: t('Parcelle 3'),
+  t4: t('Parcelle 4'),
+  t5: t('Parcelle 5'),
+  t6: t('Parcelle 6'),
+  t7: t('Parcelle 7'),
+  t8: t('Parcelle 8'),
 };
 
 export const plotIndexOf = (plotId) => PLOTS.findIndex((p) => p.id === plotId);

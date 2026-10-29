@@ -1,0 +1,57 @@
+2411	absent · the computer plays for him	ausente · la máquina juega por él	غائب · الحاسوب يلعب بدلًا منه
+2412	after {plural}	tras {plural}	بعد {plural}
+2413	{n} matchday	{n} jornada	جولة واحدة
+2414	W	G	ف
+2415	D	E	ت
+2416	L	P	خ
+2417	GD	Dif	الفارق
+2418	Pts	Pts	ن
+2419	League honours	Palmarés de la liga	سجل ألقاب الدوري
+2420	Results	Resultados	النتائج
+2421	matchday {v}	jornada {v}	الجولة {v}
+2422	(pen)	(pen.)	(ركلة جزاء)
+2423	No goals.	Ningún gol.	لا أهداف.
+2424	This match can no longer be replayed with this version of the game. Its summary is still available.	Este partido ya no puede volver a verse con esta versión del juego. Su resumen sigue disponible.	لم يعد بالإمكان إعادة مشاهدة هذه المباراة بهذا الإصدار من اللعبة. ويبقى ملخصها متاحًا.
+2425	<0/> Rewatch the match in 3D	<0/> Volver a ver el partido en 3D	<0/> إعادة مشاهدة المباراة بالأبعاد الثلاثية
+2426	Your club · {name}	Tu club · {name}	ناديك · {name}
+2427	Leagues with friends · {length} / {MAX_MY_LEAGUES}	Ligas entre amigos · {length} / {MAX_MY_LEAGUES}	دوريات الأصدقاء · {length} / {MAX_MY_LEAGUES}
+2428	<0/> My leagues	<0/> Mis ligas	<0/> دورياتي
+2429	Chances: the baseline.	Ocasiones: la referencia.	الفرص: المرجع.
+2430	Chances: {v}{abs}% at both ends.	Ocasiones: {v}{abs} % en las dos áreas.	الفرص: {v}{abs}% للطرفين.
+2431	Best XI	Mejor once	أفضل تشكيلة
+2432	The best ratings, regardless of fitness	Las mejores notas, sin mirar la condición física	أعلى التقييمات، دون اعتبار للياقة البدنية
+2433	Fresh XI	Once fresco	التشكيلة المرتاحة
+2434	The best players at {FRESH_FIT}% fitness or more; a tired player only if no fresh one can play his position	Los mejores jugadores con un {FRESH_FIT} % de condición física o más; un jugador cansado solo si ninguno fresco cubre su posición	أفضل اللاعبين بلياقة {FRESH_FIT}% أو أكثر؛ ولا يُشرك لاعب مرهق إلا إذا لم يوجد لاعب مرتاح لمركزه
+2435	{fmtRating} when rested	{fmtRating} descansado	{fmtRating} عند الراحة
+2436	fatigue −<0/>	cansancio −<0/>	إرهاق −<0/>
+2437	Rotate	Rotar	المداورة
+2438	Rotation in place	Rotación hecha	تمت المداورة
+2439	The substitutes from the last match play, topped up by the most rested starters	Juegan los suplentes del último partido, completados con los titulares más descansados	يلعب بدلاء المباراة الأخيرة، ويكمّلهم الأساسيون الأكثر راحة
+2440	Fitness: {v}%	Condición física: {v} %	اللياقة البدنية: {v}%
+2441	condition {v}%	condición {v} %	اللياقة {v}%
+2442	{v} can’t play on: choose the position to leave empty (never the goalkeeper’s)	{v} ya no juega: elige la posición que dejar vacía (nunca la del portero)	{v} لم يعد يلعب: اختر المركز الذي سيبقى شاغرًا (وليس مركز الحارس أبدًا)
+2443	Sent off: move them to the positions to leave empty	Expulsados: muévelos a las posiciones que dejar vacías	مطرودون: انقلهم إلى المراكز التي ستبقى شاغرة
+2444	Sent off: move him to the position to leave empty	Expulsado: muévelo a la posición que dejar vacía	مطرود: انقله إلى المركز الذي سيبقى شاغرًا
+2445	{v}: choose a position or a player to put him there	{v}: elige una posición o un jugador para colocarlo ahí	{v}: اختر مركزًا أو لاعبًا لوضعه فيه
+2446	Drag a player onto a position, or pick two to swap them	Arrastra a un jugador a una posición, o elige dos para intercambiarlos	اسحب لاعبًا إلى مركز، أو اختر لاعبَين لتبديل مكانيهما
+2447	Sent off: he cannot be replaced; move him to the position to leave empty	Expulsado: no puede ser sustituido; muévelo a la posición que dejar vacía	مطرود: لا يمكن استبداله؛ انقله إلى المركز الذي سيبقى شاغرًا
+2448	Injured: replace him with a player from the bench, or move him to the position to leave empty	Lesionado: sustitúyelo por un jugador del banquillo o muévelo a la posición que dejar vacía	مصاب: استبدله بلاعب من الدكة، أو انقله إلى المركز الذي سيبقى شاغرًا
+2449	· out of position ({toLowerCase})	· fuera de su posición ({toLowerCase})	· خارج مركزه ({toLowerCase})
+2450	, level {fmtRating}	, nivel {fmtRating}	، المستوى {fmtRating}
+2451	, sent off, position left empty	, expulsado, posición vacía	، مطرود، والمركز شاغر
+2452	, injured	, lesionado	، مصاب
+2453	Substitutes	Suplentes	البدلاء
+2454	No substitutions left	No quedan cambios	لا تبديلات متبقية
+2455	{left} substitution left	{left} cambio disponible	تبديل واحد متبقٍ
+2456	{left} substitutions left	{left} cambios disponibles	{"one":"تبديل واحد متبقٍ","two":"تبديلان متبقيان","few":"{left} تبديلات متبقية","other":"{left} تبديلًا متبقيًا"}
+2457	No substitutes: sign some in the transfer market.	Ningún suplente: ficha en el mercado.	لا بدلاء: تعاقد مع لاعبين في سوق الانتقالات.
+2458	Already off	Ya ha salido	غادر الملعب
+2459	{name}, {toLowerCase}, level {fmtRating}{v}	{name}, {toLowerCase}, nivel {fmtRating}{v}	{name}، {toLowerCase}، المستوى {fmtRating}{v}
+2460	Starting XI · <0/>	Once inicial · <0/>	التشكيلة الأساسية · <0/>
+2461	Key	Leyenda	دليل الرموز
+2462	The number beside the portrait is the player’s level <0>in that position</0>.	La cifra junto al retrato es el nivel del jugador <0>en esa posición</0>.	الرقم بجانب الصورة هو مستوى اللاعب <0>في هذا المركز</0>.
+2463	Red dotted outline: he is playing out of position<0/>.	Contorno de puntos rojos: juega fuera de su posición<0/>.	إطار منقّط أحمر: يلعب خارج مركزه<0/>.
+2464	({offPos} in your XI)	({offPos} en tu once)	({offPos} في تشكيلتك)
+2465	Selected player: each position shows the level he would have there, in green if he would do better, in red otherwise.	Jugador elegido: cada posición muestra el nivel que tendría allí, en verde si rendiría mejor, en rojo si no.	اللاعب المختار: يعرض كل مركز المستوى الذي سيكون عليه فيه، بالأخضر إن كان سيؤدي أفضل، وبالأحمر خلاف ذلك.
+2466	Bar and percentage under the name: fitness. A tired player plays worse and gets injured more often; absent players (injured, suspended) stay on the bench, greyed out.	Barra y porcentaje bajo el nombre: condición física. Un jugador cansado rinde peor y se lesiona más; los ausentes (lesionados, sancionados) se quedan en el banquillo, en gris.	الشريط والنسبة تحت الاسم: اللياقة البدنية. اللاعب المرهق يلعب أسوأ ويُصاب أكثر؛ ويبقى الغائبون (المصابون والموقوفون) على الدكة بلون رمادي.
+2467	This XI carries over to the pre-match, where you can still adjust it.	Este once se recupera en la previa, donde aún puedes retocarlo.	تُنقل هذه التشكيلة إلى ما قبل المباراة، حيث يمكنك تعديلها مجددًا.

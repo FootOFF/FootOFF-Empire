@@ -1,0 +1,76 @@
+2540	Goal!	¡Gol!	هدف!
+2541	Goal {v}	Gol {v}	هدف {v}
+2542	(pen)	(pen.)	(ج)
+2543	Possession	Posesión	الاستحواذ
+2544	Shots	Tiros	التسديدات
+2545	Shots on target	Tiros a puerta	التسديدات على المرمى
+2546	Big chances	Ocasiones claras	الفرص الكبيرة
+2547	Expected goals	Goles esperados	الأهداف المتوقعة
+2548	Saves	Paradas	التصديات
+2549	Woodwork	Postes	القائمان والعارضة
+2550	Yellow cards	Tarjetas amarillas	البطاقات الصفراء
+2551	Red cards	Tarjetas rojas	البطاقات الحمراء
+2552	booked	amonestado	مُنذَر
+2553	sent off	expulsado	مطرود
+2554	Position left empty	Posición vacía	مركز شاغر
+2555	Positions left empty	Posiciones vacías	مراكز شاغرة
+2556	No substitutions: the team {v} with {v2}.	Ningún cambio: el equipo {v} con {v2}.	لا تبديلات: الفريق {v} بـ{v2}.
+2557	restarts	sale	يستأنف
+2558	carries on	sigue	يواصل
+2559	No substitutions: the team {v}.	Ningún cambio: el equipo {v}.	لا تبديلات: الفريق {v}.
+2560	restarts unchanged	sale tal cual	يستأنف دون تغيير
+2561	carries on unchanged	sigue tal cual	يواصل دون تغيير
+2562	Formation: <0/> → <1/>	Dibujo: <0/> → <1/>	الخطة: <0/> ← <1/>
+2563	Positions reorganised	Posiciones reorganizadas	إعادة تنظيم المراكز
+2564	XI level <0/> → <1/>	Nivel del once <0/> → <1/>	مستوى التشكيلة <0/> ← <1/>
+2565	The match resumes at half-time, where you left it.	El partido se reanuda en el descanso, donde lo dejaste.	تُستأنف المباراة عند الاستراحة، حيث تركتها.
+2566	The match resumes in minute {label}, where you left it.	El partido se reanuda en el minuto {label}, donde lo dejaste.	تُستأنف المباراة في الدقيقة {label}، حيث تركتها.
+2567	{player} is injured and cannot continue: bring on a substitute, or carry on with ten.	{player} está lesionado y no puede seguir: da entrada a un suplente o sigue con diez.	{player} مصاب ولا يستطيع المواصلة: أدخل بديلًا، أو واصل بعشرة لاعبين.
+2568	<0/> · Matchday	<0/> · Jornada	<0/> · الجولة
+2569	Half-time	Descanso	الاستراحة
+2570	Full time{v}	Final del partido{v}	نهاية المباراة{v}
+2571	1st half	1.ª parte	الشوط الأول
+2572	2nd half	2.ª parte	الشوط الثاني
+2573	Finished{v}	Terminado{v}	انتهت{v}
+2574	Replay	Repetición	إعادة
+2575	Chances of a win, a draw and a defeat at the end of the match, calculated on the engine from what the live match has shown	Probabilidades de victoria, empate y derrota al final del partido, calculadas con el motor a partir de lo que ha mostrado el directo	فرص الفوز والتعادل والهزيمة في نهاية المباراة، محسوبة بمحرك اللعبة انطلاقًا مما أظهره البث المباشر
+2576	Final prediction	Pronóstico final	التوقع النهائي
+2577	Match centre	Centro del partido	مركز المباراة
+2578	Stats	Estadísticas	الإحصائيات
+2579	Ratings	Notas	التقييمات
+2580	The feed	El directo	المجريات
+2581	{v} ratings	Notas de {v}	تقييمات {v}
+2582	Match ratings	Notas del partido	تقييمات المباراة
+2583	Statistics and match feed	Estadísticas y desarrollo del partido	الإحصائيات ومجريات المباراة
+2584	Statistics or feed	Estadísticas o directo	الإحصائيات أو المجريات
+2585	Statistics	Estadísticas	الإحصائيات
+2586	Replay	Repetición	إعادة بطيئة
+2587	Skip the highlight	Saltar la jugada	تخطي اللقطة
+2588	Turn the sound back on	Activar el sonido	إعادة تشغيل الصوت
+2589	Mute	Silenciar	كتم الصوت
+2590	Sound off	Sonido desactivado	الصوت مكتوم
+2591	Normal speed: speed up ×4	Velocidad normal: acelerar ×4	السرعة العادية: تسريع ×4
+2592	Match sped up ×4: back to normal speed	Partido acelerado ×4: volver a la velocidad normal	المباراة مسرّعة ×4: العودة إلى السرعة العادية
+2593	Normal speed: tap to speed up ×4 between highlights	Velocidad normal: toca para acelerar ×4 entre jugadas destacadas	السرعة العادية: المس للتسريع ×4 بين اللقطات البارزة
+2594	Sped up ×4 between highlights: tap to go back to ×1	Acelerado ×4 entre jugadas destacadas: toca para volver a ×1	مسرّعة ×4 بين اللقطات البارزة: المس للعودة إلى ×1
+2595	Wait for half-time	Espera al descanso	انتظر الاستراحة
+2596	Too late: the match is nearly over	Demasiado tarde: el partido está a punto de terminar	فات الأوان: المباراة توشك على الانتهاء
+2597	Make a substitution, change formation or tactics	Hacer un cambio, cambiar de dibujo o de táctica	إجراء تبديل، أو تغيير الخطة أو التكتيك
+2598	No substitutions left: formation, tactics and positions only	No quedan cambios: solo dibujo, táctica y posiciones	لا تبديلات متبقية: الخطة والتكتيك والمراكز فقط
+2599	Substitution	Cambio	تبديل
+2600	Change	Cambiar	تبديل
+2601	Go to half-time	Ir al descanso	الانتقال إلى الاستراحة
+2602	Go to the final whistle	Ir al pitido final	الانتقال إلى صافرة النهاية
+2603	Full time	Final	النهاية
+2604	Half-time · your instructions	Descanso · tus consignas	الاستراحة · تعليماتك
+2605	{minuteLabel}′ · substitution	{minuteLabel}′ · cambio	{minuteLabel}′ · تبديل
+2606	The match is stopped. What you decide takes effect in minute {v}, at the next stoppage.	El partido está detenido. Lo que decidas surte efecto en el minuto {v}, en la próxima parada del juego.	المباراة متوقفة. يسري ما تقرره في الدقيقة {v}، عند التوقف التالي للعب.
+2607	Score	Marcador	النتيجة
+2608	On target	A puerta	على المرمى
+2609	Final prediction<0/>	Pronóstico final<0/>	التوقع النهائي<0/>
+2610	with these changes	con estos cambios	مع هذه التغييرات
+2611	Line-up and substitutions	Alineación y cambios	التشكيلة والتبديلات
+2612	{v}{name} · {v2}{n} left of {SUBS_MAX}	{v}{name} · {v2}{n} posible de {SUBS_MAX}	{v}{name} · {v2}{n} متاح من {SUBS_MAX}
+2613	{v}{name} · {v2}{n} left of {SUBS_MAX}	{v}{name} · {v2}{n} posibles de {SUBS_MAX}	{v}{name} · {v2}{n} متاحة من {SUBS_MAX}
+2614	{plannedSubs} substitution planned ·	{plannedSubs} cambio previsto ·	تبديل واحد مقرر ·
+2615	{plannedSubs} substitutions planned ·	{plannedSubs} cambios previstos ·	{"one":"تبديل واحد مقرر · ","two":"تبديلان مقرران · ","few":"{plannedSubs} تبديلات مقررة · ","other":"{plannedSubs} تبديلًا مقررًا · "}

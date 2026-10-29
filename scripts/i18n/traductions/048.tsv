@@ -1,0 +1,66 @@
+2964	Propose the contract	Proponer el contrato	اقتراح العقد
+2965	<0/> today<1/>	<0/> hoy<1/>	<0/> اليوم<1/>
+2966	· the first club to agree a deal wins	· gana el primer club que cierre el acuerdo	· يفوز أول نادٍ يتم الصفقة
+2967	· fee reserved until the next matchday	· traspaso reservado hasta la próxima jornada	· مبلغ الانتقال محجوز حتى الجولة المقبلة
+2968	His value	Su valor	قيمته
+2969	his value	su valor	قيمته
+2970	{d}% {v} his value	{d} % {v} su valor	{d}% {v} قيمته
+2971	Listing for sale	Puesta en venta	العرض للبيع
+2972	{name} listed for sale	{name} en venta	{name} معروض للبيع
+2973	Player for sale	Jugador en venta	لاعب معروض للبيع
+2974	<0/> is for sale at <1/>.	<0/> está en venta por <1/>.	<0/> معروض للبيع بـ<1/>.
+2975	No open offer today: new clubs will come forward after the next matchday.	Ninguna oferta abierta hoy: nuevos clubes se presentarán tras la próxima jornada.	لا عرض مفتوح اليوم: ستتقدم أندية جديدة بعد الجولة المقبلة.
+2976	See the offer	Ver la oferta	عرض العرض
+2977	See the offers	Ver las ofertas	عرض العروض
+2978	Listing {name} for sale	Puesta en venta de {name}	عرض {name} للبيع
+2979	<0/> · age <1/><2/>	<0/> · <1/> años<2/>	<0/> · <1/> عامًا<2/>
+2980	Your price	Tu precio	سعرك
+2981	Lower the price	Bajar el precio	خفض السعر
+2982	Raise the price	Subir el precio	رفع السعر
+2983	Already offered to clubs today: those that made an offer still have it, and new clubs will come forward after the next matchday, at this price.	Ya propuesto a los clubes hoy: los que hicieron una oferta la mantienen, y nuevos clubes se presentarán tras la próxima jornada, a este precio.	عُرض على الأندية اليوم بالفعل: تحتفظ الأندية التي قدمت عرضًا بعروضها، وستتقدم أندية جديدة بعد الجولة المقبلة بهذا السعر.
+2984	What affects the offers	Lo que influye en las ofertas	ما يؤثر في العروض
+2985	“Paid at once”: the chance that a club offers you this price as soon as he is listed; otherwise, its offer will be lower, to be negotiated.	«Pagado al instante»: la probabilidad de que un club te ofrezca este precio en cuanto lo pongas en venta; si no, su oferta será más baja y habrá que negociarla.	«مدفوع فورًا»: فرصة أن يعرض عليك نادٍ هذا السعر فور عرضه للبيع؛ وإلا فسيكون عرضه أقل وقابلًا للتفاوض.
+2986	At least two clubs in the running, enough to start a bidding war: <0/>	Al menos dos clubes en liza, lo justo para hacer subir la puja: <0/>	ناديان على الأقل في السباق، ما يكفي لإطلاق مزايدة: <0/>
+2987	Wage saved on the sale	Salario ahorrado con la venta	الراتب الموفَّر بالبيع
+2988	Paid at once	Pagado al instante	مدفوع فورًا
+2989	At least one club will pay this price as soon as he is listed	Al menos un club pagará este precio en cuanto lo pongas en venta	سيدفع نادٍ واحد على الأقل هذا السعر فور عرضه للبيع
+2990	No club will pay this price straight away: lower offers, to be negotiated	Ningún club pagará este precio de entrada: ofertas más bajas, por negociar	لن يدفع أي نادٍ هذا السعر مباشرة: عروض أقل وقابلة للتفاوض
+2991	List for sale · <0/>	Poner en venta · <0/>	عرض للبيع · <0/>
+2992	No new club before the next matchday	Ningún club nuevo antes de la próxima jornada	لا نادٍ جديد قبل الجولة المقبلة
+2993	At least one club makes an offer straight away · up to {CANDIDATES} are studying the file	Al menos un club hace una oferta enseguida · hasta {CANDIDATES} estudian el caso	نادٍ واحد على الأقل يقدم عرضًا فورًا · وما يصل إلى {CANDIDATES} أندية تدرس الملف
+2994	Negotiation · sale	Negociación · venta	التفاوض · البيع
+2995	Close the negotiation	Cerrar la negociación	إغلاق التفاوض
+2996	Sale completed	Venta cerrada	تمت عملية البيع
+2997	Negotiation over	Negociación terminada	انتهى التفاوض
+2998	Sale completed!	¡Venta cerrada!	تمت عملية البيع!
+2999	<0/> joins <1/> for <2/>.	<0/> ficha por <1/> por <2/>.	ينضم <0/> إلى <1/> مقابل <2/>.
+3000	The negotiation earned you <0/> more than their offer.	La negociación te ha reportado <0/> más que su oferta.	جلب لك التفاوض <0/> أكثر من عرضه.
+3001	<0/> more than his value (<1/>).	<0/> más que su valor (<1/>).	<0/> أكثر من قيمته (<1/>).
+3002	Wage saved: <0/> per season · projected end of season: <1/>.	Salario ahorrado: <0/> por temporada · cierre de temporada previsto: <1/>.	الراتب الموفَّر: <0/> في الموسم · نهاية الموسم المتوقعة: <1/>.
+3003	Back to the offers	Volver a las ofertas	العودة إلى العروض
+3004	Your asking price of <0/> was out of their reach: the offer for <1/> is withdrawn.	Tu petición de <0/> estaba fuera de su alcance: se retira la oferta por <1/>.	كان طلبك البالغ <0/> بعيدًا عن متناوله: سُحب العرض المقدم لضم <1/>.
+3005	Offer expired	Oferta caducada	انتهت صلاحية العرض
+3006	This offer is no longer valid.	Esta oferta ya no es válida.	لم يعد هذا العرض ساريًا.
+3007	Squad at the minimum ({SQUAD_MIN} players): sign before you sell.	Plantilla al mínimo ({SQUAD_MIN} jugadores): ficha antes de vender.	التشكيلة عند الحد الأدنى ({SQUAD_MIN} لاعبًا): تعاقد قبل أن تبيع.
+3008	Negotiation with {club}	Negociación con {club}	التفاوض مع {club}
+3009	Age <0/> · value <1/><2/>	<0/> años · valor <1/><2/>	<0/> عامًا · القيمة <1/><2/>
+3010	· for sale at {price}	· en venta por {price}	· معروض للبيع بـ{price}
+3011	Deal! <0/> <1/> your asking price of <2/>	¡Acuerdo! <0/> <1/> tu petición de <2/>	اتفاق! <0/> <1/> طلبك البالغ <2/>
+3012	<0/> more than <1/> offer. Nothing is signed: sell, or refuse and keep your player. The agreement holds until the next matchday.	<0/> más que <1/> oferta. No hay nada firmado: vende, o rechaza y quédate con tu jugador. El acuerdo vale hasta la próxima jornada.	<0/> أكثر من عرض<1/>. لم يُوقَّع شيء بعد: بِع، أو ارفض واحتفظ بلاعبك. ويبقى الاتفاق ساريًا حتى الجولة المقبلة.
+3013	Request refused… but {withArticle} {agree} to {amount}	Petición rechazada… pero {withArticle} {agree} a {amount}	رُفض الطلب… لكن {withArticle} {agree} إلى {amount}
+3014	Request refused: the club stands by its offer	Petición rechazada: el club mantiene su oferta	رُفض الطلب: النادي متمسك بعرضه
+3015	You asked for <0/>. That’s <1/> final word: sale guaranteed at this price.<2/>	Pedías <0/>. Es <1/> última palabra: venta asegurada a este precio.<2/>	طلبتَ <0/>. هذه كلمت<1/> الأخيرة: البيع مضمون بهذا السعر.<2/>
+3016	No more requests possible before the next matchday.	No es posible otra petición antes de la próxima jornada.	لا طلبات أخرى ممكنة قبل الجولة المقبلة.
+3017	{plural} left.	Quedan {plural}.	تبقّت {plural}.
+3018	{n} request left	{n} petición posible	طلب واحد ممكن
+3019	{n} requests left	{n} peticiones posibles	{"one":"طلب واحد ممكن","two":"طلبان ممكنان","few":"{n} طلبات ممكنة","other":"{n} طلبًا ممكنًا"}
+3020	Deal at your price	Acuerdo a tu precio	اتفاق بسعرك
+3021	Their final word	Su última palabra	كلمته الأخيرة
+3022	Their offer · {note}	Su oferta · {note}	عرضه · {note}
+3023	Your asking price	Tu petición	طلبك
+3024	Lower the request	Bajar la petición	خفض الطلب
+3025	<0/>% above their offer	<0/> % por encima de su oferta	أعلى من عرضه بنسبة <0/>%
+3026	Raise the request	Subir la petición	رفع الطلب
+3027	Amount asked	Importe pedido	المبلغ المطلوب
+3028	If refused, the club will give its final word: its offer will rise to what it will pay for sure.	Si la rechazan, el club dirá su última palabra: su oferta subirá a lo que paga con seguridad.	إن رُفض، سيقول النادي كلمته الأخيرة: يرتفع عرضه إلى ما سيدفعه حتمًا.
+3029	The club has given its final word: <0/>, valid until the next matchday.	El club ha dicho su última palabra: <0/>, válida hasta la próxima jornada.	قال النادي كلمته الأخيرة: <0/>، سارية حتى الجولة المقبلة.

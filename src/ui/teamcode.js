@@ -1,10 +1,12 @@
+import { NAMES, t } from '../i18n/index';
 // Code de trois lettres d'un club, comme à la télé (bandeau du score du direct). Tiré du nom, sans accents, sans les
 // mots génériques (FC, Étoile, Olympique…) ni les petits mots (de, des, du…) ; on garde le dernier mot qui reste, le
 // lieu le plus souvent : « Étoile Vaudrémont » → VAU, « US du Lac » → LAC. Un nom composé prend une lettre de chaque
 // partie (« Saint-Clair » → SCL), un nom à capitales intérieures prend ses capitales (« FootOFF FC » → FOF). Les deux
 // clubs d'un match n'ont jamais le même code (teamCodes). Le nom complet reste partout ailleurs.
 
-const STOP = new Set(['de', 'des', 'du', 'la', 'le', 'les', 'l', 'd', 'et', 'en', 'sur', 'sous', 'a', 'au', 'aux']);
+const STOP = new Set(['de', 'des', 'du', 'la', 'le', 'les', 'l', 'd', 'et', 'en', 'sur', 'sous', 'a', 'au', 'aux',
+  'del', 'el', 'los', 'las', 'y', 'the', 'of', 'and', 'on', 'upon']); // petits mots espagnols et anglais
 const GENERIC = new Set([
   'as', 'fc', 'us', 'sc', 'rc', 'ac', 'cs', 'ca', 'sa', 'so', 'js', 'es', 'ss', 'cf', 'afc', 'asc', 'usm',
   'olympique', 'sporting', 'racing', 'stade', 'etoile', 'union', 'entente', 'avenir', 'jeunesse', 'rapid', 'atlas',
@@ -12,17 +14,30 @@ const GENERIC = new Set([
 ]);
 const plain = (w) => w.normalize('NFD').replace(/[̀-ͯ]/g, '');
 const letters = (w) => plain(w).replace(/[^A-Za-z]/g, '');
+// en anglais et en espagnol, les types de club de la langue (Town, Rovers, Real, Deportivo…) comptent comme mots génériques
+const TYPES = new Set((NAMES?.clubTypes || []).flatMap((x) => String(x).split(/\s+/)).map((w) => letters(w).toLowerCase()).filter(Boolean));
 
 function mainWord(name) {
   const tokens = String(name || '').split(/[\s’']+/).filter((t) => letters(t));
   const low = (t) => letters(t).toLowerCase();
-  const sig = tokens.filter((t) => !STOP.has(low(t)) && !GENERIC.has(low(t)));
+  const sig = tokens.filter((t) => !STOP.has(low(t)) && !GENERIC.has(low(t)) && !TYPES.has(low(t)));
   const pool = sig.length ? sig : tokens.filter((t) => !STOP.has(low(t)));
-  return { main: (pool.length ? pool : tokens)[(pool.length ? pool : tokens).length - 1] || 'Club', all: pool.length ? pool : tokens };
+  return { main: (pool.length ? pool : tokens)[(pool.length ? pool : tokens).length - 1] || t('Club'), all: pool.length ? pool : tokens };
+}
+
+// Écriture arabe : pas de sigle latin possible. Comme les bandeaux des chaînes arabes, le mot principal du nom, tel quel,
+// sans le type de club (« اتحاد الواحة » → « الواحة »).
+const arabic = (name) => /[\u0600-\u06FF]/.test(name) && !/[A-Za-z]/.test(plain(name));
+function arabicCode(name) {
+  const words = String(name || '').split(/\s+/).filter(Boolean);
+  const types = new Set(NAMES?.clubTypes || []);
+  const sig = words.filter((w) => !types.has(w));
+  return (sig.length ? sig : words).at(-1) || t('Club');
 }
 
 // code principal d'un nom
 export function teamCode(name) {
+  if (arabic(name)) return arabicCode(name);
   const { main, all } = mainWord(name);
   const parts = main.split('-').map(letters).filter(Boolean);
   let code;
@@ -52,6 +67,7 @@ function alternatives(name) {
 export function teamCodes(home, away) {
   const h = teamCode(home);
   let a = teamCode(away);
-  if (a === h) a = alternatives(away).find((c) => c !== h) || `${a.slice(0, 2)}2`;
+  if (a === h && arabic(away)) a = String(away).split(/\s+/)[0]; // deux « الواحة » : le type du club (« نجم »)
+  else if (a === h) a = alternatives(away).find((c) => c !== h) || `${a.slice(0, 2)}2`;
   return [h, a];
 }

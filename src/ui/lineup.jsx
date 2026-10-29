@@ -8,6 +8,7 @@ import { RatingBadge } from './kit';
 import { haptic } from './haptics';
 import { Portrait } from './portrait';
 import { IconCheck } from './icons';
+import { t, tn, tr } from '../i18n/index';
 
 // Composition interactive, la même partout (onglet Composition de l'Effectif, avant-match, mi-temps) : le terrain
 // avec le onze à ses postes (portrait, note au poste, nom, condition), le banc en cartes en dessous. Le terrain se
@@ -105,13 +106,13 @@ export function displayNames(players) {
 // dans la même proportion), en mots sous le choix.
 export function formationEffect(id) {
   const f = FORMATIONS[id];
-  if (!f || f.for === 1) return 'Occasions : la référence.';
+  if (!f || f.for === 1) return t('Occasions : la référence.');
   const pct = Math.round((f.for - 1) * 100);
-  return `Occasions : ${pct > 0 ? '+' : '−'}${Math.abs(pct)} % des deux côtés.`;
+  return t('Occasions : {v}{abs} % des deux côtés.', { v: pct > 0 ? '+' : '−', abs: Math.abs(pct) });
 }
 export function FormationPicker({ value, onChange }) {
   return (
-    <div className="formations" role="radiogroup" aria-label="Dispositif">
+    <div className="formations" role="radiogroup" aria-label={t('Dispositif')}>
       {FORMATION_ORDER.map((id) => (
         <button key={id} role="radio" aria-checked={value === id} className={value === id ? 'active' : ''} onClick={() => onChange(id)}>
           <strong>{FORMATIONS[id].name}</strong>
@@ -140,12 +141,12 @@ function LineupAction({ next, lineup, onApply, label, done, gain = null, title, 
 export function BestEleven({ players, lineup, formation, onApply }) {
   const best = useMemo(() => autoLineup(players, formation, restWeight), [players, formation]);
   const gain = lineupRating(players, best, formation) - lineupRating(players, lineup, formation);
-  return <LineupAction next={best} lineup={lineup} onApply={onApply} label="Meilleur onze" done="Meilleur onze" gain={gain} title="Les meilleures notes, sans regarder la condition physique" />;
+  return <LineupAction next={best} lineup={lineup} onApply={onApply} label={t('Meilleur onze')} done={t('Meilleur onze')} gain={gain} title={t('Les meilleures notes, sans regarder la condition physique')} />;
 }
 export function FitEleven({ players, lineup, formation, onApply }) {
   const best = useMemo(() => freshLineup(players, formation), [players, formation]);
   const n = changed(best, lineup);
-  return <LineupAction next={best} lineup={lineup} onApply={onApply} label="Onze frais" done="Onze frais" gain={n ? null : 0} className="lu-fresh" title={`Les meilleurs joueurs à ${FRESH_FIT} % de condition physique ou plus ; un joueur fatigué seulement si personne de frais ne tient son poste`} />;
+  return <LineupAction next={best} lineup={lineup} onApply={onApply} label={t('Onze frais')} done={t('Onze frais')} gain={n ? null : 0} className="lu-fresh" title={t('Les meilleurs joueurs à {FRESH_FIT} % de condition physique ou plus ; un joueur fatigué seulement si personne de frais ne tient son poste', { FRESH_FIT })} />;
 }
 
 // Niveau d'un onze tel qu'il jouera, condition comprise (comme le pronostic et le match), avec ce que la fatigue lui
@@ -158,10 +159,7 @@ export function levelOf(players, lineup, formation) {
 export function LevelReadout({ level }) {
   const { rating, rested, tired } = level;
   return (
-    <span className="pm-level">
-      Niveau <b>{fmtRating(rating)}</b>
-      {tired > 0 && <em className="pm-tired" title={`${fmtRating(rested)} au repos`}>fatigue −{fmtRating(tired)}</em>}
-    </span>
+    <span className="pm-level">{tr('Niveau <0/><1/>', [<b>{fmtRating(rating)}</b>, tired > 0 && <em className="pm-tired" title={t('{fmtRating} au repos', { fmtRating: fmtRating(rested) })}>{tr('fatigue −<0/>', [fmtRating(tired)])}</em>])}</span>
   );
 }
 
@@ -169,7 +167,7 @@ export function LevelReadout({ level }) {
 export function RotateButton({ players, lineup, last, formation, onApply }) {
   const ref = last?.length ? last : lineup;
   const next = useMemo(() => rotateLineup(players, ref, formation), [players, ref, formation]);
-  return <LineupAction next={next} lineup={lineup} onApply={onApply} label="Faire tourner" done="Rotation en place" className="lu-rotate" title="Les remplaçants du dernier match jouent, complétés par les titulaires les plus reposés" />;
+  return <LineupAction next={next} lineup={lineup} onApply={onApply} label={t('Faire tourner')} done={t('Rotation en place')} className="lu-rotate" title={t('Les remplaçants du dernier match jouent, complétés par les titulaires les plus reposés')} />;
 }
 // Les trois boutons ensemble (avant-match, onglet Composition)
 export function LineupActions({ state, lineup, formation, onApply }) {
@@ -189,7 +187,7 @@ function FitBar({ value }) {
   const v = Math.round(Math.max(0, Math.min(100, value)));
   const tone = FIT_TONE(v);
   return (
-    <span className={`lu-fit ${tone}`} title={`Condition physique : ${v} %`} aria-label={`condition ${v} %`}>
+    <span className={`lu-fit ${tone}`} title={t('Condition physique : {v} %', { v })} aria-label={t('condition {v} %', { v })}>
       <span className="lu-fit-bar"><i style={{ width: `${v}%` }} /></span>
       <em>{v} %</em>
     </span>
@@ -200,7 +198,7 @@ function FitBar({ value }) {
 function BenchFit({ value }) {
   if (value == null) return null;
   const v = Math.round(Math.max(0, Math.min(100, value)));
-  return <span className={`lu-bfit ${FIT_TONE(v)}`} title={`Condition physique : ${v} %`}>{v} %</span>;
+  return <span className={`lu-bfit ${FIT_TONE(v)}`} title={t('Condition physique : {v} %', { v })}>{v} %</span>;
 }
 
 export function LineupBoard({ players, lineup, formation, onChange, locked = null, booked = null, maxIn = Infinity, original = null, notes = null, hurt = null, unavailable = null, fitness = null }) {
@@ -324,11 +322,11 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
   const left = original ? maxIn - entering(lineup) : null;
   const sentOn = lineup.filter((id) => isLocked(id)).length;
   const outHint = selOut
-    ? `${playerOf(sel)?.name} ne joue plus : choisis le poste à laisser vide (jamais celui du gardien)`
-    : sentOn > 1 ? 'Expulsés : déplace-les sur les postes à laisser vides' : sentOn ? 'Expulsé : déplace-le sur le poste à laisser vide' : null;
+    ? t('{v} ne joue plus : choisis le poste à laisser vide (jamais celui du gardien)', { v: playerOf(sel)?.name })
+    : sentOn > 1 ? t('Expulsés : déplace-les sur les postes à laisser vides') : sentOn ? t('Expulsé : déplace-le sur le poste à laisser vide') : null;
   const hint = sel && !selOut
-    ? `${playerOf(sel)?.name} : choisis un poste ou un joueur pour l’y placer`
-    : 'Glisse un joueur sur un poste, ou choisis-en deux pour les échanger';
+    ? t('{v} : choisis un poste ou un joueur pour l’y placer', { v: playerOf(sel)?.name })
+    : t('Glisse un joueur sur un poste, ou choisis-en deux pour les échanger');
 
   return (
     <div className={`lu ${ghost ? 'dragging' : ''}`} ref={root} data-noswipe="">
@@ -352,8 +350,8 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
               data-drop={key}
               className={cls.filter(Boolean).join(' ')}
               style={{ '--x': `${pitch[k][0]}%`, '--y': `${pitch[k][1]}%` }}
-              title={isLocked(id) ? 'Expulsé : il ne peut pas être remplacé ; déplace-le sur le poste à laisser vide' : isHurt(id) ? 'Blessé : à remplacer par un joueur du banc, ou à déplacer sur le poste à laisser vide' : `${POS_LABELS[pos]}${natural ? '' : ` · hors de son poste (${POS_LABELS[p.pos].toLowerCase()})`}`}
-              aria-label={`${p.name}, ${POS_LABELS[pos].toLowerCase()}${out ? '' : `, niveau ${fmtRating(cur)}`}${isLocked(id) ? ', expulsé, poste laissé vide' : isHurt(id) ? ', blessé' : ''}`}
+              title={isLocked(id) ? t('Expulsé : il ne peut pas être remplacé ; déplace-le sur le poste à laisser vide') : isHurt(id) ? t('Blessé : à remplacer par un joueur du banc, ou à déplacer sur le poste à laisser vide') : `${POS_LABELS[pos]}${natural ? '' : t(' · hors de son poste ({toLowerCase})', { toLowerCase: POS_LABELS[p.pos].toLowerCase() })}`}
+              aria-label={`${p.name}, ${POS_LABELS[pos].toLowerCase()}${out ? '' : t(', niveau {fmtRating}', { fmtRating: fmtRating(cur) })}${isLocked(id) ? t(', expulsé, poste laissé vide') : isHurt(id) ? t(', blessé') : ''}`}
               {...handlers({ kind: 'slot', k })}
             >
               <span className="lu-face">
@@ -372,19 +370,19 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
       </div>
       <div className="lu-bench">
         <div className="lu-bench-head">
-          <span className="lu-bench-title mark-head">Remplaçants</span>
-          {left !== null && <span className={`lu-left ${left === 0 ? 'none' : ''}`}>{left === 0 ? 'Plus de changement' : `${left} changement${left > 1 ? 's' : ''} possible${left > 1 ? 's' : ''}`}</span>}
+          <span className="lu-bench-title mark-head">{t('Remplaçants')}</span>
+          {left !== null && <span className={`lu-left ${left === 0 ? 'none' : ''}`}>{left === 0 ? t('Plus de changement') : tn(left, '{left} changement possible', '{left} changements possibles', { left }, left > 1)}</span>}
         </div>
         <div className="lu-bench-grid">
-          {bench.length === 0 && <span className="muted small">Aucun remplaçant : recrute au mercato.</span>}
+          {bench.length === 0 && <span className="muted small">{t('Aucun remplaçant : recrute au mercato.')}</span>}
           {bench.map((p) => {
             const key = `bench:${p.id}`;
             const ok = canEnter(p);
-            const why = ok ? null : absenceOf(p)?.short || (hurt?.has(p.id) ? 'Blessé' : 'Déjà sorti');
+            const why = ok ? null : absenceOf(p)?.short || (hurt?.has(p.id) ? t('Blessé') : t('Déjà sorti'));
             const cls = ['lu-bchip', keyOf(sel) === key && 'sel', over === key && 'over', (ghost?.from === key || lift === key) && 'src', lift === key && 'lift', !ok && 'na'];
             return (
               <button key={p.id} type="button" data-drop={key} className={cls.filter(Boolean).join(' ')} title={why || undefined} aria-disabled={!ok || undefined}
-                aria-label={`${p.name}, ${POS_LABELS[p.pos].toLowerCase()}, niveau ${fmtRating(playerRating(p))}${why ? `, ${why.toLowerCase()}` : ''}`} {...handlers({ kind: 'bench', id: p.id })}>
+                aria-label={t('{name}, {toLowerCase}, niveau {fmtRating}{v}', { name: p.name, toLowerCase: POS_LABELS[p.pos].toLowerCase(), fmtRating: fmtRating(playerRating(p)), v: why ? `, ${why.toLowerCase()}` : '' })} {...handlers({ kind: 'bench', id: p.id })}>
                 <Portrait p={p} size={36} />
                 <span className="lu-bmain">
                   <span className="lu-bname">{names[p.id]}</span>
@@ -422,7 +420,7 @@ export function LineupEditor({ state, run }) {
     <div className="lu-editor">
       <section className="lu-main">
         <div className="pm-xi-head">
-          <h3 className="pm-sh mark-head">Onze de départ · <span className="nowrap">{formationOf(formation).name}</span></h3>
+          <h3 className="pm-sh mark-head">{tr('Onze de départ · <0/>', [<span className="nowrap">{formationOf(formation).name}</span>])}</h3>
           <LevelReadout level={level} />
           <LineupActions state={state} lineup={state.lineup} formation={formation} onApply={(l) => save(l)} />
         </div>
@@ -430,17 +428,17 @@ export function LineupEditor({ state, run }) {
       </section>
       <aside className="lu-side">
         <div className="lu-card">
-          <h3 className="pm-sh mark-head">Dispositif</h3>
+          <h3 className="pm-sh mark-head">{t('Dispositif')}</h3>
           <FormationPicker value={formation} onChange={(f) => save(reshapeLineup(state.players, state.lineup, f), f)} />
           <p className="pm-blurb">{formationOf(formation).blurb} <span className="pm-effect">{formationEffect(formation)}</span></p>
         </div>
         <div className="lu-card lu-legend">
-          <h3 className="pm-sh mark-head">Repères</h3>
-          <p><i className="lu-dot" /><span>Le chiffre à côté du portrait est le niveau du joueur <b>à ce poste</b>.</span></p>
-          <p><i className="lu-dot off" /><span>Contour en pointillés rouges : il joue hors de son poste{offPos ? ` (${offPos} dans ton onze)` : ''}.</span></p>
-          <p><i className="lu-dot alt" /><span>Joueur choisi : chaque poste affiche le niveau qu’il y aurait, en vert s’il y ferait mieux, en rouge sinon.</span></p>
-          <p><i className="lu-dot fit" /><span>Barre et pourcentage sous le nom : condition physique. Un joueur fatigué joue moins bien et se blesse plus souvent ; les absents (blessés, suspendus) restent sur le banc, grisés.</span></p>
-          <p className="muted small">Ce onze est repris à l’avant-match, où tu peux encore le retoucher.</p>
+          <h3 className="pm-sh mark-head">{t('Repères')}</h3>
+          <p><i className="lu-dot" /><span>{tr('Le chiffre à côté du portrait est le niveau du joueur <0>à ce poste</0>.', [(c) => <b>{c}</b>])}</span></p>
+          <p><i className="lu-dot off" /><span>{tr('Contour en pointillés rouges : il joue hors de son poste<0/>.', [offPos ? t(' ({offPos} dans ton onze)', { offPos }) : ''])}</span></p>
+          <p><i className="lu-dot alt" /><span>{t('Joueur choisi : chaque poste affiche le niveau qu’il y aurait, en vert s’il y ferait mieux, en rouge sinon.')}</span></p>
+          <p><i className="lu-dot fit" /><span>{t('Barre et pourcentage sous le nom : condition physique. Un joueur fatigué joue moins bien et se blesse plus souvent ; les absents (blessés, suspendus) restent sur le banc, grisés.')}</span></p>
+          <p className="muted small">{t('Ce onze est repris à l’avant-match, où tu peux encore le retoucher.')}</p>
         </div>
       </aside>
     </div>

@@ -7,6 +7,7 @@ import { bestSigning } from './advice';
 import { book } from './ledger';
 import { seasonObjectives } from './objectives';
 import { rnd } from './utils';
+import { eur as eurIntl, LANG, numLocale, t } from '../i18n/index';
 
 // Tutoriel des premières minutes, mené par la directrice sportive du club : bienvenue → centre d'entraînement →
 // première séance (une épreuve en 3D) → première recrue → premier match → effectif (condition physique, blessures,
@@ -24,7 +25,7 @@ const goalReached = {
 };
 // primes des étapes d'action (une fois chacune), et ce qui les justifie
 export const REWARDS = {
-  build: [1000, 'Subvention de la mairie'], train: [500, 'Premier entraînement'], sign: [500, 'Première recrue'], match: [1000, 'Premier match'],
+  build: [1000, t('Subvention de la mairie')], train: [500, t('Premier entraînement')], sign: [500, t('Première recrue')], match: [1000, t('Premier match')],
 };
 
 // Fait avancer le tutoriel tant que les objectifs des étapes sont déjà remplis ; les primes gagnées s'ajoutent à
@@ -99,7 +100,7 @@ export function prepareFirstSeason(s) {
 
 // Textes des étapes, dits par la directrice sportive : quoi faire (text), pourquoi (why), et la prime de l'étape
 // (reward). Le club, la recrue proposée et les objectifs tirés rendent le tutoriel concret.
-const eur = (v) => `${v.toLocaleString('fr-FR')} €`;
+const eur = (v) => (LANG !== 'fr' ? eurIntl(v) : `${v.toLocaleString(numLocale())} €`);
 export function stepContent(step, s) {
   const total = STEPS.length;
   const index = STEPS.indexOf(step) + 1;
@@ -108,81 +109,81 @@ export function stepContent(step, s) {
     case 'welcome':
       return {
         ...base,
-        title: 'Bienvenue, président',
-        text: `${s.clubName} démarre en ${DIVISIONS[s.divisionIndex].name} : un terrain municipal, ${eur(START_MONEY)} en caisse et tout à construire. Je suis ta directrice sportive : je te montre l’essentiel en quelques minutes.`,
-        why: 'Ton but : monter de division en division jusqu’à l’Élite, et bâtir le complexe le plus prestigieux du pays.',
-        cta: 'C’est parti',
+        title: t('Bienvenue, président'),
+        text: t('{clubName} démarre en {name} : un terrain municipal, {START_MONEY} en caisse et tout à construire. Je suis ta directrice sportive : je te montre l’essentiel en quelques minutes.', { clubName: s.clubName, name: DIVISIONS[s.divisionIndex].name, START_MONEY: eur(START_MONEY) }),
+        why: t('Ton but : monter de division en division jusqu’à l’Élite, et bâtir le complexe le plus prestigieux du pays.'),
+        cta: t('C’est parti'),
       };
     case 'build':
       return {
         ...base,
-        title: 'Construis ton centre d’entraînement',
-        text: `Touche la parcelle 1 du complexe, puis maintiens « Construire ». Coût : ${eur(upgradeCost('training', 1))}.`,
-        why: 'Sans lui, tes joueurs ne progressent qu’à l’intersaison. Avec lui, ils progressent entre chaque match.',
-        cta: 'Voir la parcelle',
+        title: t('Construis ton centre d’entraînement'),
+        text: t('Touche la parcelle 1 du complexe, puis maintiens « Construire ». Coût : {upgradeCost}.', { upgradeCost: eur(upgradeCost('training', 1)) }),
+        why: t('Sans lui, tes joueurs ne progressent qu’à l’intersaison. Avec lui, ils progressent entre chaque match.'),
+        cta: t('Voir la parcelle'),
         action: { kind: 'plot', plot: 't1', sector: 'main' },
       };
     case 'train':
       return {
         ...base,
-        title: 'Ta première séance',
-        text: 'Ouvre le centre, choisis un joueur et joue son épreuve en 3D : frappes, sprint, lecture du jeu ou arrêts du gardien.',
-        why: 'Plus l’épreuve est réussie, plus le joueur progresse, pour de bon. Pressé ? « Simuler » assure un gain moyen.',
-        cta: 'Aller à l’entraînement',
+        title: t('Ta première séance'),
+        text: t('Ouvre le centre, choisis un joueur et joue son épreuve en 3D : frappes, sprint, lecture du jeu ou arrêts du gardien.'),
+        why: t('Plus l’épreuve est réussie, plus le joueur progresse, pour de bon. Pressé ? « Simuler » assure un gain moyen.'),
+        cta: t('Aller à l’entraînement'),
         action: { kind: 'panel', panel: 'training' },
       };
     case 'sign': {
       const rec = bestSigning(s)?.player;
       return {
         ...base,
-        title: 'Renforce ton équipe',
+        title: t('Renforce ton équipe'),
         text: rec
-          ? `${rec.name} (${POS_LABELS[rec.pos].toLowerCase()}) ${rec.club ? `est à vendre (${rec.club})` : 'est libre'} et renforcerait ton onze. Dans le mercato, il est marqué « Recommandé » : fais-lui une offre.`
-          : 'Le mercato bouge à chaque journée. Recrute quand un joueur renforce ton onze : il est marqué « Recommandé ».',
-        why: 'Avant de confirmer, la jauge de l’offre affiche tes vraies chances d’accord : à toi de doser le prix.',
-        cta: 'Ouvrir le mercato',
+          ? t('{name} ({toLowerCase}) {v} et renforcerait ton onze. Dans le mercato, il est marqué « Recommandé » : fais-lui une offre.', { name: rec.name, toLowerCase: POS_LABELS[rec.pos].toLowerCase(), v: rec.club ? t('est à vendre ({club})', { club: rec.club }) : t('est libre') })
+          : t('Le mercato bouge à chaque journée. Recrute quand un joueur renforce ton onze : il est marqué « Recommandé ».'),
+        why: t('Avant de confirmer, la jauge de l’offre affiche tes vraies chances d’accord : à toi de doser le prix.'),
+        cta: t('Ouvrir le mercato'),
         action: { kind: 'panel', panel: 'mercato' },
       };
     }
     case 'match':
       return {
         ...base,
-        title: 'Joue ton premier match',
-        text: 'Choisis ton onze et ta tactique, regarde le pronostic bouger, puis vis la rencontre en direct.',
-        why: 'Chaque match à domicile remplit la caisse, et chaque victoire rapproche de la montée.',
-        cta: 'Jouer le match',
+        title: t('Joue ton premier match'),
+        text: t('Choisis ton onze et ta tactique, regarde le pronostic bouger, puis vis la rencontre en direct.'),
+        why: t('Chaque match à domicile remplit la caisse, et chaque victoire rapproche de la montée.'),
+        cta: t('Jouer le match'),
         action: { kind: 'match' },
       };
     case 'squad':
       return {
         ...base,
-        title: 'Ménage ton effectif',
-        text: 'Sous chaque joueur, une barre : sa condition physique. Un match la fait baisser selon l’endurance, chaque date la remonte. Fatigué, un joueur joue moins bien et se blesse plus souvent : « Onze frais » aligne les meilleurs joueurs à 80 % de condition ou plus, « Faire tourner » fait jouer les remplaçants.',
-        why: 'Blessés et suspendus (rouge : deux matchs, second jaune ou trois jaunes : un) restent sur le banc, grisés. Pendant un match, « Changement » arrête le jeu à toute minute : cinq changements par match.',
-        cta: 'Compris',
+        title: t('Ménage ton effectif'),
+        text: t('Sous chaque joueur, une barre : sa condition physique. Un match la fait baisser selon l’endurance, chaque date la remonte. Fatigué, un joueur joue moins bien et se blesse plus souvent : « Onze frais » aligne les meilleurs joueurs à 80 % de condition ou plus, « Faire tourner » fait jouer les remplaçants.'),
+        why: t('Blessés et suspendus (rouge : deux matchs, second jaune ou trois jaunes : un) restent sur le banc, grisés. Pendant un match, « Changement » arrête le jeu à toute minute : cinq changements par match.'),
+        cta: t('Compris'),
       };
     case 'goals': {
       const obj = seasonObjectives(s);
       const list = obj ? obj.list.map((o) => o.title.toLowerCase()).join(', ') : '';
       return {
         ...base,
-        title: 'Les objectifs du conseil',
+        title: t('Les objectifs du conseil'),
         text: obj
-          ? `Cette saison, le conseil d’administration attend trois choses de toi : ${list}. Chacun rapporte une prime ; leur avancée est en haut à gauche.`
-          : 'Chaque saison, le conseil d’administration te fixe trois objectifs, chacun avec sa prime ; leur avancée est en haut à gauche.',
-        why: obj ? `Les trois réussis valent un bonus de saison parfaite : +${eur(obj.perfect.money)}.` : 'Les trois réussis valent un bonus de saison parfaite.',
-        cta: 'Compris',
+          ? t('Cette saison, le conseil d’administration attend trois choses de toi : {list}. Chacun rapporte une prime ; leur avancée est en haut à gauche.', { list })
+          : t('Chaque saison, le conseil d’administration te fixe trois objectifs, chacun avec sa prime ; leur avancée est en haut à gauche.'),
+        why: obj ? t('Les trois réussis valent un bonus de saison parfaite : +{money}.', { money: eur(obj.perfect.money) }) : t('Les trois réussis valent un bonus de saison parfaite.'),
+        cta: t('Compris'),
       };
     }
     case 'stadium': {
       const cost = upgradeCost('terrain', 2);
       return {
         ...base,
-        title: 'Ton prochain cap : le stade',
-        text: `À ${eur(cost)}, ton stade passera à ${capacity(2).toLocaleString('fr-FR')} places : plus de public, plus de recettes à chaque match.`,
-        why: 'Les pastilles dorées montrent ce qui est prêt à être amélioré, et le bouton du staff, à droite de l’écran, te conseille ensuite.',
-        cta: 'Terminer',
-        secondary: { label: 'Voir le stade', action: { kind: 'plot', plot: 't0', sector: 'main' } },
+        title: t('Ton prochain cap : le stade'),
+        text: t('À {cost}, ton stade passera à {toLocaleString} places : plus de public, plus de recettes à chaque match.', { cost: eur(cost), toLocaleString: capacity(2).toLocaleString(numLocale()) }),
+        why: t('Les pastilles dorées montrent ce qui est prêt à être amélioré, et le bouton du staff, à droite de l’écran, te conseille ensuite.'),
+        cta: t('Terminer'),
+        secondary: { label: t('Voir le stade'), action: { kind: 'plot', plot: 't0', sector: 'main' } },
       };
     }
     default:

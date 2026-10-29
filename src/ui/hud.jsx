@@ -18,11 +18,12 @@ import { clubStars } from '../game/crest';
 import { useFitText } from './fittext';
 import { deadlineText } from '../game/league';
 import { duesNow } from '../game/advice';
+import { eur, LANG, numLocale, ordinal as ordinalText, ordSuffix, t, tn, tr } from '../i18n/index';
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran, en plaques façon habillage télé (docs/DESIGN.md).
 
-const euros = (v) => `${new Intl.NumberFormat('fr-FR').format(v)} €`;
-const ordinal = (n) => <>{n}<sup>{n === 1 ? 'er' : 'e'}</sup></>;
+const euros = (v) => (LANG !== 'fr' ? eur(v) : `${new Intl.NumberFormat(numLocale()).format(v)} €`);
+const ordinal = (n) => <>{n}<sup>{ordSuffix(n)}</sup></>;
 
 // Bandeaux du haut, découpés en cases comme un score télé : à gauche le club (écusson, nom, division et saison,
 // journée, classement en or), à droite la trésorerie et la notoriété, puis le menu. Téléphone : le club et le menu
@@ -37,30 +38,30 @@ export function TopHud({ state, onMenu, onFinances, onReputation, onTable }) {
   const nameRef = useFitText(state.clubName, 17);
   return (
     <header className="hud-top">
-      <div className="hud-bug hud-club" aria-label="Club">
+      <div className="hud-bug hud-club" aria-label={t('Club')}>
         <span className="hud-cell hud-crest"><ClubCrest crest={state.crest} name={state.clubName} className="hud-mark" stars={clubStars(state)} /></span>
         <span className="hud-cell hud-id">
           <span className="hud-club-name" ref={nameRef}>{state.clubName}</span>
-          <span className="hud-club-meta">{div.name}<span className="hud-meta-season"> · Saison {state.seasonNumber}</span><span className="hud-meta-round"> · J{round}/{rounds}</span></span>
+          <span className="hud-club-meta">{div.name}<span className="hud-meta-season">{' '}{tr('· Saison <0/>', [state.seasonNumber])}</span><span className="hud-meta-round"> · {t('J')}{round}/{rounds}</span></span>
         </span>
-        <span className="hud-cell hud-round"><small>Journée</small><b>{round}/{rounds}</b></span>
-        <button className="hud-cell hud-rank" onClick={onTable} title="Voir le classement"
-          aria-label={rank ? `Classement : ${rank === 1 ? '1er' : `${rank}e`}, voir le classement` : 'Classement : aucune journée jouée, voir le classement'}>
-          <small>Classement</small><b className={rank ? '' : 'none'}>{rank ? ordinal(rank) : '–'}</b>
+        <span className="hud-cell hud-round"><small>{t('Journée')}</small><b>{round}/{rounds}</b></span>
+        <button className="hud-cell hud-rank" onClick={onTable} title={t('Voir le classement')}
+          aria-label={rank ? t('Classement : {v}, voir le classement', { v: ordinalText(rank) }) : t('Classement : aucune journée jouée, voir le classement')}>
+          <small>{t('Classement')}</small><b className={rank ? '' : 'none'}>{rank ? ordinal(rank) : '–'}</b>
         </button>
       </div>
-      <div className="hud-bug hud-res" aria-label="Ressources">
-        <button className={`hud-cell hud-money ${state.money < 0 ? 'neg' : ''}`} onClick={onFinances} title={`Trésorerie : ${fmtMoney(due.total)} à payer en fin de saison, dont ${fmtMoney(due.owed)} déjà dus ; ${fmtMoney(due.available)} disponibles · voir les finances`}
-          aria-label={`Trésorerie : ${fmtMoney(state.money)} ; à payer en fin de saison : ${fmtMoney(due.total)}, dont ${fmtMoney(due.owed)} déjà dus ; disponible : ${fmtMoney(due.available)}. Voir les finances`} data-money-target>
+      <div className="hud-bug hud-res" aria-label={t('Ressources')}>
+        <button className={`hud-cell hud-money ${state.money < 0 ? 'neg' : ''}`} onClick={onFinances} title={t('Trésorerie : {total} à payer en fin de saison, dont {owed} déjà dus ; {available} disponibles · voir les finances', { total: fmtMoney(due.total), owed: fmtMoney(due.owed), available: fmtMoney(due.available) })}
+          aria-label={t('Trésorerie : {money} ; à payer en fin de saison : {total}, dont {owed} déjà dus ; disponible : {available}. Voir les finances', { money: fmtMoney(state.money), total: fmtMoney(due.total), owed: fmtMoney(due.owed), available: fmtMoney(due.available) })} data-money-target>
           <IconCoin />
           <span className="hud-stack">
-            <small>Trésorerie</small>
+            <small>{t('Trésorerie')}</small>
             <b className="hud-val"><AnimatedMoney value={state.money} /></b>
-            <em className={`hud-avail ${due.available < 0 ? 'neg' : ''}`}><span className="hide-sm">disponible</span><span className="show-sm">dispo</span> {fmtMoney(due.available)}</em>
+            <em className={`hud-avail ${due.available < 0 ? 'neg' : ''}`}><span className="hide-sm">{t('disponible')}</span><span className="show-sm">{t('dispo')}</span> {fmtMoney(due.available)}</em>
           </span>
         </button>
-        <button className="hud-cell hud-rep" onClick={onReputation} aria-label={`Notoriété : ${rl.level.name}, réputation ${Math.round(state.reputation)}`}
-          title={`${rl.level.name}${rl.next ? ` · prochain statut : ${rl.next.name} à ${rl.next.min} de réputation` : ''} · voir ce qu’elle apporte`}>
+        <button className="hud-cell hud-rep" onClick={onReputation} aria-label={t('Notoriété : {name}, réputation {round}', { name: rl.level.name, round: Math.round(state.reputation) })}
+          title={t('{name}{v} · voir ce qu’elle apporte', { name: rl.level.name, v: rl.next ? t(' · prochain statut : {name} à {min} de réputation', { name: rl.next.name, min: rl.next.min }) : '' })}>
           <IconStar />
           <span className="hud-stack">
             <small>{rl.level.name}</small>
@@ -72,7 +73,7 @@ export function TopHud({ state, onMenu, onFinances, onReputation, onTable }) {
           </span>
         </button>
       </div>
-      <button className="hud-bug hud-menu" onClick={onMenu} aria-label="Menu"><IconMenu /></button>
+      <button className="hud-bug hud-menu" onClick={onMenu} aria-label={t('Menu')}><IconMenu /></button>
     </header>
   );
 }
@@ -90,17 +91,17 @@ export function ObjectiveWidget({ state, collapsed, onToggle }) {
   const max = obj.list.reduce((a, o) => a + (o.state === 'failed' ? 0 : o.prize.money), 0) + (failed ? 0 : obj.perfect.money);
   const all = obj.done === n;
   return (
-    <aside className={`hud-goal glass ${collapsed ? 'collapsed' : ''} ${all ? 'achieved' : ''}`} aria-label="Objectifs du conseil">
+    <aside className={`hud-goal glass ${collapsed ? 'collapsed' : ''} ${all ? 'achieved' : ''}`} aria-label={t('Objectifs du conseil')}>
       <button className="hud-goal-head" onClick={onToggle} aria-expanded={!collapsed}>
         {collapsed ? (
           <>
-            <span className="hud-goal-k">Objectifs {obj.done}/{n}</span>
-            <span className="hud-goal-max">{all ? <><b>+{euros(max)}</b> au bilan</> : max ? <>jusqu’à <b>+{euros(max)}</b></> : 'manqués'}</span>
+            <span className="hud-goal-k">{tr('Objectifs <0/>/<1/>', [obj.done, n])}</span>
+            <span className="hud-goal-max">{all ? <><b>+{euros(max)}</b>{t(' au bilan')}</> : max ? <>{t('jusqu’à ')}<b>+{euros(max)}</b></> : t('manqués')}</span>
           </>
         ) : (
           <>
-            <span className="hud-goal-k mark-head">Objectifs du conseil</span>
-            <span className="hud-goal-count">{obj.done} sur {n}</span>
+            <span className="hud-goal-k mark-head">{t('Objectifs du conseil')}</span>
+            <span className="hud-goal-count">{tr('<0/> sur <1/>', [obj.done, n])}</span>
           </>
         )}
         <IconChevron className="hud-goal-chev" />
@@ -115,13 +116,13 @@ export function ObjectiveWidget({ state, collapsed, onToggle }) {
                 <b className="hud-obj-prize">+{euros(o.prize.money)}</b>
                 <span className="hud-obj-sub">
                   <span className="hud-obj-bar" aria-hidden="true"><i style={{ width: `${Math.round(o.ratio * 100)}%` }} /></span>
-                  <em>{o.state === 'done' ? 'atteint, prime au bilan' : o.state === 'failed' ? 'manqué' : o.now}</em>
+                  <em>{o.state === 'done' ? t('atteint, prime au bilan') : o.state === 'failed' ? t('manqué') : o.now}</em>
                 </span>
               </li>
             ))}
           </ul>
-          <p className="hud-goal-foot"><span>Les trois réussis : bonus</span><b>+{euros(obj.perfect.money)}</b></p>
-          {ch && <p className="hud-goal-foot step"><span title={ch.chapter.goal}>Carrière · {ch.chapter.title} <em>{ch.progress.now}</em></span><b>{ch.reward.short}</b></p>}
+          <p className="hud-goal-foot"><span>{t('Les trois réussis : bonus')}</span><b>+{euros(obj.perfect.money)}</b></p>
+          {ch && <p className="hud-goal-foot step"><span title={ch.chapter.goal}>{tr('Carrière · <0/> <1/>', [ch.chapter.title, <em>{ch.progress.now}</em>])}</span><b>{ch.reward.short}</b></p>}
         </div>
       )}
     </aside>
@@ -131,19 +132,19 @@ export function ObjectiveWidget({ state, collapsed, onToggle }) {
 // Cinq sections (nav.jsx) : Complexe (la vue 3D), Équipe, Mercato, Saison, Club. Le stade n'a pas de bouton : on
 // l'ouvre en le touchant dans la vue 3D.
 const DOCK = [
-  { id: null, section: null, label: 'Complexe', Icon: IconEmpire },
-  { id: 'squad', section: 'equipe', label: 'Équipe', Icon: IconUsers },
-  { id: 'mercato', section: 'mercato', label: 'Mercato', Icon: IconTransfer },
-  { id: 'season', section: 'saison', label: 'Saison', Icon: IconCal },
-  { id: 'club', section: 'club', label: 'Club', Icon: IconShield },
+  { id: null, section: null, label: t('Complexe'), Icon: IconEmpire },
+  { id: 'squad', section: 'equipe', label: t('Équipe'), Icon: IconUsers },
+  { id: 'mercato', section: 'mercato', label: t('Mercato'), Icon: IconTransfer },
+  { id: 'season', section: 'saison', label: t('Saison'), Icon: IconCal },
+  { id: 'club', section: 'club', label: t('Club'), Icon: IconShield },
 ];
 
 // Pastille du dock : point doré (action utile), « ! » rouge (alerte) ou nombre (rouge, comme une notification).
 function DockBadge({ value }) {
   if (!value) return null;
-  if (value === 'dot') return <i className="dock-badge dot" aria-label="Action disponible" />;
-  if (value === 'warn') return <i className="dock-badge warn" aria-label="Alerte">!</i>;
-  return <i className="dock-badge" aria-label={`${value} à traiter`}>{value}</i>;
+  if (value === 'dot') return <i className="dock-badge dot" aria-label={t('Action disponible')} />;
+  if (value === 'warn') return <i className="dock-badge warn" aria-label={t('Alerte')}>!</i>;
+  return <i className="dock-badge" aria-label={t('{value} à traiter', { value })}>{value}</i>;
 }
 
 // Raccourci clavier du HUD (PC) : touche physique (code), sans modificateur, jamais pendant une saisie ; actif
@@ -185,7 +186,7 @@ export function Dock({ panel, onPanel, badges = {}, keys = false }) {
     onPanel(active === id ? null : id);
   }, keys);
   return (
-    <nav ref={ref} className="hud-dock" aria-label="Navigation" {...handlers}>
+    <nav ref={ref} className="hud-dock" aria-label={t('Navigation')} {...handlers}>
       {glass}
       {DOCK.map(({ id, label, Icon }, i) => {
         const lit = hoverKey === null ? active === id : hoverKey === keyOf(id);
@@ -227,38 +228,38 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
   const titleRef = useFitText(ctx?.opp.name, 17);
   if (watch) { // la journée est jouée : notre match nous attend, comme un direct
     return (
-      <section className="hud-match glass comp-league" aria-label="Match à regarder">
+      <section className="hud-match glass comp-league" aria-label={t('Match à regarder')}>
         {ctx ? <MatchCrest opp={ctx.opp} /> : <span className="hm-icon" aria-hidden="true"><IconPlay /></span>}
         <div className="hm-info">
-          <span className="hm-eyebrow">{ctx ? <>J{state.round + 1}/{state.schedule.length} · {ctx.home === false ? 'Extérieur' : 'Domicile'}</> : 'Dernière journée'}</span>
-          <strong className="hud-match-title" ref={titleRef} title={ctx?.opp.name}>{ctx ? ctx.opp.name : 'Ton match'}</strong>
-          <span className="hm-odds"><button type="button" className="linkbtn" onClick={() => league.onWatch(true)}>Voir le résultat sans le match</button></span>
+          <span className="hm-eyebrow">{ctx ? <>{t('J')}{state.round + 1}/{state.schedule.length} · {ctx.home === false ? t('Extérieur') : t('Domicile')}</> : t('Dernière journée')}</span>
+          <strong className="hud-match-title" ref={titleRef} title={ctx?.opp.name}>{ctx ? ctx.opp.name : t('Ton match')}</strong>
+          <span className="hm-odds"><button type="button" className="linkbtn" onClick={() => league.onWatch(true)}>{t('Voir le résultat sans le match')}</button></span>
         </div>
-        <button className="btn" onClick={() => league.onWatch()} aria-keyshortcuts="J"><IconPlay className="fill" /> Regarder<kbd className="hm-key" aria-hidden="true">J</kbd></button>
+        <button className="btn" onClick={() => league.onWatch()} aria-keyshortcuts="J">{tr('<0/> Regarder<1/>', [<IconPlay className="fill" />, <kbd className="hm-key" aria-hidden="true">J</kbd>])}</button>
       </section>
     );
   }
   if (waitSeason) {
     return (
-      <section className="hud-match glass done" aria-label="Fin de saison">
+      <section className="hud-match glass done" aria-label={t('Fin de saison')}>
         <span className="hm-icon" aria-hidden="true"><IconTrophy /></span>
         <div className="hm-info">
-          <span className="hm-eyebrow">Saison {state.seasonNumber} terminée</span>
-          <strong className="hud-match-title">Le bilan arrive</strong>
-          <span className="hm-odds">La ligue passe à la saison suivante</span>
+          <span className="hm-eyebrow">{tr('Saison <0/> terminée', [state.seasonNumber])}</span>
+          <strong className="hud-match-title">{t('Le bilan arrive')}</strong>
+          <span className="hm-odds">{t('La ligue passe à la saison suivante')}</span>
         </div>
       </section>
     );
   }
   if (done) {
     return (
-      <section className="hud-match glass done" aria-label="Fin de saison">
+      <section className="hud-match glass done" aria-label={t('Fin de saison')}>
         <span className="hm-icon" aria-hidden="true"><IconTrophy /></span>
         <div className="hm-info">
-          <span className="hm-eyebrow">Saison {state.seasonNumber} terminée</span>
-          <strong className="hud-match-title">Place au bilan</strong>
+          <span className="hm-eyebrow">{tr('Saison <0/> terminée', [state.seasonNumber])}</span>
+          <strong className="hud-match-title">{t('Place au bilan')}</strong>
         </div>
-        <button className="btn" onClick={onEndSeason} aria-keyshortcuts="J"><IconTrophy /> Bilan<kbd className="hm-key" aria-hidden="true">J</kbd></button>
+        <button className="btn" onClick={onEndSeason} aria-keyshortcuts="J">{tr('<0/> Bilan<1/>', [<IconTrophy />, <kbd className="hm-key" aria-hidden="true">J</kbd>])}</button>
       </section>
     );
   }
@@ -266,28 +267,28 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
   const champ = ctx.comp === 'league'; // journée de championnat (sinon un tour de coupe)
   const [w, d, l] = roundPercents([odds.win, odds.draw, odds.loss]); // les chiffres de l'avant-match, au point près
   return (
-    <section className={`hud-match glass comp-${ctx.comp} ${league?.sent ? 'sent' : ''}`} aria-label="Prochain match">
+    <section className={`hud-match glass comp-${ctx.comp} ${league?.sent ? 'sent' : ''}`} aria-label={t('Prochain match')}>
       <MatchCrest opp={opp} />
       <div className="hm-info">
         <span className="hm-eyebrow" title={ctx.label}>
-          {champ ? <>J{state.round + 1}/{state.schedule.length}</> : ctx.short} · {ctx.home === false ? 'Extérieur' : 'Domicile'}
+          {champ ? <>{t('J')}{state.round + 1}/{state.schedule.length}</> : ctx.short} · {ctx.home === false ? t('Extérieur') : t('Domicile')}
         </span>
         <strong className="hud-match-title" ref={titleRef} title={opp.name}>{opp.name}</strong>
-        <span className="hm-odds" title={`Pronostic : victoire ${w.label}, nul ${d.label}, défaite ${l.label}`}>
+        <span className="hm-odds" title={t('Pronostic : victoire {label}, nul {label2}, défaite {label3}', { label: w.label, label2: d.label, label3: l.label })}>
           <span className="tri" aria-hidden="true"><i style={{ flexGrow: odds.win * 100 }} /><i style={{ flexGrow: odds.draw * 100 }} /><i style={{ flexGrow: odds.loss * 100 }} /></span>
-          <span className="hm-odds-text"><b>{w.label}</b> de victoire</span>
+          <span className="hm-odds-text">{tr('<0/> de victoire', [<b>{w.label}</b>])}</span>
         </span>
       </div>
       {league ? (
         league.kickoff ? (
           <KickoffButton at={league.kickoff} onPlay={onPlay} />
         ) : league.sent ? (
-          <button className="btn ghost" onClick={onPlay} title={`Équipe validée : le match se joue ${deadlineText(league.deadline)} au plus tard (J pour la modifier)`} aria-keyshortcuts="J"><IconCheck /> Validée<kbd className="hm-key" aria-hidden="true">J</kbd></button>
+          <button className="btn ghost" onClick={onPlay} title={t('Équipe validée : le match se joue {deadlineText} au plus tard (J pour la modifier)', { deadlineText: deadlineText(league.deadline) })} aria-keyshortcuts="J">{tr('<0/> Validée<1/>', [<IconCheck />, <kbd className="hm-key" aria-hidden="true">J</kbd>])}</button>
         ) : (
-          <button className="btn" onClick={onPlay} title="Préparer et valider ton équipe (J)" aria-keyshortcuts="J"><IconPlay className="fill" /> Jouer<kbd className="hm-key" aria-hidden="true">J</kbd></button>
+          <button className="btn" onClick={onPlay} title={t('Préparer et valider ton équipe (J)')} aria-keyshortcuts="J">{tr('<0/> Jouer<1/>', [<IconPlay className="fill" />, <kbd className="hm-key" aria-hidden="true">J</kbd>])}</button>
         )
       ) : (
-        <button className="btn" onClick={onPlay} title="Jouer le match (J)" aria-label="Jouer le match" aria-keyshortcuts="J"><IconPlay className="fill" /> Jouer<kbd className="hm-key" aria-hidden="true">J</kbd></button>
+        <button className="btn" onClick={onPlay} title={t('Jouer le match (J)')} aria-label={t('Jouer le match')} aria-keyshortcuts="J">{tr('<0/> Jouer<1/>', [<IconPlay className="fill" />, <kbd className="hm-key" aria-hidden="true">J</kbd>])}</button>
       )}
     </section>
   );
@@ -308,13 +309,13 @@ export const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '
 function KickoffButton({ at, onPlay }) {
   const left = useCountdown(at);
   return left > 0 ? (
-    <button className="btn ghost hm-kickoff" onClick={onPlay} title="Tout le monde a validé : coup d’envoi à la fin du compte à rebours (J pour retoucher ton équipe)" aria-keyshortcuts="J" aria-label={`Coup d’envoi dans ${mmss(left)}`}>
-      <span className="hm-kickoff-label">Coup d’envoi</span>
+    <button className="btn ghost hm-kickoff" onClick={onPlay} title={t('Tout le monde a validé : coup d’envoi à la fin du compte à rebours (J pour retoucher ton équipe)')} aria-keyshortcuts="J" aria-label={t('Coup d’envoi dans {mmss}', { mmss: mmss(left) })}>
+      <span className="hm-kickoff-label">{t('Coup d’envoi')}</span>
       <span className="hm-kickoff-row"><IconClock /><span className="hm-kickoff-time">{mmss(left)}</span></span><kbd className="hm-key" aria-hidden="true">J</kbd>
     </button>
   ) : (
-    <button className="btn ghost hm-kickoff" disabled title="Le match se joue">
-      <span className="hm-kickoff-label">Coup d’envoi</span>
+    <button className="btn ghost hm-kickoff" disabled title={t('Le match se joue')}>
+      <span className="hm-kickoff-label">{t('Coup d’envoi')}</span>
       <span className="hm-kickoff-row"><IconClock /><span className="hm-kickoff-time">…</span></span>
     </button>
   );
@@ -326,9 +327,9 @@ function MatchCrest({ opp }) {
 }
 
 const TIME_UI = {
-  auto: { Icon: IconClock, label: 'Auto', title: 'Heure réelle (cycle jour / nuit)' },
-  day: { Icon: IconSun, label: 'Jour', title: 'Toujours en journée' },
-  night: { Icon: IconMoon, label: 'Nuit', title: 'Toujours la nuit' },
+  auto: { Icon: IconClock, label: t('Auto'), title: t('Heure réelle (cycle jour / nuit)') },
+  day: { Icon: IconSun, label: t('Jour'), title: t('Toujours en journée') },
+  night: { Icon: IconMoon, label: t('Nuit'), title: t('Toujours la nuit') },
 };
 
 // Colonne d'outils, à droite : Bâtir (vitrine des bâtiments, touche B), Staff (conseil), Vue (réglages de la vue,
@@ -366,13 +367,13 @@ function StaffBubble({ tip, row, onAction, onDismiss, onClose }) {
     return () => { document.removeEventListener('pointerdown', away); window.removeEventListener('keydown', esc); };
   }, [onClose]);
   return (
-    <aside ref={ref} className={`staff-bubble ${tip.tone || ''}`} style={{ '--row': row }} aria-live="polite" aria-label="Conseil du staff">
-      <span className="staff-eyebrow mark-head">Conseil du staff</span>
+    <aside ref={ref} className={`staff-bubble ${tip.tone || ''}`} style={{ '--row': row }} aria-live="polite" aria-label={t('Conseil du staff')}>
+      <span className="staff-eyebrow mark-head">{t('Conseil du staff')}</span>
       <strong className="staff-title">{tip.title}</strong>
       <p className="staff-text">{tip.text}</p>
       <div className="staff-actions">
         <button className="btn btn-sm" onClick={onAction}>{tip.action.label}</button>
-        <button className="staff-hide" onClick={onDismiss} aria-label="Masquer ce conseil">Masquer</button>
+        <button className="staff-hide" onClick={onDismiss} aria-label={t('Masquer ce conseil')}>{t('Masquer')}</button>
       </div>
     </aside>
   );
@@ -385,32 +386,32 @@ export function SceneTools({ timeMode, matchDay, onTime, onMatchDay, onRecenter,
   useHudKey(['KeyB'], () => onBuild?.(), keys && !!build);
   return (
     <>
-    <nav className={`hud-tools ${view ? 'open' : ''}`} aria-label="Outils du complexe">
+    <nav className={`hud-tools ${view ? 'open' : ''}`} aria-label={t('Outils du complexe')}>
       {build && (
-        <button className={`tools-build ${build === 'open' ? 'on' : ''}`} onClick={onBuild} aria-pressed={build === 'open'} aria-keyshortcuts="B" title="Construire · touche B">
-          <IconCrane /><span>Bâtir</span>
+        <button className={`tools-build ${build === 'open' ? 'on' : ''}`} onClick={onBuild} aria-pressed={build === 'open'} aria-keyshortcuts="B" title={t('Construire · touche B')}>
+          <IconCrane /><span>{t('Bâtir')}</span>
           {build === 'dot' && <i className="tools-dot" aria-hidden="true" />}
         </button>
       )}
       {tip && (
         <button className={`tools-staff ${staff.open ? 'on' : ''} ${tip.tone || ''}`} onClick={() => staff.setOpen((o) => (o === 'open' ? false : 'open'))}
-          aria-expanded={!!staff.open} title="Conseil du staff">
-          <IconStaff /><span>Staff</span>
+          aria-expanded={!!staff.open} title={t('Conseil du staff')}>
+          <IconStaff /><span>{t('Staff')}</span>
           {staff.unread && !staff.open && <i className="tools-dot" aria-hidden="true" />}
         </button>
       )}
-      <button className={`tools-view ${view ? 'on' : ''}`} onClick={() => setView((v) => !v)} aria-expanded={view} title="Réglages de la vue">
-        <IconEye /><span>Vue</span>
+      <button className={`tools-view ${view ? 'on' : ''}`} onClick={() => setView((v) => !v)} aria-expanded={view} title={t('Réglages de la vue')}>
+        <IconEye /><span>{t('Vue')}</span>
       </button>
       {view && (
         <>
-          <button className={`tools-sub ${timeMode !== 'auto' ? 'set' : ''}`} onClick={onTime} disabled={matchDay} title={`${T.title} : toucher pour changer`}>
+          <button className={`tools-sub ${timeMode !== 'auto' ? 'set' : ''}`} onClick={onTime} disabled={matchDay} title={t('{title} : toucher pour changer', { title: T.title })}>
             <T.Icon /><span>{T.label}</span>
           </button>
-          <button className={`tools-sub ${matchDay ? 'set' : ''}`} onClick={onMatchDay} aria-pressed={matchDay} title="Jour de match : stade plein, projecteurs">
-            <IconStadium /><span>Match</span>
+          <button className={`tools-sub ${matchDay ? 'set' : ''}`} onClick={onMatchDay} aria-pressed={matchDay} title={t('Jour de match : stade plein, projecteurs')}>
+            <IconStadium /><span>{t('Match')}</span>
           </button>
-          <button className="tools-sub" onClick={onRecenter} title="Recentrer la vue"><IconTarget /><span>Centrer</span></button>
+          <button className="tools-sub" onClick={onRecenter} title={t('Recentrer la vue')}><IconTarget /><span>{t('Centrer')}</span></button>
         </>
       )}
     </nav>

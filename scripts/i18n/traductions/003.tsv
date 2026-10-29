@@ -1,0 +1,83 @@
+129	Technical	Técnico	تقني
+130	Physical	Físico	بدني
+131	Mental	Mental	ذهني
+132	Position	Posición	المركز
+133	Profile	Perfil	الملف
+134	defender	defensa	مدافع
+135	defenders	defensas	مدافعين
+136	a {v} profile	un perfil {v}	لاعبًا بملف {v}
+137	youngsters	jóvenes	شبانًا
+138	{n} youngster	{n} joven	شابًا واحدًا
+139	{n} youngsters	{n} jóvenes	{"one":"شابًا واحدًا","two":"شابين","few":"{n} شبان","many":"{n} شابًا","other":"{n} شاب"}
+140	{y} with a {v} profile	{y} de perfil {v}	{y} بملف {v}
+141	The scouts head out on a mission	Los ojeadores salen de misión	الكشافون ينطلقون في مهمة
+142	They are looking for {missionTarget}, {tn}.	Buscan {missionTarget}, {tn}.	يبحثون عن {missionTarget}، {tn}.
+143	for one scouting trip	durante un ojeo	خلال جولة استكشاف واحدة
+144	over {steps} scouting trips	durante {steps} ojeos	{"one":"خلال جولة استكشاف واحدة","two":"خلال جولتي استكشاف","few":"خلال {steps} جولات استكشاف","other":"خلال {steps} جولة استكشاف"}
+145	a rare talent	un talento excepcional	موهبة نادرة
+146	real potential	un gran potencial	إمكانات واعدة
+147	a good prospect	un buen elemento	عنصر جيد
+148	a {age}-year-old {v}	un {v} de {age} años	{v} يبلغ {age} عامًا
+149	None	Ninguno	بدون
+150	One	Un	واحد
+151	Two	Dos	اثنان
+152	Three	Tres	ثلاثة
+153	Four	Cuatro	أربعة
+154	Five	Cinco	خمسة
+155	Six	Seis	ستة
+156	Seven	Siete	سبعة
+157	Eight	Ocho	ثمانية
+158	The most promising is still {who}, {promiseWord}.	El más prometedor sigue siendo {who}, {promiseWord}.	يبقى الأكثر وعدًا {who}، {promiseWord}.
+159	The most promising so far: {who}, {promiseWord}.	El más prometedor por ahora: {who}, {promiseWord}.	الأكثر وعدًا حتى الآن: {who}، {promiseWord}.
+160	{toUpperCase}{slice} stands out: {promiseWord}.	{toUpperCase}{slice} destaca: {promiseWord}.	{toUpperCase}{slice} يبرز من بين الجميع: {promiseWord}.
+161	{v} youngster observed. {lead}	{v} joven observado. {lead}	تمت مراقبة شاب واحد. {lead}
+162	{"zero":"No youngsters observed. {lead}","one":"{v} youngster observed. {lead}","other":"{v} youngsters observed. {lead}"}	{"zero":"Ningún joven observado. {lead}","one":"{v} joven observado. {lead}","other":"{v} jóvenes observados. {lead}"}	{"zero":"لم تتم مراقبة أي شاب. {lead}","one":"تمت مراقبة شاب واحد. {lead}","two":"تمت مراقبة شابين. {lead}","other":"تمت مراقبة {v} من الشبان. {lead}"}
+163	Scouting mission: {missionTarget}	Misión de los ojeadores: {missionTarget}	مهمة الكشافين: {missionTarget}
+164	The scouts are back from their mission	Los ojeadores vuelven de su misión	عودة الكشافين من مهمتهم
+165	They saw {missionCount} and bring back {tn}: {join}.	Han visto {missionCount} y traen {tn}: {join}.	شاهدوا {missionCount} وعادوا بـ{tn}: {join}.
+166	the most promising	al más prometedor	الأكثر وعدًا
+167	the {length} most promising	a los {length} más prometedores	{"one":"الأكثر وعدًا","two":"الاثنين الأكثر وعدًا","few":"الـ{length} الأكثر وعدًا","other":"الـ{length} الأكثر وعدًا"}
+168	Titles and promotions	Títulos y ascensos	الألقاب والصعود
+169	Matches and feats	Partidos y hazañas	المباريات والإنجازات
+170	Players and academy	Jugadores y cantera	اللاعبون والأكاديمية
+171	Complex and finances	Complejo y finanzas	المجمّع والمالية
+172	League with friends	Liga entre amigos	دوري الأصدقاء
+173	Promotion	Ascenso	الصعود
+174	Go up to the division above.	Subir a la división superior.	الصعود إلى الدرجة الأعلى.
+175	Among the elite	Entre la élite	بين النخبة
+176	Reach the {LAST}.	Llegar a la {LAST}.	الوصول إلى {LAST}.
+177	European nights	Noches europeas	الليالي الأوروبية
+178	Play in the European Club Cup.	Jugar la Copa de Europa de Clubes.	المشاركة في كأس أوروبا للأندية.
+179	First title	Primer título	اللقب الأول
+180	Be crowned champion of your division.	Proclamarte campeón de tu división.	التتويج بطلًا لدرجتك.
+181	The Cup!	¡La Copa!	الكأس!
+182	Win the National Cup.	Ganar la Copa Nacional.	الفوز بالكأس الوطنية.
+183	Elite champion	Campeón de la Élite	بطل النخبة
+184	Win the league in the top division.	Ganar la liga de la máxima división.	الفوز بدوري الدرجة الأعلى.
+185	King of Europe	Rey de Europa	ملك أوروبا
+186	Win the European Club Cup.	Ganar la Copa de Europa de Clubes.	الفوز بكأس أوروبا للأندية.
+187	The double	El doblete	الثنائية
+188	League and National Cup in the same season.	Liga y Copa Nacional en la misma temporada.	الدوري والكأس الوطنية في الموسم نفسه.
+189	The treble	El triplete	الثلاثية
+190	League, National Cup and European Cup in the same season.	Liga, Copa Nacional y Copa de Europa en la misma temporada.	الدوري والكأس الوطنية وكأس أوروبا في الموسم نفسه.
+191	Full trophy cabinet	Vitrina completa	خزانة ألقاب مكتملة
+192	Win each of the six competitions at least once.	Ganar al menos una vez cada una de las seis competiciones.	الفوز بكل واحدة من المسابقات الست مرة واحدة على الأقل.
+193	First win	Primera victoria	الفوز الأول
+194	Win your first competitive match.	Ganar un primer partido oficial.	الفوز بأول مباراة رسمية.
+195	Clean sheet	Portería a cero	شباك نظيفة
+196	Finish a match without conceding.	Terminar un partido sin encajar goles.	إنهاء مباراة دون استقبال أي هدف.
+197	Comeback	Remontada	العودة في النتيجة
+198	Win a match after going behind.	Ganar un partido tras ir por detrás en el marcador.	الفوز بمباراة بعد التأخر في النتيجة.
+199	Down to the wire	Hasta el último suspiro	حتى اللحظة الأخيرة
+200	Win a match with a goal in the 90th minute or later.	Ganar un partido marcando en el minuto 90 o después.	الفوز بمباراة بهدف في الدقيقة 90 أو بعدها.
+201	Ten against eleven	Diez contra once	عشرة ضد أحد عشر
+202	Win a match despite a player being sent off.	Ganar un partido pese a una expulsión.	الفوز بمباراة رغم طرد أحد اللاعبين.
+203	Nerves of steel	Nervios de acero	أعصاب من فولاذ
+204	Win a penalty shoot-out.	Ganar una tanda de penaltis.	الفوز بركلات الترجيح.
+205	Giant-killer	Matagigantes	قاهر العمالقة
+206	Beat a team rated at least one and a half points higher.	Vencer a un equipo con al menos un punto y medio más de nivel.	التغلب على فريق يفوقك مستوى بنقطة ونصف على الأقل.
+207	Masterclass	Exhibición	عرض قوة
+208	Win a match by five goals.	Ganar un partido por cinco goles de diferencia.	الفوز بمباراة بفارق خمسة أهداف.
+209	Goal fest	Festival ofensivo	مهرجان أهداف
+210	Score six goals in a single match.	Marcar seis goles en un mismo partido.	تسجيل ستة أهداف في مباراة واحدة.
+211	Hat-trick	Hat-trick	هاتريك

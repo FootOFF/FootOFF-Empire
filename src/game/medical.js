@@ -2,6 +2,7 @@ import { isInjured, wageOf } from './players';
 import { pushJournal } from './journal';
 import { book } from './ledger';
 import { dateKey } from './mercato';
+import { t, tn } from '../i18n/index';
 
 // Centre médical : le staff soigne les blessés et prévient les blessures. Son niveau (0 à 5) décide de tout, et la
 // chance affichée d'un soin est celle qui décide (tirage au moment du soin).
@@ -38,8 +39,8 @@ export function treatPlayer(s, id) {
     if (p.injury.out <= 0) delete p.injury;
     pushJournal(s, {
       season: s.seasonNumber, round: s.round, kind: 'club',
-      title: p.injury ? `Soins réussis : ${p.name} revient un match plus tôt` : `${p.name} est guéri`,
-      text: p.injury ? `Encore ${p.injury.out} match${p.injury.out > 1 ? 's' : ''} d’absence au lieu de ${before}.` : 'Le centre médical l’a remis sur pied : il est disponible pour le prochain match.',
+      title: p.injury ? t('Soins réussis : {name} revient un match plus tôt', { name: p.name }) : t('{name} est guéri', { name: p.name }),
+      text: p.injury ? tn(p.injury.out, 'Encore {out} match d’absence au lieu de {before}.', 'Encore {out} matchs d’absence au lieu de {before}.', { out: p.injury.out, before }, p.injury.out > 1) : t('Le centre médical l’a remis sur pied : il est disponible pour le prochain match.'),
     });
   }
   s.lastTreatment = { id: p.id, ok, fee, chance, before, after: p.injury?.out || 0, at: Date.now() };

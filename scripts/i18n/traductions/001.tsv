@@ -1,0 +1,68 @@
+1	minute {v}	minuto {v}	الدقيقة {v}
+2	Match in progress · {when} against {name}	Partido en curso · {when} contra {name}	مباراة جارية · {when} ضد {name}
+3	FootOFF FC · season 3 · Regional League	FootOFF FC · temporada 3 · Liga Regional	FootOFF FC · الموسم 3 · الدوري الإقليمي
+4	Save	Guardado	الحفظ
+5	Game restored from the backup copy	Partida restaurada desde la copia de seguridad	تمت استعادة اللعبة من النسخة الاحتياطية
+6	Your save could not be read. You pick up where you were when your last session began.	Tu partida guardada era ilegible. Retomas donde estabas al abrir tu última sesión.	تعذّرت قراءة حفظك. ستستأنف من حيث كنت عند بداية جلستك الأخيرة.
+7	Unreadable save	Partida guardada ilegible	حفظ غير قابل للقراءة
+8	It has been set aside, with no backup copy available. Found a new club, or paste a save code in the settings.	Se ha apartado y no hay copia de seguridad disponible. Funda un nuevo club o pega un código de guardado en los ajustes.	تم وضعه جانبًا ولا توجد نسخة احتياطية متاحة. أسّس ناديًا جديدًا، أو الصق رمز حفظ في الإعدادات.
+9	New version	Nueva versión	إصدار جديد
+10	FootOFF Empire has been updated	FootOFF Empire se ha actualizado	تم تحديث FootOFF Empire
+11	Reload to enjoy it: your game is saved.	Recarga para disfrutarla: tu partida está guardada.	أعد التحميل للاستفادة منه: لعبتك محفوظة.
+12	Achievement unlocked	Logro desbloqueado	تم فتح إنجاز
+13	{length} achievements unlocked	{length} logros desbloqueados	{"one":"تم فتح إنجاز","two":"تم فتح إنجازين","few":"تم فتح {length} إنجازات","many":"تم فتح {length} إنجازًا","other":"تم فتح {length} إنجاز"}
+14	Also: {join}	Y también: {join}	وأيضًا: {join}
+15	Career · chapter completed	Carrera · capítulo cumplido	المسيرة · فصل مكتمل
+16	{goal} Reward: {label}.	{goal} Recompensa: {label}.	{goal} المكافأة: {label}.
+17	Not possible.	Acción imposible.	لا يمكن تنفيذ هذا الإجراء.
+18	Step completed	Etapa superada	تم إنجاز المرحلة
+19	The bonus is paid to the club.	La prima se ingresa en las cuentas del club.	تُصرف المكافأة للنادي.
+20	Complex	Complejo	المجمّع
+21	{name}: to be built	{name}: por construir	{name}: بحاجة إلى البناء
+22	Build it on a free plot of the complex (Build button) to open this screen.	Constrúyelo en una parcela libre del complejo (botón Construir) para abrir esta pantalla.	ابنِه على قطعة أرض شاغرة في المجمّع (زر «بناء») لفتح هذه الشاشة.
+23	Confirm these changes	Confirmar estos cambios	تأكيد هذه التغييرات
+24	Confirm my team	Confirmar mi equipo	تأكيد فريقي
+25	Academy · end of season	Cantera · fin de temporada	الأكاديمية · نهاية الموسم
+26	{length} youth players will leave the club	{length} canteranos dejarán el club	سيغادر {length} من الشبان النادي
+27	{name} will leave the club	{name} dejará el club	سيغادر {name} النادي
+28	Promote {v} to the first team before the season ends, or {v2}.	Súbe{v} al primer equipo antes de que acabe la temporada; si no, {v2}.	رقِّ{v} إلى الفريق الأول قبل نهاية الموسم، وإلا {v2}.
+29	them	los	هم
+30	him	lo	ه
+31	they will leave	se irán	سيرحلون
+32	he will leave	se irá	سيرحل
+33	Academy · mission under way, scouting {step} of {steps}	Cantera · misión en curso, ojeo {step} de {steps}	الأكاديمية · مهمة جارية، الاستكشاف {step} من {steps}
+34	A rare talent spotted	Un talento excepcional detectado	رُصدت موهبة نادرة
+35	News from the scouts	Noticias de los ojeadores	أخبار الكشافين
+36	Academy · the scouts are back	Cantera · vuelven los ojeadores	الأكاديمية · عودة الكشافين
+37	One youngster to watch	Un joven a seguir	شاب واحد جدير بالمتابعة
+38	{back} youngsters to watch	{back} jóvenes a seguir	{"one":"شاب واحد جدير بالمتابعة","two":"شابان جديران بالمتابعة","few":"{back} شبان جديرون بالمتابعة","many":"{back} شابًا جديرًا بالمتابعة","other":"{back} شاب جدير بالمتابعة"}
+39	{tn} among the {missionCount} your scouts saw.	{tn} entre los {missionCount} que vieron tus ojeadores.	{tn} من بين {missionCount} شاهدهم كشافوك.
+40	The most promising	El más prometedor	الأكثر وعدًا
+41	The most promising	Los más prometedores	الأكثر وعدًا
+42	{length} out for the coming games	{length} bajas para lo que viene	{length} غيابات في المباريات المقبلة
+43	Injury	Lesión	إصابة
+44	Suspension	Sanción	إيقاف
+45	{name}: {v} for {matches} match	{name}: {v} para {matches} partido	{name}: {v} لمباراة واحدة
+46	{name}: {v} for {matches} matches	{name}: {v} para {matches} partidos	{"one":"{name}: {v} لمباراة واحدة","two":"{name}: {v} لمباراتين","few":"{name}: {v} لـ{matches} مباريات","other":"{name}: {v} لـ{matches} مباراة"}
+47	injured	lesionado	مصاب
+48	suspended	sancionado	موقوف
+49	{name} {n} match	{name} {n} partido	{name} مباراة واحدة
+50	{name} {n} matches	{name} {n} partidos	{"one":"{name} مباراة واحدة","two":"{name} مباراتان","few":"{name} {n} مباريات","other":"{name} {n} مباراة"}
+51	{offers} offer received for your players	{offers} oferta recibida por tus jugadores	وصل عرض واحد لشراء لاعبيك
+52	{offers} offers received for your players	{offers} ofertas recibidas por tus jugadores	{"one":"وصل عرض واحد لشراء لاعبيك","two":"وصل عرضان لشراء لاعبيك","few":"وصلت {offers} عروض لشراء لاعبيك","many":"وصل {offers} عرضًا لشراء لاعبيك","other":"وصل {offers} عرض لشراء لاعبيك"}
+53	{join} {tn} signed elsewhere	{join} {tn} fichado por otro club	وقّع {join} لنادٍ آخر
+54	has	ha	قد
+55	have	han	قد
+56	Transfer market · during the matchday	Mercado · durante la jornada	سوق الانتقالات · خلال الجولة
+57	With this spending, the season would end in the red. At the final whistle, the board would sell your biggest earners to balance the books.	Con este gasto, la temporada acabaría en números rojos. Al pitido final, la directiva vendería tus salarios más altos para sanear las cuentas.	بهذا الإنفاق سينتهي الموسم بعجز مالي. ومع صافرة النهاية سيبيع مجلس الإدارة أصحاب أعلى الرواتب لتصحيح الحسابات.
+58	Cost	Coste	التكلفة
+59	Extra upkeep	Mantenimiento adicional	صيانة إضافية
+60	{upkeep} / season	{upkeep} / temporada	{upkeep} / الموسم
+61	Projected end of season	Cierre de temporada previsto	الرصيد المتوقع في نهاية الموسم
+62	Spend anyway	Gastar de todos modos	الإنفاق رغم ذلك
+63	Hold off	Renunciar	التراجع
+64	Build: {name}?	¿Construir: {name}?	بناء: {name}؟
+65	Not enough funds.	Fondos insuficientes.	الأموال غير كافية.
+66	Construction started	Obra iniciada	بدأت الأشغال
+67	{name}: upgrade to level {v}?	{name}: ¿subir al nivel {v}?	{name}: الترقية إلى المستوى {v}؟
+68	Not enough funds, or maximum level reached.	Fondos insuficientes o nivel máximo alcanzado.	الأموال غير كافية أو بلغت المستوى الأقصى.

@@ -10,6 +10,7 @@ import { holdCharge } from './charge';
 import { PHONE, useSwipe } from './gestures';
 import { IconCheck, IconChevron, IconClose, IconLock, IconStar } from './icons';
 import { Eyebrow } from './kit';
+import { t, tn, tr } from '../i18n/index';
 
 // Vitrine de construction (fiche d'une parcelle, src/ui/inspector.jsx) : cartes illustrées des bâtiments, fenêtre
 // d'aperçu des niveaux (avant / après), bouton d'achat à maintenir au doigt. Les vignettes (public/ui/buildings,
@@ -19,33 +20,31 @@ export const imgOf = (key, lvl) => `${import.meta.env.BASE_URL}ui/buildings/${ke
 
 // Rôle de chaque bâtiment, en une phrase.
 export const BLURB = {
-  terrain: 'Plus de places, plus de recettes les jours de match.',
-  training: 'Entre deux matchs, quatre de tes joueurs passent une épreuve en 3D : à jouer toi-même ou à simuler.',
-  academy: 'Ton équipe de jeunes : six places gratuites, de nouveaux talents repérés après chaque journée.',
-  fans: 'Plus de public, des recettes annexes et de la réputation à chaque match.',
-  sponsor: 'Des partenaires qui paient chaque saison, et des revenus pendant ton absence.',
-  transfers: 'Des recruteurs qui t’ouvrent le marché des joueurs sous contrat.',
-  direction: 'Le bureau du président : tu y négocies les droits TV, les salaires et la billetterie.',
-  medical: 'Tes kinés soignent les blessés pour les faire revenir plus vite, et la prévention en évite.',
-  league: 'Crée tes championnats entre amis : invite-les par un lien, chacun avec son club, journée chaque soir.',
+  terrain: t('Plus de places, plus de recettes les jours de match.'),
+  training: t('Entre deux matchs, quatre de tes joueurs passent une épreuve en 3D : à jouer toi-même ou à simuler.'),
+  academy: t('Ton équipe de jeunes : six places gratuites, de nouveaux talents repérés après chaque journée.'),
+  fans: t('Plus de public, des recettes annexes et de la réputation à chaque match.'),
+  sponsor: t('Des partenaires qui paient chaque saison, et des revenus pendant ton absence.'),
+  transfers: t('Des recruteurs qui t’ouvrent le marché des joueurs sous contrat.'),
+  direction: t('Le bureau du président : tu y négocies les droits TV, les salaires et la billetterie.'),
+  medical: t('Tes kinés soignent les blessés pour les faire revenir plus vite, et la prévention en évite.'),
+  league: t('Crée tes championnats entre amis : invite-les par un lien, chacun avec son club, journée chaque soir.'),
 };
 
 // Ce que rapporte un niveau, avant de cliquer : recettes en plus par saison, entretien, rentabilité.
-const SPORTING = { training: 'il fait progresser l’équipe', academy: 'il forme de jeunes talents', transfers: 'il ouvre le marché des joueurs sous contrat', medical: 'il soigne et protège tes joueurs' };
+const SPORTING = { training: t('il fait progresser l’équipe'), academy: t('il forme de jeunes talents'), transfers: t('il ouvre le marché des joueurs sous contrat'), medical: t('il soigne et protège tes joueurs') };
 export function Payoff({ state, k, target, compact = false }) {
   const inv = investmentPreview(state, k, target);
   if (SPORTING[k]) {
-    return <span className="ins-money">Investissement sportif{compact ? '' : ` : il ne rapporte pas d’argent, ${SPORTING[k]}`} · entretien +{fmtMoney(inv.upkeep)} par saison</span>;
+    return <span className="ins-money">{tr('Investissement sportif<0/> · entretien +<1/> par saison', [compact ? '' : t(' : il ne rapporte pas d’argent, {v}', { v: SPORTING[k] }), fmtMoney(inv.upkeep)])}</span>;
   }
   if (inv.gain <= 0) {
-    return <span className="ins-money muted">{k === 'terrain' ? 'Aucune recette en plus tant que le stade n’est pas plein' : 'Aucune recette en plus pour l’instant'} · entretien +{fmtMoney(inv.upkeep)}</span>;
+    return <span className="ins-money muted">{tr('<0/> · entretien +<1/>', [k === 'terrain' ? t('Aucune recette en plus tant que le stade n’est pas plein') : t('Aucune recette en plus pour l’instant'), fmtMoney(inv.upkeep)])}</span>;
   }
-  const when = inv.payback === null ? 'ne couvre pas son entretien'
-    : inv.payback <= 1 ? 'rentabilisé en moins d’une saison' : `rentabilisé en ${Math.ceil(inv.payback)} saisons environ`;
+  const when = inv.payback === null ? t('ne couvre pas son entretien')
+    : tn(inv.payback, 'rentabilisé en moins d’une saison', 'rentabilisé en {ceil} saisons environ', { ceil: Math.ceil(inv.payback) }, !(inv.payback <= 1));
   return (
-    <span className={`ins-money ${inv.payback === null ? 'muted' : 'good'}`}>
-      +{fmtMoney(inv.gain)} de recettes par saison{compact ? '' : ` · entretien +${fmtMoney(inv.upkeep)}`} · {when}
-    </span>
+    <span className={`ins-money ${inv.payback === null ? 'muted' : 'good'}`}>{tr('+<0/> de recettes par saison<1/> · <2/>', [fmtMoney(inv.gain), compact ? '' : t(' · entretien +{upkeep}', { upkeep: fmtMoney(inv.upkeep) }), when])}</span>
   );
 }
 
@@ -56,13 +55,13 @@ export function spendHint(state, cost) {
   const missing = cost - state.money;
   if (missing > 0) {
     const m = matchesToAfford(state, missing);
-    return { tone: '', text: `Il manque ${fmtMoney(missing)}${m ? ` · environ ${m} match${m > 1 ? 's' : ''} à domicile` : ''}` };
+    return { tone: '', text: t('Il manque {missing}{v}', { missing: fmtMoney(missing), v: m ? tn(m, ' · environ {m} match à domicile', ' · environ {m} matchs à domicile', { m }, m > 1) : '' }) };
   }
   const endAfter = seasonEndForecast(state) - cost - Math.round(cost * 0.04);
-  if (endAfter < 0) return { tone: 'risk', text: `Attention : fin de saison prévue dans le rouge (${fmtMoney(endAfter)})` };
+  if (endAfter < 0) return { tone: 'risk', text: t('Attention : fin de saison prévue dans le rouge ({endAfter})', { endAfter: fmtMoney(endAfter) }) };
   const due = duesNow(state);
-  if (due.available - cost < 0) return { tone: 'warn', text: `Après travaux, ta caisse ne couvre plus les ${fmtMoney(due.owed)} déjà dus en salaires et entretien : les recettes des matchs restants devront compléter` };
-  return { tone: '', text: `Disponible après travaux : ${fmtMoney(due.available - cost)}` };
+  if (due.available - cost < 0) return { tone: 'warn', text: t('Après travaux, ta caisse ne couvre plus les {owed} déjà dus en salaires et entretien : les recettes des matchs restants devront compléter', { owed: fmtMoney(due.owed) }) };
+  return { tone: '', text: t('Disponible après travaux : {v}', { v: fmtMoney(due.available - cost) }) };
 }
 
 // Carte de la vitrine : vignette, famille, nom, effet phare, prix (ou ce qui manque). Au doigt, sur téléphone, elle
@@ -83,11 +82,11 @@ export function BuildCard({ state, k, picked, recommended, onPick }) {
       <span className="bcard-img">
         <img src={imgOf(k, 1)} alt="" draggable="false" />
         <i className="bcard-kind">{BUILDING_KIND[k]}</i>
-        {recommended && <i className="bcard-rec"><IconStar /><span>Conseillé</span></i>}
+        {recommended && <i className="bcard-rec"><IconStar /><span>{t('Conseillé')}</span></i>}
       </span>
       <strong className="bcard-name">{BUILDINGS[k].name}</strong>
       <span className="bcard-hero">{hero.short || hero.value}</span>
-      <span className="bcard-price"><b>{fmtMoney(cost)}</b><em>Il manque {fmtMoney(missing)}</em></span>
+      <span className="bcard-price"><b>{fmtMoney(cost)}</b><em>{tr('Il manque <0/>', [fmtMoney(missing)])}</em></span>
     </button>
   );
 }
@@ -97,11 +96,11 @@ export function BuildCard({ state, k, picked, recommended, onPick }) {
 export function LevelStrip({ k, current, shown, onShow }) {
   const max = BUILDINGS[k].max;
   return (
-    <div className="lvstrip" role="radiogroup" aria-label="Niveaux" style={{ '--n': max }}>
+    <div className="lvstrip" role="radiogroup" aria-label={t('Niveaux')} style={{ '--n': max }}>
       {Array.from({ length: max }, (_, i) => {
         const l = i + 1;
         const kind = l <= current ? 'built' : l === current + 1 ? 'next' : 'later';
-        const label = l <= current ? 'construit' : l === current + 1 ? fmtMoney(upgradeCost(k, l)) : `après le niveau ${l - 1}`;
+        const label = l <= current ? t('construit') : l === current + 1 ? fmtMoney(upgradeCost(k, l)) : t('après le niveau {v}', { v: l - 1 });
         return (
           <button
             key={l}
@@ -110,7 +109,7 @@ export function LevelStrip({ k, current, shown, onShow }) {
             aria-checked={shown === l}
             className={`lv ${kind} ${shown === l ? 'on' : ''}`}
             onClick={() => onShow(l)}
-            title={`Niveau ${l} · ${label}`}
+            title={t('Niveau {l} · {label}', { l, label })}
           >
             <i className="lv-img" style={{ backgroundImage: `url(${imgOf(k, l)})` }} />
             <b>{l <= current ? <IconCheck /> : l}</b>
@@ -134,7 +133,7 @@ export function StatRows({ state, k, lvl, base = 0 }) {
             <dt>{st.label}{st.sub ? <small>{st.sub}</small> : null}</dt>
             <dd>
               {was && was.value !== st.value && <><s>{was.value}</s><IconChevron /></>}
-              {before && !was && <em>nouveau</em>}
+              {before && !was && <em>{t('nouveau')}</em>}
               <b>{st.value}</b>
             </dd>
           </div>
@@ -234,7 +233,7 @@ export function HoldButton({ onConfirm, disabled = false, k = null, children }) 
       {touch && !disabled && (
         <svg className="hold-ring" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5" /><circle className="p" cx="10" cy="10" r="7.5" pathLength="1" /></svg>
       )}
-      <span className="hold-label">{nudge ? 'Garde le doigt appuyé' : children}</span>
+      <span className="hold-label">{nudge ? t('Garde le doigt appuyé') : children}</span>
     </button>
   );
 }
@@ -253,34 +252,34 @@ export function BuildWindow({ state, k, current, shown, onShow, onAction, recomm
     const hint = spendHint(state, cost);
     foot = (
       <>
-        <HoldButton k={k} onConfirm={onAction} disabled={state.money < cost}>{current ? 'Améliorer' : 'Construire'} · {fmtMoney(cost)}</HoldButton>
+        <HoldButton k={k} onConfirm={onAction} disabled={state.money < cost}>{current ? t('Améliorer') : t('Construire')} · {fmtMoney(cost)}</HoldButton>
         <span className={`ins-hint ${hint.tone}`}>{hint.text}</span>
       </>
     );
   } else if (shown > next) {
     foot = (
       <>
-        <p className="bw-note"><IconLock /> Niveau {shown} : {fmtMoney(cost)}, après le niveau {shown - 1}</p>
-        <button type="button" className="btn ghost wide" onClick={() => onShow(next)}>Revenir au niveau {next}</button>
+        <p className="bw-note">{tr('<0/> Niveau <1/> : <2/>, après le niveau <3/>', [<IconLock />, shown, fmtMoney(cost), shown - 1])}</p>
+        <button type="button" className="btn ghost wide" onClick={() => onShow(next)}>{tr('Revenir au niveau <0/>', [next])}</button>
       </>
     );
   } else {
-    foot = <p className="bw-note built"><IconCheck /> Niveau {shown} construit{shown === current ? ' · niveau actuel' : ''}</p>;
+    foot = <p className="bw-note built">{tr('<0/> Niveau <1/> construit<2/>', [<IconCheck />, shown, shown === current ? t(' · niveau actuel') : ''])}</p>;
   }
   return (
-    <section ref={ref} className="bw" aria-label={`Aperçu : ${b.name}`}>
+    <section ref={ref} className="bw" aria-label={t('Aperçu : {name}', { name: b.name })}>
       <span className="grip" aria-hidden="true" />
       <header className="bw-head">
         <div className="panel-title">
-          <Eyebrow>{BUILDING_KIND[k]}{recommended ? ' · Conseillé par le staff' : ''}</Eyebrow>
+          <Eyebrow>{BUILDING_KIND[k]}{recommended ? t(' · Conseillé par le staff') : ''}</Eyebrow>
           <h3>{b.name}</h3>
         </div>
-        {onClose && <button type="button" className="hud-icon" onClick={onClose} aria-label="Fermer l’aperçu"><IconClose /></button>}
+        {onClose && <button type="button" className="hud-icon" onClick={onClose} aria-label={t('Fermer l’aperçu')}><IconClose /></button>}
       </header>
       <div className="bw-body">
         <figure className="bw-hero" key={`${k}-${shown}`}>
-          <img src={imgOf(k, shown)} alt={`${b.name}, niveau ${shown}`} draggable="false" />
-          <figcaption>Niveau {shown}<span> / {b.max}</span></figcaption>
+          <img src={imgOf(k, shown)} alt={t('{name}, niveau {shown}', { name: b.name, shown })} draggable="false" />
+          <figcaption>{tr('Niveau <0/><1/>', [shown, <span> / {b.max}</span>])}</figcaption>
         </figure>
         <p className="bw-blurb">{BLURB[k]}</p>
         <LevelStrip k={k} current={current} shown={shown} onShow={onShow} />

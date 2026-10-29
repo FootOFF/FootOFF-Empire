@@ -1,0 +1,72 @@
+2820	Loading transfers…	Cargando los traspasos…	جارٍ تحميل الصفقات…
+2821	History unavailable for now: it comes back with the connection to the league.	Historial no disponible por ahora: vuelve con la conexión a la liga.	السجل غير متاح حاليًا: يعود مع الاتصال بالدوري.
+2822	No transfers between friends this season. Every signing on the shared market, with a computer club or between friends will be recorded here.	Ningún traspaso entre amigos esta temporada. Cada fichaje en el mercado común, con un club de la máquina o entre amigos quedará registrado aquí.	لا صفقات بين الأصدقاء هذا الموسم. وستُسجَّل هنا كل صفقة في السوق المشتركة أو مع نادٍ للحاسوب أو بين الأصدقاء.
+2823	· age {g}	· {g} años	· {g} عامًا
+2824	Free	Libre	حر
+2825	Purchases	Compras	المشتريات
+2826	Sales	Ventas	المبيعات
+2827	{n} departure	{n} salida	رحيل لاعب واحد
+2828	{n} departures	{n} salidas	{"one":"رحيل لاعب واحد","two":"رحيل لاعبين","few":"رحيل {n} لاعبين","other":"رحيل {n} لاعبًا"}
+2829	Balance	Saldo	الرصيد
+2830	profit	beneficio	ربح
+2831	investment	inversión	استثمار
+2832	Since the club was founded: <0/> in purchases, <1/> in sales, balance <2/><3/>.	Desde la creación del club: <0/> en compras, <1/> en ventas, saldo <2/><3/>.	منذ تأسيس النادي: <0/> مشتريات، و<1/> مبيعات، والرصيد <2/><3/>.
+2833	The club’s biggest purchase: <0/> · <1/> (season <2/>)	Mayor compra del club: <0/> · <1/> (temporada <2/>)	أكبر صفقة شراء للنادي: <0/> · <1/> (الموسم <2/>)
+2834	Biggest sale: <0/> · <1/> (season <2/>)	Mayor venta: <0/> · <1/> (temporada <2/>)	أكبر صفقة بيع: <0/> · <1/> (الموسم <2/>)
+2835	No transfers yet. Every arrival and every departure will be recorded here, with its amount.	Ningún traspaso por ahora. Cada llegada y cada salida quedarán registradas aquí, con su importe.	لا صفقات حتى الآن. وستُسجَّل هنا كل حالة وصول ورحيل مع مبلغها.
+2836	Arrival	Llegada	وصول
+2837	Departure	Salida	رحيل
+2838	<0/> · age <1/> · <2/> · <3/> · <4/>	<0/> · <1/> años · <2/> · <3/> · <4/>	<0/> · <1/> عامًا · <2/> · <3/> · <4/>
+2839	free agent	jugador libre	لاعب حر
+2840	to {withArticle}{v}	{withArticle}{v}	إلى {withArticle}{v}
+2841	(sold by the board)	(vendido por la directiva)	(باعه مجلس الإدارة)
+2842	left on a free, out of contract	se fue libre, al terminar su contrato	رحل حرًا بنهاية عقده
+2843	Tracked	Seguidos	قيد المتابعة
+2844	Offers	Ofertas	العروض
+2845	Asking price	Precio pedido	السعر المطلوب
+2846	his asking price	su petición	طلبه
+2847	{k}% {v} his asking price	{k} % {v} su petición	{k}% {v} طلبه
+2848	below	por debajo de	أقل من
+2849	above	por encima de	أعلى من
+2850	The transfer market is closed while the matchday is played. Try again after the match.	El mercado está cerrado mientras se juega la jornada. Vuelve a intentarlo tras el partido.	سوق الانتقالات مغلقة أثناء لعب الجولة. أعد المحاولة بعد المباراة.
+2851	Six signings per matchday at most: try again after the next match.	Seis fichajes por jornada como máximo: vuelve a intentarlo tras el próximo partido.	ست صفقات في الجولة على الأكثر: أعد المحاولة بعد المباراة المقبلة.
+2852	Three pending offers at most: withdraw one, or wait for a reply.	Tres ofertas pendientes como máximo: retira una o espera una respuesta.	ثلاثة عروض معلّقة على الأكثر: اسحب أحدها أو انتظر الرد.
+2853	This player’s situation has just changed: reopen the transfer market to see where things stand.	La situación de este jugador acaba de cambiar: vuelve a abrir el mercado para ver cómo está.	تغيّر وضع هذا اللاعب للتو: أعد فتح سوق الانتقالات لمعرفة ما آل إليه.
+2854	Your reply didn’t go through. Try again in a moment.	Tu respuesta no se ha enviado. Vuelve a intentarlo en un momento.	لم يُرسل ردك. أعد المحاولة بعد قليل.
+2855	The league couldn’t confirm the signing. Try again in a moment.	La liga no ha podido confirmar el fichaje. Vuelve a intentarlo en un momento.	تعذّر على الدوري تأكيد التعاقد. أعد المحاولة بعد قليل.
+2856	Your offer didn’t go through. Try again in a moment.	Tu oferta no se ha enviado. Vuelve a intentarlo en un momento.	لم يُرسل عرضك. أعد المحاولة بعد قليل.
+2857	His agent’s counter-proposal: {wage} per season over {yearsOf}	Contrapropuesta de su agente: {wage} por temporada durante {yearsOf}	اقتراح مضاد من وكيله: {wage} في الموسم لمدة {yearsOf}
+2858	Fee agreed ({fee}): his contract is still to be negotiated	Traspaso acordado ({fee}): su contrato queda por negociar	تم الاتفاق على مبلغ الانتقال ({fee}): يبقى التفاوض على عقده
+2859	Counter-offer from {clubAfter}: {counter} (asking price {costOf})	Contraoferta {clubAfter}: {counter} (precio pedido {costOf})	عرض مضاد من {clubAfter}: {counter} (السعر المطلوب {costOf})
+2860	promotion clause +{round}%	cláusula de ascenso +{round} %	بند صعود +{round}%
+2861	contract for {yearsOf} at {wage} per season	contrato de {yearsOf} a {wage} por temporada	عقد لمدة {yearsOf} براتب {wage} في الموسم
+2862	bonus of {bonus}	prima de {bonus}	مكافأة قدرها {bonus}
+2863	promotion clause of +{round}%	cláusula de ascenso de +{round} %	بند صعود بنسبة +{round}%
+2864	Signing in progress	Fichaje en curso	التعاقد جارٍ
+2865	Signing missed	Fichaje perdido	ضاعت الصفقة
+2866	Agreement reached	Acuerdo alcanzado	تم الاتفاق
+2867	The league still has to confirm the signing of <0/>: if another club agreed a deal before you, it wins.	La liga aún tiene que confirmar el fichaje de <0/>: si otro club cerró antes que tú, se lo lleva.	لا يزال على الدوري تأكيد التعاقد مع <0/>: إذا أتم نادٍ آخر الصفقة قبلك فهو الفائز بها.
+2868	Fee agreed <0/>: <1/>.	Traspaso acordado <0/>: <1/>.	مبلغ الانتقال المتفق عليه <0/>: <1/>.
+2869	Another club in the league signed	Otro club de la liga ha fichado a	تعاقد نادٍ آخر في الدوري مع
+2870	just before you.	justo antes que tú.	قبلك بلحظات.
+2871	Back to the transfer market	Volver al mercado	العودة إلى سوق الانتقالات
+2872	Contract extended	Contrato renovado	تم تمديد العقد
+2873	Extension	Renovación	التمديد
+2874	Contract extended!	¡Contrato renovado!	تم تمديد العقد!
+2875	Deal done!	¡Acuerdo cerrado!	تمت الصفقة!
+2876	<0/> is under contract until season <1/>, at <2/> per season<3/>.	<0/> tiene contrato hasta la temporada <1/>, a <2/> por temporada<3/>.	<0/> مرتبط بعقد حتى الموسم <1/>، براتب <2/> في الموسم<3/>.
+2877	({before} until now)	({before} hasta ahora)	({before} حتى الآن)
+2878	<0/> joins your squad<1/>.	<0/> se une a tu plantilla<1/>.	ينضم <0/> إلى تشكيلتك<1/>.
+2879	<0/> saved on the fee asked (<1/>).	<0/> ahorrados sobre el traspaso pedido (<1/>).	<0/> وفّرتها من مبلغ الانتقال المطلوب (<1/>).
+2880	<0/> more than the fee asked (<1/>).	<0/> más que el traspaso pedido (<1/>).	<0/> أكثر من مبلغ الانتقال المطلوب (<1/>).
+2881	He strengthens your XI: +<0/> over the weakest starter in his position.	Refuerza tu once: +<0/> sobre el titular más flojo de su posición.	يقوّي تشكيلتك الأساسية: +<0/> مقارنة بأضعف أساسي في مركزه.
+2882	Pick the team	Formar el equipo	اختيار التشكيلة
+2883	Player unavailable	Jugador no disponible	اللاعب غير متاح
+2884	<0/> is no longer on the market.	<0/> ya no está en el mercado.	<0/> لم يعد في السوق.
+2885	Player gone	Jugador marchado	رحل اللاعب
+2886	<0/> is no longer at the club.	<0/> ya no está en el club.	<0/> لم يعد في النادي.
+2887	Negotiation	Negociación	التفاوض
+2888	Negotiation · fee	Negociación · traspaso	التفاوض · مبلغ الانتقال
+2889	Negotiation · contract	Negociación · contrato	التفاوض · العقد
+2890	Current season:	Temporada en curso:	الموسم الجاري:
+2891	final year of contract	último año de contrato	السنة الأخيرة من العقد

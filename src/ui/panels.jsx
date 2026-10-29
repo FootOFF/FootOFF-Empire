@@ -18,6 +18,7 @@ import { LANDSCAPE, PHONE, useMedia, useSwipe } from './gestures';
 import { SeasonCalendar } from './calendar';
 import { ClubRoster } from './roster';
 import { SECTIONS, SectionPager, SectionTabs, sectionNear, sectionOf, useNav } from './nav';
+import { decSep, t, tn, tr } from '../i18n/index';
 
 // Un panneau ou une fiche qui s'ouvre fait un léger souffle qui monte, qui descend quand il se ferme. D'un onglet à
 // l'autre d'une section, le clic de l'onglet suffit : ni souffle d'ouverture, ni souffle de fermeture.
@@ -92,9 +93,9 @@ export function Panel({ id = null, title, eyebrow, size = 'md', money = null, to
         {section && <SectionTabs section={section} />}
         <div className="panel-actions">
           {money !== null && (
-            <span className={`panel-money ${money < 0 ? 'neg' : ''}`} data-money-target title="Trésorerie"><IconCoin /><AnimatedMoney value={money} /></span>
+            <span className={`panel-money ${money < 0 ? 'neg' : ''}`} data-money-target title={t('Trésorerie')}><IconCoin /><AnimatedMoney value={money} /></span>
           )}
-          <button className="hud-icon" onClick={onClose} aria-label="Fermer"><IconClose /></button>
+          <button className="hud-icon" onClick={onClose} aria-label={t('Fermer')}><IconClose /></button>
         </div>
       </header>
       {toolbar && <div className="panel-bar">{toolbar}</div>}
@@ -115,7 +116,7 @@ export function zoneOf(divisionIndex, i) {
   if (i >= 6 && divisionIndex > 0) return 'releg';
   return null;
 }
-const ZONE_TAG = { promo: 'montée', europe: 'Coupe d’Europe', releg: 'descente' };
+const ZONE_TAG = { promo: t('montée'), europe: t('Coupe d’Europe'), releg: t('descente') };
 const signed = (v) => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0');
 
 // Classement de la division (panneau Saison, et après chaque journée de championnat) : la zone de chaque place en
@@ -130,35 +131,35 @@ export function StandingsTable({ state, before = null, onClub = null }) {
     <table className={`table standings ${before ? 'moves' : ''}`}>
       <thead>
         <tr>
-          <th>#</th>{before && <th className="t-move-h" aria-label="Évolution" />}<th>Club</th><th>J</th>
-          {wdl && <><th className="t-wdl" title="Gagnés">G</th><th className="t-wdl" title="Nuls">N</th><th className="t-wdl" title="Perdus">P</th></>}
-          <th>Diff</th><th>Pts</th>
+          <th>#</th>{before && <th className="t-move-h" aria-label={t('Évolution')} />}<th>{t('Club')}</th><th>{t('J')}</th>
+          {wdl && <><th className="t-wdl" title={t('Gagnés')}>{t('G')}</th><th className="t-wdl" title={t('Nuls')}>{t('N')}</th><th className="t-wdl" title={t('Perdus')}>{t('P')}</th></>}
+          <th>{t('Diff')}</th><th>{t('Pts')}</th>
         </tr>
       </thead>
       <tbody>
-        {standings.map((t, i) => {
+        {standings.map((row, i) => {
           const zone = state.league ? null : zoneOf(state.divisionIndex, i); // ligue entre amis : ni montée ni descente
-          const was = before ? before.indexOf(t.i) : -1;
+          const was = before ? before.indexOf(row.i) : -1;
           const move = was < 0 ? 0 : was - i; // positif : le club remonte
           return (
-            <tr key={t.i} className={[t.i === 0 && 'me', zone].filter(Boolean).join(' ')}>
+            <tr key={row.i} className={[row.i === 0 && 'me', zone].filter(Boolean).join(' ')}>
               <td className="t-pos">{i + 1}</td>
               {before && (
-                <td className={`t-move ${move > 0 ? 'up' : move < 0 ? 'down' : ''}`} aria-label={move ? `${move > 0 ? 'gagne' : 'perd'} ${Math.abs(move)} place${Math.abs(move) > 1 ? 's' : ''}` : 'même place'}>
+                <td className={`t-move ${move > 0 ? 'up' : move < 0 ? 'down' : ''}`} aria-label={move ? tn(Math.abs(move), '{v} {n} place', '{v} {n} places', { v: move > 0 ? t('gagne') : t('perd'), n: Math.abs(move) }, Math.abs(move) > 1) : t('même place')}>
                   {move ? <><i aria-hidden="true" />{Math.abs(move)}</> : '–'}
                 </td>
               )}
               <td className="t-club">
-                {t.i === 0 ? <ClubCrest crest={state.crest} name={t.name} className="t-crest" /> : <Crest name={t.name} className="t-crest" />}
-                {onClub && t.i !== 0
-                  ? <button type="button" className="t-name t-open" onClick={() => onClub(t.i)} title={`Voir l’effectif de ${t.name}`}>{t.name}</button>
-                  : <span className="t-name">{t.name}</span>}
-                {zone && <span className="sr-only">, zone de {ZONE_TAG[zone]}</span>}
+                {row.i === 0 ? <ClubCrest crest={state.crest} name={row.name} className="t-crest" /> : <Crest name={row.name} className="t-crest" />}
+                {onClub && row.i !== 0
+                  ? <button type="button" className="t-name t-open" onClick={() => onClub(row.i)} title={t('Voir l’effectif de {name}', { name: row.name })}>{row.name}</button>
+                  : <span className="t-name">{row.name}</span>}
+                {zone && <span className="sr-only">{tr(', zone de <0/>', [ZONE_TAG[zone]])}</span>}
               </td>
-              <td>{t.played}</td>
-              {wdl && <><td className="t-wdl">{t.w}</td><td className="t-wdl">{t.d}</td><td className="t-wdl">{t.l}</td></>}
-              <td>{signed(t.gd)}</td>
-              <td className="t-pts">{t.pts}</td>
+              <td>{row.played}</td>
+              {wdl && <><td className="t-wdl">{row.w}</td><td className="t-wdl">{row.d}</td><td className="t-wdl">{row.l}</td></>}
+              <td>{signed(row.gd)}</td>
+              <td className="t-pts">{row.pts}</td>
             </tr>
           );
         })}
@@ -175,12 +176,12 @@ export function ZoneLegend({ state }) {
   return (
     <ul className="zone-legend">
       {promo ? (
-        <li className="promo"><i aria-hidden="true" />Montée en {DIVISIONS[state.divisionIndex + 1].name}</li>
+        <li className="promo">{tr('<0/>Montée en <1/>', [<i aria-hidden="true" />, DIVISIONS[state.divisionIndex + 1].name])}</li>
       ) : (
-        <li className="europe"><i aria-hidden="true" />Coupe d’Europe des clubs la saison prochaine</li>
+        <li className="europe">{tr('<0/>Coupe d’Europe des clubs la saison prochaine', [<i aria-hidden="true" />])}</li>
       )}
-      {rel && <li className="releg"><i aria-hidden="true" />Descente en {DIVISIONS[state.divisionIndex - 1].name}</li>}
-      {promo && <li className="note">La Coupe d’Europe des clubs se joue depuis l’Élite : ses deux premiers s’y qualifient.</li>}
+      {rel && <li className="releg">{tr('<0/>Descente en <1/>', [<i aria-hidden="true" />, DIVISIONS[state.divisionIndex - 1].name])}</li>}
+      {promo && <li className="note">{t('La Coupe d’Europe des clubs se joue depuis l’Élite : ses deux premiers s’y qualifient.')}</li>}
     </ul>
   );
 }
@@ -202,21 +203,21 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
   // écart avec le 2e : « 2 pts de la montée », ou l'égalité de points (départagés à la différence de buts)
   const behind = (what) => {
     const n = standings[1].pts - me.pts;
-    return n > 0 ? `${n} pt${n > 1 ? 's' : ''} ${what}` : 'À égalité de points avec le 2e';
+    return n > 0 ? tn(n, '{n} pt {what}', '{n} pts {what}', { n, what }, n > 1) : t('À égalité de points avec le 2e');
   };
-  if (promo && pos > 2) goal = behind('de la montée');
-  else if (promo) goal = 'En zone de montée';
-  else if (state.league) goal = pos === 1 ? 'En tête de la ligue' : `${standings[0].pts - me.pts} pt${standings[0].pts - me.pts > 1 ? 's' : ''} du premier`;
-  else goal = pos === 1 ? 'En tête de l’Élite' : pos === 2 ? 'Place européenne' : behind('de l’Europe');
-  if (rel && pos >= 7) goal = 'En zone de descente';
+  if (promo && pos > 2) goal = behind(t('de la montée'));
+  else if (promo) goal = t('En zone de montée');
+  else if (state.league) goal = tn(pos, 'En tête de la ligue', '{v} pt{v2} du premier', { v: standings[0].pts - me.pts, v2: standings[0].pts - me.pts > 1 ? 's' : '' }, !(pos === 1));
+  else goal = pos === 1 ? t('En tête de l’Élite') : pos === 2 ? t('Place européenne') : behind(t('de l’Europe'));
+  if (rel && pos >= 7) goal = t('En zone de descente');
   const motm = lm?.players?.length ? [...lm.players].sort((a, b) => b.rating - a.rating)[0] : null;
 
   return (
     <Panel
       id="season"
       size="lg"
-      title={`Saison ${state.seasonNumber} · ${div.name}`}
-      eyebrow={`${div.name} · Saison ${state.seasonNumber} · ${state.round ? `journée ${Math.min(state.round, leagueLength(state))} / ${leagueLength(state)}` : 'avant la 1re journée'}`}
+      title={t('Saison {seasonNumber} · {name}', { seasonNumber: state.seasonNumber, name: div.name })}
+      eyebrow={t('{name} · Saison {seasonNumber} · {v}', { name: div.name, seasonNumber: state.seasonNumber, v: state.round ? t('journée {min} / {leagueLength}', { min: Math.min(state.round, leagueLength(state)), leagueLength: leagueLength(state) }) : t('avant la 1re journée') })}
       onClose={onClose}
       onEscape={sheetOpen || roster !== null ? () => {} : undefined}
       overlay={(
@@ -228,11 +229,11 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
       toolbar={(
         <>
           <div className="season-stats">
-          <Stat label="Position" value={ordinal(pos)} sub="sur 8" tone={pos <= 2 ? 'up' : rel && pos >= 7 ? 'down' : ''} />
-          <Stat label="Points" value={me.pts} sub={`${me.played} match${me.played > 1 ? 's' : ''}`} />
-          <Stat label="Diff." value={signed(me.gd)} />
+          <Stat label={t('Position')} value={ordinal(pos)} sub={t('sur 8')} tone={pos <= 2 ? 'up' : rel && pos >= 7 ? 'down' : ''} />
+          <Stat label={t('Points')} value={me.pts} sub={tn(me.played, '{n} match', '{n} matchs', { n: me.played }, me.played > 1)} />
+          <Stat label={t('Diff.')} value={signed(me.gd)} />
           {/* « Ambition » : la place visée au classement (l'« objectif de saison » du HUD est celui des primes de palier) */}
-          <Stat label="Ambition" value={state.league ? 'Titre' : promo ? 'Top 2' : 'Europe'} sub={goal} />
+          <Stat label={t('Ambition')} value={state.league ? t('Titre') : promo ? t('Top 2') : t('Europe')} sub={goal} />
           </div>
         </>
       )}
@@ -240,8 +241,8 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
       {tab === 'calendar' && <SeasonCalendar state={state} initialSel={initialSel} onOpenMatch={onOpenMatch} onPlay={onPlay} />}
       {tab === 'table' && (
         <div className="season-cols">
-          <section className="season-plate season-table" aria-label={`Classement ${ofDiv(div.name)}`}>
-            <SectionHead label={`Classement · ${div.name}`} aside={me.played ? `après ${me.played} journée${me.played > 1 ? 's' : ''} sur ${leagueLength(state)}` : 'avant la 1re journée'} />
+          <section className="season-plate season-table" aria-label={t('Classement {ofDiv}', { ofDiv: ofDiv(div.name) })}>
+            <SectionHead label={t('Classement · {name}', { name: div.name })} aside={me.played ? tn(me.played, 'après {played} journée sur {leagueLength}', 'après {played} journées sur {leagueLength}', { played: me.played, leagueLength: leagueLength(state) }, me.played > 1) : t('avant la 1re journée')} />
             <StandingsTable state={state} onClub={state.league ? setRoster : null} />
             <ZoneLegend state={state} />
           </section>
@@ -253,7 +254,7 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
 
             {lm && (
               <section className="season-plate">
-                <SectionHead label={`Dernier match · ${lm.comp && lm.comp !== 'league' ? `${lm.comp === 'c1' ? 'Europe' : 'Coupe'} · ${STAGES_SHORT[lm.stage].toLowerCase()}` : `journée ${lm.round}`}`} aside={lmPens ? `${lmWon ? 'Qualifié' : 'Éliminé'} aux t.a.b. ${lm.pens[0]}–${lm.pens[1]}` : lm.gf > lm.ga ? 'Victoire' : lm.gf < lm.ga ? 'Défaite' : 'Match nul'} />
+                <SectionHead label={t('Dernier match · {v}', { v: lm.comp && lm.comp !== 'league' ? `${lm.comp === 'c1' ? t('Europe') : t('Coupe')} · ${STAGES_SHORT[lm.stage].toLowerCase()}` : t('journée {round}', { round: lm.round }) })} aside={lmPens ? t('{v} aux t.a.b. {v2}–{v3}', { v: lmWon ? t('Qualifié') : t('Éliminé'), v2: lm.pens[0], v3: lm.pens[1] }) : lm.gf > lm.ga ? t('Victoire') : lm.gf < lm.ga ? t('Défaite') : t('Match nul')} />
                 <div className="last-match">
                   <div className="lm-score">
                     <span className="lm-team">{lm.away ? lm.oppName : state.clubName}</span>
@@ -264,8 +265,8 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
                     <p className="lm-scorers"><IconBall /> {lm.scorers.map((x) => `${x.name} ${x.minute}′`).join(' · ')}</p>
                   )}
                   <div className="lm-facts">
-                    {motm && <span className="lm-motm"><RatingBadge value={motm.rating} /> {motm.name}, homme du match</span>}
-                    <span>{lm.away ? `À l’extérieur · droits TV ${fmtMoney(lm.revenue)}` : `${fmtNum(lm.attendance)} spectateurs · ${fmtMoney(lm.revenue)}`}</span>
+                    {motm && <span className="lm-motm">{tr('<0/> <1/>, homme du match', [<RatingBadge value={motm.rating} />, motm.name])}</span>}
+                    <span>{lm.away ? t('À l’extérieur · droits TV {revenue}', { revenue: fmtMoney(lm.revenue) }) : t('{attendance} spectateurs · {revenue}', { attendance: fmtNum(lm.attendance), revenue: fmtMoney(lm.revenue) })}</span>
                   </div>
                 </div>
               </section>
@@ -275,10 +276,10 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
 
             {state.history.length > 0 && (
               <section className="season-plate">
-                <SectionHead label="Classements" />
+                <SectionHead label={t('Classements')} />
                 <ul className="honours">
                   {state.history.slice().reverse().map((h) => (
-                    <li key={h.season}><span>Saison {h.season}</span><em>{h.division}</em><b>{ordinal(h.position)}</b></li>
+                    <li key={h.season}><span>{tr('Saison <0/>', [h.season])}</span><em>{h.division}</em><b>{ordinal(h.position)}</b></li>
                   ))}
                 </ul>
               </section>
@@ -290,8 +291,8 @@ export function SeasonPanel({ state, onClose, tab = 'calendar', initialSel = nul
   );
 }
 
-const pts = (n) => `${n} point${n > 1 ? 's' : ''}`;
-const days = (n) => `${n} journée${n > 1 ? 's' : ''}`;
+const pts = (n) => tn(n, '{n} point', '{n} points', { n }, n > 1);
+const days = (n) => tn(n, '{n} journée', '{n} journées', { n }, n > 1);
 
 // Course de la saison : la place visée (montée, Europe, maintien), où en est le club, l'écart avec le club à
 // rattraper (ou à tenir derrière), les journées qui restent et la prime de classement de la place actuelle.
@@ -303,30 +304,30 @@ function RaceCard({ state, standings, pos }) {
   const left = Math.max(0, leagueLength(state) - me.played);
   const danger = !lg && d > 0 && pos >= 7;
   const target = danger ? 6 : lg ? 1 : 2; // place à atteindre (6e : maintien) ou à garder (2e ; 1re en ligue)
-  const title = lg ? 'Être champion' : danger ? 'Sauver sa place' : elite ? 'Jouer l’Europe' : 'Monter en fin de saison';
-  const aim = lg ? `Le premier est champion ${ofDiv(state.league.name)} et entre à son palmarès.` : danger
-    ? `Les deux derniers descendent en ${DIVISIONS[d - 1].name}.`
-    : elite ? 'Les deux premiers jouent la Coupe d’Europe des clubs la saison prochaine.' : `Les deux premiers montent en ${DIVISIONS[d + 1].name}.`;
+  const title = lg ? t('Être champion') : danger ? t('Sauver sa place') : elite ? t('Jouer l’Europe') : t('Monter en fin de saison');
+  const aim = lg ? t('Le premier est champion {ofDiv} et entre à son palmarès.', { ofDiv: ofDiv(state.league.name) }) : danger
+    ? t('Les deux derniers descendent en {name}.', { name: DIVISIONS[d - 1].name })
+    : elite ? t('Les deux premiers jouent la Coupe d’Europe des clubs la saison prochaine.') : t('Les deux premiers montent en {name}.', { name: DIVISIONS[d + 1].name });
   let where;
   if (pos <= target && !danger) {
     const chaser = standings[target]; // le premier club hors de la zone
     const n = me.pts - chaser.pts;
     where = n > 0
-      ? <>Tu es <b>{ordinal(pos)}</b>, <b>{pts(n)}</b> devant {clubAfter('', chaser.name)}, {ordinal(target + 1)}.</>
-      : <>Tu es <b>{ordinal(pos)}</b>, à égalité de points {clubAfter('avec ', chaser.name)}, {ordinal(target + 1)} : la différence de buts vous départage.</>;
+      ? <>{tr('Tu es <0/>, <1/> devant <2/>, <3/>.', [<b>{ordinal(pos)}</b>, <b>{pts(n)}</b>, clubAfter('', chaser.name), ordinal(target + 1)])}</>
+      : <>{tr('Tu es <0/>, à égalité de points <1/>, <2/> : la différence de buts vous départage.', [<b>{ordinal(pos)}</b>, clubAfter('avec ', chaser.name), ordinal(target + 1)])}</>;
   } else {
     const ahead = standings[target - 1]; // le dernier club dans la zone visée
     const n = ahead.pts - me.pts;
     where = n > 0
-      ? <>Tu es <b>{ordinal(pos)}</b>, à <b>{pts(n)}</b> {clubAfter('de ', ahead.name)}, {ordinal(target)}.</>
-      : <>Tu es <b>{ordinal(pos)}</b>, à égalité de points {clubAfter('avec ', ahead.name)}, {ordinal(target)} : la différence de buts vous départage.</>;
+      ? <>{tr('Tu es <0/>, à <1/> <2/>, <3/>.', [<b>{ordinal(pos)}</b>, <b>{pts(n)}</b>, clubAfter('de ', ahead.name), ordinal(target)])}</>
+      : <>{tr('Tu es <0/>, à égalité de points <1/>, <2/> : la différence de buts vous départage.', [<b>{ordinal(pos)}</b>, clubAfter('avec ', ahead.name), ordinal(target)])}</>;
   }
   return (
-    <section className={`season-plate sc-race ${danger ? 'danger' : pos <= 2 ? 'in' : ''}`} aria-label="Course de la saison">
-      <SectionHead label={lg ? 'Course au titre' : danger ? 'Maintien' : elite ? 'Course à l’Europe' : 'Course à la montée'} />
+    <section className={`season-plate sc-race ${danger ? 'danger' : pos <= 2 ? 'in' : ''}`} aria-label={t('Course de la saison')}>
+      <SectionHead label={lg ? t('Course au titre') : danger ? t('Maintien') : elite ? t('Course à l’Europe') : t('Course à la montée')} />
       <h3>{title}</h3>
-      <p>{aim} {lg && pos === 1 && standings[1] ? <>Tu es <b>1er</b>, {pts(Math.max(0, me.pts - standings[1].pts))} devant {clubAfter('', standings[1].name)}.</> : where} {left ? `Il reste ${days(left)}.` : 'Le championnat est terminé.'}</p>
-      <p className="sc-race-prize">Prime de classement à ta place : <b>{fmtMoney(prizeFor(pos, d))}</b></p>
+      <p>{aim} {lg && pos === 1 && standings[1] ? <>{tr('Tu es <0/>, <1/> devant <2/>.', [<b>{t('1er')}</b>, pts(Math.max(0, me.pts - standings[1].pts)), clubAfter('', standings[1].name)])}</> : where} {left ? t('Il reste {days}.', { days: days(left) }) : t('Le championnat est terminé.')}</p>
+      <p className="sc-race-prize">{tr('Prime de classement à ta place : <0/>', [<b>{fmtMoney(prizeFor(pos, d))}</b>])}</p>
     </section>
   );
 }
@@ -343,16 +344,16 @@ function Leaders({ state, onPlayer }) {
   const scorer = top((r) => r.goals);
   const wall = top((r) => (r.p.pos === 'G' || r.p.pos === 'D' ? r.clean : 0));
   const items = [
-    rated && { r: rated, label: `Meilleure note${rated.motm ? ` · ${rated.motm} fois homme du match` : ''}`, value: fmtRating(rated.avg) },
-    scorer && { r: scorer, label: 'Meilleur buteur', value: scorer.goals },
-    wall && { r: wall, label: 'Matchs sans encaisser', value: wall.clean },
+    rated && { r: rated, label: t('Meilleure note{v}', { v: rated.motm ? t(' · {motm} fois homme du match', { motm: rated.motm }) : '' }), value: fmtRating(rated.avg) },
+    scorer && { r: scorer, label: t('Meilleur buteur'), value: scorer.goals },
+    wall && { r: wall, label: t('Matchs sans encaisser'), value: wall.clean },
   ].filter(Boolean);
   const games = Math.max(0, ...rows.map((r) => r.apps));
   return (
-    <section className="season-plate" aria-label="Les meilleurs du club">
-      <SectionHead label="Les meilleurs du club" aside={`Saison ${state.seasonNumber}`} />
+    <section className="season-plate" aria-label={t('Les meilleurs du club')}>
+      <SectionHead label={t('Les meilleurs du club')} aside={t('Saison {seasonNumber}', { seasonNumber: state.seasonNumber })} />
       {items.length === 0 ? (
-        <p className="tc-empty">{games ? 'Encore trop tôt : la note moyenne se compte sur 3 matchs.' : 'Les premiers matchs désigneront les meilleurs du club.'}</p>
+        <p className="tc-empty">{games ? t('Encore trop tôt : la note moyenne se compte sur 3 matchs.') : t('Les premiers matchs désigneront les meilleurs du club.')}</p>
       ) : (
         <ul className="sc-leaders">
           {items.map(({ r, label, value }) => (
@@ -377,11 +378,11 @@ function CupRuns({ state }) {
   const next = nextFixture(state);
   return ['cup', 'c1'].filter((k) => cups[k]).map((k) => {
     const c = cups[k];
-    const status = c.won ? 'Vainqueur' : c.alive ? `En course · ${STAGES[c.stage].toLowerCase()}` : 'Éliminé';
+    const status = c.won ? t('Vainqueur') : c.alive ? t('En course · {toLowerCase}', { toLowerCase: STAGES[c.stage].toLowerCase() }) : t('Éliminé');
     const lost = c.results.find((x) => !x.won);
     return (
       <section key={k} className={`season-plate sc-cupcard ${k}`}>
-        <SectionHead label={k === 'c1' ? 'Coupe d’Europe des clubs' : 'Coupe nationale'} aside={status} />
+        <SectionHead label={k === 'c1' ? t('Coupe d’Europe des clubs') : t('Coupe nationale')} aside={status} />
         <ol className="cup-run">
           {STAGES.map((st, i) => {
             const r = c.results.find((x) => x.stage === i);
@@ -393,12 +394,12 @@ function CupRuns({ state }) {
                 {r ? (
                   <>
                     <span className="cr-opp">{r.opp}</span>
-                    <b>{r.gf}–{r.ga}{r.pens ? ` · t.a.b. ${r.pens[0]}–${r.pens[1]}` : ''}</b>
+                    <b>{r.gf}–{r.ga}{r.pens ? t(' · t.a.b. {a}–{b}', { a: r.pens[0], b: r.pens[1] }) : ''}</b>
                   </>
                 ) : upcoming ? (
                   <>
-                    <span className="cr-opp">{c.opp.name}<em>{c.opp.budget ? `Europe · budget ${fmtMoney(c.opp.budget)}` : c.opp.division}{next?.comp === k ? ' · prochain match' : ''}</em></span>
-                    <b>niv. {String(c.opp.strength).replace('.', ',')}</b>
+                    <span className="cr-opp">{c.opp.name}<em>{c.opp.budget ? t('Europe · budget {budget}', { budget: fmtMoney(c.opp.budget) }) : c.opp.division}{next?.comp === k ? t(' · prochain match') : ''}</em></span>
+                    <b>{tr('niv. <0/>', [String(c.opp.strength).replace('.', decSep())])}</b>
                   </>
                 ) : <span className="cr-opp muted">—</span>}
               </li>
@@ -407,7 +408,7 @@ function CupRuns({ state }) {
         </ol>
         {lost && (
           <p className="cr-out">
-            {lost.stage === 3 ? <>Finaliste : battu en finale {clubAfter('par ', lost.opp)}.</> : <>Éliminé en {STAGES[lost.stage].toLowerCase()} {clubAfter('par ', lost.opp)} : rendez-vous la saison prochaine.</>}
+            {lost.stage === 3 ? tr('Finaliste : battu en finale <0/>.', [clubAfter('par ', lost.opp)]) : tr('Éliminé en <0/> <1/> : rendez-vous la saison prochaine.', [STAGES[lost.stage].toLowerCase(), clubAfter('par ', lost.opp)])}
           </p>
         )}
       </section>
@@ -420,9 +421,9 @@ export function TrophyCase({ trophies }) {
   const counts = ['league', 'cup', 'c1'].map((k) => [k, trophies.filter((t) => t.comp === k).length]);
   return (
     <>
-      <SectionHead label="Vitrine des trophées" aside={`${trophies.length} titre${trophies.length > 1 ? 's' : ''}`} />
+      <SectionHead label={t('Vitrine des trophées')} aside={tn(trophies.length, '{n} titre', '{n} titres', { n: trophies.length }, trophies.length > 1)} />
       {trophies.length === 0 ? (
-        <p className="tc-empty">Pas encore de trophée : sois champion, ou va au bout de la Coupe nationale.</p>
+        <p className="tc-empty">{t('Pas encore de trophée : sois champion, ou va au bout de la Coupe nationale.')}</p>
       ) : (
         <>
           <div className="tc-counts">
@@ -431,8 +432,8 @@ export function TrophyCase({ trophies }) {
             ))}
           </div>
           <ul className="tc-list">
-            {[...trophies].reverse().map((t, i) => (
-              <li key={i}><Trophy comp={t.comp} /><span>{t.comp === 'league' ? `Champion ${ofDiv(t.division)}` : t.comp === 'cup' ? 'Coupe nationale' : 'Coupe d’Europe des clubs'}</span><em>Saison {t.season}</em></li>
+            {[...trophies].reverse().map((row, i) => (
+              <li key={i}><Trophy comp={row.comp} /><span>{row.comp === 'league' ? t('Champion {ofDiv}', { ofDiv: ofDiv(row.division) }) : row.comp === 'cup' ? t('Coupe nationale') : t('Coupe d’Europe des clubs')}</span><em>{tr('Saison <0/>', [row.season])}</em></li>
             ))}
           </ul>
         </>
@@ -443,8 +444,8 @@ export function TrophyCase({ trophies }) {
 
 // --- Journal façon FootOFF Media : à la une, rubriques, titres ----------------------------------------------
 
-const KINDS = { match: 'Match', mercato: 'Mercato', infra: 'Bâtiments', saison: 'Saison', objectif: 'Objectif', club: 'Club', academie: 'Académie', entrainement: 'Entraînement' };
-const FILTERS = [['all', 'Tout'], ['match', 'Matchs'], ['mercato', 'Mercato'], ['infra', 'Bâtiments'], ['club', 'Club']];
+const KINDS = { match: t('Match'), mercato: t('Mercato'), infra: t('Bâtiments'), saison: t('Saison'), objectif: t('Objectif'), club: t('Club'), academie: t('Académie'), entrainement: t('Entraînement') };
+const FILTERS = [['all', t('Tout')], ['match', t('Matchs')], ['mercato', t('Mercato')], ['infra', t('Bâtiments')], ['club', t('Club')]];
 
 // Les anciennes entrées n'ont qu'un texte : on en tire un titre et une rubrique.
 function article(e) {
@@ -463,7 +464,7 @@ function article(e) {
   return { ...e, kind, title: t.replace(/\.$/, ''), body: '' };
 }
 
-const dateOf = (e) => (e.round ? `Saison ${e.season} · journée ${e.round}` : `Saison ${e.season}`);
+const dateOf = (e) => (e.round ? t('Saison {season} · journée {round}', { season: e.season, round: e.round }) : t('Saison {season}', { season: e.season }));
 
 // Le journal garde l'histoire du club (jusqu'à 600 entrées, src/game/journal.js) : la rubrique en barre d'outils, et une
 // rangée de saisons (la saison en cours d'abord, « Tout » pour l'histoire entière) au-dessus des articles.
@@ -480,8 +481,8 @@ export function JournalPanel({ state, onClose }) {
   return (
     <Panel
       id="journal"
-      title="Le journal du club"
-      eyebrow={`FootOFF Media · ${season === 'all' ? `${seasons.length} saison${seasons.length > 1 ? 's' : ''} d’histoire` : `Saison ${season}`}`}
+      title={t('Le journal du club')}
+      eyebrow={t('FootOFF Media · {v}', { v: season === 'all' ? tn(seasons.length, '{length} saison d’histoire', '{length} saisons d’histoire', { length: seasons.length }, seasons.length > 1) : t('Saison {season}', { season }) })}
       onClose={onClose}
       toolbar={(
         <div className="chips journal-filters">
@@ -492,17 +493,17 @@ export function JournalPanel({ state, onClose }) {
       )}
     >
       {seasons.length > 1 && (
-        <div className="chips journal-seasons" role="tablist" aria-label="Saison">
-          <button role="tab" aria-selected={season === 'all'} className={season === 'all' ? 'active' : ''} onClick={() => setSeason('all')}>Tout</button>
+        <div className="chips journal-seasons" role="tablist" aria-label={t('Saison')}>
+          <button role="tab" aria-selected={season === 'all'} className={season === 'all' ? 'active' : ''} onClick={() => setSeason('all')}>{t('Tout')}</button>
           {seasons.map((n) => (
-            <button key={n} role="tab" aria-selected={season === n} className={season === n ? 'active' : ''} onClick={() => setSeason(n)}>S{n}</button>
+            <button key={n} role="tab" aria-selected={season === n} className={season === n ? 'active' : ''} onClick={() => setSeason(n)}>{t('S')}{n}</button>
           ))}
         </div>
       )}
-      {!lead && <p className="muted">{state.journal.length ? 'Rien dans cette rubrique pour cette saison.' : 'L’histoire commence au premier coup de sifflet.'}</p>}
+      {!lead && <p className="muted">{state.journal.length ? t('Rien dans cette rubrique pour cette saison.') : t('L’histoire commence au premier coup de sifflet.')}</p>}
       {lead && (
         <article className={`news-lead k-${lead.kind}`}>
-          <span className="news-kicker"><b>À la une</b> · {KINDS[lead.kind]} · {dateOf(lead)}</span>
+          <span className="news-kicker"><b>{t('À la une')}</b> · {KINDS[lead.kind]} · {dateOf(lead)}</span>
           <h3>{lead.title}</h3>
           {lead.body && <p>{lead.body}</p>}
         </article>

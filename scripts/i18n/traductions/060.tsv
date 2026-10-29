@@ -1,0 +1,47 @@
+3617	Build	Construye	ابنِ
+3618	Your complex grows plot by plot, in any order you like: training, academy, supporters, partners.	Tu complejo crece parcela a parcela, en el orden que quieras: entrenamiento, cantera, aficionados, socios.	ينمو مجمّعك قطعة أرض بعد أخرى، بالترتيب الذي تريده: التدريب، والأكاديمية، والمشجعون، والشركاء.
+3619	Develop	Desarrolla	طوّر
+3620	Train your talents, unearth the stars of tomorrow, reach the season’s objective.	Forma a tus talentos, descubre a los futuros cracks y cumple el objetivo de la temporada.	كوّن مواهبك، واكتشف نجوم الغد، وحقق هدف الموسم.
+3621	Climb	Asciende	اصعد
+3622	From the County League to the Elite League: your reputation draws the crowds, the sponsors and the players.	De la Liga Provincial a la Liga Élite: tu reputación atrae al público, a los patrocinadores y a los jugadores.	من دوري المقاطعة إلى دوري النخبة: تجذب سمعتك الجمهور والرعاة واللاعبين.
+3623	Continue the game	Continuar la partida	متابعة اللعبة
+3624	Your club. Your complex. <0>Your empire.</0>	Tu club. Tu complejo. <0>Tu imperio.</0>	ناديك. مجمّعك. <0>إمبراطوريتك.</0>
+3625	Your game with <0/> (season <1/>) will be erased.	Tu partida con <0/> (temporada <1/>) se borrará.	ستُحذف لعبتك مع <0/> (الموسم <1/>).
+3626	Everything that decides, <0>in plain sight.</0>	Todo lo que decide, <0>a la vista.</0>	كل ما يحسم الأمور، <0>بوضوح.</0>
+3627	The match and its exact prediction, the players and their condition, the transfer market and value, money, reputation.	El partido y su pronóstico exacto, los jugadores y su condición, el mercado y el valor, el dinero, la reputación.	المباراة وتوقعها الدقيق، واللاعبون ولياقتهم، وسوق الانتقالات والقيمة، والمال، والسمعة.
+3628	What’s new · version <0/>	Novedades · versión <0/>	المستجدات · الإصدار <0/>
+3629	{"zero":"","one":"","other":" · and previous versions"}	{"zero":"","one":"","other":" · y las versiones anteriores"}	{"zero":"","one":"","other":" · والإصدارات السابقة"}
+3630	On	Activado	مفعّل
+3631	Unavailable	No disponibles	غير متاح
+3632	On	Activadas	مفعّل
+3633	Off	Desactivadas	معطّل
+3634	Saved on this device.	Guardados en este dispositivo.	محفوظة على هذا الجهاز.
+3635	<0/> · your league club is played like a solo game, separate from your career: its complex, its squad, its finances. Its matches are played at the league’s time.	<0/> · tu club de liga se juega como una partida en solitario, aparte de tu carrera: su complejo, su plantilla, sus finanzas. Sus partidos se juegan a la hora de la liga.	<0/> · يُلعب نادي الدوري كلعبة فردية منفصلة عن مسيرتك: بمجمّعه وتشكيلته وماليته. وتُلعب مبارياته في موعد الدوري.
+3636	Eight clubs. <0>Your friends.</0>	Ocho clubes. <0>Tus amigos.</0>	ثمانية أندية. <0>أصدقاؤك.</0>
+3637	Join a friend’s league with their code, or create your own from the League Headquarters. A brand-new club for everyone, one matchday a day.	Únete a la liga de un amigo con su código o crea la tuya desde la Sede de la Liga. Un club nuevo para cada uno, una jornada al día.	انضم إلى دوري صديق برمزه، أو أنشئ دوريك من مقر الدوري. نادٍ جديد لكل واحد، وجولة واحدة يوميًا.
+3638	Football, <0>differently.</0>	El fútbol, <0>de otra manera.</0>	كرة القدم، <0>بطريقة مختلفة.</0>
+3639	News, analysis and Stats Pass on footoff.media. Opens in a new tab.	Noticias, análisis y Stats Pass en footoff.media. Se abre en una pestaña nueva.	أخبار وتحليلات وStats Pass على footoff.media. يُفتح في تبويب جديد.
+3640	{v} · your club is waiting	{v} · tu club te espera	{v} · ناديك بانتظارك
+3641	{v} · Season {season} · {v2}	{v} · Temporada {season} · {v2}	{v} · الموسم {season} · {v2}
+3642	finished	terminada	انتهى
+3643	{clubName} · {name} · Season {seasonNumber}	{clubName} · {name} · Temporada {seasonNumber}	{clubName} · {name} · الموسم {seasonNumber}
+3644	Found another club	Fundar otro club	تأسيس نادٍ آخر
+3645	Found your club and build your empire	Funda tu club y construye tu imperio	أسّس ناديك وابنِ إمبراطوريتك
+3646	{count} league · create, join, standings	{count} liga · crear, unirse, clasificaciones	دوري واحد · إنشاء، انضمام، ترتيب
+3647	{count} leagues · create, join, standings	{count} ligas · crear, unirse, clasificaciones	{"one":"دوري واحد · إنشاء، انضمام، ترتيب","two":"دوريان · إنشاء، انضمام، ترتيب","few":"{count} دوريات · إنشاء، انضمام، ترتيب","other":"{count} دوريًا · إنشاء، انضمام، ترتيب"}
+3648	Join your friends with their code	Únete a tus amigos con su código	انضم إلى أصدقائك برموزهم
+3649	Style	Estilo	النمط
+3650	Symbol	Símbolo	الرمز
+3651	Pattern	Motivo	الزخرفة
+3652	Inscription	Inscripción	الكتابة
+3653	Background	Fondo	الخلفية
+3654	Found your club	Funda tu club	أسّس ناديك
+3655	Eleven players, a neighbourhood pitch and the County League to start with. The rest is yours to build.	Once jugadores, un campo de barrio y la Liga Provincial para empezar. El resto lo construyes tú.	أحد عشر لاعبًا، وملعب حي، ودوري المقاطعة كبداية. والباقي تبنيه أنت.
+3656	Suggest another name	Proponer otro nombre	اقتراح اسم آخر
+3657	Found the club	Fundar el club	تأسيس النادي
+3658	FootOFF Empire title screen	Pantalla de inicio de FootOFF Empire	الشاشة الرئيسية لـFootOFF Empire
+3659	FootOFF Media presents	FootOFF Media presenta	FootOFF Media تقدّم
+3660	A neighbourhood pitch. <0>An empire</0> to build.	Un campo de barrio. <0>Un imperio</0> por construir.	ملعب حي. <0>إمبراطورية</0> تنتظر البناء.
+3661	Main menu	Menú principal	القائمة الرئيسية
+3662	FootOFF Empire	FootOFF Empire	FootOFF Empire
+3663	FootOFF Empire · beta <0/> · <1/>	FootOFF Empire · beta <0/> · <1/>	FootOFF Empire · نسخة تجريبية <0/> · <1/>

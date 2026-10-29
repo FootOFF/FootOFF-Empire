@@ -1,0 +1,79 @@
+1794	Knocked out in the {toLowerCase} by {opp} ({gf}–{ga}{v}): this round will not be played.	Eliminado en {toLowerCase} por {opp} ({gf}–{ga}{v}): esta ronda no se disputará.	أُقصي في {toLowerCase} أمام {opp} ({gf}–{ga}{v}): لن يُلعب هذا الدور.
+1795	This round will not be played.	Esta ronda no se disputará.	لن يُلعب هذا الدور.
+1796	No opponent	Sin rival	لا خصم
+1797	Opponent to be drawn	Rival por sortear	الخصم في انتظار القرعة
+1798	· Away	· Fuera	· خارج الأرض
+1799	VS	VS	ضد
+1800	pens	pen.	ترجيح
+1801	on the way to <0/>	camino de <0/>	في الطريق إلى <0/>
+1802	<0/> Play the match	<0/> Jugar el partido	<0/> لعب المباراة
+1803	See the Stats Pass <0/>	Ver el Stats Pass <0/>	عرض Stats Pass <0/>
+1804	The top two go up to the {name}{v}.	Los dos primeros suben a la {name}{v}.	يصعد الأولان إلى {name}{v}.
+1805	, the bottom two go down	, los dos últimos bajan	، ويهبط الأخيران
+1806	The top two play in the European Cup next season, the bottom two go down.	Los dos primeros juegan la Copa de Europa la próxima temporada, los dos últimos bajan.	يشارك الأولان في كأس أوروبا الموسم المقبل، ويهبط الأخيران.
+1807	Season summary	Balance de la temporada	حصيلة الموسم
+1808	Summary	Balance	الحصيلة
+1809	{n} match played	{n} partido jugado	مباراة واحدة لُعبت
+1810	{n} matches played	{n} partidos jugados	{"one":"مباراة واحدة لُعبت","two":"مباراتان لُعبتا","few":"{n} مباريات لُعبت","other":"{n} مباراة لُعبت"}
+1811	win	victoria	فوز
+1812	wins	victorias	انتصارات
+1813	draw	empate	تعادل
+1814	draws	empates	تعادلات
+1815	defeat	derrota	هزيمة
+1816	defeats	derrotas	هزائم
+1817	goal scored	gol marcado	هدف مسجل
+1818	goals scored	goles marcados	أهداف مسجلة
+1819	conceded	encajado	مستقبَل
+1820	conceded	encajados	مستقبَلة
+1821	Form	Forma	الحالة
+1822	last match	último partido	آخر مباراة
+1823	last {length} matches	últimos {length} partidos	{"one":"آخر مباراة","two":"آخر مباراتين","few":"آخر {length} مباريات","other":"آخر {length} مباراة"}
+1824	Next round: {toLowerCase}	Próxima ronda: {toLowerCase}	الدور التالي: {toLowerCase}
+1825	Knocked out in the {toLowerCase}	Eliminado en {toLowerCase}	أُقصي في {toLowerCase}
+1826	At the club since season {joined}	En el club desde la temporada {joined}	في النادي منذ الموسم {joined}
+1827	Retired at {age}, at the end of season {left}	Retirado a los {age} años, al final de la temporada {left}	اعتزل في سن {age}، في نهاية الموسم {left}
+1828	Left on a free at {age}, out of contract, at the end of season {left}	Se fue libre a los {age} años, al terminar su contrato, al final de la temporada {left}	رحل حرًا في سن {age} بنهاية عقده، في نهاية الموسم {left}
+1829	Sold by the board (recovery plan) to {v} for {v2}, season {left}	Vendido por la directiva (plan de saneamiento) a {v} por {v2}, temporada {left}	باعه مجلس الإدارة (خطة الإنقاذ) إلى {v} مقابل {v2}، الموسم {left}
+1830	another club	otro club	نادٍ آخر
+1831	Sold to {v} for {v2}, season {left}{v3}	Vendido a {v} por {v2}, temporada {left}{v3}	بيع إلى {v} مقابل {v2}، الموسم {left}{v3}
+1832	(matchday {leftRound})	(jornada {leftRound})	(الجولة {leftRound})
+1833	At the club	En el club	في النادي
+1834	Retired	Retirado	معتزل
+1835	Left on a free	Se fue libre	رحل حرًا
+1836	Sold	Vendido	مَبيع
+1837	Champions {ofDiv} (season {season})	Campeón {ofDiv} (temporada {season})	بطل {ofDiv} (الموسم {season})
+1838	Promoted from the {division} (season {season})	Ascenso desde la {division} (temporada {season})	صعود من {division} (الموسم {season})
+1839	Club top scorer in season {season} ({plural})	Máximo goleador del club en la temporada {season} ({plural})	هداف النادي في الموسم {season} ({plural})
+1840	{n} goal	{n} gol	هدف واحد
+1841	{n} goals	{n} goles	{"one":"هدف واحد","two":"هدفان","few":"{n} أهداف","other":"{n} هدفًا"}
+1842	Man of the match {motm} times	Jugador del partido {motm} veces	رجل المباراة {motm} مرات
+1843	{name}’s career	Carrera de {name}	مسيرة {name}
+1844	Career at the club	Carrera en el club	المسيرة مع النادي
+1845	Close	Cerrar	إغلاق
+1846	level / 20	nivel / 20	المستوى / 20
+1847	on leaving / 20	al irse / 20	عند الرحيل / 20
+1848	· {age} today	· {age} años hoy	· {age} عامًا اليوم
+1849	· {age}	· {age} años	· {age} عامًا
+1850	Seasons <0/><1/>	Temporadas <0/><1/>	المواسم <0/><1/>
+1851	See his player profile	Ver su ficha de jugador	عرض بطاقة اللاعب
+1852	His attributes when he left	Sus cualidades en el momento de irse	قدراته عند رحيله
+1853	matches	partidos	مباريات
+1854	goals	goles	أهداف
+1855	assists	asist.	تمريرات حاسمة
+1856	men of the match	jugador del partido	مرات رجل المباراة
+1857	average rating	nota media	متوسط التقييم
+1858	minutes	minutos	دقائق
+1859	shots · <0/>% on target	tiros · <0/> % a puerta	تسديدات · <0/>% على المرمى
+1860	shots converted	tiros convertidos	تسديدات محوّلة
+1861	clean sheets	porterías a cero	مباريات بشباك نظيفة
+1862	of matches without conceding	de partidos sin encajar	من المباريات بشباك نظيفة
+1863	goals + assists per match	goles + asistencias por partido	أهداف + تمريرات حاسمة في المباراة
+1864	minutes per goal	minutos por gol	دقائق لكل هدف
+1865	yellow · red cards	tarjetas amarillas · rojas	بطاقات صفراء · حمراء
+1866	Highest level	Nivel más alto	أعلى مستوى
+1867	Matches recorded in detail	Partidos registrados en detalle	المباريات المسجلة بالتفصيل
+1868	Sale fee	Importe de la venta	مبلغ البيع
+1869	Season by season	Temporada a temporada	موسمًا بموسم
+1870	Season	Temporada	الموسم
+1871	Lv.	Niv.	المستوى
+1872	MP	PJ	م

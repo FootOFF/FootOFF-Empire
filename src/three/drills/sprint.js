@@ -1,3 +1,4 @@
+import { decSep, t } from '../../i18n/index';
 import * as THREE from 'three';
 import { KITS } from './stage';
 import { agent, clamp01, cones, rnd, stride } from './kit';
@@ -112,7 +113,7 @@ export function createSprint(stage, ctx) {
   const tmp = new THREE.Vector3();
   const camPos = new THREE.Vector3();
   const camLook = new THREE.Vector3();
-  const fmt = (t) => `${t.toFixed(2).replace('.', ',')} s`;
+  const fmt = (t) => `${t.toFixed(2).replace('.', decSep())} s`;
 
   function hud() {
     ctx.hud({ round: Math.min(HURDLES.length, s.next + 1), rounds: HURDLES.length, chrono: fmt(s.chrono), prompt: s.prompt, action: s.phase === 'set' || s.phase === 'run' });
@@ -133,9 +134,9 @@ export function createSprint(stage, ctx) {
       const d = Math.abs(j.from - (h.x - IDEAL));
       if (d <= 0.035) { s.v = Math.min(VMAX * 1.06, s.v + 0.05); s.perfect += 1; text = 'Parfait'; tone = 'gold'; ctx.sfx('good'); } else if (d <= 0.07) { text = 'Bien'; tone = 'good'; } else { s.v *= 0.94; text = 'Juste'; tone = 'meh'; }
     } else if (j) {
-      s.v *= 0.7; s.clips += 1; h.fall = 0.001; text = 'Haie touchée'; tone = 'bad'; ctx.sfx('clip');
+      s.v *= 0.7; s.clips += 1; h.fall = 0.001; text = t('Haie touchée'); tone = 'bad'; ctx.sfx('clip');
     } else {
-      s.v *= 0.4; s.clips += 1; h.fall = 0.001; s.stumble = 1; text = 'Chute évitée de justesse'; tone = 'bad'; ctx.sfx('crash');
+      s.v *= 0.4; s.clips += 1; h.fall = 0.001; s.stumble = 1; text = t('Chute évitée de justesse'); tone = 'bad'; ctx.sfx('crash');
     }
     ctx.pop({ text, points: text === 'Parfait' ? '+' : '', tone, at: stage.toScreen(tmp.set(h.x, 0.1, Z)) });
   }
@@ -151,20 +152,20 @@ export function createSprint(stage, ctx) {
     },
     start() {
       s.phase = 'set'; s.t = 0; s.beepAt = rnd(1.4, 2.4); s.signal = false;
-      s.prompt = 'À vos marques… Prêt…';
+      s.prompt = t('À vos marques… Prêt…');
       hud();
     },
     press() {
       if (s.phase === 'set') {
         if (!s.signal) {
-          if (!s.penalty) { s.penalty = 0.5; ctx.pop({ text: 'Faux départ', points: '+0,5 s', tone: 'bad', at: stage.toScreen(tmp.set(runner.x, 0.2, Z)) }); ctx.sfx('bad'); }
+          if (!s.penalty) { s.penalty = 0.5; ctx.pop({ text: t('Faux départ'), points: '+0,5 s', tone: 'bad', at: stage.toScreen(tmp.set(runner.x, 0.2, Z)) }); ctx.sfx('bad'); }
           return;
         }
         s.reaction = s.t - s.beepAt;
         s.phase = 'run';
         s.chrono = s.reaction + s.penalty;
-        s.prompt = 'Saute dans la zone dorée';
-        ctx.pop({ text: s.reaction < 0.2 ? 'Départ canon' : 'Partez', points: `${(s.reaction).toFixed(2).replace('.', ',')} s`, tone: s.reaction < 0.2 ? 'gold' : 'good', at: stage.toScreen(tmp.set(runner.x, 0.2, Z)) });
+        s.prompt = t('Saute dans la zone dorée');
+        ctx.pop({ text: s.reaction < 0.2 ? t('Départ canon') : t('Partez'), points: `${(s.reaction).toFixed(2).replace('.', decSep())} s`, tone: s.reaction < 0.2 ? 'gold' : 'good', at: stage.toScreen(tmp.set(runner.x, 0.2, Z)) });
         hud();
         return;
       }
@@ -178,8 +179,8 @@ export function createSprint(stage, ctx) {
         if (h.fall > 0 && h.fall < 1) { h.fall = Math.min(1, h.fall + dt * 3.2); h.g.rotation.z = -h.fall * 1.45; }
       });
       if (s.phase === 'set') {
-        if (!s.signal && s.t >= s.beepAt) { s.signal = true; ctx.sfx('go'); s.prompt = 'Partez !'; hud(); }
-        if (s.signal && s.t - s.beepAt > 1.5) { s.reaction = 1.5; s.phase = 'run'; s.chrono = 1.5 + s.penalty; s.prompt = 'Saute dans la zone dorée'; hud(); }
+        if (!s.signal && s.t >= s.beepAt) { s.signal = true; ctx.sfx('go'); s.prompt = t('Partez !'); hud(); }
+        if (s.signal && s.t - s.beepAt > 1.5) { s.reaction = 1.5; s.phase = 'run'; s.chrono = 1.5 + s.penalty; s.prompt = t('Saute dans la zone dorée'); hud(); }
         stride(runner, 0, dt);
         follow();
       } else if (s.phase === 'run' || s.phase === 'finish') {
@@ -201,7 +202,7 @@ export function createSprint(stage, ctx) {
           s.t = 0;
           s.prompt = '';
           ctx.sfx('finish');
-          ctx.pop({ text: 'Arrivée', points: fmt(s.chrono), tone: s.chrono <= T_GOOD + 0.6 ? 'gold' : 'good', at: stage.toScreen(tmp.set(FINISH, 0.2, Z)) });
+          ctx.pop({ text: t('Arrivée'), points: fmt(s.chrono), tone: s.chrono <= T_GOOD + 0.6 ? 'gold' : 'good', at: stage.toScreen(tmp.set(FINISH, 0.2, Z)) });
           hud();
         }
         if (s.phase === 'run' && Math.round(s.chrono * 10) !== Math.round((s.chrono - dt) * 10)) hud();

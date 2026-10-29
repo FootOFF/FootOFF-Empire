@@ -10,7 +10,7 @@ import { leagueLength } from '../game/cups';
 import { promoteYouth, releaseYouth, setYouthPlan, signYouth } from '../game/engine';
 import { fitGain } from '../game/mercato';
 import { deName } from '../game/names';
-import { fmtMoney, fmtRating } from './format';
+import { fmtMoney, fmtRating, footLabel } from './format';
 import { IconAcademy, IconArrowUp, IconChevron, IconChevronLeft, IconClock, IconClose, IconTarget } from './icons';
 import { Eyebrow, divRef, tierOf } from './kit';
 import { Panel } from './panels';
@@ -19,6 +19,7 @@ import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { Portrait } from './portrait';
 import { heat } from './mercato';
+import { numLocale, plural, t, tn, tr } from '../i18n/index';
 
 // Académie : l'équipe de jeunes du club (academy.js), ouverte d'un clic sur le bâtiment dans la vue 3D. Deux onglets,
 // dans le style de l'Effectif (tableau détaillé sur PC, liste compacte sur téléphone) : « Mes jeunes » (six places,
@@ -26,19 +27,18 @@ import { heat } from './mercato';
 // gratuitement). La fiche d'un jeune choisit son plan, le fait monter en équipe première ou le libère.
 
 const ORDER = { G: 0, D: 1, M: 2, A: 3 };
-const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 const attrsOf = (p) => (p.pos === 'G' ? GK_ATTRS.map((x) => ({ ...x, v: p.g[x.key] })) : ATTRS.map((x) => ({ ...x, v: p.a[x.key] })));
 const topAttrs = (p, n = 3) => [...attrsOf(p)].sort((a, b) => b.v - a.v).slice(0, n);
 const plus = (v) => (v >= 0.05 ? `+${fmtRating(v)}` : '–');
 const potText = (r) => (r ? `${fmtRating(r[0])} – ${fmtRating(r[1])}` : 'atteint');
 const potMid = (s, p) => { const r = potentialRange(p, s); return r ? (r[0] + r[1]) / 2 : playerRating(p); };
-const dec = (v) => (Math.round(v * 10) / 10).toLocaleString('fr-FR');
+const dec = (v) => (Math.round(v * 10) / 10).toLocaleString(numLocale());
 const isLeaving = (p) => p.age + 1 >= YOUTH_LEAVE_AGE; // 19 ans à l'intersaison : dernière saison à l'académie
 const planOf = (p) => (PLANS[p.plan] ? p.plan : advisedPlan(p));
-const forPos = (pos) => `pour un ${POS_LABELS[pos].toLowerCase()}`;
+const forPos = (pos) => t('pour un {toLowerCase}', { toLowerCase: POS_LABELS[pos].toLowerCase() });
 const attrName = (p, key) => (p.pos === 'G' ? GK_ATTRS : ATTRS).find((a) => a.key === key)?.name.toLowerCase() || key;
-const listFr = (a) => (a.length > 1 ? `${a.slice(0, -1).join(', ')} et ${a[a.length - 1]}` : a[0] || '');
-const gainTip = (g = {}) => `Dernière journée ${plus(g.round || 0)} · cette saison ${plus(g.season || 0)}${g.summer != null ? ` · dernier été ${plus(g.summer)}` : ''}`;
+const listFr = (a) => (a.length > 1 ? new Intl.ListFormat(numLocale(), { type: 'conjunction' }).format(a) : a[0] || ''); // « A, B et C », dans la langue de la partie
+const gainTip = (g = {}) => t('Dernière journée {plus} · cette saison {plus2}{v}', { plus: plus(g.round || 0), plus2: plus(g.season || 0), v: g.summer != null ? t(' · dernier été {plus}', { plus: plus(g.summer) }) : '' });
 
 export function AcademyView({ state, run, ask, notify = () => {}, onClose, onBuilding, initialTab = 'youth', focus = [], preview = null }) {
   const [tab, setTab] = useState(initialTab);
@@ -79,11 +79,11 @@ export function AcademyView({ state, run, ask, notify = () => {}, onClose, onBui
   // recruter : gratuit, dans la limite des places ; le plan conseillé pour son poste est choisi d'emblée
   const sign = (p) => {
     const plan = advisedPlan(p);
-    if (!run((s) => signYouth(s, p.id), full ? 'Académie complète : fais monter ou libère un jeune.' : 'Recrutement impossible.')) return;
+    if (!run((s) => signYouth(s, p.id), full ? t('Académie complète : fais monter ou libère un jeune.') : t('Recrutement impossible.'))) return;
     setSheet(null);
     notify({
-      kind: 'academy', eyebrow: 'Académie', title: `${p.name} rejoint l’académie`,
-      text: `Plan ${PLANS[plan].label.toLowerCase()}, conseillé ${forPos(p.pos)}.`,
+      kind: 'academy', eyebrow: t('Académie'), title: t('{name} rejoint l’académie', { name: p.name }),
+      text: t('Plan {toLowerCase}, conseillé {forPos}.', { toLowerCase: PLANS[plan].label.toLowerCase(), forPos: forPos(p.pos) }),
       action: { panel: 'academy', tab: 'youth', ids: [p.id] },
     });
   };
@@ -91,36 +91,36 @@ export function AcademyView({ state, run, ask, notify = () => {}, onClose, onBui
     const n = state.players.length;
     if (n >= SQUAD_MAX) return;
     ask({
-      title: `Faire monter ${p.name} en équipe première ?`,
-      text: 'Il rejoint l’effectif professionnel, avec un salaire, et ne pourra plus revenir à l’académie.',
+      title: t('Faire monter {name} en équipe première ?', { name: p.name }),
+      text: t('Il rejoint l’effectif professionnel, avec un salaire, et ne pourra plus revenir à l’académie.'),
       rows: [
-        ['Niveau', fmtRating(playerRating(p))],
-        ['Potentiel estimé', potText(potentialRange(p, state))],
-        ['Salaire', `${fmtMoney(wageOf(p, state.divisionIndex))} / saison`, 'down'],
-        ['Effectif', `${n} → ${n + 1} joueurs`],
+        [t('Niveau'), fmtRating(playerRating(p))],
+        [t('Potentiel estimé'), potText(potentialRange(p, state))],
+        [t('Salaire'), t('{wageOf} / saison', { wageOf: fmtMoney(wageOf(p, state.divisionIndex)) }), 'down'],
+        [t('Effectif'), t('{n} → {v} joueurs', { n, v: n + 1 })],
       ],
-      confirmLabel: 'Faire monter',
-      cancelLabel: 'Pas encore',
+      confirmLabel: t('Faire monter'),
+      cancelLabel: t('Pas encore'),
       onConfirm: () => {
-        if (!run((s) => promoteYouth(s, p.id), 'Effectif complet.')) return;
+        if (!run((s) => promoteYouth(s, p.id), t('Effectif complet.'))) return;
         setSheet(null);
         notify({
-          kind: 'academy', eyebrow: 'Académie', title: `${p.name} monte en équipe première`,
-          text: 'Formé au club, il rejoint ton effectif.', action: { panel: 'squad', tab: 'players', sheet: p.id },
+          kind: 'academy', eyebrow: t('Académie'), title: t('{name} monte en équipe première', { name: p.name }),
+          text: t('Formé au club, il rejoint ton effectif.'), action: { panel: 'squad', tab: 'players', sheet: p.id },
         });
       },
     });
   };
   const release = (p) => ask({
     tone: 'danger',
-    title: `Libérer ${p.name} ?`,
-    text: 'Il quitte le club définitivement, et sa place à l’académie se libère.',
-    confirmLabel: 'Libérer',
-    cancelLabel: 'Le garder',
+    title: t('Libérer {name} ?', { name: p.name }),
+    text: t('Il quitte le club définitivement, et sa place à l’académie se libère.'),
+    confirmLabel: t('Libérer'),
+    cancelLabel: t('Le garder'),
     onConfirm: () => {
       if (!run((s) => releaseYouth(s, p.id))) return;
       setSheet(null);
-      notify({ kind: 'info', title: `${p.name} a quitté l’académie` });
+      notify({ kind: 'info', title: t('{name} a quitté l’académie', { name: p.name }) });
     },
   });
 
@@ -129,8 +129,8 @@ export function AcademyView({ state, run, ask, notify = () => {}, onClose, onBui
     <Panel
       id="academy"
       size="lg"
-      title="Académie"
-      eyebrow={<>Niveau {lvl} / {BUILDINGS.academy.max} · {youth.length} / {YOUTH_PLACES} jeunes<span className="hide-sm"> · {divisionOf(state).name}</span></>}
+      title={t('Académie')}
+      eyebrow={<>{t('Niveau ')}<bdi>{lvl} / {BUILDINGS.academy.max}</bdi> · <bdi>{youth.length} / {YOUTH_PLACES}</bdi>{t(' jeunes')}<span className="hide-sm"> · {divisionOf(state).name}</span></>}
       onClose={onClose}
       onEscape={onEscape}
       toolbar={(
@@ -138,8 +138,8 @@ export function AcademyView({ state, run, ask, notify = () => {}, onClose, onBui
           <Places state={state} youth={youth} upgradable={upgradable} onBuilding={onBuilding} />
           <Tabs
             items={[
-              ['youth', 'Mes jeunes', youth.length ? <em className="mc-count-badge ac-tab-n">{youth.length}</em> : null],
-              ['scout', 'Détection', scouted.length && !scoutSeen ? <em className={`mc-count-badge ac-tab-n ${full ? '' : 'hot'}`}>{scouted.length}</em> : null],
+              ['youth', t('Mes jeunes'), youth.length ? <em className="mc-count-badge ac-tab-n">{youth.length}</em> : null],
+              ['scout', t('Détection'), scouted.length && !scoutSeen ? <em className={`mc-count-badge ac-tab-n ${full ? '' : 'hot'}`}>{scouted.length}</em> : null],
             ]}
             value={tab}
             onChange={setTab}
@@ -181,13 +181,12 @@ function Places({ state, youth, upgradable, onBuilding }) {
   const order = [...youth].sort((a, b) => isLeaving(a) - isLeaving(b));
   return (
     <div className="sq-budget ac-places">
-      <div className="sq-budget-top"><span>Places</span><b>{youth.length} / {YOUTH_PLACES}</b></div>
+      <div className="sq-budget-top"><span>{t('Places')}</span><b><bdi>{youth.length} / {YOUTH_PLACES}</bdi></b></div>
       <span className="ac-slots" aria-hidden="true">
         {Array.from({ length: YOUTH_PLACES }, (_, i) => <i key={i} className={!order[i] ? '' : isLeaving(order[i]) ? 'warn' : 'on'} />)}
       </span>
-      <span className="sq-budget-sub">
-        Gratuites, sans salaire · <button className="linkbtn fin-link" onClick={onBuilding}>bâtiment niveau {state.buildings.academy || 0}</button>
-        {upgradable && <em className="ac-up"> · amélioration possible</em>}
+      <span className="sq-budget-sub">{t('Gratuites, sans salaire · ')}<button className="linkbtn fin-link" onClick={onBuilding}>{tr('bâtiment niveau <0/>', [state.buildings.academy || 0])}</button>
+        {upgradable && <em className="ac-up">{t(' · amélioration possible')}</em>}
       </span>
     </div>
   );
@@ -198,33 +197,26 @@ function Places({ state, youth, upgradable, onBuilding }) {
 // Prochain repérage : après la prochaine journée de championnat, dans deux journées (Élite : une liste toutes les deux
 // journées), ou au début de la saison prochaine.
 function nextScouting(state) {
-  if (state.mission) return `au retour de tes recruteurs, ${whenText(state, missionReturn(state, state.mission.left))}`;
+  if (state.mission) return t('au retour de tes recruteurs, {whenText}', { whenText: whenText(state, missionReturn(state, state.mission.left)) });
   const { next } = scoutingWhen(state);
-  return next == null ? 'au début de la saison prochaine' : next > 1 ? 'dans deux journées de championnat' : 'après la prochaine journée de championnat';
+  return next == null ? t('au début de la saison prochaine') : tn(next, 'après la prochaine journée de championnat', 'dans deux journées de championnat', {}, next > 1);
 }
 
 function YouthTab({ state, youth, scouted, refLvl, focus, onOpen, onScout }) {
   const leaving = youth.filter(isLeaving);
   const rules = (
-    <p className="sq-hint ac-rules">
-      Après chaque journée de championnat, tes jeunes progressent, surtout dans les qualités de leur plan, puis ils font un
-      bond à l’intersaison. Ils ne touchent pas de salaire. À {YOUTH_LEAVE_AGE} ans, un jeune qui n’est pas monté en équipe
-      première quitte le club.
-    </p>
+    <p className="sq-hint ac-rules">{tr('Après chaque journée de championnat, tes jeunes progressent, surtout dans les qualités de leur plan, puis ils font un bond à l’intersaison. Ils ne touchent pas de salaire. À <0/> ans, un jeune qui n’est pas monté en équipe première quitte le club.', [YOUTH_LEAVE_AGE])}</p>
   );
   if (!youth.length) {
     return (
       <>
         <div className="ac-empty">
           <span className="ac-empty-ico"><IconAcademy /></span>
-          <h3>Ton équipe de jeunes est vide</h3>
-          <p>
-            {YOUTH_PLACES} places, sans frais :{' '}
-            {scouted.length
-              ? (scouted.length > 1 ? `recrute parmi les ${scouted.length} jeunes repérés par tes éducateurs.` : 'recrute le jeune repéré par tes éducateurs.')
-              : `de nouveaux jeunes seront repérés ${nextScouting(state)}.`}
-          </p>
-          {scouted.length > 0 && <button className="btn" onClick={onScout}>Voir la détection</button>}
+          <h3>{t('Ton équipe de jeunes est vide')}</h3>
+          <p>{tr('<0/> places, sans frais : <1/>', [YOUTH_PLACES, scouted.length
+              ? (tn(scouted.length, 'recrute le jeune repéré par tes éducateurs.', 'recrute parmi les {length} jeunes repérés par tes éducateurs.', { length: scouted.length }, scouted.length > 1))
+              : t('de nouveaux jeunes seront repérés {nextScouting}.', { nextScouting: nextScouting(state) })])}</p>
+          {scouted.length > 0 && <button className="btn" onClick={onScout}>{t('Voir la détection')}</button>}
         </div>
         {rules}
       </>
@@ -236,10 +228,7 @@ function YouthTab({ state, youth, scouted, refLvl, focus, onOpen, onScout }) {
       {leaving.length > 0 && (
         <div className="ac-alert" role="note">
           <IconClock aria-hidden="true" />
-          <p>
-            <b>{names}</b> {leaving.length > 1 ? 'auront' : 'aura'} {YOUTH_LEAVE_AGE} ans à l’intersaison : fais-{leaving.length > 1 ? 'les' : 'le'} monter
-            en équipe première avant la fin de la saison, sinon {leaving.length > 1 ? 'ils quitteront' : 'il quittera'} le club.
-          </p>
+          <p>{tr('<0/> <1/> <2/> ans à l’intersaison : fais-<3/> monter en équipe première avant la fin de la saison, sinon <4/> le club.', [<b>{names}</b>, tn(leaving.length, 'aura', 'auront', {}, leaving.length > 1), YOUTH_LEAVE_AGE, tn(leaving.length, 'le', 'les', {}, leaving.length > 1), tn(leaving.length, 'il quittera', 'ils quitteront', {}, leaving.length > 1)])}</p>
         </div>
       )}
       <div className="sq-tables">
@@ -262,7 +251,7 @@ function useSort(rows, value) {
       key={key}
       className={`${cls} ${sort.key === key ? 'sorted' : ''}`}
       onClick={() => setSort({ key, dir: sort.key === key ? -sort.dir : -1 })}
-      title={`${name} · trier`}
+      title={t('{name} · trier', { name })}
       aria-sort={sort.key === key ? (sort.dir < 0 ? 'descending' : 'ascending') : undefined}
     >
       {label}{sort.key === key && <IconChevron className={`sq-sort ${sort.dir < 0 ? 'down' : 'up'}`} aria-hidden="true" />}
@@ -290,14 +279,14 @@ function YouthTable({ state, rows, refLvl, focus, onOpen }) {
       <table className="sq-table ac-table">
         <thead>
           <tr>
-            <th className="c-name">Joueur</th>
-            <th className="c-pos">Poste</th>
-            {th('age', 'Âge', 'c-age')}
-            {th('lvl', 'Niveau', 'c-lvl')}
-            {th('pot', 'Potentiel', 'c-pot', 'Potentiel estimé')}
-            {th('prog', 'Progrès', 'c-prog', 'Progrès cette saison')}
-            <th className="c-best">Points forts</th>
-            <th className="c-plan">Plan</th>
+            <th className="c-name">{t('Joueur')}</th>
+            <th className="c-pos">{t('Poste')}</th>
+            {th('age', t('Âge'), 'c-age')}
+            {th('lvl', t('Niveau'), 'c-lvl')}
+            {th('pot', t('Potentiel'), 'c-pot', t('Potentiel estimé'))}
+            {th('prog', t('Progrès'), 'c-prog', t('Progrès cette saison'))}
+            <th className="c-best">{t('Points forts')}</th>
+            <th className="c-plan">{t('Plan')}</th>
           </tr>
         </thead>
         <tbody>
@@ -315,8 +304,8 @@ function YouthTable({ state, rows, refLvl, focus, onOpen }) {
                       <span className="sq-name">{p.name}</span>
                       {(ready || leaving) && (
                         <span className="ac-flags">
-                          {ready && <em className="ac-tag good">Niveau titulaire</em>}
-                          {leaving && <em className="ac-tag warn">Dernière saison</em>}
+                          {ready && <em className="ac-tag good">{t('Niveau titulaire')}</em>}
+                          {leaving && <em className="ac-tag warn">{t('Dernière saison')}</em>}
                         </span>
                       )}
                     </span>
@@ -347,14 +336,12 @@ function YouthRow({ p, state, refLvl, focus, onOpen }) {
         <span className="sq-face"><Portrait p={p} size={42} /><span className={`pos-pill ${p.pos}`}>{p.pos}</span></span>
         <span className="sq-row-main">
           <span className="sq-row-name">{p.name}</span>
-          <span className="sq-row-meta">
-            {p.age} ans · {PLANS[planOf(p)].label}<span className={heat(potMid(state, p), refLvl)}>pot. {potText(potentialRange(p, state))}</span>
-          </span>
+          <span className="sq-row-meta">{tr('<0/> ans · <1/><2/>', [p.age, PLANS[planOf(p)].label, <span className={heat(potMid(state, p), refLvl)}>{tr('pot. <0/>', [potText(potentialRange(p, state))])}</span>])}</span>
         </span>
         <span className="sq-row-side">
           <b className={heat(r, refLvl)}>{fmtRating(r)}</b>
-          {isLeaving(p) ? <span className="ac-warn">dernière saison</span>
-            : (g.season || 0) >= 0.05 ? <span className="ac-gain">{plus(g.season)} cette saison</span> : <span>à l’entraînement</span>}
+          {isLeaving(p) ? <span className="ac-warn">{t('dernière saison')}</span>
+            : (g.season || 0) >= 0.05 ? <span className="ac-gain">{tr('<0/> cette saison', [plus(g.season)])}</span> : <span>{t('à l’entraînement')}</span>}
         </span>
       </button>
     </li>
@@ -371,20 +358,20 @@ function ScoutTab({ state, scouted, full, refLvl, onOpen, onSign, onBuilding, ru
   return (
     <>
       <p className="sq-hint ac-intro">
-        {state.scouting?.away ? 'Recruteurs en mission : la liste se renouvelle à leur retour'
-          : `${back ? `Retour de mission : ${back.back > 1 ? `les ${back.back} plus prometteurs` : 'le plus prometteur'} parmi ${missionCount(back, back.seen)}`
-            : since > 0 ? `Repérés après la journée ${since}` : 'Repérés pour le début de saison'} · d’autres jeunes ${when} · recrutement gratuit`}
+        {state.scouting?.away ? t('Recruteurs en mission : la liste se renouvelle à leur retour')
+          : t('{v} · d’autres jeunes {when} · recrutement gratuit', { v: back ? t('Retour de mission : {tn} parmi {missionCount}', { tn: tn(back.back, 'le plus prometteur', 'les {back} plus prometteurs', { back: back.back }, back.back > 1), missionCount: missionCount(back, back.seen) })
+            : since > 0 ? t('Repérés après la journée {since}', { since }) : t('Repérés pour le début de saison'), when })}
       </p>
       {full && (
         <div className="ac-alert" role="note">
           <IconAcademy aria-hidden="true" />
-          <p>Ton équipe de jeunes est complète ({YOUTH_PLACES} / {YOUTH_PLACES}) : fais monter ou libère un jeune pour en recruter un autre.</p>
+          <p>{tr('Ton équipe de jeunes est complète (<0/> / <1/>) : fais monter ou libère un jeune pour en recruter un autre.', [YOUTH_PLACES, YOUTH_PLACES])}</p>
         </div>
       )}
       {scouted.length === 0 ? (!state.scouting?.away && (
         <p className="ac-none">
-          {lvl === 0 ? 'Construis l’académie pour que tes éducateurs repèrent des jeunes.'
-            : `Tu as recruté tous les jeunes repérés. Tes éducateurs en proposeront ${SCOUTED[lvl]} autres ${when}.`}
+          {lvl === 0 ? t('Construis l’académie pour que tes éducateurs repèrent des jeunes.')
+            : t('Tu as recruté tous les jeunes repérés. Tes éducateurs en proposeront {v} autres {when}.', { v: SCOUTED[lvl], when })}
         </p>
       )) : (
         <>
@@ -409,14 +396,14 @@ function ScoutTable({ state, rows, refLvl, full, onOpen, onSign }) {
       <table className="sq-table ac-table">
         <thead>
           <tr>
-            <th className="c-name">Joueur</th>
-            <th className="c-pos">Poste</th>
-            {th('age', 'Âge', 'c-age')}
-            {th('lvl', 'Niveau', 'c-lvl')}
-            {th('pot', 'Potentiel', 'c-pot', 'Potentiel estimé')}
-            <th className="c-best">Points forts</th>
-            <th className="c-plan">Plan conseillé</th>
-            <th className="c-act" aria-label="Recruter" />
+            <th className="c-name">{t('Joueur')}</th>
+            <th className="c-pos">{t('Poste')}</th>
+            {th('age', t('Âge'), 'c-age')}
+            {th('lvl', t('Niveau'), 'c-lvl')}
+            {th('pot', t('Potentiel'), 'c-pot', t('Potentiel estimé'))}
+            <th className="c-best">{t('Points forts')}</th>
+            <th className="c-plan">{t('Plan conseillé')}</th>
+            <th className="c-act" aria-label={t('Recruter')} />
           </tr>
         </thead>
         <tbody>
@@ -437,9 +424,7 @@ function ScoutTable({ state, rows, refLvl, full, onOpen, onSign }) {
                 <td className="c-best"><Strengths p={p} /></td>
                 <td className="c-plan"><span className="ac-plan">{PLANS[advisedPlan(p)].label}</span></td>
                 <td className="c-act">
-                  <button className="btn btn-sm" disabled={full} title={full ? 'Équipe de jeunes complète' : `Recruter ${p.name}, gratuitement`} onClick={(e) => { e.stopPropagation(); onSign(p); }}>
-                    Signer
-                  </button>
+                  <button className="btn btn-sm" disabled={full} title={full ? t('Équipe de jeunes complète') : t('Recruter {name}, gratuitement', { name: p.name })} onClick={(e) => { e.stopPropagation(); onSign(p); }}>{t('Signer')}</button>
                 </td>
               </tr>
             );
@@ -458,11 +443,11 @@ function ScoutRow({ p, state, refLvl, onOpen }) {
         <span className="sq-face"><Portrait p={p} size={42} /><span className={`pos-pill ${p.pos}`}>{p.pos}</span></span>
         <span className="sq-row-main">
           <span className="sq-row-name">{p.name}</span>
-          <span className="sq-row-meta">{p.age} ans<span className={heat(potMid(state, p), refLvl)}>pot. {potText(potentialRange(p, state))}</span></span>
+          <span className="sq-row-meta">{tr('<0/> ans<1/>', [p.age, <span className={heat(potMid(state, p), refLvl)}>{tr('pot. <0/>', [potText(potentialRange(p, state))])}</span>])}</span>
         </span>
         <span className="sq-row-side">
           <b className={heat(r, refLvl)}>{fmtRating(r)}</b>
-          <span>à recruter</span>
+          <span>{t('à recruter')}</span>
         </span>
       </button>
     </li>
@@ -471,8 +456,8 @@ function ScoutRow({ p, state, refLvl, onOpen }) {
 
 // Retour d'une mission : « après la journée 9 », « au début de la saison prochaine »…
 function whenText(state, ret) {
-  if (ret.season > state.seasonNumber) return ret.round ? `après la journée ${ret.round} de la saison prochaine` : 'au début de la saison prochaine';
-  return `après la journée ${ret.round}`;
+  if (ret.season > state.seasonNumber) return ret.round ? t('après la journée {round} de la saison prochaine', { round: ret.round }) : t('au début de la saison prochaine');
+  return t('après la journée {round}', { round: ret.round });
 }
 // chance d'au moins un grand potentiel, jamais 0 % ni 100 % quand ce n'est pas certain
 const pctOf = (p) => (p <= 0 ? '0 %' : p >= 1 ? '100 %' : `${Math.min(99, Math.max(1, Math.round(p * 100)))} %`);
@@ -485,7 +470,7 @@ function MissionCard({ state, run, ask, notify }) {
   const [picks, setPicks] = useState({ pos: 'A', plan: 'tech' });
   const [steps, setSteps] = useState(3);
   const elite = leagueLength(state) > 7; // un repérage toutes les deux journées
-  const span = (n) => (elite ? `${2 * n} journées` : `${n} journées`);
+  const span = (n) => (elite ? t('{v} journées', { v: 2 * n }) : t('{n} journées', { n }));
   const m = state.mission;
   if (m) {
     const back = Math.min(m.steps * m.per * MISSION_BOOST, m.per + m.steps);
@@ -493,10 +478,10 @@ function MissionCard({ state, run, ask, notify }) {
     const news = [...(m.news || [])].reverse();
     const recall = () => ask({
       tone: 'danger',
-      title: 'Rappeler les recruteurs ?',
-      text: 'La mission s’arrête sans ramener de jeunes ; les repérages reprennent aussitôt.',
-      confirmLabel: 'Rappeler',
-      cancelLabel: 'Les laisser chercher',
+      title: t('Rappeler les recruteurs ?'),
+      text: t('La mission s’arrête sans ramener de jeunes ; les repérages reprennent aussitôt.'),
+      confirmLabel: t('Rappeler'),
+      cancelLabel: t('Les laisser chercher'),
       onConfirm: () => run((s) => cancelMission(s)),
     });
     return (
@@ -504,24 +489,24 @@ function MissionCard({ state, run, ask, notify }) {
         <div className="ac-level-head">
           <span className="ac-level-ico"><IconTarget /></span>
           <div className="panel-title">
-            <Eyebrow>Mission en cours · {missionTarget(m)}</Eyebrow>
-            <strong>Retour {whenText(state, missionReturn(state, m.left))}, avec {back > 1 ? `les ${back} plus prometteurs` : 'le plus prometteur'} des {m.steps * m.per * MISSION_BOOST} jeunes vus.</strong>
+            <Eyebrow>{tr('Mission en cours · <0/>', [missionTarget(m)])}</Eyebrow>
+            <strong>{tr('Retour <0/>, avec <1/> des <2/> jeunes vus.', [whenText(state, missionReturn(state, m.left)), tn(back, 'le plus prometteur', 'les {back} plus prometteurs', { back }, back > 1), m.steps * m.per * MISSION_BOOST])}</strong>
           </div>
         </div>
-        <div className="ac-mission-track" aria-label={`Repérage ${done} sur ${m.steps}`}>
+        <div className="ac-mission-track" aria-label={t('Repérage {done} sur {steps}', { done, steps: m.steps })}>
           <span aria-hidden="true">{Array.from({ length: m.steps }, (_, k) => <i key={k} className={k < done ? 'on' : ''} />)}</span>
-          <b>{done} / {m.steps}</b>
+          <b><bdi>{done} / {m.steps}</bdi></b>
         </div>
         {news.length > 0 ? (
-          <ul className="ac-mission-news" aria-label="Nouvelles des recruteurs">
+          <ul className="ac-mission-news" aria-label={t('Nouvelles des recruteurs')}>
             {news.map((n) => (
-              <li key={n.step} className={n.best === 'rare' ? 'rare' : ''}><b>Repérage {n.step}</b>{' '}{n.text}</li>
+              <li key={n.step} className={n.best === 'rare' ? 'rare' : ''}><b>{tr('Repérage <0/>', [n.step])}</b>{' '}{n.text}</li>
             ))}
           </ul>
-        ) : <p className="ac-plan-text">Premières nouvelles après le prochain repérage.</p>}
+        ) : <p className="ac-plan-text">{t('Premières nouvelles après le prochain repérage.')}</p>}
         <div className="ac-level-next">
-          <span>Pendant la mission, la liste des jeunes repérés ne se renouvelle pas.</span>
-          <button type="button" className="btn ghost btn-sm" onClick={recall}>Rappeler les recruteurs</button>
+          <span>{t('Pendant la mission, la liste des jeunes repérés ne se renouvelle pas.')}</span>
+          <button type="button" className="btn ghost btn-sm" onClick={recall}>{t('Rappeler les recruteurs')}</button>
         </div>
       </section>
     );
@@ -531,37 +516,35 @@ function MissionCard({ state, run, ask, notify }) {
   const options = kind === 'pos' ? ['G', 'D', 'M', 'A'].map((k) => [k, POS_LABELS[k]])
     : Object.entries(PROFILES).map(([k, v]) => [k, v[0].toUpperCase() + v.slice(1)]);
   const launch = () => {
-    if (!run((s) => startMission(s, target), 'Mission impossible.')) return;
-    notify({ kind: 'academy', eyebrow: 'Académie', title: 'Les recruteurs partent en mission', text: `Ils cherchent ${missionTarget(target)} : des nouvelles à chaque repérage, retour ${whenText(state, plan.ret)}.` });
+    if (!run((s) => startMission(s, target), t('Mission impossible.'))) return;
+    notify({ kind: 'academy', eyebrow: t('Académie'), title: t('Les recruteurs partent en mission'), text: t('Ils cherchent {missionTarget} : des nouvelles à chaque repérage, retour {whenText}.', { missionTarget: missionTarget(target), whenText: whenText(state, plan.ret) }) });
   };
   return (
     <section className="ac-level ac-mission">
       <div className="ac-level-head">
         <span className="ac-level-ico"><IconTarget /></span>
         <div className="panel-title">
-          <Eyebrow>Mission des recruteurs</Eyebrow>
-          <strong>Envoie-les en mission sur un poste ou un profil. Ils donnent des nouvelles à chaque repérage.</strong>
+          <Eyebrow>{t('Mission des recruteurs')}</Eyebrow>
+          <strong>{t('Envoie-les en mission sur un poste ou un profil. Ils donnent des nouvelles à chaque repérage.')}</strong>
         </div>
       </div>
-      <div className="chips ac-mission-row" role="group" aria-label="Cible de la mission">
+      <div className="chips ac-mission-row" role="group" aria-label={t('Cible de la mission')}>
         {Object.entries(MISSION_KINDS).map(([k, label]) => <button key={k} type="button" className={kind === k ? 'active' : ''} onClick={() => setKind(k)}>{label}</button>)}
       </div>
       <div className="chips ac-mission-row" role="group" aria-label={MISSION_KINDS[kind]}>
         {options.map(([v, label]) => <button key={v} type="button" className={picks[kind] === v ? 'active' : ''} onClick={() => setPicks({ ...picks, [kind]: v })}>{label}</button>)}
       </div>
-      <div className="chips ac-mission-row" role="group" aria-label="Durée de la mission">
+      <div className="chips ac-mission-row" role="group" aria-label={t('Durée de la mission')}>
         {MISSION_STEPS.map((n) => <button key={n} type="button" className={steps === n ? 'active' : ''} onClick={() => setSteps(n)}>{span(n)}</button>)}
       </div>
-      <p className="ac-plan-text">
-        Ils verront <b>{missionCount(target, plan.seen)}</b> et ramèneront <b>{plan.back > 1 ? `les ${plan.back} plus prometteurs` : 'le plus prometteur'}</b> {whenText(state, plan.ret)}.
-      </p>
-      <div className="ac-mission-odds" aria-label="Chances exactes">
-        <span>Un potentiel de 16 ou plus parmi eux <b>{pctOf(plan.p16)}</b></span>
-        <span>De 18 ou plus <b>{pctOf(plan.p18)}</b></span>
+      <p className="ac-plan-text">{tr('Ils verront <0/> et ramèneront <1/> <2/>.', [<b>{missionCount(target, plan.seen)}</b>, <b>{tn(plan.back, 'le plus prometteur', 'les {back} plus prometteurs', { back: plan.back }, plan.back > 1)}</b>, whenText(state, plan.ret)])}</p>
+      <div className="ac-mission-odds" aria-label={t('Chances exactes')}>
+        <span>{tr('Un potentiel de 16 ou plus parmi eux <0/>', [<b>{pctOf(plan.p16)}</b>])}</span>
+        <span>{tr('De 18 ou plus <0/>', [<b>{pctOf(plan.p18)}</b>])}</span>
       </div>
       <div className="ac-level-next">
-        <span>Pendant la mission, la liste des jeunes repérés ne se renouvelle pas ; en échange, tes recruteurs en observent deux fois plus.</span>
-        <button type="button" className="btn btn-sm" onClick={launch}>Lancer la mission</button>
+        <span>{t('Pendant la mission, la liste des jeunes repérés ne se renouvelle pas ; en échange, tes recruteurs en observent deux fois plus.')}</span>
+        <button type="button" className="btn btn-sm" onClick={launch}>{t('Lancer la mission')}</button>
       </div>
     </section>
   );
@@ -572,24 +555,24 @@ function LevelCard({ state, onBuilding }) {
   const lvl = state.buildings.academy || 0;
   const max = BUILDINGS.academy.max;
   const line = (l) => {
-    const t = academyTalent(l);
-    return `${plural(SCOUTED[l], 'jeune repéré', 'jeunes repérés')} ${leagueLength(state) > 7 ? 'toutes les deux journées' : 'après chaque journée'} · potentiel ${t.pot[0]} à ${t.pot[1]}, rarement ${t.top} · fourchette de ${dec(2 * scoutingError(l))} points`;
+    const row = academyTalent(l);
+    return t('{plural} {v} · potentiel {v2} à {v3}, rarement {top} · fourchette de {dec} points', { plural: plural(SCOUTED[l], 'jeune repéré', 'jeunes repérés'), v: leagueLength(state) > 7 ? t('toutes les deux journées') : t('après chaque journée'), v2: row.pot[0], v3: row.pot[1], top: row.top, dec: dec(2 * scoutingError(l)) });
   };
   return (
     <section className="ac-level">
       <div className="ac-level-head">
         <span className="ac-level-ico"><IconAcademy /></span>
         <div className="panel-title">
-          <Eyebrow>Académie · niveau {lvl} / {max}</Eyebrow>
+          <Eyebrow>{tr('Académie · niveau <0/> / <1/>', [lvl, max])}</Eyebrow>
           <strong>{line(lvl)}</strong>
         </div>
       </div>
       {lvl < max ? (
         <div className="ac-level-next">
-          <span><b>Niveau {lvl + 1}</b> : {line(lvl + 1)}</span>
-          <button className="btn ghost btn-sm" onClick={onBuilding}><IconArrowUp /> Améliorer · {fmtMoney(upgradeCost('academy', lvl + 1))}</button>
+          <span><b>{tr('Niveau <0/>', [lvl + 1])}</b> : {line(lvl + 1)}</span>
+          <button className="btn ghost btn-sm" onClick={onBuilding}>{tr('<0/> Améliorer · <1/>', [<IconArrowUp />, fmtMoney(upgradeCost('academy', lvl + 1))])}</button>
         </div>
-      ) : <span className="ac-level-max">Niveau maximum atteint</span>}
+      ) : <span className="ac-level-max">{t('Niveau maximum atteint')}</span>}
     </section>
   );
 }
@@ -631,15 +614,15 @@ function AcademySheet({ p, scout, state, refLvl, full, place, onClose, onPrev, o
 
   return (
     <div className="sq-overlay" onClick={onClose}>
-      <article ref={ref} className="sq-sheet glass ac-sheet" onClick={(e) => e.stopPropagation()} aria-label={`Fiche ${deName(p.name)}`}>
+      <article ref={ref} className="sq-sheet glass ac-sheet" onClick={(e) => e.stopPropagation()} aria-label={t('Fiche {deName}', { deName: deName(p.name) })}>
         <span className="grip" aria-hidden="true" />
         <header className="sh-bar">
           <div className="sh-pager">
-            <button className="hud-icon" onClick={goPrev} aria-label={scout ? 'Jeune repéré précédent' : 'Jeune précédent'}><IconChevronLeft /></button>
+            <button className="hud-icon" onClick={goPrev} aria-label={scout ? t('Jeune repéré précédent') : t('Jeune précédent')}><IconChevronLeft /></button>
             <span>{place}</span>
-            <button className="hud-icon" onClick={goNext} aria-label={scout ? 'Jeune repéré suivant' : 'Jeune suivant'}><IconChevron /></button>
+            <button className="hud-icon" onClick={goNext} aria-label={scout ? t('Jeune repéré suivant') : t('Jeune suivant')}><IconChevron /></button>
           </div>
-          <button className="hud-icon" onClick={onClose} aria-label="Fermer la fiche"><IconClose /></button>
+          <button className="hud-icon" onClick={onClose} aria-label={t('Fermer la fiche')}><IconClose /></button>
         </header>
 
         {/* même en-tête que la fiche joueur (squad.jsx PlayerSheet) : niveau en grand, poste, nom, portrait, étiquettes */}
@@ -648,69 +631,67 @@ function AcademySheet({ p, scout, state, refLvl, full, place, onClose, onPrev, o
             <div className="sh-rate"><b>{fmtRating(r)}</b></div>
             <div className="sh-meta">
               <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
-              <span>{p.age} ans · {p.foot === 'les deux' ? 'des deux pieds' : `pied ${p.foot}`}</span>
+              <span>{tr('<0/> ans · <1/>', [p.age, footLabel(p.foot)])}</span>
             </div>
             <h3 className="sh-name">{nameRest.length > 0 && <small>{nameFirst}</small>}<b>{nameRest.length ? nameRest.join(' ') : nameFirst}</b></h3>
           </div>
           <Portrait p={p} size={136} className="sh-face" />
           <div className="sh-tags">
-            <span className="sh-tag on">{scout ? (p.scoutNote || 'Repéré par tes éducateurs') : `Académie depuis la saison ${p.youthSince ?? state.seasonNumber}`}</span>
-            {leaving && <span className="sh-tag warn">{YOUTH_LEAVE_AGE} ans à l’intersaison</span>}
-            {gain >= 0.3 && <span className="sh-tag sale">Niveau titulaire</span>}
-            {p.alt && <span className="sh-tag">Dépanne : {POS_LABELS[p.alt].toLowerCase()} {fmtRating(ratingAt(p, p.alt))}</span>}
+            <span className="sh-tag on">{scout ? (p.scoutNote || t('Repéré par tes éducateurs')) : t('Académie depuis la saison {v}', { v: p.youthSince ?? state.seasonNumber })}</span>
+            {leaving && <span className="sh-tag warn">{tr('<0/> ans à l’intersaison', [YOUTH_LEAVE_AGE])}</span>}
+            {gain >= 0.3 && <span className="sh-tag sale">{t('Niveau titulaire')}</span>}
+            {p.alt && <span className="sh-tag">{tr('Dépanne : <0/> <1/>', [POS_LABELS[p.alt].toLowerCase(), fmtRating(ratingAt(p, p.alt))])}</span>}
           </div>
         </section>
 
         <section className="sh-sec sh-levelsec">
           <div className="sh-row">
-            <span className="sh-cap">Niveau <b className={heat(r, refLvl)}>{fmtRating(r)}</b><small> / 20</small></span>
-            <span className="sh-pot">{pot ? <>Potentiel estimé <b>{potText(pot)}</b></> : 'Plafond atteint'}</span>
+            <span className="sh-cap">{tr('Niveau <0/><1/>', [<b className={heat(r, refLvl)}>{fmtRating(r)}</b>, <small> / 20</small>])}</span>
+            <span className="sh-pot">{pot ? <>{t('Potentiel estimé ')}<b>{potText(pot)}</b></> : t('Plafond atteint')}</span>
           </div>
           <div className="sh-scale" aria-hidden="true">
             <i className="now" style={{ width: `${(r / 20) * 100}%` }} />
-            {pot && <i className="pot" style={{ left: `${(pot[0] / 20) * 100}%`, width: `${((pot[1] - pot[0]) / 20) * 100}%` }} />}
+            {pot && <i className="pot" style={{ insetInlineStart: `${(pot[0] / 20) * 100}%`, width: `${((pot[1] - pot[0]) / 20) * 100}%` }} />}
           </div>
           <div className="sh-ticks" aria-hidden="true"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span></div>
         </section>
 
         {!scout && (
           <section className="sh-sec">
-            <span className="sh-cap">Progrès</span>
+            <span className="sh-cap">{t('Progrès')}</span>
             <div className="sh-stats ac-prog">
-              <div><b className={(g.round || 0) >= 0.05 ? 'good' : ''}>{plus(g.round || 0)}</b><span>dernière journée</span></div>
-              <div><b className={(g.season || 0) >= 0.05 ? 'good' : ''}>{plus(g.season || 0)}</b><span>cette saison</span></div>
-              <div><b className={(g.summer || 0) >= 0.05 ? 'good' : ''}>{g.summer != null ? plus(g.summer) : '–'}</b><span>dernier été</span></div>
+              <div><b className={(g.round || 0) >= 0.05 ? 'good' : ''}>{plus(g.round || 0)}</b><span>{t('dernière journée')}</span></div>
+              <div><b className={(g.season || 0) >= 0.05 ? 'good' : ''}>{plus(g.season || 0)}</b><span>{t('cette saison')}</span></div>
+              <div><b className={(g.summer || 0) >= 0.05 ? 'good' : ''}>{g.summer != null ? plus(g.summer) : '–'}</b><span>{t('dernier été')}</span></div>
             </div>
-            <p className="sh-evo">
-              Prochain bond à l’intersaison, d’autant plus grand qu’il est loin de son potentiel.
-            </p>
+            <p className="sh-evo">{t('Prochain bond à l’intersaison, d’autant plus grand qu’il est loin de son potentiel.')}</p>
           </section>
         )}
 
         <section className="sh-sec">
-          <span className="sh-cap">{scout ? 'Plan d’entraînement conseillé' : 'Plan d’entraînement'}</span>
+          <span className="sh-cap">{scout ? t('Plan d’entraînement conseillé') : t('Plan d’entraînement')}</span>
           {!scout && (
             <Tabs
               className="segmented ac-plans"
               role="radiogroup"
-              label="Plan d’entraînement"
-              items={Object.keys(PLANS).map((k) => [k, PLANS[k].label, k === advised ? <i className="ac-advised" title={`Conseillé ${forPos(p.pos)}`} aria-label="conseillé" /> : null])}
+              label={t('Plan d’entraînement')}
+              items={Object.keys(PLANS).map((k) => [k, PLANS[k].label, k === advised ? <i className="ac-advised" title={t('Conseillé {forPos}', { forPos: forPos(p.pos) })} aria-label={t('conseillé')} /> : null])}
               value={plan}
               onChange={onPlan}
             />
           )}
           <p className="ac-plan-text">
             {scout
-              ? <><b>{PLANS[plan].label}</b>, choisi d’emblée s’il rejoint l’académie : {workedNames}. C’est avec ce plan que son niveau progresse le plus vite ; tu pourras le changer à tout moment.</>
+              ? <><b>{PLANS[plan].label}</b>{t(', choisi d’emblée s’il rejoint l’académie : ')}{workedNames}{t('. C’est avec ce plan que son niveau progresse le plus vite ; tu pourras le changer à tout moment.')}</>
               : plan === advised || slower <= 0
-                ? <>Qualités travaillées en priorité : {workedNames}. C’est le plan conseillé {forPos(p.pos)} : son niveau y progresse le plus vite.</>
-                : <>Qualités travaillées en priorité : {workedNames}. Son niveau progresse <b className="ac-slow">{slower} % moins vite</b> qu’avec le plan conseillé ({PLANS[advised].label.toLowerCase()}).</>}
+                ? <>{t('Qualités travaillées en priorité : ')}{workedNames}{t('. C’est le plan conseillé ')}{forPos(p.pos)}{t(' : son niveau y progresse le plus vite.')}</>
+                : <>{t('Qualités travaillées en priorité : ')}{workedNames}{t('. Son niveau progresse ')}<b className="ac-slow">{tr('<0/> % moins vite', [slower])}</b>{t(' qu’avec le plan conseillé (')}{PLANS[advised].label.toLowerCase()}).</>}
           </p>
         </section>
 
         {p.traits?.length > 0 && (
           <section className="sh-sec">
-            <span className="sh-cap">{p.traits.length > 1 ? 'Signes distinctifs' : 'Signe distinctif'}</span>
+            <span className="sh-cap">{tn(p.traits.length, 'Signe distinctif', 'Signes distinctifs', {}, p.traits.length > 1)}</span>
             <ul className="sh-traits">
               {p.traits.map((t) => <li key={t}><i aria-hidden="true" /><b>{TRAITS[t].name}</b><span>{TRAITS[t].desc}</span></li>)}
             </ul>
@@ -719,8 +700,8 @@ function AcademySheet({ p, scout, state, refLvl, full, place, onClose, onPrev, o
 
         <section className="sh-sec">
           <div className="sh-row">
-            <span className="sh-cap">Attributs</span>
-            <span className="sh-legend"><i className="key" /> travaillés par {scout ? 'ce' : 'son'} plan · <em>or</em> : fort pour ta division</span>
+            <span className="sh-cap">{t('Attributs')}</span>
+            <span className="sh-legend">{tr('<0/> travaillés par <1/> plan · <2>or</2> : fort pour ta division', [<i className="key" />, scout ? t('ce') : t('son', undefined, 'plan'), (c) => <em>{c}</em>])}</span>
           </div>
           <div className={`sh-fams n${fams.length}`}>
             {fams.map((fam) => (
@@ -740,21 +721,21 @@ function AcademySheet({ p, scout, state, refLvl, full, place, onClose, onPrev, o
 
         <footer className={`sh-foot ${scout ? 'market' : 'own'}`}>
           {scout ? (
-            <span>Recrutement <b>gratuit</b> · pas de salaire tant qu’il est à l’académie</span>
+            <span>{tr('Recrutement <0>gratuit</0> · pas de salaire tant qu’il est à l’académie', [(c) => <b>{c}</b>])}</span>
           ) : squadFull ? (
-            <span>Effectif complet ({SQUAD_MAX} joueurs) : vends un joueur pour faire monter un jeune.</span>
+            <span>{tr('Effectif complet (<0/> joueurs) : vends un joueur pour faire monter un jeune.', [SQUAD_MAX])}</span>
           ) : gain >= 0.3 ? (
-            <span>Il renforcerait ton onze : <b className="gold">+{fmtRating(gain)}</b> sur le titulaire le plus faible à son poste · salaire <b>{fmtMoney(wageOf(p, state.divisionIndex))}</b></span>
+            <span>{tr('Il renforcerait ton onze : <0/> sur le titulaire le plus faible à son poste · salaire <1/>', [<b className="gold">+{fmtRating(gain)}</b>, <b>{fmtMoney(wageOf(p, state.divisionIndex))}</b>])}</span>
           ) : (
-            <span>En équipe première : salaire <b>{fmtMoney(wageOf(p, state.divisionIndex))}</b> par saison</span>
+            <span>{tr('En équipe première : salaire <0/> par saison', [<b>{fmtMoney(wageOf(p, state.divisionIndex))}</b>])}</span>
           )}
           <div className="sh-actions">
             {scout ? (
-              <button className="btn" disabled={full} onClick={onSign}>{full ? 'Équipe de jeunes complète' : 'Signer · gratuit'}</button>
+              <button className="btn" disabled={full} onClick={onSign}>{full ? t('Équipe de jeunes complète') : t('Signer · gratuit')}</button>
             ) : (
               <>
-                <button className="btn ghost" onClick={onRelease}>Libérer</button>
-                <button className="btn" disabled={squadFull} onClick={onPromote}><IconArrowUp /> Faire monter</button>
+                <button className="btn ghost" onClick={onRelease}>{t('Libérer')}</button>
+                <button className="btn" disabled={squadFull} onClick={onPromote}>{tr('<0/> Faire monter', [<IconArrowUp />])}</button>
               </>
             )}
           </div>

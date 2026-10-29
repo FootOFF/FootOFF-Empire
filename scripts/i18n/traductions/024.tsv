@@ -1,0 +1,81 @@
+1289	Be champions	Ser campeón	الفوز باللقب
+1290	Go up at the end of the season	Subir al final de la temporada	الصعود في نهاية الموسم
+1291	Finish in the top two	Terminar entre los dos primeros	الإنهاء ضمن المركزين الأولين
+1292	Finish in the top half	Terminar en la primera mitad	الإنهاء في النصف الأول من الترتيب
+1293	Stay up	Mantener la categoría	البقاء في الدرجة
+1294	Finish 6th or better	Terminar 6.º o mejor	الإنهاء في المركز السادس أو أفضل
+1295	Finish 1st in the league.	Terminar 1.º en la liga.	الإنهاء في المركز الأول في الدوري.
+1296	Finish in the top {target}.	Terminar entre los {target} primeros.	الإنهاء ضمن أول {target} مراكز.
+1297	{v} today	{v} hoy	المركز {v} اليوم
+1298	not played yet	aún sin jugar	لم يُلعب بعد
+1299	Win {target} matches	Ganar {target} partidos	الفوز في {target} مباريات
+1300	In the league.	En liga.	في الدوري.
+1301	Score {target} goals	Marcar {target} goles	تسجيل {target} أهداف
+1302	Concede {target} goals at most	Encajar {target} goles como máximo	استقبال {target} أهداف على الأكثر
+1303	In the league, over the whole season.	En liga, en toda la temporada.	في الدوري، طوال الموسم.
+1304	{ga} conceded	{ga} encajado	هدف واحد مستقبَل
+1305	{ga} conceded	{ga} encajados	{"zero":"لا أهداف مستقبَلة","one":"هدف واحد مستقبَل","two":"هدفان مستقبَلان","few":"{ga} أهداف مستقبَلة","other":"{ga} هدفًا مستقبَلًا"}
+1306	Keep a clean sheet	Dejar la portería a cero	الحفاظ على نظافة الشباك
+1307	Keep {target} clean sheets	Dejar la portería a cero {target} veces	{"one":"الحفاظ على نظافة الشباك","two":"الحفاظ على نظافة الشباك مرتين","few":"الحفاظ على نظافة الشباك {target} مرات","other":"الحفاظ على نظافة الشباك {target} مرة"}
+1308	League matches without conceding a goal.	Partidos de liga sin encajar goles.	مباريات في الدوري دون استقبال أي هدف.
+1309	Finish the season in the black	Terminar la temporada en positivo	إنهاء الموسم برصيد إيجابي
+1310	Have at least as much money at the end-of-season review as at the start of the season.	Tener en el balance al menos tanto dinero como al principio de la temporada.	امتلاك أموال في حصيلة الموسم لا تقل عما كانت عليه في بدايته.
+1311	in the black	en positivo	برصيد إيجابي
+1312	in the red	en números rojos	في العجز
+1313	Grow the complex	Hacer crecer el complejo	تنمية المجمّع
+1314	Build or upgrade a building.	Construir o mejorar un edificio.	بناء مبنى أو تطويره.
+1315	construction started	obra iniciada	بدأت الأشغال
+1316	no construction	ninguna obra	لا أشغال
+1317	Give a club youngster his chance	Dar la alternativa a un canterano	منح شاب من النادي فرصته
+1318	Promote a youngster from the academy to the first team.	Subir a un joven de la cantera al primer equipo.	ترقية شاب من الأكاديمية إلى الفريق الأول.
+1319	done	hecho	تم ذلك
+1320	not yet	todavía no	ليس بعد
+1321	Objective missed: {toLowerCase}.	Objetivo fallado: {toLowerCase}.	هدف لم يتحقق: {toLowerCase}.
+1322	Objective reached: {toLowerCase} (+€{toLocaleString}).	Objetivo cumplido: {toLowerCase} (+{toLocaleString} €).	هدف تحقق: {toLowerCase} (+{toLocaleString} €).
+1323	Perfect season: all three board objectives reached (+€{toLocaleString}).	Temporada perfecta: los tres objetivos de la directiva cumplidos (+{toLocaleString} €).	موسم مثالي: تحققت أهداف مجلس الإدارة الثلاثة (+{toLocaleString} €).
+1324	Perfect season: all three objectives reached	Temporada perfecta: los tres objetivos cumplidos	موسم مثالي: تحققت الأهداف الثلاثة
+1325	Season objectives: {reached} of {length}	Objetivos de la temporada: {reached} de {length}	أهداف الموسم: {reached} من {length}
+1326	missed	fallado	لم يتحقق
+1328	FIN	REM	إنهاء
+1329	Finishing	Remate	إنهاء الهجمات
+1330	PAS	PAS	تمرير
+1331	Passing	Pase	التمرير
+1332	DRI	REG	مراوغة
+1333	Dribbling	Regate	المراوغة
+1334	PAC	VEL	سرعة
+1335	Pace	Velocidad	السرعة
+1336	STA	RES	تحمّل
+1337	Stamina	Resistencia	التحمّل
+1338	STR	POT	قوة
+1339	Strength	Potencia	القوة
+1340	POS	COL	تمركز
+1341	Positioning	Colocación	التمركز
+1342	DEF	DEF	دفاع
+1343	Defending	Defensa	الدفاع
+1344	COM	TEM	هدوء
+1345	Composure	Temple	رباطة الجأش
+1346	REF	REF	ردود
+1347	Reflexes	Reflejos	ردود الفعل
+1348	AER	AÉR	هوائي
+1349	Aerial ability	Juego aéreo	الكرات الهوائية
+1350	One-on-ones	Uno contra uno	المواجهات الفردية
+1351	DIS	SAQ	توزيع
+1352	Distribution	Saque	بناء اللعب
+1353	Tactical and mental	Táctica y mentalidad	التكتيك والذهن
+1354	Goalkeeping	Portería	حراسة المرمى
+1355	Finisher	Rematador	القنّاص
+1356	Converts 50% more chances than the others.	Convierte un 50 % más de ocasiones que los demás.	يحوّل فرصًا أكثر بنسبة 50% من غيره.
+1357	Provider	Pasador	الممرّر
+1358	His team creates 10% more chances, and he provides the assist far more often.	Su equipo genera un 10 % más de ocasiones, y da la asistencia mucho más a menudo.	يصنع فريقه فرصًا أكثر بنسبة 10%، ويقدّم التمريرة الحاسمة أكثر بكثير.
+1359	Tireless	Incansable	المثابر
+1360	Tires 40% more slowly. From the 70th minute, his team creates 40% more chances.	Se cansa un 40 % más despacio. A partir del minuto 70, su equipo genera un 40 % más de ocasiones.	يتعب أبطأ بنسبة 40%. وابتداءً من الدقيقة 70 يصنع فريقه فرصًا أكثر بنسبة 40%.
+1361	Arrow	Flecha	السهم
+1362	His pace makes the difference: 9% more chances for his team, 15% with a low block.	Su velocidad marca la diferencia: un 9 % más de ocasiones para su equipo, un 15 % con bloque bajo.	سرعته تصنع الفارق: فرص أكثر بنسبة 9% لفريقه، و15% عند التكتل الدفاعي.
+1363	Rock	Roca	الصخرة
+1364	Wins his duels: the opponent creates 10% fewer chances.	Gana sus duelos: el rival genera un 10 % menos de ocasiones.	يكسب صراعاته: يصنع الخصم فرصًا أقل بنسبة 10%.
+1365	Leader	Líder	القائد
+1366	His XI plays with more composure: +0.3 to the team level (only one leader counts).	Su once gana en serenidad: +0,3 al nivel del equipo (solo cuenta un líder).	تكتسب تشكيلته مزيدًا من الهدوء: +0.3 لمستوى الفريق (يُحتسب قائد واحد فقط).
+1367	Hothead	Sangre caliente	العصبي
+1368	Committed in the tackle (3% more chances), but his team gets 40% more yellow cards and 2.2 times as many reds.	Comprometido en los duelos (un 3 % más de ocasiones), pero su equipo recibe un 40 % más de amarillas y 2,2 veces más rojas.	مندفع في الالتحامات (فرص أكثر بنسبة 3%)، لكن فريقه يتلقى بطاقات صفراء أكثر بنسبة 40% وبطاقات حمراء أكثر بـ2.2 مرة.
+1369	Long shot	Disparo lejano	التسديد البعيد
+1370	Often tries his luck from distance: 9% more chances for his team.	Prueba suerte a menudo desde lejos: un 9 % más de ocasiones para su equipo.	يجرب حظه كثيرًا من بعيد: فرص أكثر بنسبة 9% لفريقه.

@@ -1,18 +1,19 @@
 import { DIVISIONS } from './constants';
 import { ofDiv } from './cups';
+import { t } from '../i18n/index';
 
 // Palmarès : un trophée par compétition (le titre de chaque division, la Coupe nationale, la Coupe d'Europe des
 // clubs), avec toutes ses victoires. Sert à l'allée d'honneur du parvis (3D) et à la salle des trophées.
 
-const LEAGUE_TROPHIES = ['Coupe du District', 'Trophée de la Ligue', 'Plateau national', 'Trophée Élite'];
+const LEAGUE_TROPHIES = [t('Coupe du District'), t('Trophée de la Ligue'), t('Plateau national'), t('Trophée Élite')];
 
 export const HONOURS = [
   ...DIVISIONS.map((d, i) => ({
     id: `league${i + 1}`, comp: 'league', division: d.name, unit: 'titre',
-    name: `Champion ${ofDiv(d.name)}`, trophy: LEAGUE_TROPHIES[i],
+    name: t('Champion {ofDiv}', { ofDiv: ofDiv(d.name) }), trophy: LEAGUE_TROPHIES[i],
   })),
-  { id: 'cup', comp: 'cup', name: 'Coupe nationale', trophy: 'Coupe nationale', unit: 'victoire' },
-  { id: 'c1', comp: 'c1', name: 'Coupe d’Europe des clubs', trophy: 'Coupe d’Europe', unit: 'victoire' },
+  { id: 'cup', comp: 'cup', name: t('Coupe nationale'), trophy: t('Coupe nationale'), unit: 'victoire' },
+  { id: 'c1', comp: 'c1', name: t('Coupe d’Europe des clubs'), trophy: t('Coupe d’Europe'), unit: 'victoire' },
 ];
 
 // Trophée d'une victoire du palmarès (entrée de s.trophies).
@@ -24,7 +25,7 @@ export function honourId(t) {
   return t.comp === 'cup' || t.comp === 'c1' ? t.comp : null;
 }
 
-export const plural = (n, unit) => `${n} ${unit}${n > 1 ? 's' : ''}`;
+export { plural } from '../i18n/index'; // un nombre et son unité, accordés (src/i18n)
 
 // Trophées gagnés, dans l'ordre des premières victoires : définition + victoires [{ season, opp }], nombre, première
 // et dernière saison.

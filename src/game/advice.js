@@ -11,15 +11,17 @@ import { dateKey, fitGain, pendingCounters, poolOf } from './mercato';
 import { capacity, duesOf, endOfSeasonForecast, expectedGate, investmentPreview, seasonForecast } from './economy';
 import { standingsOf } from './season';
 import { lastYear } from './contracts';
+import { decSep, eur, LANG, numLocale, t, tn } from '../i18n/index';
 
 // Signaux et conseils : ce que le joueur peut faire d'utile maintenant (pastilles dorées du dock et de
 // la vue 3D, recrue recommandée, bouton du staff de la colonne d'outils). Tout est calculé à partir de l'état.
 
-const n = (v) => new Intl.NumberFormat('fr-FR').format(Math.round(v));
-const money = (v) => (v >= 1e6 ? `${(v / 1e6).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} M€` : `${n(v)} €`);
-const LINE = { G: 'Ton gardien', D: 'Ta défense', M: 'Ton milieu', A: 'Ton attaque' };
+const n = (v) => new Intl.NumberFormat(numLocale()).format(Math.round(v));
+const money = (v) => (LANG !== 'fr' ? eur(v, { compact: v >= 1e6 }) : v >= 1e6 ? `${(v / 1e6).toLocaleString(numLocale(), { maximumFractionDigits: 2 })} M€` : `${n(v)} €`);
+const LINE = { G: t('Ton gardien'), D: t('Ta défense'), M: t('Ton milieu'), A: t('Ton attaque') };
 // « A, B et C »
-const names = (list) => { const n = list.map((p) => p.name); return n.length > 1 ? `${n.slice(0, -1).join(', ')} et ${n.at(-1)}` : n[0]; };
+// « A, B et C » dans la langue de la partie (en français, exactement comme avant)
+const names = (list) => { const n = list.map((p) => p.name); return n.length > 1 ? new Intl.ListFormat(numLocale(), { type: 'conjunction' }).format(n) : n[0]; };
 
 // Ligne la plus faible de l'onze aligné (moyenne des notes à leur poste).
 export function weakestLine(s) {
@@ -152,7 +154,7 @@ export function dockSignals(s) {
     items: {
       training: session ? 'dot' : null, academy: youth ? 'dot' : null, medical: care ? 'dot' : null, finances: red ? 'dot' : null,
       'mercato:offers': deals || null, // offres et contre-propositions à traiter
-      'mercato:watch': followedCount(s) ? { n: followedCount(s), tone: 'muted', label: `${followedCount(s)} joueurs suivis` } : null,
+      'mercato:watch': followedCount(s) ? { n: followedCount(s), tone: 'muted', label: t('{followedCount} joueurs suivis', { followedCount: followedCount(s) }) } : null,
     },
   };
 }
@@ -178,15 +180,15 @@ export function staffTips(s) {
   const end = endOfSeasonForecast(s, position, wages).end;
   if (end < 0) {
     out.push({
-      id: `red-${s.seasonNumber}`, tone: 'warn', title: 'Fin de saison dans le rouge',
-      text: `Prévision : −${money(-end)} après les salaires (${money(wages)}). Vends un remplaçant ou évite les recrues coûteuses.`,
-      action: { kind: 'panel', panel: 'finances', label: 'Voir les finances' },
+      id: `red-${s.seasonNumber}`, tone: 'warn', title: t('Fin de saison dans le rouge'),
+      text: t('Prévision : −{v} après les salaires ({wages}). Vends un remplaçant ou évite les recrues coûteuses.', { v: money(-end), wages: money(wages) }),
+      action: { kind: 'panel', panel: 'finances', label: t('Voir les finances') },
     });
   } else if (seasonForecast(s, wages).net < 0) {
     out.push({
-      id: `wages-${s.seasonNumber}`, tone: 'warn', title: 'Masse salariale trop lourde',
-      text: `Les salaires (${money(wages)}) dépassent ce que la saison doit rapporter. Vends un remplaçant, ou laisse partir un joueur en fin de contrat.`,
-      action: { kind: 'panel', panel: 'finances', label: 'Voir les finances' },
+      id: `wages-${s.seasonNumber}`, tone: 'warn', title: t('Masse salariale trop lourde'),
+      text: t('Les salaires ({wages}) dépassent ce que la saison doit rapporter. Vends un remplaçant, ou laisse partir un joueur en fin de contrat.', { wages: money(wages) }),
+      action: { kind: 'panel', panel: 'finances', label: t('Voir les finances') },
     });
   }
   // contrats : en seconde moitié de saison, les joueurs en dernière année (ils partiront libres à l'intersaison)
@@ -195,9 +197,9 @@ export function staffTips(s) {
     const many = ending.length > 1;
     out.push({
       id: `contracts-${s.seasonNumber}-${ending.length}`,
-      title: many ? `${ending.length} contrats se terminent cette saison` : `${ending[0].name} : dernière année de contrat`,
-      text: `${many ? `${names(ending)} partiront` : 'Il partira'} libre${many ? 's' : ''} à l’intersaison, sans indemnité. ${many ? 'Prolonge-les depuis leur fiche ou l’onglet Contrats de la Direction, ou vends-les' : 'Prolonge-le depuis sa fiche ou l’onglet Contrats de la Direction, ou vends-le'} avant la fin de la saison.`,
-      action: { kind: 'panel', panel: 'squad', ...(many ? {} : { sheet: ending[0].id }), label: many ? 'Voir l’effectif' : 'Voir sa fiche' },
+      title: many ? t('{length} contrats se terminent cette saison', { length: ending.length }) : t('{name} : dernière année de contrat', { name: ending[0].name }),
+      text: t('{v} libre{v2} à l’intersaison, sans indemnité. {v3} avant la fin de la saison.', { v: many ? t('{names} partiront', { names: names(ending) }) : t('Il partira'), v2: many ? 's' : '', v3: many ? t('Prolonge-les depuis leur fiche ou l’onglet Contrats de la Direction, ou vends-les') : t('Prolonge-le depuis sa fiche ou l’onglet Contrats de la Direction, ou vends-le') }),
+      action: { kind: 'panel', panel: 'squad', ...(many ? {} : { sheet: ending[0].id }), label: many ? t('Voir l’effectif') : t('Voir sa fiche') },
     });
   }
   // académie : en seconde moitié de saison, les jeunes qui auront 19 ans à l'intersaison (ils partiront s'ils ne sont
@@ -207,45 +209,43 @@ export function staffTips(s) {
     const many = leaving.length > 1;
     out.push({
       id: `academy-leaving-${s.seasonNumber}`,
-      title: many ? `${leaving.length} jeunes dans leur dernière saison` : `${leaving[0].name} : dernière saison à l’académie`,
-      text: `${many ? `${names(leaving)} auront` : 'Il aura'} ${YOUTH_LEAVE_AGE} ans à l’intersaison. Fais-${many ? 'les' : 'le'} monter en équipe première avant la fin de la saison, sinon ${many ? 'ils quitteront' : 'il quittera'} le club.`,
-      action: { kind: 'panel', panel: 'academy', tab: 'youth', ids: leaving.map((p) => p.id), label: 'Voir l’académie' },
+      title: many ? t('{length} jeunes dans leur dernière saison', { length: leaving.length }) : t('{name} : dernière saison à l’académie', { name: leaving[0].name }),
+      text: t('{v} {YOUTH_LEAVE_AGE} ans à l’intersaison. Fais-{v2} monter en équipe première avant la fin de la saison, sinon {v3} le club.', { v: many ? t('{names} auront', { names: names(leaving) }) : t('Il aura'), YOUTH_LEAVE_AGE, v2: many ? t('les') : t('le'), v3: many ? t('ils quitteront') : t('il quittera') }),
+      action: { kind: 'panel', panel: 'academy', tab: 'youth', ids: leaving.map((p) => p.id), label: t('Voir l’académie') },
     });
   }
   // Direction : la hausse des droits TV se demande une fois par saison, et ne vaut que pour les matchs qui suivent
   if (tvOpen(s)) {
     out.push({
-      id: `tv-${s.seasonNumber}`, title: 'Négocie les droits TV de la saison',
-      text: 'Une fois par saison, ta Direction peut demander au diffuseur une hausse des droits TV. Elle vaut pour les matchs qui suivent : plus tôt tu la demandes, plus elle rapporte.',
-      action: { kind: 'panel', panel: 'direction', tab: 'tv', label: 'Aller à la Direction' },
+      id: `tv-${s.seasonNumber}`, title: t('Négocie les droits TV de la saison'),
+      text: t('Une fois par saison, ta Direction peut demander au diffuseur une hausse des droits TV. Elle vaut pour les matchs qui suivent : plus tôt tu la demandes, plus elle rapporte.'),
+      action: { kind: 'panel', panel: 'direction', tab: 'tv', label: t('Aller à la Direction') },
     });
   }
   // centre médical : un soin possible avant le prochain match (un par blessé et par date)
   const hurt = s.players.filter((p) => treatOpen(s, p) && s.money >= treatFee(s, p));
   if (hurt.length) {
     out.push({
-      id: `care-${dateKey(s)}`, title: hurt.length > 1 ? `${hurt.length} blessés à soigner` : `${hurt[0].name} peut être soigné`,
-      text: hurt.length > 1
-        ? `Le centre médical peut tenter de soigner ${names(hurt)} avant le prochain match : chaque soin réussi fait revenir un blessé un match plus tôt.`
-        : 'Le centre médical peut tenter un soin avant le prochain match : réussi, il le fait revenir un match plus tôt.',
-      action: { kind: 'panel', panel: 'medical', label: 'Aller au centre médical' },
+      id: `care-${dateKey(s)}`, title: tn(hurt.length, '{name} peut être soigné', '{length} blessés à soigner', { length: hurt.length, name: hurt[0].name }, hurt.length > 1),
+      text: tn(hurt.length, 'Le centre médical peut tenter un soin avant le prochain match : réussi, il le fait revenir un match plus tôt.', 'Le centre médical peut tenter de soigner {names} avant le prochain match : chaque soin réussi fait revenir un blessé un match plus tôt.', { names: names(hurt) }, hurt.length > 1),
+      action: { kind: 'panel', panel: 'medical', label: t('Aller au centre médical') },
     });
   }
   const best = autoLineup(s.players, s.formation);
   if (lineupRating(s.players, best, s.formation, fitWeight) > lineupRating(s.players, s.lineup, s.formation, fitWeight) + 0.15) {
     out.push({
-      id: `lineup-${s.seasonNumber}`, title: 'Ton onze peut faire mieux',
-      text: 'Des remplaçants sont plus forts ou plus frais que certains titulaires. Choisis « Onze frais » ou « Faire tourner » dans l’avant-match.',
-      action: { kind: 'match', label: 'Préparer le match' },
+      id: `lineup-${s.seasonNumber}`, title: t('Ton onze peut faire mieux'),
+      text: t('Des remplaçants sont plus forts ou plus frais que certains titulaires. Choisis « Onze frais » ou « Faire tourner » dans l’avant-match.'),
+      action: { kind: 'match', label: t('Préparer le match') },
     });
   }
   // centre d'entraînement : la séance d'avant-match n'est pas finie
   const todo = trainingTodo(s);
   if (todo.length) {
     out.push({
-      id: `training-${windowKey(s)}`, title: todo.length === LINES.length ? 'Séance d’entraînement avant le match' : 'Séance d’entraînement à finir',
-      text: `${todo.length > 1 ? `${todo.length} joueurs peuvent encore progresser avant le prochain match : une épreuve chacun` : 'Un joueur peut encore progresser avant le prochain match : une épreuve'}, à jouer en 3D, à simuler ou à confier au staff (réglage du centre).`,
-      action: { kind: 'panel', panel: 'training', label: 'Aller à l’entraînement' },
+      id: `training-${windowKey(s)}`, title: todo.length === LINES.length ? t('Séance d’entraînement avant le match') : t('Séance d’entraînement à finir'),
+      text: t('{tn}, à jouer en 3D, à simuler ou à confier au staff (réglage du centre).', { tn: tn(todo.length, 'Un joueur peut encore progresser avant le prochain match : une épreuve', '{length} joueurs peuvent encore progresser avant le prochain match : une épreuve chacun', { length: todo.length }, todo.length > 1) }),
+      action: { kind: 'panel', panel: 'training', label: t('Aller à l’entraînement') },
     });
   }
   // programmes de signes distinctifs (centre niveau 3) : aucun en cours alors que des joueurs peuvent en suivre un ;
@@ -254,9 +254,9 @@ export function staffTips(s) {
   const eligible = (s.buildings.training || 0) >= 3 && !running ? s.players.filter((p) => programsFor(s, p).length).length : 0;
   if (eligible) {
     out.push({
-      id: `programs-${s.seasonNumber}-${s.training?.learned || 0}`, title: 'Lance un programme de signes',
-      text: `${eligible > 1 ? `${eligible} joueurs peuvent` : 'Un joueur peut'} apprendre un signe distinctif au centre d’entraînement (Finisseur, Passeur, Roc…) : aucun programme n’est en cours, et chacun avance à chaque séance.`,
-      action: { kind: 'panel', panel: 'training', tab: 'programs', label: 'Voir les programmes' },
+      id: `programs-${s.seasonNumber}-${s.training?.learned || 0}`, title: t('Lance un programme de signes'),
+      text: t('{tn} apprendre un signe distinctif au centre d’entraînement (Finisseur, Passeur, Roc…) : aucun programme n’est en cours, et chacun avance à chaque séance.', { tn: tn(eligible, 'Un joueur peut', '{eligible} joueurs peuvent', { eligible }, eligible > 1) }),
+      action: { kind: 'panel', panel: 'training', tab: 'programs', label: t('Voir les programmes') },
     });
   }
   const gate = expectedGate(s, null);
@@ -264,18 +264,18 @@ export function staffTips(s) {
   // les tarifs se règlent à la Direction du club (onglet Billetterie) : le conseil n'a de sens qu'une fois construite
   if (lvl >= BUILDINGS.terrain.max && s.buildings.direction > 0 && gate.demand > gate.capacity * 1.3 && ['popular', 'standard'].includes(s.ticketPolicy || 'standard')) {
     out.push({
-      id: `pricing-${s.seasonNumber}`, title: 'Ton stade affiche complet',
-      text: `${n(gate.demand - gate.capacity)} supporters restent dehors. Passe en tarif Premium ou Prestige : l’enceinte reste pleine et chaque billet rapporte plus.`,
-      action: { kind: 'panel', panel: 'direction', tab: 'tickets', label: 'Régler les tarifs' },
+      id: `pricing-${s.seasonNumber}`, title: t('Ton stade affiche complet'),
+      text: t('{n} supporters restent dehors. Passe en tarif Premium ou Prestige : l’enceinte reste pleine et chaque billet rapporte plus.', { n: n(gate.demand - gate.capacity) }),
+      action: { kind: 'panel', panel: 'direction', tab: 'tickets', label: t('Régler les tarifs') },
     });
   }
   // stade : seulement quand l'agrandissement est payable, une fois par niveau (0.8.2 : plus de « trop petit » à chaque
   // match quand on ne peut rien y faire)
   if (lvl < BUILDINGS.terrain.max && gate.demand > gate.capacity * 1.05 && s.money >= upgradeCost('terrain', lvl + 1)) {
     out.push({
-      id: `stadium-${lvl}`, title: 'Agrandis ton stade',
-      text: `${n(gate.demand - gate.capacity)} supporters restent dehors à chaque match à domicile. Le niveau ${lvl + 1} offre ${n(capacity(lvl + 1))} places, et tu as les fonds.`,
-      action: { kind: 'plot', plot: 't0', sector: 'main', label: 'Voir le stade' },
+      id: `stadium-${lvl}`, title: t('Agrandis ton stade'),
+      text: t('{n} supporters restent dehors à chaque match à domicile. Le niveau {v} offre {n2} places, et tu as les fonds.', { n: n(gate.demand - gate.capacity), v: lvl + 1, n2: n(capacity(lvl + 1)) }),
+      action: { kind: 'plot', plot: 't0', sector: 'main', label: t('Voir le stade') },
     });
   }
   // académie : des jeunes repérés à la journée, des places libres, et la détection pas encore regardée (vue : plus rien
@@ -284,17 +284,17 @@ export function staffTips(s) {
   const free = YOUTH_PLACES - (s.youth || []).length;
   if (s.buildings.academy > 0 && scouted.length && free > 0 && !s.scouting.seen) {
     out.push({
-      id: `academy-scout-${s.scouting.key}`, title: scouted.length > 1 ? 'Ton académie a repéré des jeunes' : 'Ton académie a repéré un jeune',
-      text: `${scouted.length > 1 ? `${scouted.length} jeunes à recruter` : 'Un jeune à recruter'} gratuitement, et ${free > 1 ? `${free} places libres` : 'une place libre'} dans ton équipe de jeunes. La liste change au prochain repérage.`,
-      action: { kind: 'panel', panel: 'academy', tab: 'scout', label: 'Voir la détection' },
+      id: `academy-scout-${s.scouting.key}`, title: tn(scouted.length, 'Ton académie a repéré un jeune', 'Ton académie a repéré des jeunes', {}, scouted.length > 1),
+      text: t('{tn} gratuitement, et {tn2} dans ton équipe de jeunes. La liste change au prochain repérage.', { tn: tn(scouted.length, 'Un jeune à recruter', '{length} jeunes à recruter', { length: scouted.length }, scouted.length > 1), tn2: tn(free, 'une place libre', '{free} places libres', { free }, free > 1) }),
+      action: { kind: 'panel', panel: 'academy', tab: 'scout', label: t('Voir la détection') },
     });
   }
   // académie : les recruteurs à la maison et des places libres (une fois par saison)
   if (s.buildings.academy > 0 && !s.mission && free > 0) {
     out.push({
-      id: `mission-${s.seasonNumber}`, title: 'Envoie tes recruteurs en mission',
-      text: `Ils ciblent un poste ou un profil, donnent des nouvelles à chaque repérage et reviennent avec les jeunes les plus prometteurs qu’ils ont vus : de quoi remplir ${free > 1 ? `les ${free} places libres` : 'la place libre'} de ton équipe de jeunes.`,
-      action: { kind: 'panel', panel: 'academy', tab: 'scout', label: 'Préparer une mission' },
+      id: `mission-${s.seasonNumber}`, title: t('Envoie tes recruteurs en mission'),
+      text: t('Ils ciblent un poste ou un profil, donnent des nouvelles à chaque repérage et reviennent avec les jeunes les plus prometteurs qu’ils ont vus : de quoi remplir {tn} de ton équipe de jeunes.', { tn: tn(free, 'la place libre', 'les {free} places libres', { free }, free > 1) }),
+      action: { kind: 'panel', panel: 'academy', tab: 'scout', label: t('Préparer une mission') },
     });
   }
   const sign = bestSigning(s);
@@ -303,9 +303,9 @@ export function staffTips(s) {
     const pos = sign.player.pos;
     out.push({
       id: `sign-${sign.player.id}`,
-      title: weak && weak.pos === pos ? (pos === 'G' ? 'Ton gardien est ton point faible' : `${LINE[pos]} est ta ligne la plus faible`) : 'Une recrue renforcerait ton onze',
-      text: `${sign.player.name} (${POS_LABELS[pos].toLowerCase()}, niveau ${ratingAt(sign.player, pos).toFixed(1).replace('.', ',')}) ${sign.player.club ? `est à vendre (${sign.player.club}) : indemnité de ${money(sign.fee)}` : `est libre : prime à la signature de ${money(sign.fee)}`}.`,
-      action: { kind: 'panel', panel: 'mercato', label: 'Voir le mercato' },
+      title: weak && weak.pos === pos ? (pos === 'G' ? t('Ton gardien est ton point faible') : t('{v} est ta ligne la plus faible', { v: LINE[pos] })) : t('Une recrue renforcerait ton onze'),
+      text: t('{name} ({toLowerCase}, niveau {replace}) {v}.', { name: sign.player.name, toLowerCase: POS_LABELS[pos].toLowerCase(), replace: ratingAt(sign.player, pos).toFixed(1).replace('.', decSep()), v: sign.player.club ? t('est à vendre ({club}) : indemnité de {fee}', { club: sign.player.club, fee: money(sign.fee) }) : t('est libre : prime à la signature de {fee}', { fee: money(sign.fee) }) }),
+      action: { kind: 'panel', panel: 'mercato', label: t('Voir le mercato') },
     });
   }
   const plot = actionablePlots(s).find((id) => id !== 't0');
@@ -319,9 +319,9 @@ export function staffTips(s) {
     const name = BUILDINGS[key || pickNew].name;
     out.push({
       id: `build-${plot}-${key ? s.buildings[key] : 0}`,
-      title: key ? `Améliore : ${name}` : `Construis : ${name}`,
-      text: key ? `Le niveau ${s.buildings[key] + 1} est à ta portée, et la saison finirait encore dans le vert.` : 'Une parcelle libre t’attend : tu as les fonds, et la saison finirait encore dans le vert.',
-      action: { kind: 'plot', plot, sector: p.sector, label: key ? 'Voir le bâtiment' : 'Voir la parcelle' },
+      title: key ? t('Améliore : {name}', { name }) : t('Construis : {name}', { name }),
+      text: key ? t('Le niveau {v} est à ta portée, et la saison finirait encore dans le vert.', { v: s.buildings[key] + 1 }) : t('Une parcelle libre t’attend : tu as les fonds, et la saison finirait encore dans le vert.'),
+      action: { kind: 'plot', plot, sector: p.sector, label: key ? t('Voir le bâtiment') : t('Voir la parcelle') },
     });
   }
   return out;

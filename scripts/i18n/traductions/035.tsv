@@ -1,0 +1,51 @@
+2061	Faces · market (96 px)	Caras · mercado (96 px)	الوجوه · السوق (96 بكسل)
+2062	The same, small (34 px)	Las mismas en pequeño (34 px)	الوجوه نفسها بحجم صغير (34 بكسل)
+2063	Starting squad (52 px) · <0/>	Plantilla inicial (52 px) · <0/>	تشكيلة البداية (52 بكسل) · <0/>
+2064	{size} lookalikes	{size} dobles	{size} أشباه
+2065	no lookalikes	ningún doble	لا أشباه
+2066	Academy (64 px)	Cantera (64 px)	الأكاديمية (64 بكسل)
+2068	<0/> · age <1/>	<0/> · <1/> años	<0/> · <1/> عامًا
+2069	Today	Hoy	اليوم
+2070	End-of-season bank balance: {join}	Tesorería al final de la temporada: {join}	الخزينة في نهاية الموسم: {join}
+2071	Finances	Finanzas	المالية
+2072	Season {seasonNumber} · {name}	Temporada {seasonNumber} · {name}	الموسم {seasonNumber} · {name}
+2073	available {available}	disponible {available}	المتاح {available}
+2074	To pay	Por pagar	المستحق
+2075	end of season · {owed} already owed	final de temporada · {owed} ya comprometidos	نهاية الموسم · {owed} مستحقة مسبقًا
+2076	End of season	Fin de temporada	نهاية الموسم
+2077	forecast	previsión	توقع
+2078	of income	de los ingresos	من الإيرادات
+2079	End-of-season forecast	Previsión de fin de temporada	توقعات نهاية الموسم
+2080	{left} match to play	{left} partido por jugar	مباراة واحدة متبقية
+2081	{left} matches to play	{left} partidos por jugar	{"one":"مباراة واحدة متبقية","two":"مباراتان متبقيتان","few":"{left} مباريات متبقية","other":"{left} مباراة متبقية"}
+2082	season over	temporada terminada	انتهى الموسم
+2083	Current bank balance <0/>	Tesorería actual <0/>	الخزينة الحالية <0/>
+2084	including {owed} already owed in wages and upkeep ·	de los que {owed} ya comprometidos en salarios y mantenimiento ·	منها {owed} مستحقة مسبقًا للرواتب والصيانة ·
+2085	{v} short	faltan {v}	ينقص {v}
+2086	{available} available	{available} disponibles	{available} متاحة
+2087	Remaining matches <0/>	Partidos restantes <0/>	المباريات المتبقية <0/>
+2088	{homes} at home, {v} away (TV rights)	{homes} en casa, {v} fuera (derechos de TV)	{homes} على أرضنا، و{v} خارج أرضنا (حقوق البث)
+2089	{left} × about {perMatch}	{left} × unos {perMatch}	{left} × نحو {perMatch}
+2090	Sponsors <0/>	Patrocinadores <0/>	الرعاة <0/>
+2091	{v} received at the start of the season	{v} recibidos al inicio de la temporada	{v} وصلت في بداية الموسم
+2092	paid at the review	pagados en el balance	تُصرف في الحصيلة
+2093	already in the bank	ya en caja	في الخزينة بالفعل
+2094	in <0/> place	en la <0/> posición	في المركز <0/>
+2095	Season wages	Salarios de la temporada	رواتب الموسم
+2096	paid at the review · <0/>	pagados en el balance · <0/>	تُدفع في الحصيلة · <0/>
+2097	{length} players · {left} matchday of {len} to come	{length} jugadores · {left} jornada de {len} por jugar	{length} لاعبين · جولة واحدة متبقية من {len}
+2098	{length} players · {left} matchdays of {len} to come	{length} jugadores · {left} jornadas de {len} por jugar	{"one":"{length} لاعبين · جولة واحدة متبقية من {len}","two":"{length} لاعبين · جولتان متبقيتان من {len}","few":"{length} لاعبين · {left} جولات متبقية من {len}","other":"{length} لاعبين · {left} جولة متبقية من {len}"}
+2099	{len} matchdays	{len} jornadas	{len} جولة
+2100	Season upkeep <0>paid at the review</0>	Mantenimiento de la temporada <0>pagado en el balance</0>	صيانة الموسم <0>تُدفع في الحصيلة</0>
+2101	End-of-season bank balance	Tesorería al final de la temporada	الخزينة في نهاية الموسم
+2102	You will be <0/> short at the final whistle: the board would then sell your biggest earners. Sell a substitute or trim the squad before then.	Faltarán <0/> al pitido final: la directiva vendería entonces tus salarios más altos. Vende a un suplente o aligera la plantilla antes.	سينقصك <0/> عند صافرة النهاية: وسيبيع مجلس الإدارة حينها أصحاب أعلى الرواتب. بِع لاعبًا بديلًا أو خفّف التشكيلة قبل ذلك.
+2103	Wages weigh <0/> of a season’s income. Above 75%, one bad run is enough to finish in the red.	Los salarios pesan <0/> de los ingresos de una temporada. Por encima del 75 %, basta una mala racha para acabar en números rojos.	تمثل الرواتب <0/> من إيرادات الموسم. وفوق 75% تكفي سلسلة نتائج سيئة لإنهاء الموسم بعجز.
+2104	This season	Esta temporada	هذا الموسم
+2105	result {signed}	resultado {signed}	النتيجة {signed}
+2106	Nothing taken yet: ticketing, refreshments and the shop pay out at every match.	Nada ingresado por ahora: taquilla, cantina y tienda cobran en cada partido.	لا إيرادات حتى الآن: التذاكر والمقصف والمتجر تدرّ أموالًا في كل مباراة.
+2107	Wages and upkeep are counted every league matchday (one <0/> of the season) and paid in one go at the review.	Los salarios y el mantenimiento se cuentan en cada jornada de liga (<0/> de la temporada) y se pagan de una vez en el balance.	تُحتسب الرواتب والصيانة في كل جولة من الدوري (<0/> الموسم) وتُدفع دفعة واحدة في الحصيلة.
+2108	fourteenth	un catorceavo	جزء من أربعة عشر من
+2109	seventh	un séptimo	سُبع
+2110	Previous seasons	Temporadas anteriores	المواسم السابقة
+2111	end-of-season bank balance	tesorería al final de la temporada	الخزينة في نهاية الموسم
+2112	Season <0/> <1/>	Temporada <0/> <1/>	الموسم <0/> <1/>
