@@ -56,6 +56,12 @@ export const IconLeague = I(<><path d="M7 21V9h10v12M4.5 21h15" /><path d="M9.5 
 export const IconDirection = I(<><rect x="3.5" y="7.5" width="17" height="12" rx="2" /><path d="M9 7.5V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 6v1.5M3.5 12.5h17M11 12.5v1.6h2v-1.6" /></>);
 // loupe (recherche)
 export const IconSearch = I(<><circle cx="11" cy="11" r="6.2" /><path d="m15.6 15.6 4.4 4.4" /></>);
+// réseaux de FootOFF (0.8.17) : les mêmes pictogrammes au trait que le site footoff.media
+export const IconInstagram = I(<><rect x="3.75" y="3.75" width="16.5" height="16.5" rx="5.25" /><circle cx="12" cy="12" r="4.5" /><circle cx="17.25" cy="6.75" r=".85" fill="currentColor" stroke="none" /></>);
+export const IconTikTok = I(<path d="M21 7.917v4.034a9.948 9.948 0 0 1 -5 -1.951v6.5a6.5 6.5 0 1 1 -8 -6.326v4.326a2.5 2.5 0 1 0 4 2v-13.5h4a4.998 4.998 0 0 0 5 5z" />);
+export const IconYouTube = I(<><rect x="3" y="5.25" width="18" height="13.5" rx="3" /><path d="M10.1 9.4v5.2l4.5-2.6Z" fill="currentColor" stroke="none" /></>);
+export const IconXBrand = I(<><path d="M4 4l11.733 16h4.267l-11.733 -16z" /><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772" /></>);
+export const IconLinkedIn = I(<><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 11v5M8 8v.01M12 16v-5M16 16v-3a2 2 0 0 0 -4 0" /></>);
 // tri : deux flèches opposées
 export const IconSort = I(<path d="M8 4v16M4.5 7.5 8 4l3.5 3.5M16 20V4M12.5 16.5 16 20l3.5-3.5" />);
 // bulle de parole (conseil du staff)

@@ -3277,6 +3277,23 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .ts-side { position: absolute; right: 56px; bottom: 84px; width: min(452px, 36vw); }
 .ts-bottom { position: absolute; left: 64px; right: 56px; bottom: calc(36px + var(--hb)); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); animation: fo-fade .8s .6s ease both; }
 .ts-legal { font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+/* Suivre FootOFF (0.8.17) : rangée d'icônes au pied de l'écran titre, section des réglages (titre et pause) */
+.ts-foot-end { display: flex; align-items: center; gap: var(--s-4); }
+.social-strip { display: flex; align-items: center; gap: 2px; pointer-events: auto; }
+.social-link { display: grid; place-items: center; width: 34px; height: 34px; color: var(--muted); transition: color var(--dur-fast) var(--ease); }
+.social-link svg { width: 18px; height: 18px; }
+@media (hover: hover) { .social-link:hover { color: var(--gold-light); } }
+.social-link:focus-visible { outline: 1px solid var(--gold); outline-offset: -2px; color: var(--gold-light); }
+.cm-section { margin: 14px 0 2px; padding: 0 26px; font-family: var(--font-disp); font-size: var(--d-xs); font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--gold); }
+.cm-row.cm-social { min-height: 54px; gap: 14px; text-decoration: none; }
+.cm-social-icon { width: 20px; height: 20px; flex: none; color: var(--gold-light); }
+.cm-social .cm-row-text strong { font-size: 18px; }
+.cm-social-out { width: 15px; height: 15px; flex: none; color: var(--muted); }
+.cm-social.on .cm-social-out { color: var(--gold-light); }
+@media (orientation: landscape) and (max-height: 500px) { .social-strip { gap: 6px; } .social-link { width: 42px; height: 42px; } } /* au doigt : des cibles franches */
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
+  .ts-social { display: none; } /* debout, le menu descend jusqu'en bas : les réseaux sont sous « FootOFF Media » */
+}
 .ts-pillars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-3); }
 .ts-pillars li { display: flex; flex-direction: column; gap: 2px; padding-left: var(--s-3); border-left: 2px solid var(--gold-line); }
 .ts-pillars strong { font-family: var(--font-disp); font-weight: 600; font-size: var(--d-xs); letter-spacing: .07em; text-transform: uppercase; color: var(--gold); }
@@ -3395,6 +3412,19 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .cm-row { min-height: 60px; }
   .ts-sub h2, .ts-form h2 { font-size: 34px; }
 }
+@media (max-height: 860px) and (min-width: 761px) { /* fenêtre d'ordinateur peu haute : les huit entrées du menu tiennent entre la mention du haut et l'aide du bas (0.8.17) */
+  .ts-col { padding: 72px 0 80px; gap: 22px; }
+  .ts-mark .lockup-mark { height: 76px; }
+  .ts .cm-item { min-height: 50px; padding-block: 4px; }
+  .ts .cm-item.on { min-height: 62px; }
+  .ts .cm-label { font-size: 24px; }
+  .ts-head { gap: var(--s-2); }
+  .ts .cm-item.on .cm-label { font-size: 30px; }
+}
+/* fenêtre encore plus basse (et l'arabe, plus haut de ligne, dès 860 px) : comme sur console, seule l'entrée choisie
+   garde sa ligne d'explication */
+@media (max-height: 760px) and (min-width: 761px) { .ts .cm-item:not(.on) .cm-sub { display: none; } }
+@media (max-height: 860px) and (min-width: 761px) { html[lang="ar"] .ts .cm-item:not(.on) .cm-sub { display: none; } }
 /* Fondation du club dans une fenêtre peu haute : le formulaire se resserre (accroche retirée, écusson et sélecteurs
    plus compacts) ; s'il ne tient toujours pas (téléphone à l'horizontale), la colonne défile, sans jamais passer sous
    la barre du haut ni sous l'aide des commandes. L'aide et la mention du bas ne captent jamais un clic : un bouton
@@ -5649,6 +5679,17 @@ html[lang="ar"] {
   --font-title: 'Geist', 'Cairo', system-ui, sans-serif;
 }
 html[lang="ar"] *, html[lang="ar"] *::before, html[lang="ar"] *::after { letter-spacing: normal !important; }
+/* écran titre en arabe (0.8.17, revue de marque) : l'interligne de Cairo allonge le menu d'une centaine de pixels ; sur
+   ordinateur, il se resserre donc plus tôt, sans jamais passer sous la mention du haut ni sous l'aide du bas */
+@media (max-height: 980px) and (min-width: 761px) {
+  html[lang="ar"] .ts-col { padding: 84px 0 92px; gap: 18px; }
+  html[lang="ar"] .ts-mark .lockup-mark { height: 72px; }
+  html[lang="ar"] .ts-head { gap: var(--s-2); }
+  html[lang="ar"] .ts .cm-item { min-height: 48px; padding-block: 4px; }
+  html[lang="ar"] .ts .cm-item.on { min-height: 62px; }
+  html[lang="ar"] .ts .cm-label { font-size: 22px; }
+  html[lang="ar"] .ts .cm-item.on .cm-label { font-size: 27px; }
+}
 [dir="rtl"] svg[data-rtl-flip] { scale: -1 1; }
 /* sigles des clubs en arabe : un mot entier (« البستان »), pas trois lettres. Plus petit ; au téléphone, sous l'écusson */
 html[lang="ar"] .lv-team b { font-size: 20px; line-height: 1.3; }

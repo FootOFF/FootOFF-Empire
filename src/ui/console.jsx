@@ -18,6 +18,7 @@ import { clubStars } from '../game/crest';
 import { errorReport } from './errlog';
 import { canFullscreen, setFullscreen, useFullscreen } from './fullscreen';
 import { t, tr } from '../i18n/index';
+import { LINK, SOCIALS } from './socials';
 
 export { setUiSound, uiSound } from './uisound';
 
@@ -143,7 +144,7 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
   // Retour en tête (0.8.8, demande du PDG) : la même ligne qu'avant, fixe au-dessus de la liste qui défile, première de
   // la navigation ; le curseur s'ouvre sur Son
   const rows = [{ id: 'back' }, { id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'fluid', disabled: !onToggleFluid }, ...(fsOk ? [{ id: 'fullscreen' }] : []),
-    { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'report' }];
+    { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'report' }, ...SOCIALS.map((x) => ({ id: x.id }))];
   const at = (id) => rows.findIndex((r) => r.id === id); // rang d'une entrée (le plein écran n'existe que sur PC)
   const menu = useMenu(rows, { initial: focus ? Math.max(0, at(focus)) : at('sound'), onBack: () => (mode === 'menu' ? onBack() : setMode('menu')), active: active && mode === 'menu' });
   const { cur, setCur, refs, hover } = menu;
@@ -273,7 +274,52 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
           <span>{t('Un rapport à coller dans un message : version, erreurs, et ta partie si tu l’acceptes.')}</span>
         </span>
       </button>
+      {/* Suivre FootOFF (0.8.17) : les comptes officiels, ouverts dans un nouvel onglet */}
+      <SocialRows cur={cur} at={at} row={row} />
     </div>
+    </>
+  );
+}
+
+// Comptes officiels de FootOFF (socials.js) : une ligne par réseau, ouverte dans un nouvel onglet ; dans les réglages et
+// dans la vue « FootOFF Media » de l'écran titre.
+function SocialRows({ cur, at, row }) {
+  return (
+    <>
+      <p className="cm-section" aria-hidden="true">{t('Suivre FootOFF')}</p>
+      {SOCIALS.map(({ id, name, handle, url, Icon }) => (
+        <a key={id} href={url} {...LINK} role="menuitem" className={`cm-row cm-social ${cur === at(id) ? 'on' : ''}`} {...row(at(id))} onClick={() => uiSound('select')} aria-label={t('FootOFF sur {name}', { name })}>
+          <span className="cm-bar" aria-hidden="true" />
+          <Icon className="cm-social-icon" />
+          <span className="cm-row-text"><strong>{name}</strong><span><bdi>{handle}</bdi></span></span>
+          <IconExternal className="cm-social-out" />
+        </a>
+      ))}
+    </>
+  );
+}
+
+// FootOFF Media (écran titre, 0.8.17) : le site, puis les réseaux. Au clavier et à la manette comme les réglages.
+export function MediaView({ onBack, active = true }) {
+  const rows = [{ id: 'back' }, { id: 'site' }, ...SOCIALS.map((x) => ({ id: x.id }))];
+  const at = (id) => rows.findIndex((r) => r.id === id);
+  const { cur, setCur, refs, hover } = useMenu(rows, { initial: at('site'), onBack, active });
+  const row = (i) => ({ ref: (el) => { refs.current[i] = el; }, onPointerEnter: hover(i), onFocus: () => setCur(i), style: { '--i': i } });
+  return (
+    <>
+      <button type="button" className={`cm-row back top ${cur === at('back') ? 'on' : ''}`} {...row(at('back'))} onClick={() => { uiSound('back'); onBack(); }}>
+        <span className="cm-bar" aria-hidden="true" />
+        <IconChevronLeft className="cm-back-icon" />
+        <span className="cm-row-text"><strong>{t('Retour')}</strong></span>
+      </button>
+      <div className="cm-settings" role="menu" aria-label={t('FootOFF Media')}>
+        <a href="https://www.footoff.media" {...LINK} role="menuitem" className={`cm-row cm-social ${cur === at('site') ? 'on' : ''}`} {...row(at('site'))} onClick={() => uiSound('select')}>
+          <span className="cm-bar" aria-hidden="true" />
+          <span className="cm-row-text"><strong>footoff.media</strong><span>{t('Actualités, analyses et Stats Pass.')}</span></span>
+          <IconExternal className="cm-social-out" />
+        </a>
+        <SocialRows cur={cur} at={at} row={row} />
+      </div>
     </>
   );
 }

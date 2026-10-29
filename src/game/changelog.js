@@ -5,6 +5,12 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '0.8.17', date: '2026-10-29', title: t('FootOFF sur les réseaux'),
+    items: [
+      t('Les comptes officiels de FootOFF (Instagram, TikTok, YouTube, X et LinkedIn) au pied de l’écran titre et dans les réglages, section « Suivre FootOFF ».'),
+    ],
+  },
+  {
     version: '0.8.16', date: '2026-10-29', title: t('Des écrans plus nets'),
     items: [
       t('Succès : un total et une tuile par famille qui filtre la liste, le choix Tous, Obtenus ou À obtenir, la date d’obtention sous chaque succès et la progression des succès à compteur.'),

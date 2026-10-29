@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { FootOFFLockup } from './brand';
-import { ClubCard, Hints, MenuList, SettingsView, uiSound, useMenu } from './console';
+import { ClubCard, Hints, MenuList, SettingsView, uiSound, useMenu, MediaView } from './console';
 import { RulesView } from './rules';
 import { NewsView, unseenNews } from './news';
 import { CHANGELOG, CURRENT } from '../game/changelog';
 import { useInputMode } from './input';
 import { useKeydown } from './presence';
 import { IconChevron, IconChevronLeft, IconDice } from './icons';
+import { SocialStrip } from './socials';
 import { COLOR_KEYS, ClubCrest, ColorValue, colorList } from './crest';
 import { randomClubName } from '../game/names';
 import { DIVISIONS } from '../game/constants';
@@ -126,7 +127,7 @@ function SideCard({ id, state, foreign = null, pref = LANG, settings, leagues = 
       <section className="cm-card">
         <span className="eyebrow">{t('FootOFF Media')}</span>
         <p className="cm-card-lead">{tr('Le football, <0>autrement.</0>', [(c) => <em>{c}</em>])}</p>
-        <p className="cm-card-note">{t('Actualités, analyses et Stats Pass sur footoff.media. S’ouvre dans un nouvel onglet.')}</p>
+        <p className="cm-card-note">{t('Actualités, analyses et Stats Pass sur footoff.media, et les coulisses de FootOFF sur Instagram, TikTok, YouTube, X et LinkedIn.')}</p>
       </section>
     );
   }
@@ -141,7 +142,7 @@ const clubProgress = ({ name, code, progress: p }) => {
 
 // Entrées du menu principal : Continuer (s'il y a une partie ; liveNote : un match interrompu qui reprendra à la minute
 // près), Nouvelle partie, Championnats entre amis (leagues, quand ils sont ouverts), Réglages, FootOFF Media.
-function menuItems(state, { onContinue, onNew, onLang, onSettings, onRules, onNews }, liveNote = null, leagues = null, foreign = null, pref = LANG) {
+function menuItems(state, { onContinue, onNew, onLang, onSettings, onRules, onNews, onMedia }, liveNote = null, leagues = null, foreign = null, pref = LANG) {
   const saved = state || foreign; // la carrière enregistrée (foreign : fondée dans une autre langue)
   const div = saved && DIVISIONS[saved.divisionIndex];
   const summary = saved && t('{clubName} · {name} · Saison {seasonNumber}', { clubName: saved.clubName, name: div.name, seasonNumber: saved.seasonNumber });
@@ -154,7 +155,7 @@ function menuItems(state, { onContinue, onNew, onLang, onSettings, onRules, onNe
     { id: 'rules', label: t('Règles du jeu'), sub: t('Matchs, joueurs, mercato, argent, réputation'), onSelect: onRules },
     { id: 'news', label: t('Nouveautés'), sub: t('Version {CURRENT}{v}', { CURRENT, v: unseenNews() ? t(' · à lire') : '' }), badge: unseenNews(), onSelect: onNews },
     { id: 'settings', label: t('Réglages'), sub: t('Son, vibrations, fluidité, sauvegarde, signaler un problème'), onSelect: onSettings },
-    { id: 'media', label: t('FootOFF Media'), sub: 'footoff.media', href: 'https://footoff.media' },
+    { id: 'media', label: t('FootOFF Media'), sub: t('Le site et nos réseaux'), onSelect: onMedia }, // 0.8.17 : site et réseaux réunis (MediaView)
   ];
 }
 
@@ -290,12 +291,12 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
     setPreferredLang(l);
     setPref(l);
   };
-  const items = menuItems(state, { onContinue, onNew: onNewGame, onLang: () => onView('lang'), onSettings: () => onView('settings'), onRules: () => onView('rules'), onNews: () => onView('news') }, liveNote, leagues, foreign, pref);
+  const items = menuItems(state, { onContinue, onNew: onNewGame, onLang: () => onView('lang'), onSettings: () => onView('settings'), onRules: () => onView('rules'), onNews: () => onView('news'), onMedia: () => onView('media') }, liveNote, leagues, foreign, pref);
   const menu = useMenu(items, { active: active && view === 'menu' }); // l'entrée active est gardée au retour des réglages
   const current = items[Math.min(menu.cur, items.length - 1)].id;
   const [entered, setEntered] = useState(false); // la première apparition joue l'animation d'entrée complète
   useEffect(() => { const t = setTimeout(() => setEntered(true), 1400); return () => clearTimeout(t); }, []);
-  const sub = view === 'settings' || view === 'rules' || view === 'news' || view === 'lang';
+  const sub = view === 'settings' || view === 'rules' || view === 'news' || view === 'lang' || view === 'media';
   const hints = sub
     ? [['nav', t('Choisir')], ['select', t('Valider')], ['back', t('Retour')]]
     : view === 'create'
@@ -351,6 +352,13 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
             <LangView active={active} pref={pref} saved={saved} onPick={pickLang} onBack={() => onView('menu')} />
           </div>
         )}
+        {view === 'media' && (
+          <div className="ts-main ts-sub">
+            <span className="eyebrow">{t('FootOFF Empire')}</span>
+            <h2>{t('FootOFF Media')}</h2>
+            <MediaView active={active} onBack={() => onView('menu')} />
+          </div>
+        )}
         {view === 'create' && <CreateClub active={active} onCreate={onCreate} onBack={() => onView('menu')} />}
       </div>
       {!sub && (
@@ -360,7 +368,10 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
       )}
       <footer className="ts-bottom">
         <Hints items={hints} />
-        <span className="ts-legal">{tr('FootOFF Empire · bêta <0/> · <1/>', [__APP_VERSION__, __BUILD_DATE__])}</span>
+        <span className="ts-foot-end">
+          <SocialStrip className="ts-social" />
+          <span className="ts-legal">{tr('FootOFF Empire · bêta <0/> · <1/>', [__APP_VERSION__, __BUILD_DATE__])}</span>
+        </span>
       </footer>
     </div>
   );
