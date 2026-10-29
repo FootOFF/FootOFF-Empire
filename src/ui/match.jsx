@@ -749,15 +749,20 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const sceneReady = () => !preview && matchFeed.scene && document.visibilityState === 'visible';
 
   // Révèle les événements de la mi-temps jusqu'à l'instant `upTo` (compris), dans l'ordre ; s'arrête après un but sans
-  // temps fort ou une blessure (la suite attend la fin de la célébration, ou le changement).
-  const revealTo = (upTo, { through = null } = {}) => {
-    while (revealed.current < events.length && (events[revealed.current].at <= upTo || (through && events.indexOf(through) >= revealed.current))) {
+  // temps fort ou une blessure (la suite attend la fin de la célébration, ou le changement). before : révèle aussi tout
+  // ce qui est rangé avant ce temps fort, même un peu après upTo (voir l'horloge). Renvoie le dernier événement révélé.
+  const revealTo = (upTo, { through = null, before = null } = {}) => {
+    const stop = before ? events.indexOf(before) : -1;
+    let last = null;
+    while (revealed.current < events.length && (events[revealed.current].at <= upTo || revealed.current < stop || (through && events.indexOf(through) >= revealed.current))) {
       const e = events[revealed.current++];
+      last = e;
       setShown((s) => [e, ...s]);
       react(e, { highlighted: e === through });
       if (e === through) break;
       if (e.type === 'injury' || (e.type === 'goal' && !through)) break;
     }
+    return last;
   };
 
   // Temps fort : l'horloge s'arrête au début de l'action, la scène 3D la joue, le direct révèle l'événement à l'instant
@@ -823,8 +828,11 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
       clockRef.current = next;
       matchFeed.clock = next;
       setClock(Math.ceil(next)); // l'écran n'affiche que la minute : un rendu par minute de jeu, pas vingt par seconde
-      revealTo(next);
-      if (start && revealed.current === events.indexOf(start.e) && pause.current <= 0 && !hlRef.current) startHighlight(start.e, start.type);
+      // ce qui est rangé avant le temps fort mais tombe dans sa construction (l'occasion de l'autre équipe à la même minute,
+      // un carton, un mot d'ambiance) passe juste avant lui : l'horloge, arrêtée au début de l'action, ne l'atteindrait
+      // jamais, et le direct restait figé (près d'un match sur cinq, 0.8.22) ; un blessé ouvre d'abord son changement
+      const lastShown = revealTo(next, { before: start?.e });
+      if (start && lastShown?.type !== 'injury' && revealed.current === events.indexOf(start.e) && pause.current <= 0 && !hlRef.current) startHighlight(start.e, start.type);
       if (now - savedAt.current > 2000) persist();
       if (!hlRef.current && next >= end && live.halfDone && revealed.current >= events.length) {
         setPhase(half === 1 ? 'halftime' : 'fulltime');

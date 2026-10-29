@@ -5,6 +5,12 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '0.8.22', date: '2026-10-29', title: t('Le direct ne se fige plus'),
+    items: [
+      t('Le direct ne s’arrête plus avant un temps fort : un événement tombé juste avant (l’occasion de l’autre équipe à la même minute, un carton, un mot du commentateur) figeait l’horloge pour de bon, à ×1 comme à ×4, en solo comme en ligue. Il s’affiche maintenant juste avant le temps fort.'),
+    ],
+  },
+  {
     version: '0.8.21', date: '2026-10-29', title: t('Des temps forts plus vrais'),
     items: [
       t('Les gardiens portent enfin leur tenue : manches longues à la couleur de leur maillot et gants.'),
