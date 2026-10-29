@@ -40,11 +40,15 @@ export class Agent {
     this.x += this.vx * dt; this.z += this.vz * dt;
     this.speed = Math.hypot(this.vx, this.vz);
     let target = this.h;
-    if (look && fx !== undefined) target = Math.atan2(fz - this.z, fx - this.x);
+    const kicking = this.kick > 0 && this.kickH !== undefined; // frappe : le corps se tourne vers la cible (0.8.20)
+    if (kicking) target = this.kickH;
+    else if (look && fx !== undefined) target = Math.atan2(fz - this.z, fx - this.x);
     else if (this.speed > 0.05) target = Math.atan2(this.vz, this.vx);
     else if (fx !== undefined) target = Math.atan2(fz - this.z, fx - this.x);
     const diff = wrapAngle(target - this.h);
-    this.h += THREE.MathUtils.clamp(diff, -TURN * dt, TURN * dt);
+    // demi-tour : il pivote plus vite (on ne court pas longtemps à reculons) ; une frappe se tourne vite vers sa cible
+    const rate = kicking ? TURN * 3 : Math.abs(diff) > 1.6 ? TURN * 1.7 : TURN;
+    this.h += THREE.MathUtils.clamp(diff, -rate * dt, rate * dt);
     // foulée : un cycle complet (deux pas) couvre 1,6 m en marchant, jusqu'à 3,8 m en sprint
     const g = THREE.MathUtils.clamp(this.speed / 0.7, 0, 1);
     this.gait += (g - this.gait) * Math.min(1, dt * 8);

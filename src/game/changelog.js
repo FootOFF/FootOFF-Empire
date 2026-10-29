@@ -5,6 +5,16 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '0.8.21', date: '2026-10-29', title: t('Des temps forts plus vrais'),
+    items: [
+      t('Les gardiens portent enfin leur tenue : manches longues à la couleur de leur maillot et gants.'),
+      t('La défense se place mieux : seule sa dernière ligne recule devant l’attaquant le plus avancé, le milieu tient sa ligne devant elle.'),
+      t('Sur une passe en profondeur, les défenseurs les plus proches se retournent et courent vers leur but.'),
+      t('Le tireur se tourne vers le but en armant sa frappe, et un joueur qui recule fait des pas en arrière au lieu de glisser.'),
+      t('Après un but, le buteur célèbre à l’approche du coin et ses coéquipiers le rejoignent ; le ralenti repart de l’action, sans la célébration.'),
+    ],
+  },
+  {
     version: '0.8.20', date: '2026-10-29', title: t('Le match d’abord'),
     items: [
       t('Championnats entre amis : le score se découvre en regardant son match. Le bouton « Regarder » s’illumine, et les résultats et le classement de la journée restent cachés tant que tu ne l’as pas vu.'),

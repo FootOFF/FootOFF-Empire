@@ -21,6 +21,8 @@ const BASE_H = 1.73; // taille du corps de base (m)
 const URL = `${import.meta.env.BASE_URL}models/players/`;
 const GAIT_NAMES = ['Idle_Loop', 'Walk_Loop', 'Jog_CMU_A', 'Run_CMU_B', 'Run_CMU_C', 'Jog_Fwd_Loop', 'Sprint_Loop'];
 const KICK_TIME = 0.6; const KICK_CONTACT = 0.55; // matchplay.js : la frappe dure 0,6 s, contact à 55 %
+const CELEBRATIONS = ['Celebrate_1', 'Celebrate_2', 'Celebrate_3'];
+const GLOVE_HEX = 0xf1efe9; // gants du gardien : blanc cassé
 
 let loading = null;
 let A = null; // ressources prêtes : { base, clips, gaits, marks, mask (pilosité), skins (trois peaux) }
@@ -60,7 +62,32 @@ async function build() {
     clips[c.name] = new THREE.AnimationClip(c.name, c.duration, tracks);
   }
   clips.Save_1_M = mirrorClip(clips.Save_1, 'Save_1_M');
+  // Gardiens (0.8.20, remarque du PDG : ni gants ni tenue de gardien) : manches longues et gants peints sur la peau des
+  // bras et des mains, d'après les os qui la portent (poids des os du bras, de la main et des doigts, par sommet) ; ils
+  // suivent ainsi chaque geste. Attribut aKit : (manche, gant).
+  const SLEEVE = /^(upperarm|lowerarm)_/;
+  const GLOVE = /^(hand|thumb|index|middle|ring|pinky)_/;
+  base.scene.traverse((o) => {
+    const si = o.isSkinnedMesh && o.geometry.attributes.skinIndex;
+    if (!si) return;
+    const sw = o.geometry.attributes.skinWeight;
+    const cls = o.skeleton.bones.map((bn) => (GLOVE.test(bn.name) ? 2 : SLEEVE.test(bn.name) ? 1 : 0));
+    const kit = new Float32Array(si.count * 2);
+    for (let v = 0; v < si.count; v++) {
+      for (let k = 0; k < 4; k++) {
+        const c = cls[si.getComponent(v, k)];
+        if (c) kit[v * 2 + c - 1] += sw.getComponent(v, k);
+      }
+    }
+    o.geometry.setAttribute('aKit', new THREE.BufferAttribute(kit, 2));
+  });
   A = { base, clips, mask, knit, skins };
+  // célébrations : celles où le joueur se laisse glisser à genoux (le bassin descend de plus d'un quart) sont gardées au
+  // buteur, qui arrive lancé ; ses coéquipiers, arrêtés près de lui, lèvent les bras debout
+  A.slides = new Set(CELEBRATIONS.filter((n) => {
+    const y = probe(n, (r) => wpos(r, 'pelvis').y);
+    return Math.min(...y) < y[0] * 0.75;
+  }));
   A.gaits = GAIT_NAMES.map((n, j) => (j === 0 ? { name: n, nat: 0, contacts: { l: [[0, 1]], r: [[0, 1]] } } : { name: n, ...analyzeGait(n) }));
   A.gaits.sort((a, b) => a.nat - b.nat);
   A.marks = {
@@ -209,7 +236,10 @@ function paintable(mat, u) {
     sh.uniforms.uBeard = u.beard;
     sh.uniforms.uHair = u.hair;
     sh.uniforms.uScalp = u.scalp;
-    sh.fragmentShader = `uniform sampler2D uMask;\nuniform vec4 uBeard;\nuniform vec3 uHair;\nuniform vec3 uScalp;\n${sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+    sh.uniforms.uSleeve = u.sleeve; // gardien : manches longues (couleur, 1) ; sinon (…, 0)
+    sh.uniforms.uGlove = u.glove;
+    sh.vertexShader = `attribute vec2 aKit;\nvarying vec2 vKit;\n${sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vKit = aKit;')}`;
+    sh.fragmentShader = `uniform sampler2D uMask;\nuniform vec4 uBeard;\nuniform vec3 uHair;\nuniform vec3 uScalp;\nuniform vec4 uSleeve;\nuniform vec4 uGlove;\nvarying vec2 vKit;\n${sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
   float hairK = 0.0;
   {
     vec4 fm = texture2D(uMask, vMapUv);
@@ -224,7 +254,10 @@ function paintable(mat, u) {
     float k = mix(smoothstep(n - 0.18, n + 0.18, d) * min(1.0, d * 2.0), d * 0.9, far);
     hairK = clamp(k, 0.0, 1.0);
     diffuseColor.rgb = mix(diffuseColor.rgb, hairCol, hairK * 0.9);
-  }`).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = mix(roughnessFactor, 0.95, hairK); // poil mat')}`;
+  }
+  float sleeveK = clamp(vKit.x * 1.6, 0.0, 1.0) * uSleeve.a;
+  float gloveK = clamp(vKit.y * 1.6, 0.0, 1.0) * uGlove.a;
+  diffuseColor.rgb = mix(mix(diffuseColor.rgb, uSleeve.rgb, sleeveK), uGlove.rgb, gloveK);`).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = mix(mix(roughnessFactor, 0.95, hairK), 0.88, max(sleeveK, gloveK)); // poil, tissu et gants mats')}`;
   };
   mat.customProgramCacheKey = () => 'footoff-peau';
 }
@@ -266,7 +299,7 @@ export function createPlayers3D(parent, max = 22) {
   function make(i) {
     const root = SkeletonUtils.clone(A.base.scene);
     const mats = {}; const hairs = {}; const brows = {}; const meshes = [];
-    const u = { beard: { value: new THREE.Vector4() }, hair: { value: new THREE.Color() }, scalp: { value: new THREE.Color() } };
+    const u = { beard: { value: new THREE.Vector4() }, hair: { value: new THREE.Color() }, scalp: { value: new THREE.Color() }, sleeve: { value: new THREE.Vector4() }, glove: { value: new THREE.Vector4() } };
     root.traverse((o) => {
       if (!o.isMesh) return;
       o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false;
@@ -348,7 +381,8 @@ export function createPlayers3D(parent, max = 22) {
     }
     let stride = 0; let tw = 0;
     for (let j = 1; j < g.length; j++) if (w[j] > 0) { stride += w[j] * g[j].nat * p.k * g[j].dur; tw += w[j]; }
-    if (tw > 0) p.phase = (p.phase + (v * dt) / (stride / tw)) % 1;
+    // à reculons (p.back) : la foulée se rejoue à rebours
+    if (tw > 0) p.phase = ((p.phase + ((p.back > 0.5 ? -1 : 1) * v * dt) / (stride / tw)) % 1 + 1) % 1;
     g.forEach((x, j) => { x.a.time = j === 0 ? (x.a.time + dt) % x.dur : p.phase * x.dur; x.a.setEffectiveWeight(w[j] * p.locoW); });
     const on = (iv) => iv.some(([a, b]) => (a <= b ? p.phase >= a && p.phase <= b : p.phase >= a || p.phase <= b));
     let cl = 0; let cr = 0; let cw = 0;
@@ -401,6 +435,12 @@ export function createPlayers3D(parent, max = 22) {
     // vitesse réelle : le déplacement de l'agent (ralentis compris), jamais une consigne ; un saut de position (changement
     // de plan) reprend la vitesse du moteur
     const d = p.lx === undefined ? Infinity : Math.hypot(ag.x - p.lx, ag.z - p.lz) * 10; // unités du jeu (10 m) -> m
+    // à reculons (0.8.20, remarque du PDG : des joueurs glissaient à l'envers) : le déplacement contre le regard fait
+    // jouer la foulée à rebours, un pas en arrière, au lieu d'une course en avant qui glisse vers l'arrière
+    if (d < 3 && d > 1e-4) {
+      const fwd = ((ag.x - p.lx) * Math.cos(ag.h) + (ag.z - p.lz) * Math.sin(ag.h)) * 10 / d;
+      p.back = (p.back || 0) + ((fwd < -0.35 ? 1 : 0) - (p.back || 0)) * Math.min(1, dt * 10);
+    }
     p.lx = ag.x; p.lz = ag.z;
     const v = d > 3 ? (ag.speed || 0) * 10 : d / Math.max(dt, 1e-4);
     p.speed = d > 3 ? v : p.speed + (v - p.speed) * Math.min(1, dt * 12);
@@ -415,7 +455,11 @@ export function createPlayers3D(parent, max = 22) {
       gesture(p, name, { at: A.marks[name] - 0.32, fade: 0.1 });
     }
     p.pose = pose;
-    if (ag.cheer > 0.3 && !p.cheering) { p.cheering = true; gesture(p, ['Celebrate_1', 'Celebrate_2', 'Celebrate_3'][p.seed % 3], { fade: 0.3 }); }
+    if (ag.cheer > 0.3 && !p.cheering) { // le buteur : toutes les célébrations ; ses coéquipiers : debout (jamais à genoux)
+      const pool = ag.scorer ? CELEBRATIONS : CELEBRATIONS.filter((n) => !A.slides.has(n));
+      p.cheering = true;
+      gesture(p, (pool.length ? pool : CELEBRATIONS)[p.seed % (pool.length || CELEBRATIONS.length)], { fade: 0.3 });
+    }
     if (ag.cheer < 0.05) p.cheering = false;
     if (p.shot && p.shot.time >= p.shotEnd - 0.05 && !p.cheering && pose !== 2) endGesture(p);
   }
@@ -429,6 +473,20 @@ export function createPlayers3D(parent, max = 22) {
       for (const m of p.mats.Kit_Socks || []) m.color.setHex(hex);
       for (const m of p.mats.Kit_Shorts || []) m.color.setHex(trim);
       for (const m of p.mats.Kit_Trim || []) m.color.setHex(trim); // col et bords des manches
+      // le gardien (premier de chaque onze) : manches longues de son maillot, gants
+      const keeper = i % 11 === 0;
+      const c = new THREE.Color(hex);
+      p.u.sleeve.value.set(c.r, c.g, c.b, keeper ? 1 : 0);
+      const g = new THREE.Color(GLOVE_HEX);
+      p.u.glove.value.set(g.r, g.g, g.b, keeper ? 1 : 0);
+    },
+    reset() { // ralenti (matchplay.js) : chacun repart de sa place au début de l'action, sans le geste en cours ni l'appui
+      for (const p of slots) {
+        if (!p) continue;
+        if (p.shot) { p.shot.stop(); p.shot = null; }
+        p.cheering = false; p.locoW = 1; p.fade = 0; p.prevKick = 0; p.pose = 0; p.lx = undefined; p.back = 0;
+        for (const L of p.legs) { L.lock = null; L.w = 0; L.prevA = null; L.free = false; }
+      }
     },
     setIdentity(i, id) { identity(slots[i] || make(i), id); },
     setAgent(i, ag, y, scale = 0.1) {
@@ -483,6 +541,7 @@ export function createPlayersAuto(parent, max, makeProcedural) {
     get is3d() { return is3d; },
     set timeScale(v) { cur.timeScale = v; },
     setKit(i, ...a) { kits[i] = a; cur.setKit(i, ...a); },
+    reset: () => cur.reset?.(),
     setIdentity(i, d) { ids[i] = d; cur.setIdentity?.(i, d); },
     setAgent: (...a) => cur.setAgent(...a),
     commit: (n) => cur.commit(n),

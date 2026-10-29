@@ -199,6 +199,7 @@ export function createMatchScene(parent) {
   // pendant la construction, chacun remonte de son point de départ vers sa place de finale (u reculé de shift au début)
   const lagAt = (i, t) => (H.shift && slotOf(i) > 0 ? H.shift * (1 - clamp(t / Math.max(0.5, H.bT), 0, 1)) : 0);
   const planAt = (i, t) => { const [u, v] = H.home.get(i); return [u - lagAt(i, t), v]; };
+  const roleOf = (i) => slotsOf(S.formation[teamOf(i)])[slotOf(i)]; // poste d'un joueur : G, D, M ou A
   // joueurs encore sur la pelouse, par poste
   function rolesOf(t) {
     const r = { G: [], D: [], M: [], A: [] };
@@ -883,7 +884,7 @@ export function createMatchScene(parent) {
         rcv.steer(hx, hz, Math.min(SPRINT, Math.hypot(hx - rcv.x, hz - rcv.z) / Math.max(0.15, lead - 0.05) + 0.05), dt, b.x, b.z);
         if (!gather(bt.from, dt)) return; // le passeur doit d'abord avoir le ballon
         // il frappe en finissant de se tourner, quand son receveur est en jeu (il attend son appel, au plus 1,6 s)
-        if (!p.kick && (p.facing(tx, tz) < 1.0 || H.bt > 0.35) && (onside(bt.to) || H.bt > 1.6)) { p.kick = 0.001; p.kickKind = 'pass'; }
+        if (!p.kick && (p.facing(tx, tz) < 1.0 || H.bt > 0.35) && (onside(bt.to) || H.bt > 1.6)) { p.kick = 0.001; p.kickKind = 'pass'; p.kickH = Math.atan2(tz - p.z, tx - p.x); }
         p.steer(p.x, p.z, 0, dt, tx, tz);
         if (p.kick >= KICK_CONTACT) {
           if (!onside(bt.to)) H.offside = (H.offside || 0) + 1; // mesure (banc) : jamais atteint
@@ -913,7 +914,10 @@ export function createMatchScene(parent) {
         rcv.steer(gx, gz, left > 0 ? Math.min(SPRINT, Math.hypot(gx - rcv.x, gz - rcv.z) / Math.max(0.08, tl) + 0.02) : 0.4, dt, b.x, b.z);
       }
       // reprise du pied : l'élan commence avant que le ballon n'arrive ; de la tête : il saute
-      if (firstShot && shot.style !== 'head' && left <= ARMED && !rcv.kick) { rcv.kick = 0.001; rcv.kickKind = 'shot'; }
+      if (firstShot && shot.style !== 'head' && left <= ARMED && !rcv.kick) { // reprise : le corps se tourne vers le but pendant l'élan (il tirait parfois dans le sens de sa course)
+        const [gx, gz] = at(GOAL_X, 0);
+        rcv.kick = 0.001; rcv.kickKind = 'shot'; rcv.kickH = Math.atan2(gz - rcv.z, gx - rcv.x);
+      }
       if (headed) {
         const jt = 0.32;
         rcv.lift = left < jt && left > -jt ? 0.07 * Math.max(0, 1 - (left / jt) ** 2) : rcv.lift * 0.8;
@@ -945,7 +949,7 @@ export function createMatchScene(parent) {
       if (!gather(bt.who, dt)) return;
       const [gx, gz] = at(GOAL_X, 0);
       p.steer(p.x, p.z, 0, dt, gx, gz);
-      if (!p.kick) { p.kick = 0.001; p.kickKind = 'shot'; }
+      if (!p.kick) { p.kick = 0.001; p.kickKind = 'shot'; p.kickH = Math.atan2(gz - p.z, gx - p.x); }
       if (p.kick >= KICK_CONTACT) { bt.launched = true; shoot(bt.who, bt.style); }
       return;
     }
@@ -1013,6 +1017,21 @@ export function createMatchScene(parent) {
       }
       if (bd > 1.2) chaser = -1; // trop loin : il garde sa place
     }
+    // passe en profondeur, face-à-face (0.8.20, remarque du PDG : la défense restait inerte) : les deux défenseurs les
+    // plus proches du point visé, puis du porteur, se retournent et courent vers leur but, battus de peu (l'issue est
+    // celle du moteur : ils ne le rattrapent pas)
+    const chase = new Set();
+    let chaseTo = null;
+    const cur = H.beats[H.k];
+    if (H.oneOnOne && !H.shot) {
+      if (cur?.t === 'pass' && cur.style === 'through' && cur.launched && cur.target) chaseTo = cur.target;
+      else if (b.state === 'held' && b.owner === H.shooter) chaseTo = [agents[H.shooter].x, agents[H.shooter].z];
+    }
+    if (chaseTo) {
+      teamIdx(D).filter((i) => active(i) && slotOf(i) > 0 && !H.busy.has(i) && !H.wall?.has(i))
+        .map((i) => [i, Math.hypot(agents[i].x - chaseTo[0], agents[i].z - chaseTo[1])])
+        .sort((x, y) => x[1] - y[1]).slice(0, 2).forEach(([i]) => chase.add(i));
+    }
     for (let i = 0; i < N; i++) {
       if (!active(i) || H.busy.has(i)) continue;
       const a = agents[i];
@@ -1046,6 +1065,11 @@ export function createMatchScene(parent) {
         steerUV(i, Math.min(tu, line), hv + (bv - hv) * 0.08 + Math.cos(w * 0.8) * 0.18, 0.3, dt, [b.x, b.z]);
         continue;
       }
+      if (chase.has(i)) { // course de repli, côté but du point visé ou du porteur
+        const [cu, cv] = uvOf(chaseTo[0], chaseTo[1]);
+        steerUV(i, Math.min(GOAL_X - 0.15, cu + 0.18), cv * 0.9, 0.6, dt, [b.x, b.z]);
+        continue;
+      }
       if (i === chaser) { // ballon libre : le défenseur le plus proche va le disputer
         steerUV(i, bu, bv, 0.55, dt, [b.x, b.z]);
         continue;
@@ -1068,7 +1092,10 @@ export function createMatchScene(parent) {
       }
       // la défense ne laisse personne partir dans son dos : chacun reste plus près de son but que l'attaquant le plus avancé
       // (c'est elle qui recule, l'attaquant reste en jeu) ; en attendant, de petits pas d'ajustement, jamais planté
-      const goalSide = Math.min(GOAL_X - 0.22, deepest + 0.06);
+      // seule la ligne défensive (0.8.20, remarque du PDG : toute l'équipe s'alignait en retrait) : le milieu tient sa
+      // ligne une dizaine de mètres devant, l'attaque plus haut encore
+      const role = roleOf(i);
+      const goalSide = Math.min(GOAL_X - 0.22, deepest + 0.06) - (role === 'D' ? 0 : role === 'M' ? 0.95 : 2.1);
       const k = slotOf(i), w = H.t * (0.7 + k * 0.05) + k * 2.3;
       if (mark) steerUV(i, Math.max(Math.min(GOAL_X - 0.2, mark[0] + 0.1), goalSide), mark[1] * 0.9, 0.5, dt, [b.x, b.z]);
       else {
@@ -1164,6 +1191,7 @@ export function createMatchScene(parent) {
   }
   function startReplay() {
     H.phase = 'replay';
+    players.reset?.(); // chacun repart de sa place au début de l'action, sans la célébration en cours (0.8.20)
     H.replayAngle = H.r() < 0.5 ? 'goal' : 'low'; // derrière la cage, ou au ras de la pelouse
     H.rt = Math.max(H.rec[0].t, H.revealT - REPLAY_BEFORE);
     H.rEnd = Math.min(H.rec[H.rec.length - 1].t, H.revealT + REPLAY_AFTER);
@@ -1257,13 +1285,22 @@ export function createMatchScene(parent) {
     // frappes, plongeons, sauts, chutes, joie (bras levés de l'équipe qui vient de marquer)
     const replay = H?.phase === 'replay';
     const cheerTeam = H && H.phase === 'react' && H.outcome === 'g' ? H.A : -1;
+    const sc = cheerTeam >= 0 ? agents[H.shooter] : null;
+    const celTo = cheerTeam >= 0 && H.cel ? at(...H.cel.to) : null;
     if (!replay) {
       agents.forEach((a, i) => {
-        if (a.kick > 0) { a.kick += (dt * (H?.speed || 1)) / KICK_TIME; if (a.kick >= 1) a.kick = 0; }
+        if (a.kick > 0) { a.kick += (dt * (H?.speed || 1)) / KICK_TIME; if (a.kick >= 1) { a.kick = 0; a.kickH = undefined; } }
         if (a.leanHold > 0) a.leanHold -= dt; else a.leanTo *= Math.max(0, 1 - dt * 2.5); // le gardien se relève
         a.lean += (a.leanTo - a.lean) * Math.min(1, dt * 12);
         if (Math.abs(a.lean) < 0.003 && Math.abs(a.leanTo) < 0.003) a.lean = a.leanTo = 0;
-        const cheer = teamOf(i) === cheerTeam && slotOf(i) !== 0 ? 1 : 0;
+        // la joie (0.8.20, remarque du PDG : toute l'équipe célébrait en courant, glissades à genoux comprises) : le buteur
+        // à l'approche de son coin ou après sa course, ses coéquipiers une fois arrêtés près de lui
+        a.scorer = H?.shooter === i;
+        let cheer = 0;
+        if (teamOf(i) === cheerTeam && slotOf(i) !== 0) {
+          if (a.scorer) cheer = !celTo || Math.hypot(a.x - celTo[0], a.z - celTo[1]) < 0.55 || H.react > 1.7 ? 1 : 0;
+          else cheer = sc && a.speed < 0.16 && Math.hypot(a.x - sc.x, a.z - sc.z) < 0.45 ? 1 : 0;
+        }
         a.cheer += (cheer - a.cheer) * Math.min(1, dt * (cheer ? 5 : 2.5));
         if (a.cheer < 0.005) a.cheer = 0;
         if (a.lift && !(H?.busy.has(i))) a.lift = Math.max(0, a.lift - dt * 0.4);
