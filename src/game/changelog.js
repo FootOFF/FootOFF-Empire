@@ -5,6 +5,12 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '0.8.16', date: '2026-10-29', title: t('Un écran qui reste en place'),
+    items: [
+      t('Au téléphone, debout comme couché, un glissement parti du bord de l’écran ne fait plus défiler la page vers l’écran d’avant ou d’après, sur tous les écrans du jeu et plus seulement en match.'),
+    ],
+  },
+  {
     version: '0.8.15', date: '2026-10-29', title: t('Des temps forts plus vrais'),
     items: [
       t('Le hors-jeu est respecté : la défense ne laisse aucun attaquant partir dans son dos avant la passe, et l’attaquant règle sa course sur l’avant-dernier défenseur.'),

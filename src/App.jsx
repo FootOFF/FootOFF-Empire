@@ -314,11 +314,13 @@ export default function App({ preview = null }) {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
-  // En match (0.8.10, demande du PDG) : le glissement depuis le bord de l'écran (iPhone : retour, avance) ne s'amorce plus.
+  // Partout dans le jeu (0.8.10 en match, 0.8.16 sur tous les écrans, demande du PDG : au téléphone couché, glisser de
+  // côté faisait défiler la page) : le glissement depuis le bord de l'écran (iPhone : retour, avance) ne s'amorce plus.
   // La garde ci-dessus empêchait le retour, mais Safari montrait encore l'image de l'écran d'avant pendant le geste :
-  // un toucher qui commence à moins de EDGE du bord est retenu. Un toucher bref sur un bouton du bord reste un clic.
+  // un toucher qui commence à moins de EDGE du bord est retenu. Un toucher bref sur un bouton du bord reste un clic,
+  // sur un champ il y place le curseur.
   useEffect(() => {
-    if (!inMatch) return undefined;
+    if (preview) return undefined;
     const EDGE = 24;
     let held = null; // { target, x, y } : toucher retenu au bord
     const start = (e) => {
@@ -331,9 +333,11 @@ export default function App({ preview = null }) {
       if (!held) return;
       const t = e.changedTouches[0];
       const tap = Math.hypot(t.clientX - held.x, t.clientY - held.y) < 10;
-      const el = held.target instanceof Element ? held.target.closest('button, a, [role="button"], input, label') : null;
+      const el = held.target instanceof Element ? held.target.closest('button, a, [role="button"], input, select, textarea, label') : null;
       held = null;
-      if (tap && el && !el.disabled) el.click();
+      if (!tap || !el || el.disabled) return;
+      if (el.matches('textarea, select, input:not([type="checkbox"], [type="radio"], [type="button"], [type="submit"])')) el.focus();
+      else el.click();
     };
     document.addEventListener('touchstart', start, { passive: false, capture: true });
     document.addEventListener('touchend', end, { capture: true });
@@ -341,7 +345,7 @@ export default function App({ preview = null }) {
       document.removeEventListener('touchstart', start, { capture: true });
       document.removeEventListener('touchend', end, { capture: true });
     };
-  }, [inMatch]);
+  }, [preview]);
 
   const run = (fn, failMsg) => {
     const base = clone(state);
