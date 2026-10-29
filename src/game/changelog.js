@@ -5,6 +5,16 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '0.8.19', date: '2026-10-29', title: t('Jouable à la manette'),
+    items: [
+      t('Le jeu se joue entièrement à la manette : croix ou stick gauche pour se déplacer, A pour valider, B pour revenir, X pour bâtir, Y pour jouer, LB et RB pour changer de section, clic des sticks pour passer d’un bâtiment à l’autre, stick droit et gâchettes pour la caméra.'),
+      t('Un cadre doré montre ce qui est choisi et un rappel des boutons s’affiche à l’écran. Rien ne change au clavier, à la souris ni au doigt.'),
+      t('Construire ou améliorer un bâtiment ne fige plus l’image : un anneau doré tourne au sol du chantier le temps que le bâtiment se prépare.'),
+      t('En arabe, l’écran de chargement s’écrit de droite à gauche dès la première image, sa barre se remplit depuis la droite, et le logo garde partout sa forme officielle.'),
+      t('Sur téléphone, les explications du menu de l’écran titre ne sont plus coupées, et sur tablette le pronostic de la carte du prochain match ne déborde plus.'),
+    ],
+  },
+  {
     version: '0.8.18', date: '2026-10-29', title: t('Des joueurs en 3D réalistes'),
     items: [
       t('Pendant les temps forts, les joueurs ont de vrais corps : des carrures moins massives, des tailles qui changent selon le poste, et des visages tous différents.'),

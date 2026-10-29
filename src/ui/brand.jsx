@@ -28,10 +28,11 @@ export function FOMonogram({ className, title = t('FootOFF'), flat = false }) {
   );
 }
 
-// Lockup horizontal façon FootOFF Media : monogramme | FootOFF / <sous-titre espacé>.
+// Lockup horizontal façon FootOFF Media : monogramme | FootOFF / <sous-titre espacé>. Toujours dans cet ordre, même
+// en arabe (dir="ltr") : un logo ne se retourne pas.
 export function FootOFFLockup({ sub = t('Empire'), size = 'md', className = '' }) {
   return (
-    <span className={`lockup lockup-${size} ${className}`}>
+    <span className={`lockup lockup-${size} ${className}`} dir="ltr">
       <FOMonogram className="lockup-mark" />
       <span className="lockup-sep" aria-hidden="true" />
       <span className="lockup-text">

@@ -339,6 +339,7 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .hud-match-title.long { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: .95; } /* hud.jsx useFitText */
 .hm-odds { display: flex; align-items: center; gap: 9px; font-size: 12px; line-height: 1; color: var(--muted); white-space: nowrap; }
 .hm-odds b { font-weight: 600; color: var(--text); }
+.hm-odds-short { display: none; }
 .tri { display: flex; gap: 2px; width: 78px; height: 4px; flex-shrink: 0; }
 .tri i { display: block; height: 100%; flex: 0 0 0; min-width: 2px; }
 .tri i:nth-child(1) { background: var(--gold-light); }
@@ -348,6 +349,20 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .hud-match .btn svg { width: 16px; height: 16px; }
 
 /* ---- menu du bas (hud.jsx Dock) : le seul verre du jeu ---- */
+/* Manette, dans le complexe : les boutons utiles, en colonne en bas à gauche (jamais sous le menu du bas), discrets
+   (PC et tablette) */
+/* plaque opaque comme la fiche des bâtiments (le verre est réservé au menu du bas) */
+.pad-hints { position: absolute; left: var(--gap); bottom: var(--hud-bottom); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 16px; border-radius: 14px; background: rgb(12, 12, 13); border: 1px solid var(--line); font-size: 14px; color: var(--text-2); pointer-events: none; }
+.pad-hints.pad-sheet { left: calc(2 * var(--gap) + var(--rail-w, 320px)); bottom: calc(var(--hud-bottom) + 84px); } /* à côté de la fiche, qui tient la colonne de gauche, au-dessus du menu du bas */
+.pad-hint { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.pad-btn { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; font-style: normal; font-family: var(--font-disp); font-weight: 700; font-size: 13px; line-height: 1; color: var(--text); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .45); }
+.pad-btn.face { background: var(--gold-grad); color: #0d0b07; box-shadow: none; }
+.pad-btn.wide { border-radius: 6px; }
+@media (max-width: 760px) { .pad-hints { display: none; } }
+/* sous 1260 px, le menu du bas se cale à gauche (plus bas) : les aides passent au-dessus de lui */
+@media (min-width: 761px) and (max-width: 1260px), (orientation: landscape) and (max-height: 500px) and (max-width: 1260px) {
+  .pad-hints { bottom: calc(var(--hud-bottom) + 84px); }
+}
 .hud-dock {
   position: absolute; bottom: var(--hud-bottom); left: 50%; transform: translateX(-50%); isolation: isolate;
   display: flex; align-items: center; gap: 2px; padding: 6px; border-radius: 26px;
@@ -2191,6 +2206,8 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
   .hud-meta-round { display: inline; }
   .hud-match { width: 340px; }
   .hud-match .btn { padding: 0 calc(10px + var(--slant)); font-size: 19px; }
+  .hm-odds-long { display: none; } /* « 67 % de victoire » était coupé par le bouton : le pourcentage seul, à côté de la jauge */
+  .hm-odds-short { display: inline; }
   .hud-dock button { width: 72px; }
 }
 
@@ -2289,6 +2306,12 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
    une souris. Appui : léger enfoncement, sur tous les appareils, pour sentir que le tap est pris en compte. */
 :focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
 :focus:not(:focus-visible) { outline: none; }
+/* manette : le focus donné par la navigation est toujours marqué (le navigateur ne le marque pas toujours de lui-même) */
+/* manette : le cadre de sélection (.pad-ring, ui/input.js) remplace le contour, que les boutons en biais rognaient ;
+   3 px Champagne à 3 px de l'élément, plus épais et plus clair que les liserés dorés, lisible à distance */
+html[data-input="gamepad"] :focus { outline: none !important; }
+/* rtl:ignore */
+.pad-ring { position: fixed; left: 0; top: 0; z-index: 2147483000; display: none; box-sizing: border-box; border: 3px solid #e7cc8c; pointer-events: none; }
 [tabindex="-1"]:focus { outline: none; } /* fenêtres qui reçoivent le focus à l'ouverture */
 .chips button:focus-visible, .segmented button:focus-visible, .sq-tabs button:focus-visible { outline-offset: -2px; } /* dans un conteneur qui rogne */
 .sq-table tbody tr:focus-visible { outline: none; }
@@ -3425,6 +3448,12 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
    garde sa ligne d'explication */
 @media (max-height: 760px) and (min-width: 761px) { .ts .cm-item:not(.on) .cm-sub { display: none; } }
 @media (max-height: 860px) and (min-width: 761px) { html[lang="ar"] .ts .cm-item:not(.on) .cm-sub { display: none; } }
+/* téléphone debout : la ligne d'explication passe sur deux lignes au lieu d'être coupée (« … ») ; sur un petit
+   téléphone (moins de 740 px de haut), où deux lignes feraient sortir le menu de l'écran (c'était déjà le cas en
+   arabe), seule l'entrée choisie la garde, comme sur une fenêtre basse */
+@media (max-width: 760px) and (min-height: 740px) { .ts .cm-sub { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; } }
+@media (max-width: 760px) and (max-height: 739px) { .ts .cm-item:not(.on) .cm-sub { display: none; } }
+@media (max-width: 760px) and (max-height: 769px) { html[lang="ar"] .ts .cm-item:not(.on) .cm-sub { display: none; } } /* l'arabe, plus haut de ligne */
 /* Fondation du club dans une fenêtre peu haute : le formulaire se resserre (accroche retirée, écusson et sélecteurs
    plus compacts) ; s'il ne tient toujours pas (téléphone à l'horizontale), la colonne défile, sans jamais passer sous
    la barre du haut ni sous l'aide des commandes. L'aide et la mention du bas ne captent jamais un clic : un bouton
@@ -5678,7 +5707,8 @@ html[lang="ar"] {
   --font-disp: 'Barlow Condensed', 'Cairo', 'Arial Narrow', system-ui, sans-serif;
   --font-title: 'Geist', 'Cairo', system-ui, sans-serif;
 }
-html[lang="ar"] *, html[lang="ar"] *::before, html[lang="ar"] *::after { letter-spacing: normal !important; }
+/* sauf les mots latins des logos (FootOFF / EMPIRE, écran de chargement, écran titre) : le logo officiel garde son espacement */
+html[lang="ar"] :not(.ld-words, .ld-words *, .lockup-text, .lockup-text *), html[lang="ar"] *::before, html[lang="ar"] *::after { letter-spacing: normal !important; }
 /* écran titre en arabe (0.8.17, revue de marque) : l'interligne de Cairo allonge le menu d'une centaine de pixels ; sur
    ordinateur, il se resserre donc plus tôt, sans jamais passer sous la mention du haut ni sous l'aide du bas */
 @media (max-height: 980px) and (min-width: 761px) {

@@ -13,7 +13,7 @@ import { applyUpdate } from './ui/updates';
 import { CrashScreen } from './ui/crash';
 import { clone } from './game/utils';
 import Empire2D from './ui/EmpireView';
-import { Dock, MatchCta, ObjectiveWidget, SceneTools, TopHud } from './ui/hud';
+import { Dock, MatchCta, ObjectiveWidget, PadHints, SceneTools, TopHud } from './ui/hud';
 import { Notifications, useNotifications } from './ui/notify';
 import { TipLayer } from './ui/tips';
 import { JournalPanel, SeasonPanel } from './ui/panels';
@@ -45,14 +45,14 @@ import { setOurKit } from './game/kits';
 import { TitleScreen } from './ui/title';
 import { PauseMenu } from './ui/pause';
 import { setUiSound } from './ui/console';
-import './ui/input'; // manette : traduite en touches du clavier pour tous les menus
+import { padFocusDefault } from './ui/input'; // manette : traduite en touches du clavier pour tous les menus
 import { moneyBurst } from './ui/moneyfx';
 import { previewState, previewUi, silentSound } from './ui/preview';
 import { FacesSheet } from './ui/facesheet';
 import { canVibrate, haptic, setVibration, vibrationEnabled } from './ui/haptics';
 import { fluidEnabled, setFluid } from './three/adapt';
 import { actionablePlots, dismissTip, dockSignals, seasonEndForecast, sessionPin, staffTip } from './game/advice';
-import { allowedBuildingsFor, plotBuilding, plotOf } from './game/map';
+import { PLOTS, allowedBuildingsFor, plotBuilding, plotOf } from './game/map';
 import { leavingYouth, missionCount } from './game/academy';
 import { advanceTutorial, setTutorialStep, stepContent } from './game/tutorial';
 import { roundKey } from './game/mercato';
@@ -266,6 +266,23 @@ export default function App({ preview = null }) {
       });
     }
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Manette : L3 et R3 (clic des sticks) passent d'un bâtiment du complexe à son voisin et ouvrent sa fiche, comme un
+  // clic sur le bâtiment en 3D (ui/input.js). Réinscrit à chaque rendu : lit toujours l'état courant.
+  useEffect(() => {
+    if (!hudKeys) return undefined;
+    const onPlot = (e) => {
+      const built = PLOTS.filter((p) => plotBuilding(state, p.id));
+      if (!built.length) return;
+      const at = built.findIndex((p) => p.id === sel?.plotId);
+      const next = at < 0 ? built[e.detail > 0 ? 0 : built.length - 1] : built[(at + e.detail + built.length) % built.length];
+      uiSound('tab');
+      selectPlot(next.id, next.sector);
+      setTimeout(padFocusDefault, 420); // la fiche ouverte : focus sur son action principale
+    };
+    window.addEventListener('padplot', onPlot);
+    return () => window.removeEventListener('padplot', onPlot);
+  });
 
   // En jeu, Échap (ou Start à la manette) ouvre le menu pause, quand aucune fenêtre n'est ouverte (sinon Échap la
   // ferme, elle). Réinscrit à chaque rendu : lit toujours l'état courant.
@@ -1035,6 +1052,7 @@ export default function App({ preview = null }) {
           <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} keys={hudKeys && !panel && !sel}
             league={state.league ? { pending: !!leaguePending, sent: state.league.sent === `${leagueLive?.d.league.season}:${leagueLive?.d.league.round}`, deadline: leagueLive?.d.league.deadline, kickoff: leagueKickoff, onWatch: watchLeague, seasonOver: (leagueLive?.d.league.season || 0) > state.league.season } : null} />
           <Dock panel={panel} onPanel={openPanel} badges={signals} keys={hudKeys} />
+          <PadHints build={!!buildTool} context={panel ? 'panel' : sel ? 'sheet' : 'home'} />
         </div>
       )}
 

@@ -18,6 +18,7 @@ import { clubStars } from '../game/crest';
 import { useFitText } from './fittext';
 import { deadlineText } from '../game/league';
 import { duesNow } from '../game/advice';
+import { useInputMode } from './input';
 import { eur, LANG, numLocale, ordinal as ordinalText, ordSuffix, t, tn, tr } from '../i18n/index';
 
 // HUD du jeu : couches fixes au-dessus de la vue 3D plein écran, en plaques façon habillage télé (docs/DESIGN.md).
@@ -276,7 +277,10 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
         <strong className="hud-match-title" ref={titleRef} title={opp.name}>{opp.name}</strong>
         <span className="hm-odds" title={t('Pronostic : victoire {label}, nul {label2}, défaite {label3}', { label: w.label, label2: d.label, label3: l.label })}>
           <span className="tri" aria-hidden="true"><i style={{ flexGrow: odds.win * 100 }} /><i style={{ flexGrow: odds.draw * 100 }} /><i style={{ flexGrow: odds.loss * 100 }} /></span>
-          <span className="hm-odds-text">{tr('<0/> de victoire', [<b>{w.label}</b>])}</span>
+          <span className="hm-odds-text">
+            <span className="hm-odds-long">{tr('<0/> de victoire', [<b>{w.label}</b>])}</span>
+            <b className="hm-odds-short">{w.label}</b>{/* carte resserrée (tablette, petit PC) : le pourcentage seul */}
+          </span>
         </span>
       </div>
       {league ? (
@@ -376,6 +380,29 @@ function StaffBubble({ tip, row, onAction, onDismiss, onClose }) {
         <button className="staff-hide" onClick={onDismiss} aria-label={t('Masquer ce conseil')}>{t('Masquer')}</button>
       </div>
     </aside>
+  );
+}
+
+// Manette, dans le complexe : les boutons qui y servent (sections, Bâtir, Jouer, bâtiments, caméra) ; fiche d'un
+// bâtiment ou panneau ouvert : valider, fermer et passer au suivant (à côté de la fiche). Rien au clavier ni au doigt
+// (le clavier a ses touches rappelées au survol).
+const PAD_HINTS = {
+  home: [['LB RB', 'Sections'], ['X', 'Bâtir'], ['Y', 'Jouer'], ['L3 R3', 'Bâtiments'], ['RS', 'Caméra']],
+  sheet: [['A', 'Valider'], ['B', 'Fermer'], ['L3 R3', 'Bâtiments']],
+  panel: [['A', 'Valider'], ['B', 'Fermer'], ['LB RB', 'Sections']],
+};
+export function PadHints({ build = true, context = 'home' }) {
+  const mode = useInputMode();
+  if (mode !== 'gamepad') return null;
+  return (
+    <div className={`pad-hints pad-${context}`} aria-hidden="true">
+      {PAD_HINTS[context].filter(([b]) => build || b !== 'X').map(([b, label]) => (
+        <span key={b} className="pad-hint">
+          {b.split(' ').map((x) => <i key={x} className={`pad-btn ${x.length > 1 ? 'wide' : ''} ${'AXY'.includes(x) && x.length === 1 ? 'face' : ''}`}>{x}</i>)}
+          {t(label)}
+        </span>
+      ))}
+    </div>
   );
 }
 

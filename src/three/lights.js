@@ -78,6 +78,7 @@ export function plotLights(scene, contentNode, { max = 6, power = 4, aim = 1 } =
   });
   const base = power / lights.length * 4;
   return {
+    lights,
     count: lights.length,
     // 0 : éteint (jour) · 1 : nuit · 1,4 : jour de match
     setLevel(level) { lights.forEach((l) => { l.intensity = base * level; }); },

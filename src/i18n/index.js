@@ -69,10 +69,13 @@ export async function initI18n() {
     document.documentElement.lang = LANG;
     document.documentElement.dir = isRTL() ? 'rtl' : 'ltr';
     if (LANG === 'ar') { // l'écriture arabe : Cairo (styles.css, html[lang="ar"]), du même fournisseur que les autres polices
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap';
-      document.head.appendChild(link);
+      if (!document.getElementById('fo-cairo')) { // déjà demandée par index.html quand l'arabe était connu au démarrage
+        const link = document.createElement('link');
+        link.id = 'fo-cairo';
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap';
+        document.head.appendChild(link);
+      }
       watchText((s) => s.replaceAll('→', '←'), '→', 'kbd');
     }
     // anglais : pas d'espace avant « % » (« 66% »), y compris quand le nombre est un texte à part (« {n} % » en JSX)

@@ -53,6 +53,23 @@ function scaffold(w, d, h) {
   return g;
 }
 
+// Grain de poussière rond (les points sont carrés sans texture) : une seule texture pour tous les chantiers, jamais libérée
+let dotTex = null;
+function dotTexture() {
+  if (dotTex) return dotTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(16, 16, 0, 16, 16, 16);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.55, 'rgba(255,255,255,.6)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g;
+  x.fillRect(0, 0, 32, 32);
+  dotTex = new THREE.CanvasTexture(c);
+  return dotTex;
+}
+
 function dust(w, d, n = 140) {
   const geo = new THREE.BufferGeometry();
   const pos = new Float32Array(n * 3);
@@ -66,7 +83,7 @@ function dust(w, d, n = 140) {
     vel[i * 3 + 2] = (Math.random() - 0.5) * 0.6;
   }
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const mat = new THREE.PointsMaterial({ color: 0x8d8478, size: 0.18, transparent: true, opacity: 0.55, depthWrite: false });
+  const mat = new THREE.PointsMaterial({ color: GOLD, map: dotTexture(), size: 0.16, transparent: true, opacity: 0.55, depthWrite: false });
   const pts = new THREE.Points(geo, mat);
   pts.userData.vel = vel;
   return pts;
@@ -74,20 +91,55 @@ function dust(w, d, n = 140) {
 
 function ring(w, d) {
   const r = Math.max(w, d) * 0.6;
-  const geo = new THREE.RingGeometry(r * 0.94, r, 64);
+  const geo = new THREE.RingGeometry(r * 0.97, r, 64);
   geo.rotateX(-Math.PI / 2);
-  const mat = new THREE.MeshBasicMaterial({ color: GOLD_LIGHT, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide });
+  // toneMapped: false : l'or exact de la charte, que l'éclairage de la scène ne délave pas en crème
+  const mat = new THREE.MeshBasicMaterial({ color: GOLD_LIGHT, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
   const m = new THREE.Mesh(geo, mat);
   m.position.y = 0.05;
   return m;
 }
 
+// Chargement du chantier : au sol, une piste dorée fine et discrète, et un arc d'un quart de tour, plus clair et un peu
+// plus large, qui la parcourt (le bâtiment se prépare)
+const LOADER_OPACITY = [0.3, 1]; // piste, arc
+function loader(w, d) {
+  const r = Math.max(w, d) * 0.48;
+  const g = new THREE.Group();
+  const trackGeo = new THREE.RingGeometry(r * 0.975, r, 96);
+  trackGeo.rotateX(-Math.PI / 2);
+  const trackMat = new THREE.MeshBasicMaterial({ color: GOLD, transparent: true, opacity: LOADER_OPACITY[0], depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+  const arcGeo = new THREE.RingGeometry(r * 0.96, r * 1.015, 48, 1, 0, Math.PI * 0.5);
+  arcGeo.rotateX(-Math.PI / 2);
+  const arcMat = new THREE.MeshBasicMaterial({ color: GOLD_LIGHT, transparent: true, opacity: LOADER_OPACITY[1], depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+  const arc = new THREE.Mesh(arcGeo, arcMat);
+  g.add(new THREE.Mesh(trackGeo, trackMat), arc);
+  g.position.y = 0.06;
+  g.userData = { arc, mats: [trackMat, arcMat] };
+  return g;
+}
+
 const easeOutBack = (t) => { const c = 1.4; return 1 + (c + 1) * (t - 1) ** 3 + c * (t - 1) ** 2; };
 
+// Échantillon des matériaux de chantier et d'aperçu (hologramme : corps translucide et arêtes, en maillage simple et
+// en instances), à compiler d'avance au chargement et à garder : leurs programmes restent prêts (un matériau libéré
+// libérerait le sien), et le premier chantier ou le premier aperçu ne fige plus l'image le temps de les compiler.
+export function warmupFx() {
+  const g = new THREE.Group();
+  const s = scaffold(1, 1, 1);
+  const box = new THREE.BoxGeometry(0.01, 0.01, 0.01);
+  const body = new THREE.MeshBasicMaterial({ color: 0xd9b56a, transparent: true, opacity: 0.2, depthWrite: false });
+  const edge = new THREE.LineBasicMaterial({ color: 0xf6dfa4, transparent: true, opacity: 0.8 });
+  g.add(s, dust(1, 1, 4), ring(1, 1), loader(1, 1), new THREE.Mesh(box, body), new THREE.InstancedMesh(box, body, 1),
+    new THREE.LineSegments(new THREE.EdgesGeometry(box), edge));
+  return g;
+}
+
 // Animation de construction / amélioration d'une parcelle.
-// Phase « chantier » (≥ 0,7 s, et tant que le nouveau contenu n'est pas prêt) : l'ancien bâtiment reste
-// en place sous l'échafaudage, la poussière monte. Phase « croissance » (1,4 s) : onGrow(node) remplace le
-// contenu, le nouveau bâtiment sort de terre, l'échafaudage s'efface et un anneau doré se referme.
+// Phase « chantier » (≥ 0,7 s, et tant que le nouveau contenu n'est pas prêt : chargé, puis préparé pour la carte
+// graphique) : l'ancien bâtiment reste en place sous l'échafaudage, la poussière monte et un arc doré tourne au sol
+// (chargement). Phase « croissance » (1,4 s) : onGrow(node) remplace le contenu, le nouveau bâtiment sort de terre,
+// l'échafaudage et l'arc s'effacent et un anneau doré se referme.
 export class BuildAnimation {
   constructor(wrapper, footprint, height, onGrow) {
     this.wrapper = wrapper;
@@ -103,7 +155,8 @@ export class BuildAnimation {
     this.dust = dust(footprint.w, footprint.d);
     this.ring = ring(footprint.w, footprint.d);
     this.ring.visible = false;
-    this.group.add(this.scaffold, this.dust, this.ring);
+    this.loader = loader(footprint.w, footprint.d);
+    this.group.add(this.scaffold, this.dust, this.ring, this.loader);
     wrapper.add(this.group);
     this.done = false;
   }
@@ -131,8 +184,10 @@ export class BuildAnimation {
       if (pos.array[i * 3 + 1] > 1.6 && this.phase === 'site') pos.array[i * 3 + 1] = 0;
     }
     pos.needsUpdate = true;
+    this.loader.userData.arc.rotation.y -= dt * 4.2; // un tour toutes les 1,5 s
     if (this.phase === 'site') {
       this.scaffold.scale.y = Math.min(1, this.t / 0.45);
+      this.loader.userData.mats.forEach((m, i) => { m.opacity = LOADER_OPACITY[i] * Math.min(1, this.t / 0.25); });
       if (this.t > 0.7 && this.pending) {
         this.phase = 'grow';
         this.content = this.onGrow(this.pending);
@@ -149,6 +204,8 @@ export class BuildAnimation {
     this.scaffold.userData.mats[1].opacity = 0.22 * fade;
     this.scaffold.position.y = -this.growT * 0.5;
     this.dust.material.opacity = 0.55 * fade;
+    const lf = Math.max(0, 1 - this.growT / 0.3); // l'arc de chargement s'efface dès que le bâtiment sort de terre
+    this.loader.userData.mats.forEach((m, i) => { m.opacity = LOADER_OPACITY[i] * lf; });
     const rs = 0.3 + this.growT * 0.9;
     this.ring.scale.set(rs, 1, rs);
     this.ring.material.opacity = 0.9 * fade;

@@ -11,7 +11,7 @@ import { createFluidity } from '../three/adapt';
 import { assetsProgress, initAssets, instantiateModel, preloadModel, setAssetsBoost, setAssetsNight } from '../three/assets';
 import { resolveModel, resolveProp } from '../three/manifest';
 import { plotLights } from '../three/lights';
-import { BuildAnimation, Fireworks, hoverFrame } from '../three/fx';
+import { BuildAnimation, Fireworks, hoverFrame, warmupFx } from '../three/fx';
 import { createLife } from '../three/life';
 import { createLandscape, heightAt } from '../three/landscape';
 import { plantSpots } from '../three/forest';
@@ -318,6 +318,24 @@ export default function Empire3D({
     squad.on.post = ooh;
     squad.on.miss = ooh;
     controls.addEventListener('start', () => { ctx.userCam = performance.now() + 5000; }); // le joueur reprend la main
+    // Manette (ui/input.js) : stick droit pour tourner et incliner, gâchettes pour le zoom, autour du point visé et
+    // dans les mêmes limites qu'à la souris ; pas pendant un temps fort (la réalisation télé mène).
+    const padSph = new THREE.Spherical();
+    const padOff = new THREE.Vector3();
+    const onPadCamera = (e) => {
+      const { x, y, zoom, dt } = e.detail;
+      if (!controls.enabled || modeRef.current.live) return;
+      padOff.copy(camera.position).sub(controls.target);
+      padSph.setFromVector3(padOff);
+      padSph.theta -= x * dt * 1.8;
+      padSph.phi = Math.min(controls.maxPolarAngle, Math.max(controls.minPolarAngle, padSph.phi + y * dt * 1.2));
+      padSph.radius = Math.min(controls.maxDistance, Math.max(controls.minDistance, padSph.radius * (1 - zoom * dt * 1.5)));
+      camera.position.copy(controls.target).add(padOff.setFromSpherical(padSph));
+      controls.update(); // (limites du complexe et du relief appliquées comme à la souris)
+      ctx.camTween = null;
+      ctx.userCam = performance.now() + 5000;
+    };
+    window.addEventListener('padcamera', onPadCamera);
 
     ctx.setContent = (entry, node) => {
       if (entry.content) entry.wrapper.remove(entry.content); // ressources partagées : pas de dispose ici
@@ -363,8 +381,12 @@ export default function Empire3D({
           const wanted = spec.sig;
           instantiateModel(model, fp)
             .then((node) => {
-              if (entry.sig !== wanted || !ctx.alive) return;
+              if (entry.sig !== wanted || !ctx.alive) return null;
               plantSpots(node); // arbres des bâtiments et des parcelles (repères tree_spot_*)
+              return anim ? ctx.prepare(entry, node) : node; // chantier : préparé pendant l'échafaudage
+            })
+            .then((node) => {
+              if (!node || entry.sig !== wanted || !ctx.alive) return;
               if (anim) anim.provide(node); else ctx.setContent(entry, node);
             })
             .catch((err) => {
@@ -548,13 +570,25 @@ export default function Empire3D({
       const shown = spots.map((l) => l.visible);
       const target = renderer.getRenderTarget();
       renderer.setRenderTarget(null); // même cible que le rendu (la toile) : mêmes programmes
-      spots.forEach((l) => { l.visible = true; });
-      const lit = renderer.compileAsync(scene, camera); // lumières relevées tout de suite, compilation en fond
-      spots.forEach((l) => { l.visible = false; });
-      const unlit = renderer.compileAsync(scene, camera);
+      // Les deux versions de chaque programme (projecteurs allumés, éteints), lumières relevées tout de suite et
+      // compilation en fond, puis chacune attendue : compileAsync n'attend que la dernière version de chaque matériau,
+      // et la première, jamais attendue, figeait encore l'image à sa première utilisation (amélioration d'un bâtiment).
+      const progs = new Set();
+      for (const lit of [true, false]) {
+        spots.forEach((l) => { l.visible = lit; });
+        renderer.compile(scene, camera).forEach((m) => { const p = renderer.properties.get(m).currentProgram; if (p) progs.add(p); });
+      }
       spots.forEach((l, i) => { l.visible = shown[i]; });
       renderer.setRenderTarget(target);
-      return Promise.all([lit, unlit]).then(() => {
+      const until = performance.now() + 4000; // un programme libéré entre-temps ne répondrait jamais
+      const ready = new Promise((resolve) => {
+        const check = () => {
+          progs.forEach((p) => { if (p.isReady()) progs.delete(p); });
+          if (!progs.size || !ctx.alive || performance.now() > until) resolve(); else setTimeout(check, 10);
+        };
+        check();
+      });
+      return ready.then(() => {
         // le jour, une image avec les projecteurs dans le calcul mais à zéro (rien ne change à l'écran) : tout est
         // prêt aussi pour le soir
         if (!ctx.alive || spots.some((l) => l.visible)) return;
@@ -563,13 +597,66 @@ export default function Empire3D({
         spots.forEach((l) => { l.visible = false; });
       }).catch(() => {});
     };
-    ctx.syncSpots = () => {
+    // Réserve de projecteurs : des projecteurs éteints (intensité nulle, sautés par le calcul de la lumière) complètent
+    // le compte au multiple de 8 supérieur. Un bâtiment qui apporte les siens les prend dans la réserve : le nombre de
+    // lumières ne change pas, aucun programme n'est recompilé (une recompilation de toute la scène figeait l'image
+    // plusieurs secondes à la première construction sur PC). Il ne change qu'en passant un palier de 8.
+    const SPOT_STEP = 8;
+    const reserve = [];
+    const listSpots = () => {
       const spots = [];
       scene.traverse((o) => { if (o.isSpotLight) spots.push(o); });
+      return spots;
+    };
+    const balanceSpots = () => {
+      const real = listSpots().length - reserve.length;
+      const want = Math.max(SPOT_STEP, Math.ceil(real / SPOT_STEP) * SPOT_STEP) - real;
+      while (reserve.length > want) { const l = reserve.pop(); scene.remove(l); l.dispose(); }
+      while (reserve.length < want) {
+        const l = new THREE.SpotLight(0x000000, 0, 1);
+        l.position.set(0, -50, 0);
+        scene.add(l);
+        reserve.push(l);
+      }
+    };
+    ctx.syncSpots = () => {
+      balanceSpots();
+      const spots = listSpots();
       const on = spots.some((l) => l.intensity > 0);
       spots.forEach((l) => { l.visible = on; });
       if (loaded && spots.length !== compiledFor) { compiledFor = spots.length; return precompile(spots); }
       return Promise.resolve();
+    };
+
+    // Chantier : le nouveau bâtiment est préparé pendant l'échafaudage (textures envoyées à la carte graphique,
+    // programmes de ses matériaux compilés, de jour comme de nuit, avec les projecteurs qu'il apportera), puis il entre
+    // dans la scène sans image figée. Le bâtiment et ses projecteurs ne sont dans la scène que le temps de relever ce
+    // qu'il faut compiler (aucune image n'est dessinée entre-temps).
+    const TEX_SLOTS = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap', 'aoMap', 'alphaMap'];
+    ctx.prepare = (entry, node) => {
+      if (!loaded) return Promise.resolve(node);
+      try {
+        node.traverse((o) => {
+          if (o.isMesh) for (const m of [].concat(o.material)) for (const k of TEX_SLOTS) if (m?.[k]) renderer.initTexture(m[k]);
+        });
+        entry.wrapper.add(node);
+        node.updateMatrixWorld(true);
+        const extra = node.name.startsWith('model:') ? plotLights(scene, node, entry.id === 't0' ? { max: 6, power: 3 } : { max: 2, power: 1.6 }) : null;
+        const old = entry.lights?.lights || []; // ceux de l'ancien bâtiment partiront avec lui
+        old.forEach((l) => scene.remove(l));
+        balanceSpots();
+        const spots = listSpots();
+        compiledFor = spots.length;
+        const job = precompile(spots);
+        old.forEach((l) => scene.add(l));
+        extra?.dispose();
+        entry.wrapper.remove(node);
+        balanceSpots();
+        return job.then(() => node, () => node);
+      } catch (err) {
+        console.warn('[Empire3D] préparation du bâtiment impossible', err);
+        return Promise.resolve(node);
+      }
     };
 
     ctx.cutCamera = (view) => { // plan de coupe (ralenti) : pas de transition
@@ -706,6 +793,11 @@ export default function Empire3D({
         // tous les matériaux compilés d'avance (projecteurs allumés et éteints), derrière l'écran de chargement : pas
         // d'à-coup quand un arbre passe en 3D, qu'un bâtiment apparaît ou que les projecteurs s'allument le soir
         loaded = true;
+        // matériaux de chantier et d'aperçu dans la scène, cachés : compilés avec tout le reste, de jour comme de nuit,
+        // et gardés (voir warmupFx)
+        ctx.warmFx = warmupFx();
+        ctx.warmFx.visible = false;
+        scene.add(ctx.warmFx);
         const ready = () => {
           if (!ctx.alive) return;
           ctx.measuring = true; // fluidité mesurée seulement une fois tout chargé et compilé (pas les à-coups du départ)
@@ -1031,6 +1123,7 @@ export default function Empire3D({
       io.disconnect();
       ro.disconnect();
       dprQuery?.removeEventListener('change', onDprChange);
+      window.removeEventListener('padcamera', onPadCamera);
       ['pointerdown', 'pointerup', 'pointermove', 'pointerleave'].forEach((ev, i) => {
         renderer.domElement.removeEventListener(ev, [onDown, onUp, onMove, onLeave][i]);
       });

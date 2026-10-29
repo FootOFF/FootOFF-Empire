@@ -221,6 +221,7 @@ export function HoldButton({ onConfirm, disabled = false, k = null, children }) 
       className={`btn btn-xl wide hold ${disabled ? '' : 'glow'} ${nudge ? 'nudge' : ''}`}
       data-key={k || undefined}
       data-noswipe=""
+      data-pad-default="" /* manette : le focus de départ de la fiche (ui/input.js) */
       disabled={disabled}
       onPointerDown={down}
       onPointerUp={release}
