@@ -105,7 +105,7 @@ export function createLeagueClub(d, m) {
 // les transferts conclus avec un ami (applyLeagueMoves), puis relit le mercato.
 export function syncLeagueClub(s, d) {
   const L = s.league;
-  const keep = { season: L.season, round: L.round, results: L.results, sent: L.sent, plans: L.plans || {}, outbox: L.outbox || [], done: L.done || [] };
+  const keep = { season: L.season, round: L.round, results: L.results, sent: L.sent, plans: L.plans || {}, outbox: L.outbox || [], done: L.done || [], goneSeen: L.goneSeen || [] };
   s.league = { ...leagueInfoOf(d, L.slot), ...keep };
   refreshRivals(s);
   // offres d'achat au nom d'un club de la ligue, reçues avant la 1.0.2 : retirées (un ami fait ses offres par le serveur)
@@ -436,7 +436,8 @@ export function leagueMercato(s, d) {
   // négociations entre amis de la journée : reçues (vendeur), faites (acheteur, en attente ou refusées). Le prix sur la
   // table (x), le tour (w : le vendeur « s » ou l'acheteur « b »), le nombre de contre-offres (c), les prix successifs (h).
   const mine = moves.filter((x) => x.kind === 'f');
-  const deal = (x) => ({ id: x.id, l: x.pid, n: x.data?.n || '?', x: x.fee, w: x.data?.w === 'b' ? 'b' : 's', c: Number(x.data?.c) || 0, h: Array.isArray(x.data?.h) ? x.data.h : [x.fee] });
+  // g : refusée d'office, le joueur avait déjà quitté le club de l'ami (1.0.5)
+  const deal = (x) => ({ id: x.id, l: x.pid, n: x.data?.n || '?', x: x.fee, w: x.data?.w === 'b' ? 'b' : 's', c: Number(x.data?.c) || 0, h: Array.isArray(x.data?.h) ? x.data.h : [x.fee], ...(x.data?.g === 1 ? { g: true } : {}) });
   L.offersIn = mine.filter((x) => x.seller === L.me && x.status === 'open').map((x) => ({ ...deal(x), b: slotOfMember(L, x.buyer) }));
   // une seule ligne par joueur visé, la dernière offre (0.8.8 : les offres refusées s'empilaient) ; aucune s'il est signé
   const last = new Map();
@@ -530,7 +531,8 @@ export function leagueRequest(s, item) {
   const sellable = canSell(s, item.lid);
   const yes = !!item.yes && sellable;
   const counter = item.counter && sellable ? item.counter : null;
-  return { action: 'answer', body: { ...at, id: item.id, yes, ...(counter ? { counter } : {}), data: yes || counter ? { pl: snapPlayer(p) } : {} } };
+  // joueur déjà parti de notre club : le refus en porte le motif (g), que l'acheteur lit (1.0.5, demande du PDG)
+  return { action: 'answer', body: { ...at, id: item.id, yes, ...(counter ? { counter } : {}), data: yes || counter ? { pl: snapPlayer(p) } : !p ? { g: 1 } : {} } };
 }
 
 // La réponse du serveur appliquée à la partie (res : sa réponse, ou { error, taken } quand il a refusé). La demande sort

@@ -1837,7 +1837,9 @@ function LeagueOffersBlock({ state, run, ask, refLvl, onOffer }) {
               const myTurn = o.status === 'open' && o.w === 'b';
               const squadFull = state.players.length >= SQUAD_MAX;
               const prices = line && <> · <span className="mc-line">{line}</span></>;
-              const note = o.status === 'no' ? t('{club} · {v} : tu peux en refaire une', { club, v: o.c ? t('négociation rompue') : t('offre refusée') }) : myTurn ? <>{tr('Contre-offre <0/>', [clubAfter('de ', club)])}{prices}</> : <>{club}{t(' · en attente de sa réponse')}{prices}</>;
+              const pseudo = L.clubs.find((c) => c.slot === o.s)?.pseudo || t('ton ami');
+              const note = o.status === 'no' && o.g ? t('Offre refusée d’office : ce joueur a déjà quitté le club de {pseudo}', { pseudo })
+                : o.status === 'no' ? t('{club} · {v} : tu peux en refaire une', { club, v: o.c ? t('négociation rompue') : t('offre refusée') }) : myTurn ? <>{tr('Contre-offre <0/>', [clubAfter('de ', club)])}{prices}</> : <>{club}{t(' · en attente de sa réponse')}{prices}</>;
               return (
                 <li key={o.id} className={`mc-row ${myTurn ? 'offer' : ''}`}>
                   {medal(p)}

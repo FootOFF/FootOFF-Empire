@@ -5,6 +5,12 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.5', date: '2026-10-30', title: t('Offres claires entre amis'),
+    items: [
+      t('Une offre pour un joueur qui a déjà quitté le club de ton ami est refusée d’office, et tu sais pourquoi.'),
+    ],
+  },
+  {
     version: '1.0.4', date: '2026-10-30', title: t('Les effectifs des amis en direct'),
     items: [
       t('Championnats entre amis : chaque club publie son effectif quand il change. L’onglet Amis du mercato suit tout : achats, ventes hors de la ligue, joueurs libérés, blessures.'),

@@ -848,6 +848,18 @@ export default function App({ preview = null }) {
     }, 4000);
     return () => clearTimeout(t);
   }, [rosterSig, leagueLive?.m, leagueLive?.d]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Offre refusée d'office parce que le joueur avait déjà quitté le club de l'ami (1.0.5, demande du PDG) : l'acheteur en
+  // est prévenu une fois, avec la raison (offres vues : s.league.goneSeen)
+  const goneOffers = (state?.league?.offersOut || []).filter((o) => o.status === 'no' && o.g && !(state.league.goneSeen || []).includes(o.id));
+  useEffect(() => {
+    if (!goneOffers.length || !state?.league) return;
+    for (const o of goneOffers) {
+      const pseudo = state.league.clubs.find((c) => c.slot === o.s)?.pseudo || t('ton ami');
+      notify({ kind: 'warn', eyebrow: state.league.name, title: t('Offre refusée d’office'), text: t('{name} a déjà quitté le club de {pseudo} : ton offre ne peut pas aboutir.', { name: o.n, pseudo }), key: `gone-${o.id}` });
+    }
+    const ids = goneOffers.map((o) => o.id);
+    run((s) => { if (s.league) s.league.goneSeen = [...(s.league.goneSeen || []), ...ids].slice(-60); return s; });
+  }, [goneOffers.map((o) => o.id).join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
   // File des demandes au serveur des ligues (leagueClub.js : signature d'une recrue négociée, offre pour le joueur d'un
   // ami, réponse à une offre reçue) : une à la fois, dans l'ordre, et la réponse s'applique à la partie. Serveur
   // injoignable : la demande attend la relecture suivante de la ligue (toutes les minutes).
