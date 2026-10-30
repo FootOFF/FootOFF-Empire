@@ -357,7 +357,7 @@ export function leagueMercato(s, d) {
     if (!okSnap(snap) || owner.has(snap.l)) return;
     const known = seen.get(slot) || new Map();
     if (known.size >= 40) return;
-    known.set(snap.l, { ...snap, ...extra });
+    known.set(snap.l, { ...snap, bought: extra.bought === true }); // « bought » jamais lu d'un instantané reçu
     owner.set(snap.l, slot);
     seen.set(slot, known);
   };
@@ -372,7 +372,7 @@ export function leagueMercato(s, d) {
     }
     return null;
   };
-  for (const x of moves) {
+  for (const x of [...moves].reverse()) { // le plus récent d'abord : acheté puis revendu, le joueur est chez le dernier
     const slot = x.status === 'done' ? slotOfMember(L, x.buyer) : null;
     if (slot == null || !friend(slot)) continue;
     let snap = null;
@@ -483,6 +483,7 @@ export const answerFriend = (s, o, yes, counter = null, role = 's') => queueLeag
 // Un joueur parti autrement (vente, retraite, fin de contrat) : ses négociations comme vendeur sont rompues.
 export function closeGoneDeals(s) {
   const L = s.league;
+  if (L) ensureLids(s); // un joueur de l'académie ou un amateur de secours a son identifiant de ligue (audit du 2026-10-30)
   for (const o of L?.offersIn || []) {
     if (!s.players.some((q) => q.lid === o.l) && !queuedFor(s, (x) => x.k === 'answer' && x.id === o.id)) answerFriend(s, o, false);
   }

@@ -425,6 +425,7 @@ export function playLeagueRound(league, members, teams, world, moves = []) {
 // x : la rencontre ({ h, a, hg, ag, sh, sa, sq, md }).
 export function replayOf(league, clubs, round, x, season = league.season) {
   if (!x.sh || !x.sa || !x.sq) return null;
+  if (!Array.isArray(x.sq[0]) || !Array.isArray(x.sq[1])) return null; // rencontre illisible : le résumé reste
   const home = x.sq[0].map(unsnapPlayer);
   const away = x.sq[1].map(unsnapPlayer);
   const side = (slot, players, packed, md = 0) => ({ slot, name: clubs[slot].name, crest: clubs[slot].crest, players, sheet: unpackSheet(packed), medical: md });
