@@ -5,6 +5,18 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0', date: '2026-10-30', title: t('La version publique'),
+    items: [
+      t('FootOFF Empire passe en version 1.0, sa version publique. L’écran titre va à l’essentiel : les nouveautés se lisent depuis le menu pause.'),
+      t('Monter se mérite : les adversaires de Départementale, de Régionale et de Nationale sont plus forts, en championnat comme en Coupe nationale. Un bon président quitte la Départementale vers sa troisième saison. Dans une partie en cours, ces adversaires renforcés arrivent à la saison suivante.'),
+      t('La division ouvre les niveaux des bâtiments : jusqu’au niveau 2 en Départementale, 3 en Régionale, 4 en Nationale et 5 en Élite, avec l’arène du stade. Un bâtiment déjà plus haut le reste.'),
+      t('À la manette, on choisit enfin un poste ou un remplaçant dans la composition, avant le match comme pendant les changements.'),
+      t('Les fautes qui valent un carton rouge tombent hors de la surface : plus de faute qui mériterait aussi un penalty.'),
+      t('Au ralenti, les panneaux FootOFF Media du bord du terrain se lisent à l’endroit, des quatre côtés du stade.'),
+      t('En anglais, en espagnol et en arabe, plus d’espace avant les deux-points dans les fiches des bâtiments, de l’académie, du mercato et de l’entraînement.'),
+    ],
+  },
+  {
     version: '0.8.24', date: '2026-10-30', title: t('Des appuis de footballeur'),
     items: [
       t('À chaque foulée, l’avant du pied reste planté au sol et le talon pivote autour, comme chez un vrai footballeur : les pieds ne glissent presque plus et ne s’enfoncent plus dans la pelouse.'),

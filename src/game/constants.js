@@ -7,11 +7,13 @@ export const SAVE_KEY = 'footoff-empire-save-v1';
 // millions, salaires et valeurs des joueurs ×4 : economy.js) ; les petites divisions gardent des budgets modestes.
 // Niveau des adversaires (oppMin à oppMax, répartis dans la division) : chaque division commence un peu au-dessus de
 // la précédente, et le haut de l'Élite (17,0) reste un défi pour un onze arrivé au sommet (18 au plus, en pratique).
+// 1.0 (demande du PDG : montées trop rapides) : adversaires relevés de 0,8 en Départementale et en Régionale, 0,5 en
+// Nationale ; le marché des transferts reste calé sur `market`, le club moyen de la division d'avant (transfers.js).
 export const DIVISIONS = [
-  { name: t('Départementale'), oppMin: 5.0, oppMax: 7.4, ticket: 6, food: 2, shop: 1, demand: 650, tv: 0, sponsor: 5000, prize: 6000 },
-  { name: t('Régionale'), oppMin: 7.6, oppMax: 10.0, ticket: 10, food: 3, shop: 2, demand: 3800, tv: 4000, sponsor: 35000, prize: 40000 },
-  { name: t('Nationale'), oppMin: 10.2, oppMax: 12.8, ticket: 16, food: 4, shop: 3.5, demand: 15000, tv: 45000, sponsor: 220000, prize: 300000 },
-  { name: t('Élite'), oppMin: 13.4, oppMax: 17.0, ticket: 40, food: 7, shop: 9, demand: 40000, tv: 1800000, sponsor: 8000000, prize: 6400000 },
+  { name: t('Départementale'), oppMin: 5.8, oppMax: 8.2, market: 6.2, ticket: 6, food: 2, shop: 1, demand: 650, tv: 0, sponsor: 5000, prize: 6000 },
+  { name: t('Régionale'), oppMin: 8.4, oppMax: 10.8, market: 8.8, ticket: 10, food: 3, shop: 2, demand: 3800, tv: 4000, sponsor: 35000, prize: 40000 },
+  { name: t('Nationale'), oppMin: 10.7, oppMax: 13.3, market: 11.5, ticket: 16, food: 4, shop: 3.5, demand: 15000, tv: 45000, sponsor: 220000, prize: 300000 },
+  { name: t('Élite'), oppMin: 13.4, oppMax: 17.0, market: 15.2, ticket: 40, food: 7, shop: 9, demand: 40000, tv: 1800000, sponsor: 8000000, prize: 6400000 },
 ];
 
 export const POS_LABELS = { G: t('Gardien'), D: t('Défenseur'), M: t('Milieu'), A: t('Attaquant') };
@@ -78,6 +80,17 @@ export const START_MONEY = 8000;
 export const ELITE_SCALE = 4;
 // Les salaires et l'entretien se comptent à chaque journée de championnat (un septième de la saison, un quatorzième en
 // Élite) et se paient en une fois au bilan (0.8.8, economy.js accrueDues et season.js endSeason).
+
+// Niveau le plus haut qu'un bâtiment peut atteindre dans la division (1.0, demande du PDG : une académie de niveau 4 et
+// un grand stade dès la troisième saison, c'était trop rapide) : les bâtiments des parcelles jusqu'au niveau 2 en
+// Départementale, 3 en Régionale, 4 en Nationale, 5 en Élite ; le stade jusqu'au niveau 2, 3, 4, puis l'arène de l'Élite.
+// Un bâtiment déjà plus haut le reste (club relégué, partie commencée avant). Les championnats entre amis n'ont pas de
+// plafond.
+const LEVEL_CAPS = { terrain: [2, 3, 4, 6], other: [2, 3, 4, 5] };
+const capsOf = (key) => (key === 'terrain' ? LEVEL_CAPS.terrain : LEVEL_CAPS.other);
+export const levelCap = (s, key) => (s.league ? BUILDINGS[key].max : Math.min(BUILDINGS[key].max, capsOf(key)[s.divisionIndex] ?? BUILDINGS[key].max));
+// Division qui ouvre un niveau (son index dans DIVISIONS).
+export const unlockDivision = (key, level) => capsOf(key).findIndex((m) => m >= level);
 
 export function upgradeCost(key, targetLevel) {
   const b = BUILDINGS[key];

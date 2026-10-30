@@ -497,11 +497,15 @@ def fence(B, hx, hy, step=3.0):
 
 
 def boards(B, hx, hy, mat="boards", h=0.9):
+    # Le panneau sud et celui de l'est sont les panneaux nord et ouest tournes d'un demi-tour : les UV, projetees en
+    # coordonnees locales, se lisent alors a l'endroit cote terrain sur les quatre (1.0 : sud et est se lisaient en
+    # miroir dans les ralentis ; les GLB publies ont ete corriges de la meme facon, U -> -U sur ces faces).
     t = 0.12
-    B.box(mat, (-hx, -hy - t, 0), (hx, -hy, h), tile=(24, h))
+    R = Matrix.Rotation(math.pi, 4, "Z")
     B.box(mat, (-hx, hy, 0), (hx, hy + t, h), tile=(24, h))
+    B.box(mat, (-hx, hy, 0), (hx, hy + t, h), M=R, tile=(24, h))
     B.box(mat, (-hx - t, -hy, 0), (-hx, hy, h), tile=(24, h))
-    B.box(mat, (hx, -hy, 0), (hx + t, hy, h), tile=(24, h))
+    B.box(mat, (-hx - t, -hy, 0), (-hx, hy, h), M=R, tile=(24, h))
 
 
 def mast(B, coll, x, y, h, cols, rows, name, lattice=False, target=(0, 0, 0)):

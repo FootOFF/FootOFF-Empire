@@ -38,6 +38,10 @@ const BALL_R = 0.011;
 const HEAD = 0.185; // hauteur d'une tête (1,85 m)
 const SPOT = GOAL_X - 1.1; // point de penalty (11 m)
 const BOX = GOAL_X - 1.65; // ligne de la surface (16,5 m)
+// une faute de carton rouge tombe devant la surface (1.0, remarque du PDG : dans la surface, elle vaudrait aussi un
+// penalty, une double peine que le direct n'affiche pas) : le porteur file vers ce point, à 1,5 m de la ligne (GOAL_X - 1,4
+// avant, dans la surface) ; le fautif garde sa place près de la ligne défensive, d'où il le rattrape
+const FOUL_U = BOX - 0.15;
 const KEEP_U = GOAL_X - 0.1; // le gardien se tient un mètre devant sa ligne
 const SPRINT = 0.74; // u/s (7,4 m/s)
 const REPLAY_SPEED = 0.5; // ralenti
@@ -497,7 +501,7 @@ export function createMatchScene(parent) {
         H.offender = offender;
         H.victim = carrier;
         beats = [
-          { t: 'carry', who: carrier, to: [3.3, s * 0.45], speed: 0.6, max: 2.4 },
+          { t: 'carry', who: carrier, to: [3.15, s * 0.45], speed: 0.6, max: 2.4 }, // 3,3 avant la 1.0 (FOUL_U)
           { t: 'foul', who: offender, victim: carrier },
         ];
         break;
@@ -1002,7 +1006,7 @@ export function createMatchScene(parent) {
           const k = 0.6 / Math.max(1e-6, gap0);
           off.steer(vic.x + (vic.x - off.x) * k, vic.z + (vic.z - off.z) * k, want, dt);
         } else off.steer(vic.x, vic.z, 0.8, dt);
-        vic.steer(...at(GOAL_X - 1.4, uvOf(vic.x, vic.z)[1] * 0.8), bt.tackle ? 0.08 : H.bt > 1.2 ? 0.15 : 0.6, dt);
+        vic.steer(...at(FOUL_U, uvOf(vic.x, vic.z)[1] * 0.8), bt.tackle ? 0.08 : H.bt > 1.2 ? 0.15 : 0.6, dt);
         const gap = Math.hypot(off.x - vic.x, off.z - vic.z);
         // à 1,6 m, il se jette : la jambe tendue (90 cm devant le bassin) fauche le porteur 0,55 s plus tard, et c'est ce
         // contact qui fait la faute
@@ -1467,7 +1471,7 @@ export function createMatchScene(parent) {
     get ball() { return b; },
     get agents() { return agents; }, // lecture seule (inspection en développement)
     get debug() {
-      return H && { offside: H.offside || 0, swaps: H.swaps || 0, line: H.line, A: H.A, keeper: H.keeper, victim: H.victim, offender: H.offender, dirA: S.dir[H.A], id: H.id, kind: H.kind, outcome: H.outcome, phase: H.phase, beat: H.beats[H.k]?.t, k: H.k, t: +H.t.toFixed(2), revealed: H.revealed, forced: !!H.forced, finaleT: H.finaleT ?? (H.fk === 0 ? 0 : null), est: H.est, fk: H.fk, bstate: b.state, owner: b.owner, bt: H.beats[H.k] && { t: H.beats[H.k].t, from: H.beats[H.k].from, to: H.beats[H.k].to, who: H.beats[H.k].who }, ball: { state: b.state, x: +b.x.toFixed(2), z: +b.z.toFixed(2), y: +b.y.toFixed(2) } };
+      return H && { offside: H.offside || 0, swaps: H.swaps || 0, line: H.line, A: H.A, keeper: H.keeper, victim: H.victim, offender: H.offender, foulAt: H.foulAt ?? null, dirA: S.dir[H.A], id: H.id, kind: H.kind, outcome: H.outcome, phase: H.phase, beat: H.beats[H.k]?.t, k: H.k, t: +H.t.toFixed(2), revealed: H.revealed, forced: !!H.forced, finaleT: H.finaleT ?? (H.fk === 0 ? 0 : null), est: H.est, fk: H.fk, bstate: b.state, owner: b.owner, bt: H.beats[H.k] && { t: H.beats[H.k].t, from: H.beats[H.k].from, to: H.beats[H.k].to, who: H.beats[H.k].who }, ball: { state: b.state, x: +b.x.toFixed(2), z: +b.z.toFixed(2), y: +b.y.toFixed(2) } };
     },
     dispose() {
       matchFeed.scene = false;

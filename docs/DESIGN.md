@@ -358,12 +358,14 @@ La galerie (`?galerie` dans l'adresse du jeu) affiche chaque écran avec des don
 - Erreurs (`src/ui/crash.jsx`, `src/ui/errlog.js`) : barrière d'erreur globale autour du jeu. Une erreur de rendu affiche
   « Le jeu a rencontré un problème » (Reprendre, Copie de secours avec son club et sa saison, Copier le rapport : version,
   navigateur, erreur, vingt dernières erreurs du navigateur ; rien n'est envoyé). Aperçu : `?ecran=erreur`. La version et
-  la date de construction (`__APP_VERSION__`, `__BUILD_DATE__`) s'affichent au bas de l'écran titre.
+  la date de construction s'affichent au bas de l'écran titre (« FootOFF Empire · version 1.0 · date » : version du journal
+  des nouveautés, plus de « bêta » depuis la 1.0 ; le rapport d'erreur garde `__APP_VERSION__` de `package.json`).
 - Signaler un problème (réglages, `SettingsView`) : un rapport à coller dans un message, version, navigateur, taille de
   l'écran, vingt dernières erreurs (`src/ui/errlog.js`), avec ou sans la partie (son code de sauvegarde) : le joueur
   choisit, rien n'est envoyé. L'écran d'erreur propose les deux mêmes copies. Un code de sauvegarde reçu se rejoue dans
   une session cloud avec `decodeCode` puis `repairSave` (`src/game/save.js`).
-- Nouveautés (`src/game/changelog.js`, `src/ui/news.jsx`) : écran titre et menu pause, une entrée par version avec sa date
+- Nouveautés (`src/game/changelog.js`, `src/ui/news.jsx`) : menu pause seulement depuis la 1.0 (demande du PDG : plus
+  d'onglet Nouveautés à l'écran titre), une entrée par version avec sa date
   et ses apports ; pastille dorée et « à lire » tant que la version courante n'a pas été ouverte (stockage local). La
   version courante est celle de `package.json` : la faire avancer avec chaque entrée du journal.
 - Règles du jeu (`src/ui/rules.jsx`) : écran titre et menu pause, sept chapitres en langage joueur (but du jeu, match,
@@ -401,8 +403,8 @@ Façon jeu de console : un seul chargement au démarrage, puis l'écran titre de
   complexe décalé hors du menu), sur téléphone comme sur PC. La page elle-même ne se zoome pas au doigt
   (`index.html`, `main.jsx`) ; seule la caméra 3D du jeu garde son zoom. Logo FootOFF Empire d'origine (monogramme,
   FootOFF, « Empire » en sous-titre espacé, le même que sur l'écran de chargement ; il ne se modifie jamais), sans
-  horloge ; menu Continuer, Nouvelle partie (« Fonder un autre club » s'il y a une partie), Règles du jeu, Nouveautés,
-  Réglages, FootOFF Media. L'entrée active devient une barre dorée penchée (maquette A10), plus haute, texte sombre
+  horloge ; menu Continuer, Nouvelle partie (« Fonder un autre club » s'il y a une partie), Règles du jeu,
+  Réglages, FootOFF Media (plus de Nouveautés depuis la 1.0 : elles restent au menu pause). L'entrée active devient une barre dorée penchée (maquette A10), plus haute, texte sombre
   et flèche. Nouvelle partie sur une partie en cours : la fenêtre de confirmation du jeu prévient que la sauvegarde
   sera effacée (« Effacer et recommencer » ou « Garder ma partie ») ; le joueur garde ce choix (consigne de
   l'utilisateur, 2026-10-24). À droite (PC) la plaque de l'entrée active : pour la partie, le club en grand,
@@ -462,6 +464,10 @@ la caméra le cadre dans la zone libre puis oscille lentement autour, comme en v
   Souris, clavier, manette : un clic. Puis le chantier : son, vibration, ruban « Chantier lancé » sur la vignette.
 - Parcelle bâtie : vignette du niveau atteint, niveau suivant chiffré avant / après, « Aperçu des niveaux » (la
   fenêtre ; sur PC, le niveau montré remplace le bâtiment en hologramme le temps de l'aperçu).
+- Plafond de la division (1.0, `levelCap`) : au-delà, la fiche et la fenêtre d'aperçu montrent « Le niveau 4 se débloque
+  en Nationale » (cadenas) à la place du bouton ; dans la rangée des niveaux, ces vignettes portent un cadenas au lieu de
+  leur numéro (classe `capped`, infobulle « en Nationale ») ; ni pastille dorée ni conseil du staff pour une amélioration
+  plafonnée.
 - Sélecteur ‹ › : d'une parcelle libre à l'autre, sans perdre le bâtiment choisi. Bouton Construire (grue) en tête
   des outils du HUD, touche B : ouvre la vitrine sur la première parcelle libre, pastille dorée si un bâtiment est
   payable tout de suite.

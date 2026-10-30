@@ -1,4 +1,4 @@
-import { BUILDINGS, DIVISIONS, ELITE_SCALE, POS_LABELS, SQUAD_MAX, SQUAD_MIN, START_MONEY, upgradeCost } from './constants';
+import { BUILDINGS, DIVISIONS, ELITE_SCALE, POS_LABELS, SQUAD_MAX, SQUAD_MIN, START_MONEY, levelCap, upgradeCost } from './constants';
 import { OFFLINE_CAP, offlinePerHour } from './economy';
 import { assignNumber, costOf, makePlayer, saleValue, wageOf } from './players';
 import {
@@ -138,7 +138,7 @@ export function setTicketPolicy(s, id) {
 export function upgrade(s, key) {
   const lvl = s.buildings[key];
   const cost = upgradeCost(key, lvl + 1);
-  if (lvl >= BUILDINGS[key].max || s.money < cost) return null;
+  if (lvl >= levelCap(s, key) || s.money < cost) return null; // plafond de la division (1.0)
   s.buildings[key] = lvl + 1;
   s.money -= cost;
   book(s, 'works', cost);

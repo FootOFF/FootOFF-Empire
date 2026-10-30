@@ -216,8 +216,11 @@ export function previewState(screen) {
 function academyPreview(s, screen) {
   s.money = 1e6;
   build(s, 't2', 'academy');
+  const div = s.divisionIndex; // niveau 3 : au-dessus du plafond de la Départementale (1.0), comme un club redescendu
+  s.divisionIndex = 1;
   upgrade(s, 'academy');
   upgrade(s, 'academy');
+  s.divisionIndex = div;
   s.money = 42000;
   if (screen === 'academie-vide') return;
   const leagueRounds = (n) => { // journées de championnat (les matchs de coupe ne comptent pas)
@@ -241,8 +244,11 @@ function academyPreview(s, screen) {
 // une épreuve jouée (attaquant) et une simulée (gardien) ; un programme de signe en cours.
 function trainingPreview(s) {
   s.money = 1e6;
+  const div = s.divisionIndex; // niveau 3 : au-dessus du plafond de la Départementale (1.0), comme un club redescendu
+  s.divisionIndex = 1;
   upgrade(s, 'training');
   upgrade(s, 'training');
+  s.divisionIndex = div;
   s.money = 42000;
   const scores = [0.82, null, 0.64, 0.38];
   for (let w = 0; w < 2; w++) {

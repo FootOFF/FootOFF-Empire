@@ -23,7 +23,8 @@ const roundKey = (s) => `${s.seasonNumber}:${s.round}`;
 // Niveau du marché, calé sur le milieu de la division (makePlayer : note moyenne 5,3 + 2 × level) : `delta` points
 // au-dessus (ou au-dessous) du club moyen de la division. Avant la 0.5.0, le marché suivait l'indice de la division :
 // un cran au-dessus du club moyen en Départementale (on montait aussitôt), deux crans en dessous en Élite.
-const marketLevel = (s, delta) => { const d = DIVISIONS[s.divisionIndex]; return ((d.oppMin + d.oppMax) / 2 + delta - 5.3) / 2; };
+// 1.0 : calé sur `market` (le club moyen de la division avant que les adversaires ne soient relevés), pas sur eux.
+const marketLevel = (s, delta) => ((DIVISIONS[s.divisionIndex].market + delta - 5.3) / 2);
 
 // Les recruteurs vont plus haut avec le bureau des transferts, et la notoriété attire les grands noms : le meilleur du
 // marché reste un cran au-dessus du club moyen de la division, plus haut avec un réseau complet et un grand nom.

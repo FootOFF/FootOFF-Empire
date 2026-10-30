@@ -154,12 +154,37 @@ attire (`src/game/reputation.js`), à rendement décroissant, comparée à la fo
 
 ## Divisions et difficulté
 
-Niveau des adversaires (`DIVISIONS`, répartis de `oppMin` à `oppMax`) : Départementale 5,0 à 7,4, Régionale 7,6 à 10,0,
-Nationale 10,2 à 12,8, Elite 13,4 à 17,0 ; Coupe d'Europe 15,1 à 18,5, plus fort à chaque tour (15,9 de moyenne en
+Niveau des adversaires (`DIVISIONS`, répartis de `oppMin` à `oppMax`) : Départementale 5,8 à 8,2, Régionale 8,4 à 10,8,
+Nationale 10,7 à 13,3, Elite 13,4 à 17,0 (1.0 ; avant : 5,0 à 7,4, 7,6 à 10,0 et 10,2 à 12,8) ; Coupe d'Europe 15,1 à 18,5, plus fort à chaque tour (15,9 de moyenne en
 huitièmes, 17,7 en finale ; 14,8 à 18,2 en 0.5.x ; 13,7 à 17,3 avant la 0.5.0, quand une Coupe d'Europe sur deux était
 gagnée). L'effectif de départ vaut environ 6,2 (milieu de
 Départementale) : la première montée se gagne en deux ou trois saisons, pas d'emblée. Au sommet, le haut de l'Elite
 (17) reste un défi pour un onze arrivé à 17,5-18 : le titre se dispute, saison après saison, sans jamais être acquis.
+
+1.0 (2026-10-30, demande du PDG : Régionale dès la deuxième saison, Nationale en saison 4, académie de niveau 4 et grand
+stade dès la troisième, finales de Coupe nationale faciles) :
+
+- adversaires relevés de 0,8 en Départementale et en Régionale, de 0,5 en Nationale ; la Coupe nationale tire ses
+  adversaires dans ces mêmes divisions. Le marché des transferts reste calé sur `market` (le club moyen de chaque
+  division d'avant : 6,2, 8,8, 11,5, 15,2 ; `transfers.js`), pas sur les adversaires : sinon il suivait et le
+  relèvement s'annulait ;
+- plafond des bâtiments par division (`levelCap`, `constants.js`) : niveau 2 en Départementale, 3 en Régionale, 4 en
+  Nationale, 5 en Élite ; stade 2, 3, 4, puis l'arène (5 et 6) en Élite. Un bâtiment déjà plus haut le reste. Fiche
+  du bâtiment et fenêtre d'aperçu : « Niveau 4 débloqué en Nationale » à la place du bouton. Pas de plafond dans les
+  championnats entre amis.
+
+Mesuré par `node tools/sim/career.mjs 14 24 --joueur` (vingt-quatre carrières de quatorze saisons, bon joueur ; le
+simulateur relève aussi la Nationale, la division en fin de saison 3, l'académie de niveau 4, le stade de niveau 3 et
+les finales de coupe des trois premières saisons) :
+
+| | 0.8.24 | 1.0 |
+|---|---|---|
+| Première montée (médiane) | saison 2 | saison 3 |
+| Division en fin de saison 3 (Départementale / Régionale / Nationale) | 7 / 15 / 2 | 11 / 10 / 3 |
+| Nationale (médiane) | saison 6 | saison 6 |
+| Elite (médiane) | saison 8 (21 sur 24 en douze saisons) | saison 10 (17 sur 24 en quatorze saisons) |
+| Finales de Coupe nationale en saisons 1 à 3 (72 saisons) | 13 | 8 |
+| Académie de niveau 4 | dès la saison 3 pour un joueur qui y met tout (vu par le PDG) | pas avant la Nationale |
 
 ## Simulation (`tools/sim/career.mjs`, dans le dépôt)
 

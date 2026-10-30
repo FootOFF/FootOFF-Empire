@@ -51,6 +51,7 @@ export const RULES = [
     id: 'complexe', title: t('Le complexe'),
     body: [
       t('Sept parcelles autour du stade, à bâtir dans l’ordre que tu veux, chaque bâtiment une seule fois, cinq niveaux chacun.'),
+      t('La division ouvre les niveaux : jusqu’au niveau 2 en Départementale, 3 en Régionale, 4 en Nationale et 5 en Élite, où s’ouvre aussi l’arène du stade (niveaux 5 et 6). Un bâtiment déjà plus haut le reste, même après une descente.'),
       t('Stade : 600 places au départ, jusqu’à 75 000. Quand la demande dépasse la capacité, des supporters restent dehors : agrandis, ou passe en tarif Premium ou Prestige (Direction du club, onglet Billetterie).'),
       t('Centre d’entraînement : séances entre les matchs, une épreuve en 3D par ligne (jouée, elle rapporte plus ; simulée, le gain moyen est assuré), nouvelles épreuves à chaque niveau, programmes de signes distinctifs dès le niveau 3, meilleure récupération. Tu peux confier les séances au staff : il les simule avant chaque match, avec les joueurs conseillés.'),
       t('Académie : six jeunes recrutés gratuitement parmi les repérés après chaque journée (toutes les deux en Élite ; un ou deux selon le niveau), qui progressent et montent en équipe première quand tu le décides ; à 19 ans, un jeune qui n’est pas monté s’en va. Les grands potentiels sont rares (18 ou plus : moins de deux par saison au niveau 5) et mettent des années à éclore.'),

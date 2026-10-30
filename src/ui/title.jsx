@@ -2,8 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FootOFFLockup } from './brand';
 import { ClubCard, Hints, MenuList, SettingsView, uiSound, useMenu, MediaView } from './console';
 import { RulesView } from './rules';
-import { NewsView, unseenNews } from './news';
-import { CHANGELOG, CURRENT } from '../game/changelog';
+import { CURRENT } from '../game/changelog';
 import { useInputMode } from './input';
 import { useKeydown } from './presence';
 import { IconChevron, IconChevronLeft, IconDice } from './icons';
@@ -71,17 +70,6 @@ function SideCard({ id, state, foreign = null, settings, leagues = null }) {
       </section>
     );
   }
-  if (id === 'news') {
-    const v = CHANGELOG[0];
-    return (
-      <section className="cm-card">
-        <span className="eyebrow">{tr('Nouveautés · version <0/>', [v.version])}</span>
-        <p className="cm-card-lead">{v.title}</p>
-        <ul className="cm-card-list">{v.items.slice(0, 3).map((t, i) => <li key={i}>{t}</li>)}</ul>
-        <p className="cm-card-note">{v.date}{tn(CHANGELOG.length, '', ' · et les versions précédentes', {}, CHANGELOG.length > 1)}</p>
-      </section>
-    );
-  }
   if (id === 'settings') {
     return (
       <section className="cm-card">
@@ -133,7 +121,7 @@ const clubProgress = ({ name, code, progress: p }) => {
 
 // Entrées du menu principal : Continuer (s'il y a une partie ; liveNote : un match interrompu qui reprendra à la minute
 // près), Nouvelle partie, Championnats entre amis (leagues, quand ils sont ouverts), Réglages, FootOFF Media.
-function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews, onMedia }, liveNote = null, leagues = null, foreign = null) {
+function menuItems(state, { onContinue, onNew, onSettings, onRules, onMedia }, liveNote = null, leagues = null, foreign = null) {
   const saved = state || foreign; // la carrière enregistrée (foreign : fondée dans une autre langue)
   const div = saved && DIVISIONS[saved.divisionIndex];
   const summary = saved && t('{clubName} · {name} · Saison {seasonNumber}', { clubName: saved.clubName, name: div.name, seasonNumber: saved.seasonNumber });
@@ -143,7 +131,6 @@ function menuItems(state, { onContinue, onNew, onSettings, onRules, onNews, onMe
     ...(leagues ? (leagues.clubs || []).map((m) => ({ id: `club-${m.code}`, label: m.club.name, sub: clubProgress(m), onSelect: () => leagues.onPlay(m) })) : []),
     ...(leagues ? [{ id: 'leagues', label: t('Championnats entre amis'), sub: leagues.count ? tn(leagues.count, '{count} championnat · créer, rejoindre, classements', '{count} championnats · créer, rejoindre, classements', { count: leagues.count }, leagues.count > 1) : t('Rejoins tes amis avec leur code'), onSelect: leagues.onOpen }] : []),
     { id: 'rules', label: t('Règles du jeu'), sub: t('Matchs, joueurs, mercato, argent, réputation'), onSelect: onRules },
-    { id: 'news', label: t('Nouveautés'), sub: t('Version {CURRENT}{v}', { CURRENT, v: unseenNews() ? t(' · à lire') : '' }), badge: unseenNews(), onSelect: onNews },
     { id: 'settings', label: t('Réglages'), sub: t('Son, vibrations, fluidité, sauvegarde, signaler un problème'), onSelect: onSettings },
     { id: 'media', label: t('FootOFF Media'), sub: t('Le site et nos réseaux'), onSelect: onMedia }, // 0.8.17 : site et réseaux réunis (MediaView)
   ];
@@ -275,7 +262,7 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
   const active = !blocked;
   const pref = preferredLang(); // langue proposée pour la nouvelle partie
   const saved = state || foreign;
-  const items = menuItems(state, { onContinue, onNew: onNewGame, onSettings: () => onView('settings'), onRules: () => onView('rules'), onNews: () => onView('news'), onMedia: () => onView('media') }, liveNote, leagues, foreign);
+  const items = menuItems(state, { onContinue, onNew: onNewGame, onSettings: () => onView('settings'), onRules: () => onView('rules'), onMedia: () => onView('media') }, liveNote, leagues, foreign);
   const menu = useMenu(items, { active: active && view === 'menu' }); // l'entrée active est gardée au retour des réglages
   const current = items[Math.min(menu.cur, items.length - 1)].id;
   const [entered, setEntered] = useState(false); // la première apparition joue l'animation d'entrée complète
@@ -320,7 +307,7 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
     document.fonts?.ready.then(() => { if (live) fit(); });
     return () => { live = false; ro.disconnect(); };
   }, [view, items.length]);
-  const sub = view === 'settings' || view === 'rules' || view === 'news' || view === 'lang' || view === 'media';
+  const sub = view === 'settings' || view === 'rules' || view === 'lang' || view === 'media';
   const hints = sub
     ? [['nav', t('Choisir')], ['select', t('Valider')], ['back', t('Retour')]]
     : view === 'create'
@@ -362,13 +349,6 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
             <RulesView active={active} onBack={() => onView('menu')} />
           </div>
         )}
-        {view === 'news' && (
-          <div className="ts-main ts-sub">
-            <span className="eyebrow">{t('FootOFF Empire')}</span>
-            <h2>{t('Nouveautés')}</h2>
-            <NewsView active={active} onBack={() => onView('menu')} />
-          </div>
-        )}
         {view === 'lang' && (
           <div className="ts-main ts-sub">
             <span className="eyebrow">{t('Nouvelle partie')}</span>
@@ -394,7 +374,7 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
         <Hints items={hints} />
         <span className="ts-foot-end">
           <SocialStrip className="ts-social" />
-          <span className="ts-legal">{tr('FootOFF Empire · bêta <0/> · <1/>', [__APP_VERSION__, __BUILD_DATE__])}</span>
+          <span className="ts-legal">{tr('FootOFF Empire · version <0/> · <1/>', [CURRENT, __BUILD_DATE__])}</span>
         </span>
       </footer>
     </div>

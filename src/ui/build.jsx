@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { BUILDINGS, upgradeCost } from '../game/constants';
+import { BUILDINGS, DIVISIONS, levelCap, unlockDivision, upgradeCost } from '../game/constants';
 import { BUILDING_KIND, buildingStats, investmentPreview } from '../game/economy';
 import { duesNow, matchesToAfford, seasonEndForecast } from '../game/advice';
 import { fmtMoney } from './format';
@@ -91,28 +91,31 @@ export function BuildCard({ state, k, picked, recommended, onPick }) {
   );
 }
 
+// Niveau au-delà du plafond de la division (1.0, constants.js levelCap) : « Le niveau 4 se débloque en Nationale ».
+export const unlockNote = (k, level) => tr('<0/> Le niveau <1/> se débloque en <2/>', [<IconLock />, level, DIVISIONS[unlockDivision(k, level)]?.name || '']);
+
 // Rangée des niveaux (vignettes) : construits, prochain, à venir. Un clic montre le niveau (image, chiffres, et
-// l'hologramme sur la parcelle).
-export function LevelStrip({ k, current, shown, onShow }) {
+// l'hologramme sur la parcelle). cap : plus haut niveau ouvert dans la division.
+export function LevelStrip({ k, current, shown, onShow, cap = BUILDINGS[k].max }) {
   const max = BUILDINGS[k].max;
   return (
     <div className="lvstrip" role="radiogroup" aria-label={t('Niveaux')} style={{ '--n': max }}>
       {Array.from({ length: max }, (_, i) => {
         const l = i + 1;
         const kind = l <= current ? 'built' : l === current + 1 ? 'next' : 'later';
-        const label = l <= current ? t('construit') : l === current + 1 ? fmtMoney(upgradeCost(k, l)) : t('après le niveau {v}', { v: l - 1 });
+        const label = l <= current ? t('construit') : l > cap ? t('en {name}', { name: DIVISIONS[unlockDivision(k, l)]?.name || '' }) : l === current + 1 ? fmtMoney(upgradeCost(k, l)) : t('après le niveau {v}', { v: l - 1 });
         return (
           <button
             key={l}
             type="button"
             role="radio"
             aria-checked={shown === l}
-            className={`lv ${kind} ${shown === l ? 'on' : ''}`}
+            className={`lv ${kind} ${l > cap && l > current ? 'capped' : ''} ${shown === l ? 'on' : ''}`}
             onClick={() => onShow(l)}
             title={t('Niveau {l} · {label}', { l, label })}
           >
             <i className="lv-img" style={{ backgroundImage: `url(${imgOf(k, l)})` }} />
-            <b>{l <= current ? <IconCheck /> : l}</b>
+            <b>{l <= current ? <IconCheck /> : l > cap ? <IconLock /> : l}</b> {/* cadenas : niveau d'une division plus haute (1.0) */}
           </button>
         );
       })}
@@ -248,8 +251,16 @@ export function BuildWindow({ state, k, current, shown, onShow, onAction, recomm
   const b = BUILDINGS[k];
   const next = current + 1;
   const cost = upgradeCost(k, shown);
+  const cap = levelCap(state, k);
   let foot;
-  if (shown === next) {
+  if (shown >= next && shown > cap) { // plafond de la division (1.0)
+    foot = (
+      <>
+        <p className="bw-note">{unlockNote(k, shown)}</p>
+        {shown > next && <button type="button" className="btn ghost wide" onClick={() => onShow(next)}>{tr('Revenir au niveau <0/>', [next])}</button>}
+      </>
+    );
+  } else if (shown === next) {
     const hint = spendHint(state, cost);
     foot = (
       <>
@@ -283,7 +294,7 @@ export function BuildWindow({ state, k, current, shown, onShow, onAction, recomm
           <figcaption>{tr('Niveau <0/><1/>', [shown, <span> / {b.max}</span>])}</figcaption>
         </figure>
         <p className="bw-blurb">{BLURB[k]}</p>
-        <LevelStrip k={k} current={current} shown={shown} onShow={onShow} />
+        <LevelStrip k={k} current={current} shown={shown} onShow={onShow} cap={cap} />
         <StatRows state={state} k={k} lvl={shown} base={shown - 1} />
         {shown > current && <Payoff state={state} k={k} target={shown} />}
       </div>

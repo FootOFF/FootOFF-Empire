@@ -1,5 +1,5 @@
 import { leagueLength, nextFixture } from './cups';
-import { BUILDINGS, POS_LABELS, SQUAD_MAX, YOUTH_LEAVE_AGE, YOUTH_PLACES, upgradeCost } from './constants';
+import { BUILDINGS, POS_LABELS, SQUAD_MAX, YOUTH_LEAVE_AGE, YOUTH_PLACES, levelCap, upgradeCost } from './constants';
 import { leavingYouth } from './academy';
 import { LINES, programsFor, sessionOf, staffOn, windowKey } from './training';
 import { tvOpen } from './direction';
@@ -77,7 +77,7 @@ export function actionablePlots(s) {
     const key = plotBuilding(s, p.id);
     if (key) {
       const lvl = s.buildings[key];
-      if (lvl < BUILDINGS[key].max && s.money >= upgradeCost(key, lvl + 1)) out.push(p.id);
+      if (lvl < levelCap(s, key) && s.money >= upgradeCost(key, lvl + 1)) out.push(p.id);
     } else if (!free && allowedBuildingsFor(s).some((k) => s.money >= upgradeCost(k, 1))) {
       free = true;
       out.push(p.id);
@@ -262,7 +262,7 @@ export function staffTips(s) {
   const gate = expectedGate(s, null);
   const lvl = s.buildings.terrain;
   // les tarifs se règlent à la Direction du club (onglet Billetterie) : le conseil n'a de sens qu'une fois construite
-  if (lvl >= BUILDINGS.terrain.max && s.buildings.direction > 0 && gate.demand > gate.capacity * 1.3 && ['popular', 'standard'].includes(s.ticketPolicy || 'standard')) {
+  if (lvl >= levelCap(s, 'terrain') && s.buildings.direction > 0 && gate.demand > gate.capacity * 1.3 && ['popular', 'standard'].includes(s.ticketPolicy || 'standard')) {
     out.push({
       id: `pricing-${s.seasonNumber}`, title: t('Ton stade affiche complet'),
       text: t('{n} supporters restent dehors. Passe en tarif Premium ou Prestige : l’enceinte reste pleine et chaque billet rapporte plus.', { n: n(gate.demand - gate.capacity) }),
@@ -271,7 +271,7 @@ export function staffTips(s) {
   }
   // stade : seulement quand l'agrandissement est payable, une fois par niveau (0.8.2 : plus de « trop petit » à chaque
   // match quand on ne peut rien y faire)
-  if (lvl < BUILDINGS.terrain.max && gate.demand > gate.capacity * 1.05 && s.money >= upgradeCost('terrain', lvl + 1)) {
+  if (lvl < levelCap(s, 'terrain') && gate.demand > gate.capacity * 1.05 && s.money >= upgradeCost('terrain', lvl + 1)) {
     out.push({
       id: `stadium-${lvl}`, title: t('Agrandis ton stade'),
       text: t('{n} supporters restent dehors à chaque match à domicile. Le niveau {v} offre {n2} places, et tu as les fonds.', { n: n(gate.demand - gate.capacity), v: lvl + 1, n2: n(capacity(lvl + 1)) }),

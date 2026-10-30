@@ -310,6 +310,9 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
     onPointerCancel: reset,
     onContextMenu: (e) => e.preventDefault(), // appui long : pas de menu du navigateur
     onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(item); } },
+    // le bouton A de la manette appuie sur l'élément choisi par un clic sans pointeur (input.js, detail 0) : sans lui,
+    // ni un poste ni un remplaçant ne se choisissait à la manette (1.0) ; le doigt et la souris passent par down/up
+    onClick: (e) => { if (e.detail === 0) tap(item); },
   });
 
   // un expulsé ou un blessé non remplacé ne joue plus : le choisir montre, sur chaque coéquipier, son niveau au poste

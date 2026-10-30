@@ -113,7 +113,7 @@ function manage(s) {
 }
 const ageOfXi = (s) => { const xi = s.players.filter((p) => s.lineup?.includes(p.id)); return xi.reduce((a, p) => a + p.age, 0) / Math.max(1, xi.length); };
 
-const agg = { books: {}, promo: [], elite: [], title: [], euro: [], relegations: 0, red: 0, eliteTitles: 0, eliteSeasons: 0, money: {}, share: {}, rep: {}, team: {}, market: {}, age: {}, young: {}, gap: {}, injuries: 0, matches: 0, cups: 0, euros: 0, euroSeasons: 0, kickFit: 0, tired: 0, spent: 0, out: 0, wins: 0 };
+const agg = { books: {}, promo: [], natio: [], academy4: [], stadium3: [], s3div: [], earlyFinals: 0, elite: [], title: [], euro: [], relegations: 0, red: 0, eliteTitles: 0, eliteSeasons: 0, money: {}, share: {}, rep: {}, team: {}, market: {}, age: {}, young: {}, gap: {}, injuries: 0, matches: 0, cups: 0, euros: 0, euroSeasons: 0, kickFit: 0, tired: 0, spent: 0, out: 0, wins: 0 };
 // condition du onze au coup d'envoi (moyenne des titulaires, titulaires sous 70 % et sous 50 %), absences (dates)
 function kickoff(s) {
   const xi = s.lineup.map((id) => s.players.find((p) => p.id === id)).filter(Boolean);
@@ -126,7 +126,7 @@ const push = (obj, k, v) => (obj[k] ||= []).push(v);
 for (let r = 0; r < RUNS; r++) {
   const s = engine.createInitialState('Club Test');
   s.tutorial = { step: 'done' };
-  let firstReg = null, firstElite = null, firstTitle = null, firstEuro = null;
+  let firstReg = null, firstNat = null, firstAcad4 = null, firstStad3 = null, firstElite = null, firstTitle = null, firstEuro = null;
   for (let season = 1; season <= N; season++) {
     while (nextFixture(s)) {
       manage(s);
@@ -144,6 +144,7 @@ for (let r = 0; r < RUNS; r++) {
     const gap = teamLevel(s) - (DIVISIONS[s.divisionIndex].oppMin + DIVISIONS[s.divisionIndex].oppMax) / 2; // onze contre le milieu de la division
     if (s.c1) agg.euroSeasons++;
     const divBefore = DIVISIONS[s.divisionIndex].name;
+    const finalPlayed = (s.cups?.cup?.results || []).length >= 4; // la Coupe nationale jouée jusqu'à la finale
     engine.endSeason(s);
     if (ACCOUNTS) { const l = s.ledger.past.at(-1); (agg.books[divBefore] ||= []).push(l.lines); }
     const h = s.history.at(-1);
@@ -155,16 +156,22 @@ for (let r = 0; r < RUNS; r++) {
     agg.cups += won.filter((t) => t.comp === 'cup').length;
     if (won.some((t) => t.comp === 'c1')) { agg.euros++; if (!firstEuro) firstEuro = season; }
     if (!firstReg && s.divisionIndex >= 1) firstReg = season;
+    if (!firstNat && s.divisionIndex >= 2) firstNat = season;
+    if (!firstAcad4 && (s.buildings.academy || 0) >= 4) firstAcad4 = season;
+    if (!firstStad3 && (s.buildings.terrain || 0) >= 3) firstStad3 = season;
+    if (season === 3) agg.s3div.push(s.divisionIndex);
+    if (season <= 3 && finalPlayed) agg.earlyFinals++;
     if (!firstElite && s.divisionIndex === 3) firstElite = season;
     if (h.division === 'Elite') { agg.eliteSeasons++; if (h.position === 1) { agg.eliteTitles++; if (!firstTitle) firstTitle = season; } }
     if (DIVISIONS.findIndex((d) => d.name === h.division) > s.divisionIndex) agg.relegations++;
     if (s.money < 0) agg.red++;
     if (DETAIL && r === 0) console.log(`S${String(season).padStart(2)} ${h.division.padEnd(14)} ${h.position}e  caisse ${fmt(s.money).padStart(13)} €  salaires ${Math.round(share * 100)} %  rep ${s.reputation.toFixed(0).padStart(3)}  onze ${teamLevel(s).toFixed(1)} (${gap >= 0 ? '+' : ''}${gap.toFixed(1)})  âge ${age.toFixed(1)}  ≤21 ans ${young}  marché max ${Math.max(0, ...poolOf(s).map(playerRating)).toFixed(1)}  stade L${s.buildings.terrain}  effectif ${s.players.length}${won.length ? `  ${won.map((t) => (t.comp === 'c1' ? 'EUROPE' : t.comp === 'cup' ? 'coupe' : 'titre')).join(' + ')}` : ''}`);
   }
-  agg.promo.push(firstReg); agg.elite.push(firstElite); agg.title.push(firstTitle); agg.euro.push(firstEuro);
+  agg.promo.push(firstReg); agg.natio.push(firstNat); agg.academy4.push(firstAcad4); agg.stadium3.push(firstStad3); agg.elite.push(firstElite); agg.title.push(firstTitle); agg.euro.push(firstEuro);
 }
 console.log(`\n${RUNS} carrières de ${N} saisons${HUMAN ? ' · président « joueur »' : ''}`);
 console.log(`première montée (médiane) : S${med(agg.promo)} · Elite : S${med(agg.elite) ?? '—'} (${agg.elite.filter(Boolean).length}/${RUNS}) · premier titre d'Elite : S${med(agg.title) ?? '—'} (${agg.title.filter(Boolean).length}/${RUNS}) · première Coupe d'Europe : S${med(agg.euro) ?? '—'} (${agg.euro.filter(Boolean).length}/${RUNS})`);
+console.log(`Nationale (médiane) : S${med(agg.natio) ?? '—'} · division en fin de saison 3 : ${['Départementale', 'Régionale', 'Nationale', 'Elite'].map((d, i) => `${d} ${agg.s3div.filter((x) => x === i).length}`).join(', ')} · académie niveau 4 : S${med(agg.academy4) ?? '—'} (${agg.academy4.filter(Boolean).length}/${RUNS}) · stade niveau 3 : S${med(agg.stadium3) ?? '—'} · finales de coupe jouées en saisons 1-3 : ${agg.earlyFinals}`);
 console.log(`saisons d'Elite gagnées : ${agg.eliteSeasons ? Math.round((100 * agg.eliteTitles) / agg.eliteSeasons) : 0} % · Coupes d'Europe gagnées : ${agg.euros}/${agg.euroSeasons} participations · Coupes nationales : ${agg.cups} · descentes : ${agg.relegations} · fins de saison dans le rouge : ${agg.red} · blessures par match : ${(agg.injuries / agg.matches).toFixed(2)}`);
 console.log(`condition du onze au coup d'envoi : ${(agg.kickFit / agg.matches).toFixed(1)} % en moyenne · titulaires sous 70 % : ${(agg.tired / agg.matches).toFixed(2)} par match, sous 50 % : ${(agg.spent / agg.matches).toFixed(2)} · blessures : ${(agg.injuries / agg.matches).toFixed(2)} par match, ${(agg.out / Math.max(1, agg.injuries)).toFixed(1)} dates d'absence en moyenne · matchs gagnés : ${Math.round((100 * agg.wins) / agg.matches)} %`);
 console.log('période   caisse (méd.)     salaires/revenus  réputation  onze (écart)   âge du onze  ≤21 ans  marché max');

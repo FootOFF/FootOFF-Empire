@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { BUILDINGS, YOUTH_PLACES, upgradeCost } from '../game/constants';
+import { BUILDINGS, YOUTH_PLACES, levelCap, upgradeCost } from '../game/constants';
 import { PLOTS, PLOT_LABELS, SECTORS, allowedBuildingsFor, plotBuilding } from '../game/map';
 import { fmtMoney, fmtNum } from './format';
 import { BUILDING_KIND, TICKET_ORDER, TICKET_POLICIES, buildingStats, expectedGate } from '../game/economy';
@@ -12,7 +12,7 @@ import { PHONE, useMedia, useSwipe } from './gestures';
 import { usePanelSound } from './panels';
 import { uiSound } from './uisound';
 import { haptic } from './haptics';
-import { BuildCard, BuildWindow, HoldButton, Payoff, StatRows, imgOf, spendHint } from './build';
+import { BuildCard, BuildWindow, HoldButton, Payoff, StatRows, imgOf, spendHint, unlockNote } from './build';
 import { t, tn, tr } from '../i18n/index';
 
 const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor, transfers: IconTransfer, direction: IconDirection, medical: IconMedical, league: IconLeague };
@@ -274,6 +274,7 @@ function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTra
     if (win) setWin(false); else onClose();
   });
 
+  const capped = !maxed && lvl >= levelCap(state, k); // plafond de la division (1.0) : le niveau suivant attend la montée
   const cost = maxed ? 0 : upgradeCost(k, lvl + 1);
   const hint = maxed ? null : spendHint(state, cost);
   const gate = k === 'terrain' ? expectedGate(state, null) : null;
@@ -285,7 +286,7 @@ function BuiltPlot({ state, sel, k, fresh, onClose, onUpgrade, onMatchDay, onTra
         title={b.name}
         Icon={ICONS[k]}
         onClose={onClose}
-        foot={maxed || side ? null : (
+        foot={maxed || side ? null : capped ? <p className="bw-note">{unlockNote(k, lvl + 1)}</p> : (
           <>
             <HoldButton k={k} onConfirm={() => onUpgrade(k)} disabled={state.money < cost}>{tr('<0/> Améliorer · <1/>', [<IconArrowUp />, fmtMoney(cost)])}</HoldButton>
             <span className={`ins-hint ${hint.tone}`}>{hint.text}</span>

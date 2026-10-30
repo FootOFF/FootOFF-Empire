@@ -1,6 +1,6 @@
 # Rapport du pipeline GLB
 
-Généré par `npm run models` le 27/10/2026 05:43:27.
+Généré par `npm run models` le 30/10/2026 16:10:33.
 
 | Modèle | Statut | Triangles | Draw calls | Matériaux | Poids final | Dimensions (L × H × P) | Nœuds spéciaux |
 |---|---|---|---|---|---|---|---|

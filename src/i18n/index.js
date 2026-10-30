@@ -149,11 +149,14 @@ const fill = (s, vars) => {
 // Les espaces autour d'un morceau de phrase (« · saison ») restent ceux du code : le dictionnaire ne connaît que le
 // texte du milieu.
 // ctx : contexte, quand un même mot français se traduit autrement selon l'endroit (t('Rose', undefined, 'couleur'))
+// (sauf l'espace française devant « : » ou « ; » en tête de morceau : en anglais, en espagnol et en arabe, ces signes
+// se collent au mot d'avant ; 1.0, « Sporting investment : it… »)
 export function t(fr, vars, ctx) {
   if (LANG === 'fr') return fill(fr, vars);
   const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(fr);
   const s = (ctx && DICT[`${ctx}|${m[2]}`]) ?? DICT[m[2]] ?? m[2];
-  return m[1] + fill(typeof s === 'string' ? s : s.other ?? m[2], vars) + m[3];
+  const out = fill(typeof s === 'string' ? s : s.other ?? m[2], vars);
+  return (/^[:;]/.test(out) ? '' : m[1]) + out + m[3];
 }
 // tn(n, 'un jeune', '{n} jeunes', vars) : accord selon le nombre. Le dictionnaire donne, pour la forme plurielle
 // française, les formes de la langue (one, two, few, many, other ; zero en arabe), choisies par Intl.PluralRules.
