@@ -34,7 +34,7 @@ import { DirectionView } from './ui/direction';
 import { MedicalView } from './ui/medical';
 import { LeagueView } from './ui/league';
 import { deadlineText, leagueLang, leagueOpen } from './game/league';
-import { LeagueError, kickoffAt, leagueResults, myLeagues, pulseUrgent, refreshLeague, sendMove, sendSheet, takeInvite, userActive, watchPulse } from './game/leagueNet';
+import { LeagueError, deadlineAt, kickoffAt, leagueHumans, leagueResults, myLeagues, pulseUrgent, refreshLeague, sendMove, sendSheet, takeInvite, userActive, watchPulse } from './game/leagueNet';
 import { applyLeagueRound, closeGoneDeals, createLeagueClub, leagueClubProgress, leagueRequest, loadLeagueClub, myReplay, readLeagueClub, saveLeagueClub, settleLeague, syncLeagueClub, teamSheet } from './game/leagueClub';
 import { adoptPulled, cloudNote, cloudPlan, isPushing, markUnreadable, playedPrint, pullClub, pushClub, savedWhen, stageOf, syncOf } from './game/leagueCloud';
 import ConfirmDialog from './ui/confirm';
@@ -1067,7 +1067,7 @@ export default function App({ preview = null }) {
             />
           )}
           <MatchCta state={state} onPlay={play} onEndSeason={() => run(endSeason)} keys={hudKeys && !panel && !sel}
-            league={state.league ? { pending: !!leaguePending, sent: state.league.sent === `${leagueLive?.d.league.season}:${leagueLive?.d.league.round}`, deadline: leagueLive?.d.league.deadline, kickoff: leagueKickoff, onWatch: watchLeague, seasonOver: (leagueLive?.d.league.season || 0) > state.league.season } : null} />
+            league={state.league ? { pending: !!leaguePending, sent: state.league.sent === `${leagueLive?.d.league.season}:${leagueLive?.d.league.round}`, deadline: leagueLive?.d.league.deadline, deadlineAt: deadlineAt(leagueLive?.d), humans: leagueHumans(leagueLive?.d), kickoff: leagueKickoff, onWatch: watchLeague, seasonOver: (leagueLive?.d.league.season || 0) > state.league.season } : null} />
           <Dock panel={panel} onPanel={openPanel} badges={signals} keys={hudKeys} />
           <PadHints build={!!buildTool} context={panel ? 'panel' : sel ? 'sheet' : 'home'} />
         </div>

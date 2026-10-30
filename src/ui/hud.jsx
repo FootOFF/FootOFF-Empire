@@ -216,9 +216,10 @@ export function Dock({ panel, onPanel, badges = {}, keys = false }) {
 // l'avant-match, calculé sur le même moteur avec le onze et la tactique enregistrés), bouton Jouer (touche J).
 // league (partie de championnat entre amis) : { pending : la journée est jouée, notre match est à regarder ; sent : notre
 // équipe est validée ; deadline : l'heure de la journée ; onWatch(skip) ; seasonOver : la ligue est passée à la saison
-// suivante ; kickoff : tous ont validé, coup d'envoi à cette heure (0.8.6) }. « Jouer » ouvre l'avant-match pour valider
-// l'équipe ; une fois tous validés, un compte à rebours de dix minutes remplace « Validée » : les équipes sont
-// verrouillées (0.8.20, règle du PDG), plus rien ne s'ouvre avant le match, qui se regarde ensuite.
+// suivante ; kickoff : tous ont validé, coup d'envoi à cette heure (0.8.6) ; deadlineAt : l'heure de la journée à l'horloge
+// de l'appareil ; humans : les amis et leur équipe (1.0.1) }. « Jouer » ouvre l'avant-match pour valider l'équipe ; une
+// fois tous validés, un compte à rebours de dix minutes remplace « Validée » : les équipes sont verrouillées (0.8.20,
+// règle du PDG), plus rien ne s'ouvre avant le match, qui se regarde ensuite. Au-dessus, le bandeau de la journée.
 export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = null }) {
   const ctx = matchContext(state);
   const done = !ctx;
@@ -270,6 +271,8 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
   const champ = ctx.comp === 'league'; // journée de championnat (sinon un tour de coupe)
   const [w, d, l] = roundPercents([odds.win, odds.draw, odds.loss]); // les chiffres de l'avant-match, au point près
   return (
+    <>
+    {league?.deadline && <LeagueStrip league={league} />}
     <section className={`hud-match glass comp-${ctx.comp} ${league?.sent ? 'sent' : ''}`} aria-label={t('Prochain match')}>
       <MatchCrest opp={opp} />
       <div className="hm-info">
@@ -297,6 +300,35 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
         <button className="btn" onClick={onPlay} title={t('Jouer le match (J)')} aria-label={t('Jouer le match')} aria-keyshortcuts="J">{tr('<0/> Jouer<1/>', [<IconPlay className="fill" />, <kbd className="hm-key" aria-hidden="true">J</kbd>])}</button>
       )}
     </section>
+    </>
+  );
+}
+
+// Bandeau de la journée de ligue, au-dessus de la carte du prochain match (1.0.1, demande du PDG) : l'heure limite et le
+// temps qui reste pour valider son équipe, puis chaque ami, coché quand son équipe est validée. Un affichage, pas un
+// bouton : la carte et la vue 3D restent dessous. Tous validés : le compte à rebours du coup d'envoi est sur le bouton.
+function LeagueStrip({ league }) {
+  const left = useCountdown(league.kickoff ? null : league.deadlineAt);
+  return (
+    <div className="hm-league glass">
+      <div className="hm-league-row">
+        <span className="hm-league-when"><IconClock />{league.kickoff ? t('Tout le monde a validé') : t('Heure limite {deadlineText}', { deadlineText: deadlineText(league.deadline) })}</span>
+        {left !== null && <b className="hm-league-left">{left > 0 ? t('reste {left}', { left: leftText(left) }) : t('heure passée')}</b>}
+      </div>
+      {league.humans?.length > 0 && (
+        <ul className="hm-league-who">
+          {league.humans.map((h) => {
+            const ok = h.ok || (h.me && league.sent);
+            return (
+              <li key={h.id} className={ok ? 'ok' : h.active ? '' : 'away'} title={ok ? t('équipe validée') : h.active ? t('à valider') : t('absent · l’ordinateur joue pour lui')}>
+                {ok ? <IconCheck /> : <i aria-hidden="true" />}
+                <span>{h.me ? t('Toi') : h.pseudo}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -312,6 +344,10 @@ export function useCountdown(at) {
   return at ? Math.max(0, Math.ceil((at - now) / 1000)) : null;
 }
 export const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+// Temps qui reste avant l'heure limite d'une journée de ligue (1.0.1) : « 3 h 25 », « 25 min », puis « 9:42 » sous dix
+// minutes. Espaces insécables : jamais coupé.
+export const leftText = (s) => (s >= 3600 ? `${Math.floor(s / 3600)}\u00a0h\u00a0${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`
+  : s >= 600 ? `${Math.floor(s / 60)}\u00a0min` : mmss(s));
 function KickoffButton({ at }) {
   const left = useCountdown(at);
   return left > 0 ? (

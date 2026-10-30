@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { ClubCard, Hints, MenuList, SettingsView, useMenu } from './console';
 import { RulesView } from './rules';
-import { NewsView, unseenNews } from './news';
-import { CURRENT } from '../game/changelog';
 import { IconCheck } from './icons';
 import { ClubCrest } from './crest';
 import { DIVISIONS, divisionOf } from '../game/constants';
@@ -23,7 +21,6 @@ export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMat
     { id: 'resume', label: t('Reprendre'), sub: t('Retour au complexe'), onSelect: onResume },
     { id: 'settings', label: t('Réglages'), sub: t('Son, vibrations, fluidité, sauvegarde, signaler un problème'), onSelect: () => setView('settings') },
     { id: 'rules', label: t('Règles du jeu'), sub: t('Matchs, joueurs, mercato, argent, réputation'), onSelect: () => setView('rules') },
-    { id: 'news', label: t('Nouveautés'), sub: t('Version {CURRENT}{v}', { CURRENT, v: unseenNews() ? t(' · à lire') : '' }), badge: unseenNews(), onSelect: () => setView('news') },
     { id: 'title', label: t('Écran titre'), sub: inMatch ? t('Indisponible pendant un match') : t('Ta partie reste sauvegardée'), disabled: inMatch, onSelect: onTitle },
     ...(onNewGame ? [{ id: 'new', label: t('Nouvelle partie'), sub: t('Efface la partie en cours'), tone: 'danger', onSelect: onNewGame }] : []),
     { id: 'media', label: t('FootOFF Media'), sub: 'footoff.media', href: 'https://footoff.media' },
@@ -45,9 +42,8 @@ export function PauseMenu({ state, settings, onResume, onTitle, onNewGame, inMat
           <MenuList items={items} menu={menu} label={t('Menu pause')} />
         ) : (
           <div className="pz-settings">
-            <span className="eyebrow pz-view-title">{view === 'rules' ? t('Règles du jeu') : view === 'news' ? t('Nouveautés') : t('Réglages')}</span>
+            <span className="eyebrow pz-view-title">{view === 'rules' ? t('Règles du jeu') : t('Réglages')}</span>
             {view === 'rules' && <RulesView active={!blocked} onBack={() => setView('menu')} />}
-            {view === 'news' && <NewsView active={!blocked} onBack={() => setView('menu')} />}
             {view === 'settings' && <SettingsView settings={settings} active={!blocked} focus={focus} onBack={() => setView('menu')} />}
           </div>
         )}

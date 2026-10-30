@@ -1,4 +1,4 @@
-import { LEAGUE_ENGINE, MAX_MY_LEAGUES, isLeagueCode, roundPayload } from './league';
+import { AI_PSEUDO, LEAGUE_ENGINE, MAX_MY_LEAGUES, isLeagueCode, roundPayload } from './league';
 import { LANG, t } from '../i18n/index';
 
 // Le serveur des ligues (site footoff.media, app/api/ligue) : même origine que le jeu en ligne
@@ -210,6 +210,15 @@ async function syncedState(m, { teams = false } = {}) {
 }
 // Coup d'envoi annoncé (tous ont validé, 0.8.6) en heure de l'appareil, ou null
 export const kickoffAt = (d) => (d?.kickoff && !d.due ? Date.parse(d.kickoff) - (d.skew || 0) : null);
+// Heure limite de la journée en cours, à l'horloge de l'appareil (bandeau du club, 1.0.1)
+export const deadlineAt = (d) => (d?.league?.deadline ? Date.parse(d.league.deadline) - (d.skew || 0) : null);
+// Les amis d'une ligue, dans l'ordre de leurs places, et leur équipe de la journée (bandeau du club, 1.0.1) : les places
+// de l'ordinateur n'en font pas partie. active : venu dans les sept derniers jours (sinon l'ordinateur joue pour lui).
+export function leagueHumans(d) {
+  if (!d?.members) return [];
+  return d.members.filter((m) => m.pseudo !== AI_PSEUDO).sort((a, b) => a.slot - b.slot)
+    .map((m) => ({ id: m.id, pseudo: m.pseudo, ok: !!m.validated, me: m.id === d.me?.id, active: m.active !== false }));
+}
 
 // État d'un championnat, journée jouée au passage : si elle est due (tous ont validé, ou l'heure est passée), ce jeu la
 // calcule (roundPayload, à l'identique chez chacun, depuis l'état de la ligue d'avant) et l'envoie ; le premier envoi

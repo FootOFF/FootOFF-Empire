@@ -4,7 +4,7 @@ import { SectionHead } from './kit';
 import { COLOR_KEYS, ClubCrest, ColorValue, Crest, CrestArt } from './crest';
 import { CREST_ROWS } from './title';
 import { IconCheck, IconChevron, IconChevronLeft, IconClock, IconDice, IconPlay, IconPlus, IconRefresh, IconUsers } from './icons';
-import { mmss, useCountdown } from './hud';
+import { leftText, mmss, useCountdown } from './hud';
 import { uiSound } from './uisound';
 import { capitalize, isPluralClub, randomClubName, withArticle } from '../game/names';
 import { CLUB_BLACK, clubInitials, defaultCrest, hexLum, normalizeCrest, randomCrest, withStyle } from '../game/crest';
@@ -13,7 +13,7 @@ import {
   deviceZone, hourText, isLeagueCode, leagueClubs, leagueFixtures, leagueLang, leagueRounds, leagueTable, replayOf,
 } from '../game/league';
 import {
-  createLeague, deleteLeague, forgetLeague, inviteLink, joinLeague, kickMember, kickoffAt, leagueInfo, leagueState, leaveLeague, myLeagues, pulseUrgent, userActive, watchPulse,
+  createLeague, deadlineAt, deleteLeague, forgetLeague, inviteLink, joinLeague, kickMember, kickoffAt, leagueInfo, leagueState, leaveLeague, myLeagues, pulseUrgent, userActive, watchPulse,
   parseResumeCode, refreshLeague, rememberLeague, resumeCodeOf, startLeague, updateLeague,
 } from '../game/leagueNet';
 import { dropLeagueClub, leagueClubProgress } from '../game/leagueClub';
@@ -285,7 +285,7 @@ function CreateForm({ onDone }) {
             {MINUTES.map((m) => <option key={m} value={m}>{String(m).padStart(2, '0')}</option>)}
           </select>
         </span>
-        <small className="lig-hint">{tr('Les journées se jouent au plus tard chaque jour à <0/> (heure de cet appareil). Dès que tous les amis ont validé leur équipe, un compte à rebours de dix minutes s’affiche pour tous, puis les matchs commencent. Un retardataire joue avec une équipe choisie pour lui.', [hourText(hour, minute)])}</small>
+        <small className="lig-hint">{tr('Les journées se jouent au plus tard chaque jour à <0/> (heure de cet appareil). Dès que tous les amis ont validé leur équipe, un compte à rebours de dix minutes s’affiche pour tous, puis les matchs commencent ; une journée jouée ainsi en avance laisse jusqu’au lendemain pour la suivante. Un retardataire joue avec une équipe choisie pour lui.', [hourText(hour, minute)])}</small>
       </div>
       <ClubFields pseudo={pseudo} setPseudo={setPseudo} club={club} setClub={setClub} crest={crest} setCrest={setCrest} />
       <Problem text={problem} />
@@ -585,7 +585,7 @@ function LeagueDetail({ m, ask, flash, onGone, onReplay, onPlayClub, reload = 0 
           <p className="dir-note">{t('Une salle d’attente jamais lancée ferme d’elle-même au bout de 48 heures.')}</p>
         </>
       ) : (
-        <RunningLeague league={league} clubs={clubs} humans={humans} results={data.results} worldBefore={data.worldBefore} me={me} kickoff={kickoffAt(data)} onPlayClub={() => onPlayClub(m)} onReplay={onReplay} flash={flash} />
+        <RunningLeague league={league} clubs={clubs} humans={humans} results={data.results} worldBefore={data.worldBefore} me={me} kickoff={kickoffAt(data)} deadline={deadlineAt(data)} onPlayClub={() => onPlayClub(m)} onReplay={onReplay} flash={flash} />
       )}
 
       {!lobby && (
@@ -613,7 +613,12 @@ function KickoffNote({ at }) {
   const left = useCountdown(at);
   return <span className="lig-kickoff">{left > 0 ? <>{t('tous ont validé · coup d’envoi dans ')}<b>{mmss(left)}</b></> : t('coup d’envoi…')}</span>;
 }
-function RunningLeague({ league, clubs, humans, results: all, worldBefore, me, kickoff = null, onPlayClub, onReplay, flash }) {
+// Heure limite de la journée et temps qui reste (1.0.1)
+function DeadlineNote({ iso, at }) {
+  const left = useCountdown(at);
+  return <span className="lig-deadline">{t('au plus tard {deadlineText}', { deadlineText: deadlineText(iso) })}{left > 0 ? <b>{t('reste {left}', { left: leftText(left) })}</b> : left === 0 ? <b>{t('heure passée')}</b> : null}</span>;
+}
+function RunningLeague({ league, clubs, humans, results: all, worldBefore, me, kickoff = null, deadline = null, onPlayClub, onReplay, flash }) {
   const rounds = leagueRounds(league);
   // Une journée se découvre en regardant son match (0.8.20, règle du PDG) : celles que ton club n'a pas encore regardées
   // sur cet appareil restent cachées, scores, classement et palmarès compris.
@@ -647,7 +652,7 @@ function RunningLeague({ league, clubs, humans, results: all, worldBefore, me, k
         </section>
       )}
       <section className="dir-card lig-round">
-        <SectionHead label={t('Journée {min} / {rounds}', { min: Math.min(league.round + 1, rounds), rounds })} aside={league.deadline ? t('au plus tard {deadlineText}', { deadlineText: deadlineText(league.deadline) }) : null} />
+        <SectionHead label={t('Journée {min} / {rounds}', { min: Math.min(league.round + 1, rounds), rounds })} aside={league.deadline ? <DeadlineNote iso={league.deadline} at={deadline} /> : null} />
         <ul className="lig-ready">
           {humans.map((c) => (
             <li key={c.slot} className={c.validated ? 'ok' : ''}>

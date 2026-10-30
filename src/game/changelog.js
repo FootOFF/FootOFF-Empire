@@ -1,9 +1,17 @@
 import { t } from '../i18n/index';
-// Nouveautés du jeu, de la plus récente à la plus ancienne : l'écran « Nouveautés » (écran titre et menu pause) les
-// affiche, et une pastille signale une version pas encore lue (version vue : stockage local, src/ui/news.jsx).
+// Nouveautés du jeu, de la plus récente à la plus ancienne : l'historique des versions. Plus aucun écran ne les affiche
+// depuis la 1.0.1 (écran titre retiré en 1.0, menu pause en 1.0.1, demandes du PDG).
 // La version courante est celle de package.json (__APP_VERSION__), à faire avancer avec chaque entrée ajoutée ici.
 
 export const CHANGELOG = [
+  {
+    version: '1.0.1', date: '2026-10-30', title: t('Heure limite en vue'),
+    items: [
+      t('Championnats entre amis : au-dessus du prochain match, l’heure limite de la journée, le temps qui reste pour valider ton équipe, et qui a validé ou pas encore.'),
+      t('Une journée jouée en avance, parce que tout le monde avait validé, laisse jusqu’au lendemain pour la suivante.'),
+      t('Le menu pause va à l’essentiel : plus d’entrée Nouveautés.'),
+    ],
+  },
   {
     version: '1.0', date: '2026-10-30', title: t('La version publique'),
     items: [

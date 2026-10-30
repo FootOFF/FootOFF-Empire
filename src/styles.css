@@ -173,7 +173,7 @@ svg.fill { fill: currentColor; } /* icône pleine (triangle de lecture) */
 .hud > *, .hud-left > *, .hud-left > .presence > * { pointer-events: auto; transition: opacity .35s var(--ease), transform .35s var(--ease); }
 .game.cinematic :is(.hud > *, .hud-left > *, .hud-left > .presence > *) { opacity: 0; pointer-events: none; transform: translateY(6px); }
 .game.cinematic .plotlabel { display: none; }
-.game.has-panel :is(.hud-match, .hud-tools, .staff-bubble) { opacity: 0; pointer-events: none; transform: translateX(12px); }
+.game.has-panel :is(.hud-match, .hm-league, .hud-tools, .staff-bubble) { opacity: 0; pointer-events: none; transform: translateX(12px); }
 .game.has-panel .hud-dock { left: calc((100% - 484px) / 2); }
 .game.wide-panel :is(.hud > *, .hud-left > *, .hud-left > .presence > *) { opacity: 0; pointer-events: none; } /* le grand écran Effectif couvre l'Empire : le HUD s'efface */ /* reste dans la zone visible à gauche du panneau */
 
@@ -347,6 +347,24 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 .tri i:nth-child(3) { background: var(--red); }
 .hud-match .btn { --slant: 11px; min-height: 48px; padding: 0 calc(15px + var(--slant)); font-size: 21px; flex-shrink: 0; }
 .hud-match .btn svg { width: 16px; height: 16px; }
+/* bandeau de la journée de ligue (hud.jsx LeagueStrip, 1.0.1) : au-dessus de la carte, à sa largeur ; un affichage */
+.hm-league {
+  position: absolute; right: var(--gap); bottom: calc(var(--hud-bottom) + 80px + 6px); width: 440px;
+  display: flex; flex-direction: column; gap: 7px; padding: 9px 16px 10px; pointer-events: none;
+  transition: opacity .25s, transform .25s;
+}
+.hm-league-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
+.hm-league-when { display: inline-flex; align-items: center; gap: 7px; min-width: 0; font-size: 12px; line-height: 1.2; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hm-league-when svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--gold-light); }
+.hm-league-left { flex-shrink: 0; font-family: var(--font-disp); font-weight: 700; font-size: 15px; line-height: 1.2; letter-spacing: .04em; font-variant-numeric: tabular-nums; color: var(--gold-light); white-space: nowrap; }
+.hm-league-who { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 5px 14px; }
+.hm-league-who li { display: inline-flex; align-items: center; gap: 5px; min-width: 0; font-size: 12px; line-height: 1.2; color: var(--muted); }
+.hm-league-who li span { max-width: 14ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hm-league-who li i { width: 9px; height: 9px; flex-shrink: 0; border-radius: 50%; border: 1.5px solid currentColor; }
+.hm-league-who li svg { width: 12px; height: 12px; flex-shrink: 0; }
+.hm-league-who li.ok { color: var(--green); }
+.hm-league-who li.ok span { color: var(--text); }
+.hm-league-who li.away { opacity: .55; }
 
 /* ---- menu du bas (hud.jsx Dock) : le seul verre du jeu ---- */
 /* Manette, dans le complexe : les boutons utiles, en colonne en bas à gauche (jamais sous le menu du bas), discrets
@@ -2205,7 +2223,8 @@ html[lang="ar"] .sqc-xi { line-height: 1.45; padding: 0 7px; font-size: 12px; }
 
 /* PC moyen : carte de match et menu un peu plus étroits, le menu reste centré tant qu'il ne touche pas la carte */
 @media (min-width: 761px) and (max-width: 1420px), (orientation: landscape) and (max-height: 500px) and (max-width: 1420px) {
-  .hud-match { width: 380px; }
+  .hud-match, .hm-league { width: 380px; }
+  .hud-match-title.long { font-size: 21px; } /* deux lignes à côté de « Jouer » : la carte garde ses 80 px (bandeau de ligue calé dessus) */
   .hud-dock button { width: 80px; }
 }
 /* sous 1260 px, le menu centré toucherait la carte de match : il se cale à gauche */
@@ -2215,14 +2234,14 @@ html[lang="ar"] .sqc-xi { line-height: 1.45; padding: 0 7px; font-size: 12px; }
   .game.has-panel .hud-dock { left: var(--gap); }
   /* fiche d'une parcelle ouverte (colonne de gauche) : le menu passe à sa droite, la carte de match s'efface */
   .game.has-sel .hud-dock { left: calc(var(--gap) + var(--rail-w) + var(--s-3)); }
-  .game.has-sel .hud-match { opacity: 0; pointer-events: none; transform: translateX(12px); }
+  .game.has-sel :is(.hud-match, .hm-league) { opacity: 0; pointer-events: none; transform: translateX(12px); }
 }
 /* tablette et petit PC : les bandeaux se resserrent (la journée passe dans la ligne du club, la barre de notoriété
    s'efface), la carte de match et le menu aussi */
 @media (min-width: 761px) and (max-width: 1100px), (orientation: landscape) and (max-height: 500px) and (max-width: 1100px) {
   .hud-round, .hud-rep-bar, .hud-rep-next { display: none; }
   .hud-meta-round { display: inline; }
-  .hud-match { width: 340px; }
+  .hud-match, .hm-league { width: 340px; }
   .hud-match .btn { padding: 0 calc(10px + var(--slant)); font-size: 19px; }
   .hm-odds-long { display: none; } /* « 67 % de victoire » était coupé par le bouton : le pourcentage seul, à côté de la jauge */
   .hm-odds-short { display: inline; }
@@ -2264,6 +2283,7 @@ html[lang="ar"] .sqc-xi { line-height: 1.45; padding: 0 7px; font-size: 12px; }
   .hud-obj { padding: 8px 0 7px; row-gap: 6px; }
   .hud-obj-sub em { min-width: 0; }
   .hud-tip { position: absolute; left: var(--gap); right: var(--gap); bottom: calc(var(--hud-bottom) + 68px + 72px + 20px); }
+  .game:has(.hm-league) .hud-tip { bottom: calc(var(--hud-bottom) + 68px + 10px + 72px + 6px + 60px + 8px); } /* au-dessus du bandeau de ligue */
 
   .hud-tools { top: calc(var(--gap) + var(--top-h) + 8px); }
   .hud-tools button { font-size: 11px; gap: 4px; }
@@ -2280,6 +2300,7 @@ html[lang="ar"] .sqc-xi { line-height: 1.45; padding: 0 7px; font-size: 12px; }
   .hud-dock button { flex: 1; width: auto; min-width: 0; height: 58px; border-radius: 19px; }
   .hud-dock button span { font-size: 12px; letter-spacing: .06em; }
   .hud-match { left: var(--gap); right: var(--gap); width: auto; height: 72px; gap: 12px; padding: 0 10px 0 12px; bottom: calc(var(--hud-bottom) + 68px + 10px); }
+  .hm-league { left: var(--gap); right: var(--gap); width: auto; bottom: calc(var(--hud-bottom) + 68px + 10px + 72px + 6px); padding: 8px 12px 9px; gap: 6px; }
   .hud-match .crest.hm-crest { width: 36px; height: 42px; }
   .hud-crest .crest.hud-mark { width: 31px; height: 36px; }
   .hm-info { gap: 5px; }
@@ -4641,7 +4662,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   background: rgb(12, 12, 13); border: 1px solid var(--line); box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
   animation: fo-slide var(--dur) var(--ease);
 }
-.game:has(.bw) :is(.hud-tools, .hud-match) { opacity: 0; pointer-events: none; transform: translateX(12px); }
+.game:has(.bw) :is(.hud-tools, .hud-match, .hm-league) { opacity: 0; pointer-events: none; transform: translateX(12px); }
 .bw-head { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-4) var(--s-4) var(--s-3) var(--s-5); border-bottom: 1px solid var(--line); }
 .bw-head .panel-title { flex: 1; }
 .bw-head h3 { font-family: var(--font-disp); font-size: var(--d-lg); font-weight: 600; line-height: 1.2; }
@@ -5294,15 +5315,6 @@ html, body { overscroll-behavior: none; }
 .cm-rules-body::-webkit-scrollbar { display: none; }
 .cm-rules-body h3 { margin: 0 0 10px; font-family: var(--font-disp); font-weight: 600; font-size: var(--d-lg); color: var(--gold-light); }
 .cm-rules-body p { margin: 0 0 12px; font-size: var(--t-md); line-height: 1.6; color: var(--text-2); max-width: 62ch; }
-.news-v { padding: 14px 0 6px; border-top: 1px solid var(--line); }
-.news-v:first-child { padding-top: 0; border-top: 0; }
-.news-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
-.news-head h3 { margin: 0; font-family: var(--font-disp); font-weight: 600; font-size: var(--d-lg); color: var(--text); }
-.news-ver { font-family: var(--font-disp); font-weight: 600; font-size: var(--d-xs); padding: 2px 8px; border-radius: 3px; border: 1px solid var(--line-strong); color: var(--text-2); }
-.news-v.cur .news-ver { border-color: var(--gold-line); color: var(--gold-light); background: var(--gold-soft); }
-.news-date { font-family: var(--font-disp); font-weight: 600; font-size: var(--d-xs); color: var(--muted); margin-left: auto; }
-.news-v ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
-.news-v li { font-size: var(--t-sm); line-height: 1.55; color: var(--text-2); max-width: 62ch; }
 .cm-badge { display: inline-block; width: 8px; height: 8px; margin-left: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px rgba(199, 161, 90, .7); vertical-align: 2px; }
 .cm-item.on .cm-badge { background: var(--gold-ink); box-shadow: none; } /* entrée choisie (barre dorée) : point foncé, visible */
 /* langue choisie (écran titre, Langue) : un point doré après son nom, foncé sur la barre dorée */
@@ -5423,6 +5435,10 @@ html, body { overscroll-behavior: none; }
 .hm-kickoff.locked .hm-kickoff-row svg { width: 15px; height: 15px; }
 .lig-kickoff { color: var(--gold-light); }
 .lig-kickoff b { font-variant-numeric: tabular-nums; }
+/* heure limite de la journée (1.0.1) : le temps qui reste dessous, en or ; le titre de la journée ne se coupe pas */
+.lig-round > .ui-section-head > .eyebrow { white-space: nowrap; flex-shrink: 0; }
+.lig-deadline { text-align: right; }
+.lig-deadline b { display: block; margin-top: 2px; font-weight: 600; color: var(--gold-light); font-variant-numeric: tabular-nums; }
 @keyframes lig-spin { to { transform: rotate(360deg); } }
 .lig-head small { font-size: var(--t-xs); color: var(--muted); line-height: 1.45; }
 .lig-head small, .lig-head em { text-wrap: pretty; }

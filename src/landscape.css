@@ -139,6 +139,8 @@
   .hud-tools button svg { width: 18px; height: 18px; }
   .tools-dot { top: 6px; right: calc(50% - 14px); width: 8px; height: 8px; }
   .staff-bubble { --nub: 30px; left: auto; right: calc(var(--gap) + var(--tool) + 5px); width: min(340px, 52vw); padding: 12px 22px 12px 14px; top: calc(var(--gap) + var(--top-h) + 8px + var(--row, 0) * var(--tool-h) - 8px); }
+  /* bandeau de ligue en bas à droite (1.0.1) : la bulle s'arrête au-dessus, son texte défile au besoin (petits écrans couchés) */
+  .game:has(.hm-league) .staff-bubble { max-height: calc(100dvh - var(--gap) - var(--top-h) - var(--row, 0) * var(--tool-h) - var(--hud-bottom) - 115px); overflow-y: auto; scrollbar-width: none; }
   .staff-title { font-size: 19px; margin-top: 8px; }
   .staff-text { font-size: 12px; margin-top: 6px; }
   .staff-actions { margin-top: 10px; }
@@ -152,11 +154,14 @@
   .hud-match .crest.hm-crest { width: 30px; height: 35px; }
   .hm-info { gap: 4px; }
   .hm-eyebrow { font-size: 11px; }
-  .hud-match-title { font-size: 18px; }
+  .hud-match-title, .hud-match-title.long { font-size: 18px; }
   .hm-odds { font-size: 11px; }
   .tri { width: 48px; }
   .hud-match .btn { --slant: 9px; min-height: 40px; padding: 0 calc(8px + var(--slant)); font-size: 17px; }
-  .game.has-sel .hud-match { opacity: 0; pointer-events: none; }
+  .game.has-sel :is(.hud-match, .hm-league) { opacity: 0; pointer-events: none; }
+  .hm-league { left: auto; right: var(--gap); bottom: calc(var(--hud-bottom) + 56px + 5px); width: min(440px, calc(100% - var(--dock-w) - 3 * var(--gap))); padding: 6px 10px 7px; gap: 4px; }
+  .hm-league-when, .hm-league-who li { font-size: 11px; }
+  .hm-league-left { font-size: 13px; }
 
   /* --- Fiches du complexe : la parcelle ou le bâtiment à gauche, l'aperçu (et son action) à droite, chacun sur toute
      la hauteur entre le bandeau et le bas de l'écran ; le corps défile, l'action reste visible ---------------------- */
