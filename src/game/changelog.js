@@ -5,6 +5,12 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.7', date: '2026-10-30', title: t('La jauge de la musique'),
+    items: [
+      t('Réglages : le volume de la musique se règle sur une jauge, au doigt ou à la souris, et avec les flèches ou la manette.'),
+    ],
+  },
+  {
     version: '1.0.6', date: '2026-10-30', title: t('La musique du jeu'),
     items: [
       t('La musique de FootOFF Empire joue en fond, douce, à l’écran titre et dans le complexe. Elle s’efface pendant les matchs et reprend ensuite. Son volume se règle dans les Réglages.'),

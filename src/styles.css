@@ -5848,9 +5848,18 @@ html[lang="ar"] :is(.ld-step, .ld-tip-label) { font-family: 'Cairo', system-ui, 
 html[lang="ar"] .lv-sb-team b, html[lang="ar"] .lv-sb-team b span { line-height: 1.4; }
 html[lang="ar"] :is(.compo-card-text b, .lv-facts b) { line-height: 1.4; }
 
-/* Réglages : volume de la musique (1.0.6), quatre barres et le niveau ; la ligne choisie passe en couleur de texte */
-.cm-vol { flex-shrink: 0; display: inline-flex; align-items: center; gap: 10px; }
-.cm-vol-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 18px; }
-.cm-vol-bars i { width: 5px; border-radius: 1px; background: currentColor; opacity: .25; }
-.cm-vol-bars i.on { opacity: 1; }
-.cm-vol b { min-width: 4.2em; text-align: right; font-family: var(--font-disp); font-weight: 600; font-size: 15px; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+/* Réglages : volume de la musique (1.0.6, la jauge choisie par le PDG) : piste fine, remplissage or, curseur rond, zone de
+   prise plus haute que la piste (le doigt) ; propriétés logiques : en arabe, elle se remplit de droite à gauche */
+.cm-gauge { flex-shrink: 0; display: inline-flex; align-items: center; gap: 14px; }
+.cm-gauge-hit { position: relative; display: flex; align-items: center; width: 168px; height: 32px; cursor: pointer; touch-action: none; outline: none; }
+.cm-gauge-track { position: relative; flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .14); }
+.cm-gauge-track i { position: absolute; inset-block: 0; inset-inline-start: 0; border-radius: 2px; background: var(--gold-grad); }
+.cm-gauge-track b { position: absolute; top: 50%; width: 16px; height: 16px; margin-block-start: -8px; margin-inline-start: -8px; border-radius: 50%; background: var(--gold-light); box-shadow: 0 0 0 3px rgba(0, 0, 0, .55); transition: transform .15s; }
+.cm-gauge-hit:active .cm-gauge-track b, .cm-gauge-hit:focus-visible .cm-gauge-track b, .cm-music.on .cm-gauge-track b { transform: scale(1.15); }
+.cm-gauge em { min-width: 3.4em; text-align: end; font-style: normal; font-family: var(--font-disp); font-weight: 600; font-size: 17px; letter-spacing: .03em; color: var(--gold-light); font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
+  .cm-row.cm-music { flex-wrap: wrap; row-gap: 4px; }
+  .cm-music .cm-row-text { flex-basis: 100%; }
+  .cm-music .cm-gauge { flex: 1; }
+  .cm-music .cm-gauge-hit { flex: 1; width: auto; height: 36px; }
+}

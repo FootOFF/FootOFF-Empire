@@ -17,7 +17,7 @@ import { uiSound } from './uisound';
 import { clubStars } from '../game/crest';
 import { errorReport } from './errlog';
 import { canFullscreen, setFullscreen, useFullscreen } from './fullscreen';
-import { t, tr } from '../i18n/index';
+import { isRTL, t, tr } from '../i18n/index';
 import { LINK, SOCIALS } from './socials';
 
 export { setUiSound, uiSound } from './uisound';
@@ -150,15 +150,31 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
   const { cur, setCur, refs, hover } = menu;
   const row = (i) => ({ ref: (el) => { refs.current[i] = el; }, onPointerEnter: hover(i), onFocus: () => setCur(i), style: { '--i': i } });
   const vibOn = vibration && canVibrate;
-  // musique (1.0.6) : coupée, 25, 50, 75 ou 100 % ; choisir passe au niveau suivant, gauche et droite baissent ou montent
-  const LEVELS = [0, 0.25, 0.5, 0.75, 1];
-  const lvl = Math.max(0, LEVELS.indexOf(musicVolume));
-  const setLevel = (i) => { if (onMusicVolume && i >= 0 && i < LEVELS.length && i !== lvl) { onMusicVolume(LEVELS[i]); uiSound('select'); } };
+  // musique (1.0.6) : une jauge de 0 à 100 % (proposition A, choisie par le PDG) ; on la fait glisser au doigt ou à la
+  // souris, gauche et droite (clavier, manette) la règlent de 10 en 10 ; en arabe, elle se remplit de droite à gauche
+  const vol = Math.round(musicVolume * 100);
+  const gauge = useRef(null);
+  const setVol = (v, tick = true) => {
+    const x = Math.round(Math.min(1, Math.max(0, v)) * 20) / 20;
+    if (!onMusicVolume || x === musicVolume) return;
+    onMusicVolume(x);
+    if (tick) uiSound('move');
+  };
   useKeydown((e) => {
     if (!active || mode !== 'menu' || cur !== at('music') || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
     e.preventDefault();
-    setLevel(lvl + (e.key === 'ArrowRight' ? 1 : -1));
+    setVol(musicVolume + ((e.key === 'ArrowRight') !== isRTL() ? 0.1 : -0.1));
   });
+  const atPointer = (e) => {
+    const r = gauge.current.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;
+    return isRTL() ? 1 - x : x;
+  };
+  const drag = {
+    onPointerDown: (e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.setPointerCapture?.(e.pointerId); setVol(atPointer(e), false); },
+    onPointerMove: (e) => { if (e.currentTarget.hasPointerCapture?.(e.pointerId)) setVol(atPointer(e), false); },
+    onPointerUp: (e) => { e.currentTarget.releasePointerCapture?.(e.pointerId); uiSound('select'); },
+  };
   const doExport = async () => {
     uiSound('select');
     const c = await onExport();
@@ -236,15 +252,17 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
         <span className="cm-row-text"><strong>{t('Son')}</strong><span>{t('Ambiance du stade, sifflet, pièces et sons du menu.')}</span></span>
         <span className={`switch ${muted ? '' : 'on'}`} aria-hidden="true"><i /></span>
       </button>
-      <button type="button" role="menuitem" disabled={!onMusicVolume} className={`cm-row ${cur === at('music') ? 'on' : ''}`} {...row(at('music'))}
-        aria-label={t('Musique : {v}', { v: lvl ? `${LEVELS[lvl] * 100} %` : t('coupée') })} onClick={() => setLevel((lvl + 1) % LEVELS.length)}>
+      <div role="group" aria-label={t('Musique')} tabIndex={-1} className={`cm-row cm-music ${cur === at('music') ? 'on' : ''}`} {...row(at('music'))}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text"><strong>{t('Musique')}</strong><span>{t('La musique du jeu, en fond. Elle s’efface pendant les matchs et reprend ensuite.')}</span></span>
-        <span className="cm-vol" aria-hidden="true">
-          <span className="cm-vol-bars">{LEVELS.slice(1).map((v, i) => <i key={v} className={i < lvl ? 'on' : ''} style={{ height: `${6 + i * 4}px` }} />)}</span>
-          <b>{lvl ? `${LEVELS[lvl] * 100} %` : t('Coupée')}</b>
+        <span className="cm-gauge">
+          <span ref={gauge} className="cm-gauge-hit" role="slider" tabIndex={0} aria-label={t('Volume de la musique')} aria-valuemin={0} aria-valuemax={100}
+            aria-valuenow={vol} aria-valuetext={vol ? `${vol} %` : t('coupée')} aria-disabled={!onMusicVolume} {...drag}>
+            <span className="cm-gauge-track"><i style={{ inlineSize: `${vol}%` }} /><b style={{ insetInlineStart: `${vol}%` }} /></span>
+          </span>
+          <em>{vol ? `${vol} %` : t('Coupée')}</em>
         </span>
-      </button>
+      </div>
       <button type="button" role="menuitemcheckbox" aria-checked={vibOn} disabled={!canVibrate} className={`cm-row ${cur === at('vibration') ? 'on' : ''}`} {...row(at('vibration'))} onClick={() => { onToggleVibration(); uiSound('select'); }}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">

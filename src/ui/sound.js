@@ -3,15 +3,15 @@
 // Le contexte audio est créé au premier geste de l'utilisateur (coup d'envoi), comme l'exigent les navigateurs.
 
 const KEY = 'fo-sound';
-// Musique de fond (1.0.6, demande du PDG) : la chanson du jeu en boucle, douce, à son volume (Réglages : coupée, 25, 50,
-// 75 ou 100 %), dans son propre contexte audio (celui du stade s'éteint après chaque match). Elle s'efface en fondu
+// Musique de fond (1.0.6, demande du PDG) : la chanson du jeu en boucle, douce, à son volume (Réglages : une jauge de 0 à
+// 100 %, 50 % par défaut), dans son propre contexte audio (celui du stade s'éteint après chaque match). Elle s'efface en fondu
 // pendant les matchs, les rejeux, les épreuves et les cérémonies, quand le jeu est caché ou le son coupé, puis reprend là
 // où elle en était. Lue en continu depuis le serveur, jamais précachée ; volume par Web Audio (l'iPhone ignore celui de
 // l'élément audio). Fichier : public/audio/footoff-empire.mp3 (-16 LUFS, 96 kb/s).
 const MUSIC_KEY = 'fo-music';
 const MUSIC_URL = `${import.meta.env.BASE_URL}audio/footoff-empire.mp3`;
 const MUSIC_LEVEL = 0.55; // à 100 % : la chanson sous le stade et les sons du menu
-export const MUSIC_LEVELS = [0, 0.25, 0.5, 0.75, 1];
+const musicLevel = (v) => (Number.isFinite(v) ? Math.round(Math.min(1, Math.max(0, v)) * 20) / 20 : 0.5); // pas de 5 %
 
 function noiseBuffer(ctx, seconds = 3) {
   const len = ctx.sampleRate * seconds;
@@ -35,7 +35,7 @@ export function createStadiumSound() {
   let musicVol = 0.5;
   try {
     const v = localStorage.getItem(MUSIC_KEY);
-    if (v !== null && MUSIC_LEVELS.includes(Number(v))) musicVol = Number(v);
+    if (v !== null && v !== '' && Number.isFinite(Number(v))) musicVol = musicLevel(Number(v));
   } catch { /* préférence indisponible : douce par défaut */ }
   let mctx = null;
   let mel = null;
@@ -57,7 +57,7 @@ export function createStadiumSound() {
     mctx.createMediaElementSource(mel).connect(mgain).connect(mctx.destination);
     return true;
   }
-  function music() {
+  function music(quick = false) { // quick : le joueur règle le volume, il l'entend aussitôt
     const on = musicOn();
     if (!mel && !on) return;
     if (!mel && navigator.userActivation && !navigator.userActivation.hasBeenActive) { mpending = true; return; } // les navigateurs attendent un geste
@@ -71,7 +71,7 @@ export function createStadiumSound() {
       mctx.resume?.();
       const p = mel.play();
       if (p?.catch) p.catch(() => { mpending = true; });
-      g.linearRampToValueAtTime(musicVol * MUSIC_LEVEL, t + 2);
+      g.linearRampToValueAtTime(musicVol * MUSIC_LEVEL, t + (quick ? 0.15 : 2));
     } else {
       g.linearRampToValueAtTime(0, t + 1.2);
       mtimer = setTimeout(() => { if (!musicOn()) mel.pause(); }, 1300);
@@ -156,9 +156,9 @@ export function createStadiumSound() {
     setMusic(on) { mwanted = !!on; music(); },
     get musicVolume() { return musicVol; },
     setMusicVolume(v) {
-      musicVol = MUSIC_LEVELS.includes(v) ? v : 0.5;
+      musicVol = musicLevel(v);
       try { localStorage.setItem(MUSIC_KEY, String(musicVol)); } catch { /* gardé pour la session */ }
-      music();
+      music(true);
     },
     whistle,
     chance() { swell(0.42, 0.35, 1.4, 800); }, // « ooh »
