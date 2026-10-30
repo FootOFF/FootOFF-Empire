@@ -193,7 +193,7 @@ export default function App({ preview = null }) {
   const sound = useRef(null);
   if (!sound.current) sound.current = preview ? silentSound : createStadiumSound();
   const [, bumpSound] = useState(0); // le son se coupe aussi pendant le direct : on relit sound.current.muted
-  const uiSound = useCallback((kind) => sound.current.ui?.(kind), []);
+  const uiSound = useCallback((kind, x) => sound.current.ui?.(kind, x), []);
   useEffect(() => { setUiSound(uiSound); }, [uiSound]);
 
   useEffect(() => {
@@ -609,6 +609,8 @@ export default function App({ preview = null }) {
     onToggleSound: () => { sound.current.setMuted(!sound.current.muted); bumpSound((n) => n + 1); },
     musicVolume: sound.current.musicVolume ?? 0,
     onMusicVolume: (v) => { sound.current.setMusicVolume?.(v); bumpSound((n) => n + 1); },
+    sfxVolume: sound.current.sfxVolume ?? 1,
+    onSfxVolume: (v) => { sound.current.setSfxVolume?.(v); bumpSound((n) => n + 1); },
     vibration,
     canVibrate: canVibrate(),
     onToggleVibration: () => { setVibration(!vibration); setVibrationState(!vibration); },

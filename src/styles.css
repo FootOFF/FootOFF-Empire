@@ -5855,13 +5855,13 @@ html[lang="ar"] :is(.compo-card-text b, .lv-facts b) { line-height: 1.4; }
 .cm-gauge-track { position: relative; flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .14); }
 .cm-gauge-track i { position: absolute; inset-block: 0; inset-inline-start: 0; border-radius: 2px; background: var(--gold-grad); }
 .cm-gauge-track b { position: absolute; top: 50%; width: 16px; height: 16px; margin-block-start: -8px; margin-inline-start: -8px; border-radius: 50%; background: var(--gold-light); box-shadow: 0 0 0 3px rgba(0, 0, 0, .55); transition: transform .15s; }
-.cm-gauge-hit:active .cm-gauge-track b, .cm-gauge-hit:focus-visible .cm-gauge-track b, .cm-music.on .cm-gauge-track b { transform: scale(1.15); }
+.cm-gauge-hit:active .cm-gauge-track b, .cm-gauge-hit:focus-visible .cm-gauge-track b, .cm-volume.on .cm-gauge-track b { transform: scale(1.15); }
 .cm-gauge em { min-width: 3.4em; text-align: end; font-style: normal; font-family: var(--font-disp); font-weight: 600; font-size: 17px; letter-spacing: .03em; color: var(--gold-light); font-variant-numeric: tabular-nums; }
 @media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
-  .cm-row.cm-music { flex-wrap: wrap; row-gap: 4px; }
-  .cm-music .cm-row-text { flex-basis: 100%; }
-  .cm-music .cm-gauge { flex: 1; }
-  .cm-music .cm-gauge-hit { flex: 1; width: auto; height: 36px; }
+  .cm-row.cm-volume { flex-wrap: wrap; row-gap: 4px; }
+  .cm-volume .cm-row-text { flex-basis: 100%; }
+  .cm-volume .cm-gauge { flex: 1; }
+  .cm-volume .cm-gauge-hit { flex: 1; width: auto; height: 36px; }
 }
 
 /* Écran de chargement : la musique attend un geste (1.0.8) ; sous le logo, sans rien déplacer (le logo est le repère),
@@ -5873,3 +5873,23 @@ html[lang="ar"] :is(.compo-card-text b, .lv-facts b) { line-height: 1.4; }
 html[lang="ar"] .ld-music { font-family: 'Cairo', system-ui, sans-serif; letter-spacing: 0; font-size: 13px; }
 @keyframes ld-music { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ld-music { animation: none; } }
+
+/* Fondation au téléphone debout (1.0.10, demande du PDG : il fallait défiler pour « Retour » et la mention de version
+   le recouvrait). Barre du haut et mention du bas masquées (le club de la partie en cours et la version restent sur le
+   menu), titre seul, sélecteurs resserrés, « Fonder le club » et « Retour » côte à côte : tout tient dès 600 px de haut.
+   Plus bas encore, seul l'écusson défile ; les deux boutons restent toujours à l'écran. */
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
+  .ts:not(.ts-menu) .ts-bottom, .ts.ts-create .ts-top { display: none; }
+  .ts.ts-create .ts-col { overflow: hidden; padding-top: 20px; padding-bottom: calc(16px + var(--hb)); }
+  .ts.ts-create .ts-form { flex-shrink: 1; min-height: 0; gap: 10px; }
+  .ts-form > .eyebrow { display: none; }
+  .ts-form .ts-field { margin-top: 0; gap: 2px; }
+  .ts-form .ts-input input { padding: 6px 0; }
+  .ts-crest { flex-shrink: 1; min-height: 0; margin-top: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  .ts-crest::-webkit-scrollbar { display: none; }
+  .ts-crest-rows { gap: 4px; }
+  .ts-pick { min-height: 34px; padding-block: 1px; }
+  .ts-actions { flex-shrink: 0; flex-direction: row; margin-top: 2px; }
+  .ts-actions .btn-xl { min-height: 52px; padding-inline: 12px; font-size: 20px; }
+  .ts-actions .btn-xl[type="submit"] { flex: 1.7; }
+}

@@ -16,7 +16,7 @@ export function CoachCard({ content, onPrimary, onSecondary, onSkip }) {
           {Array.from({ length: content.total }, (_, i) => <i key={i} className={i < content.index ? 'on' : ''} />)}
         </span>
       </header>
-      <span className="coach-who">{t('Ta directrice sportive')}</span>
+      <span className="coach-who">{t('Ta direction sportive')}</span>
       <strong className="coach-title">{content.title}</strong>
       <p className="coach-text">{content.text}</p>
       {content.why && <p className="coach-why">{content.why}</p>}

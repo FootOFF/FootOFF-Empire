@@ -110,7 +110,7 @@ function Field({ label, value, onChange, max, placeholder = '', dice = null, hin
     <label className="lig-field">
       <span className="ts-field-label">{label}</span>
       <span className={`lig-input ${mono ? 'mono' : ''}`}>
-        <input value={value} onChange={(e) => onChange(e.target.value)} maxLength={max} autoComplete="off" spellCheck={false} placeholder={placeholder} />
+        <input value={value} onChange={(e) => { uiSound(e.target.value.length < value.length ? 'keyback' : 'key'); onChange(e.target.value); }} maxLength={max} autoComplete="off" spellCheck={false} placeholder={placeholder} />
         {dice && <button type="button" className="ts-dice" onClick={() => { dice(); uiSound('move'); }} aria-label={t('{label} : autre proposition', { label })} title={t('Autre proposition')}><IconDice /></button>}
       </span>
       {hint && <small className="lig-hint">{hint}</small>}

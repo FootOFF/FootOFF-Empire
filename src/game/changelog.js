@@ -5,6 +5,16 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.10', date: '2026-10-30', title: t('Fondation, sons et réglages'),
+    items: [
+      t('Au téléphone, l’écran « Fonde ton club » tient en entier : « Fonder le club » et « Retour » côte à côte, sans défiler, et plus rien ne se superpose.'),
+      t('Réglages : le volume des sons se règle sur sa propre jauge, à côté de celle de la musique.'),
+      t('Chaque lettre du nom de ton club se tape avec un petit son feutré.'),
+      t('Les boutons − et + des sommes (offres, salaires, primes, prix) jouent une note douce qui monte avec la somme.'),
+      t('Le tutoriel est mené par ta direction sportive.'),
+    ],
+  },
+  {
     version: '1.0.9', date: '2026-10-30', title: t('Une musique discrète'),
     items: [
       t('Sur iPhone, la musique n’apparaît plus comme un morceau dans le lecteur du téléphone (écran verrouillé, haut de l’écran) : elle fait partie du jeu, comme ses autres sons.'),
@@ -631,7 +641,7 @@ export const CHANGELOG = [
     version: '0.1.0', date: '2026-10-24', title: t('Version de départ'),
     items: [
       t('Direction du club : droits TV, salaires et billetterie à négocier.'),
-      t('Tutoriel en sept étapes mené par la directrice sportive, objectifs du président à chaque saison.'),
+      t('Tutoriel en sept étapes mené par la direction sportive, objectifs du président à chaque saison.'),
       t('Centre d’entraînement avec huit épreuves en 3D, académie, mercato négocié, Coupe nationale et Coupe d’Europe.'),
     ],
   },

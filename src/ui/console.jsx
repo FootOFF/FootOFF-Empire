@@ -133,37 +133,22 @@ function PadGlyph({ k }) {
 // pour restaurer une partie). Le code est copié dans le presse-papiers ; s'il ne peut pas l'être, il s'affiche dans un
 // champ à copier soi-même. Coller un code mène à une confirmation du jeu (App) avant de remplacer la partie.
 const sizeOf = (code) => t('{max} Ko', { max: Math.max(1, Math.round(code.length / 1024)) });
-// focus : l'entrée choisie à l'ouverture (« fluid » : la notification « Le jeu rame » mène au réglage lui-même)
-export function SettingsView({ settings, onBack, active = true, focus = null }) {
-  const { muted, onToggleSound, musicVolume = 0, onMusicVolume = null, vibration, canVibrate, onToggleVibration, fluid = false, onToggleFluid = null, save = null, onExport = null, onImport = null } = settings;
-  const [mode, setMode] = useState('menu'); // menu | export (code affiché) | import (code à coller)
-  const [code, setCode] = useState('');
-  const [note, setNote] = useState(null);
-  const [fsOk] = useState(canFullscreen); // PC seulement (fullscreen.js)
-  const fullscreen = useFullscreen();
-  // Retour en tête (0.8.8, demande du PDG) : la même ligne qu'avant, fixe au-dessus de la liste qui défile, première de
-  // la navigation ; le curseur s'ouvre sur Son
-  const rows = [{ id: 'back' }, { id: 'sound' }, { id: 'music', disabled: !onMusicVolume }, { id: 'vibration', disabled: !canVibrate }, { id: 'fluid', disabled: !onToggleFluid }, ...(fsOk ? [{ id: 'fullscreen' }] : []),
-    { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'report' }, ...SOCIALS.map((x) => ({ id: x.id }))];
-  const at = (id) => rows.findIndex((r) => r.id === id); // rang d'une entrée (le plein écran n'existe que sur PC)
-  const menu = useMenu(rows, { initial: focus ? Math.max(0, at(focus)) : at('sound'), onBack: () => (mode === 'menu' ? onBack() : setMode('menu')), active: active && mode === 'menu' });
-  const { cur, setCur, refs, hover } = menu;
-  const row = (i) => ({ ref: (el) => { refs.current[i] = el; }, onPointerEnter: hover(i), onFocus: () => setCur(i), style: { '--i': i } });
-  const vibOn = vibration && canVibrate;
-  // musique (1.0.6) : une jauge de 0 à 100 % (proposition A, choisie par le PDG) ; on la fait glisser au doigt ou à la
-  // souris, gauche et droite (clavier, manette) la règlent de 10 en 10 ; en arabe, elle se remplit de droite à gauche
-  const vol = Math.round(musicVolume * 100);
+// Volume (musique 1.0.6, sons 1.0.10) : une jauge de 0 à 100 % (proposition A, choisie par le PDG) ; on la fait glisser
+// au doigt ou à la souris, gauche et droite (clavier, manette) la règlent de 10 en 10 ; en arabe, elle se remplit de
+// droite à gauche
+function VolumeRow({ id, label, text, aria, off, value, onChange, on, keys, rowProps }) {
+  const vol = Math.round(value * 100);
   const gauge = useRef(null);
   const setVol = (v, tick = true) => {
     const x = Math.round(Math.min(1, Math.max(0, v)) * 20) / 20;
-    if (!onMusicVolume || x === musicVolume) return;
-    onMusicVolume(x);
+    if (!onChange || x === value) return;
+    onChange(x);
     if (tick) uiSound('move');
   };
   useKeydown((e) => {
-    if (!active || mode !== 'menu' || cur !== at('music') || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    if (!keys || !on || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
     e.preventDefault();
-    setVol(musicVolume + ((e.key === 'ArrowRight') !== isRTL() ? 0.1 : -0.1));
+    setVol(value + ((e.key === 'ArrowRight') !== isRTL() ? 0.1 : -0.1));
   });
   const atPointer = (e) => {
     const r = gauge.current.getBoundingClientRect();
@@ -175,6 +160,38 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
     onPointerMove: (e) => { if (e.currentTarget.hasPointerCapture?.(e.pointerId)) setVol(atPointer(e), false); },
     onPointerUp: (e) => { e.currentTarget.releasePointerCapture?.(e.pointerId); uiSound('select'); },
   };
+  return (
+    <div role="group" aria-label={label} tabIndex={-1} className={`cm-row cm-volume cm-vol-${id} ${on ? 'on' : ''}`} {...rowProps}>
+      <span className="cm-bar" aria-hidden="true" />
+      <span className="cm-row-text"><strong>{label}</strong><span>{text}</span></span>
+      <span className="cm-gauge">
+        <span ref={gauge} className="cm-gauge-hit" role="slider" tabIndex={0} aria-label={aria} aria-valuemin={0} aria-valuemax={100}
+          aria-valuenow={vol} aria-valuetext={vol ? `${vol} %` : off.toLowerCase()} aria-disabled={!onChange} {...drag}>
+          <span className="cm-gauge-track"><i style={{ inlineSize: `${vol}%` }} /><b style={{ insetInlineStart: `${vol}%` }} /></span>
+        </span>
+        <em>{vol ? `${vol} %` : off}</em>
+      </span>
+    </div>
+  );
+}
+
+// focus : l'entrée choisie à l'ouverture (« fluid » : la notification « Le jeu rame » mène au réglage lui-même)
+export function SettingsView({ settings, onBack, active = true, focus = null }) {
+  const { musicVolume = 0, onMusicVolume = null, sfxVolume = 1, onSfxVolume = null, vibration, canVibrate, onToggleVibration, fluid = false, onToggleFluid = null, save = null, onExport = null, onImport = null } = settings;
+  const [mode, setMode] = useState('menu'); // menu | export (code affiché) | import (code à coller)
+  const [code, setCode] = useState('');
+  const [note, setNote] = useState(null);
+  const [fsOk] = useState(canFullscreen); // PC seulement (fullscreen.js)
+  const fullscreen = useFullscreen();
+  // Retour en tête (0.8.8, demande du PDG) : la même ligne qu'avant, fixe au-dessus de la liste qui défile, première de
+  // la navigation ; le curseur s'ouvre sur Musique
+  const rows = [{ id: 'back' }, { id: 'music', disabled: !onMusicVolume }, { id: 'sound', disabled: !onSfxVolume }, { id: 'vibration', disabled: !canVibrate }, { id: 'fluid', disabled: !onToggleFluid }, ...(fsOk ? [{ id: 'fullscreen' }] : []),
+    { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'report' }, ...SOCIALS.map((x) => ({ id: x.id }))];
+  const at = (id) => rows.findIndex((r) => r.id === id); // rang d'une entrée (le plein écran n'existe que sur PC)
+  const menu = useMenu(rows, { initial: focus ? Math.max(0, at(focus)) : at('music'), onBack: () => (mode === 'menu' ? onBack() : setMode('menu')), active: active && mode === 'menu' });
+  const { cur, setCur, refs, hover } = menu;
+  const row = (i) => ({ ref: (el) => { refs.current[i] = el; }, onPointerEnter: hover(i), onFocus: () => setCur(i), style: { '--i': i } });
+  const vibOn = vibration && canVibrate;
   const doExport = async () => {
     uiSound('select');
     const c = await onExport();
@@ -247,22 +264,10 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
       <span className="cm-row-text"><strong>{t('Retour')}</strong></span>
     </button>
     <div className="cm-settings" role="menu" aria-label={t('Réglages')}>
-      <button type="button" role="menuitemcheckbox" aria-checked={!muted} className={`cm-row ${cur === at('sound') ? 'on' : ''}`} {...row(at('sound'))} onClick={() => { onToggleSound(); uiSound('select'); }}>
-        <span className="cm-bar" aria-hidden="true" />
-        <span className="cm-row-text"><strong>{t('Son')}</strong><span>{t('Ambiance du stade, sifflet, pièces et sons du menu.')}</span></span>
-        <span className={`switch ${muted ? '' : 'on'}`} aria-hidden="true"><i /></span>
-      </button>
-      <div role="group" aria-label={t('Musique')} tabIndex={-1} className={`cm-row cm-music ${cur === at('music') ? 'on' : ''}`} {...row(at('music'))}>
-        <span className="cm-bar" aria-hidden="true" />
-        <span className="cm-row-text"><strong>{t('Musique')}</strong><span>{t('La musique du jeu, en fond. Elle s’efface pendant les matchs et reprend ensuite.')}</span></span>
-        <span className="cm-gauge">
-          <span ref={gauge} className="cm-gauge-hit" role="slider" tabIndex={0} aria-label={t('Volume de la musique')} aria-valuemin={0} aria-valuemax={100}
-            aria-valuenow={vol} aria-valuetext={vol ? `${vol} %` : t('coupée')} aria-disabled={!onMusicVolume} {...drag}>
-            <span className="cm-gauge-track"><i style={{ inlineSize: `${vol}%` }} /><b style={{ insetInlineStart: `${vol}%` }} /></span>
-          </span>
-          <em>{vol ? `${vol} %` : t('Coupée')}</em>
-        </span>
-      </div>
+      <VolumeRow id="music" label={t('Musique')} text={t('La musique du jeu, en fond. Elle s’efface pendant les matchs et reprend ensuite.')} aria={t('Volume de la musique')}
+        off={t('Coupée')} value={musicVolume} onChange={onMusicVolume} on={cur === at('music')} keys={active && mode === 'menu'} rowProps={row(at('music'))} />
+      <VolumeRow id="sound" label={t('Sons')} text={t('Ambiance du stade, sifflet, pièces et sons du menu.')} aria={t('Volume des sons')}
+        off={t('Coupés')} value={sfxVolume} onChange={onSfxVolume} on={cur === at('sound')} keys={active && mode === 'menu'} rowProps={row(at('sound'))} />
       <button type="button" role="menuitemcheckbox" aria-checked={vibOn} disabled={!canVibrate} className={`cm-row ${cur === at('vibration') ? 'on' : ''}`} {...row(at('vibration'))} onClick={() => { onToggleVibration(); uiSound('select'); }}>
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text">

@@ -2,7 +2,10 @@
 // les occasions, clameur sur les buts, soupir quand on encaisse, sifflet de l'arbitre.
 // Le contexte audio est créé au premier geste de l'utilisateur (coup d'envoi), comme l'exigent les navigateurs.
 
-const KEY = 'fo-sound';
+const KEY = 'fo-sound'; // interrupteur Son jusqu'à la 1.0.9 ('off' : coupé), lu une fois pour la jauge des sons
+// Sons (1.0.10, demande du PDG) : une jauge de 0 à 100 % à côté de celle de la musique (100 % : le niveau d'avant, 0 % :
+// coupés), indépendante d'elle. Le bouton du direct (Couper le son) passe à 0 % et « Remettre le son » retrouve le niveau.
+const SFX_KEY = 'fo-sfx';
 // Musique de fond (1.0.6, demande du PDG) : la chanson du jeu en boucle, douce, à son volume (Réglages : une jauge de 0 à
 // 100 %, 50 % par défaut), dans son propre contexte audio (celui du stade s'éteint après chaque match). Elle s'efface en fondu
 // pendant les matchs, les rejeux, les épreuves et les cérémonies, quand le jeu est caché ou le son coupé, puis reprend là
@@ -28,7 +31,7 @@ const setMusicWaiting = (w) => {
   musicWaitingNow = w;
   for (const f of musicSubs) f();
 };
-const musicLevel = (v) => (Number.isFinite(v) ? Math.round(Math.min(1, Math.max(0, v)) * 20) / 20 : 0.5); // pas de 5 %
+const volLevel = (v) => (Number.isFinite(v) ? Math.round(Math.min(1, Math.max(0, v)) * 20) / 20 : 0.5); // pas de 5 %
 
 function noiseBuffer(ctx, seconds = 3) {
   const len = ctx.sampleRate * seconds;
@@ -47,13 +50,23 @@ export function createStadiumSound() {
   let ctx = null;
   let master, crowdGain, crowdFilter;
   let base = 0; // niveau de la rumeur entre deux clameurs : celui du match (start), sinon le silence
-  let muted = false;
-  try { muted = localStorage.getItem(KEY) === 'off'; } catch { /* préférence indisponible */ }
   let musicVol = 0.5;
   try {
     const v = localStorage.getItem(MUSIC_KEY);
-    if (v !== null && v !== '' && Number.isFinite(Number(v))) musicVol = musicLevel(Number(v));
+    if (v !== null && v !== '' && Number.isFinite(Number(v))) musicVol = volLevel(Number(v));
   } catch { /* préférence indisponible : douce par défaut */ }
+  let sfxVol = 1;
+  try {
+    const v = localStorage.getItem(SFX_KEY);
+    if (v !== null && v !== '' && Number.isFinite(Number(v))) sfxVol = volLevel(Number(v));
+    else if (localStorage.getItem(KEY) === 'off') { // « Son coupé » d'avant : il taisait aussi la musique, qui reste muette
+      sfxVol = 0;
+      musicVol = 0;
+      localStorage.setItem(SFX_KEY, '0');
+      localStorage.setItem(MUSIC_KEY, '0');
+    }
+  } catch { /* préférence indisponible */ }
+  let sfxLast = sfxVol || 1; // le niveau que « Remettre le son » retrouve
   let mctx = null;
   let mgain = null;
   let mbuf = null; // la chanson décodée
@@ -64,7 +77,7 @@ export function createStadiumSound() {
   let mwanted = false;
   let mtimer = 0;
   let mwait = 0;
-  const musicOn = () => mwanted && !muted && musicVol > 0;
+  const musicOn = () => mwanted && musicVol > 0;
   // en attente d'un geste : voulue, mais le navigateur garde le contexte audio suspendu
   const musicCheck = () => setMusicWaiting(!!mctx && musicOn() && mctx.state !== 'running');
   function musicReady() {
@@ -156,7 +169,7 @@ export function createStadiumSound() {
     if (!AC) return false;
     ctx = new AC();
     master = ctx.createGain();
-    master.gain.value = muted ? 0 : 0.9;
+    master.gain.value = 0.9 * sfxVol;
     master.connect(ctx.destination);
     const src = ctx.createBufferSource();
     src.buffer = noiseBuffer(ctx);
@@ -211,20 +224,24 @@ export function createStadiumSound() {
     }
   }
 
+  function setSfx(v) {
+    sfxVol = volLevel(v);
+    if (sfxVol > 0) sfxLast = sfxVol;
+    try { localStorage.setItem(SFX_KEY, String(sfxVol)); } catch { /* gardé pour la session */ }
+    if (ctx) master.gain.setTargetAtTime(0.9 * sfxVol, ctx.currentTime, 0.05);
+  }
+
   return {
-    get muted() { return muted; },
+    get muted() { return sfxVol === 0; },
     start() { if (ensure()) { ctx.resume?.(); base = 0.18; swell(0.18, 1.5, 0.1); } },
-    setMuted(m) {
-      muted = m;
-      try { localStorage.setItem(KEY, m ? 'off' : 'on'); } catch { /* idem */ }
-      if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05);
-      music();
-    },
+    setMuted(m) { setSfx(m ? 0 : sfxLast); },
+    get sfxVolume() { return sfxVol; },
+    setSfxVolume: setSfx,
     // musique de fond : voulue ou non à cet instant (App : hors match, rejeu, épreuves, cérémonies, jeu visible)
     setMusic(on) { mwanted = !!on; music(); },
     get musicVolume() { return musicVol; },
     setMusicVolume(v) {
-      musicVol = musicLevel(v);
+      musicVol = volLevel(v);
       try { localStorage.setItem(MUSIC_KEY, String(musicVol)); } catch { /* gardé pour la session */ }
       music(true);
     },
@@ -271,8 +288,8 @@ export function createStadiumSound() {
     },
     // sons des menus (écran titre, pause) : déplacement (petit clic), validation (deux notes qui montent), retour
     // (une note qui descend). Rien avant le premier geste de l'utilisateur (le navigateur refuserait le son).
-    ui(kind) {
-      if (muted || (navigator.userActivation && !navigator.userActivation.hasBeenActive) || !ensure()) return;
+    ui(kind, x = 0.5) {
+      if (!sfxVol || (navigator.userActivation && !navigator.userActivation.hasBeenActive) || !ensure()) return;
       ctx.resume?.();
       const t = ctx.currentTime;
       const tone = (f0, f1, at, len, vol, type = 'sine') => {
@@ -289,6 +306,23 @@ export function createStadiumSound() {
         osc.stop(t + at + len + 0.02);
       };
       if (kind === 'move') tone(1500, 1250, 0, 0.045, 0.018);
+      // −/+ des sommes (1.0.10, demande du PDG) : une note de marimba feutrée, sur une gamme pentatonique de deux octaves
+      // dont la hauteur suit la somme sur sa jauge (x de 0 à 1) ; elle glisse à peine vers le haut ou vers le bas selon le
+      // sens. Rien au-dessus de 5 kHz.
+      else if (kind === 'amount-up' || kind === 'amount-down') {
+        const d = Math.round(Math.min(1, Math.max(0, Number.isFinite(x) ? x : 0.5)) * 10);
+        const f = 330 * 2 ** ((Math.floor(d / 5) * 12 + [0, 2, 4, 7, 9][d % 5]) / 12);
+        const g = kind === 'amount-up' ? 1.015 : 0.985;
+        tone(f, f * g, 0, 0.16, 0.028);
+        if (f * 4 < 5000) tone(f * 4, f * 4 * g, 0, 0.05, 0.003);
+      }
+      // frappe du nom du club (1.0.10, demande du PDG) : une touche feutrée, grave et brève, jamais deux fois tout à fait la
+      // même hauteur ; un peu plus grave quand on efface
+      else if (kind === 'key' || kind === 'keyback') {
+        const f = (kind === 'key' ? 560 : 430) * (0.94 + Math.random() * 0.12);
+        tone(f, f * 0.82, 0, 0.05, 0.022, 'triangle');
+        tone(f * 2, f * 1.7, 0, 0.02, 0.006);
+      }
       else if (kind === 'select') { tone(660, 680, 0, 0.09, 0.035, 'triangle'); tone(990, 1010, 0.06, 0.14, 0.03, 'triangle'); }
       else if (kind === 'back') tone(720, 480, 0, 0.11, 0.03, 'triangle');
       // en jeu : onglet (clic très bref), panneau qui s'ouvre (souffle qui monte) ou se ferme (qui descend),
@@ -335,7 +369,7 @@ export function createStadiumSound() {
     // arrêt du gardien, saut d'une haie, haie renversée, bonne ou mauvaise lecture. Tout est synthétisé. Pas de
     // public à l'entraînement : aucun de ces sons ne touche à la rumeur de la foule.
     sfx(kind) {
-      if (muted || !ensure()) return;
+      if (!sfxVol || !ensure()) return;
       ctx.resume?.();
       const t = ctx.currentTime;
       const tone = (f0, f1, at, len, vol, type = 'sine') => {

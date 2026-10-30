@@ -9,7 +9,7 @@ import { seasonObjectives } from './objectives';
 import { rnd } from './utils';
 import { eur as eurIntl, LANG, numLocale, t } from '../i18n/index';
 
-// Tutoriel des premières minutes, mené par la directrice sportive du club : bienvenue → centre d'entraînement →
+// Tutoriel des premières minutes, mené par la direction sportive du club : bienvenue → centre d'entraînement →
 // première séance (une épreuve en 3D) → première recrue → premier match → effectif (condition physique, blessures,
 // suspensions, changements) → objectifs du conseil d'administration → cap sur le stade. Chaque étape dit ce qu'il faut faire et pourquoi ; une étape d'action réussie rapporte une prime au club
 // (annoncée par une notification). Chaque étape se valide toute seule dès que son objectif est atteint ; l'étape
@@ -98,7 +98,7 @@ export function prepareFirstSeason(s) {
   return s;
 }
 
-// Textes des étapes, dits par la directrice sportive : quoi faire (text), pourquoi (why), et la prime de l'étape
+// Textes des étapes, dits par la direction sportive : quoi faire (text), pourquoi (why), et la prime de l'étape
 // (reward). Le club, la recrue proposée et les objectifs tirés rendent le tutoriel concret.
 const eur = (v) => (LANG !== 'fr' ? eurIntl(v) : `${v.toLocaleString(numLocale())} €`);
 export function stepContent(step, s) {
@@ -110,7 +110,7 @@ export function stepContent(step, s) {
       return {
         ...base,
         title: t('Bienvenue, président'),
-        text: t('{clubName} démarre en {name} : un terrain municipal, {START_MONEY} en caisse et tout à construire. Je suis ta directrice sportive : je te montre l’essentiel en quelques minutes.', { clubName: s.clubName, name: DIVISIONS[s.divisionIndex].name, START_MONEY: eur(START_MONEY) }),
+        text: t('{clubName} démarre en {name} : un terrain municipal, {START_MONEY} en caisse et tout à construire. Je suis ta direction sportive : je te montre l’essentiel en quelques minutes.', { clubName: s.clubName, name: DIVISIONS[s.divisionIndex].name, START_MONEY: eur(START_MONEY) }),
         why: t('Ton but : monter de division en division jusqu’à l’Élite, et bâtir le complexe le plus prestigieux du pays.'),
         cta: t('C’est parti'),
       };

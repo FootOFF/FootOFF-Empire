@@ -75,7 +75,8 @@ function SideCard({ id, state, foreign = null, settings, leagues = null }) {
       <section className="cm-card">
         <span className="eyebrow">{t('Réglages')}</span>
         <dl className="cm-card-rows">
-          <div><dt>{t('Son')}</dt><dd>{settings.muted ? t('Coupé') : t('Activé')}</dd></div>
+          <div><dt>{t('Musique')}</dt><dd>{settings.musicVolume ? `${Math.round(settings.musicVolume * 100)} %` : t('Coupée')}</dd></div>
+          <div><dt>{t('Sons')}</dt><dd>{settings.sfxVolume ? `${Math.round(settings.sfxVolume * 100)} %` : t('Coupés')}</dd></div>
           <div><dt>{t('Vibrations')}</dt><dd>{!settings.canVibrate ? t('Indisponibles') : settings.vibration ? t('Activées') : t('Coupées')}</dd></div>
         </dl>
         <p className="cm-card-note">{t('Enregistrés sur cet appareil.')}</p>
@@ -189,7 +190,7 @@ function CreateClub({ onCreate, onBack, active }) {
           <input
             ref={(el) => { menu.refs.current[0] = el; }}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => { uiSound(e.target.value.length < name.length ? 'keyback' : 'key'); setName(e.target.value); }}
             onFocus={() => menu.setCur(0)}
             maxLength={26}
             autoComplete="off"

@@ -809,7 +809,7 @@ Vignettes rendues dans une session cloud par `tmp/vign/index.html` (Three.js et 
 ## Tutoriel des premiers pas
 
 Refait le 2026-10-24 (`src/game/tutorial.js`, carte `CoachCard` de `src/ui/guide.jsx`) pour être intéressant,
-didactique et donner envie de continuer. La directrice sportive du club mène huit étapes : bienvenue (le but du jeu),
+didactique et donner envie de continuer. La direction sportive du club mène huit étapes : bienvenue (le but du jeu),
 construire le centre d'entraînement, jouer une première épreuve en 3D, recruter la recrue recommandée, jouer le
 premier match, ménager son effectif (condition, blessures, suspensions, changements), découvrir les trois objectifs du
 conseil d'administration (tirés pour la saison), puis cap sur le stade. Chaque

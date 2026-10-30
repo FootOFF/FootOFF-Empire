@@ -465,6 +465,6 @@ export function previewUi(screen, s) {
 
 // Son coupé en aperçu (pas d'AudioContext dans les vignettes).
 export const silentSound = {
-  muted: true, start() {}, setMuted() {}, whistle() {}, chance() {}, goal() {}, conceded() {}, card() {}, coins() {}, spend() {}, ui() {}, sfx() {}, stop() {},
+  muted: true, sfxVolume: 0, setSfxVolume() {}, start() {}, setMuted() {}, whistle() {}, chance() {}, goal() {}, conceded() {}, card() {}, coins() {}, spend() {}, ui() {}, sfx() {}, stop() {},
   musicVolume: 0, setMusic() {}, setMusicVolume() {},
 };
