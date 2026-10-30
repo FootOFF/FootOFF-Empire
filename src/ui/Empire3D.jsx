@@ -711,8 +711,10 @@ export default function Empire3D({
         if (mi.angle === 'goal') camWant.set(mi.goalX + sgn * 0.95, 0.62, THREE.MathUtils.clamp(mi.bz * 0.35, -0.5, 0.5));
         else camWant.set(mi.bx - sgn * 0.85, 0.1, THREE.MathUtils.clamp(mi.bz + (mi.bz > 0 ? -1.25 : 1.25), -3.1, 3.1));
         // derrière la cage : le cadre vise entre le ballon et la cage (le but reste à l'image) ; au ras : le ballon
-        if (mi.angle === 'goal') camAim.set(mi.bx * 0.65 + mi.goalX * 0.35, Math.max(0.03, (mi.by || 0) * 0.6), mi.bz * 0.65);
-        else camAim.set(mi.bx * 0.8 + mi.goalX * 0.2, Math.max(0.03, (mi.by || 0) * 0.6), mi.bz * 0.85); // la cage entre dans le cadre
+        // le cadre ne monte pas plus haut que les joueurs : un long centre ne fait plus filmer le ciel et la tribune seuls
+        // (audit, 0.8.24 : deux secondes sans aucun joueur au ralenti d'un centre)
+        if (mi.angle === 'goal') camAim.set(mi.bx * 0.65 + mi.goalX * 0.35, Math.min(0.22, Math.max(0.03, (mi.by || 0) * 0.6)), mi.bz * 0.65);
+        else camAim.set(mi.bx * 0.8 + mi.goalX * 0.2, Math.min(0.12, Math.max(0.03, (mi.by || 0) * 0.6)), mi.bz * 0.85); // la cage entre dans le cadre
         if (mi.cut) { camera.position.copy(camWant); controls.target.copy(camAim); }
         else {
           camera.position.lerp(camWant, 1 - Math.exp(-dt * 2.5));

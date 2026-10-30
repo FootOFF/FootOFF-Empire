@@ -342,9 +342,10 @@ export function clubAfter(prep, name) {
   return prep + a;
 }
 export const capitalize = (t) => t.charAt(0).toUpperCase() + t.slice(1);
-// élision devant un prénom qui commence par une voyelle : « passe décisive d’Adam », « frappe d’Ilyes » (dans une
-// autre langue, le nom seul : la préposition est dans la phrase traduite)
-export const deName = (name) => (G ? G.deName(name) : (/^[AEIOUÉÈÊÂÎÔ]/.test(name) ? 'd’' : 'de ') + name);
+// élision devant un prénom qui commence par une voyelle ou un h muet : « passe décisive d’Adam », « frappe d’Ilyes »,
+// « passe d’Hugo », « d’Yves » (0.8.24) ; Hamza, Yanis, Yann, Youssef gardent « de » (dans une autre langue, le nom seul :
+// la préposition est dans la phrase traduite)
+export const deName = (name) => (G ? G.deName(name) : (/^(?:[AEIOUÉÈÊÂÎÔ]|Yv|H(?:ugo|ector|adrien|enri|ervé|ippolyte|onoré))/.test(name) ? 'd’' : 'de ') + name);
 // prépositions qui se contractent avec l'article d'un club dans le commentaire (fr : « de », « à » ; es : « de », « a »)
 export const CLUB_PREPS = G ? G.preps : ['de', 'à'];
 

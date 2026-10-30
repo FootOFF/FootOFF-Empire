@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { TACTICS, TACTIC_ORDER, autoLineup, fitWeight, formationOf, lineupRating, reshapeLineup, slotsOf } from '../game/tactics';
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
 import { LIVE_VERSION, SUBS_MAX, awayElevenOf, createLiveMatch, highlightOf, liveKeyOf, pairSubs, prematchOdds, prematchXg, statsOf, subMinute } from '../game/live';
@@ -428,7 +429,8 @@ function GoalBanner({ banner, state, m, shown, codes, flip = false, replay = fal
   const p = home ? state.players.find((q) => q.id === banner.playerId) : (m.awayRoster || []).find((q) => q.name === banner.player);
   const nth = home && !replay && p ? (p.season?.goals || 0) + shown.filter((e) => e.type === 'goal' && e.playerId === banner.playerId
     && (e.half < banner.half || (e.half === banner.half && e.at <= banner.at))).length : 0;
-  const facts = [`${banner.minute}′`, banner.q === 'pen' && t('sur penalty'), banner.assist && t('passe de {name}', { name: banner.assist }), nth && t('{v} but de la saison', { v: tn(nth, 'premier', '{nth}e', { nth }, !(nth === 1)) })].filter(Boolean);
+  // passeur : « passe d’Eliott », « passe de Marc » (élision, 0.8.24)
+  const facts = [`${banner.minute}′`, banner.q === 'pen' && t('sur penalty'), banner.assist && t('passe {deName}', { deName: deName(banner.assist) }), nth && t('{v} but de la saison', { v: tn(nth, 'premier', '{nth}e', { nth }, !(nth === 1)) })].filter(Boolean);
   return (
     <div className={`lv-goal ${ours ? 'ours' : 'theirs'} ${banner.fast ? 'fast' : ''}`} role="status">
       <span className="lv-goal-word">{ours ? t('But !') : t('But {v}', { v: codes[home ? 0 : 1] })}</span>
@@ -697,6 +699,11 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const awayLooks = () => ((kickoffView() && live.state.awayStart) || live.state.awayRoster).map(lookOf);
   const formationNow = () => (kickoffView() ? live.state.startFormation || live.state.formation : live.state.formation);
   const awayFormationNow = () => (kickoffView() ? live.state.awayStartFormation || live.state.awayFormation : live.state.awayFormation);
+  // la coupe vers le ralenti (scène 3D) : l'étiquette « Ralenti » tout de suite, sans attendre le prochain tour d'horloge
+  useEffect(() => {
+    matchFeed.onReplay = () => flushSync(() => setHl((x) => (x && !x.replay ? { ...x, replay: true } : x)));
+    return () => { matchFeed.onReplay = null; };
+  }, []);
   useEffect(() => {
     Object.assign(matchFeed, {
       active: !preview, ended: false, phase, half, clock: clockRef.current, speed,

@@ -5,6 +5,17 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '0.8.24', date: '2026-10-30', title: t('Des appuis de footballeur'),
+    items: [
+      t('À chaque foulée, l’avant du pied reste planté au sol et le talon pivote autour, comme chez un vrai footballeur : les pieds ne glissent presque plus et ne s’enfoncent plus dans la pelouse.'),
+      t('Nouvelles foulées à reculons et de côté, en marchant, en trottinant et en courant ; demi-tours sur un appui, buste penché dans les virages et à l’accélération.'),
+      t('Tous les joueurs suivent le ballon du regard, de la tête et du haut du corps.'),
+      t('Les gardiens font face au jeu en permanence, se déplacent en pas chassés et choisissent leur arrêt : prise basse, à mi-hauteur ou en l’air, arrêt du corps, plongeon, saut manqué. Le geste part dès la frappe et les mains arrivent sur le ballon au bon moment.'),
+      t('Les frappes montrent enfin le vrai coup de pied, au moment exact du contact avec le ballon.'),
+      t('Les expulsions se lisent d’un coup d’œil : le fautif tacle, le joueur fauché reste au sol, le fautif se relève à côté de lui et le carton rouge s’affiche juste au-dessus du fautif. Au ralenti, la caméra garde toujours des joueurs dans le cadre.'),
+    ],
+  },
+  {
     version: '0.8.23', date: '2026-10-29', title: t('La langue au départ, chacun ses couleurs'),
     items: [
       t('Nouvelle partie : la langue se choisit juste après, une seule fois par partie. Elle n’est plus proposée à l’écran titre.'),

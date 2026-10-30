@@ -46,6 +46,7 @@ const REPLAY_AFTER = 0.8;
 const HL_PRE = 0.2; // minutes de jeu du début d'un temps fort à son instant décisif (comme match.jsx) : 12 s
 const CUT = 1.1; // plan de coupe (s) : la mise en place se fait hors champ, l'action démarre déjà en mouvement
 const RECV = 0.05; // contact pied-ballon (u) : un ballon arrêté se prend à cette distance du pied
+const TACKLE_LEAD = 0.55; // s : du départ du tacle glissé au contact de la jambe tendue (geste 3D calé dessus)
 const REACH = 0.1; // portée d'une jambe tendue (u, un mètre du corps) : un ballon qui passe là, au sol, est contrôlé
 
 const clamp = THREE.MathUtils.clamp;
@@ -64,7 +65,7 @@ export function createMatchScene(parent) {
   warmBalls.forEach((m) => parent.add(m));
   const cardMats = { yellow: new THREE.SpriteMaterial({ color: 0xf5d020, depthTest: false }), red: new THREE.SpriteMaterial({ color: 0xe03b2f, depthTest: false }) };
   const card = new THREE.Sprite(cardMats.red);
-  card.scale.set(0.05, 0.07, 1);
+  card.scale.set(0.044, 0.062, 1); // carton : 0,44 × 0,62 m
   card.visible = false;
   card.renderOrder = 10;
   parent.add(card);
@@ -123,7 +124,7 @@ export function createMatchScene(parent) {
     for (let i = 0; i < N; i++) {
       const [x, z] = spotFn(i);
       const a = agents[i];
-      Object.assign(a, { x, z, vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0, pose: 0, poseId: 0, poseK: 0, poseWant: 0 });
+      Object.assign(a, { x, z, vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0, pose: 0, poseId: 0, poseK: 0, poseWant: 0, saveSide: 0, saveH: 0, saveLead: 0, saveKind: 0, saveId: 0 });
       a.h = teamOf(i) === 0 ? (S.dir[0] > 0 ? 0 : Math.PI) : (S.dir[1] > 0 ? 0 : Math.PI);
     }
   }
@@ -183,7 +184,7 @@ export function createMatchScene(parent) {
   function put(i, u, v, faceU = GOAL_X, faceV = 0) {
     const a = agents[i];
     [a.x, a.z] = at(u, v);
-    Object.assign(a, { vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0 });
+    Object.assign(a, { vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0, saveSide: 0, saveH: 0, saveLead: 0, saveKind: 0, saveId: 0, tackleId: 0, tackleLead: 0, jumpAt: -1 });
     const [fx, fz] = at(faceU, faceV);
     a.h = Math.atan2(fz - a.z, fx - a.x);
     H.home.set(i, [u, v]);
@@ -192,7 +193,7 @@ export function createMatchScene(parent) {
   function place(i, u, v, faceU = GOAL_X, faceV = 0) {
     const a = agents[i];
     [a.x, a.z] = at(u, v);
-    Object.assign(a, { vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0 });
+    Object.assign(a, { vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0, saveSide: 0, saveH: 0, saveLead: 0, saveKind: 0, saveId: 0 });
     const [fx, fz] = at(faceU, faceV);
     a.h = Math.atan2(fz - a.z, fx - a.x);
   }
@@ -629,8 +630,26 @@ export function createMatchScene(parent) {
     if (best !== i && bd < di * 0.6 && di - bd > 0.2) { swapRole(i, best); H.swaps = (H.swaps || 0) + 1; return best; }
     return i;
   }
+  // carton rouge, après la faute : personne d'autre que le fautif ne vient à moins de 2,5 m du joueur à terre (audit de
+  // la charte, 0.8.24 : un second défenseur se collait au porteur fauché) ; il vise un point hors du cercle, du côté où
+  // il se trouve (il y va en marchant, sans glisser)
+  const VICTIM_CLEAR = 0.25;
+  const clearOfVictim = (i, x, z) => {
+    if (!H || H.outcome !== 'red' || H.victim === undefined || H.foulAt === undefined || i === H.offender || i === H.victim) return [x, z];
+    const v = agents[H.victim];
+    if (Math.hypot(x - v.x, z - v.z) < VICTIM_CLEAR) {
+      const ox = agents[i].x - v.x, oz = agents[i].z - v.z, od = Math.hypot(ox, oz) || 1;
+      x = v.x + (ox / od) * (VICTIM_CLEAR + 0.03); z = v.z + (oz / od) * (VICTIM_CLEAR + 0.03);
+    }
+    // derrière le fautif, vu de la caméra du direct (toujours côté +z, plongée de 28 à 34°) : le carton brandi au-dessus
+    // de sa tête se projette sur cette bande (jusqu'à 7,4 m derrière lui avec la caméra la plus proche, perspective
+    // comprise) ; elle reste libre dès la faute (audit, 0.8.24 : le carton semblait collé à un coéquipier placé là)
+    const o = agents[H.offender];
+    if (o.z - z > -0.05 && o.z - z < 0.85 && Math.abs(x - o.x) < 0.1) x = o.x + (Math.sign(agents[i].x - o.x) || 1) * 0.13;
+    return [x, z];
+  };
   const steerUV = (i, u, v, speed, dt, look = null) => {
-    const [x, z] = at(u, v);
+    const [x, z] = clearOfVictim(i, ...at(u, v));
     if (look) agents[i].steer(x, z, speed, dt, ...look);
     else agents[i].steer(x, z, speed, dt);
   };
@@ -684,6 +703,19 @@ export function createMatchScene(parent) {
     const reach = outcome === 's' ? tv : outcome === 'g' ? (H.r() < 0.55 ? -Math.sign(tv || 1) * rr(0.12, 0.28) : tv * rr(0.25, 0.55)) : tv * rr(0.4, 0.8);
     H.dive = { v: reach, at: H.t + (H.pen ? 0.06 : Math.max(0.05, T - 0.42)), from: kv, catch: outcome === 's', parry: outcome === 's' && H.r() < 0.45 };
     H.shot = { T, t0: H.t, tv, h, style, from: [bu, bv] };
+    // l'arrêt du gardien (0.8.24, joueurs 3D) : le point où le ballon croise sa ligne (là où il se jette pour un but ou un
+    // tir à côté), à gauche (+) ou à droite de son corps, sa hauteur, et le temps qui le sépare de la frappe ; la
+    // 3D y choisit le geste (prise basse, moyenne ou haute, arrêt du corps, plongeon) et le cale sur l'instant du contact
+    {
+      const [ku] = uvOf(kp.x, kp.z);
+      const f = clamp((ku - bu) / Math.max(0.05, GOAL_X - bu), 0, 1);
+      const tc = f * T;
+      const [cx, cz] = at(ku, outcome === 's' ? bv + (tv - bv) * f : reach);
+      const hc = Math.max(0, b.y + b.vy * tc - 0.5 * GRAVITY * tc * tc);
+      const side = ((cx - kp.x) * Math.sin(kp.h) - (cz - kp.z) * Math.cos(kp.h)) * 10; // m, sa gauche positive
+      // saveLead : le temps de la frappe au contact ; saveId : un arrêt par frappe (la 3D lance le geste dès la frappe)
+      Object.assign(kp, { saveSide: side, saveH: hc * 10, saveLead: tc, saveKind: outcome === 's' ? (H.dive.parry ? 2 : 1) : 3, saveId: H.id * 8 + (H.shots = (H.shots || 0) + 1) });
+    }
     return T;
   }
   function reveal() {
@@ -921,6 +953,7 @@ export function createMatchScene(parent) {
       if (headed) {
         const jt = 0.32;
         rcv.lift = left < jt && left > -jt ? 0.07 * Math.max(0, 1 - (left / jt) ** 2) : rcv.lift * 0.8;
+        rcv.jumpAt = H.t; // saut entretenu à cet instant (sinon il retombe)
       }
       const headNow = headed && b.y > 0.1;
       // le receveur visé s'étire pour contrôler la passe qui lui est destinée (1,5 m) ; le ballon vient ensuite à son pied
@@ -959,11 +992,29 @@ export function createMatchScene(parent) {
       const off = agents[bt.who];
       const vic = agents[bt.victim];
       if (!bt.contact) {
-        off.steer(vic.x, vic.z, 0.8, dt);
-        vic.steer(...at(GOAL_X - 1.4, uvOf(vic.x, vic.z)[1] * 0.8), 0.6, dt);
-        if (Math.hypot(off.x - vic.x, off.z - vic.z) < 0.05 || H.bt > 2.2) {
+        // la faute au contact (0.8.24, audit de la charte : le carton tombait à distance) : le porteur, gêné, ralentit et
+        // le fautif le rattrape ; le tacle glissé part quand il est à deux mètres (geste 3D, contact calé dessus)
+        // pendant la glissade, il règle sa vitesse pour arriver à portée de jambe (90 cm) au contact ; le porteur, rattrapé,
+        // ne s'échappe plus
+        const gap0 = Math.hypot(off.x - vic.x, off.z - vic.z);
+        if (bt.tackle) { // (il vise au-delà du porteur : sans ralentir à l'approche, à la vitesse qui le rattrape)
+          const want = clamp(vic.speed + (gap0 - 0.09) / Math.max(0.05, bt.tackle - H.t), 0, 1.2);
+          const k = 0.6 / Math.max(1e-6, gap0);
+          off.steer(vic.x + (vic.x - off.x) * k, vic.z + (vic.z - off.z) * k, want, dt);
+        } else off.steer(vic.x, vic.z, 0.8, dt);
+        vic.steer(...at(GOAL_X - 1.4, uvOf(vic.x, vic.z)[1] * 0.8), bt.tackle ? 0.08 : H.bt > 1.2 ? 0.15 : 0.6, dt);
+        const gap = Math.hypot(off.x - vic.x, off.z - vic.z);
+        // à 1,6 m, il se jette : la jambe tendue (90 cm devant le bassin) fauche le porteur 0,55 s plus tard, et c'est ce
+        // contact qui fait la faute
+        if (!bt.tackle && gap < 0.16) {
+          bt.tackle = H.t + TACKLE_LEAD;
+          Object.assign(off, { tackleId: H.id * 8 + 7, tackleLead: TACKLE_LEAD });
+        }
+        if ((bt.tackle && H.t >= bt.tackle) || gap < 0.05 || H.bt > 4) {
           bt.contact = H.t;
-          vic.roll = (Math.random() < 0.5 ? -1 : 1) * 1.35; // le porteur s'écroule
+          H.foulAt = H.t;
+          vic.roll = (Math.random() < 0.5 ? -1 : 1) * 1.35; // le porteur s'écroule (3D : il trébuche sur le tacle et reste au sol)
+          if (!bt.tackle) { bt.tackle = H.t; Object.assign(off, { tackleId: H.id * 8 + 7, tackleLead: 0 }); }
           vic.vx *= 0.3; vic.vz *= 0.3;
           deadBall(b.x, b.z);
         }
@@ -1023,6 +1074,9 @@ export function createMatchScene(parent) {
     const chase = new Set();
     let chaseTo = null;
     const cur = H.beats[H.k];
+    // l'action d'un carton rouge : seul le fautif va au contact du porteur, avant la faute comme après
+    const foulOn = H.outcome === 'red' && H.victim !== undefined;
+    if (foulOn) presser = -1;
     if (H.oneOnOne && !H.shot) {
       if (cur?.t === 'pass' && cur.style === 'through' && cur.launched && cur.target) chaseTo = cur.target;
       else if (b.state === 'held' && b.owner === H.shooter) chaseTo = [agents[H.shooter].x, agents[H.shooter].z];
@@ -1084,7 +1138,7 @@ export function createMatchScene(parent) {
       let mark = null, md = 0.7;
       if (hu > BOX - 0.4) {
         for (const j of teamIdx(A)) {
-          if (!active(j) || slotOf(j) === 0) continue;
+          if (!active(j) || slotOf(j) === 0 || (H.outcome === 'red' && j === H.victim)) continue; // le porteur fauché n'est plus marqué
           const [ju, jv] = uvOf(agents[j].x, agents[j].z);
           const d = Math.hypot(ju - hu, jv - hv);
           if (ju > BOX - 0.6 && d < md) { md = d; mark = [ju, jv]; }
@@ -1105,6 +1159,14 @@ export function createMatchScene(parent) {
         steerUV(i, tu + Math.sin(w) * 0.05, hv + (bv - hv) * 0.22 + Math.cos(w * 0.9) * 0.06, late ? 0.62 : H.oneOnOne ? 0.6 : 0.34, dt, [b.x, b.z]);
       }
     }
+    if (foulOn) { // les autres défenseurs restent à 1,5 m au moins du porteur (on doit voir qui le fauche)
+      const v = agents[H.victim];
+      for (const i of teamIdx(D)) {
+        if (i === H.offender || !active(i) || slotOf(i) === 0) continue;
+        const a = agents[i]; const dx = a.x - v.x, dz = a.z - v.z; const d = Math.hypot(dx, dz);
+        if (d < 0.15 && d > 1e-6) { a.x = v.x + (dx / d) * 0.15; a.z = v.z + (dz / d) * 0.15; }
+      }
+    }
   }
   // Gardiens : celui qui défend suit le ballon sur sa ligne (sort sur un face-à-face) et plonge sur la frappe ;
   // l'autre reste dans sa moitié.
@@ -1112,7 +1174,7 @@ export function createMatchScene(parent) {
     const a = agents[i];
     if (teamOf(i) === H.A) { // le gardien de l'équipe qui attaque suit le jeu, en libéro, sans quitter sa surface
       a.poseWant = 0;
-      steerUV(i, -4.6 + clamp((bu + 1) * 0.12, 0, 0.7), clamp(bv * 0.12, -0.4, 0.4), 0.14, dt, [b.x, b.z]);
+      steerUV(i, -4.6 + clamp((bu + 1) * 0.12, 0, 0.7), clamp(bv * 0.12, -0.4, 0.4), 0.14, dt, [b.x, b.z, true]);
       return;
     }
     // sur la ligne qui joint le ballon au centre du but, d'autant plus avancé que le ballon est loin (jusqu'à 3 m)
@@ -1132,7 +1194,8 @@ export function createMatchScene(parent) {
       else if (!dv.done) { dv.done = true; a.leanTo = clamp((dv.v - dv.from) / 0.12, -1, 1) * (dv.catch ? 1 : 0.95); a.leanHold = 0.9; }
       if (H.t >= dv.at) { v = dv.v * 0.55; u = KEEP_U; }
     }
-    steerUV(i, u, v, H.dive && H.t >= H.dive.at ? 0.5 : 0.3, dt, H.shot ? [b.x - b.vx * 0.6, b.z - b.vz * 0.6] : [b.x, b.z]);
+    // toujours face au ballon (0.8.24, remarque du PDG : des gardiens regardaient leur but en reculant)
+    steerUV(i, u, v, H.dive && H.t >= H.dive.at ? 0.5 : 0.3, dt, H.shot ? [b.x - b.vx * 0.6, b.z - b.vz * 0.6, true] : [b.x, b.z, true]);
   }
 
   // Après l'instant décisif : la joie du buteur (ses coéquipiers l'entourent), le gardien qui garde le ballon, le
@@ -1162,8 +1225,17 @@ export function createMatchScene(parent) {
       }
     } else if (outcome === 'red') {
       const off = agents[H.offender];
-      off.steer(off.x, Math.sign(off.z || 1) * 3.75, 0.16, dt);
-      for (let i = 0; i < N; i++) if (active(i) && i !== H.offender && i !== H.victim) agents[i].steer(agents[i].x, agents[i].z, 0, dt, off.x, off.z);
+      // le fautif se relève de son tacle (2,6 s) avant de quitter la pelouse
+      const v = agents[H.victim];
+      if (H.t - (H.foulAt ?? H.t) > 2.6) off.steer(off.x, Math.sign(off.z || 1) * 3.75, 0.16, dt);
+      // relevé de son tacle, il se tient à côté du joueur à terre, jamais entre lui et la caméra (audit, 0.8.24)
+      else if (H.t - (H.foulAt ?? H.t) > 1.3 && off.z > v.z - 0.02 && Math.abs(off.x - v.x) < 0.12) off.steer(v.x + (Math.sign(off.x - v.x) || 1) * 0.15, off.z, 0.12, dt, v.x, v.z);
+      else off.steer(off.x, off.z, 0, dt, v.x, v.z);
+      for (let i = 0; i < N; i++) {
+        if (!active(i) || i === H.offender || i === H.victim) continue;
+        const a = agents[i]; const [x, z] = clearOfVictim(i, a.x, a.z); // trop près du joueur à terre : il s'écarte
+        a.steer(x, z, x === a.x && z === a.z ? 0 : 0.42, dt, off.x, off.z);
+      }
     } else {
       for (let i = 0; i < N; i++) if (active(i)) agents[i].steer(agents[i].x, agents[i].z, 0, dt, b.x, b.z);
     }
@@ -1180,23 +1252,31 @@ export function createMatchScene(parent) {
   }
 
   // --- Ralenti : l'action rejouée depuis son enregistrement ----------------------------------------------------------
-  const REC = 12; // par joueur : x, z, cap, foulée, allure, frappe, plongeon, joie, saut, chute, pose, tir (joueurs 3D)
+  const REC = 17; // par joueur : x, z, cap, foulée, allure, frappe, plongeon, joie, saut, chute, pose, tir (joueurs 3D), arrêt (côté, hauteur, avance, issue, numéro)
   function record() {
     const a = new Float32Array(N * REC);
     for (let i = 0; i < N; i++) {
       const g = agents[i];
-      a.set([g.x, g.z, g.h, g.phase, g.gait, g.kick, g.lean, g.cheer, g.lift, g.roll, g.pose || 0, g.kickKind === 'shot' ? 1 : 0], i * REC);
+      a.set([g.x, g.z, g.h, g.phase, g.gait, g.kick, g.lean, g.cheer, g.lift, g.roll, g.pose || 0, g.kickKind === 'shot' ? 1 : 0, g.saveSide || 0, g.saveH || 0, g.saveLead || 0, g.saveKind || 0, g.saveId || 0], i * REC);
     }
     H.rec.push({ t: H.t, a, b: [b.x, b.y, b.z], q: ballMesh.quaternion.toArray() });
   }
   function startReplay() {
     H.phase = 'replay';
     players.reset?.(); // chacun repart de sa place au début de l'action, sans la célébration en cours (0.8.20)
-    H.replayAngle = H.r() < 0.5 ? 'goal' : 'low'; // derrière la cage, ou au ras de la pelouse
+    // derrière la cage, ou au ras de la pelouse ; un penalty, toujours derrière la cage (au ras de la pelouse, la caméra
+    // se plaçait parmi les joueurs alignés hors de la surface et cachait le gardien)
+    const angle = H.r() < 0.5 ? 'goal' : 'low';
+    H.replayAngle = H.pen ? 'goal' : angle;
     H.rt = Math.max(H.rec[0].t, H.revealT - REPLAY_BEFORE);
     H.rEnd = Math.min(H.rec[H.rec.length - 1].t, H.revealT + REPLAY_AFTER);
     H.cut = true;
     matchFeed.hlPhase = 'replay';
+    matchFeed.onReplay?.(); // l'étiquette « Ralenti » change sur l'image même de la coupe (0.8.24)
+    // la première image enregistrée, tout de suite (0.8.24, audit de la charte) : sinon, dans cette même image, les
+    // joueurs remis à zéro recevaient encore l'état du direct (ballon frappé, but marqué) ; le gardien plongeait et le
+    // buteur levait les bras avant la frappe rejouée
+    replayStep(0);
   }
   const qa = new THREE.Quaternion(), qb = new THREE.Quaternion();
   function replayStep(dt) {
@@ -1219,6 +1299,7 @@ export function createMatchScene(parent) {
       g.lift = L(f0.a[o + 8], f1.a[o + 8]); g.roll = L(f0.a[o + 9], f1.a[o + 9]);
       g.pose = f0.a[o + 10]; // une pose ne s'interpole pas (sa partie entière est son type)
       g.kickKind = f0.a[o + 11] ? 'shot' : 'pass';
+      g.saveSide = f0.a[o + 12]; g.saveH = f0.a[o + 13]; g.saveLead = f0.a[o + 14]; g.saveKind = f0.a[o + 15]; g.saveId = f0.a[o + 16];
     }
     b.x = L(f0.b[0], f1.b[0]); b.y = L(f0.b[1], f1.b[1]); b.z = L(f0.b[2], f1.b[2]);
     qa.fromArray(f0.q); qb.fromArray(f1.q);
@@ -1261,8 +1342,6 @@ export function createMatchScene(parent) {
     if (S.play === 'warmup') warmupUpdate(dt);
     let cut = false;
     if (S.play === 'live' && H) {
-      cut = H.cut;
-      H.cut = false;
       const step = dt * H.speed;
       if (H.phase === 'cut' || H.phase === 'play' || H.phase === 'react') {
         H.t += step;
@@ -1277,9 +1356,13 @@ export function createMatchScene(parent) {
           if (!H.revealed) matchFeed.hlClock = H.e.at - HL_PRE * (1 - Math.min(0.98, H.t / Math.max(1, H.est)));
         } else {
           reactStep(step);
-          ballUpdate(step);
+          if (H.phase === 'react') ballUpdate(step); // (le ralenti vient de commencer : son ballon est déjà posé)
         }
       } else if (H.phase === 'replay') replayStep(dtReal);
+      // changement de plan lu après le pas de jeu (0.8.24, audit de la charte) : la coupe vers le ralenti tombe sur l'image
+      // même où il commence ; lue avant, une image du ralenti passait encore par la caméra du direct
+      cut = H.cut;
+      H.cut = false;
     }
 
     // frappes, plongeons, sauts, chutes, joie (bras levés de l'équipe qui vient de marquer)
@@ -1303,13 +1386,15 @@ export function createMatchScene(parent) {
         }
         a.cheer += (cheer - a.cheer) * Math.min(1, dt * (cheer ? 5 : 2.5));
         if (a.cheer < 0.005) a.cheer = 0;
-        if (a.lift && !(H?.busy.has(i))) a.lift = Math.max(0, a.lift - dt * 0.4);
+        // un saut retombe dès qu'il n'est plus entretenu (0.8.24, audit de la charte : le joueur qui avait dévié de la tête,
+        // gardé dans l'action, restait suspendu à 70 cm du sol jusqu'à la fin, ralenti compris)
+        if (a.lift && !(H && a.jumpAt === H.t)) a.lift = Math.max(0, a.lift - dt * 0.4);
         // pose (players.js) : gardien prêt, plongeon, ballon serré ; saut de la tête, bras levés
         let want = slotOf(i) === 0 && H?.phase !== 'end' ? a.poseWant || 0 : a.lift > 0.004 ? 4 : 0;
         if (slotOf(i) === 0 && H && H.phase === 'react') want = b.state === 'keeper' && teamOf(i) === H.D ? 3 : 2; // après l'instant décisif
         // les bras tendus du plongeon, seulement tant que le corps est couché : relevé, il baisse les bras (jamais bras
         // levés devant un but encaissé)
-        if (want === 2 && Math.abs(a.lean) < 0.2) want = 0;
+        if (want === 2 && Math.abs(a.lean) < 0.2 && !a.saveKind) want = 0; // (un arrêt face à lui : le gardien 3D prend le ballon)
         if (want && want !== a.poseId) { a.poseId = want; a.poseK = Math.min(a.poseK || 0, 0.4); }
         a.poseK = (a.poseK || 0) + ((want ? 1 : 0) - (a.poseK || 0)) * Math.min(1, dt * (want === 2 ? 18 : 8));
         if (a.poseK < 0.01) { a.poseK = 0; a.poseId = want; }
@@ -1321,6 +1406,8 @@ export function createMatchScene(parent) {
       else players.setAgent(i, agents[i], S.baseY);
     }
     players.timeScale = H && H.phase === 'replay' ? REPLAY_SPEED : 1; // joueurs 3D : gestes au ralenti eux aussi
+    // tous les regards suivent le ballon pendant un temps fort (0.8.24)
+    if (S.play === 'live' && H) players.setLook?.(b.x, S.baseY + BALL_R + b.y, b.z); else players.setLook?.(null);
     players.commit(N);
     if (!replay) {
       const mx = b.x - b.prev[0], mz = b.z - b.prev[1];
@@ -1333,8 +1420,8 @@ export function createMatchScene(parent) {
     // carton brandi au-dessus du fautif
     if (H && H.cardOf !== undefined && H.phase === 'react') {
       const a = agents[H.cardOf];
-      card.visible = H.react < 1.8;
-      card.position.set(a.x, S.baseY + 0.27 + Math.sin(time * 4) * 0.008, a.z);
+      card.visible = H.react > 0.5 && H.react < 2.3; // l'arbitre le sort un instant après la coupe : la bande derrière le fautif est déjà libre
+      card.position.set(a.x, S.baseY + 0.245 + Math.sin(time * 4) * 0.006, a.z); // juste au-dessus de sa tête (bas du carton à 2,1 m)
     } else card.visible = false;
     if (S.play !== 'live' || !H) return null;
     // plan demandé à la réalisation (Empire3D) : l'action (ballon, porteur), un coup de pied arrêté (entre le ballon et
@@ -1380,7 +1467,7 @@ export function createMatchScene(parent) {
     get ball() { return b; },
     get agents() { return agents; }, // lecture seule (inspection en développement)
     get debug() {
-      return H && { offside: H.offside || 0, swaps: H.swaps || 0, line: H.line, A: H.A, dirA: S.dir[H.A], id: H.id, kind: H.kind, outcome: H.outcome, phase: H.phase, beat: H.beats[H.k]?.t, k: H.k, t: +H.t.toFixed(2), revealed: H.revealed, forced: !!H.forced, finaleT: H.finaleT ?? (H.fk === 0 ? 0 : null), est: H.est, fk: H.fk, bstate: b.state, owner: b.owner, bt: H.beats[H.k] && { t: H.beats[H.k].t, from: H.beats[H.k].from, to: H.beats[H.k].to, who: H.beats[H.k].who }, ball: { state: b.state, x: +b.x.toFixed(2), z: +b.z.toFixed(2), y: +b.y.toFixed(2) } };
+      return H && { offside: H.offside || 0, swaps: H.swaps || 0, line: H.line, A: H.A, keeper: H.keeper, victim: H.victim, offender: H.offender, dirA: S.dir[H.A], id: H.id, kind: H.kind, outcome: H.outcome, phase: H.phase, beat: H.beats[H.k]?.t, k: H.k, t: +H.t.toFixed(2), revealed: H.revealed, forced: !!H.forced, finaleT: H.finaleT ?? (H.fk === 0 ? 0 : null), est: H.est, fk: H.fk, bstate: b.state, owner: b.owner, bt: H.beats[H.k] && { t: H.beats[H.k].t, from: H.beats[H.k].from, to: H.beats[H.k].to, who: H.beats[H.k].who }, ball: { state: b.state, x: +b.x.toFixed(2), z: +b.z.toFixed(2), y: +b.y.toFixed(2) } };
     },
     dispose() {
       matchFeed.scene = false;

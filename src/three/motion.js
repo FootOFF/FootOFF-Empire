@@ -42,12 +42,21 @@ export class Agent {
     let target = this.h;
     const kicking = this.kick > 0 && this.kickH !== undefined; // frappe : le corps se tourne vers la cible (0.8.20)
     if (kicking) target = this.kickH;
-    else if (look && fx !== undefined) target = Math.atan2(fz - this.z, fx - this.x);
-    else if (this.speed > 0.05) target = Math.atan2(this.vz, this.vx);
+    else if (look && fx !== undefined) {
+      target = Math.atan2(fz - this.z, fx - this.x);
+      // pas chassés (0.8.24) : face au ballon ; au-delà de 2 m/s de côté, les hanches s'ouvrent un peu vers la course ;
+      // à reculons, il recule face au jeu
+      if (this.speed > 0.2) {
+        const off = wrapAngle(Math.atan2(this.vz, this.vx) - target);
+        if (Math.abs(off) < 2.2) target += THREE.MathUtils.clamp(off, -0.25, 0.25) * Math.min(1, (this.speed - 0.2) / 0.15);
+      }
+    } else if (this.speed > 0.05) target = Math.atan2(this.vz, this.vx);
     else if (fx !== undefined) target = Math.atan2(fz - this.z, fx - this.x);
     const diff = wrapAngle(target - this.h);
-    // demi-tour : il pivote plus vite (on ne court pas longtemps à reculons) ; une frappe se tourne vite vers sa cible
-    const rate = kicking ? TURN * 3 : Math.abs(diff) > 1.6 ? TURN * 1.7 : TURN;
+    // demi-tour : il pivote plus vite (on ne court pas longtemps à reculons), et sur place, presque arrêté (moins de
+    // 1,5 m/s), d'un appui (0.8.24 : il repartait avant d'avoir pivoté et courait un instant à reculons) ; une frappe se
+    // tourne vite vers sa cible
+    const rate = kicking ? TURN * 3 : Math.abs(diff) > 1.6 ? (this.speed < 0.15 ? TURN * 3 : TURN * 1.7) : TURN;
     this.h += THREE.MathUtils.clamp(diff, -rate * dt, rate * dt);
     // foulée : un cycle complet (deux pas) couvre 1,6 m en marchant, jusqu'à 3,8 m en sprint
     const g = THREE.MathUtils.clamp(this.speed / 0.7, 0, 1);
