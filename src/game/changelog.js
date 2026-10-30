@@ -5,6 +5,12 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.13', date: '2026-10-31', title: t('Un vrai son d’écriture'),
+    items: [
+      t('Écrire le nom de ton club fait le clic doux d’une touche, toujours le même ; effacer a son propre son, plus grave.'),
+    ],
+  },
+  {
     version: '1.0.12', date: '2026-10-31', title: t('La note des négociations'),
     items: [
       t('Négociations : monter et descendre jouent la note douce du milieu de la jauge du salaire, la même pour toutes les sommes et tous les choix.'),

@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FootOFFLockup } from './brand';
 import { ClubCard, Hints, MenuList, SettingsView, uiSound, useMenu, MediaView } from './console';
+import { typeSound } from './uisound';
 import { RulesView } from './rules';
 import { CURRENT } from '../game/changelog';
 import { useInputMode } from './input';
@@ -190,7 +191,7 @@ function CreateClub({ onCreate, onBack, active }) {
           <input
             ref={(el) => { menu.refs.current[0] = el; }}
             value={name}
-            onChange={(e) => { uiSound(e.target.value.length < name.length ? 'keyback' : 'key'); setName(e.target.value); }}
+            onChange={(e) => { typeSound(e, name); setName(e.target.value); }}
             onFocus={() => menu.setCur(0)}
             maxLength={26}
             autoComplete="off"

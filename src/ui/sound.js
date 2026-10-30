@@ -52,9 +52,41 @@ function noiseBuffer(ctx, seconds = 3) {
   return buf;
 }
 
+// Sons de frappe (1.0.13) : le clic d'une touche feutrée, calculé une fois, toujours identique (bruit à graine fixe) :
+// un claquement bref filtré autour de `tick` Hz, le corps grave de la touche (`body`) et sa petite résonance (`tock`).
+// Écrire : plus clair ; effacer : plus grave et plus doux. Mesurés : chauds, secs, -25 dB au-dessus de 5,5 kHz.
+const KEY_SOUNDS = {
+  key: { tick: 2000, body: 210, tock: 950, peak: 0.028 },
+  keyback: { tick: 1300, body: 160, tock: 620, peak: 0.024 },
+};
+function keyClick(ctx, { tick, body, tock, peak }) {
+  const sr = ctx.sampleRate;
+  const n = Math.round(sr * 0.06);
+  const buf = ctx.createBuffer(1, n, sr);
+  const d = buf.getChannelData(0);
+  let seed = 7;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 1073741823.5 - 1; };
+  const w0 = (2 * Math.PI * tick) / sr; // passe-bande (Q 1,4) écrit à la main : le son est calculé avant d'être joué
+  const al = Math.sin(w0) / (2 * 1.4);
+  const a0 = 1 + al, a1 = -2 * Math.cos(w0), a2 = 1 - al;
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0, m = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / sr;
+    const x = rnd() * Math.exp(-t / 0.004);
+    const y = (al * x - al * x2 - a1 * y1 - a2 * y2) / a0;
+    x2 = x1; x1 = x; y2 = y1; y1 = y;
+    d[i] = (0.9 * y + 0.6 * Math.sin(2 * Math.PI * body * t) * Math.exp(-t / 0.012) + 0.22 * Math.sin(2 * Math.PI * tock * t) * Math.exp(-t / 0.007))
+      * Math.min(1, i / (sr * 0.001)); // attaque d'une milliseconde : aucun claquement numérique
+    m = Math.max(m, Math.abs(d[i]));
+  }
+  for (let i = 0; i < n; i++) d[i] *= peak / m;
+  return buf;
+}
+
 export function createStadiumSound() {
   let ctx = null;
   let master, uiBus, crowdGain, crowdFilter;
+  let keyBufs = null; // les deux sons de frappe, calculés pour le contexte en cours
   let base = 0; // niveau de la rumeur entre deux clameurs : celui du match (start), sinon le silence
   let musicVol = 0.5;
   try {
@@ -332,12 +364,14 @@ export function createStadiumSound() {
         tone(f, f * g, 0, 0.16, 0.028);
         tone(f * 4, f * 4 * g, 0, 0.05, 0.003);
       }
-      // frappe du nom du club (1.0.10, demande du PDG) : une touche feutrée, grave et brève, jamais deux fois tout à fait la
-      // même hauteur ; un peu plus grave quand on efface
+      // frappe du nom du club (1.0.10 ; 1.0.13, demande du PDG : un son d'écriture, toujours le même, un pour écrire et un
+      // pour effacer, plus de notes qui changent) : le clic d'une touche feutrée, figé une fois pour toutes (keyClick)
       else if (kind === 'key' || kind === 'keyback') {
-        const f = (kind === 'key' ? 560 : 430) * (0.94 + Math.random() * 0.12);
-        tone(f, f * 0.82, 0, 0.05, 0.022, 'triangle');
-        tone(f * 2, f * 1.7, 0, 0.02, 0.006);
+        if (keyBufs?.ctx !== ctx) keyBufs = { ctx, key: keyClick(ctx, KEY_SOUNDS.key), keyback: keyClick(ctx, KEY_SOUNDS.keyback) };
+        const src = ctx.createBufferSource();
+        src.buffer = keyBufs[kind];
+        src.connect(uiBus);
+        src.start(t);
       }
       else if (kind === 'select') { tone(660, 680, 0, 0.09, 0.035, 'triangle'); tone(990, 1010, 0.06, 0.14, 0.03, 'triangle'); }
       else if (kind === 'back') tone(720, 480, 0, 0.11, 0.03, 'triangle');
