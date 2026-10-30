@@ -1,5 +1,6 @@
 import { upgradeCost } from './constants';
-import { ATTRS, GK_ATTRS, assignNumber, freshSeason, makePlayer, marketValue, playerRating, progressPlayer, ratingAt } from './players';
+import { ATTRS, GK_ATTRS, TRAITS, assignNumber, freshSeason, makePlayer, marketValue, playerRating, progressPlayer, ratingAt } from './players';
+import { BANDS, HAIRS, SKINS } from './faces';
 import { squadName } from './names';
 import { FORMATION_ORDER, autoLineup, lineupRating, slotsOf } from './tactics';
 import { ELITE_PACE, bestCat, catsFor, collectiveGain, sessionGain, suggestFor } from './training';
@@ -57,14 +58,31 @@ export const snapPlayer = (p) => ({
 // Relu d'un autre appareil (équipe envoyée, joueur cédé) : chaque champ vérifié, une valeur piégée ne fait jamais tomber
 // le jeu (audit cyber-auditor du 2026-10-28) ; un joueur bien formé reste exactement le même.
 const POS = ['G', 'D', 'M', 'A'];
+// Visage relu : index dans leurs palettes, nombres dans leurs bornes, styles en mots simples (jamais une clé d'objet comme
+// « constructor » ou « length », qui faisaient tomber le portrait) ; sans teint ni cheveux, le visage est retiré de
+// l'identité du joueur. Signes : seulement ceux du jeu.
+const WORD = /^[a-z][a-zA-Z]{1,11}$/;
+const word = (v) => typeof v === 'string' && WORD.test(v) && !(v in Object.prototype) && !(v in Array.prototype) && !(v in Function.prototype);
+const idx = (v, n) => (Number.isInteger(v) && v >= 0 && v < n ? v : undefined);
+const num = (v, lo, hi) => (Number.isFinite(v) && v >= lo && v <= hi ? v : undefined);
+export function cleanFace(f) {
+  if (!f || typeof f !== 'object' || Array.isArray(f)) return null;
+  const o = {
+    v: idx(f.v, 10), sk: idx(f.sk, SKINS.length), hc: idx(f.hc, HAIRS.length), bc: idx(f.bc, BANDS.length), sx: idx(f.sx, 2),
+    es: num(f.es, -0.5, 0.5), jw: num(f.jw, 0.8, 1.2), by: num(f.by, 0, 1), gr: num(f.gr, 0, 99), bd: num(f.bd, 0, 99), fhAt: num(f.fhAt, 0, 99),
+  };
+  for (const k of ['tx', 'hs', 'fh', 'fa', 'sh', 'ey', 'ec', 'no', 'mo', 'bw', 'ba', 'ea', 'sg']) if (word(f[k])) o[k] = f[k];
+  for (const k of Object.keys(o)) if (o[k] === undefined) delete o[k];
+  return o.sk === undefined || o.hc === undefined ? null : o;
+}
 const FEET = ['droit', 'gauche', 'les deux'];
 const int = (v, d) => (Number.isSafeInteger(v) ? v : d);
 const fin = (v, d) => (Number.isFinite(v) ? v : d);
 export const unsnapPlayer = (x) => ({
   id: int(x?.i, 0), lid: int(x?.l, null), name: typeof x?.n === 'string' ? (x.n.replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, '').slice(0, 40) || '?') : '?', pos: POS.includes(x?.pos) ? x.pos : 'M',
   alt: POS.includes(x?.alt) ? x.alt : null, foot: FEET.includes(x?.ft) ? x.ft : 'droit', age: fin(x?.g, 25), pot: fin(x?.p, 0), a: unpack(x?.a, FIELD),
-  ...(x?.k ? { g: unpack(x.k, KEEPER) } : {}), traits: Array.isArray(x?.t) ? x.t.filter((t) => typeof t === 'string') : [],
-  num: int(x?.num, null), face: x?.f && typeof x.f === 'object' && !Array.isArray(x.f) ? x.f : null, fit: fin(x?.fit, 100),
+  ...(x?.k ? { g: unpack(x.k, KEEPER) } : {}), traits: Array.isArray(x?.t) ? x.t.filter((k) => typeof k === 'string' && Object.hasOwn(TRAITS, k)).slice(0, 8) : [],
+  num: int(x?.num, null), face: cleanFace(x?.f), fit: fin(x?.fit, 100),
   ...(x?.x ? { injury: { out: 1, total: 1, label: t('Indisponible') } } : {}), form: [], season: freshSeason(), hist: [],
 });
 // Un joueur de l'état de la ligue (club de l'ordinateur, marché) devenu joueur d'une partie : son identifiant de ligue.

@@ -34,8 +34,8 @@ import { DirectionView } from './ui/direction';
 import { MedicalView } from './ui/medical';
 import { LeagueView } from './ui/league';
 import { deadlineText, leagueLang, leagueOpen } from './game/league';
-import { LeagueError, deadlineAt, kickoffAt, leagueHumans, leagueResults, myLeagues, pulseUrgent, refreshLeague, sendMove, sendSheet, takeInvite, userActive, watchPulse } from './game/leagueNet';
-import { applyLeagueRound, closeGoneDeals, createLeagueClub, leagueClubProgress, leagueRequest, loadLeagueClub, myReplay, readLeagueClub, saveLeagueClub, settleLeague, syncLeagueClub, teamSheet } from './game/leagueClub';
+import { LeagueError, deadlineAt, kickoffAt, leagueHumans, leagueResults, myLeagues, publishRoster, pulseUrgent, refreshLeague, sendMove, sendSheet, takeInvite, userActive, watchPulse } from './game/leagueNet';
+import { applyLeagueRound, closeGoneDeals, createLeagueClub, leagueClubProgress, leagueRequest, leagueRoster, leagueRosterSig, loadLeagueClub, myReplay, readLeagueClub, saveLeagueClub, settleLeague, syncLeagueClub, teamSheet } from './game/leagueClub';
 import { adoptPulled, cloudNote, cloudPlan, isPushing, markUnreadable, playedPrint, pullClub, pushClub, savedWhen, stageOf, syncOf } from './game/leagueCloud';
 import ConfirmDialog from './ui/confirm';
 import { Presence } from './ui/presence';
@@ -826,6 +826,28 @@ export default function App({ preview = null }) {
       document.removeEventListener('visibilitychange', tick); document.removeEventListener('visibilitychange', away);
     };
   }, [leagueCode, leagueLive?.m]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Effectif publié (1.0.4, demande du PDG) : quand les joueurs du club de ligue changent (recrue, vente, départ, niveau,
+  // blessure), le jeu l'envoie au serveur quelques secondes après ; l'onglet Amis des autres se met à jour, vente hors de
+  // la ligue et joueur libéré compris. Hors ligne : renvoyé à la relecture suivante de la ligue.
+  const rosterSent = useRef({}); // signature envoyée, en mémoire d'abord (stockage plein : jamais de renvoi en boucle)
+  const rosterSig = state?.league ? leagueRosterSig(state) : null;
+  useEffect(() => {
+    const m = leagueLive?.m;
+    const key = m ? `fo-ligue-rsig:${m.code}` : null;
+    const sent = () => { if (rosterSent.current[m.code]) return rosterSent.current[m.code]; try { return localStorage.getItem(key); } catch { return null; } };
+    if (!rosterSig || !m || leagueLive?.d?.league?.status !== 'running' || sent() === rosterSig) return undefined;
+    const t = setTimeout(async () => {
+      const s = latest.current;
+      if (s?.league?.code !== m.code) return;
+      const sig = leagueRosterSig(s);
+      const mark = () => { rosterSent.current[m.code] = sig; try { localStorage.setItem(key, sig); } catch { /* gardée en mémoire */ } };
+      try { await publishRoster(m, leagueRoster(s)); mark(); } catch (e) {
+        if ([401, 409, 413].includes(e?.status)) mark(); // refus définitif : pas de relance en boucle (hors ligne : plus tard)
+        else if (e?.status === 429) setTimeout(() => leagueTick.current?.(), 61000); // envoyé il y a moins d'une minute : à nouveau ensuite
+      }
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [rosterSig, leagueLive?.m, leagueLive?.d]); // eslint-disable-line react-hooks/exhaustive-deps
   // File des demandes au serveur des ligues (leagueClub.js : signature d'une recrue négociée, offre pour le joueur d'un
   // ami, réponse à une offre reçue) : une à la fois, dans l'ordre, et la réponse s'applique à la partie. Serveur
   // injoignable : la demande attend la relecture suivante de la ligue (toutes les minutes).

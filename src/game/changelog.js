@@ -5,6 +5,12 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.4', date: '2026-10-30', title: t('Les effectifs des amis en direct'),
+    items: [
+      t('Championnats entre amis : chaque club publie son effectif quand il change. L’onglet Amis du mercato suit tout : achats, ventes hors de la ligue, joueurs libérés, blessures.'),
+    ],
+  },
+  {
     version: '1.0.3', date: '2026-10-30', title: t('Les couleurs du match'),
     items: [
       t('Temps forts en 3D : un code couleur discret, façon télé, à côté du nom de chaque équipe dans le score, pour savoir qui joue en quelle couleur.'),

@@ -117,10 +117,21 @@ export function syncLeagueClub(s, d) {
   return s;
 }
 
+// Effectif publié de notre club (1.0.4) : nos joueurs en instantanés (identifiants de ligue compris : académie, amateurs
+// de secours), et sa signature, qui ne change qu'avec ce qui se voit dans l'onglet Amis des autres (un joueur arrive ou
+// part, son niveau, son âge, une blessure) ; la forme et la fraîcheur du jour ne le renvoient pas.
+export function leagueRoster(s) {
+  const c = clone(s);
+  ensureLids(c);
+  return c.players.slice(0, 40).map((p) => ({ ...snapPlayer(p), i: 0, fit: 100 })).sort((a, b) => a.l - b.l);
+}
+export const leagueRosterSig = (s) => (s?.players || []).map((p) => `${p.lid ?? `#${p.id}`}:${p.name}:${p.age}:${Math.round(playerRating(p) * 10)}:${available(p) ? 1 : 0}`).sort().join('|');
+
 // Identifiant de ligue d'un joueur de la partie (créé à l'académie, amateur de secours : place × 100 000 + son numéro de
 // partie, unique dans la ligue).
 export function ensureLids(s) {
-  for (const p of s.players) if (p.lid == null) p.lid = s.league.slot * 100000 + p.id;
+  // place 0 : 800 000 et plus (1.0.4), jamais les identifiants des effectifs de départ ni du marché ; déjà donnés : gardés
+  for (const p of s.players) if (p.lid == null) p.lid = (s.league.slot || 8) * 100000 + p.id;
   return s;
 }
 
@@ -350,7 +361,7 @@ export function leagueMercato(s, d) {
   // joueurs des amis (audit cyber-auditor du 2026-10-30) : tout instantané passe par unsnapPlayer, champ par champ (une
   // journée envoyée par un autre appareil peut être piégée) ; un joueur n'appartient qu'à un seul ami, le plus récent
   // gagne ; 40 joueurs au plus par ami
-  const okSnap = (x) => !!x && typeof x === 'object' && !Array.isArray(x) && Number.isSafeInteger(x.l);
+  const okSnap = (x) => !!x && typeof x === 'object' && !Array.isArray(x) && Number.isSafeInteger(x.l) && x.l >= 0 && x.l < 1000000;
   const seen = new Map(); // ami → ses joueurs connus (le plus récent d'abord)
   const owner = new Map(); // joueur (identifiant de ligue) → l'ami qui l'a
   const put = (slot, snap, extra = {}) => {
@@ -372,9 +383,19 @@ export function leagueMercato(s, d) {
     }
     return null;
   };
+  // effectifs publiés par les amis (1.0.4) : leur club tel qu'il est, ventes hors de la ligue et départs compris
+  const published = new Map(); // place → { at, roster }
+  for (const [member, r] of Object.entries(d.rosters && typeof d.rosters === 'object' ? d.rosters : {})) {
+    const slot = slotOfMember(L, member);
+    if (slot != null && friend(slot) && Array.isArray(r?.roster) && Number.isSafeInteger(r.mv)) published.set(slot, r);
+  }
+  L.rosterFrom = {};
   for (const x of [...moves].reverse()) { // le plus récent d'abord : acheté puis revendu, le joueur est chez le dernier
     const slot = x.status === 'done' ? slotOfMember(L, x.buyer) : null;
     if (slot == null || !friend(slot)) continue;
+    // achat déjà compté dans son effectif publié (mv : son dernier achat conclu au moment de l'envoi) : il fait foi
+    const pub = published.get(slot);
+    if (pub && Number(x.id) <= pub.mv) continue;
     let snap = null;
     if (x.kind === 'm' && fromMarket.has(x.pid)) snap = snapPlayer({ ...fromMarket.get(x.pid), lid: x.pid });
     else if (x.kind === 'a') {
@@ -383,17 +404,21 @@ export function leagueMercato(s, d) {
     } else if (x.kind === 'f') snap = resultSnap(x.pid) || (okSnap(x.data?.pl) ? x.data.pl : null) || startSnap(x.pid);
     if (snap) put(slot, { ...snap, l: x.pid }, { bought: true });
   }
+  for (const [slot, r] of published) {
+    for (const snap of r.roster) put(slot, snap);
+    L.rosterFrom[slot] = 'live';
+  }
+  // un ami qui n'a encore rien publié (jeu pas à jour) : ses joueurs vus dans ses matchs joués
   for (const r of [...list(d.results)].reverse()) {
     for (const x of list(r?.matches)) {
-      for (const [k, slot] of [[0, x?.h], [1, x?.a]]) if (friend(slot)) for (const snap of list(x?.sq?.[k])) put(slot, snap);
+      for (const [k, slot] of [[0, x?.h], [1, x?.a]]) if (friend(slot) && !published.has(slot)) for (const snap of list(x?.sq?.[k])) put(slot, snap);
     }
   }
   // avant son premier match de la saison : son dernier effectif connu de la saison passée, ou en première saison son
   // effectif de départ
-  L.rosterFrom = {};
   const fromMatches = (slot) => [...(seen.get(slot)?.values() || [])].some((y) => !y.bought);
   for (const c of L.clubs) {
-    if (!friend(c.slot) || fromMatches(c.slot)) continue;
+    if (!friend(c.slot) || published.has(c.slot) || fromMatches(c.slot)) continue;
     const before = list(d.prevSq?.[c.slot]);
     if (before.length) { for (const snap of before) put(c.slot, snap); L.rosterFrom[c.slot] = 'prev'; }
     else if (d.league.season === 1) for (const base of list(leagueSquads(d.league)[c.slot])) put(c.slot, snapPlayer({ ...base, lid: c.slot * 100 + base.id }));

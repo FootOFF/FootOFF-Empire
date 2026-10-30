@@ -64,8 +64,9 @@ export const leagueInfo = (code) => call(`/${code}/info`);
 export const joinLeague = (code, payload) => call(`/${code}/join`, { method: 'POST', body: payload });
 // teams : avec, si la journée est due, les équipes à faire jouer (celles validées, sinon la dernière connue) ; since :
 // seulement les résultats de la saison après cette journée (ceux que l'appareil n'a pas encore)
-export const leagueState = (m, { teams = false, since = null } = {}) => {
-  const q = [teams && 'teams=1', since != null && `since=${since}`].filter(Boolean).join('&');
+// rv : le numéro du dernier effectif d'ami que l'appareil connaît (1.0.4), toujours envoyé (sans lui, aucun effectif)
+export const leagueState = (m, { teams = false, since = null, rv = 0 } = {}) => {
+  const q = [teams && 'teams=1', since != null && `since=${since}`, `rv=${Number.isSafeInteger(rv) && rv > 0 ? rv : 0}`].filter(Boolean).join('&');
   return call(`/${m.code}/state${q ? `?${q}` : ''}`, { auth: m });
 };
 export const leagueResults = (m, season) => call(`/${m.code}/results?season=${season}`, { auth: m });
@@ -73,7 +74,7 @@ export const leagueResults = (m, season) => call(`/${m.code}/results?season=${se
 export const leagueTransfers = (m) => call(`/${m.code}/transfers`, { auth: m });
 // Pouls (0.8.6) : une empreinte de ce qui change dans le championnat (arrivées, équipes validées, journée, offres et
 // réponses entre amis), de quelques octets ; relire l'état complet seulement quand elle change.
-export const leaguePulse = (m) => call(`/${m.code}/pulse`, { auth: m }).then((d) => d?.p ?? null);
+export const leaguePulse = (m) => call(`/${m.code}/pulse?r=1`, { auth: m }).then((d) => d?.p ?? null); // r=1 : les effectifs publiés comptent (1.0.4)
 // Cadence (audit cyber-auditor du 2026-10-28 : appels comptés par Vercel, pare-feu à 30 par minute et par adresse) :
 // toutes les 6 s quand quelque chose est en attente (urgent, ou moins de deux minutes après une demande au serveur),
 // sinon toutes les 30 s, puis 60 s tant que rien ne change ; jamais sans un geste du joueur dans les trois dernières
@@ -145,6 +146,8 @@ export const kickMember = (m, member) => call(`/${m.code}/kick`, { method: 'POST
 export const leaveLeague = (m) => call(`/${m.code}/leave`, { method: 'POST', body: {}, auth: m });
 // le créateur supprime le championnat pour tout le monde ; name : son nom exact, tapé pour confirmer
 export const deleteLeague = (m, name) => call(`/${m.code}/delete`, { method: 'POST', body: { name }, auth: m });
+// Effectif de notre club publié aux amis (1.0.4, leagueRoster) : leur onglet Amis se met à jour
+export const publishRoster = (m, roster) => call(`/${m.code}/roster`, { method: 'POST', body: { roster }, auth: m });
 export const sendSheet = (m, season, round, sheet) => call(`/${m.code}/sheet`, { method: 'POST', body: { season, round, sheet }, auth: m });
 export const sendResult = (m, body) => call(`/${m.code}/result`, { method: 'POST', body: { ...body, engine: LEAGUE_ENGINE }, auth: m });
 // Mercato immédiat (0.8.3) : une demande de la file de la partie (leagueClub.js, leagueRequest) : sign, offer, withdraw,
@@ -177,7 +180,23 @@ function readCache(code) {
 function writeCache(code, c) {
   try { localStorage.setItem(RES(code), JSON.stringify(c)); } catch { /* stockage plein : relu du serveur la prochaine fois */ }
 }
-export const dropCache = (code) => { try { localStorage.removeItem(RES(code)); } catch { /* rien à effacer */ } };
+export const dropCache = (code) => { try { localStorage.removeItem(RES(code)); localStorage.removeItem(RST(code)); } catch { /* rien à effacer */ } };
+// Effectifs publiés par les amis (1.0.4) : à part des journées (un stockage plein ne fait pas tout relire), et en mémoire
+// pour la session ; { v : le plus grand numéro connu, rosters : membre → { v, mv, roster } }
+const RST = (code) => `fo-ligue-rs:${code}`;
+const rosterMemo = new Map();
+function readRosters(code) {
+  if (rosterMemo.has(code)) return rosterMemo.get(code);
+  try {
+    const c = JSON.parse(localStorage.getItem(RST(code)) || 'null');
+    if (c && Number.isSafeInteger(c.v) && c.rosters && typeof c.rosters === 'object' && !Array.isArray(c.rosters)) return c;
+  } catch { /* illisible : relu du serveur */ }
+  return { v: 0, rosters: {} };
+}
+function writeRosters(code, c) {
+  rosterMemo.set(code, c);
+  try { localStorage.setItem(RST(code), JSON.stringify(c)); } catch { /* stockage plein : la copie en mémoire suffit pour la session */ }
+}
 
 // Dernier effectif connu de chaque ami dans des journées jouées (1.0.2) : place → ses joueurs (instantanés), le plus récent
 // de chacun. L'effectif d'un ami avant son premier match d'une nouvelle saison (mercato, onglet Amis).
@@ -208,13 +227,21 @@ function friendSnaps(results, members) {
 // prevSq : le dernier effectif connu des amis à la saison passée (1.0.2).
 async function syncedState(m, { teams = false } = {}) {
   let c = readCache(m.code);
-  let d = await leagueState(m, { teams, since: c?.results.length ? c.results[c.results.length - 1].round : null });
+  // effectifs publiés par les amis (1.0.4) : relus depuis le dernier numéro que l'appareil connaît
+  const rc = readRosters(m.code);
+  let d = await leagueState(m, { teams, since: c?.results.length ? c.results[c.results.length - 1].round : null, rv: rc.v });
   if (c && c.season !== d.league.season) { // nouvelle saison : tout est relu, le dernier état de la précédente reste
     const last = c.results[c.results.length - 1];
     c = { season: d.league.season, results: [], prev: last?.world && c.season === d.league.season - 1 ? { season: c.season, world: last.world, sq: friendSnaps(c.results, d.members) } : c.prev };
-    d = await leagueState(m, { teams });
+    d = await leagueState(m, { teams, rv: rc.v });
   }
   if (!c) c = { season: d.league.season, results: [], prev: null };
+  // un ami parti (l'ordinateur a repris son club) : son effectif publié s'oublie
+  const fresh = d.rosters && typeof d.rosters === 'object' && !Array.isArray(d.rosters) ? d.rosters : {};
+  const present = new Set(list(d.members).filter((x) => x?.pseudo !== AI_PSEUDO).map((x) => x.id));
+  const rosters = Object.fromEntries(Object.entries({ ...rc.rosters, ...fresh })
+    .filter(([id, x]) => present.has(id) && Array.isArray(x?.roster) && Number.isSafeInteger(x.v) && Number.isSafeInteger(x.mv)));
+  writeRosters(m.code, { v: Object.values(rosters).reduce((a, x) => Math.max(a, x.v), rc.v), rosters });
   const known = new Set(c.results.map((r) => r.round));
   const results = [...c.results, ...(d.results || []).filter((r) => !known.has(r.round))].sort((a, b) => a.round - b.round);
   let prev = c.prev?.season === d.league.season - 1 ? c.prev : null;
@@ -232,7 +259,7 @@ async function syncedState(m, { teams = false } = {}) {
   };
   // skew : avance de l'horloge du serveur sur celle de l'appareil (compte à rebours du coup d'envoi, 0.8.6)
   const skew = d.serverTime ? Date.parse(d.serverTime) - Date.now() : 0;
-  return { ...d, results, world: worldAt(Infinity), worldBefore: worldAt, skew, prevSq: prev?.sq || null };
+  return { ...d, results, world: worldAt(Infinity), worldBefore: worldAt, skew, prevSq: prev?.sq || null, rosters };
 }
 // Coup d'envoi annoncé (tous ont validé, 0.8.6) en heure de l'appareil, ou null
 export const kickoffAt = (d) => (d?.kickoff && !d.due ? Date.parse(d.kickoff) - (d.skew || 0) : null);
