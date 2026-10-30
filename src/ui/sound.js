@@ -11,6 +11,19 @@ const KEY = 'fo-sound';
 const MUSIC_KEY = 'fo-music';
 const MUSIC_URL = `${import.meta.env.BASE_URL}audio/footoff-empire.mp3`;
 const MUSIC_LEVEL = 0.55; // à 100 % : la chanson sous le stade et les sons du menu
+// Musique en attente d'un geste (1.0.8) : la lecture a été refusée par le navigateur (règle des sites qui jouent du son :
+// il faut un toucher, un clic ou une touche) ; l'écran de chargement le dit (loading.jsx, useMusicWaiting).
+let musicWaitingNow = false;
+const musicSubs = new Set();
+export const musicWaiting = {
+  get: () => musicWaitingNow,
+  subscribe(f) { musicSubs.add(f); return () => musicSubs.delete(f); },
+};
+const setMusicWaiting = (w) => {
+  if (w === musicWaitingNow) return;
+  musicWaitingNow = w;
+  for (const f of musicSubs) f();
+};
 const musicLevel = (v) => (Number.isFinite(v) ? Math.round(Math.min(1, Math.max(0, v)) * 20) / 20 : 0.5); // pas de 5 %
 
 function noiseBuffer(ctx, seconds = 3) {
@@ -55,12 +68,14 @@ export function createStadiumSound() {
     mgain = mctx.createGain();
     mgain.gain.value = 0;
     mctx.createMediaElementSource(mel).connect(mgain).connect(mctx.destination);
+    mctx.onstatechange = () => { if (mctx.state === 'running' && !mel.paused) { mpending = false; setMusicWaiting(false); } };
     return true;
   }
   function music(quick = false) { // quick : le joueur règle le volume, il l'entend aussitôt
     const on = musicOn();
     if (!mel && !on) return;
-    if (!mel && navigator.userActivation && !navigator.userActivation.hasBeenActive) { mpending = true; return; } // les navigateurs attendent un geste
+    // dès l'écran de chargement (1.0.8, demande du PDG) : la lecture est tentée tout de suite ; un navigateur qui exige un
+    // geste la refuse, elle part alors au premier toucher, clic ou touche
     if (!musicReady()) return;
     const t = mctx.currentTime;
     const g = mgain.gain;
@@ -68,18 +83,22 @@ export function createStadiumSound() {
     g.setValueAtTime(g.value, t);
     clearTimeout(mtimer);
     if (on) {
-      mctx.resume?.();
+      mctx.resume?.()?.catch?.(() => {});
       const p = mel.play();
-      if (p?.catch) p.catch(() => { mpending = true; });
+      const started = () => { const ok = !mel.paused && mctx.state === 'running'; mpending = !ok; setMusicWaiting(!ok && musicOn()); };
+      if (p?.then) p.then(started, () => { mpending = true; setMusicWaiting(musicOn()); });
+      else started();
       g.linearRampToValueAtTime(musicVol * MUSIC_LEVEL, t + (quick ? 0.15 : 2));
     } else {
       g.linearRampToValueAtTime(0, t + 1.2);
       mtimer = setTimeout(() => { if (!musicOn()) mel.pause(); }, 1300);
+      setMusicWaiting(false);
     }
   }
   if (typeof window !== 'undefined') {
-    const kick = () => { if (musicOn() && (mpending || !mel || mel.paused)) { mpending = false; music(); } };
-    for (const ev of ['pointerdown', 'keydown', 'touchend']) window.addEventListener(ev, kick, { capture: true, passive: true });
+    const kick = () => { if (musicOn() && (mpending || !mel || mel.paused || mctx?.state !== 'running')) { mpending = false; music(); } };
+    // l'iPhone ne débloque le son qu'à la fin d'un toucher (touchend, click) ; la souris et le clavier dès l'appui
+    for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) window.addEventListener(ev, kick, { capture: true, passive: true });
   }
 
   function ensure() {

@@ -5863,3 +5863,13 @@ html[lang="ar"] :is(.compo-card-text b, .lv-facts b) { line-height: 1.4; }
   .cm-music .cm-gauge { flex: 1; }
   .cm-music .cm-gauge-hit { flex: 1; width: auto; height: 36px; }
 }
+
+/* Écran de chargement : la musique attend un geste (1.0.8) ; sous le logo, sans rien déplacer (le logo est le repère),
+   une ligne discrète qui respire doucement */
+.ld-logo { position: relative; }
+.ld-music { position: absolute; top: calc(100% + 36px); left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;
+  font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #c7a15a; animation: ld-music 2.6s ease-in-out infinite; }
+.ld-music svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+html[lang="ar"] .ld-music { font-family: 'Cairo', system-ui, sans-serif; letter-spacing: 0; font-size: 13px; }
+@keyframes ld-music { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ld-music { animation: none; } }

@@ -1,5 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { FOMonogram } from './brand';
+import { useInputMode } from './input';
+import { musicWaiting } from './sound';
 import { t, tr } from '../i18n/index';
 
 // Écran de chargement, façon jeu de console : logo au centre, astuce en bas à gauche, étape et pourcentage en bas
@@ -44,6 +46,20 @@ function targetOf(info, done, now, marks) {
 
 // info : null tant que le moteur 3D n'est pas arrivé, puis { phase: 'assets' | 'prepare', download: 0 à 1 }.
 // done : scène prête ; la barre file à 100 %, puis onFinished. fixed : valeur figée (galerie d'écrans).
+// Musique en attente d'un geste (1.0.8) : sous le logo, une ligne discrète invite à toucher l'écran ; elle s'efface dès
+// que la musique part
+function MusicHint() {
+  const waiting = useSyncExternalStore(musicWaiting.subscribe, musicWaiting.get, musicWaiting.get);
+  const mode = useInputMode();
+  if (!waiting) return null;
+  return (
+    <span className="ld-music">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></svg>
+      {mode === 'touch' ? t('Touche l’écran pour la musique') : t('Clique ou appuie sur une touche pour la musique')}
+    </span>
+  );
+}
+
 export function LoadingScreen({ info = null, done = false, fixed = null, onFinished }) {
   const boot = typeof window !== 'undefined' ? window.__foBoot : null;
   const [t0] = useState(() => boot?.t0 ?? performance.now());
@@ -126,6 +142,7 @@ export function LoadingScreen({ info = null, done = false, fixed = null, onFinis
           <FOMonogram className="ld-mono" />
           <span className="ld-sep" aria-hidden="true" />
           <span className="ld-words"><span className="ld-name">{tr('Foot<0>OFF</0>', [(c) => <b>{c}</b>])}</span><span className="ld-sub">{t('Empire')}</span></span>
+          <MusicHint />
         </div>
       </div>
       <div className="ld-bottom">

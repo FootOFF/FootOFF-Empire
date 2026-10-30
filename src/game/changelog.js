@@ -5,6 +5,12 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.8', date: '2026-10-30', title: t('La musique dès le chargement'),
+    items: [
+      t('La musique démarre dès l’écran de chargement quand le navigateur le permet ; sinon, au premier toucher de l’écran, que l’écran de chargement propose.'),
+    ],
+  },
+  {
     version: '1.0.7', date: '2026-10-30', title: t('La jauge de la musique'),
     items: [
       t('Réglages : le volume de la musique se règle sur une jauge, au doigt ou à la souris, et avec les flèches ou la manette.'),
