@@ -5,6 +5,12 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.12', date: '2026-10-31', title: t('La note des négociations'),
+    items: [
+      t('Négociations : monter et descendre jouent la note douce du milieu de la jauge du salaire, la même pour toutes les sommes et tous les choix.'),
+    ],
+  },
+  {
     version: '1.0.11', date: '2026-10-31', title: t('Des sons qui s’entendent'),
     items: [
       t('Les sons du jeu passent nettement au-dessus de la musique : les sons du menu montent beaucoup, le stade et les entraînements aussi.'),

@@ -322,12 +322,12 @@ export function createStadiumSound() {
       };
       if (kind === 'move') tone(1500, 1250, 0, 0.045, 0.018);
       // sommes et conditions d'un contrat (1.0.10 ; 1.0.11, demande du PDG) : − / + des sommes, curseurs, durée, clause.
-      // Deux sons fixes, ceux qu'il a aimés au milieu de la jauge du salaire (la hauteur qui suivait la somme devenait
-      // sourde vers le bas et criarde vers le haut) : monter joue un mi (660 Hz) qui glisse à peine vers le haut,
-      // descendre un do dièse (554 Hz) qui glisse à peine vers le bas. Note de marimba feutrée, rien au-dessus de 2,7 kHz.
+      // Deux sons fixes, exactement ceux qu'il a aimés vers 1 500 € sur un salaire de 920 à 2 300 € (1.0.10 : la hauteur
+      // suivait la somme, sourde vers le bas, criarde vers le haut) : un do dièse (554 Hz) qui glisse à peine vers le haut
+      // pour monter, à peine vers le bas pour descendre. Note de marimba feutrée, rien au-dessus de 2,3 kHz.
       else if (kind === 'amount-up' || kind === 'amount-down') {
         const up = kind === 'amount-up';
-        const f = up ? 660 : 554;
+        const f = 554.37;
         const g = up ? 1.015 : 0.985;
         tone(f, f * g, 0, 0.16, 0.028);
         tone(f * 4, f * 4 * g, 0, 0.05, 0.003);
