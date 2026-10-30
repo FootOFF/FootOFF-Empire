@@ -29,12 +29,21 @@
     <meta name="theme-color" content="#070707" />
     <title>FootOFF Empire — un jeu FootOFF Media</title>
     <meta name="description" content="Fonde ton club, bâtis ton complexe, monte jusqu’à l’Élite. Un jeu de gestion de football dans le navigateur, sur PC comme sur téléphone, par FootOFF Media." />
-    <!-- lancement public (2026-10-30) : le jeu est indexable, plus de noindex -->
+    <!-- lancement public (2026-10-30) : le jeu est indexable, plus de noindex ; une seule adresse pour les moteurs (la
+         copie github.io et les invitations ?ligue= y renvoient) -->
+    <link rel="canonical" href="https://www.footoff.media/footoffempire/" />
+    <!-- vues de travail (?galerie, ?ecran=…) et liens d'invitation (?ligue=…) : jamais dans les moteurs de recherche -->
+    <script>
+      if (/[?&](galerie|ecran|ligue)(=|&|$)/.test(location.search)) document.head.appendChild(Object.assign(document.createElement('meta'), { name: 'robots', content: 'noindex, nofollow' }));
+    </script>
     <!-- Adresse unique : www.footoff.media/footoffempire/. Sur l'ancienne adresse (footoff.github.io), le jeu part vers
          la nouvelle en emportant la partie et les réglages : compressés dans le fragment de l'adresse (#transfert=…),
          jamais envoyé à un serveur. À l'arrivée, rien n'est écrasé : si une partie existe déjà sur footoff.media, celle
          de github.io est rangée à côté (clé « .github »). Rien n'est effacé sur l'ancienne adresse. Pendant ce passage,
-         window.__foMoving retient le démarrage du jeu (src/main.jsx). -->
+         window.__foMoving retient le démarrage du jeu (src/main.jsx). Le transfert n'est accepté qu'en arrivant de
+         l'ancienne adresse (référent footoff.github.io, que la balise ci-dessous garantit) : un lien #transfert= venu
+         d'ailleurs n'impose aucune partie. -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <script>
       (function () {
         var KEEP = /^(footoff-empire-|fo-)/; // clés du jeu (SAVE_KEY de src/game/constants.js, réglages fo-…)
@@ -53,6 +62,26 @@
           return a;
         }
         function gzip(data, Stream) { return new Response(new Blob([data]).stream().pipeThrough(new Stream('gzip'))).arrayBuffer(); }
+        // décompression plafonnée : un fragment piégé (bombe gzip) ne fait pas tomber l'onglet ; le plafond dépasse de loin
+        // le stockage local d'un navigateur, toute vraie partie passe
+        function gunzip(bytes, max) {
+          var reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+          var parts = [], size = 0;
+          function pump() {
+            return reader.read().then(function (r) {
+              if (r.done) {
+                var out = new Uint8Array(size), at = 0;
+                for (var i = 0; i < parts.length; i++) { out.set(parts[i], at); at += parts[i].length; }
+                return out;
+              }
+              size += r.value.length;
+              if (size > max) { reader.cancel(); throw new Error('transfert trop lourd'); }
+              parts.push(r.value);
+              return pump();
+            });
+          }
+          return pump();
+        }
         if (location.hostname === 'footoff.github.io') {
           window.__foMoving = true;
           var go = function (hash) { location.replace(DEST + location.search + (hash || '')); };
@@ -68,12 +97,14 @@
         } else if (location.hash.indexOf(MARK) === 0) {
           window.__foMoving = true;
           var clean = function () { location.replace(location.pathname + location.search); };
+          if (document.referrer.indexOf('https://footoff.github.io/') !== 0) { clean(); return; }
           try {
-            gzip(unb64(location.hash.slice(MARK.length)), DecompressionStream).then(function (buf) {
+            gunzip(unb64(location.hash.slice(MARK.length)), 16e6).then(function (buf) {
               var data = JSON.parse(new TextDecoder().decode(buf));
               var had = localStorage.getItem(SAVE) !== null;
               Object.keys(data).forEach(function (k) {
-                if (!KEEP.test(k) || typeof data[k] !== 'string') return;
+                // jamais de clé de championnat (fo-ligue…) : l'ancienne adresse n'en a jamais eu (/api/ligue est de même origine)
+                if (!KEEP.test(k) || k.indexOf('fo-ligue') === 0 || typeof data[k] !== 'string') return;
                 if (had && k === SAVE) localStorage.setItem(SAVE + '.github', data[k]);
                 else if (had && k.indexOf(SAVE) === 0) return; // secours et direct de l'autre partie : ignorés
                 else if (localStorage.getItem(k) === null) localStorage.setItem(k, data[k]);
