@@ -374,7 +374,7 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
         <Hints items={hints} />
         <span className="ts-foot-end">
           <SocialStrip className="ts-social" />
-          <span className="ts-legal">{tr('FootOFF Empire · version <0/> · <1/>', [CURRENT, __BUILD_DATE__])}</span>
+          <span className="ts-legal">{tr('FootOFF Empire · version <0/>', [CURRENT])}</span>
         </span>
       </footer>
     </div>

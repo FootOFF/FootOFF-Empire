@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.9', date: '2026-10-30', title: t('Une musique discrète'),
+    items: [
+      t('Sur iPhone, la musique n’apparaît plus comme un morceau dans le lecteur du téléphone (écran verrouillé, haut de l’écran) : elle fait partie du jeu, comme ses autres sons.'),
+      t('Elle n’interrompt plus ta propre musique et se tait quand l’iPhone est en mode silencieux.'),
+      t('L’écran titre n’affiche plus que la version du jeu.'),
+    ],
+  },
+  {
     version: '1.0.8', date: '2026-10-30', title: t('La musique dès le chargement'),
     items: [
       t('La musique démarre dès l’écran de chargement quand le navigateur le permet ; sinon, au premier toucher de l’écran, que l’écran de chargement propose.'),

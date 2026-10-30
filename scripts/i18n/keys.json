@@ -2767,914 +2767,942 @@
    ]
   },
   {
-   "k": "La musique dès le chargement",
+   "k": "Une musique discrète",
    "kind": "t",
    "where": [
     "game/changelog.js:8"
    ]
   },
   {
-   "k": "La musique démarre dès l’écran de chargement quand le navigateur le permet ; sinon, au premier toucher de l’écran, que l’écran de chargement propose.",
+   "k": "Sur iPhone, la musique n’apparaît plus comme un morceau dans le lecteur du téléphone (écran verrouillé, haut de l’écran) : elle fait partie du jeu, comme ses autres sons.",
    "kind": "t",
    "where": [
     "game/changelog.js:10"
    ]
   },
   {
-   "k": "La jauge de la musique",
+   "k": "Elle n’interrompt plus ta propre musique et se tait quand l’iPhone est en mode silencieux.",
    "kind": "t",
    "where": [
-    "game/changelog.js:14"
+    "game/changelog.js:11"
    ]
   },
   {
-   "k": "Réglages : le volume de la musique se règle sur une jauge, au doigt ou à la souris, et avec les flèches ou la manette.",
+   "k": "L’écran titre n’affiche plus que la version du jeu.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:12"
+   ]
+  },
+  {
+   "k": "La musique dès le chargement",
    "kind": "t",
    "where": [
     "game/changelog.js:16"
    ]
   },
   {
-   "k": "La musique du jeu",
+   "k": "La musique démarre dès l’écran de chargement quand le navigateur le permet ; sinon, au premier toucher de l’écran, que l’écran de chargement propose.",
    "kind": "t",
    "where": [
-    "game/changelog.js:20"
+    "game/changelog.js:18"
    ]
   },
   {
-   "k": "La musique de FootOFF Empire joue en fond, douce, à l’écran titre et dans le complexe. Elle s’efface pendant les matchs et reprend ensuite. Son volume se règle dans les Réglages.",
+   "k": "La jauge de la musique",
    "kind": "t",
    "where": [
     "game/changelog.js:22"
    ]
   },
   {
-   "k": "Offres claires entre amis",
+   "k": "Réglages : le volume de la musique se règle sur une jauge, au doigt ou à la souris, et avec les flèches ou la manette.",
    "kind": "t",
    "where": [
-    "game/changelog.js:26"
+    "game/changelog.js:24"
    ]
   },
   {
-   "k": "Une offre pour un joueur qui a déjà quitté le club de ton ami est refusée d’office, et tu sais pourquoi.",
+   "k": "La musique du jeu",
    "kind": "t",
    "where": [
     "game/changelog.js:28"
    ]
   },
   {
-   "k": "Les effectifs des amis en direct",
+   "k": "La musique de FootOFF Empire joue en fond, douce, à l’écran titre et dans le complexe. Elle s’efface pendant les matchs et reprend ensuite. Son volume se règle dans les Réglages.",
    "kind": "t",
    "where": [
-    "game/changelog.js:32"
+    "game/changelog.js:30"
    ]
   },
   {
-   "k": "Championnats entre amis : chaque club publie son effectif quand il change. L’onglet Amis du mercato suit tout : achats, ventes hors de la ligue, joueurs libérés, blessures.",
+   "k": "Offres claires entre amis",
    "kind": "t",
    "where": [
     "game/changelog.js:34"
    ]
   },
   {
-   "k": "Les couleurs du match",
+   "k": "Une offre pour un joueur qui a déjà quitté le club de ton ami est refusée d’office, et tu sais pourquoi.",
    "kind": "t",
    "where": [
-    "game/changelog.js:38"
+    "game/changelog.js:36"
    ]
   },
   {
-   "k": "Temps forts en 3D : un code couleur discret, façon télé, à côté du nom de chaque équipe dans le score, pour savoir qui joue en quelle couleur.",
+   "k": "Les effectifs des amis en direct",
    "kind": "t",
    "where": [
     "game/changelog.js:40"
    ]
   },
   {
-   "k": "Le mercato entre amis",
+   "k": "Championnats entre amis : chaque club publie son effectif quand il change. L’onglet Amis du mercato suit tout : achats, ventes hors de la ligue, joueurs libérés, blessures.",
    "kind": "t",
    "where": [
-    "game/changelog.js:44"
+    "game/changelog.js:42"
    ]
   },
   {
-   "k": "Championnats entre amis : plus jamais d’offre au nom du club d’un ami qui ne l’a pas faite. Les clubs qui achètent tes joueurs mis en vente viennent d’en dehors de la ligue.",
+   "k": "Les couleurs du match",
    "kind": "t",
    "where": [
     "game/changelog.js:46"
    ]
   },
   {
-   "k": "Le mercato a un onglet Amis : l’effectif de chaque ami, club par club, et une offre en un geste, dès avant la première journée.",
+   "k": "Temps forts en 3D : un code couleur discret, façon télé, à côté du nom de chaque équipe dans le score, pour savoir qui joue en quelle couleur.",
    "kind": "t",
    "where": [
-    "game/changelog.js:47"
+    "game/changelog.js:48"
    ]
   },
   {
-   "k": "Heure limite en vue",
+   "k": "Le mercato entre amis",
    "kind": "t",
    "where": [
-    "game/changelog.js:51"
+    "game/changelog.js:52"
    ]
   },
   {
-   "k": "Championnats entre amis : au-dessus du prochain match, l’heure limite de la journée, le temps qui reste pour valider ton équipe, et qui a validé ou pas encore.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:53"
-   ]
-  },
-  {
-   "k": "Une journée jouée en avance, parce que tout le monde avait validé, laisse jusqu’au lendemain pour la suivante.",
+   "k": "Championnats entre amis : plus jamais d’offre au nom du club d’un ami qui ne l’a pas faite. Les clubs qui achètent tes joueurs mis en vente viennent d’en dehors de la ligue.",
    "kind": "t",
    "where": [
     "game/changelog.js:54"
    ]
   },
   {
-   "k": "Le menu pause va à l’essentiel : plus d’entrée Nouveautés.",
+   "k": "Le mercato a un onglet Amis : l’effectif de chaque ami, club par club, et une offre en un geste, dès avant la première journée.",
    "kind": "t",
    "where": [
     "game/changelog.js:55"
    ]
   },
   {
-   "k": "La version publique",
+   "k": "Heure limite en vue",
    "kind": "t",
    "where": [
     "game/changelog.js:59"
    ]
   },
   {
-   "k": "FootOFF Empire passe en version 1.0, sa version publique. L’écran titre va à l’essentiel : les nouveautés se lisent depuis le menu pause.",
+   "k": "Championnats entre amis : au-dessus du prochain match, l’heure limite de la journée, le temps qui reste pour valider ton équipe, et qui a validé ou pas encore.",
    "kind": "t",
    "where": [
     "game/changelog.js:61"
    ]
   },
   {
-   "k": "Monter se mérite : les adversaires de Départementale, de Régionale et de Nationale sont plus forts, en championnat comme en Coupe nationale. Un bon président quitte la Départementale vers sa troisième saison. Dans une partie en cours, ces adversaires renforcés arrivent à la saison suivante.",
+   "k": "Une journée jouée en avance, parce que tout le monde avait validé, laisse jusqu’au lendemain pour la suivante.",
    "kind": "t",
    "where": [
     "game/changelog.js:62"
    ]
   },
   {
-   "k": "La division ouvre les niveaux des bâtiments : jusqu’au niveau 2 en Départementale, 3 en Régionale, 4 en Nationale et 5 en Élite, avec l’arène du stade. Un bâtiment déjà plus haut le reste.",
+   "k": "Le menu pause va à l’essentiel : plus d’entrée Nouveautés.",
    "kind": "t",
    "where": [
     "game/changelog.js:63"
    ]
   },
   {
-   "k": "À la manette, on choisit enfin un poste ou un remplaçant dans la composition, avant le match comme pendant les changements.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:64"
-   ]
-  },
-  {
-   "k": "Les fautes qui valent un carton rouge tombent hors de la surface : plus de faute qui mériterait aussi un penalty.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:65"
-   ]
-  },
-  {
-   "k": "Au ralenti, les panneaux FootOFF Media du bord du terrain se lisent à l’endroit, des quatre côtés du stade.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:66"
-   ]
-  },
-  {
-   "k": "En anglais, en espagnol et en arabe, plus d’espace avant les deux-points dans les fiches des bâtiments, de l’académie, du mercato et de l’entraînement.",
+   "k": "La version publique",
    "kind": "t",
    "where": [
     "game/changelog.js:67"
    ]
   },
   {
-   "k": "Des appuis de footballeur",
+   "k": "FootOFF Empire passe en version 1.0, sa version publique. L’écran titre va à l’essentiel : les nouveautés se lisent depuis le menu pause.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:69"
+   ]
+  },
+  {
+   "k": "Monter se mérite : les adversaires de Départementale, de Régionale et de Nationale sont plus forts, en championnat comme en Coupe nationale. Un bon président quitte la Départementale vers sa troisième saison. Dans une partie en cours, ces adversaires renforcés arrivent à la saison suivante.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:70"
+   ]
+  },
+  {
+   "k": "La division ouvre les niveaux des bâtiments : jusqu’au niveau 2 en Départementale, 3 en Régionale, 4 en Nationale et 5 en Élite, avec l’arène du stade. Un bâtiment déjà plus haut le reste.",
    "kind": "t",
    "where": [
     "game/changelog.js:71"
    ]
   },
   {
-   "k": "À chaque foulée, l’avant du pied reste planté au sol et le talon pivote autour, comme chez un vrai footballeur : les pieds ne glissent presque plus et ne s’enfoncent plus dans la pelouse.",
+   "k": "À la manette, on choisit enfin un poste ou un remplaçant dans la composition, avant le match comme pendant les changements.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:72"
+   ]
+  },
+  {
+   "k": "Les fautes qui valent un carton rouge tombent hors de la surface : plus de faute qui mériterait aussi un penalty.",
    "kind": "t",
    "where": [
     "game/changelog.js:73"
    ]
   },
   {
-   "k": "Nouvelles foulées à reculons et de côté, en marchant, en trottinant et en courant ; demi-tours sur un appui, buste penché dans les virages et à l’accélération.",
+   "k": "Au ralenti, les panneaux FootOFF Media du bord du terrain se lisent à l’endroit, des quatre côtés du stade.",
    "kind": "t",
    "where": [
     "game/changelog.js:74"
    ]
   },
   {
-   "k": "Tous les joueurs suivent le ballon du regard, de la tête et du haut du corps.",
+   "k": "En anglais, en espagnol et en arabe, plus d’espace avant les deux-points dans les fiches des bâtiments, de l’académie, du mercato et de l’entraînement.",
    "kind": "t",
    "where": [
     "game/changelog.js:75"
    ]
   },
   {
-   "k": "Les gardiens font face au jeu en permanence, se déplacent en pas chassés et choisissent leur arrêt : prise basse, à mi-hauteur ou en l’air, arrêt du corps, plongeon, saut manqué. Le geste part dès la frappe et les mains arrivent sur le ballon au bon moment.",
+   "k": "Des appuis de footballeur",
    "kind": "t",
    "where": [
-    "game/changelog.js:76"
+    "game/changelog.js:79"
    ]
   },
   {
-   "k": "Les frappes montrent enfin le vrai coup de pied, au moment exact du contact avec le ballon.",
+   "k": "À chaque foulée, l’avant du pied reste planté au sol et le talon pivote autour, comme chez un vrai footballeur : les pieds ne glissent presque plus et ne s’enfoncent plus dans la pelouse.",
    "kind": "t",
    "where": [
-    "game/changelog.js:77"
+    "game/changelog.js:81"
    ]
   },
   {
-   "k": "Les expulsions se lisent d’un coup d’œil : le fautif tacle, le joueur fauché reste au sol, le fautif se relève à côté de lui et le carton rouge s’affiche juste au-dessus du fautif. Au ralenti, la caméra garde toujours des joueurs dans le cadre.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:78"
-   ]
-  },
-  {
-   "k": "La langue au départ, chacun ses couleurs",
+   "k": "Nouvelles foulées à reculons et de côté, en marchant, en trottinant et en courant ; demi-tours sur un appui, buste penché dans les virages et à l’accélération.",
    "kind": "t",
    "where": [
     "game/changelog.js:82"
    ]
   },
   {
-   "k": "Nouvelle partie : la langue se choisit juste après, une seule fois par partie. Elle n’est plus proposée à l’écran titre.",
+   "k": "Tous les joueurs suivent le ballon du regard, de la tête et du haut du corps.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:83"
+   ]
+  },
+  {
+   "k": "Les gardiens font face au jeu en permanence, se déplacent en pas chassés et choisissent leur arrêt : prise basse, à mi-hauteur ou en l’air, arrêt du corps, plongeon, saut manqué. Le geste part dès la frappe et les mains arrivent sur le ballon au bon moment.",
    "kind": "t",
    "where": [
     "game/changelog.js:84"
    ]
   },
   {
-   "k": "Championnats entre amis : chaque club joue à ses couleurs, et le tien garde toujours les siennes, à domicile comme à l’extérieur. En déplacement, ton équipe ne joue plus en tenue de secours face à un adversaire habillé à tes couleurs.",
+   "k": "Les frappes montrent enfin le vrai coup de pied, au moment exact du contact avec le ballon.",
    "kind": "t",
    "where": [
     "game/changelog.js:85"
    ]
   },
   {
+   "k": "Les expulsions se lisent d’un coup d’œil : le fautif tacle, le joueur fauché reste au sol, le fautif se relève à côté de lui et le carton rouge s’affiche juste au-dessus du fautif. Au ralenti, la caméra garde toujours des joueurs dans le cadre.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:86"
+   ]
+  },
+  {
+   "k": "La langue au départ, chacun ses couleurs",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:90"
+   ]
+  },
+  {
+   "k": "Nouvelle partie : la langue se choisit juste après, une seule fois par partie. Elle n’est plus proposée à l’écran titre.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:92"
+   ]
+  },
+  {
+   "k": "Championnats entre amis : chaque club joue à ses couleurs, et le tien garde toujours les siennes, à domicile comme à l’extérieur. En déplacement, ton équipe ne joue plus en tenue de secours face à un adversaire habillé à tes couleurs.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:93"
+   ]
+  },
+  {
    "k": "Le direct ne se fige plus",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:89"
-   ]
-  },
-  {
-   "k": "Le direct ne s’arrête plus avant un temps fort : un événement tombé juste avant (l’occasion de l’autre équipe à la même minute, un carton, un mot du commentateur) figeait l’horloge pour de bon, à ×1 comme à ×4, en solo comme en ligue. Il s’affiche maintenant juste avant le temps fort.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:91"
-   ]
-  },
-  {
-   "k": "Des temps forts plus vrais",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:95",
-    "game/changelog.js:150"
-   ]
-  },
-  {
-   "k": "Les gardiens portent enfin leur tenue : manches longues à la couleur de leur maillot et gants.",
    "kind": "t",
    "where": [
     "game/changelog.js:97"
    ]
   },
   {
-   "k": "La défense se place mieux : seule sa dernière ligne recule devant l’attaquant le plus avancé, le milieu tient sa ligne devant elle.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:98"
-   ]
-  },
-  {
-   "k": "Sur une passe en profondeur, les défenseurs les plus proches se retournent et courent vers leur but.",
+   "k": "Le direct ne s’arrête plus avant un temps fort : un événement tombé juste avant (l’occasion de l’autre équipe à la même minute, un carton, un mot du commentateur) figeait l’horloge pour de bon, à ×1 comme à ×4, en solo comme en ligue. Il s’affiche maintenant juste avant le temps fort.",
    "kind": "t",
    "where": [
     "game/changelog.js:99"
    ]
   },
   {
-   "k": "Le tireur se tourne vers le but en armant sa frappe, et un joueur qui recule fait des pas en arrière au lieu de glisser.",
+   "k": "Des temps forts plus vrais",
    "kind": "t",
    "where": [
-    "game/changelog.js:100"
+    "game/changelog.js:103",
+    "game/changelog.js:158"
    ]
   },
   {
-   "k": "Après un but, le buteur célèbre à l’approche du coin et ses coéquipiers le rejoignent ; le ralenti repart de l’action, sans la célébration.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:101"
-   ]
-  },
-  {
-   "k": "Le match d’abord",
+   "k": "Les gardiens portent enfin leur tenue : manches longues à la couleur de leur maillot et gants.",
    "kind": "t",
    "where": [
     "game/changelog.js:105"
    ]
   },
   {
-   "k": "Championnats entre amis : le score se découvre en regardant son match. Le bouton « Regarder » s’illumine, et les résultats et le classement de la journée restent cachés tant que tu ne l’as pas vu.",
+   "k": "La défense se place mieux : seule sa dernière ligne recule devant l’attaquant le plus avancé, le milieu tient sa ligne devant elle.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:106"
+   ]
+  },
+  {
+   "k": "Sur une passe en profondeur, les défenseurs les plus proches se retournent et courent vers leur but.",
    "kind": "t",
    "where": [
     "game/changelog.js:107"
    ]
   },
   {
-   "k": "Dès que tout le monde a validé, les équipes sont verrouillées : plus de retouche pendant le compte à rebours, et le mercato rouvre après la journée.",
+   "k": "Le tireur se tourne vers le but en armant sa frappe, et un joueur qui recule fait des pas en arrière au lieu de glisser.",
    "kind": "t",
    "where": [
     "game/changelog.js:108"
    ]
   },
   {
-   "k": "Mi-temps d’un match de ligue : le résumé de la première période, ses temps forts et les changements prévus par les plans de mi-temps des deux clubs.",
+   "k": "Après un but, le buteur célèbre à l’approche du coin et ses coéquipiers le rejoignent ; le ralenti repart de l’action, sans la célébration.",
    "kind": "t",
    "where": [
     "game/changelog.js:109"
    ]
   },
   {
-   "k": "Séances confiées au staff : il entraîne à chaque séance les joueurs conseillés, ou celui d’un programme de signe ; un joueur choisi à la main ne vaut que pour la séance en cours.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:110"
-   ]
-  },
-  {
-   "k": "Écran titre sur PC : le menu ne déborde plus sur le logo ni sur les rappels des touches, même avec un club de ligue en plus.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:111"
-   ]
-  },
-  {
-   "k": "En arabe : les noms des clubs autour des écussons s’écrivent correctement, le potentiel des joueurs ne se coupe plus, le badge de titulaire et le nom du club tiennent dans leur cadre, et « Nouvelle partie » est mieux traduit.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:112"
-   ]
-  },
-  {
-   "k": "Portraits : les visages correspondent mieux aux noms des joueurs, dans toutes les langues ; ceux qui ne collaient pas sont redessinés.",
+   "k": "Le match d’abord",
    "kind": "t",
    "where": [
     "game/changelog.js:113"
    ]
   },
   {
-   "k": "Jouable à la manette",
+   "k": "Championnats entre amis : le score se découvre en regardant son match. Le bouton « Regarder » s’illumine, et les résultats et le classement de la journée restent cachés tant que tu ne l’as pas vu.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:115"
+   ]
+  },
+  {
+   "k": "Dès que tout le monde a validé, les équipes sont verrouillées : plus de retouche pendant le compte à rebours, et le mercato rouvre après la journée.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:116"
+   ]
+  },
+  {
+   "k": "Mi-temps d’un match de ligue : le résumé de la première période, ses temps forts et les changements prévus par les plans de mi-temps des deux clubs.",
    "kind": "t",
    "where": [
     "game/changelog.js:117"
    ]
   },
   {
-   "k": "Le jeu se joue entièrement à la manette : croix ou stick gauche pour se déplacer, A pour valider, B pour revenir, X pour bâtir, Y pour jouer, LB et RB pour changer de section, clic des sticks pour passer d’un bâtiment à l’autre, stick droit et gâchettes pour la caméra.",
+   "k": "Séances confiées au staff : il entraîne à chaque séance les joueurs conseillés, ou celui d’un programme de signe ; un joueur choisi à la main ne vaut que pour la séance en cours.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:118"
+   ]
+  },
+  {
+   "k": "Écran titre sur PC : le menu ne déborde plus sur le logo ni sur les rappels des touches, même avec un club de ligue en plus.",
    "kind": "t",
    "where": [
     "game/changelog.js:119"
    ]
   },
   {
-   "k": "Un cadre doré montre ce qui est choisi et un rappel des boutons s’affiche à l’écran. Rien ne change au clavier, à la souris ni au doigt.",
+   "k": "En arabe : les noms des clubs autour des écussons s’écrivent correctement, le potentiel des joueurs ne se coupe plus, le badge de titulaire et le nom du club tiennent dans leur cadre, et « Nouvelle partie » est mieux traduit.",
    "kind": "t",
    "where": [
     "game/changelog.js:120"
    ]
   },
   {
-   "k": "Construire ou améliorer un bâtiment ne fige plus l’image : un anneau doré tourne au sol du chantier le temps que le bâtiment se prépare.",
+   "k": "Portraits : les visages correspondent mieux aux noms des joueurs, dans toutes les langues ; ceux qui ne collaient pas sont redessinés.",
    "kind": "t",
    "where": [
     "game/changelog.js:121"
    ]
   },
   {
-   "k": "En arabe, l’écran de chargement s’écrit de droite à gauche dès la première image, sa barre se remplit depuis la droite, et le logo garde partout sa forme officielle.",
+   "k": "Jouable à la manette",
    "kind": "t",
    "where": [
-    "game/changelog.js:122"
+    "game/changelog.js:125"
    ]
   },
   {
-   "k": "Sur téléphone, les explications du menu de l’écran titre ne sont plus coupées, et sur tablette le pronostic de la carte du prochain match ne déborde plus.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:123"
-   ]
-  },
-  {
-   "k": "Des joueurs en 3D réalistes",
+   "k": "Le jeu se joue entièrement à la manette : croix ou stick gauche pour se déplacer, A pour valider, B pour revenir, X pour bâtir, Y pour jouer, LB et RB pour changer de section, clic des sticks pour passer d’un bâtiment à l’autre, stick droit et gâchettes pour la caméra.",
    "kind": "t",
    "where": [
     "game/changelog.js:127"
    ]
   },
   {
-   "k": "Pendant les temps forts, les joueurs ont de vrais corps : des carrures moins massives, des tailles qui changent selon le poste, et des visages tous différents.",
+   "k": "Un cadre doré montre ce qui est choisi et un rappel des boutons s’affiche à l’écran. Rien ne change au clavier, à la souris ni au doigt.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:128"
+   ]
+  },
+  {
+   "k": "Construire ou améliorer un bâtiment ne fige plus l’image : un anneau doré tourne au sol du chantier le temps que le bâtiment se prépare.",
    "kind": "t",
    "where": [
     "game/changelog.js:129"
    ]
   },
   {
-   "k": "Chaque joueur ressemble à son portrait : même teint, même coiffure, même barbe ou moustache, cheveux gris compris.",
+   "k": "En arabe, l’écran de chargement s’écrit de droite à gauche dès la première image, sa barre se remplit depuis la droite, et le logo garde partout sa forme officielle.",
    "kind": "t",
    "where": [
     "game/changelog.js:130"
    ]
   },
   {
-   "k": "Une vraie tenue : maillot ajusté avec col et bords de manches à la couleur secondaire du club, short droit, chaussettes et chaussures.",
+   "k": "Sur téléphone, les explications du menu de l’écran titre ne sont plus coupées, et sur tablette le pronostic de la carte du prochain match ne déborde plus.",
    "kind": "t",
    "where": [
     "game/changelog.js:131"
    ]
   },
   {
-   "k": "Les foulées suivent la vitesse réelle de chaque joueur, ralentis compris : plus personne ne court sur place, et frappes, arrêts et célébrations se rejouent eux aussi au ralenti.",
+   "k": "Des joueurs en 3D réalistes",
    "kind": "t",
    "where": [
-    "game/changelog.js:132"
+    "game/changelog.js:135"
    ]
   },
   {
-   "k": "FootOFF sur les réseaux",
+   "k": "Pendant les temps forts, les joueurs ont de vrais corps : des carrures moins massives, des tailles qui changent selon le poste, et des visages tous différents.",
    "kind": "t",
    "where": [
-    "game/changelog.js:136"
+    "game/changelog.js:137"
    ]
   },
   {
-   "k": "Les comptes officiels de FootOFF (Instagram, TikTok, YouTube, X et LinkedIn) au pied de l’écran titre et dans les réglages, section « Suivre FootOFF ».",
+   "k": "Chaque joueur ressemble à son portrait : même teint, même coiffure, même barbe ou moustache, cheveux gris compris.",
    "kind": "t",
    "where": [
     "game/changelog.js:138"
    ]
   },
   {
-   "k": "Des écrans plus nets",
+   "k": "Une vraie tenue : maillot ajusté avec col et bords de manches à la couleur secondaire du club, short droit, chaussettes et chaussures.",
    "kind": "t",
    "where": [
-    "game/changelog.js:142"
+    "game/changelog.js:139"
    ]
   },
   {
-   "k": "Succès : un total et une tuile par famille qui filtre la liste, le choix Tous, Obtenus ou À obtenir, la date d’obtention sous chaque succès et la progression des succès à compteur.",
+   "k": "Les foulées suivent la vitesse réelle de chaque joueur, ralentis compris : plus personne ne court sur place, et frappes, arrêts et célébrations se rejouent eux aussi au ralenti.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:140"
+   ]
+  },
+  {
+   "k": "FootOFF sur les réseaux",
    "kind": "t",
    "where": [
     "game/changelog.js:144"
    ]
   },
   {
-   "k": "Mercato : des cartes de joueurs compactes, deux à trois fois plus de joueurs par écran de téléphone, et des filtres rangés : recherche et tri, postes, puis bascules.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:145"
-   ]
-  },
-  {
-   "k": "Au téléphone, debout comme couché, un glissement parti du bord de l’écran ne fait plus défiler la page vers l’écran d’avant ou d’après, sur tous les écrans du jeu et plus seulement en match.",
+   "k": "Les comptes officiels de FootOFF (Instagram, TikTok, YouTube, X et LinkedIn) au pied de l’écran titre et dans les réglages, section « Suivre FootOFF ».",
    "kind": "t",
    "where": [
     "game/changelog.js:146"
    ]
   },
   {
-   "k": "Le hors-jeu est respecté : la défense ne laisse aucun attaquant partir dans son dos avant la passe, et l’attaquant règle sa course sur l’avant-dernier défenseur.",
+   "k": "Des écrans plus nets",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:150"
+   ]
+  },
+  {
+   "k": "Succès : un total et une tuile par famille qui filtre la liste, le choix Tous, Obtenus ou À obtenir, la date d’obtention sous chaque succès et la progression des succès à compteur.",
    "kind": "t",
    "where": [
     "game/changelog.js:152"
    ]
   },
   {
-   "k": "Plus personne ne regarde l’action sans bouger : chacun se démarque, deux coéquipiers proposent une solution au porteur, la défense coulisse et ajuste ses pas, et ça bouge dans la surface sur un corner.",
+   "k": "Mercato : des cartes de joueurs compactes, deux à trois fois plus de joueurs par écran de téléphone, et des filtres rangés : recherche et tri, postes, puis bascules.",
    "kind": "t",
    "where": [
     "game/changelog.js:153"
    ]
   },
   {
-   "k": "Les gardiens ferment l’angle, sortent quand le ballon est loin et se mettent en position d’attente avant la frappe ; ils plongent bras tendus et gardent le ballon serré contre eux.",
+   "k": "Au téléphone, debout comme couché, un glissement parti du bord de l’écran ne fait plus défiler la page vers l’écran d’avant ou d’après, sur tous les écrans du jeu et plus seulement en match.",
    "kind": "t",
    "where": [
     "game/changelog.js:154"
    ]
   },
   {
-   "k": "Sur une passe au sol, le receveur se place sur la trajectoire et s’étire pour contrôler au lieu de voir le ballon filer ; sur un ballon libre, le coéquipier le plus proche y va.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:155"
-   ]
-  },
-  {
-   "k": "Pour une tête, les joueurs prennent leur élan bras en avant.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:156"
-   ]
-  },
-  {
-   "k": "Le jeu en anglais, en espagnol et en arabe",
+   "k": "Le hors-jeu est respecté : la défense ne laisse aucun attaquant partir dans son dos avant la passe, et l’attaquant règle sa course sur l’avant-dernier défenseur.",
    "kind": "t",
    "where": [
     "game/changelog.js:160"
    ]
   },
   {
-   "k": "FootOFF Empire se joue maintenant en français, en anglais, en espagnol et en arabe. La langue proposée est celle du site footoff.media ; l’entrée « Langue » de l’écran titre permet d’en choisir une autre.",
+   "k": "Plus personne ne regarde l’action sans bouger : chacun se démarque, deux coéquipiers proposent une solution au porteur, la défense coulisse et ajuste ses pas, et ça bouge dans la surface sur un corner.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:161"
+   ]
+  },
+  {
+   "k": "Les gardiens ferment l’angle, sortent quand le ballon est loin et se mettent en position d’attente avant la frappe ; ils plongent bras tendus et gardent le ballon serré contre eux.",
    "kind": "t",
    "where": [
     "game/changelog.js:162"
    ]
   },
   {
-   "k": "Chaque langue a ses propres noms de joueurs et de clubs, aussi nombreux et variés qu’en français. Une partie garde la langue de sa fondation : ses joueurs ne changent jamais de nom.",
+   "k": "Sur une passe au sol, le receveur se place sur la trajectoire et s’étire pour contrôler au lieu de voir le ballon filer ; sur un ballon libre, le coéquipier le plus proche y va.",
    "kind": "t",
    "where": [
     "game/changelog.js:163"
    ]
   },
   {
-   "k": "En arabe, tout le jeu se lit de droite à gauche : menus, fiches, tableaux, flèches et glissés du doigt. Le terrain, lui, garde ses côtés : un arrière gauche reste à gauche.",
+   "k": "Pour une tête, les joueurs prennent leur élan bras en avant.",
    "kind": "t",
    "where": [
     "game/changelog.js:164"
    ]
   },
   {
-   "k": "Les entraînements en 3D, les panneaux du complexe et les plaques des trophées parlent aussi la langue choisie.",
+   "k": "Le jeu en anglais, en espagnol et en arabe",
    "kind": "t",
    "where": [
-    "game/changelog.js:165"
+    "game/changelog.js:168"
    ]
   },
   {
-   "k": "Le jeu au téléphone couché",
+   "k": "FootOFF Empire se joue maintenant en français, en anglais, en espagnol et en arabe. La langue proposée est celle du site footoff.media ; l’entrée « Langue » de l’écran titre permet d’en choisir une autre.",
    "kind": "t",
    "where": [
-    "game/changelog.js:169"
+    "game/changelog.js:170"
    ]
   },
   {
-   "k": "Le jeu se joue aussi au téléphone couché. Écran titre : le menu à gauche, ton complexe à droite. Complexe : le club et la trésorerie sur une ligne en haut, le menu et le prochain match côte à côte en bas, la 3D dégagée au milieu.",
+   "k": "Chaque langue a ses propres noms de joueurs et de clubs, aussi nombreux et variés qu’en français. Une partie garde la langue de sa fondation : ses joueurs ne changent jamais de nom.",
    "kind": "t",
    "where": [
     "game/changelog.js:171"
    ]
   },
   {
-   "k": "Équipe, Mercato, Saison et Club s’ouvrent en plein écran sous un bandeau compact : le titre et les onglets sur une ligne, avec la trésorerie quand elle sert. On passe d’une section à l’autre d’un glissé du doigt. La composition se dessine sur un grand terrain couché.",
+   "k": "En arabe, tout le jeu se lit de droite à gauche : menus, fiches, tableaux, flèches et glissés du doigt. Le terrain, lui, garde ses côtés : un arrière gauche reste à gauche.",
    "kind": "t",
    "where": [
     "game/changelog.js:172"
    ]
   },
   {
-   "k": "En match, les temps forts passent en plein écran sous un score façon télé resserré ; entre deux, le centre du match reste compact, avec Stats, Notes et Le fil en onglets sur les petits téléphones. Avant-match, mi-temps et après-match gardent leurs boutons toujours visibles.",
+   "k": "Les entraînements en 3D, les panneaux du complexe et les plaques des trophées parlent aussi la langue choisie.",
    "kind": "t",
    "where": [
     "game/changelog.js:173"
    ]
   },
   {
-   "k": "Écusson : le nom s’écrit tel que tu l’as choisi, « FC » compris, tant qu’il reste lisible, sans perdre de lettres au bout du ruban ; le losange moderne porte maintenant un ruban avec le nom, l’année ou les deux.",
+   "k": "Le jeu au téléphone couché",
    "kind": "t",
    "where": [
-    "game/changelog.js:174"
+    "game/changelog.js:177"
    ]
   },
   {
-   "k": "Correction : la pastille des couleurs de l’écusson n’est plus rognée en haut et en bas.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:175"
-   ]
-  },
-  {
-   "k": "Recruteurs en mission, nouvelles à chaque repérage",
+   "k": "Le jeu se joue aussi au téléphone couché. Écran titre : le menu à gauche, ton complexe à droite. Complexe : le club et la trésorerie sur une ligne en haut, le menu et le prochain match côte à côte en bas, la 3D dégagée au milieu.",
    "kind": "t",
    "where": [
     "game/changelog.js:179"
    ]
   },
   {
-   "k": "Les missions des recruteurs n’ont plus de régions : ils cherchent un poste ou un profil (technique, physique, mental), pendant deux, trois ou quatre repérages.",
+   "k": "Équipe, Mercato, Saison et Club s’ouvrent en plein écran sous un bandeau compact : le titre et les onglets sur une ligne, avec la trésorerie quand elle sert. On passe d’une section à l’autre d’un glissé du doigt. La composition se dessine sur un grand terrain couché.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:180"
+   ]
+  },
+  {
+   "k": "En match, les temps forts passent en plein écran sous un score façon télé resserré ; entre deux, le centre du match reste compact, avec Stats, Notes et Le fil en onglets sur les petits téléphones. Avant-match, mi-temps et après-match gardent leurs boutons toujours visibles.",
    "kind": "t",
    "where": [
     "game/changelog.js:181"
    ]
   },
   {
-   "k": "Une mission voit deux fois plus de jeunes qu’autant de repérages ordinaires et en ramène davantage : jusqu’à six des seize jeunes vus, sur quatre repérages. Les chances affichées d’y trouver un grand potentiel restent exactes.",
+   "k": "Écusson : le nom s’écrit tel que tu l’as choisi, « FC » compris, tant qu’il reste lisible, sans perdre de lettres au bout du ruban ; le losange moderne porte maintenant un ruban avec le nom, l’année ou les deux.",
    "kind": "t",
    "where": [
     "game/changelog.js:182"
    ]
   },
   {
-   "k": "Mission en cours visible : à chaque repérage, une notification et une ligne à l’académie disent combien de jeunes ils ont observés et ce que vaut le plus prometteur (un bon élément, un beau potentiel, un talent rare), sans dévoiler son potentiel.",
+   "k": "Correction : la pastille des couleurs de l’écusson n’est plus rognée en haut et en bas.",
    "kind": "t",
    "where": [
     "game/changelog.js:183"
    ]
   },
   {
-   "k": "Corrections : « des milieux » s’écrit correctement, et une mission lancée avant cette version revient normalement.",
+   "k": "Recruteurs en mission, nouvelles à chaque repérage",
    "kind": "t",
    "where": [
-    "game/changelog.js:184"
+    "game/changelog.js:187"
    ]
   },
   {
-   "k": "Objectifs et succès repensés",
+   "k": "Les missions des recruteurs n’ont plus de régions : ils cherchent un poste ou un profil (technique, physique, mental), pendant deux, trois ou quatre repérages.",
    "kind": "t",
    "where": [
-    "game/changelog.js:188"
+    "game/changelog.js:189"
    ]
   },
   {
-   "k": "Le parcours de carrière remplace la « Grande étape » : sept chapitres de la vie du club, sur plusieurs saisons (notoriété, stade à guichets fermés, académie, Europe), chacun avec sa prime versée dès qu’il est accompli. Il ne répète jamais un objectif du conseil. En ligue entre amis, un parcours à part : derbys, notoriété, titres.",
+   "k": "Une mission voit deux fois plus de jeunes qu’autant de repérages ordinaires et en ramène davantage : jusqu’à six des seize jeunes vus, sur quatre repérages. Les chances affichées d’y trouver un grand potentiel restent exactes.",
    "kind": "t",
    "where": [
     "game/changelog.js:190"
    ]
   },
   {
-   "k": "Les objectifs du conseil restent trois par saison, sans doublon avec le parcours.",
+   "k": "Mission en cours visible : à chaque repérage, une notification et une ligne à l’académie disent combien de jeunes ils ont observés et ce que vaut le plus prometteur (un bon élément, un beau potentiel, un talent rare), sans dévoiler son potentiel.",
    "kind": "t",
    "where": [
     "game/changelog.js:191"
    ]
   },
   {
-   "k": "Vingt-sept nouveaux succès, rangés en familles : matchs et exploits, joueurs et académie, complexe et finances, ligue entre amis. Une ligue entre amis n’affiche que les succès qu’elle peut gagner.",
+   "k": "Corrections : « des milieux » s’écrit correctement, et une mission lancée avant cette version revient normalement.",
    "kind": "t",
    "where": [
     "game/changelog.js:192"
    ]
   },
   {
-   "k": "Dans la salle des trophées, le nouvel onglet Carrière montre chaque chapitre : accompli, en cours avec son avancée, ou à venir.",
+   "k": "Objectifs et succès repensés",
    "kind": "t",
    "where": [
-    "game/changelog.js:193"
+    "game/changelog.js:196"
    ]
   },
   {
-   "k": "Match sans détour",
+   "k": "Le parcours de carrière remplace la « Grande étape » : sept chapitres de la vie du club, sur plusieurs saisons (notoriété, stade à guichets fermés, académie, Europe), chacun avec sa prime versée dès qu’il est accompli. Il ne répète jamais un objectif du conseil. En ligue entre amis, un parcours à part : derbys, notoriété, titres.",
    "kind": "t",
    "where": [
-    "game/changelog.js:197"
+    "game/changelog.js:198"
    ]
   },
   {
-   "k": "En plein match et à l’avant-match, glisser le doigt depuis le bord de l’écran ne ramène plus en arrière ; les boutons du bord répondent toujours.",
+   "k": "Les objectifs du conseil restent trois par saison, sans doublon avec le parcours.",
    "kind": "t",
    "where": [
     "game/changelog.js:199"
    ]
   },
   {
-   "k": "L’avant-match n’affiche plus les signes distinctifs de l’adversaire : ils comptent toujours en match et dans le pronostic.",
+   "k": "Vingt-sept nouveaux succès, rangés en familles : matchs et exploits, joueurs et académie, complexe et finances, ligue entre amis. Une ligue entre amis n’affiche que les succès qu’elle peut gagner.",
    "kind": "t",
    "where": [
     "game/changelog.js:200"
    ]
   },
   {
-   "k": "Vitesse du match",
+   "k": "Dans la salle des trophées, le nouvel onglet Carrière montre chaque chapitre : accompli, en cours avec son avancée, ou à venir.",
    "kind": "t",
    "where": [
-    "game/changelog.js:204"
+    "game/changelog.js:201"
    ]
   },
   {
-   "k": "Un seul bouton de vitesse, qui dit où tu en es : « ×1 » à vitesse normale, « ×4 » sur fond or quand le match est accéléré. Un toucher bascule de l’un à l’autre.",
+   "k": "Match sans détour",
    "kind": "t",
    "where": [
-    "game/changelog.js:206"
+    "game/changelog.js:205"
    ]
   },
   {
-   "k": "À ×4, seul le jeu entre deux temps forts file plus vite : tous les temps forts s’affichent, à vitesse normale, avec le ralenti des buts.",
+   "k": "En plein match et à l’avant-match, glisser le doigt depuis le bord de l’écran ne ramène plus en arrière ; les boutons du bord répondent toujours.",
    "kind": "t",
    "where": [
     "game/changelog.js:207"
    ]
   },
   {
-   "k": "Économie, négociation et couleurs",
+   "k": "L’avant-match n’affiche plus les signes distinctifs de l’adversaire : ils comptent toujours en match et dans le pronostic.",
    "kind": "t",
    "where": [
-    "game/changelog.js:211"
+    "game/changelog.js:208"
    ]
   },
   {
-   "k": "Salaires et entretien se comptent à chaque journée et se paient en une fois au bilan de la saison. La trésorerie montre ce qu’il faudra payer en fin de saison et ce qui est réellement disponible ; un achat qui entamerait ce qui est déjà dû est signalé avant d’être conclu.",
+   "k": "Vitesse du match",
    "kind": "t",
    "where": [
-    "game/changelog.js:213"
+    "game/changelog.js:212"
    ]
   },
   {
-   "k": "Entre amis, la négociation est libre : accepte, fais une contre-offre ou refuse, chacun à son tour, trois contre-offres au plus. Chacun peut rompre à tout moment.",
+   "k": "Un seul bouton de vitesse, qui dit où tu en es : « ×1 » à vitesse normale, « ×4 » sur fond or quand le match est accéléré. Un toucher bascule de l’un à l’autre.",
    "kind": "t",
    "where": [
     "game/changelog.js:214"
    ]
   },
   {
-   "k": "Depuis le classement, chaque club ouvre son effectif : poste, âge, niveau et valeur (celui d’un ami après son premier match joué). Le joueur d’un ami ouvre directement l’offre, celui d’un club de l’ordinateur sa fiche du mercato.",
+   "k": "À ×4, seul le jeu entre deux temps forts file plus vite : tous les temps forts s’affichent, à vitesse normale, avec le ralenti des buts.",
    "kind": "t",
    "where": [
     "game/changelog.js:215"
    ]
   },
   {
-   "k": "Dans l’onglet Bilan du mercato, les transferts des amis de la saison en cours et de la précédente : le joueur, ses clubs de départ et d’arrivée, le montant et la journée ; les tiens en or.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:216"
-   ]
-  },
-  {
-   "k": "Ton écusson à tes couleurs, à la fondation du club ou en rejoignant un championnat : la couleur principale habille le maillot, la secondaire le short. Si deux maillots se ressemblent, l’adversaire change de tenue. L’or et le noir restent le choix par défaut.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:217"
-   ]
-  },
-  {
-   "k": "« Onze frais » remplace « Onze en forme » : les meilleurs joueurs à 80 % de condition ou plus. La forme ne pèse plus en match : seules la condition physique et les capacités comptent.",
-   "kind": "t",
-   "where": [
-    "game/changelog.js:218"
-   ]
-  },
-  {
-   "k": "Corrections : le vrai écusson de chaque ami sur tous les écrans, plus de conflit de sauvegarde en revenant sur le même appareil, le but d’un ami n’est plus annoncé à ton nom dans un match revu, une seule ligne par joueur pour tes offres refusées, le score du bandeau de but n’est plus rogné au téléphone, « Jouer » ne recouvre plus les chances de victoire, et « Retour » est en tête des réglages.",
+   "k": "Économie, négociation et couleurs",
    "kind": "t",
    "where": [
     "game/changelog.js:219"
    ]
   },
   {
-   "k": "Temps forts façon retransmission",
+   "k": "Salaires et entretien se comptent à chaque journée et se paient en une fois au bilan de la saison. La trésorerie montre ce qu’il faudra payer en fin de saison et ce qui est réellement disponible ; un achat qui entamerait ce qui est déjà dû est signalé avant d’être conclu.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:221"
+   ]
+  },
+  {
+   "k": "Entre amis, la négociation est libre : accepte, fais une contre-offre ou refuse, chacun à son tour, trois contre-offres au plus. Chacun peut rompre à tout moment.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:222"
+   ]
+  },
+  {
+   "k": "Depuis le classement, chaque club ouvre son effectif : poste, âge, niveau et valeur (celui d’un ami après son premier match joué). Le joueur d’un ami ouvre directement l’offre, celui d’un club de l’ordinateur sa fiche du mercato.",
    "kind": "t",
    "where": [
     "game/changelog.js:223"
    ]
   },
   {
-   "k": "Hors coups de pied arrêtés, chaque temps fort part d’une vraie situation, une relance ou une récupération, et se construit en quelques passes jusqu’au geste décisif : 8 à 12 secondes de jeu.",
+   "k": "Dans l’onglet Bilan du mercato, les transferts des amis de la saison en cours et de la précédente : le joueur, ses clubs de départ et d’arrivée, le montant et la journée ; les tiens en or.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:224"
+   ]
+  },
+  {
+   "k": "Ton écusson à tes couleurs, à la fondation du club ou en rejoignant un championnat : la couleur principale habille le maillot, la secondaire le short. Si deux maillots se ressemblent, l’adversaire change de tenue. L’or et le noir restent le choix par défaut.",
    "kind": "t",
    "where": [
     "game/changelog.js:225"
    ]
   },
   {
-   "k": "Le ballon ne se téléporte plus : un joueur ne le contrôle qu’à sa portée, et s’il le manque, il court après.",
+   "k": "« Onze frais » remplace « Onze en forme » : les meilleurs joueurs à 80 % de condition ou plus. La forme ne pèse plus en match : seules la condition physique et les capacités comptent.",
    "kind": "t",
    "where": [
     "game/changelog.js:226"
    ]
   },
   {
-   "k": "Réalisation façon télévision : un plan large du stade entre deux temps forts, un plan qui se resserre à l’approche de la surface et, après un but, le ralenti filmé derrière la cage ou au ras de la pelouse.",
+   "k": "Corrections : le vrai écusson de chaque ami sur tous les écrans, plus de conflit de sauvegarde en revenant sur le même appareil, le but d’un ami n’est plus annoncé à ton nom dans un match revu, une seule ligne par joueur pour tes offres refusées, le score du bandeau de but n’est plus rogné au téléphone, « Jouer » ne recouvre plus les chances de victoire, et « Retour » est en tête des réglages.",
    "kind": "t",
    "where": [
     "game/changelog.js:227"
    ]
   },
   {
-   "k": "Championnats entre amis en direct",
+   "k": "Temps forts façon retransmission",
    "kind": "t",
    "where": [
     "game/changelog.js:231"
    ]
   },
   {
-   "k": "Dès que tous les amis ont validé leur équipe, un compte à rebours de dix minutes remplace « Validée » chez chacun ; à zéro, le match se regarde, sans quitter le jeu. L’heure fixée par le créateur reste la limite.",
+   "k": "Hors coups de pied arrêtés, chaque temps fort part d’une vraie situation, une relance ou une récupération, et se construit en quelques passes jusqu’au geste décisif : 8 à 12 secondes de jeu.",
    "kind": "t",
    "where": [
     "game/changelog.js:233"
    ]
   },
   {
-   "k": "Un ami qui rejoint, une équipe validée, une offre reçue ou la réponse à la tienne : tout se voit en quelques secondes. Le bouton Actualiser, en haut de la carte du championnat, relit tout à la demande.",
+   "k": "Le ballon ne se téléporte plus : un joueur ne le contrôle qu’à sa portée, et s’il le manque, il court après.",
    "kind": "t",
    "where": [
     "game/changelog.js:234"
    ]
   },
   {
-   "k": "Le créateur peut supprimer son championnat pour tout le monde, en tapant son nom pour confirmer.",
+   "k": "Réalisation façon télévision : un plan large du stade entre deux temps forts, un plan qui se resserre à l’approche de la surface et, après un but, le ralenti filmé derrière la cage ou au ras de la pelouse.",
    "kind": "t",
    "where": [
     "game/changelog.js:235"
    ]
   },
   {
-   "k": "En match et à l’avant-match, glisser le doigt sur le côté ne fait plus apparaître d’autres écrans.",
+   "k": "Championnats entre amis en direct",
    "kind": "t",
    "where": [
-    "game/changelog.js:236"
+    "game/changelog.js:239"
    ]
   },
   {
-   "k": "Signes distinctifs et fatigue",
+   "k": "Dès que tous les amis ont validé leur équipe, un compte à rebours de dix minutes remplace « Validée » chez chacun ; à zéro, le match se regarde, sans quitter le jeu. L’heure fixée par le créateur reste la limite.",
    "kind": "t",
    "where": [
-    "game/changelog.js:240"
+    "game/changelog.js:241"
    ]
   },
   {
-   "k": "Les signes distinctifs pèsent vraiment : un Finisseur transforme 50 % d’occasions de plus, face à un Chat l’adversaire en transforme 12 % de moins, et face à un Roc il s’en crée 10 % de moins. Chaque signe est chiffré sur la fiche du joueur.",
+   "k": "Un ami qui rejoint, une équipe validée, une offre reçue ou la réponse à la tienne : tout se voit en quelques secondes. Le bouton Actualiser, en haut de la carte du championnat, relit tout à la demande.",
    "kind": "t",
    "where": [
     "game/changelog.js:242"
    ]
   },
   {
-   "k": "Les adversaires ont leurs signes, eux aussi : tu les vois à l’avant-match, et le pronostic en tient compte.",
+   "k": "Le créateur peut supprimer son championnat pour tout le monde, en tapant son nom pour confirmer.",
    "kind": "t",
    "where": [
     "game/changelog.js:243"
    ]
   },
   {
-   "k": "Trois boutons, toujours visibles, pour composer ton onze : « Meilleur onze » (les meilleures notes), « Onze en forme » (notes, condition et forme réunies) et « Faire tourner » (les remplaçants du dernier match jouent).",
+   "k": "En match et à l’avant-match, glisser le doigt sur le côté ne fait plus apparaître d’autres écrans.",
    "kind": "t",
    "where": [
     "game/changelog.js:244"
    ]
   },
   {
-   "k": "La fatigue se voit et se gère : l’après-match montre la condition de chacun au coup de sifflet, puis au prochain match. Un titulaire qui enchaîne descend autour de 75 %, entre 50 et 90 % selon son âge, son endurance et ton centre d’entraînement.",
+   "k": "Signes distinctifs et fatigue",
    "kind": "t",
    "where": [
-    "game/changelog.js:245"
+    "game/changelog.js:248"
    ]
   },
   {
-   "k": "Tactique et effectif",
+   "k": "Les signes distinctifs pèsent vraiment : un Finisseur transforme 50 % d’occasions de plus, face à un Chat l’adversaire en transforme 12 % de moins, et face à un Roc il s’en crée 10 % de moins. Chaque signe est chiffré sur la fiche du joueur.",
    "kind": "t",
    "where": [
-    "game/changelog.js:249"
+    "game/changelog.js:250"
    ]
   },
   {
-   "k": "Change de dispositif à la mi-temps, ou à n’importe quel arrêt de jeu : tes joueurs se replacent au mieux et le pronostic suit. Le bouton « Changement » reste utile même sans changement restant (dispositif, tactique, postes).",
+   "k": "Les adversaires ont leurs signes, eux aussi : tu les vois à l’avant-match, et le pronostic en tient compte.",
    "kind": "t",
    "where": [
     "game/changelog.js:251"
    ]
   },
   {
-   "k": "Après un carton rouge, déplace l’expulsé sur le poste que tu veux laisser vide (jamais celui du gardien) : le poste choisi compte vraiment dans le match.",
+   "k": "Trois boutons, toujours visibles, pour composer ton onze : « Meilleur onze » (les meilleures notes), « Onze en forme » (notes, condition et forme réunies) et « Faire tourner » (les remplaçants du dernier match jouent).",
    "kind": "t",
    "where": [
     "game/changelog.js:252"
    ]
   },
   {
-   "k": "Les tactiques se paient : attaquer rapporte quand tu es plus fort, l’équilibrée est le bon choix à niveau égal, le bloc bas face à un adversaire bien plus fort.",
+   "k": "La fatigue se voit et se gère : l’après-match montre la condition de chacun au coup de sifflet, puis au prochain match. Un titulaire qui enchaîne descend autour de 75 %, entre 50 et 90 % selon son âge, son endurance et ton centre d’entraînement.",
    "kind": "t",
    "where": [
     "game/changelog.js:253"
    ]
   },
   {
+   "k": "Tactique et effectif",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:257"
+   ]
+  },
+  {
+   "k": "Change de dispositif à la mi-temps, ou à n’importe quel arrêt de jeu : tes joueurs se replacent au mieux et le pronostic suit. Le bouton « Changement » reste utile même sans changement restant (dispositif, tactique, postes).",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:259"
+   ]
+  },
+  {
+   "k": "Après un carton rouge, déplace l’expulsé sur le poste que tu veux laisser vide (jamais celui du gardien) : le poste choisi compte vraiment dans le match.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:260"
+   ]
+  },
+  {
+   "k": "Les tactiques se paient : attaquer rapporte quand tu es plus fort, l’équilibrée est le bon choix à niveau égal, le bloc bas face à un adversaire bien plus fort.",
+   "kind": "t",
+   "where": [
+    "game/changelog.js:261"
+   ]
+  },
+  {
    "k": "Ton effectif ne descend jamais sous 13 joueurs : la vente est refusée à 13, et si une fin de contrat te fait passer en dessous, le jeune le plus utile de ton académie monte d’office.",
    "kind": "t",
    "where": [
-    "game/changelog.js:254"
+    "game/changelog.js:262"
    ]
   },
   {
    "k": "Championnats entre amis",
    "kind": "t",
    "where": [
-    "game/changelog.js:258",
+    "game/changelog.js:266",
     "game/economy.js:340",
     "ui/title.jsx:98",
     "ui/title.jsx:132"
@@ -3684,308 +3712,308 @@
    "k": "Le Siège de la Ligue ouvre ses portes : crée un championnat entre amis (bâtiment de l’Élite), ou rejoins celui d’un ami par son lien d’invitation. Ni compte ni e-mail : un pseudo et ton club suffisent.",
    "kind": "t",
    "where": [
-    "game/changelog.js:260"
+    "game/changelog.js:268"
    ]
   },
   {
    "k": "Huit clubs, une journée par jour à l’heure choisie par le créateur. Les places libres reviennent à des clubs de l’ordinateur qui construisent, recrutent et adaptent leur tactique à l’adversaire.",
    "kind": "t",
    "where": [
-    "game/changelog.js:261"
+    "game/changelog.js:269"
    ]
   },
   {
    "k": "Plans de mi-temps : le match se joue sans toi. Prépare ce que fait ton staff à la pause selon le score (tu mènes, égalité, tu es mené) : dispositif, tactique et jusqu’à cinq changements.",
    "kind": "t",
    "where": [
-    "game/changelog.js:262"
+    "game/changelog.js:270"
    ]
   },
   {
    "k": "Mercato de la ligue : les joueurs libres et ceux des clubs de l’ordinateur se négocient comme en solo, et le premier club qui conclut signe le joueur. Une offre à un ami part aussitôt ; acceptée, le transfert est immédiat.",
    "kind": "t",
    "where": [
-    "game/changelog.js:263"
+    "game/changelog.js:271"
    ]
   },
   {
    "k": "Ton club de ligue est sauvegardé en ligne : tu le retrouves sur un autre appareil.",
    "kind": "t",
    "where": [
-    "game/changelog.js:264"
+    "game/changelog.js:272"
    ]
   },
   {
    "k": "Un staff plus juste",
    "kind": "t",
    "where": [
-    "game/changelog.js:268"
+    "game/changelog.js:276"
    ]
   },
   {
    "k": "Un conseil du staff que tu masques reste masqué, même quand tu recharges le jeu, jusqu’à ce que la situation change. Quand il n’a rien d’utile à dire, le staff se tait.",
    "kind": "t",
    "where": [
-    "game/changelog.js:270"
+    "game/changelog.js:278"
    ]
   },
   {
    "k": "Le stade : le staff n’en parle plus que lorsque l’agrandissement est dans tes moyens, une fois par niveau ; la pastille du stade ne s’allume plus que dans ce cas.",
    "kind": "t",
    "where": [
-    "game/changelog.js:271"
+    "game/changelog.js:279"
    ]
   },
   {
    "k": "L’académie : la pastille de la détection s’éteint dès que tu l’as regardée, jusqu’au prochain repérage. Les jeunes qui partiront à l’intersaison ne sont signalés qu’en seconde moitié de saison.",
    "kind": "t",
    "where": [
-    "game/changelog.js:272"
+    "game/changelog.js:280"
    ]
   },
   {
    "k": "Nouveaux rappels : les droits TV de la saison à négocier (Direction), les blessés à soigner (centre médical), les programmes de signes à lancer (centre d’entraînement), les recruteurs à envoyer en mission (académie).",
    "kind": "t",
    "where": [
-    "game/changelog.js:273"
+    "game/changelog.js:281"
    ]
   },
   {
    "k": "L’onglet « Pronostic » des Statistiques disparaît. Le panneau Pronostic de l’avant-match devient opaque, le classement compte les quatorze journées de l’Élite, et le nom de la division prend son accent.",
    "kind": "t",
    "where": [
-    "game/changelog.js:274"
+    "game/changelog.js:282"
    ]
   },
   {
    "k": "Forme, rotation et matchs à l’extérieur",
    "kind": "t",
    "where": [
-    "game/changelog.js:278"
+    "game/changelog.js:286"
    ]
   },
   {
    "k": "La forme compte désormais en match : un joueur en grande forme joue un peu mieux, un joueur en méforme un peu moins bien. « Meilleur onze » en tient compte, avec la condition physique.",
    "kind": "t",
    "where": [
-    "game/changelog.js:280"
+    "game/changelog.js:288"
    ]
   },
   {
    "k": "Nouveau bouton « Faire tourner », avant le match et dans la Composition : les titulaires fatigués (sous 75 %) laissent leur place aux remplaçants reposés de leur poste.",
    "kind": "t",
    "where": [
-    "game/changelog.js:281"
+    "game/changelog.js:289"
    ]
   },
   {
    "k": "À l’extérieur, l’équipe qui reçoit passe à gauche, partout : calendrier, avant-match, match en direct, après-match et statistiques, avec le score dans l’ordre du football.",
    "kind": "t",
    "where": [
-    "game/changelog.js:282"
+    "game/changelog.js:290"
    ]
   },
   {
    "k": "La saison en cours s’affiche sur les écrans de contrat (négociation, fiche du joueur, Direction) et dans l’en-tête de l’Équipe.",
    "kind": "t",
    "where": [
-    "game/changelog.js:283"
+    "game/changelog.js:291"
    ]
   },
   {
    "k": "Contrats et salaires",
    "kind": "t",
    "where": [
-    "game/changelog.js:287"
+    "game/changelog.js:295"
    ]
   },
   {
    "k": "Chaque joueur a maintenant un contrat : un salaire par saison, une durée, parfois une clause de montée. Le salaire reste fixe pendant le contrat : seules une prolongation, la clause de montée ou une descente le changent.",
    "kind": "t",
    "where": [
-    "game/changelog.js:289"
+    "game/changelog.js:297"
    ]
   },
   {
    "k": "Recruter un joueur sous contrat se fait en deux temps : l’indemnité avec son club, puis son contrat avec lui (salaire, durée, prime à la signature, clause de montée), avec la chance exacte qu’il signe. Un joueur libre se négocie directement.",
    "kind": "t",
    "where": [
-    "game/changelog.js:290"
+    "game/changelog.js:298"
    ]
   },
   {
    "k": "Prolonge depuis la fiche du joueur ou le nouvel onglet Contrats de la Direction. Sans prolongation, un joueur part libre à la fin de son contrat, sans indemnité.",
    "kind": "t",
    "where": [
-    "game/changelog.js:291"
+    "game/changelog.js:299"
    ]
   },
   {
    "k": "Tes joueurs reçoivent un contrat de deux à quatre ans à leur salaire actuel : personne ne part à la fin de cette saison.",
    "kind": "t",
    "where": [
-    "game/changelog.js:292"
+    "game/changelog.js:300"
    ]
   },
   {
    "k": "Une huitième parcelle",
    "kind": "t",
    "where": [
-    "game/changelog.js:296"
+    "game/changelog.js:304"
    ]
   },
   {
    "k": "Le complexe compte maintenant huit parcelles : trois à l’est, comme à l’ouest. Tes bâtiments de l’est se décalent un peu, rien d’autre ne change.",
    "kind": "t",
    "where": [
-    "game/changelog.js:298"
+    "game/changelog.js:306"
    ]
   },
   {
    "k": "La nouvelle parcelle est libre : elle accueillera bientôt un bâtiment de prestige, réservé à l’Élite.",
    "kind": "t",
    "where": [
-    "game/changelog.js:299"
+    "game/changelog.js:307"
    ]
   },
   {
    "k": "Plein écran sur PC",
    "kind": "t",
    "where": [
-    "game/changelog.js:303"
+    "game/changelog.js:311"
    ]
   },
   {
    "k": "Nouveau réglage « Plein écran » sur PC (Réglages, à l’écran titre et dans le menu pause) : le jeu occupe tout l’écran, sans la barre du navigateur.",
    "kind": "t",
    "where": [
-    "game/changelog.js:305"
+    "game/changelog.js:313"
    ]
   },
   {
    "k": "Échap pour en sortir. Laissé allumé, il revient à ton premier clic quand tu rouvres le jeu (le navigateur attend toujours un geste de ta part).",
    "kind": "t",
    "where": [
-    "game/changelog.js:306"
+    "game/changelog.js:314"
    ]
   },
   {
    "k": "C’est toi qui vends",
    "kind": "t",
    "where": [
-    "game/changelog.js:310"
+    "game/changelog.js:318"
    ]
   },
   {
    "k": "Quand un club accepte ta demande en négociation, la vente ne se fait plus toute seule : son offre passe à ton prix et c’est toi qui choisis, « Vendre » ou « Refuser ». L’accord vaut jusqu’à la prochaine journée.",
    "kind": "t",
    "where": [
-    "game/changelog.js:312"
+    "game/changelog.js:320"
    ]
   },
   {
    "k": "De même après le dernier mot d’un club : les deux boutons, côte à côte, en bas de la négociation.",
    "kind": "t",
    "where": [
-    "game/changelog.js:313"
+    "game/changelog.js:321"
    ]
   },
   {
    "k": "Dans les offres reçues, « Refuser » est un vrai bouton, de la même taille que « Accepter » et « Négocier ».",
    "kind": "t",
    "where": [
-    "game/changelog.js:314"
+    "game/changelog.js:322"
    ]
   },
   {
    "k": "Une composition plus grande",
    "kind": "t",
    "where": [
-    "game/changelog.js:318"
+    "game/changelog.js:326"
    ]
   },
   {
    "k": "Sur PC, à la mi-temps et pendant un changement, la composition dépliée prend tout l’écran : le terrain couché, bien plus grand, à droite des consignes.",
    "kind": "t",
    "where": [
-    "game/changelog.js:320"
+    "game/changelog.js:328"
    ]
   },
   {
    "k": "Les joueurs du terrain prennent la plus grande taille possible sans jamais se toucher, selon la taille de l’écran et la formation : plus de noms qui se chevauchent, même en 3-5-2 ou en 5-3-2. Sur un grand écran, ils sont plus gros qu’avant.",
    "kind": "t",
    "where": [
-    "game/changelog.js:321"
+    "game/changelog.js:329"
    ]
   },
   {
    "k": "À l’avant-match et dans l’onglet Composition, le terrain est plus haut et se couche dès que la place le permet.",
    "kind": "t",
    "where": [
-    "game/changelog.js:322"
+    "game/changelog.js:330"
    ]
   },
   {
    "k": "Petites finitions",
    "kind": "t",
    "where": [
-    "game/changelog.js:326"
+    "game/changelog.js:334"
    ]
   },
   {
    "k": "Sur PC, dans l’Équipe, la trésorerie et le bouton Fermer restent en haut à droite, à côté du titre ; les onglets passent sur leur propre ligne quand ils n’y tiennent pas.",
    "kind": "t",
    "where": [
-    "game/changelog.js:328"
+    "game/changelog.js:336"
    ]
   },
   {
    "k": "Sur téléphone, l’avant-match se referme en le glissant vers le bas, comme les autres fenêtres : retour au complexe.",
    "kind": "t",
    "where": [
-    "game/changelog.js:329"
+    "game/changelog.js:337"
    ]
   },
   {
    "k": "Des noms plus variés",
    "kind": "t",
    "where": [
-    "game/changelog.js:333"
+    "game/changelog.js:341"
    ]
   },
   {
    "k": "Trois fois plus de prénoms et de noms pour les joueurs : environ 450 prénoms et 700 noms, toujours francophones, simples à retenir, de toutes les origines du football français.",
    "kind": "t",
    "where": [
-    "game/changelog.js:335"
+    "game/changelog.js:343"
    ]
   },
   {
    "k": "Dans une saison, un même prénom ou un même nom ne revient presque plus trois fois, chez toi comme chez les adversaires.",
    "kind": "t",
    "where": [
-    "game/changelog.js:336"
+    "game/changelog.js:344"
    ]
   },
   {
    "k": "Aucun nom ne reprend celui d’un vrai joueur ou d’une personne connue, et plus jamais de nom qui se répète (« Laurent Laurent »).",
    "kind": "t",
    "where": [
-    "game/changelog.js:337"
+    "game/changelog.js:345"
    ]
   },
   {
    "k": "Tes joueurs gardent leur nom. Seuls deux noms de famille trop proches de personnes réelles sont remplacés à l’ouverture de la partie.",
    "kind": "t",
    "where": [
-    "game/changelog.js:338"
+    "game/changelog.js:346"
    ]
   },
   {
    "k": "Fluidité sur appareil lent",
    "kind": "t",
    "where": [
-    "game/changelog.js:342",
+    "game/changelog.js:350",
     "ui/console.jsx:277"
    ]
   },
@@ -3993,490 +4021,490 @@
    "k": "Nouveau réglage « Fluidité sur appareil lent » (Réglages, à l’écran titre et dans le menu pause), coupé par défaut : si le jeu rame, la 3D est calculée avec moins de pixels, par paliers, juste assez pour redevenir fluide. L’image est un peu moins nette ; elle remonte dès que l’appareil suit de nouveau.",
    "kind": "t",
    "where": [
-    "game/changelog.js:344"
+    "game/changelog.js:352"
    ]
   },
   {
    "k": "Rien ne change sur un appareil qui suit, ni quand le réglage est coupé : pleine résolution de l’écran.",
    "kind": "t",
    "where": [
-    "game/changelog.js:345"
+    "game/changelog.js:353"
    ]
   },
   {
    "k": "Le complexe, les temps forts du match et les épreuves d’entraînement en profitent ; l’appareil retient son réglage d’une partie à l’autre.",
    "kind": "t",
    "where": [
-    "game/changelog.js:346"
+    "game/changelog.js:354"
    ]
   },
   {
    "k": "Sur un appareil qui rame fort (moins de 15 images par seconde), le jeu propose une fois le réglage : la notification mène droit à lui.",
    "kind": "t",
    "where": [
-    "game/changelog.js:347"
+    "game/changelog.js:355"
    ]
   },
   {
    "k": "Plus de rechargement surprise",
    "kind": "t",
    "where": [
-    "game/changelog.js:351"
+    "game/changelog.js:359"
    ]
   },
   {
    "k": "Sur iPhone, après une longue partie, l’écran pouvait devenir blanc et le jeu se relancer sur l’écran de chargement : Safari ferme une page qui garde trop de mémoire. Le jeu en garde désormais bien moins.",
    "kind": "t",
    "where": [
-    "game/changelog.js:353"
+    "game/changelog.js:361"
    ]
   },
   {
    "k": "Les bâtiments partagent leurs photos (béton, brique, verre, gazon…) au lieu d’en garder chacun une copie : une fois tous les niveaux vus, quatre fois moins de mémoire pour les textures, et un tiers de moins pour un complexe complet.",
    "kind": "t",
    "where": [
-    "game/changelog.js:354"
+    "game/changelog.js:362"
    ]
   },
   {
    "k": "Les séances d’entraînement réutilisent la même 3D d’une séance à l’autre ; pendant une séance, le complexe caché libère son image.",
    "kind": "t",
    "where": [
-    "game/changelog.js:355"
+    "game/changelog.js:363"
    ]
   },
   {
    "k": "Rien n’était perdu à ces rechargements, et rien ne le serait : la partie est enregistrée à chaque action et un match en cours reprend à la minute près.",
    "kind": "t",
    "where": [
-    "game/changelog.js:356"
+    "game/changelog.js:364"
    ]
   },
   {
    "k": "Le match façon FM",
    "kind": "t",
    "where": [
-    "game/changelog.js:360"
+    "game/changelog.js:368"
    ]
   },
   {
    "k": "Plus de terrain en permanence pendant le match : le centre du match montre le score avec les buteurs, les statistiques en direct (possession, tirs, tirs cadrés, grosses occasions, buts attendus, arrêts, poteaux, cartons), les temps forts et le pronostic.",
    "kind": "t",
    "where": [
-    "game/changelog.js:362"
+    "game/changelog.js:370"
    ]
   },
   {
    "k": "Les notes des joueurs des deux équipes évoluent pendant le match : buts, passes décisives, tirs cadrés, arrêts, cartons, résultat. Tes joueurs gardent leur condition sous leur nom. Sur téléphone, onglets Stats, Notes et Le fil.",
    "kind": "t",
    "where": [
-    "game/changelog.js:363"
+    "game/changelog.js:371"
    ]
   },
   {
    "k": "La 3D seulement pour les temps forts : buts, penalties, expulsions, grosses occasions, arrêts et poteaux. Chaque action est construite comme une vraie (ouverture, contre, centre et tête, une-deux, corner, coup franc avec le mur, penalty…), filmée en plan large façon télé ; un but est suivi d’un ralenti. « Passer le temps fort » quand tu veux.",
    "kind": "t",
    "where": [
-    "game/changelog.js:364"
+    "game/changelog.js:372"
    ]
   },
   {
    "k": "Entre deux temps forts, la 3D ne tourne pas : le match est plus fluide et moins gourmand, sur PC comme sur iPhone.",
    "kind": "t",
    "where": [
-    "game/changelog.js:365"
+    "game/changelog.js:373"
    ]
   },
   {
    "k": "Des penalties pendant le match : environ un match sur quatre, réussis trois fois sur quatre. Ils ne changent pas le nombre de buts : ils en prennent une part.",
    "kind": "t",
    "where": [
-    "game/changelog.js:366"
+    "game/changelog.js:374"
    ]
   },
   {
    "k": "L’adversaire aligne de vrais joueurs (noms, postes selon son dispositif, numéros, visages), les mêmes à chaque rencontre de la saison, avec leurs buteurs, leurs passeurs et leurs notes.",
    "kind": "t",
    "where": [
-    "game/changelog.js:367"
+    "game/changelog.js:375"
    ]
   },
   {
    "k": "Pronostic encore plus juste : il compte désormais les expulsions encore à venir. Le petit écart qui restait sur les matchs très déséquilibrés a disparu (vérifié sur 60 000 matchs).",
    "kind": "t",
    "where": [
-    "game/changelog.js:368"
+    "game/changelog.js:376"
    ]
   },
   {
    "k": "En accéléré (×4), seulement les buts, les penalties et les expulsions, sans ralenti.",
    "kind": "t",
    "where": [
-    "game/changelog.js:369"
+    "game/changelog.js:377"
    ]
   },
   {
    "k": "Un match en cours au moment de la mise à jour reprend au coup d’envoi.",
    "kind": "t",
    "where": [
-    "game/changelog.js:370"
+    "game/changelog.js:378"
    ]
   },
   {
    "k": "Des visages qu’on retient, des recruteurs en mission",
    "kind": "t",
    "where": [
-    "game/changelog.js:374"
+    "game/changelog.js:382"
    ]
   },
   {
    "k": "Nouveaux visages, toujours dessinés : forme du visage, yeux et leur couleur, nez, bouche, sourcils, oreilles, une vingtaine de coiffures (afro, tresses, dreadlocks, crête, dégradé, mulet…) et toutes sortes de barbes. Les cheveux grisonnent et le front se dégarnit avec l’âge ; la barbe d’un jeune vient avec les années.",
    "kind": "t",
    "where": [
-    "game/changelog.js:376"
+    "game/changelog.js:384"
    ]
   },
   {
    "k": "Un joueur sur cinq a un signe particulier : taches de rousseur, grain de beauté, cicatrice au sourcil, nez cassé, bandeau ou oreilles décollées.",
    "kind": "t",
    "where": [
-    "game/changelog.js:377"
+    "game/changelog.js:385"
    ]
   },
   {
    "k": "Le numéro de chaque joueur sur son maillot, dans le portrait (cartes, fiche, homme du match, bandeau du but).",
    "kind": "t",
    "where": [
-    "game/changelog.js:378"
+    "game/changelog.js:386"
    ]
   },
   {
    "k": "Un nom et un visage qui vont ensemble : l’origine du nom oriente un peu le visage, avec des mélanges comme dans la vie.",
    "kind": "t",
    "where": [
-    "game/changelog.js:379"
+    "game/changelog.js:387"
    ]
   },
   {
    "k": "Aucun sosie dans ton effectif : un joueur qui ressemblerait trop à un coéquipier arrive avec une coupe ou une barbe différente.",
    "kind": "t",
    "where": [
-    "game/changelog.js:380"
+    "game/changelog.js:388"
    ]
   },
   {
    "k": "Tes joueurs actuels gardent leur visage (teint, cheveux, coiffure, barbe), avec les nouveaux traits en plus.",
    "kind": "t",
    "where": [
-    "game/changelog.js:381"
+    "game/changelog.js:389"
    ]
   },
   {
    "k": "Académie : envoie tes recruteurs en mission sur un poste, un profil (technique, physique, mental) ou une région imaginaire, pour une à trois journées. Au retour, les plus prometteurs de tous les jeunes vus ; les chances affichées d’y trouver un grand potentiel sont exactes.",
    "kind": "t",
    "where": [
-    "game/changelog.js:382"
+    "game/changelog.js:390"
    ]
   },
   {
    "k": "Stats : nouvel onglet Pronostic. Sur tes propres matchs, les chances annoncées avant le coup d’envoi face aux résultats obtenus, tranche par tranche.",
    "kind": "t",
    "where": [
-    "game/changelog.js:383"
+    "game/changelog.js:391"
    ]
   },
   {
    "k": "L’Élite pro : aller-retour et vrais millions",
    "kind": "t",
    "where": [
-    "game/changelog.js:387"
+    "game/changelog.js:395"
    ]
   },
   {
    "k": "Élite en aller-retour : quatorze journées, chaque adversaire reçu une fois et visité une fois. À l’extérieur, l’avantage du terrain passe chez l’adversaire (pronostic compris, vérifié sur vingt mille matchs) et seuls les droits TV reviennent au club.",
    "kind": "t",
    "where": [
-    "game/changelog.js:389"
+    "game/changelog.js:397"
    ]
   },
   {
    "k": "Calendrier, avant-match, après-match et Finances le disent : « Journée 4 / 14 · À l’extérieur », droits TV attendus, matchs restants à domicile et à l’extérieur.",
    "kind": "t",
    "where": [
-    "game/changelog.js:390"
+    "game/changelog.js:398"
    ]
   },
   {
    "k": "L’Élite change d’échelle, comme un grand championnat européen : droits TV et sponsors de plusieurs dizaines de millions, titulaires à plusieurs millions par an, stars à plus de dix millions, transferts à plusieurs dizaines de millions. Les petites divisions gardent leurs budgets modestes.",
    "kind": "t",
    "where": [
-    "game/changelog.js:391"
+    "game/changelog.js:399"
    ]
   },
   {
    "k": "Coupe d’Europe à vraie échelle : 15 M€ de participation, des primes de tour jusqu’à 30 M€ et 5 M€ de droits TV par match, plus de cent millions pour le vainqueur. Les clubs européens affichent leur budget (de 150 à 800 M€), et ils sont un peu plus forts.",
    "kind": "t",
    "where": [
-    "game/changelog.js:392"
+    "game/changelog.js:400"
    ]
   },
   {
    "k": "Mercato : les géants européens suivent tes stars d’Élite, surtout quand tu joues la Coupe d’Europe. Leurs offres dépassent largement la valeur, et une offre spontanée peut la dépasser de moitié.",
    "kind": "t",
    "where": [
-    "game/changelog.js:393"
+    "game/changelog.js:401"
    ]
   },
   {
    "k": "Sponsors versés à la reprise, dès la deuxième saison : un club promu touche tout de suite ceux de sa nouvelle division, de quoi se renforcer avant d’affronter des salaires bien plus lourds.",
    "kind": "t",
    "where": [
-    "game/changelog.js:394"
+    "game/changelog.js:402"
    ]
   },
   {
    "k": "En Élite, le calendrier est chargé : chaque séance d’entraînement compte pour deux tiers, l’académie repère ses jeunes toutes les deux journées et ils progressent moitié moins par journée. Autant de progrès par saison qu’ailleurs.",
    "kind": "t",
    "where": [
-    "game/changelog.js:395"
+    "game/changelog.js:403"
    ]
   },
   {
    "k": "Objectifs du conseil à l’échelle de la saison d’Élite (deux fois plus de victoires, de buts ou de cages inviolées) ; l’arène fermée coûte désormais 55 M€, puis 140 M€ pour la version agrandie.",
    "kind": "t",
    "where": [
-    "game/changelog.js:396"
+    "game/changelog.js:404"
    ]
   },
   {
    "k": "Calendrier : la qualification affichée en coupe est exacte, comme à l’avant-match (un nul y comptait pour une demi-qualification).",
    "kind": "t",
    "where": [
-    "game/changelog.js:397"
+    "game/changelog.js:405"
    ]
   },
   {
    "k": "Ta partie en cours : déjà en Élite, ta trésorerie et tes offres en cours passent à la nouvelle échelle, comme les salaires. La saison en cours garde ses sept journées ; l’aller-retour commence à la suivante.",
    "kind": "t",
    "where": [
-    "game/changelog.js:398"
+    "game/changelog.js:406"
    ]
   },
   {
    "k": "Pronostic vérifié, match repris, entraînement délégué",
    "kind": "t",
    "where": [
-    "game/changelog.js:402"
+    "game/changelog.js:410"
    ]
   },
   {
    "k": "Pronostic vérifié sur vingt mille matchs : un match annoncé à 70-80 % de victoire (74,7 % en moyenne) est gagné 75,2 % du temps, et le pronostic du direct tombe aussi juste à chaque minute.",
    "kind": "t",
    "where": [
-    "game/changelog.js:404"
+    "game/changelog.js:412"
    ]
   },
   {
    "k": "Quand tu passes la fin d’une mi-temps, le staff remplace un blessé (s’il reste un changement) : l’équipe ne finit plus à dix, et le pronostic reste exact.",
    "kind": "t",
    "where": [
-    "game/changelog.js:405"
+    "game/changelog.js:413"
    ]
   },
   {
    "k": "Si l’app se ferme pendant un match, il reprend à la minute près à la réouverture, avec le même score et la même suite (rien n’est rejoué). L’écran titre l’annonce sous « Continuer ».",
    "kind": "t",
    "where": [
-    "game/changelog.js:406"
+    "game/changelog.js:414"
    ]
   },
   {
    "k": "Centre d’entraînement : nouveau réglage « Confier les séances au staff ». Avant chaque match, il simule les épreuves que tu n’as pas faites, avec les joueurs choisis (par défaut, les conseillés) ; plus de rappel de séance.",
    "kind": "t",
    "where": [
-    "game/changelog.js:407"
+    "game/changelog.js:415"
    ]
   },
   {
    "k": "Fatigue : chaque date rend un peu moins de condition (18 à 24 points selon l’âge, +1,5 par niveau du centre d’entraînement). Un titulaire qui joue tout finit par s’user : fais tourner, « Meilleur onze » s’en charge.",
    "kind": "t",
    "where": [
-    "game/changelog.js:408"
+    "game/changelog.js:416"
    ]
   },
   {
    "k": "Le président, c’est toi : les objectifs de la saison viennent désormais du conseil d’administration.",
    "kind": "t",
    "where": [
-    "game/changelog.js:409"
+    "game/changelog.js:417"
    ]
   },
   {
    "k": "Une progression qui se mérite",
    "kind": "t",
    "where": [
-    "game/changelog.js:413"
+    "game/changelog.js:421"
    ]
   },
   {
    "k": "Académie : un ou deux jeunes repérés par journée selon son niveau (jusqu’à six avant), aux potentiels réalistes. Au niveau 5, moins de deux jeunes par saison peuvent viser 18 ou plus, et un 20 est rare. Les fourchettes affichées (niveau à l’arrivée, potentiel) sont celles du tirage.",
    "kind": "t",
    "where": [
-    "game/changelog.js:415"
+    "game/changelog.js:423"
    ]
   },
   {
    "k": "Les jeunes progressent plus lentement, à l’académie comme en équipe première : un grand espoir a besoin de plusieurs saisons pour éclore. Fini l’équipe de prodiges de 19 ans.",
    "kind": "t",
    "where": [
-    "game/changelog.js:416"
+    "game/changelog.js:424"
    ]
   },
   {
    "k": "Centre d’entraînement : les séances et la séance collective font progresser environ deux fois et demie moins vite. Jouer l’épreuve reste plus payant que la simuler.",
    "kind": "t",
    "where": [
-    "game/changelog.js:417"
+    "game/changelog.js:425"
    ]
   },
   {
    "k": "Mercato : le marché suit le niveau de ta division (il était trop fort en Départementale, trop faible en Élite). Un joueur libre demande une prime de 70 % de sa valeur.",
    "kind": "t",
    "where": [
-    "game/changelog.js:418"
+    "game/changelog.js:426"
    ]
   },
   {
    "k": "Une recrue, comme un jeune monté de l’académie, ne peut être vendue qu’après quatre journées de championnat au club : fini l’achat-revente qui rapportait des millions.",
    "kind": "t",
    "where": [
-    "game/changelog.js:419"
+    "game/changelog.js:427"
    ]
   },
   {
    "k": "Coupe d’Europe : des adversaires au niveau des meilleurs clubs d’Élite, plus forts à chaque tour. La gagner devient un exploit.",
    "kind": "t",
    "where": [
-    "game/changelog.js:420"
+    "game/changelog.js:428"
    ]
   },
   {
    "k": "Avant-match : le niveau de ton onze tient compte de la fatigue, comme les chances affichées (« fatigue −0,4 » à côté quand des titulaires ne sont pas frais).",
    "kind": "t",
    "where": [
-    "game/changelog.js:421"
+    "game/changelog.js:429"
    ]
   },
   {
    "k": "Coupes : la qualification affichée est exacte, avec ta chance de gagner une séance de tirs au but (finition de tes tireurs, réflexes de ton gardien).",
    "kind": "t",
    "where": [
-    "game/changelog.js:422"
+    "game/changelog.js:430"
    ]
   },
   {
    "k": "Objectifs du président : ils se fixent sur ton meilleur onze, pas sur l’onze du moment.",
    "kind": "t",
    "where": [
-    "game/changelog.js:423"
+    "game/changelog.js:431"
    ]
   },
   {
    "k": "Ta partie en cours garde ses joueurs et ses jeunes ; les nouvelles règles valent pour tout ce qui arrive désormais (jeunes repérés, marché, entraînement, coupes).",
    "kind": "t",
    "where": [
-    "game/changelog.js:424"
+    "game/changelog.js:432"
    ]
   },
   {
    "k": "Condition en pourcentage sur le terrain",
    "kind": "t",
    "where": [
-    "game/changelog.js:428"
+    "game/changelog.js:436"
    ]
   },
   {
    "k": "Composition, avant-match, mi-temps et changement en direct : le pourcentage de condition s’affiche sous chaque joueur, même quand il est au vert.",
    "kind": "t",
    "where": [
-    "game/changelog.js:430"
+    "game/changelog.js:438"
    ]
   },
   {
    "k": "3-5-2 et 5-3-2 : joueurs un peu mieux espacés, pour qu’aucune note ne cache la condition d’un voisin (sur téléphone comme sur PC).",
    "kind": "t",
    "where": [
-    "game/changelog.js:431"
+    "game/changelog.js:439"
    ]
   },
   {
    "k": "Réponses et chances justes à la Direction",
    "kind": "t",
    "where": [
-    "game/changelog.js:435"
+    "game/changelog.js:443"
    ]
   },
   {
    "k": "Direction › Salaires : quand un joueur refuse une baisse qu’il avait déjà acceptée une saison passée, l’écran annonce bien un refus (il gardait « accepte »). Sa baisse déjà obtenue reste.",
    "kind": "t",
    "where": [
-    "game/changelog.js:437"
+    "game/changelog.js:445"
    ]
   },
   {
    "k": "Direction et centre médical : la jauge n’écrit 0 % ou 100 % que si c’est certain ; 99,6 % s’affiche 99 %, comme au mercato.",
    "kind": "t",
    "where": [
-    "game/changelog.js:438"
+    "game/changelog.js:446"
    ]
   },
   {
    "k": "Navigation au doigt entre les sections",
    "kind": "t",
    "where": [
-    "game/changelog.js:442"
+    "game/changelog.js:450"
    ]
   },
   {
    "k": "Sur téléphone, glisse un panneau vers la gauche ou la droite pour passer à la section voisine : Équipe, Mercato, Saison, Club.",
    "kind": "t",
    "where": [
-    "game/changelog.js:444"
+    "game/changelog.js:452"
    ]
   },
   {
    "k": "Une barre en bas de chaque panneau, à portée du pouce, fait la même chose : « ‹ Équipe » à gauche, « Saison › » à droite, et des points qui disent où tu es.",
    "kind": "t",
    "where": [
-    "game/changelog.js:445"
+    "game/changelog.js:453"
    ]
   },
   {
    "k": "Revenir à une section la rouvre sur l’écran que tu y avais laissé (Classement, Journal…).",
    "kind": "t",
    "where": [
-    "game/changelog.js:446"
+    "game/changelog.js:454"
    ]
   },
   {
    "k": "Le bouton Retour du navigateur (ou de la souris, ou d’Android) ferme la fiche ou le panneau ouvert au lieu de quitter le jeu.",
    "kind": "t",
    "where": [
-    "game/changelog.js:447"
+    "game/changelog.js:455"
    ]
   },
   {
    "k": "Composition : glisser un joueur vers le bas ne ferme plus tout le panneau.",
    "kind": "t",
    "where": [
-    "game/changelog.js:448"
+    "game/changelog.js:456"
    ]
   },
   {
    "k": "Centre médical",
    "kind": "t",
    "where": [
-    "game/changelog.js:452",
+    "game/changelog.js:460",
     "game/constants.js:65",
     "ui/medical.jsx:26"
    ]
@@ -4485,574 +4513,574 @@
    "k": "Nouveau bâtiment : le centre médical. Entre deux matchs, fais soigner tes blessés : un soin par joueur et par date, avec sa chance exacte de le faire revenir un match plus tôt (une blessure légère soignée, il est disponible pour le prochain match).",
    "kind": "t",
    "where": [
-    "game/changelog.js:454"
+    "game/changelog.js:462"
    ]
   },
   {
    "k": "Sa prévention réduit aussi le risque de blessure en match : −8 % par niveau, jusqu’à −40 %.",
    "kind": "t",
    "where": [
-    "game/changelog.js:455"
+    "game/changelog.js:463"
    ]
   },
   {
    "k": "Nouvel onglet « Médical » dans l’Équipe ; la notification des blessés y mène une fois le centre construit.",
    "kind": "t",
    "where": [
-    "game/changelog.js:456"
+    "game/changelog.js:464"
    ]
   },
   {
    "k": "Construction conseillée : l’académie passe juste après le centre d’entraînement, avant l’espace supporters.",
    "kind": "t",
    "where": [
-    "game/changelog.js:457"
+    "game/changelog.js:465"
    ]
   },
   {
    "k": "Réponse claire aux baisses de salaire",
    "kind": "t",
    "where": [
-    "game/changelog.js:461"
+    "game/changelog.js:469"
    ]
   },
   {
    "k": "Direction › Salaires : après ta proposition, la réponse du joueur s’affiche à sa place (accord et nouveau salaire, ou refus) ; plus de bouton « Proposer » qui menait à « Négociation impossible ».",
    "kind": "t",
    "where": [
-    "game/changelog.js:463"
+    "game/changelog.js:471"
    ]
   },
   {
    "k": "Fiche joueur visible depuis les Stats",
    "kind": "t",
    "where": [
-    "game/changelog.js:467"
+    "game/changelog.js:475"
    ]
   },
   {
    "k": "Statistiques : « Voir sa fiche joueur » depuis une fiche carrière affiche bien la fiche (elle s’ouvrait derrière la carrière) ; la fermer ramène à la carrière.",
    "kind": "t",
    "where": [
-    "game/changelog.js:469"
+    "game/changelog.js:477"
    ]
   },
   {
    "k": "Notes entières sur le terrain",
    "kind": "t",
    "where": [
-    "game/changelog.js:473"
+    "game/changelog.js:481"
    ]
   },
   {
    "k": "Composition, changement en direct et mi-temps : la note posée sur le portrait des joueurs n’est plus rognée par ses coins en biais (11,6).",
    "kind": "t",
    "where": [
-    "game/changelog.js:475"
+    "game/changelog.js:483"
    ]
   },
   {
    "k": "Notes entières au mercato",
    "kind": "t",
    "where": [
-    "game/changelog.js:479"
+    "game/changelog.js:487"
    ]
   },
   {
    "k": "Mercato : la note posée sur le portrait d’un joueur s’élargit avec elle ; une note à deux chiffres (10,5) n’est plus rognée.",
    "kind": "t",
    "where": [
-    "game/changelog.js:481"
+    "game/changelog.js:489"
    ]
   },
   {
    "k": "Plus de loupe, tarifs à la Direction",
    "kind": "t",
    "where": [
-    "game/changelog.js:485"
+    "game/changelog.js:493"
    ]
   },
   {
    "k": "iPhone : un double toucher maintenu n’ouvre plus la loupe de texte de Safari, nulle part dans le jeu ; un bouton touché deux fois de suite répond toujours deux fois.",
    "kind": "t",
    "where": [
-    "game/changelog.js:487"
+    "game/changelog.js:495"
    ]
   },
   {
    "k": "Les tarifs des billets se règlent uniquement à la Direction du club (onglet Billetterie) ; la fiche du stade affiche le tarif en vigueur et y mène.",
    "kind": "t",
    "where": [
-    "game/changelog.js:488"
+    "game/changelog.js:496"
    ]
   },
   {
    "k": "Ventes encadrées",
    "kind": "t",
    "where": [
-    "game/changelog.js:492"
+    "game/changelog.js:500"
    ]
   },
   {
    "k": "Un joueur blessé ou suspendu ne peut plus être vendu : ni mise en vente, ni offre acceptée ; les clubs reviennent à son retour.",
    "kind": "t",
    "where": [
-    "game/changelog.js:494"
+    "game/changelog.js:502"
    ]
   },
   {
    "k": "Une recrue ne peut pas être revendue avant le match qui suit sa signature.",
    "kind": "t",
    "where": [
-    "game/changelog.js:495"
+    "game/changelog.js:503"
    ]
   },
   {
    "k": "Fiche joueur : « Arrivée au club » montre ce qu’il a coûté (indemnité ou prime), quand et d’où il est venu.",
    "kind": "t",
    "where": [
-    "game/changelog.js:496"
+    "game/changelog.js:504"
    ]
   },
   {
    "k": "Le direct, rien que le direct",
    "kind": "t",
    "where": [
-    "game/changelog.js:500"
+    "game/changelog.js:508"
    ]
   },
   {
    "k": "Pendant un match, la caméra reste à la réalisation : plus de rotation, de zoom ni de déplacement, et les bâtiments ne s’ouvrent plus d’un toucher.",
    "kind": "t",
    "where": [
-    "game/changelog.js:502"
+    "game/changelog.js:510"
    ]
   },
   {
    "k": "Un changement met vraiment le match en pause : les joueurs et le ballon s’immobilisent jusqu’à la reprise.",
    "kind": "t",
    "where": [
-    "game/changelog.js:503"
+    "game/changelog.js:511"
    ]
   },
   {
    "k": "Fiche joueur sur place",
    "kind": "t",
    "where": [
-    "game/changelog.js:507"
+    "game/changelog.js:515"
    ]
   },
   {
    "k": "Saison et Statistiques : la fiche d’un joueur s’ouvre par-dessus l’écran en cours ; la fermer ramène au même endroit (même onglet, même défilement, fiche carrière comprise) au lieu de l’Équipe.",
    "kind": "t",
    "where": [
-    "game/changelog.js:509"
+    "game/changelog.js:517"
    ]
   },
   {
    "k": "Cartes et liserés",
    "kind": "t",
    "where": [
-    "game/changelog.js:513"
+    "game/changelog.js:521"
    ]
   },
   {
    "k": "Cartes des joueurs : la note, le poste, « XI » et le numéro forment une colonne à gauche, le portrait se place à côté ; une note à deux chiffres (11,6) ne chevauche plus le visage.",
    "kind": "t",
    "where": [
-    "game/changelog.js:515"
+    "game/changelog.js:523"
    ]
   },
   {
    "k": "Le liseré doré fait tout le tour, coin coupé compris : succès tout juste débloqué, parcelle choisie, recrue conseillée, niveau de l’académie.",
    "kind": "t",
    "where": [
-    "game/changelog.js:516"
+    "game/changelog.js:524"
    ]
   },
   {
    "k": "Mercato réparé",
    "kind": "t",
    "where": [
-    "game/changelog.js:520"
+    "game/changelog.js:528"
    ]
   },
   {
    "k": "Le mercato s’ouvre de nouveau : la 0.3.7 le faisait planter (« Le jeu a rencontré un problème »).",
    "kind": "t",
    "where": [
-    "game/changelog.js:522"
+    "game/changelog.js:530"
    ]
   },
   {
    "k": "Réglages : « Signaler un problème » prépare enfin son rapport (le bouton ne faisait rien).",
    "kind": "t",
    "where": [
-    "game/changelog.js:523"
+    "game/changelog.js:531"
    ]
   },
   {
    "k": "Corrections au téléphone",
    "kind": "t",
    "where": [
-    "game/changelog.js:527"
+    "game/changelog.js:535"
    ]
   },
   {
    "k": "Équipe : le menu « Trier par » s’ouvre par-dessus les cartes et répond au doigt (les cartes le recouvraient : le tri semblait cassé).",
    "kind": "t",
    "where": [
-    "game/changelog.js:529"
+    "game/changelog.js:537"
    ]
   },
   {
    "k": "Après-match : « Stats du match » et « Voir le classement » l’un sous l’autre, en entier.",
    "kind": "t",
    "where": [
-    "game/changelog.js:530"
+    "game/changelog.js:538"
    ]
   },
   {
    "k": "Fiche carrière : même en-tête que la fiche joueur (niveau en grand et sa légende, portrait, étiquettes) ; le bouton « Voir sa fiche joueur » tient dans l’écran.",
    "kind": "t",
    "where": [
-    "game/changelog.js:531"
+    "game/changelog.js:539"
    ]
   },
   {
    "k": "Mises à jour plus discrètes",
    "kind": "t",
    "where": [
-    "game/changelog.js:535"
+    "game/changelog.js:543"
    ]
   },
   {
    "k": "Le bandeau « Nouvelle version » ne revient plus à chaque lancement quand le jeu tourne déjà la dernière version : il ne s’affiche que si une version plus récente reste à charger.",
    "kind": "t",
    "where": [
-    "game/changelog.js:537"
+    "game/changelog.js:545"
    ]
   },
   {
    "k": "Négociation plus claire",
    "kind": "t",
    "where": [
-    "game/changelog.js:541"
+    "game/changelog.js:549"
    ]
   },
   {
    "k": "Achat, mise en vente et vente négociée : la chance d’accord s’affiche juste au-dessus du bouton et suit la somme en direct, sans faire défiler.",
    "kind": "t",
    "where": [
-    "game/changelog.js:543"
+    "game/changelog.js:551"
    ]
   },
   {
    "k": "Lisibilité",
    "kind": "t",
    "where": [
-    "game/changelog.js:547"
+    "game/changelog.js:555"
    ]
   },
   {
    "k": "Entraînement : la qualité choisie se lit enfin (son gain vert et le point de la qualité conseillée disparaissaient sur le fond doré).",
    "kind": "t",
    "where": [
-    "game/changelog.js:549"
+    "game/changelog.js:557"
    ]
   },
   {
    "k": "Même correction partout où un élément choisi est doré : académie, mercato, menu de l’écran titre.",
    "kind": "t",
    "where": [
-    "game/changelog.js:550"
+    "game/changelog.js:558"
    ]
   },
   {
    "k": "Notification d’origine",
    "kind": "t",
    "where": [
-    "game/changelog.js:554"
+    "game/changelog.js:562"
    ]
   },
   {
    "k": "Les notifications retrouvent leur dessin d’origine, plus élégant : coins arrondis, lettres fines et espacées.",
    "kind": "t",
    "where": [
-    "game/changelog.js:556"
+    "game/changelog.js:564"
    ]
   },
   {
    "k": "Corrections",
    "kind": "t",
    "where": [
-    "game/changelog.js:560"
+    "game/changelog.js:568"
    ]
   },
   {
    "k": "La « Subvention de la mairie » ne s’annonce plus à chaque action : une prime du tutoriel s’annonce une seule fois (elle n’a jamais été versée deux fois).",
    "kind": "t",
    "where": [
-    "game/changelog.js:562"
+    "game/changelog.js:570"
    ]
   },
   {
    "k": "Académie plus lisible : nombres des onglets visibles sur l’onglet choisi, fiche d’un jeune au même modèle que la fiche joueur.",
    "kind": "t",
    "where": [
-    "game/changelog.js:563"
+    "game/changelog.js:571"
    ]
   },
   {
    "k": "Plus de sursaut en passant d’un onglet à l’autre d’une section (Finances, Journal, Notoriété, Direction…) ; Direction a la taille des autres écrans du Club.",
    "kind": "t",
    "where": [
-    "game/changelog.js:564"
+    "game/changelog.js:572"
    ]
   },
   {
    "k": "Retour du logo",
    "kind": "t",
    "where": [
-    "game/changelog.js:568"
+    "game/changelog.js:576"
    ]
   },
   {
    "k": "Le logo FootOFF Empire d’origine revient sur l’écran de chargement et l’écran titre.",
    "kind": "t",
    "where": [
-    "game/changelog.js:570"
+    "game/changelog.js:578"
    ]
   },
   {
    "k": "« Nouvelle partie » reste proposée sur une partie en cours, après confirmation : la partie actuelle est alors effacée.",
    "kind": "t",
    "where": [
-    "game/changelog.js:571"
+    "game/changelog.js:579"
    ]
   },
   {
    "k": "Nouvelle interface",
    "kind": "t",
    "where": [
-    "game/changelog.js:575"
+    "game/changelog.js:583"
    ]
   },
   {
    "k": "Toute l’interface refaite façon habillage télé : plaques sombres, or FootOFF, grands chiffres en capitales condensées.",
    "kind": "t",
    "where": [
-    "game/changelog.js:577"
+    "game/changelog.js:585"
    ]
   },
   {
    "k": "Menu du bas en cinq sections, Complexe, Équipe, Mercato, Saison et Club, chacune avec ses onglets.",
    "kind": "t",
    "where": [
-    "game/changelog.js:578"
+    "game/changelog.js:586"
    ]
   },
   {
    "k": "Match en direct : bandeau du score avec les clubs en trois lettres, bandeau du but, temps forts et pronostic exact pendant tout le match.",
    "kind": "t",
    "where": [
-    "game/changelog.js:579"
+    "game/changelog.js:587"
    ]
   },
   {
    "k": "Nouvelles cartes de joueurs et nouvelle fiche joueur ; le mercato s’affiche en tableau sur ordinateur.",
    "kind": "t",
    "where": [
-    "game/changelog.js:580"
+    "game/changelog.js:588"
    ]
   },
   {
    "k": "Saison : frise des dates avec les résultats, classement avec victoires, nuls et défaites, course à la montée et meilleurs joueurs du club.",
    "kind": "t",
    "where": [
-    "game/changelog.js:581"
+    "game/changelog.js:589"
    ]
   },
   {
    "k": "Nouvel écran titre et nouveau menu pause.",
    "kind": "t",
    "where": [
-    "game/changelog.js:582"
+    "game/changelog.js:590"
    ]
   },
   {
    "k": "La mémoire du club",
    "kind": "t",
    "where": [
-    "game/changelog.js:586"
+    "game/changelog.js:594"
    ]
   },
   {
    "k": "Le journal garde toute l’histoire du club, saison par saison, au lieu des quarante dernières nouvelles.",
    "kind": "t",
    "where": [
-    "game/changelog.js:588"
+    "game/changelog.js:596"
    ]
   },
   {
    "k": "Le direct raconte mieux : bien plus d’occasions, d’arrêts, de buts selon le score, de cartons et d’ambiance.",
    "kind": "t",
    "where": [
-    "game/changelog.js:589"
+    "game/changelog.js:597"
    ]
   },
   {
    "k": "Un lien partagé (messages, réseaux) montre désormais le titre, une description et une image du jeu.",
    "kind": "t",
    "where": [
-    "game/changelog.js:590"
+    "game/changelog.js:598"
    ]
   },
   {
    "k": "Prêt pour les premiers joueurs",
    "kind": "t",
    "where": [
-    "game/changelog.js:594"
+    "game/changelog.js:602"
    ]
   },
   {
    "k": "Sauvegarde protégée : copie de secours à chaque session, code de sauvegarde à copier et à coller d’un appareil à l’autre (réglages).",
    "kind": "t",
    "where": [
-    "game/changelog.js:596"
+    "game/changelog.js:604"
    ]
   },
   {
    "k": "Le jeu s’ouvre hors ligne après une première visite et annonce lui-même les nouvelles versions.",
    "kind": "t",
    "where": [
-    "game/changelog.js:597"
+    "game/changelog.js:605"
    ]
   },
   {
    "k": "Un écran clair si le jeu rencontre un problème, avec retour à la copie de secours et rapport à copier.",
    "kind": "t",
    "where": [
-    "game/changelog.js:598"
+    "game/changelog.js:606"
    ]
   },
   {
    "k": "« Signaler un problème » dans les réglages : un rapport complet, avec ta partie si tu l’acceptes, pour reproduire chaque bug.",
    "kind": "t",
    "where": [
-    "game/changelog.js:599"
+    "game/changelog.js:607"
    ]
   },
   {
    "k": "Cet écran Nouveautés, le numéro de version au bas de l’écran titre, et les Règles du jeu en langage joueur.",
    "kind": "t",
    "where": [
-    "game/changelog.js:600"
+    "game/changelog.js:608"
    ]
   },
   {
    "k": "Le tutoriel explique la condition physique, les blessures, les suspensions et les changements en cours de match.",
    "kind": "t",
    "where": [
-    "game/changelog.js:601"
+    "game/changelog.js:609"
    ]
   },
   {
    "k": "Équilibre et cohérence",
    "kind": "t",
    "where": [
-    "game/changelog.js:605"
+    "game/changelog.js:613"
    ]
   },
   {
    "k": "Une seule valeur de marché par joueur, référence des primes, des indemnités et des offres reçues.",
    "kind": "t",
    "where": [
-    "game/changelog.js:607"
+    "game/changelog.js:615"
    ]
   },
   {
    "k": "Les stars de l’Élite coûtent vraiment cher ; salaires et entretien se paient à chaque journée.",
    "kind": "t",
    "where": [
-    "game/changelog.js:608"
+    "game/changelog.js:616"
    ]
   },
   {
    "k": "La réputation se gagne selon la division et s’oublie un peu chaque été ; nouveaux statuts jusqu’à « Club de légende » à 80.",
    "kind": "t",
    "where": [
-    "game/changelog.js:609"
+    "game/changelog.js:617"
    ]
   },
   {
    "k": "Effectif de départ au milieu de la Départementale, haut de l’Élite relevé, recruteurs et notoriété qui attirent des joueurs jusqu’à 19.",
    "kind": "t",
    "where": [
-    "game/changelog.js:610"
+    "game/changelog.js:618"
    ]
   },
   {
    "k": "Le banc compte enfin",
    "kind": "t",
    "where": [
-    "game/changelog.js:614"
+    "game/changelog.js:622"
    ]
   },
   {
    "k": "Condition physique : un match fatigue selon l’endurance, chaque date repose ; un joueur fatigué joue moins bien et se blesse plus souvent.",
    "kind": "t",
    "where": [
-    "game/changelog.js:616"
+    "game/changelog.js:624"
    ]
   },
   {
    "k": "Blessures (une à neuf dates d’absence) et suspensions (rouge direct : deux matchs ; second jaune ou trois jaunes : un).",
    "kind": "t",
    "where": [
-    "game/changelog.js:617"
+    "game/changelog.js:625"
    ]
   },
   {
    "k": "Changements à toute minute pendant le direct : le match s’arrête, composition, tactique et pronostic final se règlent ; cinq changements par match.",
    "kind": "t",
    "where": [
-    "game/changelog.js:618"
+    "game/changelog.js:626"
    ]
   },
   {
    "k": "Lecture du jeu ne se fige plus, et une erreur pendant une épreuve propose de la simuler.",
    "kind": "t",
    "where": [
-    "game/changelog.js:619"
+    "game/changelog.js:627"
    ]
   },
   {
    "k": "Version de départ",
    "kind": "t",
    "where": [
-    "game/changelog.js:623"
+    "game/changelog.js:631"
    ]
   },
   {
    "k": "Direction du club : droits TV, salaires et billetterie à négocier.",
    "kind": "t",
    "where": [
-    "game/changelog.js:625"
+    "game/changelog.js:633"
    ]
   },
   {
    "k": "Tutoriel en sept étapes mené par la directrice sportive, objectifs du président à chaque saison.",
    "kind": "t",
    "where": [
-    "game/changelog.js:626"
+    "game/changelog.js:634"
    ]
   },
   {
    "k": "Centre d’entraînement avec huit épreuves en 3D, académie, mercato négocié, Coupe nationale et Coupe d’Europe.",
    "kind": "t",
    "where": [
-    "game/changelog.js:627"
+    "game/changelog.js:635"
    ]
   },
   {
@@ -13080,7 +13108,7 @@
    "kind": "t",
    "where": [
     "ui/brand.jsx:33",
-    "ui/loading.jsx:145",
+    "ui/loading.jsx:144",
     "ui/title.jsx:23"
    ]
   },
@@ -13089,7 +13117,7 @@
    "kind": "tr",
    "where": [
     "ui/brand.jsx:39",
-    "ui/loading.jsx:145"
+    "ui/loading.jsx:144"
    ]
   },
   {
@@ -18974,140 +19002,140 @@
    "k": "Un stade plus grand accueille plus de spectateurs : billetterie, buvette et boutique en profitent.",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:22"
+    "ui/loading.jsx:21"
    ]
   },
   {
    "k": "Former un jeune puis le revendre une fois progressé rapporte ; une recrue ne se revend qu’après quatre journées de championnat.",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:23"
+    "ui/loading.jsx:22"
    ]
   },
   {
    "k": "Les deux premiers montent, les deux derniers descendent : chaque point compte.",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:24"
+    "ui/loading.jsx:23"
    ]
   },
   {
    "k": "À la mi-temps, change de tactique ou fais entrer un remplaçant pour renverser le match.",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:25"
+    "ui/loading.jsx:24"
    ]
   },
   {
    "k": "L’espace supporters remplit mieux le stade et augmente la réputation gagnée à chaque match.",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:26"
+    "ui/loading.jsx:25"
    ]
   },
   {
    "k": "Le siège des partenaires rapporte même quand tu n’es pas là.",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:27"
+    "ui/loading.jsx:26"
    ]
   },
   {
    "k": "L’académie révèle un jeune talent à fort potentiel à chaque fin de saison.",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:28"
+    "ui/loading.jsx:27"
    ]
   },
   {
    "k": "Surveille la part des salaires dans tes revenus : c’est elle qui fait basculer une saison dans le rouge.",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:29"
+    "ui/loading.jsx:28"
    ]
   },
   {
    "k": "Avant le match, « Onze frais » aligne d’un geste tes meilleurs joueurs à 80 % de condition ou plus.",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:30"
+    "ui/loading.jsx:29"
    ]
   },
   {
    "k": "Le bureau des transferts ouvre un marché de joueurs sous contrat, avec des indemnités négociées.",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:31"
+    "ui/loading.jsx:30"
    ]
   },
   {
    "k": "Échap (ou Start à la manette) met le jeu en pause à tout moment.",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:32"
+    "ui/loading.jsx:31"
    ]
   },
   {
    "k": "Prêt",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:35"
+    "ui/loading.jsx:34"
    ]
   },
   {
    "k": "Démarrage du moteur",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:35"
+    "ui/loading.jsx:34"
    ]
   },
   {
    "k": "Chargement du complexe",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:35"
+    "ui/loading.jsx:34"
    ]
   },
   {
    "k": "Mise en place du décor",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:35"
+    "ui/loading.jsx:34"
    ]
   },
   {
    "k": "Réglage des projecteurs",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:35"
+    "ui/loading.jsx:34"
    ]
   },
   {
    "k": "Touche l’écran pour la musique",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:59"
+    "ui/loading.jsx:58"
    ]
   },
   {
    "k": "Clique ou appuie sur une touche pour la musique",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:59"
+    "ui/loading.jsx:58"
    ]
   },
   {
    "k": "Chargement de FootOFF Empire",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:139"
+    "ui/loading.jsx:138"
    ]
   },
   {
    "k": "Astuce",
    "kind": "t",
    "where": [
-    "ui/loading.jsx:150"
+    "ui/loading.jsx:149"
    ]
   },
   {
@@ -27756,7 +27784,7 @@
    ]
   },
   {
-   "k": "FootOFF Empire · version <0/> · <1/>",
+   "k": "FootOFF Empire · version <0/>",
    "kind": "tr",
    "where": [
     "ui/title.jsx:377"

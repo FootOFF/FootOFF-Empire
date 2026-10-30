@@ -6,10 +6,14 @@ const KEY = 'fo-sound';
 // Musique de fond (1.0.6, demande du PDG) : la chanson du jeu en boucle, douce, à son volume (Réglages : une jauge de 0 à
 // 100 %, 50 % par défaut), dans son propre contexte audio (celui du stade s'éteint après chaque match). Elle s'efface en fondu
 // pendant les matchs, les rejeux, les épreuves et les cérémonies, quand le jeu est caché ou le son coupé, puis reprend là
-// où elle en était. Lue en continu depuis le serveur, jamais précachée ; volume par Web Audio (l'iPhone ignore celui de
-// l'élément audio). Fichier : public/audio/footoff-empire.mp3 (-16 LUFS, 96 kb/s).
+// où elle en était. Fichier : public/audio/footoff-empire.mp3 (-16 LUFS, 96 kb/s, 3 min 18), jamais précaché.
+// Sans élément audio (1.0.9, demande du PDG) : téléchargée puis décodée dans le contexte audio du jeu ; un élément audio en
+// faisait, sur iPhone, un morceau du lecteur du téléphone (écran verrouillé, Dynamic Island, pause). Session « ambient »
+// (Safari 16.4+) : un son de jeu, qui se mêle à la musique du joueur et se tait en mode silencieux. Décodée à 32 kHz (le
+// fichier n'a rien au-dessus de 16 kHz) : 51 Mo en mémoire au lieu de 76.
 const MUSIC_KEY = 'fo-music';
 const MUSIC_URL = `${import.meta.env.BASE_URL}audio/footoff-empire.mp3`;
+const MUSIC_RATE = 32000;
 const MUSIC_LEVEL = 0.55; // à 100 % : la chanson sous le stade et les sons du menu
 // Musique en attente d'un geste (1.0.8) : la lecture a été refusée par le navigateur (règle des sites qui jouent du son :
 // il faut un toucher, un clic ou une touche) ; l'écran de chargement le dit (loading.jsx, useMusicWaiting).
@@ -51,52 +55,97 @@ export function createStadiumSound() {
     if (v !== null && v !== '' && Number.isFinite(Number(v))) musicVol = musicLevel(Number(v));
   } catch { /* préférence indisponible : douce par défaut */ }
   let mctx = null;
-  let mel = null;
   let mgain = null;
+  let mbuf = null; // la chanson décodée
+  let mload = null; // téléchargement et décodage en cours
+  let msrc = null; // la lecture en cours
+  let mpos = 0; // où en est la chanson (s) au départ de la lecture en cours, ou à son arrêt
+  let mat = 0; // départ de la lecture en cours (horloge du contexte)
   let mwanted = false;
   let mtimer = 0;
-  let mpending = false; // lecture refusée faute de geste : elle part au prochain
+  let mwait = 0;
   const musicOn = () => mwanted && !muted && musicVol > 0;
+  // en attente d'un geste : voulue, mais le navigateur garde le contexte audio suspendu
+  const musicCheck = () => setMusicWaiting(!!mctx && musicOn() && mctx.state !== 'running');
   function musicReady() {
-    if (mel) return true;
+    if (mctx) return true;
     const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC || typeof Audio === 'undefined') return false;
+    if (!AC) return false;
+    try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch { /* navigateur sans session audio */ }
     mctx = new AC();
-    mel = new Audio(MUSIC_URL);
-    mel.loop = true;
-    mel.preload = 'auto';
     mgain = mctx.createGain();
     mgain.gain.value = 0;
-    mctx.createMediaElementSource(mel).connect(mgain).connect(mctx.destination);
-    mctx.onstatechange = () => { if (mctx.state === 'running' && !mel.paused) { mpending = false; setMusicWaiting(false); } };
+    mgain.connect(mctx.destination);
+    mctx.onstatechange = () => { if (mctx.state === 'running' && musicOn() && !msrc) music(); musicCheck(); };
     return true;
+  }
+  const decode = (c, data) => new Promise((ok, ko) => { const p = c.decodeAudioData(data, ok, ko); p?.then?.(ok, ko); });
+  function musicLoad() {
+    if (mbuf || mload) return;
+    mload = fetch(MUSIC_URL)
+      .then((r) => { if (!r.ok) throw new Error(`musique ${r.status}`); return r.arrayBuffer(); })
+      .then((data) => {
+        const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+        let c = mctx;
+        try { if (OAC) c = new OAC(2, 1, MUSIC_RATE); } catch { /* décodée au rythme du contexte */ }
+        return decode(c, data);
+      })
+      .then((b) => { mbuf = b; if (musicOn()) music(); })
+      .catch(() => { mload = null; }); // réseau perdu : nouvel essai au prochain geste
+  }
+  function musicStart() { // vrai si une lecture vient de partir (là où la chanson s'était arrêtée)
+    if (msrc || !mbuf || mctx.state !== 'running') return false;
+    msrc = mctx.createBufferSource();
+    msrc.buffer = mbuf;
+    msrc.loop = true;
+    msrc.connect(mgain);
+    mpos %= mbuf.duration;
+    mat = mctx.currentTime;
+    msrc.start(0, mpos);
+    return true;
+  }
+  function musicStop() {
+    if (!msrc) return;
+    mpos = (mpos + mctx.currentTime - mat) % mbuf.duration;
+    try { msrc.stop(); } catch { /* déjà arrêtée */ }
+    msrc.disconnect();
+    msrc = null;
   }
   function music(quick = false) { // quick : le joueur règle le volume, il l'entend aussitôt
     const on = musicOn();
-    if (!mel && !on) return;
+    if (!mctx && !on) return;
     // dès l'écran de chargement (1.0.8, demande du PDG) : la lecture est tentée tout de suite ; un navigateur qui exige un
-    // geste la refuse, elle part alors au premier toucher, clic ou touche
+    // geste garde le contexte suspendu, elle part alors au premier toucher, clic ou touche
     if (!musicReady()) return;
     const t = mctx.currentTime;
     const g = mgain.gain;
-    g.cancelScheduledValues(t);
-    g.setValueAtTime(g.value, t);
     clearTimeout(mtimer);
     if (on) {
-      mctx.resume?.()?.catch?.(() => {});
-      const p = mel.play();
-      const started = () => { const ok = !mel.paused && mctx.state === 'running'; mpending = !ok; setMusicWaiting(!ok && musicOn()); };
-      if (p?.then) p.then(started, () => { mpending = true; setMusicWaiting(musicOn()); });
-      else started();
-      g.linearRampToValueAtTime(musicVol * MUSIC_LEVEL, t + (quick ? 0.15 : 2));
+      musicLoad();
+      if (mctx.state !== 'running') {
+        mctx.resume?.()?.then?.(musicCheck, musicCheck);
+        // iPhone : un son muet lancé pendant le geste déverrouille le contexte
+        const s = mctx.createBufferSource();
+        s.buffer = mctx.createBuffer(1, 1, mctx.sampleRate);
+        s.connect(mctx.destination);
+        s.start(0);
+        clearTimeout(mwait);
+        mwait = setTimeout(musicCheck, 600);
+      }
+      const fresh = musicStart();
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(fresh ? 0 : g.value, t);
+      g.linearRampToValueAtTime(musicVol * MUSIC_LEVEL, t + (quick && !fresh ? 0.15 : 2));
     } else {
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(g.value, t);
       g.linearRampToValueAtTime(0, t + 1.2);
-      mtimer = setTimeout(() => { if (!musicOn()) mel.pause(); }, 1300);
+      mtimer = setTimeout(() => { if (!musicOn()) musicStop(); }, 1300);
       setMusicWaiting(false);
     }
   }
   if (typeof window !== 'undefined') {
-    const kick = () => { if (musicOn() && (mpending || !mel || mel.paused || mctx?.state !== 'running')) { mpending = false; music(); } };
+    const kick = () => { if (musicOn() && (!mctx || mctx.state !== 'running' || !msrc)) music(); };
     // l'iPhone ne débloque le son qu'à la fin d'un toucher (touchend, click) ; la souris et le clavier dès l'appui
     for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) window.addEventListener(ev, kick, { capture: true, passive: true });
   }

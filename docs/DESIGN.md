@@ -357,9 +357,10 @@ La galerie (`?galerie` dans l'adresse du jeu) affiche chaque écran avec des don
   Le bandeau « Nouvelle version » ne s'affiche donc que si la page tourne vraiment une version plus ancienne.
 - Erreurs (`src/ui/crash.jsx`, `src/ui/errlog.js`) : barrière d'erreur globale autour du jeu. Une erreur de rendu affiche
   « Le jeu a rencontré un problème » (Reprendre, Copie de secours avec son club et sa saison, Copier le rapport : version,
-  navigateur, erreur, vingt dernières erreurs du navigateur ; rien n'est envoyé). Aperçu : `?ecran=erreur`. La version et
-  la date de construction s'affichent au bas de l'écran titre (« FootOFF Empire · version 1.0 · date » : version du journal
-  des nouveautés, plus de « bêta » depuis la 1.0 ; le rapport d'erreur garde `__APP_VERSION__` de `package.json`).
+  navigateur, erreur, vingt dernières erreurs du navigateur ; rien n'est envoyé). Aperçu : `?ecran=erreur`. La version
+  s'affiche au bas de l'écran titre (« FootOFF Empire · version 1.0.9 » : version du journal des nouveautés, plus de
+  « bêta » depuis la 1.0, plus de date depuis la 1.0.9 ; le rapport d'erreur garde `__APP_VERSION__` de `package.json` et
+  la date de construction).
 - Signaler un problème (réglages, `SettingsView`) : un rapport à coller dans un message, version, navigateur, taille de
   l'écran, vingt dernières erreurs (`src/ui/errlog.js`), avec ou sans la partie (son code de sauvegarde) : le joueur
   choisit, rien n'est envoyé. L'écran d'erreur propose les deux mêmes copies. Un code de sauvegarde reçu se rejoue dans
