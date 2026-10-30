@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { HOME_KIT, kitHex, matchKits } from '../game/kits';
 import { flushSync } from 'react-dom';
 import { TACTICS, TACTIC_ORDER, autoLineup, fitWeight, formationOf, lineupRating, reshapeLineup, slotsOf } from '../game/tactics';
 import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
@@ -1011,12 +1012,16 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const awayRows = notesNow.away;
   // à l'extérieur en carrière (le moteur nous garde du côté « home ») : l'équipe qui reçoit passe à gauche (0.8.1) ;
   // L et R : le côté du moteur montré à gauche et à droite (un match revu d'un ami est déjà dans le bon sens)
+  const kits = useMemo(() => matchKits(replay ? { opp: ctx.opp.name, oppCrest: ctx.opp.crest, home: state.clubName, homeCrest: state.crest, side } : { opp: ctx.opp.name }), []); // eslint-disable-line react-hooks/exhaustive-deps
   const flip = side === 'home' && m.atHome === false;
   const [L, R] = flip ? ['away', 'home'] : ['home', 'away'];
   const teamName = { home: m.home, away: m.away };
   const teamCode = { home: codes[0], away: codes[1] };
   const teamGoals = { home: goalsH, away: goalsA };
   const crestOf = (k, className) => (k === 'home' ? <HomeCrest state={state} name={m.home} className={className} /> : <AwayCrest ctx={ctx} name={m.away} className={className} />);
+  // tenue de chaque équipe dans les temps forts 3D (1.0.3, demande du PDG : on ne savait pas qui jouait en quelle
+  // couleur) : un code couleur discret, façon télé, maillot et col, à côté de son nom dans le score
+  const kitEl = (k) => <i className="lv-kit" aria-hidden="true" style={{ '--kit': kitHex(kits[k].shirt), '--kit-trim': kitHex(kits[k].trim != null && kits[k].trim !== HOME_KIT.trim ? kits[k].trim : kits[k].shirt) }} />; // col anthracite : invisible sur le bandeau, la barre reste pleine
 
   const boardEl = (
     <LineupBoard
@@ -1115,9 +1120,9 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
       {/* pendant un temps fort : le score façon télé au-dessus de la 3D */}
       <header className="lv-top">
         <div className="lv-bug" aria-label={`${teamName[L]} ${teamGoals[L]}, ${teamName[R]} ${teamGoals[R]}`}>
-          <span className="lv-team home">{crestOf(L, 'lv-crest')}<b title={teamName[L]}>{teamCode[L]}</b></span>
+          <span className="lv-team home">{crestOf(L, 'lv-crest')}<b title={teamName[L]}>{teamCode[L]}</b>{kitEl(L)}</span>
           <span className="lv-score"><b key={`${L}${teamGoals[L]}`}>{teamGoals[L]}</b><i>-</i><b key={`${R}${teamGoals[R]}`}>{teamGoals[R]}</b></span>
-          <span className="lv-team away"><b title={teamName[R]}>{teamCode[R]}</b>{crestOf(R, 'lv-crest')}</span>
+          <span className="lv-team away">{kitEl(R)}<b title={teamName[R]}>{teamCode[R]}</b>{crestOf(R, 'lv-crest')}</span>
         </div>
         <span className={`lv-clock is-${phase}`}>{clockEl}</span>
       </header>

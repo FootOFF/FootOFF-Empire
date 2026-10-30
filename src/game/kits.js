@@ -67,3 +67,22 @@ export function matchKitOf(name = '', ours = OURS, crest = undefined) {
   return keeper === kit.keeper ? kit : { ...kit, keeper };
 }
 const KEEPERS = [0x2ecc71, 0xe84393, 0x2980b9, 0x8e44ad, 0xd35400, 0x151515, 0xf2f2f2];
+
+// Les deux tenues d'un match, côté du moteur « home » et « away » (0.8.23 ; 1.0.3 : aussi pour le code couleur du score
+// façon télé, à côté du nom de chaque équipe). info : { opp } en solo (notre club, côté « home » du moteur, garde sa
+// tenue d'écusson), ou { opp, oppCrest, home, homeCrest, side } pour un match revu de ligue : chaque club à ses couleurs,
+// notre club garde toujours les siennes, l'autre change de tenue si les deux se confondent.
+export function matchKits(info) {
+  const opp = info?.opp || '';
+  if (info?.home && info.side === 'away') {
+    const away = teamKitOf(opp, info.oppCrest || undefined);
+    return { home: matchKitOf(info.home, away, info.homeCrest), away };
+  }
+  if (info?.home) {
+    const home = teamKitOf(info.home, info.homeCrest || undefined);
+    return { home, away: matchKitOf(opp, home, info.oppCrest) };
+  }
+  const home = ourKit();
+  return { home, away: matchKitOf(opp, home) };
+}
+export const kitHex = (c) => `#${(c >>> 0).toString(16).padStart(6, '0').slice(-6)}`;

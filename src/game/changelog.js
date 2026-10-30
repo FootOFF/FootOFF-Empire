@@ -5,6 +5,12 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.3', date: '2026-10-30', title: t('Les couleurs du match'),
+    items: [
+      t('Temps forts en 3D : un code couleur discret, façon télé, à côté du nom de chaque équipe dans le score, pour savoir qui joue en quelle couleur.'),
+    ],
+  },
+  {
     version: '1.0.2', date: '2026-10-30', title: t('Le mercato entre amis'),
     items: [
       t('Championnats entre amis : plus jamais d’offre au nom du club d’un ami qui ne l’a pas faite. Les clubs qui achètent tes joueurs mis en vente viennent d’en dehors de la ligue.'),

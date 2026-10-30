@@ -1696,6 +1696,9 @@ html[lang="ar"] .sqc-xi { line-height: 1.45; padding: 0 7px; font-size: 12px; }
 .lv-team.away { padding: 0 22px 0 26px; }
 .lv-team b { font-family: var(--font-disp); font-weight: 700; font-size: 30px; line-height: 1; letter-spacing: .04em; }
 .crest.lv-crest { width: 30px; height: 35px; filter: none; }
+/* tenue de l'équipe (1.0.3), façon télé : une barre étroite à la couleur du maillot, le col en pied ; un filet clair la
+   détache du bandeau quand le maillot est sombre */
+.lv-kit { flex-shrink: 0; width: 6px; height: 22px; border-radius: 1px; background: linear-gradient(var(--kit) 72%, var(--kit-trim) 72%); box-shadow: 0 0 0 1px rgba(255, 255, 255, .35); }
 .lv-score {
   --slant: 14px; position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; padding: 0 28px; margin: 0 -6px;
   background: var(--gold-grad); color: var(--gold-ink); clip-path: var(--skew);
@@ -2070,10 +2073,13 @@ html[lang="ar"] .sqc-xi { line-height: 1.45; padding: 0 7px; font-size: 12px; }
   .matchscreen.live { --lc-h: 54px; --sheet-h: min(44vh, 380px); }
   .lv-top { right: var(--gap); grid-template-columns: minmax(0, 1fr) auto; }
   .lv-bug { height: 48px; min-width: 0; }
-  .lv-team { padding: 0 14px 0 12px; gap: 8px; }
-  .lv-team.away { padding: 0 12px 0 18px; }
+  .lv-team { padding: 0 10px; gap: 6px; }
+  .lv-team.away { padding: 0 10px; }
   .lv-team b { font-size: 24px; }
-  .crest.lv-crest { width: 24px; height: 28px; }
+  /* le score façon télé ne tenait pas en largeur (l'écusson de droite était rogné) : au téléphone, le code couleur de la
+     tenue identifie chaque équipe à la place de l'écusson (1.0.3) */
+  .crest.lv-crest { display: none; }
+  .lv-kit { width: 5px; height: 18px; }
   .lv-score { padding: 0 20px; font-size: 32px; }
   .lv-clock { height: 48px; padding: 0 14px; font-size: 24px; gap: 8px; }
   .lv-clock .live-dot { width: 10px; height: 10px; }
