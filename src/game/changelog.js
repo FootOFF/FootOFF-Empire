@@ -5,6 +5,13 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.11', date: '2026-10-31', title: t('Des sons qui s’entendent'),
+    items: [
+      t('Les sons du jeu passent nettement au-dessus de la musique : les sons du menu montent beaucoup, le stade et les entraînements aussi.'),
+      t('Négociations : salaire, prime, curseurs, durée et clause jouent tous la même note douce pour monter, et une autre pour descendre.'),
+    ],
+  },
+  {
     version: '1.0.10', date: '2026-10-30', title: t('Fondation, sons et réglages'),
     items: [
       t('Au téléphone, l’écran « Fonde ton club » tient en entier : « Fonder le club » et « Retour » côte à côte, sans défiler, et plus rien ne se superpose.'),

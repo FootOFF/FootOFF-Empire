@@ -193,7 +193,7 @@ export default function App({ preview = null }) {
   const sound = useRef(null);
   if (!sound.current) sound.current = preview ? silentSound : createStadiumSound();
   const [, bumpSound] = useState(0); // le son se coupe aussi pendant le direct : on relit sound.current.muted
-  const uiSound = useCallback((kind, x) => sound.current.ui?.(kind, x), []);
+  const uiSound = useCallback((kind) => sound.current.ui?.(kind), []);
   useEffect(() => { setUiSound(uiSound); }, [uiSound]);
 
   useEffect(() => {

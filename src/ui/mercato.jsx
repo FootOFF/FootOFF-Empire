@@ -33,8 +33,12 @@ import { Portrait } from './portrait';
 import { tierOf } from './kit';
 import { plural, t, tn, tr } from '../i18n/index';
 
-// −/+ des sommes (1.0.10, demande du PDG) : une note feutrée dont la hauteur suit la somme sur sa jauge (sound.js, amount)
-const amountSound = (v, lo, hi, dir) => uiSound(dir === '+' ? 'amount-up' : 'amount-down', hi > lo ? (v - lo) / (hi - lo) : 0.5);
+// sommes et conditions d'un contrat (1.0.10 ; 1.0.11, demande du PDG) : − / +, curseurs, durée et clause jouent le
+// même son pour monter et le même pour descendre (sound.js, amount-up / amount-down) ; un curseur qu'on fait glisser,
+// au plus une fois tous les 90 ms
+const amountSound = (up) => uiSound(up ? 'amount-up' : 'amount-down');
+let lastRange = 0;
+const rangeSound = (up) => { const now = performance.now(); if (now - lastRange >= 90) { lastRange = now; amountSound(up); } };
 
 // Mercato : un seul marché pour recruter (joueurs libres et joueurs sous contrat), des offres négociées, une liste
 // de joueurs suivis, la vente de ses propres joueurs (mise en vente à son prix, clubs intéressés, négociation face à
@@ -1072,11 +1076,11 @@ function FeeStep({ state, p, run, opened }) {
             <div className="ng-ask"><span>{t('Indemnité demandée')}</span><b>{fmtMoney(ask)}</b></div>
             <span className="eyebrow">{t('Ton offre')}</span>
             <div className="ng-amount">
-              <button className="hud-icon" onClick={() => { set(offer - step); amountSound(offer - step, lo, hi, '-'); }} aria-label={t('Baisser l’offre')} disabled={offer <= lo}>−</button>
+              <button className="hud-icon" onClick={() => { set(offer - step); amountSound(false); }} aria-label={t('Baisser l’offre')} disabled={offer <= lo}>−</button>
               <output className="ng-value" aria-live="polite">{fmtMoney(offer)}<em>{vsAsk(offer, ask)}</em></output>
-              <button className="hud-icon" onClick={() => { set(offer + step); amountSound(offer + step, lo, hi, '+'); }} aria-label={t('Monter l’offre')} disabled={offer >= hi}>+</button>
+              <button className="hud-icon" onClick={() => { set(offer + step); amountSound(true); }} aria-label={t('Monter l’offre')} disabled={offer >= hi}>+</button>
             </div>
-            <input className="ng-range" type="range" min={lo} max={hi} step={step} value={offer} style={{ '--fill': `${((offer - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => set(Number(e.target.value))} aria-label={t('Montant de l’offre')} />
+            <input className="ng-range" type="range" min={lo} max={hi} step={step} value={offer} style={{ '--fill': `${((offer - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => { const v = Number(e.target.value); rangeSound(v > offer); set(v); }} aria-label={t('Montant de l’offre')} />
             <div className="chips ng-quick">
               {QUICK.map(([k, label]) => <button key={label} className={roundTo(ask * k, step) === offer ? 'active' : ''} onClick={() => set(ask * k)}>{label}</button>)}
             </div>
@@ -1181,34 +1185,34 @@ function ContractStep({ state, p, run, opened, renew, feeAgreed }) {
               <div className="ng-ask"><span>{t('Il demande')}</span><b>{tr('<0/> par saison', [fmtMoney(demand.wage)])}</b></div>
               <span className="eyebrow">{t('Salaire par saison')}</span>
               <div className="ng-amount">
-                <button className="hud-icon" onClick={() => { setW(wage - step); amountSound(wage - step, lo, hi, '-'); }} aria-label={t('Baisser le salaire')} disabled={wage <= lo}>−</button>
+                <button className="hud-icon" onClick={() => { setW(wage - step); amountSound(false); }} aria-label={t('Baisser le salaire')} disabled={wage <= lo}>−</button>
                 <output className="ng-value" aria-live="polite">{fmtMoney(wage)}<em>{vsDemand(wage, demand.wage)}</em></output>
-                <button className="hud-icon" onClick={() => { setW(wage + step); amountSound(wage + step, lo, hi, '+'); }} aria-label={t('Monter le salaire')} disabled={wage >= hi}>+</button>
+                <button className="hud-icon" onClick={() => { setW(wage + step); amountSound(true); }} aria-label={t('Monter le salaire')} disabled={wage >= hi}>+</button>
               </div>
-              <input className="ng-range" type="range" min={lo} max={hi} step={step} value={wage} style={{ '--fill': `${((wage - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => setW(Number(e.target.value))} aria-label={t('Salaire par saison')} />
+              <input className="ng-range" type="range" min={lo} max={hi} step={step} value={wage} style={{ '--fill': `${((wage - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => { const v = Number(e.target.value); rangeSound(v > wage); setW(v); }} aria-label={t('Salaire par saison')} />
             </section>
             <section className="ng-terms">
               <div className="ng-term">
                 <div className="ng-term-top"><span className="eyebrow">{t('Durée')}</span><em>{tr('saison en cours : <0/> · fin : saison <1/>', [state.seasonNumber, state.seasonNumber + years - 1])}</em></div>
                 <div className="segmented n5" role="group" aria-label={t('Durée du contrat')}>
                   {Array.from({ length: MAX_YEARS }, (_, i) => i + 1).map((y) => (
-                    <button key={y} type="button" className={y === years ? 'on' : ''} aria-pressed={y === years} disabled={y < minY} title={y < minY ? t('Une prolongation doit finir après le contrat actuel') : ''} onClick={() => setYears(y)}>{y} {tn(y, 'an', 'ans', {}, y > 1)}</button>
+                    <button key={y} type="button" className={y === years ? 'on' : ''} aria-pressed={y === years} disabled={y < minY} title={y < minY ? t('Une prolongation doit finir après le contrat actuel') : ''} onClick={() => { if (y !== years) amountSound(y > years); setYears(y); }}>{y} {tn(y, 'an', 'ans', {}, y > 1)}</button>
                   ))}
                 </div>
               </div>
               <div className="ng-term">
                 <div className="ng-term-top"><span className="eyebrow">{t('Prime à la signature')}</span><em>{demand.bonus ? t('il attend {bonus}', { bonus: fmtMoney(demand.bonus) }) : t('payée une fois')}</em></div>
                 <div className="ng-mini">
-                  <button className="hud-icon" type="button" onClick={() => { setB(bonus - bStep); amountSound(bonus - bStep, 0, bHi, '-'); }} aria-label={t('Baisser la prime')} disabled={bonus <= 0}>−</button>
+                  <button className="hud-icon" type="button" onClick={() => { setB(bonus - bStep); amountSound(false); }} aria-label={t('Baisser la prime')} disabled={bonus <= 0}>−</button>
                   <output aria-live="polite">{fmtMoney(bonus)}</output>
-                  <button className="hud-icon" type="button" onClick={() => { setB(bonus + bStep); amountSound(bonus + bStep, 0, bHi, '+'); }} aria-label={t('Monter la prime')} disabled={bonus >= bHi}>+</button>
+                  <button className="hud-icon" type="button" onClick={() => { setB(bonus + bStep); amountSound(true); }} aria-label={t('Monter la prime')} disabled={bonus >= bHi}>+</button>
                 </div>
               </div>
               {open && (
                 <div className="ng-term">
                   <div className="ng-term-top"><span className="eyebrow">{t('Clause de montée')}</span><em>{t('hausse de salaire à chaque montée')}</em></div>
                   <div className="segmented n4" role="group" aria-label={t('Clause de montée')}>
-                    {CLAUSES.map((c) => <button key={c} type="button" className={c === clause ? 'on' : ''} aria-pressed={c === clause} onClick={() => setClause(c)}>{c ? `+${Math.round(c * 100)} %` : t('Aucune')}</button>)}
+                    {CLAUSES.map((c) => <button key={c} type="button" className={c === clause ? 'on' : ''} aria-pressed={c === clause} onClick={() => { if (c !== clause) amountSound(c > clause); setClause(c); }}>{c ? `+${Math.round(c * 100)} %` : t('Aucune')}</button>)}
                   </div>
                 </div>
               )}
@@ -1350,11 +1354,11 @@ export function ListingSheet({ state, p, run, refLvl, onClose, onOffers }) {
           <div className="ng-ask"><span>{t('Sa valeur')}</span><b>{fmtMoney(v)}</b></div>
           <span className="eyebrow">{t('Ton prix')}</span>
           <div className="ng-amount">
-            <button className="hud-icon" onClick={() => { set(price - step); amountSound(price - step, lo, hi, '-'); }} aria-label={t('Baisser le prix')} disabled={price <= lo}>−</button>
+            <button className="hud-icon" onClick={() => { set(price - step); amountSound(false); }} aria-label={t('Baisser le prix')} disabled={price <= lo}>−</button>
             <output className="ng-value" aria-live="polite">{fmtMoney(price)}<em>{vsValue(price, v, step)}</em></output>
-            <button className="hud-icon" onClick={() => { set(price + step); amountSound(price + step, lo, hi, '+'); }} aria-label={t('Monter le prix')} disabled={price >= hi}>+</button>
+            <button className="hud-icon" onClick={() => { set(price + step); amountSound(true); }} aria-label={t('Monter le prix')} disabled={price >= hi}>+</button>
           </div>
-          <input className="ng-range" type="range" min={lo} max={hi} step={step} value={price} style={{ '--fill': `${((price - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => set(Number(e.target.value))} aria-label={t('Prix demandé')} />
+          <input className="ng-range" type="range" min={lo} max={hi} step={step} value={price} style={{ '--fill': `${((price - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => { const v = Number(e.target.value); rangeSound(v > price); set(v); }} aria-label={t('Prix demandé')} />
           <div className="chips ng-quick">
             {LIST_QUICK.map(([k, label]) => <button key={label} className={roundTo(v * k, step) === price ? 'active' : ''} onClick={() => set(v * k)}>{label}</button>)}
           </div>
@@ -1519,11 +1523,11 @@ export function SaleNegotiation({ state, offerId, since, run, refLvl, onClose, o
             <section className="ng-offer">
               <span className="eyebrow">{t('Ta demande')}</span>
               <div className="ng-amount">
-                <button className="hud-icon" onClick={() => { set(demand - step); amountSound(demand - step, lo, hi, '-'); }} aria-label={t('Baisser la demande')} disabled={demand <= lo}>−</button>
+                <button className="hud-icon" onClick={() => { set(demand - step); amountSound(false); }} aria-label={t('Baisser la demande')} disabled={demand <= lo}>−</button>
                 <output className="ng-value" aria-live="polite">{fmtMoney(demand)}<em>{tr('<0/> % au-dessus de son offre', [d])}</em></output>
-                <button className="hud-icon" onClick={() => { set(demand + step); amountSound(demand + step, lo, hi, '+'); }} aria-label={t('Monter la demande')} disabled={demand >= hi}>+</button>
+                <button className="hud-icon" onClick={() => { set(demand + step); amountSound(true); }} aria-label={t('Monter la demande')} disabled={demand >= hi}>+</button>
               </div>
-              <input className="ng-range" type="range" min={lo} max={hi} step={step} value={demand} style={{ '--fill': `${((demand - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => set(Number(e.target.value))} aria-label={t('Montant demandé')} />
+              <input className="ng-range" type="range" min={lo} max={hi} step={step} value={demand} style={{ '--fill': `${((demand - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => { const v = Number(e.target.value); rangeSound(v > demand); set(v); }} aria-label={t('Montant demandé')} />
               <div className="chips ng-quick">
                 {quick.map(([x, label]) => <button key={label} className={x === demand ? 'active' : ''} onClick={() => set(x)}>{label}</button>)}
               </div>
@@ -1659,11 +1663,11 @@ export function LeagueOffer({ state, p, run, refLvl, onClose, onSheet }) {
           <div className="ng-ask"><span>{reply ? t('Son prix') : t('Sa valeur')}</span><b>{fmtMoney(reply ? reply.x : ask)}</b></div>
           <span className="eyebrow">{reply ? t('Ta contre-offre') : t('Ton offre')}</span>
           <div className="ng-amount">
-            <button className="hud-icon" onClick={() => { set(offer - step); amountSound(offer - step, lo, hi, '-'); }} aria-label={t('Baisser l’offre')} disabled={offer <= lo}>−</button>
+            <button className="hud-icon" onClick={() => { set(offer - step); amountSound(false); }} aria-label={t('Baisser l’offre')} disabled={offer <= lo}>−</button>
             <output className="ng-value" aria-live="polite">{fmtMoney(offer)}</output>
-            <button className="hud-icon" onClick={() => { set(offer + step); amountSound(offer + step, lo, hi, '+'); }} aria-label={t('Monter l’offre')} disabled={offer >= hi}>+</button>
+            <button className="hud-icon" onClick={() => { set(offer + step); amountSound(true); }} aria-label={t('Monter l’offre')} disabled={offer >= hi}>+</button>
           </div>
-          <input className="ng-range" type="range" min={lo} max={hi} step={step} value={offer} style={{ '--fill': `${((offer - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => set(Number(e.target.value))} aria-label={t('Montant de l’offre')} />
+          <input className="ng-range" type="range" min={lo} max={hi} step={step} value={offer} style={{ '--fill': `${((offer - lo) / Math.max(1, hi - lo)) * 100}%` }} onChange={(e) => { const v = Number(e.target.value); rangeSound(v > offer); set(v); }} aria-label={t('Montant de l’offre')} />
         </section>)}
         <section className="ng-chance">
           <span className="eyebrow">{t('Comment ça se joue')}</span>
@@ -1714,9 +1718,9 @@ function CounterPicker({ o, role, onSend, onCancel, money = null }) {
   return (
     <div className="mc-row-actions mc-haggle">
       <div className="ng-mini">
-        <button className="hud-icon" type="button" onClick={() => { set(v - step); amountSound(v - step, lo, hi, '-'); }} aria-label={t('Baisser la contre-offre')} disabled={v <= lo}>−</button>
+        <button className="hud-icon" type="button" onClick={() => { set(v - step); amountSound(false); }} aria-label={t('Baisser la contre-offre')} disabled={v <= lo}>−</button>
         <output aria-live="polite">{fmtMoney(v)}</output>
-        <button className="hud-icon" type="button" onClick={() => { set(v + step); amountSound(v + step, lo, hi, '+'); }} aria-label={t('Monter la contre-offre')} disabled={v >= hi}>+</button>
+        <button className="hud-icon" type="button" onClick={() => { set(v + step); amountSound(true); }} aria-label={t('Monter la contre-offre')} disabled={v >= hi}>+</button>
       </div>
       <button className="btn btn-sm" disabled={short} onClick={() => onSend(v)}>{short ? t('Il te manque {v}', { v: fmtMoney(v - money) }) : t('Envoyer · {v}', { v: fmtMoney(v) })}</button>
       <button className="btn btn-sm ghost" onClick={onCancel}>{t('Annuler')}</button>

@@ -6,6 +6,12 @@ const KEY = 'fo-sound'; // interrupteur Son jusqu'à la 1.0.9 ('off' : coupé), 
 // Sons (1.0.10, demande du PDG) : une jauge de 0 à 100 % à côté de celle de la musique (100 % : le niveau d'avant, 0 % :
 // coupés), indépendante d'elle. Le bouton du direct (Couper le son) passe à 0 % et « Remettre le son » retrouve le niveau.
 const SFX_KEY = 'fo-sfx';
+// Niveaux (1.0.11, demande du PDG : à 100 %, les sons s'entendaient à peine sous la musique). Mesuré (sonie momentanée,
+// ebur128) avec la musique à 50 % : les sons du menu passaient 20 à 30 dB sous elle, la rumeur d'un match à -36 LUFS. Le
+// stade et les épreuves montent de 8 dB, les sons d'interface de 21 dB (un peu au-dessus de la musique) ; un limiteur
+// garde la sortie sous -3 dBFS.
+const SFX_LEVEL = 2.25; // gain maître des sons à 100 % (0,9 jusqu'à la 1.0.10)
+const UI_LEVEL = 4.5; // sons d'interface : en plus du gain maître
 // Musique de fond (1.0.6, demande du PDG) : la chanson du jeu en boucle, douce, à son volume (Réglages : une jauge de 0 à
 // 100 %, 50 % par défaut), dans son propre contexte audio (celui du stade s'éteint après chaque match). Elle s'efface en fondu
 // pendant les matchs, les rejeux, les épreuves et les cérémonies, quand le jeu est caché ou le son coupé, puis reprend là
@@ -48,7 +54,7 @@ function noiseBuffer(ctx, seconds = 3) {
 
 export function createStadiumSound() {
   let ctx = null;
-  let master, crowdGain, crowdFilter;
+  let master, uiBus, crowdGain, crowdFilter;
   let base = 0; // niveau de la rumeur entre deux clameurs : celui du match (start), sinon le silence
   let musicVol = 0.5;
   try {
@@ -169,8 +175,17 @@ export function createStadiumSound() {
     if (!AC) return false;
     ctx = new AC();
     master = ctx.createGain();
-    master.gain.value = 0.9 * sfxVol;
-    master.connect(ctx.destination);
+    master.gain.value = SFX_LEVEL * sfxVol;
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -3;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.002;
+    limiter.release.value = 0.2;
+    master.connect(limiter).connect(ctx.destination);
+    uiBus = ctx.createGain();
+    uiBus.gain.value = UI_LEVEL;
+    uiBus.connect(master);
     const src = ctx.createBufferSource();
     src.buffer = noiseBuffer(ctx);
     src.loop = true;
@@ -228,7 +243,7 @@ export function createStadiumSound() {
     sfxVol = volLevel(v);
     if (sfxVol > 0) sfxLast = sfxVol;
     try { localStorage.setItem(SFX_KEY, String(sfxVol)); } catch { /* gardé pour la session */ }
-    if (ctx) master.gain.setTargetAtTime(0.9 * sfxVol, ctx.currentTime, 0.05);
+    if (ctx) master.gain.setTargetAtTime(SFX_LEVEL * sfxVol, ctx.currentTime, 0.05);
   }
 
   return {
@@ -256,7 +271,7 @@ export function createStadiumSound() {
       ctx.resume?.();
       for (let i = 0; i < count; i++) {
         const t = ctx.currentTime + delay + i * 0.055 + Math.random() * 0.02;
-        for (const [mult, vol] of [[1, 0.05], [2.76, 0.018]]) {
+        for (const [mult, vol] of [[1, 0.1], [2.76, 0.018]]) {
           const osc = ctx.createOscillator();
           const g = ctx.createGain();
           osc.type = 'sine';
@@ -282,13 +297,13 @@ export function createStadiumSound() {
       osc.frequency.exponentialRampToValueAtTime(220, t + 0.09);
       g.gain.setValueAtTime(0.06, t);
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-      osc.connect(g).connect(master);
+      osc.connect(g).connect(uiBus);
       osc.start(t);
       osc.stop(t + 0.14);
     },
     // sons des menus (écran titre, pause) : déplacement (petit clic), validation (deux notes qui montent), retour
     // (une note qui descend). Rien avant le premier geste de l'utilisateur (le navigateur refuserait le son).
-    ui(kind, x = 0.5) {
+    ui(kind) {
       if (!sfxVol || (navigator.userActivation && !navigator.userActivation.hasBeenActive) || !ensure()) return;
       ctx.resume?.();
       const t = ctx.currentTime;
@@ -301,20 +316,21 @@ export function createStadiumSound() {
         g.gain.setValueAtTime(0, t + at);
         g.gain.linearRampToValueAtTime(vol, t + at + 0.006);
         g.gain.exponentialRampToValueAtTime(0.0001, t + at + len);
-        osc.connect(g).connect(master);
+        osc.connect(g).connect(uiBus);
         osc.start(t + at);
         osc.stop(t + at + len + 0.02);
       };
       if (kind === 'move') tone(1500, 1250, 0, 0.045, 0.018);
-      // −/+ des sommes (1.0.10, demande du PDG) : une note de marimba feutrée, sur une gamme pentatonique de deux octaves
-      // dont la hauteur suit la somme sur sa jauge (x de 0 à 1) ; elle glisse à peine vers le haut ou vers le bas selon le
-      // sens. Rien au-dessus de 5 kHz.
+      // sommes et conditions d'un contrat (1.0.10 ; 1.0.11, demande du PDG) : − / + des sommes, curseurs, durée, clause.
+      // Deux sons fixes, ceux qu'il a aimés au milieu de la jauge du salaire (la hauteur qui suivait la somme devenait
+      // sourde vers le bas et criarde vers le haut) : monter joue un mi (660 Hz) qui glisse à peine vers le haut,
+      // descendre un do dièse (554 Hz) qui glisse à peine vers le bas. Note de marimba feutrée, rien au-dessus de 2,7 kHz.
       else if (kind === 'amount-up' || kind === 'amount-down') {
-        const d = Math.round(Math.min(1, Math.max(0, Number.isFinite(x) ? x : 0.5)) * 10);
-        const f = 330 * 2 ** ((Math.floor(d / 5) * 12 + [0, 2, 4, 7, 9][d % 5]) / 12);
-        const g = kind === 'amount-up' ? 1.015 : 0.985;
+        const up = kind === 'amount-up';
+        const f = up ? 660 : 554;
+        const g = up ? 1.015 : 0.985;
         tone(f, f * g, 0, 0.16, 0.028);
-        if (f * 4 < 5000) tone(f * 4, f * 4 * g, 0, 0.05, 0.003);
+        tone(f * 4, f * 4 * g, 0, 0.05, 0.003);
       }
       // frappe du nom du club (1.0.10, demande du PDG) : une touche feutrée, grave et brève, jamais deux fois tout à fait la
       // même hauteur ; un peu plus grave quand on efface
@@ -353,7 +369,7 @@ export function createStadiumSound() {
         g.gain.linearRampToValueAtTime(0.016, t + 0.08);
         g.gain.setValueAtTime(0.016, t + 0.62);
         g.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
-        osc.connect(g).connect(master);
+        osc.connect(g).connect(uiBus);
         osc.start(t);
         osc.stop(t + 0.82);
         return () => {
