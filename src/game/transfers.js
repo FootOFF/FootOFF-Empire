@@ -1,7 +1,7 @@
 import { DIVISIONS } from './constants';
 import { officeSize } from './economy';
 import { makePlayer, playerRating } from './players';
-import { distinctClubName, randomClubName } from './names';
+import { distinctClubName, leagueNames, randomClubName } from './names';
 import { euroName } from './cups';
 import {
   BUYERS, CANDIDATES, buyerView, drawBuyer, formOf, openingOffer, roundTo, saleBlock, spontaneousBuyer, valueOf, withinReach,
@@ -72,15 +72,18 @@ const leaveChance = (p) => (p.interest ? 0.26 + 0.12 * p.interest : 0.1);
 
 // Nom d'un club acheteur : un rival de la division une fois sur deux s'il joue à notre niveau, sinon un club
 // d'ailleurs (un club européen pour un géant européen, div null) ; jamais le nôtre ni un club déjà en lice pour ce
-// joueur (taken, complété au passage).
+// joueur (taken, complété au passage). Championnat entre amis (1.0.2, bug relevé par le PDG) : jamais un club de la
+// ligue. Une offre au nom d'un ami, qu'il n'avait pas faite, se concluait sans lui (le joueur partait, l'ami ne recevait
+// rien) : un ami fait ses offres par le serveur des ligues, un club de l'ordinateur de la ligue n'achète pas.
 function buyerName(s, div, taken) {
+  const league = s.league ? leagueNames(s) : [];
   let club = null;
-  if (div == null) club = euroName(taken);
-  else if (div === s.divisionIndex && Math.random() < 0.5) {
+  if (div == null) club = euroName([...taken, ...league]);
+  else if (!s.league && div === s.divisionIndex && Math.random() < 0.5) {
     const free = (s.rivals || []).filter((r) => !taken.includes(r.name));
     if (free.length) club = pick(free).name;
   }
-  club ||= distinctClubName([s.clubName, ...taken]);
+  club ||= distinctClubName([s.clubName, ...league, ...taken]);
   taken.push(club);
   return club;
 }

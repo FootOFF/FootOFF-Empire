@@ -360,6 +360,10 @@ export function randomClubName() {
 
 // Un club qui ne ressemble à aucun des noms donnés : ni le même nom, ni le même lieu (« Rapid de l’Orme » et
 // « Sporting de l’Orme » dans la même saison prêtaient à confusion).
+// Noms des clubs d'un championnat entre amis (le nôtre compris) : jamais celui d'un acheteur ni d'un club d'ailleurs
+// (transfers.js, engine.js, leagueClub.js ; 1.0.2)
+export const leagueNames = (s) => (Array.isArray(s?.league?.clubs) ? s.league.clubs : []).map((c) => c?.name).filter((n) => typeof n === 'string');
+
 export function distinctClubName(avoid = []) {
   const places = new Set(avoid.map(placeOf).filter(Boolean));
   for (let i = 0; i < 200; i++) {

@@ -3946,6 +3946,9 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .sq-tab-count { display: inline-block; min-width: 18px; height: 18px; margin-left: 6px; padding: 0 5px; border-radius: 3px; background: var(--gold-grad); color: #1a1408; font-style: normal; font-size: var(--t-xs); font-weight: 700; line-height: 18px; text-align: center; vertical-align: 1px; font-variant-numeric: tabular-nums; }
 .mc { display: flex; flex-direction: column; gap: var(--s-3); }
 .mc-views { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.mc-views.with-friends { grid-template-columns: repeat(5, minmax(0, 1fr)); } /* championnat entre amis : l'onglet Amis (1.0.2) */
+.mc-friend { padding: var(--s-4); margin-bottom: var(--s-3); background: var(--plate-2); clip-path: var(--cut-shape); }
+.mc-friend .ro-head .ro-crest { width: 44px; height: 50px; }
 .mc-views button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
 .mc-count-badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 3px; background: rgba(255, 255, 255, .1); color: var(--text-2); font-style: normal; font-size: var(--t-xs); font-weight: 600; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
 .mc-count-badge.hot { background: var(--gold-grad); color: #1a1408; font-weight: 700; }
@@ -5687,6 +5690,14 @@ html, body { overscroll-behavior: none; }
 .ro-head h3 { margin: 0; font-family: var(--font-disp); font-size: var(--d-lg); line-height: 1.1; }
 .ro-head span { font-size: var(--t-sm); color: var(--muted); }
 .ro-rows .mc-row.muted { opacity: .72; }
+/* la valeur passe sous le nom au téléphone (1.0.2) : le nom, la valeur et « Faire une offre » ne tenaient pas sur une ligne */
+.ro-val { display: none; }
+.ro-rows .mc-row-main b { unicode-bidi: isolate; } /* nom venu d'un autre appareil : jamais à l'envers */
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
+  .ro-rows .mc-amount { display: none; }
+  .ro-rows .ro-val { display: block; margin-top: 2px; color: var(--text-2); }
+  .ro-rows .btn-sm { --slant: 6px; padding: 0 calc(6px + var(--slant)); font-size: 15px; }
+}
 .mc-haggle { flex-wrap: wrap; }
 .mc-haggle .ng-mini { min-width: 210px; }
 /* couleurs du club dans le créateur d'écusson (0.8.8) : la pastille ouvre le sélecteur du système. La case ne rogne

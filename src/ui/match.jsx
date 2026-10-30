@@ -983,11 +983,15 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   // tactique envisagés pendant un changement ou à la pause
   const odds = useMemo(() => (phase === 'fulltime' ? null
     : live.oddsShown(oddsMinute, shown, boardOpen ? { lineup: planned, tactic: tactic2, formation: form2 } : {})), [oddsMinute, shown, phase, plan, tactic2, form2, lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // notre club en visiteur (match revu en ligue, 1.0.2, bug relevé par le PDG) : le moteur donne les chances du club qui
+  // reçoit ; retournées, ce sont les nôtres (victoire en or, défaite en rouge). Le PDG menait 0-1 à la 83e et lisait
+  // « 1 % · 15 % · 84 % ».
+  const ours = odds && side === 'away' ? { ...odds, win: odds.loss, loss: odds.win } : odds;
   const st = useMemo(() => statsOf(shown), [shown]);
   const pronoBlock = ( // mi-temps et changement : le pronostic final (match revu : dans la seconde colonne)
     <div className="ht-block">
       <span className="ht-label">{tr('Pronostic final<0/>', [phase === 'subs' ? t(' avec ces changements') : ''])}</span>
-      {odds && <OddsBar odds={odds} />}
+      {ours && <OddsBar odds={ours} />}
     </div>
   );
   // match revu : le moteur a déjà joué les deux périodes, la possession de la pause est celle de la première
@@ -999,7 +1003,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const period = phase === 'halftime' ? t('Mi-temps') : phase === 'fulltime' ? t('Fin du match{v}', { v: m.pens ? t(' · t.a.b. {a}-{b}', { a: m.pens[0], b: m.pens[1] }) : '' }) : tn(half, '1re période', '2e période', {}, !(half === 1));
   const clockEl = phase === 'halftime' ? t('Mi-temps') : phase === 'fulltime' ? t('Terminé{v}', { v: m.pens ? t(' · t.a.b. {a}-{b}', { a: m.pens[0], b: m.pens[1] }) : '' })
     : <>{replay ? <span className="lv-replay">{t('Rejeu')}</span> : <i className={`live-dot ${phase === 'subs' ? 'hold' : ''}`} />}{minuteLabel}′</>; // un match revu n'est pas un direct : pas de point rouge
-  const pct = odds ? roundPercents([odds.win, odds.draw, odds.loss]) : null;
+  const pct = ours ? roundPercents([ours.win, ours.draw, ours.loss]) : null;
   const xiNames = displayNames(state.players);
   const names = useMemo(() => ({ short: xiNames, byName: Object.fromEntries(state.players.map((p) => [p.name, p.id])) }), [lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const fitOf = (r) => { const p = state.players.find((q) => q.id === r.id); return p ? Math.round(fitAt(p, minute, since(r.id))) : null; };
@@ -1034,7 +1038,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const prono = pct && (
     <div className="lv-prono" title={t('Chances de victoire, de nul et de défaite à la fin du match, calculées sur le moteur à partir de ce que le direct a montré')}>
       <div className="lv-prono-head"><span>{t('Pronostic final')}</span><b><em className="w">{pct[0].label}</em> · {pct[1].label} · <em className="l">{pct[2].label}</em></b></div>
-      <div className="odds-bar" aria-hidden="true"><i className="w" style={{ flexGrow: odds.win * 100 }} /><i className="d" style={{ flexGrow: odds.draw * 100 }} /><i className="l" style={{ flexGrow: odds.loss * 100 }} /></div>
+      <div className="odds-bar" aria-hidden="true"><i className="w" style={{ flexGrow: ours.win * 100 }} /><i className="d" style={{ flexGrow: ours.draw * 100 }} /><i className="l" style={{ flexGrow: ours.loss * 100 }} /></div>
     </div>
   );
   const viewNow = view === 'notes' && !tabbedScreen() ? 'stats' : view;

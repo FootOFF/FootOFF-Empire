@@ -13,6 +13,7 @@ import { SUBS_MAX } from './live';
 import { expandPlayer, marketPlayers, priceOf, snapPlayer, unsnapPlayer } from './leagueWorld';
 import { officialTable, perspectiveResult, refreshRivals } from './leagueSeason';
 import { clone } from './utils';
+import { leagueNames } from './names';
 import { ensureDeals, setDeal } from './contracts';
 import { ensureSquadMin } from './squadFloor';
 import { numLocale, t } from '../i18n/index';
@@ -107,8 +108,12 @@ export function syncLeagueClub(s, d) {
   const keep = { season: L.season, round: L.round, results: L.results, sent: L.sent, plans: L.plans || {}, outbox: L.outbox || [], done: L.done || [] };
   s.league = { ...leagueInfoOf(d, L.slot), ...keep };
   refreshRivals(s);
+  // offres d'achat au nom d'un club de la ligue, reçues avant la 1.0.2 : retirées (un ami fait ses offres par le serveur)
+  const inLeague = new Set(leagueNames(s));
+  s.offers = (s.offers || []).filter((o) => !inLeague.has(o.club));
+  s.parkedOffers = (s.parkedOffers || []).filter((o) => !inLeague.has(o.club));
   applyLeagueMoves(s, d);
-  leagueMercato(s, d);
+  try { leagueMercato(s, d); } catch { /* données de la ligue illisibles : le mercato attend la prochaine relecture, le jeu continue */ }
   return s;
 }
 
@@ -289,7 +294,9 @@ function applyMoves(s, moves) {
 // s.league.outbox, envoyée par App.jsx). Les joueurs des amis (state.transfers aussi) : une offre, à laquelle l'ami
 // répond ; acceptée, le transfert est conclu aussitôt. D'après le dernier état connu de la ligue et les mouvements de la
 // journée en cours (serveur) : un joueur déjà signé n'y est plus. Un joueur d'ami se lit dans les journées jouées
-// (l'effectif complet d'un ami dans son dernier match à domicile, son onze dans un match à l'extérieur). Identifiants :
+// (l'effectif complet d'un ami dans son dernier match à domicile, son onze dans un match à l'extérieur) ; avant son
+// premier match de la saison (1.0.2, demande du PDG), son dernier effectif connu de la saison passée (d.prevSq), ou en
+// première saison l'effectif de départ de sa place (le même gabarit pour tous, leagueSquads). Identifiants :
 // AI_ID, FRIEND_ID ou MARKET_ID + son identifiant de ligue (aucun ne croise ceux de la partie).
 export const AI_ID = 1000000;
 export const FRIEND_ID = 2000000;
@@ -299,7 +306,15 @@ const priceStep = (v) => Math.max(500, Math.round(v / 250) * 250);
 const roundMoves = (d) => (d.moves || []).filter((x) => x.season === d.league.season && x.round === d.league.round);
 const slotOfMember = (L, id) => L.clubs.find((c) => c.member === id)?.slot ?? null;
 
+const list = (v) => (Array.isArray(v) ? v : []);
+
 export function leagueMercato(s, d) {
+  // joueur d'un ami lu dans l'effectif de départ (première saison) : sa place et son numéro dans l'identifiant de ligue
+  const startSnap = (lid) => {
+    if (d.league.season !== 1) return null;
+    const base = list(leagueSquads(d.league)[Math.floor(lid / 100)]).find((q) => q.id === lid % 100);
+    return base ? snapPlayer({ ...base, lid }) : null;
+  };
   const L = s.league;
   const world = d.world || startWorld(d.league); // avant la première journée : le marché de départ
   const moves = roundMoves(d);
@@ -332,24 +347,62 @@ export function leagueMercato(s, d) {
       s.transfers.push(keep({ ...p, id: AI_ID + p.id, lid: p.id, leaguePrice: price, leagueKind: 'ai', leagueSlot: c.slot, club: c.name, contract: 2, priceMod: 1 }));
     }
   }
-  // joueurs des amis
+  // joueurs des amis (audit cyber-auditor du 2026-10-30) : tout instantané passe par unsnapPlayer, champ par champ (une
+  // journée envoyée par un autre appareil peut être piégée) ; un joueur n'appartient qu'à un seul ami, le plus récent
+  // gagne ; 40 joueurs au plus par ami
+  const okSnap = (x) => !!x && typeof x === 'object' && !Array.isArray(x) && Number.isSafeInteger(x.l);
   const seen = new Map(); // ami → ses joueurs connus (le plus récent d'abord)
-  for (const r of [...(d.results || [])].reverse()) {
-    for (const x of r.matches || []) {
-      for (const [k, slot] of [[0, x.h], [1, x.a]]) {
-        const c = L.clubs.find((q) => q.slot === slot);
-        if (!c?.human || slot === L.slot || !x.sq?.[k]) continue;
-        const known = seen.get(slot) || new Map();
-        for (const snap of x.sq[k]) if (!known.has(snap.l)) known.set(snap.l, snap);
-        seen.set(slot, known);
-      }
+  const owner = new Map(); // joueur (identifiant de ligue) → l'ami qui l'a
+  const put = (slot, snap, extra = {}) => {
+    if (!okSnap(snap) || owner.has(snap.l)) return;
+    const known = seen.get(slot) || new Map();
+    if (known.size >= 40) return;
+    known.set(snap.l, { ...snap, ...extra });
+    owner.set(snap.l, slot);
+    seen.set(slot, known);
+  };
+  const friend = (slot) => { const c = L.clubs.find((q) => q.slot === slot); return c?.human && slot !== L.slot ? c : null; };
+  // achats d'un ami à la journée en cours (1.0.2) : connus du serveur (mouvements conclus), ils rejoignent son effectif
+  // sans attendre son prochain match ; un joueur qu'il a vendu à un autre ami change de club tout de suite
+  const fromMarket = new Map(marketPlayers(world).map((p) => [p.id, p]));
+  const resultSnap = (lid) => {
+    for (const r of [...list(d.results)].reverse()) for (const x of list(r?.matches)) for (const k of [0, 1]) {
+      const snap = list(x?.sq?.[k]).find((y) => okSnap(y) && y.l === lid);
+      if (snap) return snap;
     }
+    return null;
+  };
+  for (const x of moves) {
+    const slot = x.status === 'done' ? slotOfMember(L, x.buyer) : null;
+    if (slot == null || !friend(slot)) continue;
+    let snap = null;
+    if (x.kind === 'm' && fromMarket.has(x.pid)) snap = snapPlayer({ ...fromMarket.get(x.pid), lid: x.pid });
+    else if (x.kind === 'a') {
+      const p = list(squads[Number(x.seller)]).find((q) => q.id === x.pid);
+      if (p) snap = snapPlayer({ ...p, lid: x.pid });
+    } else if (x.kind === 'f') snap = resultSnap(x.pid) || (okSnap(x.data?.pl) ? x.data.pl : null) || startSnap(x.pid);
+    if (snap) put(slot, { ...snap, l: x.pid }, { bought: true });
+  }
+  for (const r of [...list(d.results)].reverse()) {
+    for (const x of list(r?.matches)) {
+      for (const [k, slot] of [[0, x?.h], [1, x?.a]]) if (friend(slot)) for (const snap of list(x?.sq?.[k])) put(slot, snap);
+    }
+  }
+  // avant son premier match de la saison : son dernier effectif connu de la saison passée, ou en première saison son
+  // effectif de départ
+  L.rosterFrom = {};
+  const fromMatches = (slot) => [...(seen.get(slot)?.values() || [])].some((y) => !y.bought);
+  for (const c of L.clubs) {
+    if (!friend(c.slot) || fromMatches(c.slot)) continue;
+    const before = list(d.prevSq?.[c.slot]);
+    if (before.length) { for (const snap of before) put(c.slot, snap); L.rosterFrom[c.slot] = 'prev'; }
+    else if (d.league.season === 1) for (const base of list(leagueSquads(d.league)[c.slot])) put(c.slot, snapPlayer({ ...base, lid: c.slot * 100 + base.id }));
   }
   for (const [slot, known] of seen) {
     const club = L.clubs.find((q) => q.slot === slot);
     L.rosters[slot] = [];
     for (const snap of known.values()) {
-      if (signed.has(`f:${snap.l}`) || s.players.some((q) => q.lid === snap.l)) continue;
+      if ((signed.has(`f:${snap.l}`) && !snap.bought) || s.players.some((q) => q.lid === snap.l)) continue;
       const p = unsnapPlayer(snap);
       s.transfers.push({ ...p, id: FRIEND_ID + p.lid, leaguePrice: priceOf(p), leagueKind: 'friend', leagueSlot: slot, leagueMember: club.member, club: club.name, priceMod: 1, contract: 2 });
       L.rosters[slot].push(row(p, FRIEND_ID + p.lid));

@@ -24,6 +24,7 @@ export const SECTIONS = {
     title: t('Mercato'),
     items: [
       ['mercato:buy', t('Recruter')],
+      ['mercato:friends', t('Amis'), 'league'], // championnat entre amis seulement (1.0.2) : l'effectif de chaque ami
       ['mercato:watch', t('Suivis')],
       ['mercato:offers', t('Offres')],
       ['mercato:log', t('Bilan')],
@@ -74,6 +75,9 @@ export const LOCKS = { training: 'training', academy: 'academy', direction: 'dir
 export const NavContext = createContext(null);
 export const useNav = () => useContext(NavContext);
 
+// Un onglet réservé à un mode (troisième valeur : 'league', une partie de championnat entre amis) ne s'affiche qu'en ce mode.
+const shown = (nav) => ([, , only]) => !only || !!nav?.[only];
+
 // Onglet actif d'une section : le panneau, précisé par son onglet interne pour l'Effectif et la Saison.
 export function activeKey(nav) {
   if (!nav) return null;
@@ -100,7 +104,7 @@ export function SectionTabs({ section }) {
   if (!nav || !def || !def.items.length) return null;
   return (
     <nav ref={ref} className="section-tabs sq-tabs" aria-label={t('{title} : écrans', { title: def.title })}>
-      {def.items.map(([key, label]) => {
+      {def.items.filter(shown(nav)).map(([key, label]) => {
         const on = key === current;
         const lock = LOCKS[key] && !nav.built?.[LOCKS[key]];
         const badge = nav.badges?.[key];

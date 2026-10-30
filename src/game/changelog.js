@@ -5,6 +5,13 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.2', date: '2026-10-30', title: t('Le mercato entre amis'),
+    items: [
+      t('Championnats entre amis : plus jamais d’offre au nom du club d’un ami qui ne l’a pas faite. Les clubs qui achètent tes joueurs mis en vente viennent d’en dehors de la ligue.'),
+      t('Le mercato a un onglet Amis : l’effectif de chaque ami, club par club, et une offre en un geste, dès avant la première journée.'),
+    ],
+  },
+  {
     version: '1.0.1', date: '2026-10-30', title: t('Heure limite en vue'),
     items: [
       t('Championnats entre amis : au-dessus du prochain match, l’heure limite de la journée, le temps qui reste pour valider ton équipe, et qui a validé ou pas encore.'),

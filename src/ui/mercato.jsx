@@ -18,10 +18,10 @@ import { listedToday } from '../game/transfers';
 import { duesOf, endOfSeasonForecast, officeSize, seasonForecast } from '../game/economy';
 import { standingsOf } from '../game/season';
 import { capitalize, clubAfter, isPluralClub, withArticle } from '../game/names';
-import { Crest } from './crest';
+import { ClubCrest, Crest } from './crest';
 import { fmtMoney, fmtRating } from './format';
 import { Tabs } from './glass';
-import { answerFriend, canSell, offerFriend, queuedFor } from '../game/leagueClub';
+import { FRIEND_ID, answerFriend, canSell, offerFriend, queuedFor } from '../game/leagueClub';
 import { leagueTransfers, myLeagues } from '../game/leagueNet';
 import { unsnapPlayer } from '../game/leagueWorld';
 import { IconCheck, IconChevron, IconClose, IconRadar, IconSearch, IconSort, IconStar, IconTransfer, IconTrend } from './icons';
@@ -267,8 +267,8 @@ function HowTo({ run, league = false }) {
       {league ? (
         <ol>
           <li><b>{t('Repère')}</b><span>{t('Le marché commun et les clubs de l’ordinateur sont les mêmes pour toute la ligue ; de nouveaux joueurs libres arrivent à chaque journée.')}</span></li>
-          <li><b>{t('Négocie')}</b><span>{t('Comme en solo : l’indemnité avec le club du joueur, puis son contrat. Le premier club de la ligue à conclure l’emporte. Pour le joueur d’un ami, c’est ton ami qui répond à ton offre.')}</span></li>
-          <li><b>{t('Vends')}</b><span>{t('Mets des joueurs en vente : des clubs font aussitôt leurs offres, d’autres après chaque journée. Tes amis peuvent aussi t’en faire.')}</span></li>
+          <li><b>{t('Négocie')}</b><span>{t('Comme en solo : l’indemnité avec le club du joueur, puis son contrat. Le premier club de la ligue à conclure l’emporte. Les joueurs de tes amis sont dans l’onglet Amis : c’est ton ami qui répond à ton offre.')}</span></li>
+          <li><b>{t('Vends')}</b><span>{t('Mets des joueurs en vente : des clubs hors de la ligue font aussitôt leurs offres, d’autres après chaque journée. Tes amis te font les leurs depuis leur onglet Amis.')}</span></li>
         </ol>
       ) : (
         <ol>
@@ -760,7 +760,8 @@ function LogView({ state, refLvl }) {
 // eux, le mercato garde sa propre barre de vues.
 export function Mercato({ state, run, ask, refLvl, recommended, initialView = 'buy', view: viewProp = null, onView = null, onOpen, onCompare, onOffer, onSale, onList }) {
   const [viewState, setViewState] = useState(initialView);
-  const view = viewProp ?? viewState;
+  const asked = viewProp ?? viewState;
+  const view = asked === 'friends' && !state.league ? 'buy' : asked; // l'onglet Amis n'existe qu'en ligue
   const setView = onView || setViewState;
   const followed = new Set((state.shortlist || []).filter((x) => !x.gone).map((x) => x.id));
   const follow = (p) => run((s) => toggleShortlist(s, p.id));
@@ -772,9 +773,10 @@ export function Mercato({ state, run, ask, refLvl, recommended, initialView = 'b
   return (
     <div className="mc">
       {!onView && <Tabs
-        className="segmented mc-views"
+        className={`segmented mc-views ${L ? 'with-friends' : ''}`}
         items={[
           ['buy', t('Recruter')],
+          ...(L ? [['friends', t('Amis')]] : []),
           ['watch', t('Suivis'), followed.size ? <em className="mc-count-badge">{followed.size}</em> : null],
           ['offers', t('Offres'), todo ? <em className="mc-count-badge hot">{todo}</em> : null],
           ['log', t('Bilan')],
@@ -784,11 +786,77 @@ export function Mercato({ state, run, ask, refLvl, recommended, initialView = 'b
         label={t('Mercato')}
       />}
       {view === 'buy' && <BuyView {...common} run={run} followed={followed} />}
+      {view === 'friends' && L && <FriendsView state={state} refLvl={refLvl} onOffer={onOffer} />}
       {view === 'watch' && <WatchView {...common} run={run} />}
       {view === 'offers' && state.league && <LeagueOffersBlock state={state} run={run} ask={ask} refLvl={refLvl} onOffer={onOffer} />}
       {view === 'offers' && <OffersView state={state} refLvl={refLvl} run={run} ask={ask} onOffer={onOffer} onSale={onSale} onList={onList} />}
       {view === 'log' && <LogView state={state} refLvl={refLvl} />}
     </div>
+  );
+}
+
+// --- Amis (championnat entre amis, 1.0.2) -----------------------------------------------------------------
+
+// Lignes d'un effectif d'un autre club de la ligue (rows de s.league.rosters : id, n, pos, age, r, v), par poste puis
+// niveau ; aussi pour l'effectif ouvert depuis le classement (roster.jsx). open(x) : le bouton de la ligne (id non nul) ;
+// note(x) : une mention sous le nom (offre en cours).
+const ROSTER_ORDER = { G: 0, D: 1, M: 2, A: 3 };
+export const sortRoster = (rows) => [...(rows || [])].sort((a, b) => ROSTER_ORDER[a.pos] - ROSTER_ORDER[b.pos] || b.r - a.r);
+export function RosterRows({ rows, refLvl, label, ghost = false, onOpen, note = () => null }) {
+  return (
+    <ul className="mc-rows ro-rows">
+      {rows.map((x, k) => (
+        <li key={`${x.n}-${k}`} className={`mc-row ${x.id === null ? 'muted' : ''}`}>
+          <span className={`mc-medal sm ${heat(x.r, refLvl)}`}><b>{fmtRating(x.r)}</b><span>{x.pos}</span></span>
+          <span className="mc-row-main"><b>{x.n}</b><em>{note(x) || <>{tr('<0/> · <1/> ans', [POS_LABELS[x.pos], x.age])}<span className="ro-val">{fmtMoney(x.v)}</span></>}</em></span>
+          <span className="mc-amount"><b>{fmtMoney(x.v)}</b><em>{t('valeur')}</em></span>
+          {x.id !== null && <button className={`btn btn-sm ${ghost ? 'ghost' : ''}`} onClick={() => onOpen(x)}>{label(x)}</button>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// L'onglet Amis du mercato (1.0.2, demande du PDG) : l'effectif de chaque ami, club par club, et une offre en un geste,
+// dès avant la première journée. Une offre en cours se lit sur la ligne du joueur.
+function FriendsView({ state, refLvl, onOffer }) {
+  const L = state.league;
+  const friends = L.clubs.filter((c) => c.human && c.slot !== L.slot).sort((a, b) => a.slot - b.slot);
+  const pool = poolOf(state);
+  const out = new Map((L.offersOut || []).map((o) => [o.l, o]));
+  if (!friends.length) return <p className="mc-empty">{t('Aucun ami dans ce championnat pour l’instant.')}</p>;
+  const mine = (x) => (x.id === null ? null : out.get(x.id - FRIEND_ID));
+  const note = (x) => {
+    const o = mine(x);
+    if (!o) return null;
+    if (o.status === 'no') return t('Ton offre a été refusée');
+    return o.w === 'b' ? t('Contre-offre de ton ami · {x}', { x: fmtMoney(o.x) }) : t('Ton offre · {x} · en attente', { x: fmtMoney(o.x) });
+  };
+  const open = (x) => { const p = pool.find((q) => q.id === x.id); if (p) onOffer(p); };
+  return (
+    <>
+      <p className="mc-count">{t('Les effectifs de tes amis : fais une offre, ton ami l’accepte, la refuse ou te répond par une contre-offre.')}</p>
+      {friends.map((c) => {
+        const rows = sortRoster(L.rosters?.[c.slot]);
+        return (
+          <section key={c.slot} className="mc-friend">
+            <header className="ro-head">
+              {c.crest ? <ClubCrest crest={c.crest} name={c.name} className="ro-crest" /> : <Crest name={c.name} className="ro-crest" />}
+              <div>
+                <h3>{c.name}</h3>
+                <span>{rows.length ? tn(rows.length, '{pseudo} · {length} joueur', '{pseudo} · {length} joueurs', { pseudo: c.pseudo || t('ton ami'), length: rows.length }, rows.length > 1) : c.pseudo}</span>
+              </div>
+            </header>
+            {L.rosterFrom?.[c.slot] === 'prev' && <p className="mc-hint">{t('Effectif de la saison passée : il se met à jour avec ses achats et ses matchs.')}</p>}
+            {rows.length ? (
+              <RosterRows rows={rows} refLvl={refLvl} onOpen={open} note={note} label={(x) => (!mine(x) || mine(x).status === 'no' ? t('Faire une offre') : mine(x).w === 'b' ? t('Voir') : t('Mon offre'))} />
+            ) : (
+              <p className="mc-hint">{t('L’effectif de ton ami s’affichera après son prochain match joué.')}</p>
+            )}
+          </section>
+        );
+      })}
+    </>
   );
 }
 
@@ -1735,7 +1803,7 @@ function LeagueOffersBlock({ state, run, ask, refLvl, onOffer }) {
                 <li key={o.id} className="mc-row offer">
                   {medal(p)}
                   <span className="mc-row-main"><b>{o.n}</b><em>{mine
-                    ? <>{capitalize(withArticle(club))} {isPluralClub(club) ? t('veulent') : t('veut')}{t(' le recruter')}{line && <> · <span className="mc-line">{line}</span></>}{sellable ? '' : t(' · effectif au minimum ({SQUAD_MIN} joueurs) : recrute avant de vendre', { SQUAD_MIN })}</>
+                    ? <>{capitalize(withArticle(club))} {isPluralClub(club) ? t('veulent') : t('veut')}{t(' le recruter')}{line && <> · <span className="mc-line">{line}</span></>}{!p ? t(' · ce joueur n’est plus au club') : sellable ? '' : t(' · effectif au minimum ({SQUAD_MIN} joueurs) : recrute avant de vendre', { SQUAD_MIN })}</>
                     : <>{t('Ta contre-offre · ')}<span className="mc-line">{line || fmtMoney(o.x)}</span> · {clubAfter('à ', club)}{t(' de répondre')}</>}</em></span>
                   <span className="mc-amount"><b>{fmtMoney(o.x)}</b><em>{sending ? t('envoi…') : mine ? left(o) : t('en attente de sa réponse')}</em></span>
                   {mine ? answers(o, 's', () => sell(o, p, club), sellable && !!p, t('Accepter')) : (

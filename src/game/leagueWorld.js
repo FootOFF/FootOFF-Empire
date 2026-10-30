@@ -61,7 +61,7 @@ const FEET = ['droit', 'gauche', 'les deux'];
 const int = (v, d) => (Number.isSafeInteger(v) ? v : d);
 const fin = (v, d) => (Number.isFinite(v) ? v : d);
 export const unsnapPlayer = (x) => ({
-  id: int(x?.i, 0), lid: int(x?.l, null), name: typeof x?.n === 'string' ? x.n : '?', pos: POS.includes(x?.pos) ? x.pos : 'M',
+  id: int(x?.i, 0), lid: int(x?.l, null), name: typeof x?.n === 'string' ? (x.n.replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, '').slice(0, 40) || '?') : '?', pos: POS.includes(x?.pos) ? x.pos : 'M',
   alt: POS.includes(x?.alt) ? x.alt : null, foot: FEET.includes(x?.ft) ? x.ft : 'droit', age: fin(x?.g, 25), pot: fin(x?.p, 0), a: unpack(x?.a, FIELD),
   ...(x?.k ? { g: unpack(x.k, KEEPER) } : {}), traits: Array.isArray(x?.t) ? x.t.filter((t) => typeof t === 'string') : [],
   num: int(x?.num, null), face: x?.f && typeof x.f === 'object' && !Array.isArray(x.f) ? x.f : null, fit: fin(x?.fit, 100),

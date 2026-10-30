@@ -11,7 +11,7 @@ import {
 } from './mercato';
 import { listingOffers, refreshTransfers } from './transfers';
 import { PLANS, YOUTH_PLACES, advisedPlan, refreshScouting } from './academy';
-import { clubAfter, randomClubName, registerNames, withArticle } from './names';
+import { clubAfter, distinctClubName, leagueNames, randomClubName, registerNames, withArticle } from './names';
 import { archivePlayer, endSeason, playRound, pushJournal, startSeason } from './season';
 import { initGoals } from './goals';
 import { PLOTS, ensureFixedPlots, plotIndexOf } from './map';
@@ -217,7 +217,7 @@ export function sellPlayer(s, id, fee = null, club = null) {
   const idx = s.players.findIndex((p) => p.id === id);
   if (idx === -1) return null;
   const amount = fee ?? saleValue(s.players[idx], s.divisionIndex);
-  const to = club || randomClubName();
+  const to = club || (s.league ? distinctClubName([s.clubName, ...leagueNames(s)]) : randomClubName());
   archivePlayer(s, s.players[idx], { reason: 'vente', fee: amount, club: to });
   const [p] = s.players.splice(idx, 1);
   s.money += amount;

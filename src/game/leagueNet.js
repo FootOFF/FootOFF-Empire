@@ -179,24 +179,50 @@ function writeCache(code, c) {
 }
 export const dropCache = (code) => { try { localStorage.removeItem(RES(code)); } catch { /* rien à effacer */ } };
 
+// Dernier effectif connu de chaque ami dans des journées jouées (1.0.2) : place → ses joueurs (instantanés), le plus récent
+// de chacun. L'effectif d'un ami avant son premier match d'une nouvelle saison (mercato, onglet Amis).
+const list = (v) => (Array.isArray(v) ? v : []);
+function friendSnaps(results, members) {
+  const humans = new Set(list(members).filter((x) => x?.pseudo !== AI_PSEUDO).map((x) => x.slot));
+  const seen = new Map();
+  const owner = new Set(); // un joueur à un seul ami : le plus récent
+  for (const r of [...list(results)].reverse()) {
+    for (const x of list(r?.matches)) {
+      for (const [k, slot] of [[0, x?.h], [1, x?.a]]) {
+        if (!humans.has(slot)) continue;
+        const known = seen.get(slot) || new Map();
+        for (const snap of list(x?.sq?.[k])) {
+          if (!snap || typeof snap !== 'object' || !Number.isSafeInteger(snap.l) || owner.has(snap.l) || known.size >= 40) continue;
+          owner.add(snap.l);
+          known.set(snap.l, snap);
+        }
+        seen.set(slot, known);
+      }
+    }
+  }
+  return Object.fromEntries([...seen].map(([slot, known]) => [slot, [...known.values()]]));
+}
+
 // État d'un championnat avec tous les résultats de la saison (ceux de l'appareil et les nouveaux), l'état de la ligue en
-// cours (world, null avant la première journée de la première saison) et celui d'avant chaque journée (worldBefore).
+// cours (world, null avant la première journée de la première saison) et celui d'avant chaque journée (worldBefore) ;
+// prevSq : le dernier effectif connu des amis à la saison passée (1.0.2).
 async function syncedState(m, { teams = false } = {}) {
   let c = readCache(m.code);
   let d = await leagueState(m, { teams, since: c?.results.length ? c.results[c.results.length - 1].round : null });
   if (c && c.season !== d.league.season) { // nouvelle saison : tout est relu, le dernier état de la précédente reste
     const last = c.results[c.results.length - 1];
-    c = { season: d.league.season, results: [], prev: last?.world && c.season === d.league.season - 1 ? { season: c.season, world: last.world } : c.prev };
+    c = { season: d.league.season, results: [], prev: last?.world && c.season === d.league.season - 1 ? { season: c.season, world: last.world, sq: friendSnaps(c.results, d.members) } : c.prev };
     d = await leagueState(m, { teams });
   }
   if (!c) c = { season: d.league.season, results: [], prev: null };
   const known = new Set(c.results.map((r) => r.round));
   const results = [...c.results, ...(d.results || []).filter((r) => !known.has(r.round))].sort((a, b) => a.round - b.round);
   let prev = c.prev?.season === d.league.season - 1 ? c.prev : null;
-  if (!prev && d.league.season > 1 && d.league.status === 'running') {
+  if ((!prev || (!prev.sq && !results.length)) && d.league.season > 1 && d.league.status === 'running') {
     const old = await leagueResults(m, d.league.season - 1).catch(() => null);
     const last = old?.results?.[old.results.length - 1];
-    if (last?.world) prev = { season: d.league.season - 1, world: last.world };
+    if (last?.world) prev = { season: d.league.season - 1, world: last.world, sq: friendSnaps(old.results, d.members) };
+    if (prev && !prev.sq) prev = { ...prev, sq: {} }; // une seule tentative par saison (relecture de la saison passée)
   }
   writeCache(m.code, { season: d.league.season, results, prev });
   const start = prev?.world || null;
@@ -206,7 +232,7 @@ async function syncedState(m, { teams = false } = {}) {
   };
   // skew : avance de l'horloge du serveur sur celle de l'appareil (compte à rebours du coup d'envoi, 0.8.6)
   const skew = d.serverTime ? Date.parse(d.serverTime) - Date.now() : 0;
-  return { ...d, results, world: worldAt(Infinity), worldBefore: worldAt, skew };
+  return { ...d, results, world: worldAt(Infinity), worldBefore: worldAt, skew, prevSq: prev?.sq || null };
 }
 // Coup d'envoi annoncé (tous ont validé, 0.8.6) en heure de l'appareil, ou null
 export const kickoffAt = (d) => (d?.kickoff && !d.due ? Date.parse(d.kickoff) - (d.skew || 0) : null);

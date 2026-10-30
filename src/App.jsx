@@ -814,7 +814,7 @@ export default function App({ preview = null }) {
         const local = state?.league?.season;
         if (local && d.league.season > local) prev = (await leagueResults(m, local)).results;
         setLeagueLive({ d, m, prev });
-        setState((s) => (s?.league?.code === m.code ? syncLeagueClub(clone(s), d) : s));
+        setState((s) => (s?.league?.code === m.code ? closeGoneDeals(syncLeagueClub(clone(s), d)) : s));
       } catch { /* hors ligne : on réessaiera */ }
     };
     leagueTick.current = tick;
@@ -964,7 +964,7 @@ export default function App({ preview = null }) {
   const navPage = navDir && navDir.panel === panel ? navDir.dir : null; // sens du passage à la section voisine
   // navigation par sections (nav.jsx) : l'en-tête de chaque panneau y lit l'onglet actif et ses pastilles
   const nav = {
-    panel, squadTab, seasonTab, mercatoView, go: goNav, step: stepSection, badges: signals.items || {}, switching: (navSwitch || !!navPage) && !!panel,
+    panel, squadTab, seasonTab, mercatoView, go: goNav, step: stepSection, badges: signals.items || {}, switching: (navSwitch || !!navPage) && !!panel, league: !!state?.league,
     built: state ? { training: state.buildings.training > 0, academy: state.buildings.academy > 0, direction: state.buildings.direction > 0, medical: state.buildings.medical > 0 } : {},
   };
   const hudKeys = inGame && !menu && !cinematic && !confirm && !preview; // raccourcis clavier du HUD (PC)
