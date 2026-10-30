@@ -135,7 +135,7 @@ function PadGlyph({ k }) {
 const sizeOf = (code) => t('{max} Ko', { max: Math.max(1, Math.round(code.length / 1024)) });
 // focus : l'entrée choisie à l'ouverture (« fluid » : la notification « Le jeu rame » mène au réglage lui-même)
 export function SettingsView({ settings, onBack, active = true, focus = null }) {
-  const { muted, onToggleSound, vibration, canVibrate, onToggleVibration, fluid = false, onToggleFluid = null, save = null, onExport = null, onImport = null } = settings;
+  const { muted, onToggleSound, musicVolume = 0, onMusicVolume = null, vibration, canVibrate, onToggleVibration, fluid = false, onToggleFluid = null, save = null, onExport = null, onImport = null } = settings;
   const [mode, setMode] = useState('menu'); // menu | export (code affiché) | import (code à coller)
   const [code, setCode] = useState('');
   const [note, setNote] = useState(null);
@@ -143,13 +143,22 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
   const fullscreen = useFullscreen();
   // Retour en tête (0.8.8, demande du PDG) : la même ligne qu'avant, fixe au-dessus de la liste qui défile, première de
   // la navigation ; le curseur s'ouvre sur Son
-  const rows = [{ id: 'back' }, { id: 'sound' }, { id: 'vibration', disabled: !canVibrate }, { id: 'fluid', disabled: !onToggleFluid }, ...(fsOk ? [{ id: 'fullscreen' }] : []),
+  const rows = [{ id: 'back' }, { id: 'sound' }, { id: 'music', disabled: !onMusicVolume }, { id: 'vibration', disabled: !canVibrate }, { id: 'fluid', disabled: !onToggleFluid }, ...(fsOk ? [{ id: 'fullscreen' }] : []),
     { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'report' }, ...SOCIALS.map((x) => ({ id: x.id }))];
   const at = (id) => rows.findIndex((r) => r.id === id); // rang d'une entrée (le plein écran n'existe que sur PC)
   const menu = useMenu(rows, { initial: focus ? Math.max(0, at(focus)) : at('sound'), onBack: () => (mode === 'menu' ? onBack() : setMode('menu')), active: active && mode === 'menu' });
   const { cur, setCur, refs, hover } = menu;
   const row = (i) => ({ ref: (el) => { refs.current[i] = el; }, onPointerEnter: hover(i), onFocus: () => setCur(i), style: { '--i': i } });
   const vibOn = vibration && canVibrate;
+  // musique (1.0.6) : coupée, 25, 50, 75 ou 100 % ; choisir passe au niveau suivant, gauche et droite baissent ou montent
+  const LEVELS = [0, 0.25, 0.5, 0.75, 1];
+  const lvl = Math.max(0, LEVELS.indexOf(musicVolume));
+  const setLevel = (i) => { if (onMusicVolume && i >= 0 && i < LEVELS.length && i !== lvl) { onMusicVolume(LEVELS[i]); uiSound('select'); } };
+  useKeydown((e) => {
+    if (!active || mode !== 'menu' || cur !== at('music') || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    e.preventDefault();
+    setLevel(lvl + (e.key === 'ArrowRight' ? 1 : -1));
+  });
   const doExport = async () => {
     uiSound('select');
     const c = await onExport();
@@ -226,6 +235,15 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
         <span className="cm-bar" aria-hidden="true" />
         <span className="cm-row-text"><strong>{t('Son')}</strong><span>{t('Ambiance du stade, sifflet, pièces et sons du menu.')}</span></span>
         <span className={`switch ${muted ? '' : 'on'}`} aria-hidden="true"><i /></span>
+      </button>
+      <button type="button" role="menuitem" disabled={!onMusicVolume} className={`cm-row ${cur === at('music') ? 'on' : ''}`} {...row(at('music'))}
+        aria-label={t('Musique : {v}', { v: lvl ? `${LEVELS[lvl] * 100} %` : t('coupée') })} onClick={() => setLevel((lvl + 1) % LEVELS.length)}>
+        <span className="cm-bar" aria-hidden="true" />
+        <span className="cm-row-text"><strong>{t('Musique')}</strong><span>{t('La musique du jeu, en fond. Elle s’efface pendant les matchs et reprend ensuite.')}</span></span>
+        <span className="cm-vol" aria-hidden="true">
+          <span className="cm-vol-bars">{LEVELS.slice(1).map((v, i) => <i key={v} className={i < lvl ? 'on' : ''} style={{ height: `${6 + i * 4}px` }} />)}</span>
+          <b>{lvl ? `${LEVELS[lvl] * 100} %` : t('Coupée')}</b>
+        </span>
       </button>
       <button type="button" role="menuitemcheckbox" aria-checked={vibOn} disabled={!canVibrate} className={`cm-row ${cur === at('vibration') ? 'on' : ''}`} {...row(at('vibration'))} onClick={() => { onToggleVibration(); uiSound('select'); }}>
         <span className="cm-bar" aria-hidden="true" />

@@ -587,6 +587,16 @@ export default function App({ preview = null }) {
 
   // Le jeu rame fort sur cet appareil (sous 15 images par seconde), réglage de fluidité coupé : il est proposé une seule
   // fois, la notification mène au réglage lui-même (menu pause, Réglages).
+  // Musique de fond (1.0.6) : à l'écran titre et dans le complexe ; elle s'efface pendant les matchs (avant-match, direct,
+  // après-match), les rejeux de ligue, les épreuves en 3D, le bilan de saison et les gains hors ligne, et quand le jeu
+  // passe en arrière-plan ; elle reprend ensuite (sound.js)
+  const [hiddenPage, setHiddenPage] = useState(() => typeof document !== 'undefined' && document.visibilityState === 'hidden');
+  useEffect(() => {
+    const seen = () => setHiddenPage(document.visibilityState === 'hidden');
+    document.addEventListener('visibilitychange', seen);
+    return () => document.removeEventListener('visibilitychange', seen);
+  }, []);
+  useEffect(() => { sound.current.setMusic?.(!preview && !cinematic && !hiddenPage); }, [cinematic, hiddenPage]); // eslint-disable-line react-hooks/exhaustive-deps
   const onLag = () => {
     try { if (localStorage.getItem('fo-fluid-hint')) return; localStorage.setItem('fo-fluid-hint', '1'); } catch { return; }
     notify({ kind: 'info', eyebrow: t('Fluidité'), title: t('Le jeu rame sur cet appareil'), text: t('Active « Fluidité sur appareil lent » dans les réglages : la 3D sera un peu moins nette, mais fluide.'), action: { kind: 'settings', row: 'fluid' } });
@@ -597,6 +607,8 @@ export default function App({ preview = null }) {
   const settings = {
     muted: sound.current.muted,
     onToggleSound: () => { sound.current.setMuted(!sound.current.muted); bumpSound((n) => n + 1); },
+    musicVolume: sound.current.musicVolume ?? 0,
+    onMusicVolume: (v) => { sound.current.setMusicVolume?.(v); bumpSound((n) => n + 1); },
     vibration,
     canVibrate: canVibrate(),
     onToggleVibration: () => { setVibration(!vibration); setVibrationState(!vibration); },

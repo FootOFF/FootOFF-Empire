@@ -5,6 +5,12 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.6', date: '2026-10-30', title: t('La musique du jeu'),
+    items: [
+      t('La musique de FootOFF Empire joue en fond, douce, à l’écran titre et dans le complexe. Elle s’efface pendant les matchs et reprend ensuite. Son volume se règle dans les Réglages.'),
+    ],
+  },
+  {
     version: '1.0.5', date: '2026-10-30', title: t('Offres claires entre amis'),
     items: [
       t('Une offre pour un joueur qui a déjà quitté le club de ton ami est refusée d’office, et tu sais pourquoi.'),

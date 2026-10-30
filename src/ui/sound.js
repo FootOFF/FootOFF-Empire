@@ -3,6 +3,15 @@
 // Le contexte audio est créé au premier geste de l'utilisateur (coup d'envoi), comme l'exigent les navigateurs.
 
 const KEY = 'fo-sound';
+// Musique de fond (1.0.6, demande du PDG) : la chanson du jeu en boucle, douce, à son volume (Réglages : coupée, 25, 50,
+// 75 ou 100 %), dans son propre contexte audio (celui du stade s'éteint après chaque match). Elle s'efface en fondu
+// pendant les matchs, les rejeux, les épreuves et les cérémonies, quand le jeu est caché ou le son coupé, puis reprend là
+// où elle en était. Lue en continu depuis le serveur, jamais précachée ; volume par Web Audio (l'iPhone ignore celui de
+// l'élément audio). Fichier : public/audio/footoff-empire.mp3 (-16 LUFS, 96 kb/s).
+const MUSIC_KEY = 'fo-music';
+const MUSIC_URL = `${import.meta.env.BASE_URL}audio/footoff-empire.mp3`;
+const MUSIC_LEVEL = 0.55; // à 100 % : la chanson sous le stade et les sons du menu
+export const MUSIC_LEVELS = [0, 0.25, 0.5, 0.75, 1];
 
 function noiseBuffer(ctx, seconds = 3) {
   const len = ctx.sampleRate * seconds;
@@ -23,6 +32,55 @@ export function createStadiumSound() {
   let base = 0; // niveau de la rumeur entre deux clameurs : celui du match (start), sinon le silence
   let muted = false;
   try { muted = localStorage.getItem(KEY) === 'off'; } catch { /* préférence indisponible */ }
+  let musicVol = 0.5;
+  try {
+    const v = localStorage.getItem(MUSIC_KEY);
+    if (v !== null && MUSIC_LEVELS.includes(Number(v))) musicVol = Number(v);
+  } catch { /* préférence indisponible : douce par défaut */ }
+  let mctx = null;
+  let mel = null;
+  let mgain = null;
+  let mwanted = false;
+  let mtimer = 0;
+  let mpending = false; // lecture refusée faute de geste : elle part au prochain
+  const musicOn = () => mwanted && !muted && musicVol > 0;
+  function musicReady() {
+    if (mel) return true;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC || typeof Audio === 'undefined') return false;
+    mctx = new AC();
+    mel = new Audio(MUSIC_URL);
+    mel.loop = true;
+    mel.preload = 'auto';
+    mgain = mctx.createGain();
+    mgain.gain.value = 0;
+    mctx.createMediaElementSource(mel).connect(mgain).connect(mctx.destination);
+    return true;
+  }
+  function music() {
+    const on = musicOn();
+    if (!mel && !on) return;
+    if (!mel && navigator.userActivation && !navigator.userActivation.hasBeenActive) { mpending = true; return; } // les navigateurs attendent un geste
+    if (!musicReady()) return;
+    const t = mctx.currentTime;
+    const g = mgain.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    clearTimeout(mtimer);
+    if (on) {
+      mctx.resume?.();
+      const p = mel.play();
+      if (p?.catch) p.catch(() => { mpending = true; });
+      g.linearRampToValueAtTime(musicVol * MUSIC_LEVEL, t + 2);
+    } else {
+      g.linearRampToValueAtTime(0, t + 1.2);
+      mtimer = setTimeout(() => { if (!musicOn()) mel.pause(); }, 1300);
+    }
+  }
+  if (typeof window !== 'undefined') {
+    const kick = () => { if (musicOn() && (mpending || !mel || mel.paused)) { mpending = false; music(); } };
+    for (const ev of ['pointerdown', 'keydown', 'touchend']) window.addEventListener(ev, kick, { capture: true, passive: true });
+  }
 
   function ensure() {
     if (ctx) return true;
@@ -92,6 +150,15 @@ export function createStadiumSound() {
       muted = m;
       try { localStorage.setItem(KEY, m ? 'off' : 'on'); } catch { /* idem */ }
       if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05);
+      music();
+    },
+    // musique de fond : voulue ou non à cet instant (App : hors match, rejeu, épreuves, cérémonies, jeu visible)
+    setMusic(on) { mwanted = !!on; music(); },
+    get musicVolume() { return musicVol; },
+    setMusicVolume(v) {
+      musicVol = MUSIC_LEVELS.includes(v) ? v : 0.5;
+      try { localStorage.setItem(MUSIC_KEY, String(musicVol)); } catch { /* gardé pour la session */ }
+      music();
     },
     whistle,
     chance() { swell(0.42, 0.35, 1.4, 800); }, // « ooh »

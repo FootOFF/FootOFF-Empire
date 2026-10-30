@@ -5847,3 +5847,10 @@ html[lang="ar"] { --font-mono: 'Geist Mono', 'Cairo', ui-monospace, monospace; }
 html[lang="ar"] :is(.ld-step, .ld-tip-label) { font-family: 'Cairo', system-ui, sans-serif; }
 html[lang="ar"] .lv-sb-team b, html[lang="ar"] .lv-sb-team b span { line-height: 1.4; }
 html[lang="ar"] :is(.compo-card-text b, .lv-facts b) { line-height: 1.4; }
+
+/* Réglages : volume de la musique (1.0.6), quatre barres et le niveau ; la ligne choisie passe en couleur de texte */
+.cm-vol { flex-shrink: 0; display: inline-flex; align-items: center; gap: 10px; }
+.cm-vol-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 18px; }
+.cm-vol-bars i { width: 5px; border-radius: 1px; background: currentColor; opacity: .25; }
+.cm-vol-bars i.on { opacity: 1; }
+.cm-vol b { min-width: 4.2em; text-align: right; font-family: var(--font-disp); font-weight: 600; font-size: 15px; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
