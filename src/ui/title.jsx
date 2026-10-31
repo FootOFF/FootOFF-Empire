@@ -12,7 +12,7 @@ import { COLOR_KEYS, ClubCrest, ColorValue, colorList } from './crest';
 import { randomClubName } from '../game/names';
 import { DIVISIONS } from '../game/constants';
 import { CREST_EMBLEMS, CREST_GROUNDS, CREST_PATTERNS, CREST_SHAPES, CREST_STYLES, CREST_TEXTS, clubStars, normalizeCrest, randomCrest, withStyle } from '../game/crest';
-import { LANGS, LANG_NAMES, langName, preferredLang, t, tn, tr } from '../i18n/index';
+import { colon, LANGS, LANG_NAMES, langName, preferredLang, t, tn, tr } from '../i18n/index';
 
 // Écran titre, façon jeu de console : le complexe tourne lentement en 3D derrière (mode vitrine d'Empire3D), le
 // menu à gauche (en bas sur téléphone), la carte de l'entrée choisie à droite. Trois vues : menu, réglages,
@@ -218,7 +218,7 @@ function CreateClub({ onCreate, onBack, active }) {
               ref={(el) => { menu.refs.current[k + 1] = el; }}
               tabIndex={0}
               role="group"
-              aria-label={`${label} : ${list.find(([id]) => id === crest[key])?.[1]}`}
+              aria-label={`${label}${colon()}${list.find(([id]) => id === crest[key])?.[1]}`}
               onFocus={() => menu.setCur(k + 1)}
               className={`ts-pick ${menu.cur === k + 1 ? 'on' : ''}`}
             >

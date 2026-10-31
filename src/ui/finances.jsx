@@ -8,7 +8,7 @@ import { ordinal } from '../game/utils';
 import { fmtEuros, fmtMoney } from './format';
 import { SectionHead, Stat } from './kit';
 import { Panel } from './panels';
-import { t, tn, tr } from '../i18n/index';
+import { colon, comma, t, tn, tr } from '../i18n/index';
 
 // Finances : où va l'argent du club. La caisse, ce qu'il faudra payer au bilan (salaires et entretien, dus journée après
 // journée et payés en une fois en fin de saison) et ce qui reste réellement disponible ; prévision de fin de saison,
@@ -32,9 +32,9 @@ function TreasuryChart({ seasons, now }) {
   const bars = [...seasons.map((p) => ({ label: `${t('S')}${p.season}`, v: p.end })), { label: t('Auj.'), v: now, current: true }];
   const top = Math.max(1, ...bars.map((b) => Math.abs(b.v)));
   return (
-    <div className="fin-chart" role="img" aria-label={t('Trésorerie en fin de saison : {join}', { join: bars.map((b) => `${b.label} ${fmtMoney(b.v)}`).join(', ') })}>
+    <div className="fin-chart" role="img" aria-label={t('Trésorerie en fin de saison : {join}', { join: bars.map((b) => `${b.label} ${fmtMoney(b.v)}`).join(comma()) })}>
       {bars.map((b) => (
-        <div key={b.label} className={`fin-col ${b.current ? 'cur' : ''} ${b.v < 0 ? 'neg' : ''}`} title={`${b.label} : ${fmtMoney(b.v)}`}>
+        <div key={b.label} className={`fin-col ${b.current ? 'cur' : ''} ${b.v < 0 ? 'neg' : ''}`} title={`${b.label}${colon()}${fmtMoney(b.v)}`}>
           {b.current && <span className="fin-col-v">{fmtMoney(b.v)}</span>}
           <i style={{ height: `${Math.max(3, (Math.abs(b.v) / top) * 100)}%` }} />
           <span className="fin-col-l">{b.label}</span>

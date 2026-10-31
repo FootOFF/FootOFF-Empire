@@ -15,7 +15,7 @@ import { Tabs } from './glass';
 import { Presence } from './presence';
 import { Portrait } from './portrait';
 import { heat } from './mercato';
-import { decSep, numLocale, plural, t, tn, tr } from '../i18n/index';
+import { colon, decSep, numLocale, plural, t, tn, tr } from '../i18n/index';
 
 // Centre d'entraînement (training.js), ouvert d'un clic sur le bâtiment dans la vue 3D, depuis sa fiche ou un conseil
 // du staff. Trois onglets :
@@ -82,7 +82,7 @@ export function TrainingView({ state, run, ask, notify = () => {}, onClose, onBu
     notify({
       kind: 'training', eyebrow: tn(res.length, 'Épreuve simulée', 'Séance simulée', {}, res.length > 1),
       title: learned ? t('{name} acquiert le signe {programLabel}', { name: learned.name, programLabel: programLabel(learned.learned) }) : t('{gainTxt} de niveau', { gainTxt: gainTxt(res.reduce((a, r) => a + r.gain, 0)) }),
-      text: res.length > 1 ? res.map((r) => `${r.name} ${gainTxt(r.gain)}`).join(' · ') : `${res[0].name} : ${fmtRating(res[0].before)} → ${fmtRating(res[0].after)}`,
+      text: res.length > 1 ? res.map((r) => `${r.name} ${gainTxt(r.gain)}`).join(' · ') : `${res[0].name}${colon()}${fmtRating(res[0].before)} → ${fmtRating(res[0].after)}`,
       action: { panel: 'training', tab: learned ? 'programs' : 'session' },
     });
   };

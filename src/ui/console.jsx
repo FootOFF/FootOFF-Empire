@@ -406,7 +406,7 @@ export function ClubCard({ state, eyebrow, objective = false, head = true }) {
         ) : (
           <div><dt>{t('Prochain match')}</dt><dd>{t('Saison terminée, place au bilan')}</dd></div>
         )}
-        {goals && <div className="stack"><dt>{tr('Objectifs de la saison · <0/>/<1/>', [goals.done, goals.list.length])}</dt><dd>{goals.list.map((o) => `${o.state === 'done' ? '✓ ' : o.state === 'failed' ? '✗ ' : ''}${o.title}`).join(' · ')}</dd></div>}
+        {goals && <div className="stack"><dt>{tr('Objectifs de la saison · <0/>/<1/>', [goals.done, goals.list.length])}</dt><dd>{goals.list.map((o) => `${o.state === 'done' ? '✓ ' : o.state === 'failed' ? '✗ ' : ''}${o.title}`).join(' · ')}</dd></div>}
         <div><dt>{t('Trésorerie')}</dt><dd className={state.money < 0 ? 'neg' : ''}>{fmtMoney(state.money)}</dd></div>
       </dl>
     </section>

@@ -7,7 +7,7 @@ import { bestSigning } from './advice';
 import { book } from './ledger';
 import { seasonObjectives } from './objectives';
 import { rnd } from './utils';
-import { eur as eurIntl, LANG, numLocale, t } from '../i18n/index';
+import { comma, eur as eurIntl, LANG, numLocale, t } from '../i18n/index';
 
 // Tutoriel des premières minutes, mené par la direction sportive du club : bienvenue → centre d'entraînement →
 // première séance (une épreuve en 3D) → première recrue → premier match → effectif (condition physique, blessures,
@@ -164,7 +164,7 @@ export function stepContent(step, s) {
       };
     case 'goals': {
       const obj = seasonObjectives(s);
-      const list = obj ? obj.list.map((o) => o.title.toLowerCase()).join(', ') : '';
+      const list = obj ? obj.list.map((o) => o.title.toLowerCase()).join(comma()) : '';
       return {
         ...base,
         title: t('Les objectifs du conseil'),

@@ -60,7 +60,7 @@ import { createStadiumSound } from './ui/sound';
 import { achievementById, newAchievements } from './game/achievements';
 import { advanceJourney, journeyDue } from './game/journey';
 import { LOCKS, NavContext, SECTION_ENTRY, sectionNear, sectionOf } from './ui/nav';
-import { bootIntent, eur, gameLang, LANG, numLocale, reloadInLang, setPreferredLang, t, tn } from './i18n/index';
+import { bootIntent, comma, eur, gameLang, LANG, numLocale, reloadInLang, setPreferredLang, t, tn } from './i18n/index';
 
 // three.js et la scène vivent dans un chunk séparé, chargé dès le démarrage (derrière l'écran de chargement).
 const Empire3D = lazy(() => import('./ui/Empire3D'));
@@ -520,7 +520,7 @@ export default function App({ preview = null }) {
       const one = abs[0];
       notify({
         kind: 'warn', eyebrow: abs.length > 1 ? t('{length} absents pour la suite', { length: abs.length }) : one.kind === 'injury' ? t('Blessure') : t('Suspension'),
-        title: abs.length > 1 ? abs.map((a) => a.name).join(', ') : tn(one.matches, '{name} : {v} {matches} match', '{name} : {v} {matches} matchs', { name: one.name, v: one.kind === 'injury' ? t('blessé') : t('suspendu'), matches: one.matches }, one.matches > 1),
+        title: abs.length > 1 ? abs.map((a) => a.name).join(comma()) : tn(one.matches, '{name} : {v} {matches} match', '{name} : {v} {matches} matchs', { name: one.name, v: one.kind === 'injury' ? t('blessé') : t('suspendu'), matches: one.matches }, one.matches > 1),
         text: abs.length > 1 ? abs.map((a) => tn(a.matches, '{name} {n} match', '{name} {n} matchs', { name: a.name, n: a.matches }, a.matches > 1)).join(' · ') : one.why[0].toUpperCase() + one.why.slice(1) + '.',
         // centre médical construit et un blessé : la notification mène aux soins
         action: state.buildings.medical > 0 && abs.some((a) => a.kind === 'injury') ? { panel: 'medical' } : { panel: 'squad', tab: 'players' },
@@ -532,7 +532,7 @@ export default function App({ preview = null }) {
     const gone = n.followedGone || [];
     const bits = [];
     if (n.offers) bits.push(tn(n.offers, '{offers} offre reçue pour tes joueurs', '{offers} offres reçues pour tes joueurs', { offers: n.offers }, n.offers > 1));
-    if (gone.length) bits.push(t('{join} {tn} signé ailleurs', { join: gone.join(', '), tn: tn(gone.length, 'a', 'ont', {}, gone.length > 1) }));
+    if (gone.length) bits.push(t('{join} {tn} signé ailleurs', { join: gone.join(comma()), tn: tn(gone.length, 'a', 'ont', {}, gone.length > 1) }));
     if (bits.length) {
       notify({
         kind: 'mercato', eyebrow: t('Mercato · pendant la journée'), title: bits[0][0].toUpperCase() + bits[0].slice(1), text: bits[1],
@@ -926,7 +926,7 @@ export default function App({ preview = null }) {
     const key = `${d.league.season}:${d.league.round}`;
     if (leagueLocked()) { lockedNote(); cancelMatch(); return; } // le dernier ami a validé pendant que l'avant-match était ouvert
     try {
-      if (d.league.season !== state.league.season || d.league.round !== state.round) throw new Error('La journée a changé : regarde d’abord le match de la journée précédente.');
+      if (d.league.season !== state.league.season || d.league.round !== state.round) throw new Error(t('La journée a changé : regarde d’abord le match de la journée précédente.'));
       await sendSheet(m, d.league.season, d.league.round, teamSheet(clone(state), { lineup, tactic, formation, plans }));
       run((s) => { s.lineup = lineup; s.tactic = tactic; s.formation = formation; s.league.plans = plans || {}; s.league.sent = key; return s; });
       notify({ kind: 'success', eyebrow: state.league.name, title: t('Équipe validée'), text: t('Journée {v} : coup d’envoi dix minutes après la validation de la dernière équipe, au plus tard {deadlineText}.', { v: d.league.round + 1, deadlineText: deadlineText(d.league.deadline) }), key: 'league-sent' });

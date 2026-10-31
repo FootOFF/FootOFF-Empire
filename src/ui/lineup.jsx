@@ -8,7 +8,8 @@ import { RatingBadge } from './kit';
 import { haptic } from './haptics';
 import { Portrait } from './portrait';
 import { IconCheck } from './icons';
-import { t, tn, tr } from '../i18n/index';
+import { comma, t, tn, tr } from '../i18n/index';
+import { useFitText } from './fittext';
 
 // Composition interactive, la même partout (onglet Composition de l'Effectif, avant-match, mi-temps) : le terrain
 // avec le onze à ses postes (portrait, note au poste, nom, condition), le banc en cartes en dessous. Le terrain se
@@ -385,10 +386,10 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
             const cls = ['lu-bchip', keyOf(sel) === key && 'sel', over === key && 'over', (ghost?.from === key || lift === key) && 'src', lift === key && 'lift', !ok && 'na'];
             return (
               <button key={p.id} type="button" data-drop={key} className={cls.filter(Boolean).join(' ')} title={why || undefined} aria-disabled={!ok || undefined}
-                aria-label={t('{name}, {toLowerCase}, niveau {fmtRating}{v}', { name: p.name, toLowerCase: POS_LABELS[p.pos].toLowerCase(), fmtRating: fmtRating(playerRating(p)), v: why ? `, ${why.toLowerCase()}` : '' })} {...handlers({ kind: 'bench', id: p.id })}>
+                aria-label={t('{name}, {toLowerCase}, niveau {fmtRating}{v}', { name: p.name, toLowerCase: POS_LABELS[p.pos].toLowerCase(), fmtRating: fmtRating(playerRating(p)), v: why ? `${comma()}${why.toLowerCase()}` : '' })} {...handlers({ kind: 'bench', id: p.id })}>
                 <Portrait p={p} size={36} />
                 <span className="lu-bmain">
-                  <span className="lu-bname">{names[p.id]}</span>
+                  <BenchName name={names[p.id]} />
                   <span className="lu-bmeta"><span className={`pos-pill ${p.pos}`}>{p.pos}</span>{why ? <em className="lu-why">{why}</em> : <BenchFit value={fitValue(p)} />}</span>
                 </span>
                 <b className="lu-brate">{fmtRating(playerRating(p))}</b>
@@ -446,4 +447,11 @@ export function LineupEditor({ state, run }) {
       </aside>
     </div>
   );
+}
+
+// Nom d'un remplaçant (1.0.14, chasse aux défauts) : rapetisse juste assez pour tenir dans sa puce (« JEANNERET » raccourci
+// à 360 px)
+function BenchName({ name }) {
+  const ref = useFitText(name, 11);
+  return <span className="lu-bname" ref={ref}>{name}</span>;
 }

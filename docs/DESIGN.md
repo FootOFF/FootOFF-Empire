@@ -327,8 +327,17 @@ son en-tête porte le nom de la section en grand et, en onglets, les écrans voi
   ignore). Les défilements enchaînés ne sont jamais bloqués (seul un toucher bref ouvre la fenêtre) ; les gestes en
   pointer events (appui long « Construire », double toucher glissé du zoom 3D) restent intacts.
 - Typographie : le code écrit des espaces ordinaires ; `src/ui/typography.js` pose à l'affichage les insécables
-  (avant `: ; ! ?`, dans les guillemets, entre un nombre et son unité), l'apostrophe ’ et les points de
-  suspension. Ordinaux avec `ordinal()` : 1er, 1re, 2e.
+  (avant `: ; ! ?`, dans les guillemets, entre un nombre et son unité, entre les milliers), l'apostrophe ’ et les points
+  de suspension. Ordinaux avec `ordinal()` : 1er, 1re, 2e. Un morceau de phrase assemblé dans le code passe par
+  `colon()`, `comma()`, `semicolon()` (`src/i18n/index.js`) : « label: valeur » en anglais et en espagnol, « ، » et « ؛ »
+  en arabe ; jamais « ' : ' » ni « ', ' » écrits en dur (1.0.14, chasse aux défauts). Espagnol et arabe : « 26 % »
+  insécable.
+- Noms qui doivent tenir sur une ligne : `useFitText` (`src/ui/fittext.js`) les fait rapetisser, jamais au-delà de
+  leur taille de départ, puis passer sur deux lignes (classe `long`) ; remesure à chaque police arrivée et deux fois
+  après coup. Un libellé de bouton trop long passe sur deux lignes, il n'est jamais rogné par la découpe en biais.
+- Contrôle des quatre langues : la chasse aux défauts (coupes, points de suspension, chevauchements, typographie,
+  oublis de traduction) passe chaque écran de la galerie en français, anglais, espagnol et arabe, au téléphone (360 px),
+  au téléphone couché et sur PC ; `?ecran=…&club=…` donne au club un nom long (26 caractères, la limite).
 - Chargement : voir « Écran titre, pause et chargement ».
 
 ## Contrôle

@@ -20,7 +20,7 @@ import { collectiveSession, staffSession, tidyTraining, windowKey } from './trai
 import { leagueSeasonStart, officialTable } from './leagueSeason';
 import { divisionWages, ensureDeals, lastYear } from './contracts';
 import { ensureSquadMin } from './squadFloor';
-import { minuteLabel, numLocale, t, tn } from '../i18n/index';
+import { comma, minuteLabel, numLocale, t, tn } from '../i18n/index';
 
 export function roundRobin(n) {
   const rounds = [];
@@ -47,7 +47,7 @@ function announceLastYear(s) {
   pushJournal(s, {
     season: s.seasonNumber, kind: 'club',
     title: many ? t('{length} joueurs entament leur dernière année de contrat', { length: last.length }) : t('{name} entame sa dernière année de contrat', { name: last[0].name }),
-    text: t('{v} : sans prolongation, {v2} libre{v3} à la fin de la saison, sans indemnité.', { v: many ? t('{join} et {name}', { join: last.slice(0, -1).map((p) => p.name).join(', '), name: last.at(-1).name }) : last[0].name, v2: many ? t('ils partiront') : t('il partira'), v3: many ? 's' : '' }),
+    text: t('{v} : sans prolongation, {v2} libre{v3} à la fin de la saison, sans indemnité.', { v: many ? t('{join} et {name}', { join: last.slice(0, -1).map((p) => p.name).join(comma()), name: last.at(-1).name }) : last[0].name, v2: many ? t('ils partiront') : t('il partira'), v3: many ? 's' : '' }),
   });
 }
 
@@ -243,7 +243,7 @@ function cupResult(s, ctx, res) {
   c.stage = stage + 1;
   c.opp = drawOpponent(s, ctx.comp, c.stage);
   note.next = c.opp;
-  note.text = t('Prime : {toLocaleString} €. Prochain tour ({toLowerCase}) : {name}{v}.', { toLocaleString: prize.toLocaleString(numLocale()), toLowerCase: STAGES[c.stage].toLowerCase(), name: c.opp.name, v: c.opp.division && c.opp.division !== t('Europe') ? `, ${c.opp.division}` : '' });
+  note.text = t('Prime : {toLocaleString} €. Prochain tour ({toLowerCase}) : {name}{v}.', { toLocaleString: prize.toLocaleString(numLocale()), toLowerCase: STAGES[c.stage].toLowerCase(), name: c.opp.name, v: c.opp.division && c.opp.division !== t('Europe') ? `${comma()}${c.opp.division}` : '' });
   return note;
 }
 
@@ -251,7 +251,7 @@ function reportText(s, res) {
   const att = res.attendance;
   const opp = (prep = '') => clubAfter(prep, res.oppName); // « contre l’AS… », « face au FC… »
   const buts = res.gf
-    ? t('Buts : {join}.', { join: res.scorers.map((x) => `${x.name} ${minuteLabel(x.minute)}`).join(', ') })
+    ? t('Buts : {join}.', { join: res.scorers.map((x) => `${x.name} ${minuteLabel(x.minute)}`).join(comma()) })
     : t('{clubName} n’a pas trouvé la faille.', { clubName: s.clubName });
   const money = new Intl.NumberFormat(numLocale()).format(res.revenue);
   if (res.away) { // à l'extérieur (Élite) : ni public à nous, ni billetterie, seulement les droits TV

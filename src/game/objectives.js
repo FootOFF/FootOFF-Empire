@@ -4,7 +4,7 @@ import { autoLineup, lineupRating } from './tactics';
 import { book } from './ledger';
 import { pushJournal } from './journal';
 import { standingsOf } from './season';
-import { numLocale, ordinal as ordinalText, t, tn } from '../i18n/index';
+import { colon, numLocale, ordinal as ordinalText, t, tn } from '../i18n/index';
 
 // Objectifs de la saison : trois défis fixés par le conseil d'administration à chaque début de saison (le président,
 // c'est le joueur ; « objectifs du président » avant la 0.5.1), adaptés au club (force de l'onze face à sa division,
@@ -162,7 +162,7 @@ export function closeSeasonObjectives(s, events) {
   pushJournal(s, {
     season: s.seasonNumber, kind: 'objectif',
     title: reached === results.length ? t('Saison parfaite : les trois objectifs atteints') : t('Objectifs de la saison : {reached} sur {length}', { reached, length: results.length }),
-    text: results.map((x) => `${x.title} : ${x.ok ? t('atteint') : t('manqué')}`).join(' · '),
+    text: results.map((x) => `${x.title}${colon()}${x.ok ? t('atteint') : t('manqué')}`).join(' · '),
   });
   return s;
 }

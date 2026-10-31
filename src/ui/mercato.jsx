@@ -31,7 +31,7 @@ import { haptic } from './haptics';
 import { uiSound } from './uisound';
 import { Portrait } from './portrait';
 import { tierOf } from './kit';
-import { plural, t, tn, tr } from '../i18n/index';
+import { colon, comma, plural, semicolon, t, tn, tr } from '../i18n/index';
 
 // sommes et conditions d'un contrat (1.0.10 ; 1.0.11, demande du PDG) : − / +, curseurs, durée et clause jouent le
 // même son pour monter et le même pour descendre (sound.js, amount-up / amount-down) ; un curseur qu'on fait glisser,
@@ -260,9 +260,9 @@ function News({ state }) {
       <span className="eyebrow">{n.season ? t('Mercato') : t('Depuis la dernière journée')}</span>
       {parts.length > 0 && <p>{parts.join(' · ')}.</p>}
       {courted.length > 0 && (
-        <p className="warn">{tr('<0/> <1/> de partir avant la prochaine journée.', [courted.join(', '), tn(courted.length, 'est courtisé et risque', 'sont courtisés et risquent', {}, courted.length > 1)])}</p>
+        <p className="warn">{tr('<0/> <1/> de partir avant la prochaine journée.', [courted.join(comma()), tn(courted.length, 'est courtisé et risque', 'sont courtisés et risquent', {}, courted.length > 1)])}</p>
       )}
-      {gone.length > 0 && <p className="bad">{tr('<0/> <1/> signé ailleurs.', [gone.join(', '), tn(gone.length, 'a', 'ont', {}, gone.length > 1)])}</p>}
+      {gone.length > 0 && <p className="bad">{tr('<0/> <1/> signé ailleurs.', [gone.join(comma()), tn(gone.length, 'a', 'ont', {}, gone.length > 1)])}</p>}
     </div>
   );
 }
@@ -487,7 +487,7 @@ function AuctionFlash({ a }) {
     <p className={`mc-flash ${up.length ? 'sold' : 'walked'}`} role="status">{tr('Enchères pour <0/> :', [a.name])}{' '}
       {a.moves.map((m, i) => (
         <React.Fragment key={m.offerId}>
-          {i > 0 && ' ; '}
+          {i > 0 && semicolon()}
           {m.to !== null
             ? tr('<0/> <1/> à <2/>', [withArticle(m.club), agree(m.club, 'monte', 'montent'), <b>{fmtMoney(m.to)}</b>])
             : tr('<0/> <1/>', [withArticle(m.club), agree(m.club, 'se retire', 'se retirent')])}
@@ -902,7 +902,7 @@ const clauseText = (c) => (c ? t('clause de montée +{round} %', { round: Math.r
 // Conditions signées, en une phrase (écran d'accord) ; une prolongation rappelle seulement la prime et la clause.
 function termsLine(row, renew) {
   const parts = [renew ? '' : t('contrat de {yearsOf} à {wage} par saison', { yearsOf: yearsOf(row.years), wage: fmtMoney(row.wage) }), row.bonus ? t('prime de {bonus}', { bonus: fmtMoney(row.bonus) }) : '', row.clause ? t('clause de montée de +{round} %', { round: Math.round(row.clause * 100) }) : ''].filter(Boolean);
-  return parts.length ? `${capitalize(parts.join(', '))}.` : '';
+  return parts.length ? `${capitalize(parts.join(comma()))}.` : '';
 }
 
 // Négociation d'une recrue (0.8.0), en deux temps : l'indemnité avec son club (joueur sous contrat), puis le contrat
@@ -1159,7 +1159,7 @@ function ContractStep({ state, p, run, opened, renew, feeAgreed }) {
       <div className="ng-col">
         {feeAgreed && !result && (
           <section className="ng-answer agreed">
-            <b>{club} {agree(p.club, 'accepte', 'acceptent')} : {fmtMoney(feeAgreed.amount)}</b>
+            <b>{club} {agree(p.club, 'accepte', 'acceptent')}{colon()}{fmtMoney(feeAgreed.amount)}</b>
             <span>{state.league ? t('Place au contrat : l’indemnité tient jusqu’à la prochaine journée, mais le premier club de la ligue qui conclut signe le joueur.') : t('Place au contrat : l’indemnité est réservée jusqu’à la prochaine journée.')}</span>
           </section>
         )}

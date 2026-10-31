@@ -20,7 +20,8 @@ export function CoachCard({ content, onPrimary, onSecondary, onSkip }) {
       <strong className="coach-title">{content.title}</strong>
       <p className="coach-text">{content.text}</p>
       {content.why && <p className="coach-why">{content.why}</p>}
-      {content.reward && <span className="coach-reward">{tr('<0/> Prime de l’étape : +<1/> €', [<IconCoin />, content.reward.toLocaleString(numLocale())])}</span>}
+      {/* le montant isolé de gauche à droite (1.0.14) : en arabe, « +1,000 € » s'affichait « € 1,000+ » */}
+      {content.reward && <span className="coach-reward">{tr('<0/> Prime de l’étape : <1/>', [<IconCoin />, <bdi dir="ltr">{t('+{n} €', { n: content.reward.toLocaleString(numLocale()) })}</bdi>])}</span>}
       <div className="coach-actions">
         <button className="btn btn-sm" onClick={onPrimary}>{content.cta}</button>
         {content.secondary && <button className="btn btn-sm ghost" onClick={onSecondary}>{content.secondary.label}</button>}

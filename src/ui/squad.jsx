@@ -19,8 +19,9 @@ import { Presence, useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { FollowButton, LeagueOffer, ListingSheet, Mercato, Negotiation, SaleNegotiation, SaleToggle, heat } from './mercato';
 import { Portrait } from './portrait';
+import { uiSound } from './uisound';
 import { divRef, tierOf } from './kit';
-import { plural, t, tn, tr } from '../i18n/index';
+import { colon, comma, plural, t, tn, tr } from '../i18n/index';
 
 // Effectif : vue d'ensemble, puis les joueurs en cartes rangées par ligne (teinte du rang pour ta division : bronze,
 // argent, or, élite) ou, sur PC, en tableau d'analyste ; fiche joueur façon magazine FootOFF Media, comparateur
@@ -419,7 +420,7 @@ function PlayerCard({ p, state, refLvl, index, onOpen }) {
   const pot = potentialRange(p, state);
   return (
     <li style={{ '--k': Math.min(index, 18) }}>
-      <button type="button" className={`sqc ${tierOf(r, refLvl)} ${absent ? 'out' : ''}`} onClick={onOpen} aria-label={t('Fiche de {name}, niveau {fmtRating}{v}', { name: p.name, fmtRating: fmtRating(r), v: absent ? `, ${absent.short.toLowerCase()}` : '' })}>
+      <button type="button" className={`sqc ${tierOf(r, refLvl)} ${absent ? 'out' : ''}`} onClick={onOpen} aria-label={t('Fiche de {name}, niveau {fmtRating}{v}', { name: p.name, fmtRating: fmtRating(r), v: absent ? `${comma()}${absent.short.toLowerCase()}` : '' })}>
         {/* colonne de gauche (note, poste, XI, numéro) à la largeur de « 20,0 », portrait dans la place qui reste :
             une note à deux chiffres ne mord plus sur le médaillon */}
         <span className="sqc-top">
@@ -599,7 +600,17 @@ function ContractBlock({ state, p, onRenew }) {
 
 // --- Fiche joueur (magazine FootOFF Media) ---------------------------------------------------------------
 
+// Aide repliée (1.0.14, demande du PDG) : un petit « ? » discret à côté d'un titre ; l'explication ne s'ouvre que si on
+// la demande
+function HelpToggle({ open, onToggle, label }) {
+  return (
+    <button type="button" className={`help-q ${open ? 'on' : ''}`} aria-expanded={open} aria-label={label} title={label}
+      onClick={() => { uiSound(open ? 'close' : 'open'); onToggle(); }} />
+  );
+}
+
 function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, onNext, onCompare, onOffers, onList, onOffer, onRenew, onCareer }) {
+  const [fitHelp, setFitHelp] = useState(false); // ce que coûte un match et la récupération : derrière le « ? »
   const r = playerRating(p);
   const pot = potentialRange(p, state);
   const f = formAvg(p);
@@ -733,7 +744,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
               <p className="sh-evo">
                 {p.lastDelta !== undefined && <>{t('Dernier été ')}<b className={p.lastDelta > 0 ? 'up' : p.lastDelta < 0 ? 'down' : ''}>{p.lastDelta > 0 ? '+' : ''}{fmtRating(p.lastDelta)}</b></>}
                 {p.lastDelta !== undefined && prev && ' · '}
-                {prev && <>{t('saison ')}{prev.season} : {prev.apps} {plural(prev.apps, 'match', 'matchs')}, {prev.goals} {plural(prev.goals, 'but', 'buts')}{prev.avg ? t(', note {fmtRating}', { fmtRating: fmtRating(prev.avg) }) : ''}</>}
+                {prev && <>{t('saison ')}{prev.season}{colon()}{prev.apps} {plural(prev.apps, 'match', 'matchs')}, {prev.goals} {plural(prev.goals, 'but', 'buts')}{prev.avg ? t(', note {fmtRating}', { fmtRating: fmtRating(prev.avg) }) : ''}</>}
               </p>
             )}
           </section>
@@ -742,11 +753,11 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
         {!market && (
           <section className="sh-sec">
             <div className="sh-row">
-              <span className="sh-cap">{t('Condition physique')}</span>
+              <span className="sh-cap">{t('Condition physique')}<HelpToggle open={fitHelp} onToggle={() => setFitHelp((v) => !v)} label={t('Comment évolue sa condition')} /></span>
               <span className="sh-pot"><b className={fitTone(fitOf(p))}>{Math.round(fitOf(p))} %</b></span>
             </div>
             <div className="sh-scale sh-fit" aria-hidden="true"><i className={`now ${fitTone(fitOf(p))}`} style={{ width: `${fitOf(p)}%` }} /></div>
-            <p className="sh-empty">{tr('Un match complet lui coûte environ <0/> points ; d’ici le match suivant, il récupère <1/> % de sa fatigue. Titulaire à chaque match, il se stabilise vers <2/> % : fatigué, il joue moins bien et se blesse plus souvent.', [Math.round(matchCost(p)), Math.round(recoveryRate(p, state.buildings.training || 0) * 100), Math.round(100 + matchCost(p) - matchCost(p) / recoveryRate(p, state.buildings.training || 0))])}</p>
+            {fitHelp && <p className="sh-empty sh-help">{tr('Un match complet lui coûte environ <0/> points ; d’ici le match suivant, il récupère <1/> % de sa fatigue. Titulaire à chaque match, il se stabilise vers <2/> % : fatigué, il joue moins bien et se blesse plus souvent.', [Math.round(matchCost(p)), Math.round(recoveryRate(p, state.buildings.training || 0) * 100), Math.round(100 + matchCost(p) - matchCost(p) / recoveryRate(p, state.buildings.training || 0))])}</p>}
           </section>
         )}
 

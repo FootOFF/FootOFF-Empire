@@ -12,6 +12,9 @@ const NNBSP = '\u202f'; // espace fine insécable
 const UNITS = 'pts?|points?|ans|places?|spectateurs?|matchs?|joueurs?|buts?|saisons?|journées?|jours?|heures?|h|min|minutes?|secondes?|niveaux?|étoiles?';
 
 const RULES = [
+  // milliers (1.0.14, chasse aux défauts) : une insécable entière ; l'espace fine d'Intl ne fait que 1,8 px dans Inter à
+  // 13 px, « 1 250 € » s'y lisait « 1250 € »
+  [/(\d) (?=\d)/g, `$1${NBSP}`],
   [/ ([;!?])/g, `${NNBSP}$1`],
   [/ :/g, `${NBSP}:`],
   [/« /g, `«${NBSP}`],

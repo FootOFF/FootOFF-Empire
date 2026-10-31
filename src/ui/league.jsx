@@ -18,7 +18,7 @@ import {
 } from '../game/leagueNet';
 import { dropLeagueClub, leagueClubProgress } from '../game/leagueClub';
 import { cloudNote, dropSync, syncOf } from '../game/leagueCloud';
-import { LANGS, LANG_NAMES, gameLang, langName, plural, reloadInLang, t, tn, tr } from '../i18n/index';
+import { colon, LANGS, LANG_NAMES, gameLang, langName, plural, reloadInLang, t, tn, tr } from '../i18n/index';
 
 // Siège de la Ligue : les championnats entre amis (league.js, leagueNet.js). Une fenêtre, cinq vues :
 //   home     mes championnats (trois au plus sur cet appareil), créer, rejoindre, reprendre
@@ -65,7 +65,7 @@ function PickRow({ label, list, value, onStep, onPick = null }) {
     <div
       tabIndex={0}
       role="group"
-      aria-label={`${label} : ${cur[1]}`}
+      aria-label={`${label}${colon()}${cur[1]}`}
       className="ts-pick"
       onKeyDown={(e) => {
         if (e.key === 'ArrowLeft') { e.preventDefault(); onStep(-1); }
@@ -459,7 +459,7 @@ function LeagueDetail({ m, ask, flash, onGone, onReplay, onPlayClub, reload = 0 
     if (alive.current) setBusy(false);
   };
   const copy = async (text, what) => {
-    try { await navigator.clipboard.writeText(text); flash(t('{what} copié.', { what })); } catch { flash(`${what} : ${text}`); }
+    try { await navigator.clipboard.writeText(text); flash(t('{what} copié.', { what })); } catch { flash(`${what}${colon()}${text}`); }
   };
 
   if (!data) {

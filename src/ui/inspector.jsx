@@ -13,7 +13,7 @@ import { usePanelSound } from './panels';
 import { uiSound } from './uisound';
 import { haptic } from './haptics';
 import { BuildCard, BuildWindow, HoldButton, Payoff, StatRows, imgOf, spendHint, unlockNote } from './build';
-import { t, tn, tr } from '../i18n/index';
+import { colon, t, tn, tr } from '../i18n/index';
 
 const ICONS = { terrain: IconStadium, training: IconTraining, academy: IconAcademy, fans: IconFans, sponsor: IconSponsor, transfers: IconTransfer, direction: IconDirection, medical: IconMedical, league: IconLeague };
 const KINDS = [t('Sport'), t('Revenus'), t('Mercato')];
@@ -223,7 +223,7 @@ function FreePlot({ state, sel, onClose, onBuild, onPreview, onSwitchPlot }) {
               </div>
               <button type="button" className="btn ghost btn-sm" onClick={() => setWin(true)}>{tr('<0/> Aperçu', [<IconExpand />])}</button>
             </div>
-            <p className="bdetail-hero">{hero.label} : <b>{hero.value}</b>{hero.sub ? ` ${hero.sub}` : ''}</p>
+            <p className="bdetail-hero">{hero.label}{colon()}<b>{hero.value}</b>{hero.sub ? ` · ${hero.sub}` : ''}</p>
             <Payoff state={state} k={k} target={1} compact />
           </div>
         )}

@@ -17,7 +17,7 @@ import { uiSound } from './uisound';
 import { clubStars } from '../game/crest';
 // nombres au format de la langue (1 234)
 const plural = (n, one, many) => pluralRaw(n, one, many, fmtNum(n));
-import { plural as pluralRaw, t, tn, tr } from '../i18n/index';
+import { comma, plural as pluralRaw, t, tn, tr } from '../i18n/index';
 
 // Calendrier de la saison (panneau Saison). Trois parties :
 // - la frise : toutes les dates dans l'ordre où elles se jouent (couleur de la compétition en tête : championnat or,
@@ -203,7 +203,7 @@ function Odds({ odds, qualify }) {
 function scorersOf(m) {
   const by = new Map();
   for (const x of m.scorers || []) by.set(x.name, [...(by.get(x.name) || []), x.minute]);
-  return [...by].map(([name, mins]) => `${name} ${mins.map((v) => `${v}′`).join(', ')}`).join(' · ');
+  return [...by].map(([name, mins]) => `${name} ${mins.map((v) => `${v}′`).join(comma())}`).join(' · ');
 }
 
 // Rapport de force d'une date à venir : écart entre notre onze et l'adversaire.

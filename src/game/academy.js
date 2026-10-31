@@ -3,7 +3,7 @@ import { leagueLength } from './cups';
 import { pushJournal } from './journal';
 import { ATTRS, SUMMER, WEIGHTS, makePlayer, playerRating, seasonGain } from './players';
 import { clamp, ri, rnd } from './utils';
-import { t, tn } from '../i18n/index';
+import { comma, t, tn } from '../i18n/index';
 
 // Académie : l'équipe de jeunes du club, six places. On recrute quand on veut, gratuitement, parmi les jeunes repérés
 // (renouvelés après chaque journée de championnat, toutes les deux en Élite ; plus nombreux et plus doués quand
@@ -171,6 +171,8 @@ export function refreshScouting(s) {
 // voit davantage de jeunes, elle n'en fait pas naître de meilleurs.
 export const MISSION_KINDS = { pos: t('Poste'), plan: t('Profil') };
 export const PROFILES = { tech: 'technique', phys: 'physique', mental: 'mental' };
+// le profil cherché, dit dans la langue de la partie (« لاعبًا بملف technique » en arabe jusqu'à la 1.0.13)
+const PROFILE_NAMES = { tech: t('technique'), phys: t('physique'), mental: t('mental') };
 export const MISSION_STEPS = [2, 3, 4];
 export const MISSION_BOOST = 2;
 const POS_NOUNS = { G: [t('gardien'), t('gardiens')], D: [t('défenseur'), t('défenseurs')], M: [t('milieu'), t('milieux')], A: [t('attaquant'), t('attaquants')] };
@@ -178,14 +180,14 @@ const POS_NOUNS = { G: [t('gardien'), t('gardiens')], D: [t('défenseur'), t('d�
 // une mission d'avant la 0.8.12 partie dans une région.
 export function missionTarget(m) {
   if (m.kind === 'pos') return `des ${POS_NOUNS[m.value][1]}`;
-  if (m.kind === 'plan') return t('un profil {v}', { v: PROFILES[m.value] });
+  if (m.kind === 'plan') return t('un profil {v}', { v: PROFILE_NAMES[m.value] });
   return t('des jeunes');
 }
 // Les jeunes d'une mission, comptés et accordés : « 12 attaquants », « 12 jeunes au profil technique », « 1 gardien ».
 export function missionCount(m, n) {
   if (m.kind === 'pos') return `${n} ${POS_NOUNS[m.value][n > 1 ? 1 : 0]}`;
   const y = tn(n, '{n} jeune', '{n} jeunes', { n }, n > 1);
-  return m.kind === 'plan' ? t('{y} au profil {v}', { y, v: PROFILES[m.value] }) : y;
+  return m.kind === 'plan' ? t('{y} au profil {v}', { y, v: PROFILE_NAMES[m.value] }) : y;
 }
 // Jeunes ramenés d'une mission : autant que de repérages, plus ceux d'un repérage ordinaire.
 const missionBackCount = (per, steps) => per + steps;
@@ -328,7 +330,7 @@ function missionBack(s, m) {
   s.mission = null;
   pushJournal(s, {
     season: s.seasonNumber, round: s.round, kind: 'academie', title: t('Retour de mission des recruteurs'),
-    text: t('Ils ont vu {missionCount} et ramènent {tn} : {join}.', { missionCount: missionCount(m, seen), tn: tn(list.length, 'le plus prometteur', 'les {length} plus prometteurs', { length: list.length }, list.length > 1), join: list.map((p) => p.name).join(', ') }),
+    text: t('Ils ont vu {missionCount} et ramènent {tn} : {join}.', { missionCount: missionCount(m, seen), tn: tn(list.length, 'le plus prometteur', 'les {length} plus prometteurs', { length: list.length }, list.length > 1), join: list.map((p) => p.name).join(comma()) }),
   });
 }
 

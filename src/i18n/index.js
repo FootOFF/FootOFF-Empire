@@ -45,6 +45,13 @@ let INTENT = null;
 export const bootIntent = () => INTENT;
 
 export let LANG = 'fr';
+// deux-points entre un libellé et sa valeur écrits dans le code (1.0.14, chasse aux défauts : « potential : » en anglais) :
+// espace insécable devant en français, aucune espace ailleurs
+export const colon = () => (LANG === 'fr' ? '\u00a0: ' : ': ');
+// virgule entre deux morceaux de phrase assembl\u00e9s dans le code (\u00ab Nasr Wadi el-Rih, Ligue de la province \u00bb) ; l'arabe a la sienne
+export const comma = () => (LANG === 'ar' ? '\u060c ' : ', ');
+// point-virgule entre deux morceaux de phrase assembl\u00e9s dans le code (ench\u00e8res) ; l'arabe a le sien
+export const semicolon = () => (LANG === 'fr' ? '\u00a0; ' : LANG === 'ar' ? '\u061b ' : '; ');
 // listes de noms de la langue (game/names-*.js), chargées avec le dictionnaire ; null en français
 export let NAMES = null;
 let DICT = {};
@@ -78,6 +85,9 @@ export async function initI18n() {
       }
       watchText((s) => s.replaceAll('→', '←'), '→', 'kbd');
     }
+    // (le français a sa propre typographie à l'affichage : ui/typography.js)
+    // espagnol et arabe : « 26 % » ne se coupe jamais avant le signe (un « % » seul en début de ligne)
+    if (LANG === 'es' || LANG === 'ar') watchText((s) => s.replace(/(\d) %/g, '$1 %'), '%');
     // anglais : pas d'espace avant « % » (« 66% »), y compris quand le nombre est un texte à part (« {n} % » en JSX)
     if (LANG === 'en') {
       watchText((s, n) => {

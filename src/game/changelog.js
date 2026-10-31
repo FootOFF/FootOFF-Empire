@@ -5,6 +5,16 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.14', date: '2026-10-31', title: t('Finitions'),
+    items: [
+      t('Chasse aux petits défauts d’affichage dans les quatre langues : plus aucun texte coupé, rogné ou raccourci par des points de suspension, au téléphone, au téléphone couché et sur ordinateur.'),
+      t('Un bouton au libellé trop long passe sur deux lignes au lieu d’être coupé ; les noms longs de clubs et de joueurs rapetissent juste assez pour tenir.'),
+      t('La typographie de chaque langue : plus d’espace avant les deux-points en anglais et en espagnol, la ponctuation arabe, des milliers bien séparés en français (1 250 €).'),
+      t('Les derniers textes restés en français dans les autres langues sont traduits.'),
+      t('Fiche d’un joueur : l’explication de la condition physique se déplie avec le petit « ? ».'),
+    ],
+  },
+  {
     version: '1.0.13', date: '2026-10-31', title: t('Un vrai son d’écriture'),
     items: [
       t('Écrire le nom de ton club fait le clic doux d’une touche, toujours le même ; effacer a son propre son, plus grave.'),

@@ -3549,14 +3549,14 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .ts.ts-create .ts-col { justify-content: flex-start; left: 32px; width: calc(min(520px, 44vw) + 48px); padding-left: 24px; padding-right: 24px; }
   .ts.ts-create .ts-form { margin-block: auto; } /* centré s'il tient, sinon calé en haut et la colonne défile */
 }
-@media (max-height: 760px) and (min-width: 761px), (max-height: 760px) and (orientation: landscape) and (max-height: 500px) {
+@media (max-height: 820px) and (min-width: 761px), (max-height: 760px) and (orientation: landscape) and (max-height: 500px) {
   .ts-form { gap: var(--s-3); }
   .ts-form-lead { display: none; } /* le titre dit déjà tout */
   .crest.ts-crest-art { width: 84px; height: 98px; }
   .ts-pick-arrow { width: 30px; height: 30px; }
   .ts-actions { margin-top: var(--s-2); }
 }
-@media (max-height: 680px) and (min-width: 761px), (max-height: 680px) and (orientation: landscape) and (max-height: 500px) { /* fenêtre d'ordinateur réduite : tout le formulaire tient encore */
+@media (max-height: 820px) and (min-width: 761px), (max-height: 680px) and (orientation: landscape) and (max-height: 500px) { /* fenêtre d'ordinateur réduite (jusqu'à 820 px depuis la 1.0.14 : à 768 px, l'aide des touches recouvrait les boutons) : tout le formulaire tient encore */
   .ts-form > .eyebrow { display: none; }
   .ts-input input { font-size: 24px; padding: 6px 0; }
   .ts-crest-rows { gap: 4px; }
@@ -5893,3 +5893,67 @@ html[lang="ar"] .ld-music { font-family: 'Cairo', system-ui, sans-serif; letter-
   .ts-actions .btn-xl { min-height: 52px; padding-inline: 12px; font-size: 20px; }
   .ts-actions .btn-xl[type="submit"] { flex: 1.7; }
 }
+
+/* Aide repliée (1.0.14, demande du PDG) : un petit « ? » discret à côté d'un titre, l'explication s'ouvre à la demande */
+.help-q { position: relative; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-inline-start: 8px; padding: 0; border: 1px solid rgba(255, 255, 255, .22); border-radius: 50%; background: none; color: var(--muted); font-family: var(--font-disp); font-weight: 700; font-size: 11px; line-height: 1; vertical-align: 2px; cursor: pointer; transition: color .2s, border-color .2s; }
+.help-q::before { content: '?'; } html[lang="ar"] .help-q::before { content: '؟'; } /* dessiné : le titre à côté ne se lit pas « Condition physique? » */
+.help-q::after { content: ''; position: absolute; inset: -12px; } /* au doigt : une cible de 42 px */
+.help-q.on, .help-q:focus-visible { color: var(--gold-light); border-color: var(--gold); outline: none; }
+@media (hover: hover) { .help-q:hover { color: var(--gold-light); border-color: var(--gold-line); } }
+.sh-help { margin-top: 2px; animation: fo-up .3s var(--ease) both; }
+
+/* Chasse aux défauts (1.0.14, demande du PDG : « tous les petits défauts du genre », sur les 4 langues) : plus aucun
+   texte coupé ni raccourci par des points de suspension là où il peut passer à la ligne */
+.st-mini { white-space: normal; overflow: visible; line-height: 1.3; text-wrap: balance; } /* résumé d'un match (Stats Pass) : deux lignes plutôt que « … » */
+.sqc-foot > span:first-child { white-space: normal; line-height: 1.35; } /* âge et potentiel d'une carte d'effectif : à la ligne sur un petit téléphone */
+@media (max-width: 380px) { .btn.hold { padding-left: 22px; padding-right: 22px; } } /* « Garde le doigt appuyé » : 4 px de trop à 360 px, son « É » rogné */
+.btn { white-space: normal; text-wrap: balance; text-align: center; } /* un libellé trop long : deux lignes, jamais rogné par la découpe en biais */
+@media (max-width: 380px) { .btn-xl { font-size: 21px; } } /* petits téléphones : moins de libellés longs sur deux lignes */
+.lu-bmeta { white-space: normal; flex-wrap: wrap; row-gap: 3px; }
+.lu-why { overflow: visible; text-overflow: clip; white-space: nowrap; }
+.sc-date-opp { height: 40px; }
+.sc-date-opp > span { -webkit-line-clamp: 3; font-size: 11px; line-height: 1.15; }
+.tr-prog-top { padding-right: 12px; }
+.lv-sb-team b.long { white-space: normal; text-wrap: balance; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1; } /* match.jsx useFitText */
+.cm-opp > span { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.25; text-wrap: balance; } /* menu pause : le prochain adversaire en entier (« Hollowmere Spo… ») */
+.mc-id .mc-name { white-space: normal; overflow: visible; text-overflow: clip; text-wrap: balance; line-height: 1.05; } /* nom de joueur long (« Emmanuel Thomas-Grey ») : deux lignes */
+.mc-pot-text { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.25; } /* « 25 yrs · Goalkeeper » : à la ligne */
+.pm-tname b.long { line-height: 1; } /* deux lignes sans rogner le bas des lettres */
+.bcard-hero { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.25; text-wrap: balance; } /* effet phare d'une vignette (« Treatments succeed 41% of the time ») : deux lignes */
+@media (max-width: 760px) and (min-height: 680px) { .pz .cm-sub { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; } } /* menu pause au téléphone : comme l'écran titre */
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .ts-pick-value { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.1; text-wrap: balance; } } /* « Name and year » */
+@media (orientation: landscape) and (max-height: 500px) { .ts:not(.ts-menu) .ts-bottom { display: none; } } /* téléphone couché : la version recouvrait « Retour » des règles */
+.mc-card .mc-club-name { -webkit-line-clamp: 2; } /* club long (« Estudiantes de Robledo Alto ») : deux lignes */
+.sh-tiles span { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.2; } /* « Nota media » */
+@media (max-width: 380px) { .sh-tiles > div { padding-left: 8px; padding-right: 8px; } } /* « Temporada » : 3 px de trop à 360 px */
+.ng-step { white-space: normal; line-height: 1.1; } /* étapes de la négociation (« 2 Contrato del jugador ») : à la ligne */
+@media (max-width: 380px) { .ng-step { padding-left: 10px; padding-right: 10px; letter-spacing: .03em; } }
+@media (max-width: 380px) { .ts-color { gap: 6px; } .ts-swatch { width: 22px; height: 22px; } } /* nom de la couleur en entier à 360 px (arabe « ذهبي ») */
+.hud-match-title:not(.long) { white-space: nowrap; } /* « text-wrap: balance » plus haut le remettait à la ligne : le nom long s'étalait sur trois lignes et repoussait la journée et le pronostic hors de la carte ; il rapetisse d'abord (useFitText), puis passe sur deux lignes */
+.sc-date-opp > span { font-size: 10.5px; } /* calendrier : « Estudiantes de Valdemoro Alto » sur trois lignes */
+@media (orientation: landscape) and (max-height: 500px) { .lv-legend .hide-sm { display: none; } .lv-legend .show-sm { display: inline; } } /* légende des temps forts au téléphone couché : les codes des clubs, pas des noms rognés */
+.hud-match-title.long { line-height: 1; } /* deux lignes sans rogner le bas des lettres */
+.lv-legend .hide-sm { display: none; } .lv-legend .show-sm { display: inline; } /* légende des temps forts : les codes des clubs, toujours (un nom long y était rogné) */
+@media (max-width: 380px) { .sc-odds-legend { gap: 8px; letter-spacing: .02em; } .sc-odds-legend b { font-size: 20px; margin-right: 4px; } } /* « 36 % défaite » rogné à 360 px */
+html[lang="ar"] .hud-match-title.long { font-size: 17px; line-height: 1.2; } /* arabe : deux lignes à l'interligne de Cairo débordaient de la carte (journée et pronostic rognés) */
+.cup-run .cr-opp { display: block; overflow: visible; -webkit-line-clamp: unset; } /* adversaire de coupe : son nom puis « Europe · budget … », jamais coupé (arabe) */
+.sh-attr > span:first-child { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.2; } /* nom d'attribut long (« إنهاء الهجمات ») : à la ligne */
+.tr-prog-top { flex-wrap: wrap; row-gap: 2px; } /* programme d'entraînement : « 2 / 6 sesiones » sous le nom plutôt que coupé */
+.lv-facts li > span { white-space: normal; overflow: visible; text-overflow: clip; } /* buteurs : « Thibodeau 2′ (pen.), 45+1′ » à la ligne */
+.dir-contract .dir-who strong { white-space: normal; overflow: visible; text-overflow: clip; } /* direction du club : le nom du joueur en entier */
+.sq-row-name { white-space: normal; overflow: visible; text-overflow: clip; } /* listes de joueurs (anciens) : nom et motif de départ en entier */
+.pr-name { white-space: normal; overflow: visible; text-overflow: clip; } /* notes de l'après-match : « O. Chambers-Lee » en entier */
+.lv-notes-switch button { height: auto; min-height: 38px; padding-top: 4px; padding-bottom: 4px; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.05; text-wrap: balance; } /* choix de l'équipe des notes : « Atlético de Las Almenas » sur deux lignes */
+/* noms de club de 26 caractères (la limite de la fondation) : deux lignes qui ne rognent ni les capitales accentuées ni l'arabe */
+.hud-club-name.long, .pm-tname b.long, .cm-card-head strong { line-height: 1.05; }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
+  .hud-id:has(.hud-club-name.long) .hud-club-meta { display: none; } /* nom sur deux lignes : la journée se lit sur la carte du match et dans Saison */
+}
+.ts-profile { height: auto; min-height: 36px; padding-top: 4px; padding-bottom: 4px; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; text-wrap: balance; } /* écran titre : le club de la partie en entier */
+.cmp-name { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.2; } /* comparateur : le nom du joueur en entier */
+.pm-tname b.long { line-height: 1; } /* plus haut, le bloc poussait la ligne « 1er · 6 pts · niveau » dans le coin coupé de la carte */
+html[lang="ar"] .pm-tname b.long { line-height: 1.15; }
+@media (min-width: 761px) { html[lang="ar"] .pm-tname b.long { font-size: 24px !important; } } /* avant-match en arabe : un nom long sur deux lignes à l'interligne de Cairo débordait du bandeau */
+@media (min-width: 761px) and (max-height: 860px) { .pz:has(.pz-head h2.long) .cm-item:not(.on) .cm-sub, html[lang="ar"] .pz .cm-item:not(.on) .cm-sub { display: none; } } /* menu pause : un nom de club sur deux lignes repoussait la dernière entrée sous l'aide des touches */
+.pm-matchup { height: auto; min-height: 84px; } /* avant-match : un nom sur deux lignes, le bandeau grandit au lieu de couper la ligne « niveau » dessous */
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .pm-team { height: auto; min-height: 58px; padding-top: 6px; padding-bottom: 6px; } }

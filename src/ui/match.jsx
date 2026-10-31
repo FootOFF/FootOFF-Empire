@@ -24,7 +24,7 @@ import { standingsOf } from '../game/season';
 import { useFitText } from './fittext';
 import { HT_CASES } from '../game/league';
 import { arrangeFor, planView } from '../game/leagueClub';
-import { ordinal as ordinalText, t, tn, tr } from '../i18n/index';
+import { colon, comma, ordinal as ordinalText, t, tn, tr } from '../i18n/index';
 
 // Avant-match (onze + tactique + pronostic) et match en direct (score, chrono, fil de commentaires,
 // vitesse, mi-temps avec changements sur le terrain). La 3D derrière est en mode « jour de match ».
@@ -460,7 +460,7 @@ function ScoreFacts({ shown, side, pos = side }) {
   if (!goals.size && !reds.length) return <ul className={`lv-facts ${pos}`} />;
   return (
     <ul className={`lv-facts ${pos}`}>
-      {[...goals].map(([who, mins]) => <li key={`g${who}`}><IconBall /><span><b>{lastName(who)}</b> {mins.join(', ')}</span></li>)}
+      {[...goals].map(([who, mins]) => <li key={`g${who}`}><IconBall /><span><b>{lastName(who)}</b> {mins.join(comma())}</span></li>)}
       {reds.map((r) => <li key={`r${r.who}`}><i className="card red" aria-label={t('carton rouge')} /><span><b>{lastName(r.who)}</b> {r.minute}′</span></li>)}
     </ul>
   );
@@ -544,9 +544,9 @@ function emptyText(empty) {
   const count = new Map();
   for (const p of empty) count.set(p, (count.get(p) || 0) + 1);
   const parts = [...count].map(([p, n]) => (n > 1 ? `${n} ${PLURAL[p]}` : POS_LABELS[p].toLowerCase()));
-  return `${tn(empty.length, 'Poste laissé vide', 'Postes laissés vides', {}, empty.length > 1)} : ${parts.join(', ')}`;
+  return `${tn(empty.length, 'Poste laissé vide', 'Postes laissés vides', {}, empty.length > 1)}${colon()}${parts.join(comma())}`;
 }
-const SHORT = ['onze', 'dix', 'neuf', 'huit', 'sept'];
+const SHORT = [t('onze'), t('dix'), t('neuf'), t('huit'), t('sept')]; // « l'équipe repart à dix » (en français dans toutes les langues jusqu'à la 1.0.13)
 function HalftimeChanges({ state, m, plan, formation, halftime = true, onReset }) {
   const names = displayNames(state.players);
   const pairs = pairSubs(m.lineup, plan);
@@ -557,7 +557,7 @@ function HalftimeChanges({ state, m, plan, formation, halftime = true, onReset }
   const newSlots = slotsOf(formation);
   const moves = reshaped ? [] : plan.map((id, k) => {
     const was = m.lineup.indexOf(id);
-    return was >= 0 && was !== k && !isOut(id) && oldSlots[was] !== newSlots[k] ? `${names[id]} passe ${POS_LABELS[newSlots[k]].toLowerCase()}` : null;
+    return was >= 0 && was !== k && !isOut(id) && oldSlots[was] !== newSlots[k] ? t('{name} passe {pos}', { name: names[id], pos: POS_LABELS[newSlots[k]].toLowerCase() }) : null;
   }).filter(Boolean);
   const moved = plan.some((id, k) => m.lineup.includes(id) && m.lineup[k] !== id);
   const empty = plan.map((id, k) => (isOut(id) ? newSlots[k] : null)).filter(Boolean);
@@ -1017,6 +1017,9 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const [L, R] = flip ? ['away', 'home'] : ['home', 'away'];
   const teamName = { home: m.home, away: m.away };
   const teamCode = { home: codes[0], away: codes[1] };
+  // noms au tableau d'affichage (1.0.14) : un nom long rapetisse juste assez (« BLACKWATER WANDE… » sur PC), jamais raccourci
+  const nameL = useFitText(teamName[L], 18);
+  const nameR = useFitText(teamName[R], 18);
   const teamGoals = { home: goalsH, away: goalsA };
   const crestOf = (k, className) => (k === 'home' ? <HomeCrest state={state} name={m.home} className={className} /> : <AwayCrest ctx={ctx} name={m.away} className={className} />);
   // tenue de chaque équipe dans les temps forts 3D (1.0.3, demande du PDG : on ne savait pas qui jouait en quelle
@@ -1056,14 +1059,14 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
           <div className="lv-sb" aria-label={`${teamName[L]} ${teamGoals[L]}, ${teamName[R]} ${teamGoals[R]}`}>
             <div className="lv-sb-team home">
               {crestOf(L, 'lv-sb-crest')}
-              <b title={teamName[L]}><span className="hide-sm">{teamName[L]}</span><span className="show-sm">{teamCode[L]}</span></b>
+              <b title={teamName[L]} ref={nameL}><span className="hide-sm">{teamName[L]}</span><span className="show-sm">{teamCode[L]}</span></b>
             </div>
             <div className="lv-sb-mid">
               <span className="lv-sb-score"><b key={`${L}${teamGoals[L]}`}>{teamGoals[L]}</b><i>-</i><b key={`${R}${teamGoals[R]}`}>{teamGoals[R]}</b></span>
               <span className={`lv-sb-clock is-${phase}`}>{clockEl}</span>
             </div>
             <div className="lv-sb-team away">
-              <b title={teamName[R]}><span className="hide-sm">{teamName[R]}</span><span className="show-sm">{teamCode[R]}</span></b>
+              <b title={teamName[R]} ref={nameR}><span className="hide-sm">{teamName[R]}</span><span className="show-sm">{teamCode[R]}</span></b>
               {crestOf(R, 'lv-sb-crest')}
             </div>
           </div>

@@ -19,7 +19,7 @@ import { Presence } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { Portrait } from './portrait';
 import { heat } from './mercato';
-import { numLocale, plural, t, tn, tr } from '../i18n/index';
+import { colon, comma, numLocale, plural, t, tn, tr } from '../i18n/index';
 
 // Académie : l'équipe de jeunes du club (academy.js), ouverte d'un clic sur le bâtiment dans la vue 3D. Deux onglets,
 // dans le style de l'Effectif (tableau détaillé sur PC, liste compacte sur téléphone) : « Mes jeunes » (six places,
@@ -222,7 +222,7 @@ function YouthTab({ state, youth, scouted, refLvl, focus, onOpen, onScout }) {
       </>
     );
   }
-  const names = leaving.map((p) => p.name).join(', ');
+  const names = leaving.map((p) => p.name).join(comma());
   return (
     <>
       {leaving.length > 0 && (
@@ -569,7 +569,7 @@ function LevelCard({ state, onBuilding }) {
       </div>
       {lvl < max ? (
         <div className="ac-level-next">
-          <span><b>{tr('Niveau <0/>', [lvl + 1])}</b> : {line(lvl + 1)}</span>
+          <span><b>{tr('Niveau <0/>', [lvl + 1])}</b>{colon()}{line(lvl + 1)}</span>
           <button className="btn ghost btn-sm" onClick={onBuilding}>{tr('<0/> Améliorer · <1/>', [<IconArrowUp />, fmtMoney(upgradeCost('academy', lvl + 1))])}</button>
         </div>
       ) : <span className="ac-level-max">{t('Niveau maximum atteint')}</span>}

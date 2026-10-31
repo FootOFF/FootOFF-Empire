@@ -37,13 +37,14 @@ export function TopHud({ state, onMenu, onFinances, onReputation, onTable }) {
   const round = Math.min(state.round + 1, rounds); // journée à jouer (la dernière une fois le championnat fini)
   const rank = state.table[0].played ? standingsOf(state).findIndex((t) => t.i === 0) + 1 : null; // avant la 1re journée : « – »
   const nameRef = useFitText(state.clubName, 17);
+  const metaRef = useFitText(`${div.name}${round}${rounds}`, 9); // « Départementale · J1/7 » : 3 px de trop à 360 px
   return (
     <header className="hud-top">
       <div className="hud-bug hud-club" aria-label={t('Club')}>
         <span className="hud-cell hud-crest"><ClubCrest crest={state.crest} name={state.clubName} className="hud-mark" stars={clubStars(state)} /></span>
         <span className="hud-cell hud-id">
           <span className="hud-club-name" ref={nameRef}>{state.clubName}</span>
-          <span className="hud-club-meta">{div.name}<span className="hud-meta-season">{' '}{tr('· Saison <0/>', [state.seasonNumber])}</span><span className="hud-meta-round"> · {t('J')}{round}/{rounds}</span></span>
+          <span className="hud-club-meta" ref={metaRef}>{div.name}<span className="hud-meta-season">{' '}{tr('· Saison <0/>', [state.seasonNumber])}</span><span className="hud-meta-round"> · {t('J')}{round}/{rounds}</span></span>
         </span>
         <span className="hud-cell hud-round"><small>{t('Journée')}</small><b>{round}/{rounds}</b></span>
         <button className="hud-cell hud-rank" onClick={onTable} title={t('Voir le classement')}
@@ -229,6 +230,7 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
   useHudKey(['KeyJ'], () => (watch ? league.onWatch() : done ? (waitSeason ? null : onEndSeason()) : league?.kickoff ? null : onPlay()), keys);
   const odds = useMemo(() => (ctx ? prematchOdds(state, { oppStrength: ctx.opp.strength, home: ctx.home !== false, away: awayElevenOf(state, ctx) }) : null), [state]); // eslint-disable-line react-hooks/exhaustive-deps
   const titleRef = useFitText(ctx?.opp.name, 17);
+  const eyeRef = useFitText(`${ctx?.short}${ctx?.home}${state.round}`, 10); // « Coupe · Demies · Domicile » raccourci sur PC
   if (watch) { // la journée est jouée : notre match nous attend, comme un direct
     return (
       <section className="hud-match glass comp-league" aria-label={t('Match à regarder')}>
@@ -276,7 +278,7 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
     <section className={`hud-match glass comp-${ctx.comp} ${league?.sent ? 'sent' : ''}`} aria-label={t('Prochain match')}>
       <MatchCrest opp={opp} />
       <div className="hm-info">
-        <span className="hm-eyebrow" title={ctx.label}>
+        <span className="hm-eyebrow" title={ctx.label} ref={eyeRef}>
           {champ ? <>{t('J')}{state.round + 1}/{state.schedule.length}</> : ctx.short} · {ctx.home === false ? t('Extérieur') : t('Domicile')}
         </span>
         <strong className="hud-match-title" ref={titleRef} title={opp.name}>{opp.name}</strong>

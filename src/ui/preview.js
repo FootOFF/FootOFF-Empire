@@ -120,7 +120,8 @@ export const SCREENS = [
 
 export function previewState(screen) {
   if (screen === 'accueil' || screen === 'creation' || screen === 'erreur') return null;
-  const s = createInitialState('FootOFF FC');
+  // ?club=… : un autre nom de club (chasse aux défauts : un nom long, 26 caractères au plus comme à la fondation)
+  const s = createInitialState((typeof location !== 'undefined' && new URLSearchParams(location.search).get('club')?.slice(0, 26)) || 'FootOFF FC');
   s.tutorial = { step: screen === 'tutoriel' ? 'build' : screen === 'tutoriel-effectif' ? 'squad' : 'done' };
   if (screen === 'finances' || screen === 'stats' || screen === 'stats-pass' || screen === 'stats-detail' || screen === 'anciens' || screen === 'trophees') { // deux saisons bouclées, puis trois matchs : courbe et comptes remplis
     build(s, 'main', 'training');
