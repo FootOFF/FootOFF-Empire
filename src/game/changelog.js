@@ -5,6 +5,12 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.17', date: '2026-10-31', title: t('Écran titre stable'),
+    items: [
+      t('Sur ordinateur, dans une fenêtre qui n’est pas en plein écran, le logo et le menu de l’écran titre ne sautillent plus : la mise en page s’ajuste une fois pour toutes à la hauteur de la fenêtre.'),
+    ],
+  },
+  {
     version: '1.0.16', date: '2026-10-31', title: t('Notifications demandées au bon moment'),
     items: [
       t('Championnats entre amis : la demande d’autorisation des notifications s’affiche d’elle-même la première fois que tu entres dans tes championnats, ou quand tu en crées, en rejoins ou en reprends un. Le bouton de la carte Notifications reste là si tu l’as écartée.'),

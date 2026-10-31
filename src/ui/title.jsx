@@ -287,7 +287,10 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
       const b = col.lastElementChild;
       return !!a && b.offsetTop + b.offsetHeight - a.offsetTop > room + 1;
     };
-    const fit = () => {
+    // Mesuré sans transitions (data-measuring, 1.0.17) : les entrées animent leur hauteur et leur police (0,25 s) ;
+    // mesurées en pleine animation, l'ajustement changeait d'avis à chaque image et le logo et le menu sautillaient sans
+    // fin sur les fenêtres de PC à la limite (remarque du PDG du 2026-10-31). Le résultat est posé tel quel, sans animation.
+    const step = () => {
       delete col.dataset.tight;
       if (!over()) return;
       col.dataset.tight = '';
@@ -299,15 +302,33 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
       col.dataset.tight = '4'; // dernier recours (fenêtre minuscule) : le menu défile, sa marge basse reste vide
       col.style.setProperty('--ts-fade', getComputedStyle(col).paddingBottom);
     };
+    const fit = () => {
+      col.dataset.measuring = '';
+      try {
+        step();
+      } finally {
+        void col.offsetHeight; // l'état final calculé sans transition : rien ne s'anime en retirant la règle
+        delete col.dataset.measuring;
+      }
+    };
     fit();
-    // la fenêtre, et le contenu (polices chargées après coup, menu qui change) ; fit() rend la même mise en page pour
-    // la même place, sans nouvelle notification
-    const ro = new ResizeObserver(fit);
+    // La fenêtre : toujours. Le contenu (polices chargées après coup, menu qui change) : une fois les animations des
+    // entrées finies, sinon la mesure couperait celle de l'entrée choisie. fit() rend la même mise en page pour la même
+    // place, sans nouvelle notification.
+    const settled = () => { if (!col.getAnimations?.({ subtree: true }).some((a) => a.playState === 'running')) fit(); };
+    const ro = new ResizeObserver((entries) => (entries.some((e) => e.target === col) ? fit() : settled()));
     ro.observe(col);
     for (const el of col.children) ro.observe(el);
+    col.addEventListener('transitionend', settled);
+    col.addEventListener('animationend', settled);
     let live = true;
     document.fonts?.ready.then(() => { if (live) fit(); });
-    return () => { live = false; ro.disconnect(); };
+    return () => {
+      live = false;
+      ro.disconnect();
+      col.removeEventListener('transitionend', settled);
+      col.removeEventListener('animationend', settled);
+    };
   }, [view, items.length]);
   const sub = view === 'settings' || view === 'rules' || view === 'lang' || view === 'media';
   const hints = sub

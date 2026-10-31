@@ -3334,6 +3334,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
    (data-tight="2") le titre et les écarts se resserrent. « safe » : s'il déborde encore, il part du haut, jamais sur
    « FootOFF Media présente » */
 .ts-col[data-tight] .cm-item:not(.on) .cm-sub { display: none; }
+/* mesure de l'ajustement (title.jsx, 1.0.17) : hauteurs d'arrivée, sans transition */
+.ts-col[data-measuring], .ts-col[data-measuring] * { transition: none !important; }
 .ts-col:is([data-tight="2"], [data-tight="3"], [data-tight="4"]) { gap: 20px; }
 .ts-col:is([data-tight="2"], [data-tight="3"], [data-tight="4"]) .ts-head { gap: var(--s-2); }
 .ts-col:is([data-tight="2"], [data-tight="3"], [data-tight="4"]) .ts-mark .lockup-mark { height: 64px; }
