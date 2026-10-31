@@ -27,4 +27,6 @@ jobs:
       - name: Tournée des rappels
         env:
           TOKEN: ${{ secrets.LIGUE_RAPPELS_SECRET }}
-        run: curl -fsS -m 30 --retry 2 --retry-delay 10 -o /dev/null -X POST https://www.footoff.media/api/ligue/rappels -H 'content-type: application/json' -H "authorization: Bearer $TOKEN" -d '{}'
+        run: |
+          curl -fsS -m 30 --retry 2 --retry-delay 10 -o /dev/null -X POST https://www.footoff.media/api/ligue/rappels \
+            -H 'content-type: application/json' -H "authorization: Bearer $TOKEN" -d '{}'
