@@ -10,7 +10,9 @@ name: Rappels des championnats
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    # minutes décalées : GitHub saute surtout les tâches des minutes rondes, les plus chargées (une seule tournée en
+    # neuf heures le 31/10 avec */5) ; le trafic des joueurs fait aussi la tournée (site, src/lib/ligue/push.ts)
+    - cron: '3-58/5 * * * *'
   workflow_dispatch:
 
 permissions: {}
