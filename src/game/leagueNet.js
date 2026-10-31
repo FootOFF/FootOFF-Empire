@@ -317,8 +317,10 @@ function store(list) {
   try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* stockage plein ou indisponible */ }
   return list;
 }
-export const rememberLeague = (m) => store([m, ...myLeagues().filter((x) => x.code !== m.code)].slice(0, MAX_MY_LEAGUES));
-export const forgetLeague = (code) => { dropCache(code); return store(myLeagues().filter((x) => x.code !== code)); };
+// un championnat de plus : ses notifications aussi, si l'appareil les a demandées
+export const rememberLeague = (m) => { const list = store([m, ...myLeagues().filter((x) => x.code !== m.code)].slice(0, MAX_MY_LEAGUES)); syncPush(); return list; };
+// oublié sur cet appareil : ses notifications aussi (le serveur les efface déjà au départ et à la suppression)
+export const forgetLeague = (code) => { dropPush(code); dropCache(code); return store(myLeagues().filter((x) => x.code !== code)); };
 export const updateLeague = (code, patch) => store(myLeagues().map((x) => (x.code === code ? { ...x, ...patch } : x)));
 
 // Code de reprise d'un club sur un autre appareil : « CODE.identifiant.secret » (ni l'identifiant ni le secret ne
@@ -348,3 +350,133 @@ export function takeInvite() {
   return invite;
 }
 export const inviteLink = (code) => `${window.location.origin}${window.location.pathname.replace(/index\.html$/, '')}?ligue=${code}`;
+
+// Championnat ouvert par une notification touchée (…/footoffempire/?ouvrir=CODE, sw.js) : lu une fois au démarrage,
+// puis retiré de l'adresse.
+let opened;
+export function takeOpen() {
+  if (opened !== undefined) return opened;
+  opened = null;
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('ouvrir')) return opened;
+    const code = (url.searchParams.get('ouvrir') || '').toUpperCase();
+    url.searchParams.delete('ouvrir');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    opened = isLeagueCode(code) ? code : null;
+  } catch { /* adresse illisible : rien à ouvrir */ }
+  return opened;
+}
+
+// ---- notifications sur le téléphone (1.0.15) ----
+// Web Push : le jeu ajouté à l'écran d'accueil (iPhone, iOS 16.4 et plus récent) ou ouvert dans Chrome (Android,
+// ordinateur), même fermé. L'appareil s'abonne une fois (son service worker, sw.js), puis déclare cet abonnement à
+// chacun de ses championnats ; le serveur des ligues prévient (site, src/lib/ligue/push.ts) : un ami arrive, le
+// championnat est lancé, une offre ou une réponse du mercato, plus qu'une heure pour valider, coup d'envoi, journée
+// jouée. Gardé sur l'appareil : { on, sent: { CODE: adresse déclarée à ce championnat }, at : dernière déclaration
+// complète } ; tout est redéclaré chaque semaine (un abonnement effacé par le serveur revient de lui-même).
+const NOTIFS = 'fo-notifs';
+function readNotifs() {
+  try {
+    const v = JSON.parse(localStorage.getItem(NOTIFS) || 'null');
+    return v && typeof v === 'object' ? { on: !!v.on, sent: v.sent && typeof v.sent === 'object' ? v.sent : {}, at: Number(v.at) || 0 } : { on: false, sent: {}, at: 0 };
+  } catch {
+    return { on: false, sent: {}, at: 0 };
+  }
+}
+const REDECLARE_MS = 7 * 24 * 3600 * 1000;
+const writeNotifs = (v) => { try { localStorage.setItem(NOTIFS, JSON.stringify(v)); } catch { /* stockage plein ou indisponible */ } };
+const isIOS = () => /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const standalone = () => !!window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
+// 'ok' ; 'install' : iPhone, jeu ouvert dans Safari (les notifications n'arrivent qu'au jeu ajouté à l'écran
+// d'accueil) ; 'none' : navigateur sans notifications (iPhone avant iOS 16.4, navigateur intégré d'une app), ou
+// développement (pas de service worker)
+export function pushSupport() {
+  if (typeof window === 'undefined' || import.meta.env.DEV) return 'none';
+  if (isIOS() && !standalone()) return 'install';
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window ? 'ok' : 'none';
+}
+// Pour l'écran : 'on', 'off', 'denied' (refusées dans les réglages du téléphone), 'install' ou 'none'
+export function pushState() {
+  const s = pushSupport();
+  if (s !== 'ok') return s;
+  if (Notification.permission === 'denied') return 'denied';
+  return readNotifs().on && Notification.permission === 'granted' ? 'on' : 'off';
+}
+
+const keyBytes = (b64) => Uint8Array.from(atob(b64.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (b64.length % 4)) % 4)), (c) => c.charCodeAt(0));
+const sameKey = (buf, bytes) => {
+  if (!buf) return false;
+  const a = new Uint8Array(buf);
+  return a.length === bytes.length && a.every((x, i) => x === bytes[i]);
+};
+const swReady = () => Promise.race([
+  navigator.serviceWorker.ready,
+  new Promise((_, no) => { setTimeout(() => no(new Error('service worker')), 8000); }),
+]);
+let serverKey = null; // la clé publique du serveur (GET /api/ligue/push), lue une fois par session
+// L'abonnement de l'appareil, créé au besoin ; la clé du serveur a changé : on en reprend un neuf.
+async function deviceSub() {
+  const reg = await swReady();
+  serverKey ||= keyBytes((await call('/push')).key);
+  let sub = await reg.pushManager.getSubscription();
+  if (sub && !sameKey(sub.options?.applicationServerKey, serverKey)) { await sub.unsubscribe().catch(() => {}); sub = null; }
+  return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: serverKey });
+}
+// Déclare l'abonnement aux championnats qui ne l'ont pas encore (nouveau championnat, abonnement renouvelé par le
+// téléphone) ; au démarrage et à chaque championnat ajouté. Une seule synchronisation à la fois.
+let syncing = null;
+export function syncPush() {
+  if (syncing) return syncing;
+  syncing = (async () => {
+    if (!readNotifs().on || pushSupport() !== 'ok' || Notification.permission !== 'granted') return false;
+    const sub = (await deviceSub()).toJSON();
+    const st = readNotifs();
+    const fresh = Date.now() - st.at < REDECLARE_MS;
+    const before = fresh ? st.sent : {};
+    const sent = {};
+    let all = true;
+    for (const m of myLeagues()) {
+      if (before[m.code] === sub.endpoint) { sent[m.code] = sub.endpoint; continue; }
+      try {
+        await call(`/${m.code}/push`, { method: 'POST', body: { sub }, auth: m });
+        sent[m.code] = sub.endpoint;
+      } catch { all = false; /* réessayé à la prochaine synchronisation */ }
+    }
+    if (readNotifs().on) writeNotifs({ on: true, sent, at: fresh ? st.at : all ? Date.now() : 0 });
+    return true;
+  })().catch(() => false).finally(() => { syncing = null; });
+  return syncing;
+}
+// Au toucher du joueur (la demande d'autorisation suit un geste, règle de l'iPhone) : 'on', 'denied' ou 'off'.
+export async function enablePush() {
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') return perm === 'denied' ? 'denied' : 'off';
+  writeNotifs({ on: true, sent: {}, at: 0 });
+  await syncing; // une synchronisation déjà en route ne déclare rien : on attend la nôtre
+  if (!(await syncPush())) {
+    writeNotifs({ on: false, sent: {}, at: 0 });
+    throw new Error('push');
+  }
+  return 'on';
+}
+// Un championnat oublié sur cet appareil : il oublie aussi son adresse (sans attendre de réponse).
+function dropPush(code) {
+  const st = readNotifs();
+  const m = myLeagues().find((x) => x.code === code);
+  const endpoint = st.sent[code];
+  if (!m || !endpoint) return;
+  delete st.sent[code];
+  writeNotifs(st);
+  call(`/${code}/unpush`, { method: 'POST', body: { endpoint }, auth: m }).catch(() => null);
+}
+// Plus rien sur cet appareil : chaque championnat oublie son adresse, puis l'abonnement est rendu.
+export async function disablePush() {
+  writeNotifs({ on: false, sent: {}, at: 0 });
+  try {
+    const sub = await (await swReady()).pushManager.getSubscription();
+    if (!sub) return;
+    await Promise.all(myLeagues().map((m) => call(`/${m.code}/unpush`, { method: 'POST', body: { endpoint: sub.endpoint }, auth: m }).catch(() => null)));
+    await sub.unsubscribe();
+  } catch { /* abonnement déjà rendu */ }
+}

@@ -59,3 +59,37 @@ self.addEventListener('fetch', (e) => {
   }
   if (/fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) e.respondWith(staleWhileRevalidate(FONTS, req));
 });
+
+// Notifications des championnats entre amis (1.0.15) : le serveur des ligues les envoie chiffrées ({ title, body, url,
+// tag, lang, dir } : le championnat, le message, ?ouvrir=CODE) ; toujours affichées (règle des navigateurs). Une
+// notification du même sujet remplace la précédente (tag). Touchée : le jeu déjà ouvert passe devant et ouvre le
+// championnat (message au jeu, App.jsx), sinon il s'ouvre dessus.
+const text = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '');
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { d = {}; }
+  const code = /^\?ouvrir=([A-Z0-9]{4,12})$/.exec(text(d.url, 40).replace(/^\.\//, ''))?.[1] || '';
+  e.waitUntil(self.registration.showNotification(text(d.title, 80) || 'FootOFF Empire', {
+    body: text(d.body, 300),
+    tag: text(d.tag, 64) || undefined,
+    lang: text(d.lang, 5) || undefined,
+    dir: d.dir === 'rtl' ? 'rtl' : 'auto',
+    icon: abs('icons/icon-192.png'),
+    badge: abs('icons/badge-96.png'),
+    data: { code },
+  }));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const code = text(e.notification.data?.code, 12);
+  e.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const w = wins.find((c) => c.url.startsWith(scope));
+    if (w) {
+      await w.focus().catch(() => {});
+      if (code) w.postMessage({ type: 'fo-ouvrir', code });
+      return;
+    }
+    await self.clients.openWindow(code ? abs(`./?ouvrir=${code}`) : scope);
+  })());
+});

@@ -5356,6 +5356,11 @@ html, body { overscroll-behavior: none; }
 .lig-problem { margin: 0; padding: 9px 14px; font-size: var(--t-sm); color: #f0b3ab; background: rgba(224, 122, 111, .08); box-shadow: inset 3px 0 0 var(--red); clip-path: var(--cut-shape-sm); }
 .lig-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 .lig-resume-link, .lig-leave { align-self: flex-start; }
+/* notifications sur le téléphone (1.0.15) : une carte discrète sous mes championnats */
+.lig-notifs { gap: var(--s-2); padding: var(--s-4); margin-top: var(--s-2); }
+.lig-notifs h3 { display: flex; align-items: center; gap: 8px; font-size: var(--d-md); }
+.lig-notifs h3 svg { width: 18px; height: 18px; flex: none; color: var(--gold); }
+.lig-notifs .linkbtn { align-self: flex-start; }
 .lig-leave { margin-top: var(--s-2); }
 .lig-delete { align-self: flex-start; color: var(--red); } /* suppression par le créateur (0.8.6) */
 /* mot à taper pour confirmer une suppression définitive */

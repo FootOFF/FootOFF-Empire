@@ -3,7 +3,7 @@ import { Panel } from './panels';
 import { SectionHead } from './kit';
 import { COLOR_KEYS, ClubCrest, ColorValue, Crest, CrestArt } from './crest';
 import { CREST_ROWS } from './title';
-import { IconCheck, IconChevron, IconChevronLeft, IconClock, IconDice, IconPlay, IconPlus, IconRefresh, IconUsers } from './icons';
+import { IconBell, IconCheck, IconChevron, IconChevronLeft, IconClock, IconDice, IconPlay, IconPlus, IconRefresh, IconUsers } from './icons';
 import { leftText, mmss, useCountdown } from './hud';
 import { typeSound, uiSound } from './uisound';
 import { capitalize, isPluralClub, randomClubName, withArticle } from '../game/names';
@@ -13,8 +13,8 @@ import {
   deviceZone, hourText, isLeagueCode, leagueClubs, leagueFixtures, leagueLang, leagueRounds, leagueTable, replayOf,
 } from '../game/league';
 import {
-  createLeague, deadlineAt, deleteLeague, forgetLeague, inviteLink, joinLeague, kickMember, kickoffAt, leagueInfo, leagueState, leaveLeague, myLeagues, pulseUrgent, userActive, watchPulse,
-  parseResumeCode, refreshLeague, rememberLeague, resumeCodeOf, startLeague, updateLeague,
+  createLeague, deadlineAt, deleteLeague, disablePush, enablePush, forgetLeague, inviteLink, joinLeague, kickMember, kickoffAt, leagueInfo, leagueState, leaveLeague, myLeagues, pulseUrgent, userActive, watchPulse,
+  parseResumeCode, pushState, refreshLeague, rememberLeague, resumeCodeOf, startLeague, updateLeague,
 } from '../game/leagueNet';
 import { dropLeagueClub, leagueClubProgress } from '../game/leagueClub';
 import { cloudNote, dropSync, syncOf } from '../game/leagueCloud';
@@ -204,7 +204,40 @@ function Home({ mine, canBuild, onOpen, onCreate, onJoin, onResume }) {
       </div>
       {full && <p className="dir-note">{t('Trois championnats à la fois au plus : quittes-en un pour en rejoindre un autre.')}</p>}
       <button type="button" className="linkbtn lig-resume-link" disabled={full} onClick={onResume}>{t('Reprendre mon club sur cet appareil (code de reprise)')}</button>
+      {mine.length > 0 && <Notifs />}
     </>
+  );
+}
+
+// Notifications sur le téléphone (1.0.15, leagueNet.js) : une carte discrète sous mes championnats, absente quand le
+// navigateur ne sait pas en recevoir. Sur iPhone dans Safari, comment les obtenir : le jeu ajouté à l'écran d'accueil.
+function Notifs() {
+  const [state, setState] = useState(pushState);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState(null);
+  if (state === 'none') return null;
+  const turnOn = () => { // la demande d'autorisation part dans le geste même (règle de l'iPhone)
+    uiSound('select');
+    setBusy(true);
+    setProblem(null);
+    enablePush().then(setState, () => setProblem(t('Notifications indisponibles pour l’instant : réessaie dans un moment.'))).finally(() => setBusy(false));
+  };
+  const turnOff = () => {
+    uiSound('back');
+    setBusy(true);
+    disablePush().finally(() => { setState(pushState()); setBusy(false); });
+  };
+  return (
+    <section className="dir-card lig-notifs">
+      <h3>{tr('<0/> Notifications', [<IconBell />])}</h3>
+      {state === 'on' && <p className="dir-note">{t('Activées sur cet appareil, pour tous tes championnats.')}</p>}
+      {state === 'off' && <p className="dir-note">{t('Sois prévenu sur ce téléphone, même jeu fermé : un ami qui arrive, une offre au mercato, plus qu’une heure pour valider ton équipe, le coup d’envoi.')}</p>}
+      {state === 'denied' && <p className="dir-note">{t('Bloquées pour le jeu : autorise-les dans les réglages de ton téléphone, puis reviens ici.')}</p>}
+      {state === 'install' && <p className="dir-note">{t('Sur iPhone, elles arrivent quand le jeu est sur ton écran d’accueil : dans Safari, touche Partager, puis « Sur l’écran d’accueil », et ouvre le jeu depuis son icône.')}</p>}
+      <Problem text={problem} />
+      {state === 'off' && <button type="button" className="btn ghost" disabled={busy} onClick={turnOn}>{t('Activer les notifications')}</button>}
+      {state === 'on' && <button type="button" className="linkbtn" disabled={busy} onClick={turnOff}>{t('Désactiver sur cet appareil')}</button>}
+    </section>
   );
 }
 

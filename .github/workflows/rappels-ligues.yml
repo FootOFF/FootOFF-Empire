@@ -1,0 +1,30 @@
+# Tournée des rappels des championnats entre amis (1.0.15) : toutes les cinq minutes, le serveur des ligues
+# (www.footoff.media/api/ligue/rappels, dépôt du site) envoie les notifications dues à l'heure : « plus qu'une heure pour
+# valider ton équipe » et « coup d'envoi ». Les autres (un ami arrive, une offre, toutes les équipes validées, journée
+# jouée) partent d'elles-mêmes, au geste qui les déclenche. La tournée n'envoie que ce qui est dû, chaque notification
+# une seule fois, une tournée par minute au plus ; sa réponse ne dit rien de l'activité des ligues (journaux publics).
+# Secret facultatif LIGUE_RAPPELS_SECRET (Settings > Secrets and variables > Actions), la même valeur que sur Vercel : il
+# devient alors obligatoire côté serveur. GitHub peut retarder une tâche planifiée de quelques minutes, et la suspend
+# après 60 jours sans activité du dépôt (onglet Actions : « Enable workflow »).
+name: Rappels des championnats
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: rappels-ligues
+  cancel-in-progress: false
+
+jobs:
+  tournee:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Tournée des rappels
+        env:
+          TOKEN: ${{ secrets.LIGUE_RAPPELS_SECRET }}
+        run: curl -fsS -m 30 --retry 2 --retry-delay 10 -o /dev/null -X POST https://www.footoff.media/api/ligue/rappels -H 'content-type: application/json' -H "authorization: Bearer $TOKEN" -d '{}'

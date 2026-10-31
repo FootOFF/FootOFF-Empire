@@ -33,8 +33,8 @@ import { CoachCard, StaffTip } from './ui/guide';
 import { DirectionView } from './ui/direction';
 import { MedicalView } from './ui/medical';
 import { LeagueView } from './ui/league';
-import { deadlineText, leagueLang, leagueOpen } from './game/league';
-import { LeagueError, deadlineAt, kickoffAt, leagueHumans, leagueResults, myLeagues, publishRoster, pulseUrgent, refreshLeague, sendMove, sendSheet, takeInvite, userActive, watchPulse } from './game/leagueNet';
+import { deadlineText, isLeagueCode, leagueLang, leagueOpen } from './game/league';
+import { LeagueError, deadlineAt, kickoffAt, leagueHumans, leagueResults, myLeagues, publishRoster, pulseUrgent, refreshLeague, sendMove, sendSheet, syncPush, takeInvite, takeOpen, userActive, watchPulse } from './game/leagueNet';
 import { applyLeagueRound, closeGoneDeals, createLeagueClub, leagueClubProgress, leagueRequest, leagueRoster, leagueRosterSig, loadLeagueClub, myReplay, readLeagueClub, saveLeagueClub, settleLeague, syncLeagueClub, teamSheet } from './game/leagueClub';
 import { adoptPulled, cloudNote, cloudPlan, isPushing, markUnreadable, playedPrint, pullClub, pushClub, savedWhen, stageOf, syncOf } from './game/leagueCloud';
 import ConfirmDialog from './ui/confirm';
@@ -161,8 +161,11 @@ export default function App({ preview = null }) {
     if (preview || !leagueOpen()) return null;
     const code = takeInvite();
     if (code) return { invite: code };
+    const fromTap = takeOpen(); // notification touchée, jeu fermé (sw.js) : son championnat
+    if (fromTap) return { open: fromTap };
     return boot.intent?.hub ? { open: boot.intent.hub } : null; // championnat rouvert dans sa langue (league.jsx)
   });
+  const [tapCode, setTapCode] = useState(null); // en jeu : championnat ouvert par une notification touchée
   const [squadTab, setSquadTab] = useState(boot.ui.squadTab && boot.ui.squadTab !== 'market' ? boot.ui.squadTab : 'players'); // onglet de l'Effectif (joueurs, composition, anciens)
   const [seasonTab, setSeasonTab] = useState(boot.ui.seasonTab || 'calendar'); // onglet de la Saison (calendrier, classement)
   const [navSwitch, setNavSwitch] = useState(false); // ouvert depuis un onglet de la même section : sans glissement
@@ -689,6 +692,24 @@ export default function App({ preview = null }) {
     const m = myLeagues().find((x) => x.code === boot.intent.league);
     if (m) enterLeague(m, true);
   }, [booted]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Notifications des championnats (1.0.15, leagueNet.js) : l'abonnement de l'appareil redéclaré au démarrage
+  // (championnat repris ailleurs, abonnement renouvelé par le téléphone). Une notification touchée alors que le jeu est
+  // ouvert (sw.js) ouvre son championnat : sur l'écran titre, ou en jeu hors match (un match n'est jamais interrompu).
+  useEffect(() => { if (booted) syncPush(); }, [booted]);
+  const tapped = useRef(null);
+  tapped.current = (code) => {
+    if (!leagueOpen()) return;
+    if (screen === 'title') { setLeagueHub({ open: code }); return; }
+    if (!inGame || matchPhase || replay) return;
+    setTapCode(code);
+    openPanel('league');
+  };
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return undefined;
+    const onMessage = (e) => { if (e.data?.type === 'fo-ouvrir' && isLeagueCode(e.data.code)) tapped.current(e.data.code); };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+  }, []);
   // La partie choisie (celle de l'appareil, la copie en ligne, ou une nouvelle), relue avec la ligue, à l'écran. restored :
   // la fiche de la copie en ligne reprise (son empreinte est prise sur la partie relue : rien à renvoyer ensuite) ;
   // replaced : la partie de l'appareil qu'elle remplace, gardée à côté.
@@ -1219,15 +1240,16 @@ export default function App({ preview = null }) {
       <Presence>
         {((inGame && panel === 'league') || (screen === 'title' && booted && leagueHub)) && (
           <LeagueView
+            key={screen === 'title' ? `t-${leagueHub?.open || ''}` : `g-${tapCode || ''}`}
             state={state}
             ask={setConfirm}
             invite={screen === 'title' ? leagueHub?.invite : null}
-            openCode={screen === 'title' ? leagueHub?.open : null}
+            openCode={screen === 'title' ? leagueHub?.open : tapCode}
             overTitle={screen === 'title'}
             replaying={!!replay}
             onReplay={setReplay}
             onPlayClub={enterLeague}
-            onClose={() => { if (screen === 'title') setLeagueHub(null); else setPanel(null); }}
+            onClose={() => { if (screen === 'title') setLeagueHub(null); else { setPanel(null); setTapCode(null); } }}
           />
         )}
       </Presence>

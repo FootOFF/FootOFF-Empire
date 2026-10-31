@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.15', date: '2026-10-31', title: t('Notifications des championnats'),
+    items: [
+      t('Championnats entre amis : les notifications arrivent sur ton téléphone, même jeu fermé. Un ami qui rejoint ton championnat, son lancement, une offre ou une réponse au mercato, plus qu’une heure pour valider ton équipe, toutes les équipes validées, le coup d’envoi, la journée jouée.'),
+      t('Elles s’activent dans le Siège de la Ligue, sous tes championnats. Sur iPhone, le jeu doit être ajouté à l’écran d’accueil.'),
+      t('Toucher une notification ouvre son championnat.'),
+    ],
+  },
+  {
     version: '1.0.14', date: '2026-10-31', title: t('Finitions'),
     items: [
       t('Chasse aux petits défauts d’affichage dans les quatre langues : plus aucun texte coupé, rogné ou raccourci par des points de suspension, au téléphone, au téléphone couché et sur ordinateur.'),
