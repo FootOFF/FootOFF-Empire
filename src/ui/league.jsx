@@ -13,7 +13,7 @@ import {
   deviceZone, hourText, isLeagueCode, leagueClubs, leagueFixtures, leagueLang, leagueRounds, leagueTable, replayOf,
 } from '../game/league';
 import {
-  createLeague, deadlineAt, deleteLeague, disablePush, enablePush, forgetLeague, inviteLink, joinLeague, kickMember, kickoffAt, leagueInfo, leagueState, leaveLeague, myLeagues, pulseUrgent, userActive, watchPulse,
+  autoAskPush, createLeague, deadlineAt, deleteLeague, disablePush, enablePush, forgetLeague, NOTIFS_EVENT, inviteLink, joinLeague, kickMember, kickoffAt, leagueInfo, leagueState, leaveLeague, myLeagues, pulseUrgent, userActive, watchPulse,
   parseResumeCode, pushState, refreshLeague, rememberLeague, resumeCodeOf, startLeague, updateLeague,
 } from '../game/leagueNet';
 import { dropLeagueClub, leagueClubProgress } from '../game/leagueClub';
@@ -215,6 +215,11 @@ function Notifs() {
   const [state, setState] = useState(pushState);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState(null);
+  useEffect(() => { // demande automatique (1.0.16) ou abonnement fait ailleurs : la carte se relit
+    const reread = () => setState(pushState());
+    window.addEventListener(NOTIFS_EVENT, reread);
+    return () => window.removeEventListener(NOTIFS_EVENT, reread);
+  }, []);
   if (state === 'none') return null;
   const turnOn = () => { // la demande d'autorisation part dans le geste même (règle de l'iPhone)
     uiSound('select');
@@ -261,6 +266,7 @@ function CreateForm({ onDone }) {
   const submit = async (e) => {
     e.preventDefault();
     if (!ok || busy) return;
+    autoAskPush({ needLeague: false }); // notifications : demandées dans ce geste (1.0.16)
     setBusy(true);
     setProblem(null);
     try {
@@ -358,6 +364,7 @@ function JoinForm({ initialCode, mine, onDone, onOpen }) {
   const join = async (e) => {
     e.preventDefault();
     if (!ok || busy) return;
+    autoAskPush({ needLeague: false }); // notifications : demandées dans ce geste (1.0.16)
     setBusy(true);
     setProblem(null);
     try {
@@ -425,6 +432,7 @@ function ResumeForm({ mine, onDone }) {
     e.preventDefault();
     if (!parsed || busy) return;
     if (mine.length >= MAX_MY_LEAGUES && !mine.some((m) => m.code === parsed.code)) { setProblem(t('Tu joues déjà trois championnats sur cet appareil : quittes-en un d’abord.')); return; }
+    autoAskPush({ needLeague: false }); // notifications : demandées dans ce geste (1.0.16)
     setBusy(true);
     setProblem(null);
     try {

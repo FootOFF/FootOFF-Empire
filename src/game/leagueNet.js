@@ -374,18 +374,25 @@ export function takeOpen() {
 // chacun de ses championnats ; le serveur des ligues prévient (site, src/lib/ligue/push.ts) : un ami arrive, le
 // championnat est lancé, une offre ou une réponse du mercato, plus qu'une heure pour valider, coup d'envoi, journée
 // jouée. Gardé sur l'appareil : { on, sent: { CODE: adresse déclarée à ce championnat }, at : dernière déclaration
-// complète } ; tout est redéclaré chaque semaine (un abonnement effacé par le serveur revient de lui-même).
+// complète, asked : demande automatique déjà faite } ; tout est redéclaré chaque semaine (un abonnement effacé par le
+// serveur revient de lui-même). Chaque écriture le signale (évènement fo-notifs) : la carte Notifications se relit.
 const NOTIFS = 'fo-notifs';
+export const NOTIFS_EVENT = NOTIFS;
 function readNotifs() {
   try {
     const v = JSON.parse(localStorage.getItem(NOTIFS) || 'null');
-    return v && typeof v === 'object' ? { on: !!v.on, sent: v.sent && typeof v.sent === 'object' ? v.sent : {}, at: Number(v.at) || 0 } : { on: false, sent: {}, at: 0 };
+    return v && typeof v === 'object'
+      ? { on: !!v.on, sent: v.sent && typeof v.sent === 'object' ? v.sent : {}, at: Number(v.at) || 0, asked: !!v.asked }
+      : { on: false, sent: {}, at: 0, asked: false };
   } catch {
-    return { on: false, sent: {}, at: 0 };
+    return { on: false, sent: {}, at: 0, asked: false };
   }
 }
 const REDECLARE_MS = 7 * 24 * 3600 * 1000;
-const writeNotifs = (v) => { try { localStorage.setItem(NOTIFS, JSON.stringify(v)); } catch { /* stockage plein ou indisponible */ } };
+function writeNotifs(v) {
+  try { localStorage.setItem(NOTIFS, JSON.stringify({ ...readNotifs(), ...v })); } catch { /* stockage plein ou indisponible */ }
+  window.dispatchEvent(new Event(NOTIFS));
+}
 const isIOS = () => /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const standalone = () => !!window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
 // 'ok' ; 'install' : iPhone, jeu ouvert dans Safari (les notifications n'arrivent qu'au jeu ajouté à l'écran
@@ -426,8 +433,9 @@ async function deviceSub() {
 // Déclare l'abonnement aux championnats qui ne l'ont pas encore (nouveau championnat, abonnement renouvelé par le
 // téléphone) ; au démarrage et à chaque championnat ajouté. Une seule synchronisation à la fois.
 let syncing = null;
+let again = false; // demandée pendant une autre (un championnat ajouté entre-temps) : refaite juste après
 export function syncPush() {
-  if (syncing) return syncing;
+  if (syncing) { again = true; return syncing; }
   syncing = (async () => {
     if (!readNotifs().on || pushSupport() !== 'ok' || Notification.permission !== 'granted') return false;
     const sub = (await deviceSub()).toJSON();
@@ -445,7 +453,10 @@ export function syncPush() {
     }
     if (readNotifs().on) writeNotifs({ on: true, sent, at: fresh ? st.at : all ? Date.now() : 0 });
     return true;
-  })().catch(() => false).finally(() => { syncing = null; });
+  })().catch(() => false).finally(() => {
+    syncing = null;
+    if (again) { again = false; syncPush(); }
+  });
   return syncing;
 }
 // Au toucher du joueur (la demande d'autorisation suit un geste, règle de l'iPhone) : 'on', 'denied' ou 'off'.
@@ -459,6 +470,19 @@ export async function enablePush() {
     throw new Error('push');
   }
   return 'on';
+}
+// Demande automatique (1.0.16, demande du PDG) : au toucher qui entre dans les championnats (Siège de la Ligue, club de
+// ligue) quand le joueur en a déjà un, ou à celui qui en crée, en rejoint ou en reprend un (needLeague: false). Une
+// seule fois par appareil et tant que le joueur n'a jamais répondu : Apple et Google ne laissent poser la question
+// qu'une fois (un refus ne se rattrape que dans les réglages du téléphone). Seulement dans le geste même (règle de
+// l'iPhone ; un bouton de manette n'en est pas un) : sinon rien, la prochaine entrée redemandera. Le bouton de la carte
+// Notifications reste pour qui a écarté la question.
+export function autoAskPush({ needLeague = true } = {}) {
+  if (pushSupport() !== 'ok' || Notification.permission !== 'default' || readNotifs().asked) return;
+  if (needLeague && !myLeagues().length) return;
+  if (navigator.userActivation && !navigator.userActivation.isActive) return;
+  writeNotifs({ asked: true });
+  enablePush().catch(() => null).finally(() => window.dispatchEvent(new Event(NOTIFS)));
 }
 // Un championnat oublié sur cet appareil : il oublie aussi son adresse (sans attendre de réponse).
 function dropPush(code) {

@@ -5,6 +5,12 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.16', date: '2026-10-31', title: t('Notifications demandées au bon moment'),
+    items: [
+      t('Championnats entre amis : la demande d’autorisation des notifications s’affiche d’elle-même la première fois que tu entres dans tes championnats, ou quand tu en crées, en rejoins ou en reprends un. Le bouton de la carte Notifications reste là si tu l’as écartée.'),
+    ],
+  },
+  {
     version: '1.0.15', date: '2026-10-31', title: t('Notifications des championnats'),
     items: [
       t('Championnats entre amis : les notifications arrivent sur ton téléphone, même jeu fermé. Un ami qui rejoint ton championnat, son lancement, une offre ou une réponse au mercato, plus qu’une heure pour valider ton équipe, toutes les équipes validées, le coup d’envoi, la journée jouée.'),

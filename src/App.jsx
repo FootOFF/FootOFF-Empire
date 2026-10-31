@@ -34,7 +34,7 @@ import { DirectionView } from './ui/direction';
 import { MedicalView } from './ui/medical';
 import { LeagueView } from './ui/league';
 import { deadlineText, isLeagueCode, leagueLang, leagueOpen } from './game/league';
-import { LeagueError, deadlineAt, kickoffAt, leagueHumans, leagueResults, myLeagues, publishRoster, pulseUrgent, refreshLeague, sendMove, sendSheet, syncPush, takeInvite, takeOpen, userActive, watchPulse } from './game/leagueNet';
+import { LeagueError, deadlineAt, kickoffAt, leagueHumans, leagueResults, myLeagues, publishRoster, pulseUrgent, refreshLeague, sendMove, sendSheet, syncPush, takeInvite, takeOpen, userActive, watchPulse, autoAskPush } from './game/leagueNet';
 import { applyLeagueRound, closeGoneDeals, createLeagueClub, leagueClubProgress, leagueRequest, leagueRoster, leagueRosterSig, loadLeagueClub, myReplay, readLeagueClub, saveLeagueClub, settleLeague, syncLeagueClub, teamSheet } from './game/leagueClub';
 import { adoptPulled, cloudNote, cloudPlan, isPushing, markUnreadable, playedPrint, pullClub, pushClub, savedWhen, stageOf, syncOf } from './game/leagueCloud';
 import ConfirmDialog from './ui/confirm';
@@ -444,7 +444,7 @@ export default function App({ preview = null }) {
     else if (k === 'training') openTraining();
     else if (k === 'direction') openPanel('direction'); // la Direction du club : ses négociations
     else if (k === 'medical') openPanel('medical'); // le centre médical : les blessés à soigner
-    else if (k === 'league' && leagueOpen()) openPanel('league'); // le Siège de la Ligue : les championnats entre amis
+    else if (k === 'league' && leagueOpen()) { autoAskPush(); openPanel('league'); } // le Siège de la Ligue : les championnats entre amis (notifications : 1.0.16)
     else selectPlot(plotId, sector);
   };
   // une notification ouvre ce qu'elle annonce : le succès lui-même (salle des trophées, mis en évidence), les offres
@@ -1276,7 +1276,7 @@ export default function App({ preview = null }) {
             onTraining={() => openTraining()}
             onDirection={() => { setDirectionTab('tv'); openPanel('direction'); }}
             onMedical={() => openPanel('medical')}
-            onLeague={leagueOpen() ? () => openPanel('league') : null}
+            onLeague={leagueOpen() ? () => { autoAskPush(); openPanel('league'); } : null}
             onTickets={() => { setSel(null); setDirectionTab('tickets'); openPanel('direction'); }}
             onPreview={setBuildView}
             onSwitchPlot={(id) => selectPlot(id, 'main')}
@@ -1334,7 +1334,7 @@ export default function App({ preview = null }) {
             liveNote={resumeLive && matchPhase === 'live' ? liveNoteOf(resumeLive) : null}
             onNewGame={askNewGame}
             onPickLang={startNewGame}
-            leagues={leagueOpen() ? { count: myLeagues().length, clubs: myLeagues().map((m) => ({ ...m, progress: leagueClubProgress(m.code) })), onOpen: () => setLeagueHub({}), onPlay: enterLeague } : null}
+            leagues={leagueOpen() ? { count: myLeagues().length, clubs: myLeagues().map((m) => ({ ...m, progress: leagueClubProgress(m.code) })), onOpen: () => { autoAskPush(); setLeagueHub({}); }, onPlay: (m) => { autoAskPush(); enterLeague(m); } } : null}
             onCreate={(name, crest) => { setLeagueHub(null); setForeign(null); setState(createInitialState(name, crest)); setTitleView('menu'); setScreen('game'); }}
           />
         )}
