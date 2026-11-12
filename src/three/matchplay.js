@@ -51,6 +51,7 @@ const CUT = 1.1; // plan de coupe (s) : la mise en place se fait hors champ, l'a
 const RECV = 0.05; // contact pied-ballon (u) : un ballon arrêté se prend à cette distance du pied
 const TACKLE_LEAD = 0.55; // s : du départ du tacle glissé au contact de la jambe tendue (geste 3D calé dessus)
 const REACH = 0.1; // portée d'une jambe tendue (u, un mètre du corps) : un ballon qui passe là, au sol, est contrôlé
+const G = 0.981; // pesanteur (u/s²)
 
 const clamp = THREE.MathUtils.clamp;
 const teamOf = (i) => (i < 11 ? 0 : 1);
@@ -978,6 +979,9 @@ export function createMatchScene(parent) {
       const fx = Math.cos(kp.h), fz = Math.sin(kp.h);
       H.dive.root = [bx2 - (fx * hand.fwd - fz * hand.right), bz2 - (fz * hand.fwd + fx * hand.right)];
       H.dive.tc = H.t + tc;
+      // un ballon plus haut que les mains du plongeon (ou de la prise sautée) : le gardien s'élève (1.0.25, jusqu'à 70 cm),
+      // au plus haut au contact ; les mains n'avaient que les bras pour rattraper l'écart
+      if (/^GK_(Dive|Catch_High)/.test(hand.clip || '')) H.dive.lift = clamp(hc + BALL_R - hand.up, 0, 0.07);
     }
     return T;
   }
@@ -1033,15 +1037,11 @@ export function createMatchScene(parent) {
     if (b.state === 'keeper') { // dans les gants (1.0.18 : entre ses gants, là où ses mains le tiennent ; jamais au ventre)
       const kp = agents[H.keeper];
       const an = players.ballAnchor?.(H.keeper);
-      const k = Math.min(1, dt * (an ? 30 : 14));
-      if (an) {
-        b.x += (an.x - b.x) * k; b.z += (an.z - b.z) * k;
-        b.y += (Math.max(0, an.y - S.baseY - BALL_R) - b.y) * k;
-      } else {
-        b.x += (kp.x + Math.cos(kp.h) * 0.02 - b.x) * k;
-        b.z += (kp.z + Math.sin(kp.h) * 0.02 + kp.lean * 0.11 - b.z) * k;
-        b.y += (0.09 * (1 - Math.abs(kp.lean) * 0.55) - b.y) * k;
-      }
+      const k = Math.min(1, dt * 14);
+      if (an) return; // joueurs réalistes : le ballon suit les gants, posé après les gestes de l'image (après players.commit)
+      b.x += (kp.x + Math.cos(kp.h) * 0.02 - b.x) * k;
+      b.z += (kp.z + Math.sin(kp.h) * 0.02 + kp.lean * 0.11 - b.z) * k;
+      b.y += (0.09 * (1 - Math.abs(kp.lean) * 0.55) - b.y) * k;
       return;
     }
     if (b.state === 'dead') return;
@@ -1817,6 +1817,7 @@ export function createMatchScene(parent) {
       const nx = dv0.start[0] + (dv0.root[0] - dv0.start[0]) * e, nz = dv0.start[1] + (dv0.root[1] - dv0.start[1]) * e;
       a.vx = (nx - a.x) / Math.max(dt, 1e-4); a.vz = (nz - a.z) / Math.max(dt, 1e-4);
       a.x = nx; a.z = nz; a.speed = Math.hypot(a.vx, a.vz);
+      if (dv0.lift && H.t <= dv0.tc + 0.02) { a.lift = dv0.lift * (1 - (1 - f) * (1 - f)); a.jumpAt = H.t; a.liftV = 0; } // l'envol
       a.poseWant = b.state === 'keeper' ? 3 : 2;
       return;
     }
@@ -2040,7 +2041,9 @@ export function createMatchScene(parent) {
         if (a.cheer < 0.005) a.cheer = 0;
         // un saut retombe dès qu'il n'est plus entretenu (0.8.24, audit de la charte : le joueur qui avait dévié de la tête,
         // gardé dans l'action, restait suspendu à 70 cm du sol jusqu'à la fin, ralenti compris)
-        if (a.lift && !(H && a.jumpAt === H.t)) a.lift = Math.max(0, a.lift - dt * 0.4);
+        // 1.0.25 : il retombe sous la pesanteur (il redescendait à vitesse constante, 4 m/s dès le sommet)
+        if (a.lift && !(H && a.jumpAt === H.t)) { a.liftV = (a.liftV || 0) + G * dt; a.lift = Math.max(0, a.lift - a.liftV * dt); if (!a.lift) a.liftV = 0; }
+        else if (H && a.jumpAt === H.t) a.liftV = 0;
         if (a.recvIn > -1) a.recvIn -= dt; // le contrôle : le temps depuis la réception (1.0.23)
         // pose (players.js) : gardien prêt, plongeon, ballon serré ; saut de la tête, bras levés
         let want = slotOf(i) === 0 && H?.phase !== 'end' ? a.poseWant || 0 : a.lift > 0.004 ? 4 : 0;
@@ -2062,6 +2065,18 @@ export function createMatchScene(parent) {
     // tous les regards suivent le ballon pendant un temps fort (0.8.24)
     if (S.play === 'live' && H) players.setLook?.(b.x, S.baseY + BALL_R + b.y, b.z); else players.setLook?.(null);
     players.commit(N, dt);
+    // le ballon capté (1.0.25, chantier du PDG : « le ballon recalcule sa position pour se placer dans les mains ») : il
+    // reste là où les gants l'ont pris, puis suit les mains de l'image même (gestes compris) ; l'écart entre le point de
+    // la prise et le milieu des gants se résorbe en 0,1 s au lieu d'un ballon tiré vers le ventre à 30/s, une image en retard
+    if (!replay && H && b.state === 'keeper') {
+      const an = players.ballAnchor?.(H.keeper);
+      if (an) {
+        const ty = Math.max(0, an.y - S.baseY - BALL_R);
+        if (!b.grip) b.grip = [b.x - an.x, b.y - ty, b.z - an.z];
+        else { const k = Math.exp(-dt / 0.1); b.grip[0] *= k; b.grip[1] *= k; b.grip[2] *= k; }
+        b.x = an.x + b.grip[0]; b.y = Math.max(0, ty + b.grip[1]); b.z = an.z + b.grip[2];
+      }
+    } else if (b.grip) b.grip = null;
     if (!replay) {
       const mx = b.x - b.prev[0], mz = b.z - b.prev[1];
       const moved = Math.hypot(mx, mz);

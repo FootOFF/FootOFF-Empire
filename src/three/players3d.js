@@ -87,6 +87,11 @@ async function build() {
   // arrêt du corps vers la gauche : le miroir de celui vers la droite (la capture de gauche prend 1,5 s pour aller au sol,
   // trop lente sur un face-à-face où la frappe laisse 0,2 s ; celle de droite, 0,9 s)
   if (clips.GK_Block_R) clips.GK_Block_L = mirrorClip(clips.GK_Block_R, 'GK_Block_L');
+  // plongeons (1.0.25, chantier du PDG : « la captation du gardien n'est pas naturelle ») : les deux captures Mixamo ne
+  // plongent pas à la même hauteur (main à 74 cm pour celle de gauche, 108 cm pour celle de droite) ; chacune a son miroir,
+  // et la hauteur du ballon choisit le plongeon bas ou haut, de chaque côté
+  if (clips.GK_Dive_L) clips.GK_DiveLo_R = mirrorClip(clips.GK_Dive_L, 'GK_DiveLo_R');
+  if (clips.GK_Dive_R) clips.GK_DiveHi_L = mirrorClip(clips.GK_Dive_R, 'GK_DiveHi_L');
   // Gardiens (0.8.20, remarque du PDG : ni gants ni tenue de gardien) : manches longues et gants peints sur la peau des
   // bras et des mains, d'après les os qui la portent (poids des os du bras, de la main et des doigts, par sommet) ; ils
   // suivent ainsi chaque geste. Attribut aKit : (manche, gant).
@@ -115,7 +120,7 @@ async function build() {
   }));
   // gestes où le joueur se couche (plongeon, arrêt du corps, glissade à genoux) : le geste capté fait seul autorité, sans
   // verrou des appuis (0.8.24 : le pied retenu au sol pendant que le corps vole pliait la jambe à travers la pelouse)
-  A.lying = new Set([...A.slides, ...['GK_Dive_L', 'GK_Dive_R', 'GK_Block_L', 'GK_Block_R', 'Save_1', 'Foul_Tackle', 'Foul_Fall', 'Fallen_Idle', 'Stand_Up'].filter((n) => clips[n])]);
+  A.lying = new Set([...A.slides, ...['GK_Dive_L', 'GK_Dive_R', 'GK_DiveLo_R', 'GK_DiveHi_L', 'GK_Block_L', 'GK_Block_R', 'Save_1', 'Foul_Tackle', 'Foul_Fall', 'Fallen_Idle', 'Stand_Up'].filter((n) => clips[n])]);
   if (A.lying.has('Save_1')) A.lying.add('Save_1_M');
   A.gaits = GAIT_NAMES.map((n, j) => (j === 0 ? { name: n, nat: 0, contacts: { l: [[0, 1]], r: [[0, 1]] } } : { name: n, ...analyzeGait(n) }));
   A.gaits.sort((a, b) => a.nat - b.nat);
@@ -138,7 +143,7 @@ async function build() {
   const reachT = (n) => probe(n, (r, t) => ({ t, x: Math.max(Math.abs(wpos(r, 'hand_l').x), Math.abs(wpos(r, 'hand_r').x)) })).slice(8).reduce((b, x) => (x.x > b.x ? x : b), { x: -1, t: 0 }).t;
   const meetT = (n) => { const d = A.clips[n].duration; return probe(n, (r, t) => ({ t, d: wpos(r, 'hand_l').distanceTo(wpos(r, 'hand_r')) })).filter((x) => x.t > d * 0.15 && x.t < d * 0.8).reduce((b, x) => (x.d < b.d ? x : b), { d: 9, t: 0 }).t; };
   const lowT = (n) => probe(n, (r, t) => ({ t, y: wpos(r, 'pelvis').y })).slice(8).reduce((b, x) => (x.y < b.y ? x : b), { y: 9, t: 0 }).t;
-  for (const [n, f] of [['GK_Dive_L', reachT], ['GK_Dive_R', reachT], ['GK_Catch_Low', meetT], ['GK_Catch_Mid', meetT], ['GK_Catch_High', handPeak], ['GK_Block_L', lowT], ['GK_Block_R', lowT], ['GK_Miss', handPeak], ['Foul_Tackle', lowT]]) {
+  for (const [n, f] of [['GK_Dive_L', reachT], ['GK_Dive_R', reachT], ['GK_DiveLo_R', reachT], ['GK_DiveHi_L', reachT], ['GK_Catch_Low', meetT], ['GK_Catch_Mid', meetT], ['GK_Catch_High', handPeak], ['GK_Block_L', lowT], ['GK_Block_R', lowT], ['GK_Miss', handPeak], ['Foul_Tackle', lowT]]) {
     if (A.clips[n]) A.marks[n] = f(n);
   }
   // la tête (1.0.22, Mixamo « header soccerball ») : le buste part en arrière (0,5 à 0,8 s) puis le front revient frapper
@@ -147,7 +152,7 @@ async function build() {
   // les mains au contact de chaque arrêt (1.0.18) : où sont-elles par rapport au gardien (prise : entre les deux mains ;
   // plongeon, arrêt du corps : la main qui va le plus loin) ; le moteur place le gardien pour qu'elles soient au ballon
   A.saveHands = {};
-  for (const n of ['GK_Dive_L', 'GK_Dive_R', 'GK_Catch_Low', 'GK_Catch_Mid', 'GK_Catch_High', 'GK_Block_L', 'GK_Block_R', 'GK_Miss', 'Save_1', 'Save_1_M']) {
+  for (const n of ['GK_Dive_L', 'GK_Dive_R', 'GK_DiveLo_R', 'GK_DiveHi_L', 'GK_Catch_Low', 'GK_Catch_Mid', 'GK_Catch_High', 'GK_Block_L', 'GK_Block_R', 'GK_Miss', 'Save_1', 'Save_1_M']) {
     if (!A.clips[n] || A.marks[n] === undefined) continue;
     const r = probeAt(n, A.marks[n]);
     const hl = wpos(r, 'hand_l'); const hr = wpos(r, 'hand_r');
@@ -155,6 +160,7 @@ async function build() {
     const h = both ? hl.clone().add(hr).multiplyScalar(0.5) : (Math.abs(hl.x) > Math.abs(hr.x) ? hl : hr);
     A.saveHands[n] = { fwd: h.z, left: h.x, up: h.y };
   }
+  if (import.meta.env?.DEV && typeof window !== 'undefined') window.__saveHands = { hands: A.saveHands, marks: A.marks, dur: Object.fromEntries(Object.entries(A.clips).map(([k, c]) => [k, c.duration])) };
   // la faute (0.8.24, audit de la charte : le porteur ne tombait jamais) : le tacle glissé touche quand le corps est au
   // plus bas ; la chute du porteur part au moment où son bassin plonge vers le sol (le trébuchement capté avant, une
   // demi-seconde debout, est sauté : fauché, il est au sol 0,4 s après le contact)
@@ -700,7 +706,10 @@ export function createPlayers3D(parent, max = 22) {
     const K3 = mid.getWorldPosition(V()); const E3 = end.getWorldPosition(V());
     aim(mid, E3.sub(K3), T.clone().sub(K3));
     end.quaternion.copy(end.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(eq));
-    if (w < 1) { top.quaternion.slerpQuaternions(iq[0], top.quaternion, w); mid.quaternion.slerpQuaternions(iq[1], mid.quaternion, w); end.quaternion.slerpQuaternions(iq[2], end.quaternion, w); }
+    // dosage (1.0.25) : du geste capté (iq) vers la pose corrigée. slerpQuaternions(a, b) copie a dans le quaternion
+    // avant de lire b : appelé avec b = ce même quaternion, il rendait le geste capté tel quel. Toute correction dosée
+    // sous 100 % était annulée (le contrôle de la 1.0.23, les mains du gardien hors de l'instant exact du contact)
+    if (w < 1) for (const [j, bone] of [top, mid, end].entries()) bone.quaternion.copy(iq[j].slerp(bone.quaternion, w));
     top.updateMatrixWorld(true);
   }
   // Contact de la frappe (1.0.18, chantier du PDG : « les joueurs frappent à côté du ballon ») : autour du contact du
@@ -749,12 +758,18 @@ export function createPlayers3D(parent, max = 22) {
   // l'arrêt, les gants vont au ballon (les deux mains de part et d'autre pour une prise, la main la plus proche derrière le
   // ballon pour une parade) ; ensuite le ballon capté reste entre ses gants (ballAnchor).
   const sideV = V(); const toBall = V();
+  // 1.0.25 : les gants partent plus tôt vers le ballon (0,3 s avant le contact) ; une prise garde le ballon dans les gants
+  // et les mains le ramènent vers le corps en 0,35 s (le ballon suit les mains, matchplay.js), au lieu de lâcher le ballon
+  // en 0,12 s pour la pose du geste ; un ballon hors de portée tend le bras vers lui (la correction ne s'efface qu'au-delà de
+  // 60 cm, contre 35) ; le geste en attente de son départ garde son contact (il était perdu : aucune main au ballon)
   function keeperIK(p) {
     const c = p.saveC;
     if (!c || !look || !p.keeper) return;
+    if (p.pending?.name === c.name) return;
     if (!p.shot || p.shot.getClip().name !== c.name) { p.saveC = null; return; }
     const x = p.shot.time - c.t;
-    const w = x < -0.22 || x > 0.12 ? 0 : x < 0 ? smooth(1 + x / 0.22) : smooth(1 - x / 0.12);
+    const post = c.catch ? 0.35 : 0.12;
+    const w = x < -0.3 || x > post ? 0 : x < 0 ? smooth(1 + x / 0.3) : smooth(1 - x / post);
     if (w <= 0.001) return;
     const s = p.root.scale.x;
     const R = 0.011; // rayon du ballon (unités du jeu : 11 cm)
@@ -778,9 +793,8 @@ export function createPlayers3D(parent, max = 22) {
       const sh = up.getWorldPosition(V());
       const reach = (lo.getWorldPosition(V()).distanceTo(sh) + ha.getWorldPosition(V()).distanceTo(lo.getWorldPosition(V()))) * 1.05;
       const far = T.distanceTo(sh) - reach;
-      const kk = far > 0 ? Math.max(0, 1 - far / (0.35 * s)) : 1;
-      twoBone(up, lo, ha, T, w * kk, V().set(0, -1, 0).addScaledVector(sideV, k ? 0.5 : -0.5));
-    }
+      const kk = far > 0 ? Math.max(0, 1 - far / (0.6 * s)) : 1;
+      twoBone(up, lo, ha, T, w * kk, V().set(0, -1, 0).addScaledVector(sideV, k ? 0.5 : -0.5));    }
   }
   // gestes d'après l'état de l'agent du moteur (matchplay.js)
   function drive(p, ag, dt) {
@@ -869,14 +883,20 @@ export function createPlayers3D(parent, max = 22) {
   // Arrêt du gardien (0.8.24, chantier gardiens du PDG : plongeons irréalistes) : face à lui, il prend le ballon (bas, à
   // mi-hauteur ou au-dessus de la tête, en sautant) ; un peu sur le côté et bas, il s'y jette du corps ; plus loin, il
   // plonge ; un ballon haut qui le bat le voit sauter en vain. Sans ces gestes (ou sans tir), l'ancien plongeon.
+  // 1.0.25 (chantier du PDG : « on a l'impression que le ballon recalcule sa position pour se placer dans les mains ») : le
+  // geste se choisit sur la hauteur du CENTRE du ballon comparée à celle des mains de chaque geste au contact (prise basse
+  // 55 cm, à mi-hauteur 117 cm, haute 222 cm ; arrêt du corps 31 cm ; plongeon bas 74 cm, haut 108 cm). Avant, l'arrêt du
+  // corps (mains à 31 cm) partait sur des ballons à 90 cm, la prise à mi-hauteur sur des ballons à 60 cm : les mains
+  // passaient 30 à 55 cm à côté, et le ballon était ensuite tiré dans les gants.
   function saveClip(ag) {
-    const side = ag.saveSide || 0; const h = ag.saveH || 0; const far = Math.abs(side);
+    const side = ag.saveSide || 0; const h = (ag.saveH || 0) + 0.11; const far = Math.abs(side);
     if (!ag.saveKind || !A.clips.GK_Dive_L) return (ag.lean || 0) >= 0 ? 'Save_1' : 'Save_1_M';
     const left = side > 0 || (side === 0 && (ag.lean || 0) >= 0);
-    if (ag.saveKind === 3 && h > 1.9 && far < 1.2) return 'GK_Miss';
-    if (far < 0.45 && !(ag.saveKind === 2 && h < 0.9)) return h < 0.55 ? 'GK_Catch_Low' : h < 1.5 ? 'GK_Catch_Mid' : 'GK_Catch_High';
-    if (far < 1.3 && h < 0.9) return left ? 'GK_Block_L' : 'GK_Block_R';
-    return left ? 'GK_Dive_L' : 'GK_Dive_R';
+    if (ag.saveKind === 3 && h > 2.0 && far < 1.2) return 'GK_Miss';
+    if (far < 0.45 && !(ag.saveKind === 2 && h < 1.0)) return h < 0.82 ? 'GK_Catch_Low' : h < 1.75 ? 'GK_Catch_Mid' : 'GK_Catch_High';
+    if (far < 1.1 && h < 0.6) return left ? 'GK_Block_L' : 'GK_Block_R';
+    if (!A.clips.GK_DiveLo_R) return left ? 'GK_Dive_L' : 'GK_Dive_R';
+    return h < 0.95 ? (left ? 'GK_Dive_L' : 'GK_DiveLo_R') : (left ? 'GK_DiveHi_L' : 'GK_Dive_R');
   }
   let ts = 1; // vitesse du temps (ralenti)
   return {
