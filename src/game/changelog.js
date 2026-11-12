@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.31', date: '2026-11-12', title: t('Têtes, parades et ballon'),
+    items: [
+      t('Le coup de tête part du front : le ballon repart quand la tête revient frapper, plus pendant qu’elle est encore en arrière ; le saut se règle sur la hauteur du centre.'),
+      t('Sur une frappe forte à hauteur du visage, le gardien monte les deux mains et repousse le ballon, au lieu de l’attendre à hauteur de poitrine.'),
+      t('Le ballon du match a son vrai motif, pentagones noirs et coutures, sur une sphère lisse : plus de facettes quand la caméra s’approche.'),
+    ],
+  },
+  {
     version: '1.0.30', date: '2026-11-12', title: t('Plongeons et déviations'),
     items: [
       t('Le plongeon du gardien suit son vrai mouvement : appel, détente, vol à l’horizontale vers le ballon, au lieu d’une glissade debout.'),

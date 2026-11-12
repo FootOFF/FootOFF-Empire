@@ -789,6 +789,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
       hlAck: 0, hlReveal: 0, hlDone: 0, hlClock: clockRef.current, hlPhase: '', hlBeat: 0, show3D: true,
     });
   };
+  // films de contrôle en développement : un temps fort choisi (type, issue, camp, graine) joué dans le vrai stade
+  if (import.meta.env.DEV) window.__forceHL = (e, type) => { if (!hlRef.current) startHighlight({ ...e, at: clockRef.current }, type); return !!hlRef.current; };
   const endHighlight = () => {
     const h = hlRef.current;
     if (!h) return;
@@ -827,6 +829,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
         return;
       }
       if (pause.current > 0) { pause.current -= dt; return; }
+      if (import.meta.env.DEV && window.__holdClock) return; // films de contrôle : l'horloge attend le temps fort choisi
       const end = live.halfEnd;
       live.advanceTo(Math.ceil(clockRef.current) + LOOKAHEAD);
       let next = Math.min(end, clockRef.current + (dt * speed) / SEC_PER_MIN);

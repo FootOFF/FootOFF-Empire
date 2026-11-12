@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createPhotoSky, lookFor } from '../sky';
 import { createPlayers } from '../players';
+import { footballMaterial } from '../motion';
 import { ourKit } from '../../game/kits';
 import { initAssets, instantiateModel } from '../assets';
 import { resolveProp } from '../manifest';
@@ -186,39 +187,8 @@ function pitchMaterial(lawn) {
 }
 
 // --- Ballon : 12 pentagones noirs et 20 hexagones blancs, coutures fines (calculés au pixel sur la sphère) ----------
-function ballMaterial() {
-  const phi = (1 + Math.sqrt(5)) / 2;
-  const ico = [[-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0], [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi], [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1]]
-    .map((v) => new THREE.Vector3(...v).normalize());
-  const faces = new THREE.IcosahedronGeometry(1, 0);
-  const pos = faces.attributes.position;
-  const hex = [];
-  for (let i = 0; i < pos.count; i += 3) {
-    hex.push(new THREE.Vector3().fromBufferAttribute(pos, i).add(new THREE.Vector3().fromBufferAttribute(pos, i + 1)).add(new THREE.Vector3().fromBufferAttribute(pos, i + 2)).normalize());
-  }
-  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.38, metalness: 0 });
-  m.onBeforeCompile = (shader) => {
-    shader.uniforms.uPent = { value: ico };
-    shader.uniforms.uHex = { value: hex };
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vObj;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObj = normalize(position);');
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vObj;\nuniform vec3 uPent[12];\nuniform vec3 uHex[20];')
-      .replace('#include <map_fragment>', `
-        vec3 n = normalize(vObj);
-        float b1 = -2.0, b2 = -2.0; float pent = 0.0;
-        for (int i = 0; i < 12; i++) { float d = dot(n, uPent[i]); if (d > b1) { b2 = b1; b1 = d; pent = 1.0; } else if (d > b2) b2 = d; }
-        for (int i = 0; i < 20; i++) { float d = dot(n, uHex[i]); if (d > b1) { b2 = b1; b1 = d; pent = 0.0; } else if (d > b2) b2 = d; }
-        float seam = 1.0 - smoothstep(0.004, 0.012 + fwidth(b1 - b2), b1 - b2);
-        vec3 col = mix(vec3(0.93), vec3(0.035), pent);
-        col = mix(col, vec3(0.12), seam * 0.85);
-        diffuseColor.rgb *= col;
-      `);
-  };
-  m.customProgramCacheKey = () => 'drill-ball';
-  return m;
-}
+// (1.0.31 : le même matériau sert désormais au ballon du match, motion.js)
+const ballMaterial = footballMaterial;
 
 // --- Effets lumineux -----------------------------------------------------------------------------------------------
 // Anneau holographique doré (cibles, joueurs à choisir) : disque léger, anneaux nets, pulsation ; additif.

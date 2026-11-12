@@ -274,17 +274,47 @@ export class PassingGame {
   }
 }
 
-// Ballon : icosaèdre à facettes sombres et claires (lecture du roulement), mis à l'échelle du jeu.
-export function createBallMesh() {
-  const geo = new THREE.IcosahedronGeometry(BALL_R, 1); // déjà une face par triangle (non indexé)
-  const n = geo.attributes.position.count;
-  const col = new Float32Array(n * 3);
-  for (let f = 0; f < n / 3; f++) {
-    const c = f % 5 === 0 ? 0.08 : 0.95;
-    for (let v = 0; v < 3; v++) col.set([c, c, c], (f * 3 + v) * 3);
+// Ballon de football : 12 pentagones noirs et 20 hexagones blancs, coutures fines, calculés au pixel sur la sphère
+// (venu des exercices, drills/stage.js). Le motif tourne avec le ballon : il lit le roulement et l'effet.
+export function footballMaterial() {
+  const phi = (1 + Math.sqrt(5)) / 2;
+  const ico = [[-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0], [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi], [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1]]
+    .map((v) => new THREE.Vector3(...v).normalize());
+  const faces = new THREE.IcosahedronGeometry(1, 0);
+  const pos = faces.attributes.position;
+  const hex = [];
+  for (let i = 0; i < pos.count; i += 3) {
+    hex.push(new THREE.Vector3().fromBufferAttribute(pos, i).add(new THREE.Vector3().fromBufferAttribute(pos, i + 1)).add(new THREE.Vector3().fromBufferAttribute(pos, i + 2)).normalize());
   }
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, flatShading: true }));
+  faces.dispose();
+  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.38, metalness: 0 });
+  m.onBeforeCompile = (shader) => {
+    shader.uniforms.uPent = { value: ico };
+    shader.uniforms.uHex = { value: hex };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vObj;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObj = normalize(position);');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vObj;\nuniform vec3 uPent[12];\nuniform vec3 uHex[20];')
+      .replace('#include <map_fragment>', `
+        vec3 n = normalize(vObj);
+        float b1 = -2.0, b2 = -2.0; float pent = 0.0;
+        for (int i = 0; i < 12; i++) { float d = dot(n, uPent[i]); if (d > b1) { b2 = b1; b1 = d; pent = 1.0; } else if (d > b2) b2 = d; }
+        for (int i = 0; i < 20; i++) { float d = dot(n, uHex[i]); if (d > b1) { b2 = b1; b1 = d; pent = 0.0; } else if (d > b2) b2 = d; }
+        float seam = 1.0 - smoothstep(0.004, 0.012 + fwidth(b1 - b2), b1 - b2);
+        vec3 col = mix(vec3(0.93), vec3(0.035), pent);
+        col = mix(col, vec3(0.12), seam * 0.85);
+        diffuseColor.rgb *= col;
+      `);
+  };
+  m.customProgramCacheKey = () => 'football';
+  return m;
+}
+
+// Ballon du match et de la vie du club (1.0.31, contrôle de la vidéo des nouveautés : l'ancien icosaèdre à 80 facettes
+// se voyait dès que la caméra s'approchait) : une sphère lisse et le vrai motif, mise à l'échelle du jeu.
+export function createBallMesh() {
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(BALL_R, 32, 16), footballMaterial());
   mesh.castShadow = true;
   return mesh;
 }

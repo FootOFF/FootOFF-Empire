@@ -34,6 +34,7 @@ const KICK_TIME = 0.6;
 const KICK_CONTACT = 0.55;
 const ARMED = KICK_CONTACT * KICK_TIME; // de l'élan au contact du pied
 const BALL_R = 0.011;
+const HEAD_Y = 0.165; // centre de la tête d'un joueur debout au contact d'un coup de tête (1,65 m, mesuré sur le geste)
 const HEAD = 0.185; // hauteur d'une tête (1,85 m)
 const SPOT = GOAL_X - 1.1; // point de penalty (11 m)
 const BOX = GOAL_X - 1.65; // ligne de la surface (16,5 m)
@@ -1325,9 +1326,19 @@ export function createMatchScene(parent) {
   // (gather). Une passe part vers le point où son receveur peut être à temps (passTime) ; s'il la manque malgré tout, il
   // court après le ballon qui roule. Aucun ballon recollé, aucun joueur posé pendant le jeu.
   function next() { H.k += 1; H.bt = 0; if (H.k >= H.fk && !H.finale) { H.finale = true; H.finaleT = H.t; } }
-  const touching = (i, head = false) => {
+  // la tête au contact (1.0.31, contrôle de la vidéo des nouveautés : le ballon repartait à 50 cm de la tête, 0,1 s avant
+  // le coup de tête, dès qu'il passait à 60 cm du corps) : le centre du ballon au front (centre de la tête, saut compris,
+  // un peu devant), à 30 cm près, ou au plus près de son passage s'il frôle la tête à moins de 70 cm
+  const headTouch = (bt) => {
+    const p = agents[bt.to];
+    if (!(b.y > 0.1 && b.y < 0.27)) { bt.hd = 9; return false; }
+    const [fx, fz] = p.forward();
+    const d = Math.hypot(b.x - (p.x + fx * 0.008), b.y + BALL_R - (HEAD_Y + (p.lift || 0)), b.z - (p.z + fz * 0.008));
+    const prev = bt.hd ?? 9; bt.hd = d;
+    return d < 0.03 || (prev < 0.07 && d > prev);
+  };
+  const touching = (i) => {
     const p = agents[i];
-    if (head) return Math.hypot(b.x - p.x, b.z - p.z) < 0.06 && b.y > 0.1 && b.y < 0.27; // (1.0.30 : 60 cm du corps, la tête reprenait des ballons à un mètre)
     const [fx, fz] = footSpot(p);
     return (Math.hypot(b.x - fx, b.z - fz) < RECV || Math.hypot(b.x - p.x, b.z - p.z) < REACH) && b.y < 0.09;
   };
@@ -1660,12 +1671,14 @@ export function createMatchScene(parent) {
           if (!(bt.meetT > H.t - 0.1)) {
             bt.meetT = H.t; bt.meet = null;
             simulate({ x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, sx: b.sx || 0, sy: b.sy || 0, sz: b.sz || 0, skid: 0 }, Math.max(0.3, left + 0.5), 1 / 60, (s, t) => {
-              if (s.y < 0.09 || s.y > 0.23) return false;
-              if (Math.hypot(s.x - rcv.x, s.z - rcv.z) / (SPRINT * 0.95) <= t + 0.04) { bt.meet = [s.x, s.z, t]; return true; }
+              // (1.0.31) à hauteur de front, saut compris : le centre du ballon entre 1,4 et 2,4 m (plus bas, il le contrôle)
+              if (s.y < 0.13 || s.y > 0.23) return false;
+              if (Math.hypot(s.x - rcv.x, s.z - rcv.z) / (SPRINT * 0.95) <= t + 0.04) { bt.meet = [s.x, s.z, t, s.y]; return true; }
               return false;
             });
           }
           if (bt.meet) { [gx, gz] = bt.meet; tl = Math.max(0.02, bt.meet[2] - (H.t - bt.meetT)); }
+          bt.headIn = tl; // l'arrivée du ballon au front, réévaluée (le geste de la tête s'y cale)
         }
         const dd = Math.hypot(gx - rcv.x, gz - rcv.z);
         if (headed && left > 0 && dd > 1e-4) { // (1.0.19) il attaque le centre : à fond, puis à l'allure qui l'amène au point à l'heure, sans freiner devant
@@ -1707,11 +1720,17 @@ export function createMatchScene(parent) {
       }
       if (headed) {
         const jt = 0.32;
-        rcv.lift = left < jt && left > -jt ? 0.07 * Math.max(0, 1 - (left / jt) ** 2) : rcv.lift * 0.8;
+        // (1.0.31) le saut se règle sur la hauteur du ballon au point de rencontre (il sautait toujours de 70 cm, et le
+        // ballon d'un centre à hauteur d'homme lui arrivait dans la poitrine), et culmine à l'arrivée réévaluée
+        const lead = bt.headIn ?? left;
+        const top = bt.meet ? clamp(bt.meet[3] + BALL_R - HEAD_Y, 0, 0.07) : 0.07;
+        rcv.lift = lead < jt && lead > -jt ? top * Math.max(0, 1 - (lead / jt) ** 2) : rcv.lift * 0.8;
         rcv.jumpAt = H.t; // saut entretenu à cet instant (sinon il retombe)
         // le geste de la tête (1.0.22, joueurs réalistes) : annoncé une seconde avant, son contact calé sur l'arrivée du
-        // ballon (le joueur ne faisait que sauter, le ballon repartait de lui sans mouvement du buste ni de la tête)
-        if (!bt.headCue && left <= 1.0) { bt.headCue = true; Object.assign(rcv, { headId: H.id * 8 + 4, headLead: Math.max(0, left), headT: H.t }); }
+        // ballon (le joueur ne faisait que sauter, le ballon repartait de lui sans mouvement du buste ni de la tête) ;
+        // 1.0.31 : l'arrivée est retransmise à chaque image, le geste s'y recale (players3d)
+        if (!bt.headCue && lead <= 1.0) { bt.headCue = true; Object.assign(rcv, { headId: H.id * 8 + 4, headLead: Math.max(0, lead), headT: H.t }); }
+        else if (bt.headCue) Object.assign(rcv, { headLead: lead, headT: H.t });
       }
       const headNow = headed && b.y > 0.1;
       // le receveur visé s'étire pour contrôler la passe qui lui est destinée (1,5 m) ; le ballon vient ensuite à son pied
@@ -1724,7 +1743,7 @@ export function createMatchScene(parent) {
       }
       const waitStrike = swinging || strikeComing;
       const stretch = !headNow && !waitStrike && b.y < 0.09 && Math.hypot(b.x - rcv.x, b.z - rcv.z) < REACH * 1.5;
-      if (!waitStrike && (touching(bt.to, headNow) || stretch)) {
+      if (!waitStrike && ((headNow ? headTouch(bt) : touching(bt.to)) || stretch)) {
         if (firstShot && headNow) { next(); shot.launched = true; shoot(bt.to, 'head'); H.busy.add(bt.to); return; }
         if (firstPass) { next(); return; } // la déviation part tout de suite (geste suivant)
         if (firstShot && shot.style === 'head') shot.style = 'foot'; // centre trop bas pour la tête : contrôle, frappe du pied

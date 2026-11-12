@@ -1137,6 +1137,30 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Têtes, parades et ballon (1.0.31)
+
+Contrôle image par image de la vidéo des nouveautés (8 relecteurs indépendants, puis tournage dans le vrai jeu au
+téléphone) : quatre défauts du banc d'essai seul (double ombre, filet en boîte, point de penalty géant, pas de tribunes),
+trois défauts du jeu, corrigés ici.
+- Coup de tête : le contact du geste `Header` est l'instant où la tête revient vers l'avant au plus vite (0,99 s, mesuré
+  au chargement, au lieu de 0,93 posé à la main) ; le ballon part au front (`headTouch` : centre du ballon au centre de
+  la tête, `HEAD_Y` 1,65 m + saut, à 30 cm près, ou au plus près de son passage sous 70 cm), plus à 60 cm du corps ;
+  l'arrivée est retransmise à chaque image (`headLead`, `headT`) et le geste s'y recale par sa vitesse (0,6 à 1,6) ; le
+  saut culmine à l'arrivée et se règle sur la hauteur du ballon au point de rencontre (il sautait toujours de 70 cm) ; le
+  point de rencontre exige le centre du ballon entre 1,4 et 2,4 m (plus bas : contrôle). Mesuré sur 71 têtes (joueurs 3D) :
+  écart geste-départ du ballon −0,10 s → +0,016 s (médianes), tête-ballon 50 → 13 cm.
+- Parade haute : une frappe forte (parade) au centre, ballon à 1,3 m ou plus, joue `GK_Catch_High` ; la parade jouée avec
+  un geste de prise guide les deux mains, paumes côte à côte derrière le ballon, tenues 0,28 s (une seule main montait,
+  0,12 s). Gants-ballon de la parade du contre 103947 : 16 → 3 cm.
+- Ballon : `footballMaterial` (motion.js, celui des exercices) sur une sphère lisse 32 × 16 ; l'icosaèdre à 80 facettes se
+  voyait dès que la caméra s'approchait.
+- Caméra du téléphone tenu droit, maquettes pour le PDG (inactives en production, `tv.pick.phone`) : `phoneEnd` derrière
+  l'attaque (la profondeur du terrain sur la hauteur de l'écran ; `end`, `boxMix`, `omegaLat`) et `phoneClose` (télé de
+  côté plus serrée). Banc `camstats.mjs` (72 frappes, 22 600 images) : joueur au ballon 45 → 87 px (derrière l'attaque) ou
+  83 px (de côté) ; cage entière à la frappe 92 → 97 % (derrière) ou 60 % (de côté).
+- Films de contrôle en développement : `window.__forceHL(e, type)` joue un temps fort choisi dans le vrai stade,
+  `window.__holdClock` retient l'horloge du match (match.jsx, absent de la production).
+
 ## Plongeons et déviations (1.0.30)
 
 - Plongeon (`keeperStep`, `players.diveProgress`) : la course latérale du gardien suit celle du bassin dans le geste

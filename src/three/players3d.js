@@ -157,7 +157,19 @@ async function build() {
   }
   // la tête (1.0.22, Mixamo « header soccerball ») : le buste part en arrière (0,5 à 0,8 s) puis le front revient frapper
   // le ballon ; contact à 0,93 s (mesuré sur le geste : la tête au plus vite vers l'avant, au plus haut)
-  if (A.clips.Header) A.marks.Header = Math.min(0.93, A.clips.Header.duration * 0.6);
+  // 1.0.31 (contrôle de la vidéo des nouveautés : le ballon partait pendant que la tête était encore en arrière, 0,10 s
+  // avant le contact du geste sur 43 têtes mesurées) : le contact est l'instant où la tête revient vers l'avant au plus
+  // vite (0,97 s), mesuré sur le geste au lieu d'une valeur posée à la main
+  if (A.clips.Header) {
+    const s = probe('Header', (r, t) => ({ t, z: wpos(r, 'head').z }));
+    let best = { v: -1, t: 0.97 };
+    for (let i = 1; i < s.length; i++) {
+      if (s[i].t < 0.8 || s[i].t > 1.15) continue;
+      const v = (s[i].z - s[i - 1].z) / Math.max(1e-6, s[i].t - s[i - 1].t);
+      if (v > best.v) best = { v, t: (s[i].t + s[i - 1].t) / 2 };
+    }
+    A.marks.Header = best.t;
+  }
   // les mains au contact de chaque arrêt (1.0.18) : où sont-elles par rapport au gardien (prise : entre les deux mains ;
   // plongeon, arrêt du corps : la main qui va le plus loin) ; le moteur place le gardien pour qu'elles soient au ballon
   A.saveHands = {};
@@ -596,7 +608,7 @@ export function createPlayers3D(parent, max = 22) {
   function gesture(p, name, { fade = 0.18, at = 0 } = {}) {
     if (p.shot) p.shot.fadeOut(fade);
     const a = p.mixer.clipAction(A.clips[name]);
-    a.reset(); a.time = Math.max(0, at); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.setEffectiveWeight(1); a.fadeIn(fade); a.play();
+    a.reset(); a.timeScale = 1; a.time = Math.max(0, at); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.setEffectiveWeight(1); a.fadeIn(fade); a.play();
     p.shot = a; p.fade = -1 / fade; p.shotEnd = A.ends?.[name] ?? A.clips[name].duration; p.noIK = A.lying.has(name); p.frozen = false;
   }
   function endGesture(p, fade = 0.3) { if (p.shot) { p.shot.fadeOut(fade); p.shot = null; } p.fade = 1 / fade; }
@@ -861,7 +873,7 @@ export function createPlayers3D(parent, max = 22) {
     if (p.pending?.name === c.name) return;
     if (!p.shot || p.shot.getClip().name !== c.name) { p.saveC = null; return; }
     const x = p.shot.time - c.t;
-    const post = c.catch ? 0.35 : 0.12;
+    const post = c.catch ? 0.35 : c.palms ? 0.28 : 0.12;
     const w = x < -0.3 || x > post ? 0 : x < 0 ? smooth(1 + x / 0.3) : smooth(1 - x / post);
     if (w <= 0.001) return;
     const s = p.root.scale.x;
@@ -876,6 +888,8 @@ export function createPlayers3D(parent, max = 22) {
       let T;
       if (c.catch) { // prise : une main de chaque côté du ballon, un peu derrière
         T = look.clone().addScaledVector(sideV, (k ? 1 : -1) * (R + 0.035 * s)).addScaledVector(V().set(Math.cos(h), 0, Math.sin(h)), -0.02 * s);
+      } else if (c.palms) { // parade des deux mains face au tir (1.0.31 : une seule main montait) : paumes côte à côte derrière le ballon
+        T = look.clone().addScaledVector(sideV, (k ? 1 : -1) * 0.6 * R).addScaledVector(V().set(Math.cos(h), 0, Math.sin(h)), -(R + 0.025 * s));
       } else { // parade : la main derrière le ballon, côté corps
         toBall.subVectors(look, hp); const dd = toBall.length() || 1;
         T = look.clone().addScaledVector(toBall, -(R + 0.03 * s) / dd);
@@ -932,6 +946,13 @@ export function createPlayers3D(parent, max = 22) {
       const off = A.marks.Header - (ag.headLead || 0);
       if (off >= 0) gesture(p, 'Header', { at: off, fade: 0.12 }); else p.pending = { name: 'Header', wait: -off };
     }
+    // (1.0.31) le geste reste calé sur l'arrivée du ballon, que le moteur réévalue à chaque image (le receveur lit la
+    // trajectoire) : le geste accélère ou ralentit un peu pour que la tête frappe quand le ballon est là
+    if (p.shot && p.headSeen === ag.headId && ag.headId && p.shot.getClip() === A.clips.Header) {
+      const want = A.marks.Header - (ag.headLead || 0);
+      if (p.shot.time < A.marks.Header + 0.05 && (ag.headLead || 0) > -0.05) p.shot.timeScale = Math.min(1.6, Math.max(0.6, 1 + 3 * (want - p.shot.time)));
+      else p.shot.timeScale = 1;
+    }
     // geste annoncé par le moteur (1.0.28 : relance du gardien) : son instant clé (marks) tombe cueLead secondes après
     if (ag.cueId && ag.cueId !== p.cueSeen && A.clips[ag.cueName]) {
       p.cueSeen = ag.cueId;
@@ -957,7 +978,7 @@ export function createPlayers3D(parent, max = 22) {
       const name = saveClip(ag);
       const off = (A.marks[name] ?? 0) - (ag.saveLead || 0);
       if (off >= 0) gesture(p, name, { at: off, fade: 0.15 }); else p.pending = { name, wait: -off };
-      p.saveC = { name, t: A.marks[name] ?? 0, catch: ag.saveKind === 1 };
+      p.saveC = { name, t: A.marks[name] ?? 0, catch: ag.saveKind === 1, palms: ag.saveKind === 2 && name.startsWith('GK_Catch') };
     } else if (pose === 2 && p.pose !== 2 && !ag.saveId) {
       const name = (ag.lean || 0) >= 0 ? 'Save_1' : 'Save_1_M';
       gesture(p, name, { at: A.marks[name] - 0.32, fade: 0.1 });
@@ -993,6 +1014,9 @@ export function createPlayers3D(parent, max = 22) {
     if (!ag.saveKind || !A.clips.GK_Dive_L) return (ag.lean || 0) >= 0 ? 'Save_1' : 'Save_1_M';
     const left = side > 0 || (side === 0 && (ag.lean || 0) >= 0);
     if (ag.saveKind === 3 && h > 2.0 && far < 1.2) return 'GK_Miss';
+    // (1.0.31, contrôle de la vidéo : sur une frappe forte à hauteur du visage, le gardien jouait la prise à hauteur de
+    // poitrine, un seul gant montait, le ballon passait au-dessus de lui) parade haute : les deux mains montent et poussent
+    if (far < 0.45 && ag.saveKind === 2 && h >= 1.3) return 'GK_Catch_High';
     if (far < 0.45 && !(ag.saveKind === 2 && h < 1.0)) return h < 0.82 ? 'GK_Catch_Low' : h < 1.75 ? 'GK_Catch_Mid' : 'GK_Catch_High';
     if (far < 1.1 && h < 0.6) return left ? 'GK_Block_L' : 'GK_Block_R';
     if (!A.clips.GK_DiveLo_R) return left ? 'GK_Dive_L' : 'GK_Dive_R';
