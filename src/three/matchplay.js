@@ -394,7 +394,7 @@ export function createMatchScene(parent) {
       kind: red ? 'red' : e.kind || 'combo',
       outcome: red ? 'red' : e.type === 'goal' ? 'g' : (e.outcome || 'wide')[0],
       beats: [], k: 0, bt: 0, t: 0, phase: 'cut', revealed: false, revealT: 0, react: 0, fk: 0, finale: true, shift: 0, bT: 1,
-      home: new Map(), runs: new Map(), busy: new Set(), hold: new Map(), rec: [], shot: null, dive: null, cut: true,
+      home: new Map(), runs: new Map(), busy: new Set(), hold: new Map(), face: new Map(), rec: [], shot: null, dive: null, cut: true,
       speed: 1, est: 4, // toujours à vitesse normale : ×4 n'accélère que le jeu entre deux temps forts (0.8.9)
     };
     H.roles = [rolesOf(0), rolesOf(1)];
@@ -883,6 +883,20 @@ export function createMatchScene(parent) {
     const o = agents[H.offender];
     if (o.z - z > -0.05 && o.z - z < 0.85 && Math.abs(x - o.x) < 0.1) x = o.x + (Math.sign(agents[i].x - o.x) || 1) * 0.13;
     return [x, z];
+  };
+  // repli face au jeu (1.0.29, audit des déplacements : 13 % des courses des défenseurs se faisaient dos au ballon) : sur
+  // quelques mètres, ou au trot, le défenseur recule face au ballon (pas chassés, à reculons) ; il ne se retourne que pour
+  // une vraie course ; 0,4 s entre deux bascules (pas de clignotement)
+  const backpedal = (i, u, v, speed, dt) => {
+    const a = agents[i]; const [x, z] = clearOfVictim(i, ...at(u, v));
+    const dx = x - a.x, dz = z - a.z, d = Math.hypot(dx, dz);
+    const bx = b.x - a.x, bz = b.z - a.z, bd = Math.hypot(bx, bz);
+    const away = d > 0.02 && bd > 1e-3 && bd < 3 && (dx * bx + dz * bz) / (d * bd) < -0.17;
+    const want = away && (d < 0.3 || speed <= 0.36);
+    const st = H.face.get(i) || { on: false, t: -9 };
+    if (want !== st.on && H.t - st.t > 0.4) { st.on = want; st.t = H.t; H.face.set(i, st); }
+    if (st.on) a.steer(x, z, Math.min(speed, 0.25), dt, b.x, b.z, true);
+    else a.steer(x, z, speed, dt, b.x, b.z);
   };
   const steerUV = (i, u, v, speed, dt, look = null) => {
     const [x, z] = clearOfVictim(i, ...at(u, v));
@@ -2012,13 +2026,13 @@ export function createMatchScene(parent) {
         marked.add(mark);
         const m = agents[mark]; const [ju, jv] = uvOf(m.x, m.z); const [vu, vv] = local(H.A, m.vx, m.vz);
         const pu = ju + vu * 0.35, pv = jv + vv * 0.35;
-        steerUV(i, Math.min(GOAL_X - 0.12, Math.max(pu + 0.09, goalSide)), pv * 0.88, SPRINT * 0.88, dt, [b.x, b.z]);
+        backpedal(i, Math.min(GOAL_X - 0.12, Math.max(pu + 0.09, goalSide)), pv * 0.88, SPRINT * 0.88, dt);
       } else {
         const tu = Math.max(clamp(hu + clamp(bu - 3.2, -1.5, 0.6) * 0.5, 0.3, GOAL_X - 0.3), goalSide, role === 'A' ? -9 : Math.min(want, GOAL_X - 0.5));
         const [cu] = uvOf(agents[i].x, agents[i].z);
         const late = tu - cu > 0.15; // en retard sur sa ligne : il recule vite
         const tv = role === 'A' ? hv + (bv - hv) * 0.22 : hv * 0.72 + bv * 0.38; // le bloc coulisse vers le ballon
-        steerUV(i, tu + Math.sin(w) * 0.05, clamp(tv, -3.0, 3.0) + Math.cos(w * 0.9) * 0.06, late ? 0.62 : H.oneOnOne ? 0.6 : 0.34, dt, [b.x, b.z]);
+        backpedal(i, tu + Math.sin(w) * 0.05, clamp(tv, -3.0, 3.0) + Math.cos(w * 0.9) * 0.06, late ? 0.62 : H.oneOnOne ? 0.6 : 0.34, dt);
       }
     }
     if (foulOn) { // les autres défenseurs restent à 1,5 m au moins du porteur (on doit voir qui le fauche)

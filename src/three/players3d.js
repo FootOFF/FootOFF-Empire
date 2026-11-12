@@ -19,6 +19,8 @@ import { originOf } from '../game/names';
 
 const BASE_H = 1.73; // taille du corps de base (m)
 const URL = `${import.meta.env.BASE_URL}models/players/`;
+// (1.0.29 : les allures Mixamo Walk_Mx, Jog_Mx, Run_Mx sont dans anims.glb mais pas dans l'échelle : mêlées aux foulées
+// CMU, elles faisaient glisser davantage les appuis, glisse > 0,5 m/s 15,0 → 19,8 % au banc tmp/audit-locomotion)
 const GAIT_NAMES = ['Idle_Loop', 'Walk_Loop', 'Jog_CMU_A', 'Run_CMU_B', 'Run_CMU_C', 'Jog_Fwd_Loop', 'Sprint_Loop'];
 // Allures par direction (0.8.24, chantier « course et appuis ») : à reculons, de côté vers la droite et vers la gauche
 // (gestes Mixamo, sur place), et les pas chassés du gardien. Une direction sans allure se rabat sur la course de face
@@ -699,16 +701,26 @@ export function createPlayers3D(parent, max = 22) {
     const air = lying || (p.ag?.lift || 0) > 0.002; // saut (tête), couché : pas d'appui
     p.legs.forEach((L, li) => {
       const A0 = L.foot.getWorldPosition(V()); const B = L.ball.getWorldPosition(V());
-      let planted;
-      if (air) planted = false;
-      else if (p.locoW > 0.5 && p.contact) planted = li === 0 ? p.contact.l : p.contact.r;
-      else { const still = L.prevB ? Math.hypot(B.x - L.prevB.x, B.z - L.prevB.z) / Math.max(dt, 1e-3) < 2.2 * s : false; planted = B.y - g < 0.03 * s && still; }
+      // 1.0.29 (audit des déplacements : le verrou tenait le pied jusqu'à 50 cm de l'animation puis le relâchait d'un coup
+      // en 83 ms ; un pied bas restait sans verrou entre deux marqueurs) : posé = pointe animée basse et lente, levé =
+      // haute ou rapide (hystérésis) ; le verrou suit l'animation en douceur (0,12 m/s au-delà d'une zone morte de 4 cm,
+      // plus vite au-delà de 15 cm) et ne se relâche que pied levé, en 0,15 s ; un nouvel appui part de la cible actuelle
+      const vB = L.prevB ? Math.hypot(B.x - L.prevB.x, B.z - L.prevB.z) / Math.max(dt, 1e-3) : Infinity;
       L.prevB = B.clone();
-      // trop loin de l'animation (pas glissé, demi-tour) : le pied se relève et se repose plus loin
-      if (L.lock && !L.free && Math.hypot(L.lock.x - B.x, L.lock.z - B.z) > 0.5 * s) L.free = true;
-      if (planted && (!L.lock || L.free) && !L.held) { L.lock = B.clone(); L.free = false; L.w = 1; L.held = true; }
-      if (!planted) { L.held = false; if (L.lock) L.free = true; }
-      if (L.lock && L.free) { L.w -= 12 * dt; if (L.w <= 0) { L.w = 0; L.lock = null; } }
+      const hB = B.y - g;
+      const down = !air && hB < 0.025 * s && vB < 1.2 * s;
+      const up = air || hB > 0.045 * s || vB > 2.5 * s;
+      if (L.lock && !L.free) {
+        const dx = B.x - L.lock.x, dz = B.z - L.lock.z, dd = Math.hypot(dx, dz);
+        const m = dd < 0.004 ? 0 : Math.min(dd, (0.12 * s + 3 * Math.max(0, dd - 0.015)) * dt);
+        if (dd > 1e-9) { L.lock.x += (dx / dd) * m; L.lock.z += (dz / dd) * m; }
+        if (up) L.free = true;
+      }
+      if (down && (!L.lock || L.free)) {
+        const cur = L.lock && L.w > 0 ? L.lock.clone().lerp(B, 1 - L.w) : B.clone();
+        L.lock = cur; L.free = false; L.w = 1;
+      }
+      if (L.lock && L.free) { L.w -= dt / 0.15; if (L.w <= 0) { L.w = 0; L.lock = null; } }
       let T = null; let w = 0;
       if (L.lock && L.w > 0) { T = new THREE.Vector3(L.lock.x, Math.max(B.y, g - 0.004 * s), L.lock.z); w = L.w; }
       else if (B.y < g - 0.01 * s) { T = new THREE.Vector3(B.x, g, B.z); w = 1; } // pied en l'air sous la pelouse
