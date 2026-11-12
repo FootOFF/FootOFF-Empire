@@ -72,7 +72,9 @@ async function build() {
   knit.wrapS = knit.wrapT = THREE.RepeatWrapping;
   knit.repeat.set(70, 70); // maille de 3 mm environ sur l'atlas du corps
   const clips = {};
+  const rawRoot = {}; // (1.0.30) plongeons et arrêts du corps avec leur déplacement capté, pour en lire la course
   for (const c of anims.animations) {
+    if (['GK_Dive_L', 'GK_Dive_R', 'GK_Block_R'].includes(c.name)) rawRoot[c.name] = new THREE.AnimationClip(`${c.name}_raw`, c.duration, c.tracks.filter((t) => t.name.endsWith('.quaternion') || t.name === 'pelvis.position'));
     // rotations de tous les os ; bassin : hauteur seulement pour les gestes (le moteur déplace le joueur), tout pour les allures
     const loco = ALL_GAITS.has(c.name);
     const tracks = c.tracks.filter((t) => t.name.endsWith('.quaternion') || t.name === 'pelvis.position').map((t) => {
@@ -182,6 +184,21 @@ async function build() {
   if (A.clips.GK_DropKick) A.marks.GK_DropKick = fastest('GK_DropKick', ['ball_r', 'ball_l']);
   A.ends = { ...(A.ends || {}) };
   for (const n of ['GK_Throw', 'GK_Roll', 'GK_DropKick']) if (A.marks[n] !== undefined) A.ends[n] = Math.min(A.clips[n].duration, A.marks[n] + 0.7);
+  // la course captée des plongeons (1.0.30, audit du gardien : le moteur faisait glisser le gardien de côté, debout, sur
+  // une courbe sans rapport avec le geste, puis il tombait sur place) : la part du déplacement latéral du bassin faite à
+  // chaque instant du geste ; le moteur fait suivre cette course au gardien (lent à l'appel, vif en vol)
+  A.divePath = {};
+  for (const [n, raw] of Object.entries(rawRoot)) {
+    const root = SkeletonUtils.clone(A.base.scene); const mixer = new THREE.AnimationMixer(root);
+    mixer.clipAction(raw).play();
+    const N = 120, t = new Float32Array(N + 1), x = new Float32Array(N + 1);
+    for (let i = 0; i <= N; i++) { t[i] = (i / N) * raw.duration; mixer.setTime(t[i]); root.updateMatrixWorld(true); x[i] = Math.abs(wpos(root, 'pelvis').x); }
+    for (let i = N; i >= 0; i--) x[i] -= x[0];
+    A.divePath[n] = { t, x };
+  }
+  if (A.divePath.GK_Dive_L) A.divePath.GK_DiveLo_R = A.divePath.GK_Dive_L;
+  if (A.divePath.GK_Dive_R) A.divePath.GK_DiveHi_L = A.divePath.GK_Dive_R;
+  if (A.divePath.GK_Block_R) A.divePath.GK_Block_L = A.divePath.GK_Block_R;
   if (import.meta.env?.DEV && typeof window !== 'undefined') window.__saveHands = { hands: A.saveHands, marks: A.marks, dur: Object.fromEntries(Object.entries(A.clips).map(([k, c]) => [k, c.duration])) };
   // la faute (0.8.24, audit de la charte : le porteur ne tombait jamais) : le tacle glissé touche quand le corps est au
   // plus bas ; la chute du porteur part au moment où son bassin plonge vers le sol (le trébuchement capté avant, une
@@ -1066,6 +1083,15 @@ export function createPlayers3D(parent, max = 22) {
     },
     // l'instant clé d'un geste annoncé (1.0.28 : le ballon quitte la main du gardien), en secondes depuis son début
     cueMark(name) { return A?.marks?.[name] ?? null; },
+    // la part de la course latérale captée d'un plongeon faite entre les instants t0 et t du geste, rapportée à celle
+    // faite jusqu'à son contact (marks) ; null sans course captée
+    diveProgress(name, t0, t) {
+      const P = A?.divePath?.[name]; const m = A?.marks?.[name];
+      if (!P || m === undefined) return null;
+      const at = (tt) => { const k = Math.max(0, Math.min(P.t.length - 1, (tt / P.t[P.t.length - 1]) * (P.t.length - 1))); const i = Math.floor(k), f = k - i; return P.x[i] + ((P.x[Math.min(i + 1, P.x.length - 1)] - P.x[i]) * f); };
+      const den = at(m) - at(t0);
+      return den > 1e-3 ? Math.max(0, Math.min(1, (at(t) - at(t0)) / den)) : null;
+    },
     // le ballon tenu par le gardien i : entre ses gants (position monde) ; null sans joueurs réalistes
     ballAnchor(i) { const p = slots[i]; return p && p.anchor ? p.anchor : null; },
     // l'arrêt que fera le gardien i (agent ag : saveSide, saveH, saveKind) : ses mains au contact, dans son repère
@@ -1113,6 +1139,7 @@ export function createPlayersAuto(parent, max, makeProcedural) {
     saveHand: (...a) => cur.saveHand?.(...a) ?? null,
     ballAnchor: (...a) => cur.ballAnchor?.(...a) ?? null,
     cueMark: (...a) => cur.cueMark?.(...a) ?? null,
+    diveProgress: (...a) => cur.diveProgress?.(...a) ?? null,
     setAgent: (...a) => cur.setAgent(...a),
     commit: (n, dt) => cur.commit(n, dt),
     dispose() { gone = true; cur.dispose(); },

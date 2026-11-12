@@ -1137,6 +1137,19 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Plongeons et déviations (1.0.30)
+
+- Plongeon (`keeperStep`, `players.diveProgress`) : la course latérale du gardien suit celle du bassin dans le geste
+  capté (lu au chargement sur les pistes brutes de `GK_Dive_L/R`, `GK_Block_R`, miroirs compris), entre le départ de la
+  détente et le contact, au lieu d'une glissade en douceur dès l'appel (gardien debout, 3,7 à 8,4 m/s).
+- Déviation de la tête manquée (audit : 23 départs du ballon sur 1 041 sans joueur à 1,5 m, `tmp/fantome-touche.mjs`) :
+  au-delà de 1,6 m du ballon, le défenseur va le chercher et le dégage du pied (geste de passe) ; un centre qu'un
+  défenseur doit repousser est visé sur lui. Résultat : 0 départ fantôme. Revers mesuré : 18 temps forts sur 480
+  au-delà de 17 s (dégagements et cafouillages), 1 action forcée (frappe partie hors du terrain après une poursuite).
+- Tête : reprise à 60 cm du corps au plus (1 m avant) ; centres et corners toujours 24 têtes sur 24 (lecture de la
+  trajectoire, 1.0.25). Passe en profondeur de la finale : l'appel est compté au sprint (accélération comprise).
+- Essai écarté : une passe en profondeur plafonnée à 11,5 m/s de moyenne (7 temps forts « ouverture » sur 98 sans frappe).
+
 ## Appuis et repli (1.0.29)
 
 - Verrou des appuis (`footIK`) repris du prototype de l'audit des déplacements : posé = pointe animée basse (< 2,5 cm)

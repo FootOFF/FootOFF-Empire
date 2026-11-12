@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.30', date: '2026-11-12', title: t('Plongeons et déviations'),
+    items: [
+      t('Le plongeon du gardien suit son vrai mouvement : appel, détente, vol à l’horizontale vers le ballon, au lieu d’une glissade debout.'),
+      t('Plus de ballon qui change de direction sans que personne le touche : le défenseur qui manque un centre va chercher le ballon et le dégage du pied ; un centre à repousser est visé sur lui.'),
+      t('Une tête se prend au ballon, jamais à un mètre de lui ; l’attaquant lancé dans la profondeur sprinte vers la passe.'),
+    ],
+  },
+  {
     version: '1.0.29', date: '2026-11-12', title: t('Appuis et repli'),
     items: [
       t('Les pieds tiennent mieux au sol : un appui suit la foulée en douceur et ne se relâche qu’une fois le pied levé, sans ces petits sauts du pied.'),

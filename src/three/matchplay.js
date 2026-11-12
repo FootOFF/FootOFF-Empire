@@ -1150,6 +1150,7 @@ export function createMatchScene(parent) {
       const fx = Math.cos(kp.h), fz = Math.sin(kp.h);
       H.dive.root = [bx2 - (fx * hand.fwd - fz * hand.right), bz2 - (fz * hand.fwd + fx * hand.right)];
       H.dive.tc = H.t + tc;
+      H.dive.clip = hand.clip;
       // un ballon plus haut que les mains du plongeon (ou de la prise sautée) : le gardien s'élève (1.0.25, jusqu'à 70 cm),
       // au plus haut au contact ; les mains n'avaient que les bras pour rattraper l'écart
       if (/^GK_(Dive|Catch_High)/.test(hand.clip || '')) H.dive.lift = clamp(hc + BALL_R - hand.up, 0, 0.07);
@@ -1326,7 +1327,7 @@ export function createMatchScene(parent) {
   function next() { H.k += 1; H.bt = 0; if (H.k >= H.fk && !H.finale) { H.finale = true; H.finaleT = H.t; } }
   const touching = (i, head = false) => {
     const p = agents[i];
-    if (head) return Math.hypot(b.x - p.x, b.z - p.z) < 0.1 && b.y > 0.1 && b.y < 0.27;
+    if (head) return Math.hypot(b.x - p.x, b.z - p.z) < 0.06 && b.y > 0.1 && b.y < 0.27; // (1.0.30 : 60 cm du corps, la tête reprenait des ballons à un mètre)
     const [fx, fz] = footSpot(p);
     return (Math.hypot(b.x - fx, b.z - fz) < RECV || Math.hypot(b.x - p.x, b.z - p.z) < REACH) && b.y < 0.09;
   };
@@ -1374,7 +1375,7 @@ export function createMatchScene(parent) {
   function runTime(bt, tx, tz) {
     const rc = agents[bt.to];
     const d = Math.hypot(tx - rc.x, tz - rc.z);
-    if (H.finale && bt.style === 'cross' && teamOf(bt.to) === H.A) { // il attaque le centre à fond (accélération comprise)
+    if (H.finale && (bt.style === 'cross' || bt.style === 'through') && teamOf(bt.to) === H.A) { // il attaque le centre (ou la passe en profondeur, 1.0.30) à fond, accélération comprise
       const ux = (tx - rc.x) / (d || 1), uz = (tz - rc.z) / (d || 1);
       const v0 = clamp(rc.vx * ux + rc.vz * uz, 0, SPRINT);
       const t1 = (SPRINT - v0) / ACCEL, d1 = v0 * t1 + 0.5 * ACCEL * t1 * t1;
@@ -1560,6 +1561,9 @@ export function createMatchScene(parent) {
       const firstPass = shot && shot.t === 'pass' && shot.first && shot.from === bt.to;
       const headed = (firstShot && shot.style === 'head') || (firstPass && shot.head);
       if (!bt.launched) {
+        // (1.0.30, audit : une fois sur cinquante, le défenseur avait manqué le centre et la déviation partait quand même, à
+        // 3-5 m de lui, sans contact) : loin du ballon, il va le chercher et le dégage du pied (geste de passe)
+        if (bt.head && Math.hypot(b.x - p.x, b.z - p.z) > REACH * 1.6) bt.head = false;
         if (bt.head) { // déviation de la tête (défenseur) : le ballon arrive sur lui, il le repousse aussitôt
           if (!bt.target) { // (1.0.19 : vers là où le joueur qui suit peut la reprendre, pas un point fixe hors d'atteinte)
             const [au, av] = bt.at; const [ru, rv] = uvOf(rcv.x, rcv.z);
@@ -1573,6 +1577,9 @@ export function createMatchScene(parent) {
           return;
         }
         if (!bt.target) bt.target = targetOf(bt);
+        // un centre qu'un défenseur doit repousser de la tête (dégagement, cafouillage) : visé sur lui (1.0.30 ; visé à 5 m de
+        // lui, il le manquait souvent, et devait ensuite courir le dégager du pied : jusqu'à 26 s de temps fort)
+        if (bt.style === 'cross' && teamOf(bt.to) !== teamOf(bt.from) && !bt.aimed) { bt.aimed = true; bt.target = [rcv.x, rcv.z]; }
         let [tx, tz] = bt.target;
         // le receveur se met en route vers le point visé
         const lead = passTime(bt, tx, tz) + ARMED;
@@ -2060,7 +2067,10 @@ export function createMatchScene(parent) {
       if (!dv0.start) dv0.start = [a.x, a.z, H.t];
       const span = Math.max(0.05, dv0.tc - dv0.start[2]);
       const f = clamp((H.t - dv0.start[2]) / span, 0, 1);
-      const e = 1 - (1 - f) * (1 - f);
+      let e = 1 - (1 - f) * (1 - f);
+      // la course du geste capté (1.0.30) : lente à l'appel, vive en vol, au lieu d'une glissade debout
+      const mk = dv0.clip ? players.cueMark?.(dv0.clip) : null;
+      if (mk !== null && mk !== undefined) { const pr = players.diveProgress?.(dv0.clip, mk - span, mk - (dv0.tc - H.t)); if (pr !== null && pr !== undefined) e = pr; }
       const nx = dv0.start[0] + (dv0.root[0] - dv0.start[0]) * e, nz = dv0.start[1] + (dv0.root[1] - dv0.start[1]) * e;
       a.vx = (nx - a.x) / Math.max(dt, 1e-4); a.vz = (nz - a.z) / Math.max(dt, 1e-4);
       a.x = nx; a.z = nz; a.speed = Math.hypot(a.vx, a.vz);
