@@ -1137,6 +1137,15 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Quinze secondes au plus (1.0.24)
+
+- Banc de robustesse `tmp/robuste.mjs` (hors dépôt) : 480 temps forts (12 actions × 4 issues × 2 côtés × 5 graines,
+  quatre systèmes de jeu, ralentis compris). Avant : un temps fort à 15,4 s (frappe lointaine contrée : le ballon dévié
+  mettait 2 s à sortir). Après : aucun problème, aucune action forcée, instant décisif médian 9,4 s, 95 % sous 12,2 s,
+  maximum 14,3 s ; 173 retournements, 48 tirs contrés.
+- Tir contré : l'issue s'affiche au contre (`reveal()`), le ballon sort pendant la réaction.
+- `estBeats` compte 1,7 s pour un centre, un dégagement ou une passe lobée (1,3 s au sol) : la relance raccourcit d'autant.
+
 ## Contrôles et duels (1.0.23)
 
 - Contrôle (`receiveIK`) : à la réception d'une passe au sol, le pied du côté du ballon va à sa rencontre (0,18 s avant

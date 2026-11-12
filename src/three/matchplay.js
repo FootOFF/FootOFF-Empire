@@ -61,7 +61,8 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const anchorsOf = (formation) => formationOf(formation).pitch.map(([x, y]) => [-4.7 + (88 - y) * (6.7 / 73), ((x - 50) / 36) * 2.3]);
 
 // durée estimée d'une suite de gestes (s), pour tenir un temps fort sous 15 s (choix du PDG, 1.0.19)
-const estBeats = (beats) => beats.reduce((t, x) => t + (x.t === 'wait' ? x.dur : x.t === 'pass' ? 1.3 : x.t === 'carry' ? Math.min(x.max ?? 1.5, 1.5) : x.t === 'intercept' ? 1.6 : x.t === 'tackle' ? 2.2 : 0.8), 0);
+// (1.0.24 : un centre, un dégagement, une passe lobée volent plus longtemps qu'une passe au sol)
+const estBeats = (beats) => beats.reduce((t, x) => t + (x.t === 'wait' ? x.dur : x.t === 'pass' ? (x.style === 'cross' || x.style === 'clear' || x.style === 'lob' ? 1.7 : 1.3) : x.t === 'carry' ? Math.min(x.max ?? 1.5, 1.5) : x.t === 'intercept' ? 1.6 : x.t === 'tackle' ? 2.2 : 0.8), 0);
 const HL_BUDGET = 12.6; // s du début à l'instant décisif, plan de coupe compris (le dernier geste et l'issue font le reste)
 
 export function createMatchScene(parent) {
@@ -1067,6 +1068,9 @@ export function createMatchScene(parent) {
       Object.assign(b, { vx: v.vx, vy: v.vy, vz: v.vz, sx: 0, sy: 0, sz: 0, skid: 0 });
       k.done = true;
       H.hold.set(k.who, H.t + (k.slide ? 1.15 : 0.4));
+      // l'instant décisif d'un tir contré, c'est le contre (1.0.24) : l'issue s'affiche, le ballon file hors du terrain
+      // pendant la réaction (il mettait jusqu'à 2 s à sortir : le temps fort dépassait quinze secondes)
+      reveal();
       return;
     }
     const kp = agents[H.keeper];

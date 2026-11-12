@@ -5,6 +5,13 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.24', date: '2026-11-12', title: t('Quinze secondes au plus'),
+    items: [
+      t('Un tir contré se conclut au moment du contre : l’issue s’affiche et le ballon file ensuite hors du terrain (il mettait jusqu’à deux secondes à sortir).'),
+      t('Quand l’action finit par un centre ou un dégagement, la relance est plus courte : sur 480 temps forts d’essai, aucun ne dépasse quinze secondes.'),
+    ],
+  },
+  {
     version: '1.0.23', date: '2026-11-12', title: t('Contrôles et duels'),
     items: [
       t('À la réception d’une passe au sol, le pied du joueur va à la rencontre du ballon et l’amortit.'),
