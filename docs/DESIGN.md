@@ -1137,12 +1137,33 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Tirs contrés, corps à corps (1.0.20)
+
+Suite du chantier du PDG du 2026-11-11 (championnat entre amis du vendredi) : « tirs contrés, seulement quand l'issue est
+à côté, dévié en corner » ; « des joueurs qui se traversent ».
+- Tir contré (`armBlock`, `blockStep`) : quand le tireur arme une frappe dont l'issue du moteur est « à côté », le
+  défenseur le mieux placé sur la trajectoire (de 0,8 à 9,5 m du tireur, à moins de 2,2 m de la ligne) se jette : tacle
+  glissé piloté jusqu'au point de passage, jambe tendue (geste 3D du tacle, calé sur l'arrivée du ballon), ou barrage du
+  corps s'il est déjà sur la ligne. Le ballon part vers ce point ; au contact, il file hors du cadre, en corner (à 1,2 à
+  5,5 m du poteau) ou une fois sur quatre par-dessus la barre, ralenti (11 à 17 m/s). Sur un coup franc, le joueur du mur
+  visé le contre (une fois sur deux par-dessus) ; le mur saute quand le ballon arrive, contré ou non. Le gardien ne plonge
+  pas sur un tir contré. Trois fois sur quatre quand le défenseur est sur la ligne, une fois sur deux sinon.
+- Le défenseur ferme l'angle : quand la frappe finira à côté et que le buteur a le ballon (ou qu'une passe part vers
+  lui), un défenseur devant lui, à moins de 14 m, vient se placer 2,5 m devant lui sur la ligne du but (quatre fois sur
+  cinq) ; le tireur prend une touche de plus (0,8 s au plus) le temps qu'il arrive. Banc (80 frappes à côté) : 14 contres
+  (une-deux, cafouillages, frappes lointaines, ouvertures, coups francs) ; aucun sur les face-à-face, les contres et les
+  têtes, où personne ne se trouve devant le tireur.
+- Corps à corps (`separate`) : deux joueurs à moins de 55 cm s'écartent, chacun de la moitié du chevauchement ; ne bougent
+  pas celui qui frappe, le gardien pendant un arrêt, ceux qui finissent un geste, le contreur ; les duels voulus (tacle
+  jusqu'au contact, faute, ballon chipé) se jouent au contact. Banc (96 temps forts) : paires de joueurs à moins de 40 cm
+  6 155 images avant, 311 après (le tacle et le ballon chipé).
+
 ## Récupérations et contre-attaques (1.0.19)
 
 Demande du PDG (2026-11-11, dans la nuit, avant le championnat entre amis du vendredi) : « l'équipe qui a le ballon au
 début du temps fort n'est pas forcément celle qui termine l'action… récupérations, contre-attaques… de la variation et du
 réalisme. Dans la défense aussi. » Ses choix : environ une fois sur deux, quinze secondes au plus, tacles et
-interceptions, tirs contrés, pressing et duels, dégagements (les tirs contrés et les dégagements restent à faire).
+interceptions, tirs contrés, pressing et duels, dégagements (tirs contrés en 1.0.20 ; les dégagements restent à faire).
 - Retournement (`buildUp`) : une action de jeu sur deux (85 % des contres) commence chez l'adversaire, qui perd le
   ballon. Passe coupée (`intercept`) : le couple receveur visé et intercepteur où notre joueur est le plus près de la
   ligne de passe ; la passe arrive au point de coupe quand il y est, il l'y attend puis coupe la trajectoire. Tacle glissé

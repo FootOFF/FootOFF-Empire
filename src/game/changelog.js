@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.20', date: '2026-11-12', title: t('Tirs contrés, corps à corps'),
+    items: [
+      t('Tirs contrés : sur une frappe qui finit à côté, un défenseur ferme l’angle et se jette, ou le mur saute ; le ballon est dévié en corner ou par-dessus la barre.'),
+      t('Les joueurs ne se traversent plus : deux joueurs au contact s’écartent ; seuls les duels voulus, le tacle et le ballon chipé, se jouent corps contre corps.'),
+      t('Sur un coup franc, le mur saute quand le ballon arrive.'),
+    ],
+  },
+  {
     version: '1.0.19', date: '2026-11-12', title: t('Récupérations et contre-attaques'),
     items: [
       t('Dans les temps forts, l’équipe qui a le ballon au début n’est plus forcément celle qui finit l’action : une fois sur deux, l’adversaire le perd sur un pressing, une passe coupée ou un tacle glissé, et c’est le contre.'),
