@@ -1021,6 +1021,9 @@ export function createMatchScene(parent) {
   }
   function shoot(i, style) {
     const { rr, outcome } = H;
+    // de loin (au-delà de 22 m), une frappe est toujours appuyée (1.0.25 : un ballon piqué de 28 m, plus lent depuis les
+    // vitesses réelles, mourait avant le but)
+    if ((style === 'poke' || style === 'foot') && GOAL_X - uvOf(b.x, b.z)[0] > 2.2) style = 'long';
     const kp = agents[H.keeper];
     const [, kv] = uvOf(kp.x, kp.z);
     const [bu, bv] = uvOf(b.x, b.z);
@@ -1905,6 +1908,7 @@ export function createMatchScene(parent) {
         .map((i) => [i, Math.hypot(agents[i].x - chaseTo[0], agents[i].z - chaseTo[1])])
         .sort((x, y) => x[1] - y[1]).slice(0, 2).forEach(([i]) => chase.add(i));
     }
+    const marked = new Set(); // (1.0.25) un attaquant n'est marqué que par un défenseur
     for (let i = 0; i < N; i++) {
       if (!active(i) || H.busy.has(i)) continue;
       const a = agents[i];
@@ -1964,29 +1968,40 @@ export function createMatchScene(parent) {
         steerUV(i, cu + 0.12, cv * 0.92, i === H.lunge ? 0.5 : 0.42, dt, [c.x, c.z, duel]);
         continue;
       }
-      // marquage dans la surface : côté but de l'attaquant le plus proche ; sinon le bloc recule et coulisse
-      let mark = null, md = 0.7;
-      if (hu > BOX - 0.4) {
-        for (const j of teamIdx(A)) {
-          if (!active(j) || slotOf(j) === 0 || (H.outcome === 'red' && j === H.victim)) continue; // le porteur fauché n'est plus marqué
-          const [ju, jv] = uvOf(agents[j].x, agents[j].z);
-          const d = Math.hypot(ju - hu, jv - hv);
-          if (ju > BOX - 0.6 && d < md) { md = d; mark = [ju, jv]; }
-        }
-      }
-      // la défense ne laisse personne partir dans son dos : chacun reste plus près de son but que l'attaquant le plus avancé
-      // (c'est elle qui recule, l'attaquant reste en jeu) ; en attendant, de petits pas d'ajustement, jamais planté
-      // seule la ligne défensive (0.8.20, remarque du PDG : toute l'équipe s'alignait en retrait) : le milieu tient sa
-      // ligne une dizaine de mètres devant, l'attaque plus haut encore
+      // la défense de la surface (1.0.25, audit collectif : au moment du centre, aucun défenseur entre le buteur et le
+      // gardien ; la ligne restait à 13-18 m du but) : la profondeur de la ligne suit le ballon (5,5 m du but quand il est
+      // tout près, 24 m au loin ; plus basse encore quand il est sur une aile, près de la surface) ; le bloc coulisse vers
+      // le ballon ; près du but, les défenseurs et les milieux marquent les appels, côté but, chacun le sien. Personne ne
+      // part dans le dos : chacun reste plus près de son but que l'attaquant le plus avancé (c'est la défense qui recule)
       const role = roleOf(i);
       const goalSide = Math.min(GOAL_X - 0.22, deepest + 0.06) - (role === 'D' ? 0 : role === 'M' ? 0.95 : 2.1);
       const k = slotOf(i), w = H.t * (0.7 + k * 0.05) + k * 2.3;
-      if (mark) steerUV(i, Math.max(Math.min(GOAL_X - 0.2, mark[0] + 0.1), goalSide), mark[1] * 0.9, 0.5, dt, [b.x, b.z]);
-      else {
-        const tu = Math.max(clamp(hu + clamp(bu - 3.2, -1.5, 0.6) * 0.5, 0.3, GOAL_X - 0.3), goalSide);
+      const dGoal = Math.max(0, GOAL_X - bu);
+      const wideBall = Math.abs(bv) > 1.3;
+      const lineD = clamp(0.2 + dGoal * 0.55 - (wideBall && dGoal < 1.8 ? 0.25 : 0), 0.55, 2.4);
+      const want = GOAL_X - lineD - (role === 'D' ? 0 : role === 'M' ? 0.85 : 2.0);
+      let mark = null, md = 1.2;
+      if (dGoal < 2.6 && role !== 'A') {
+        const [cu0, cv0] = uvOf(a.x, a.z);
+        for (const j of teamIdx(A)) {
+          if (!active(j) || slotOf(j) === 0 || j === carrier || marked.has(j) || (H.outcome === 'red' && j === H.victim)) continue; // le porteur fauché n'est plus marqué
+          const [ju, jv] = uvOf(agents[j].x, agents[j].z);
+          if (ju < want - 0.5) continue;
+          const d = Math.hypot(ju - cu0, jv - cv0);
+          if (d < md) { md = d; mark = j; }
+        }
+      }
+      if (mark !== null) { // il suit son attaquant, côté but, un pas devant sa course
+        marked.add(mark);
+        const m = agents[mark]; const [ju, jv] = uvOf(m.x, m.z); const [vu, vv] = local(H.A, m.vx, m.vz);
+        const pu = ju + vu * 0.35, pv = jv + vv * 0.35;
+        steerUV(i, Math.min(GOAL_X - 0.12, Math.max(pu + 0.09, goalSide)), pv * 0.88, SPRINT * 0.88, dt, [b.x, b.z]);
+      } else {
+        const tu = Math.max(clamp(hu + clamp(bu - 3.2, -1.5, 0.6) * 0.5, 0.3, GOAL_X - 0.3), goalSide, role === 'A' ? -9 : Math.min(want, GOAL_X - 0.5));
         const [cu] = uvOf(agents[i].x, agents[i].z);
         const late = tu - cu > 0.15; // en retard sur sa ligne : il recule vite
-        steerUV(i, tu + Math.sin(w) * 0.05, hv + (bv - hv) * 0.22 + Math.cos(w * 0.9) * 0.06, late ? 0.62 : H.oneOnOne ? 0.6 : 0.34, dt, [b.x, b.z]);
+        const tv = role === 'A' ? hv + (bv - hv) * 0.22 : hv * 0.72 + bv * 0.38; // le bloc coulisse vers le ballon
+        steerUV(i, tu + Math.sin(w) * 0.05, clamp(tv, -3.0, 3.0) + Math.cos(w * 0.9) * 0.06, late ? 0.62 : H.oneOnOne ? 0.6 : 0.34, dt, [b.x, b.z]);
       }
     }
     if (foulOn) { // les autres défenseurs restent à 1,5 m au moins du porteur (on doit voir qui le fauche)
@@ -2022,10 +2037,16 @@ export function createMatchScene(parent) {
       a.poseWant = b.state === 'keeper' ? 3 : 2;
       return;
     }
-    // sur la ligne qui joint le ballon au centre du but, d'autant plus avancé que le ballon est loin (jusqu'à 3 m)
-    const dist = Math.max(0.3, GOAL_X - bu);
+    // sur la bissectrice de l'angle de tir (1.0.25, audit du gardien : sur la ligne ballon-centre du but, il restait 1 à
+    // 3 m hors de l'angle sur les centres et les corners), d'autant plus avancé que le ballon est loin (jusqu'à 3 m) ; un
+    // centre en l'air vers le tireur : il se place déjà pour la frappe qui viendra du point visé
+    let su = bu, sv = bv;
+    const cur = H.beats[H.k];
+    if (!H.shot && cur?.t === 'pass' && cur.launched && cur.target && (cur.to === H.shooter || H.beats[H.k + 1]?.t === 'shot')) [su, sv] = uvOf(...cur.target);
+    const dist = Math.max(0.3, GOAL_X - su);
     const depth = clamp(0.06 + dist * 0.05, 0.08, 0.3);
-    let u = GOAL_X - depth, v = clamp((bv * depth) / dist, -0.3, 0.3);
+    const a1 = Math.atan2(GOAL_HALF - sv, GOAL_X - su), a2 = Math.atan2(-GOAL_HALF - sv, GOAL_X - su);
+    let u = GOAL_X - depth, v = clamp(sv + Math.tan((a1 + a2) / 2) * (u - su), -0.32, 0.32);
     // position d'attente : appuis fléchis, bras ouverts, quand une frappe se prépare (porteur dans les 25 m, penalty)
     const bt = H.beats[H.k];
     const threat = !H.shot && (H.pen || bt?.t === 'shot' || (b.state === 'held' && teamOf(b.owner) === H.A && bu > BOX - 0.9));

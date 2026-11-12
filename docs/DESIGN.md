@@ -1178,13 +1178,19 @@ mesuré sur bancs (node, joueurs 3D compris).
   2 min au plus ; issue forcée à `H.est + 14`.
 - **Déplacements** (`motion.js`) : rotation avec inertie (30 rad/s², 60 en frappe) au lieu de pivots à 945°/s ; arrivée à
   freinage constant (4 m/s²) au lieu d'une approche exponentielle ; phase de foulée fixe par joueur (rejeu identique).
+- **Défense de la surface** (`offBall`) : profondeur de ligne selon le ballon (`lineD` 5,5 à 24 m, plus basse ballon sur
+  une aile près de la surface), bloc qui coulisse (`hv·0,72 + bv·0,38`), marquage des appels côté but par les défenseurs
+  et les milieux à moins de 26 m du but (un attaquant, un marqueur : `marked`). Gardien sur la bissectrice de l'angle de
+  tir, placé pour la frappe qui viendra du point visé par un centre en l'air. Effets mesurés : centres 24 têtes sur 24,
+  tirs contrés 35 → 52 sur 480. Une frappe de plus de 22 m est appuyée (style `long`).
 - **Ombres** : tache douce sous chaque joueur (instanciée, élargie au saut) et sous le ballon (pâlit et s'écarte en
   montant) ; textures calculées (`DataTexture`), aucune lumière ni carte d'ombres ajoutée.
 - Plafonds de hauteur : centre 4,5 m, passe lobée 5 m (le pied frappe plus fort, 33 m/s au plus) ; le centre part de
   l'angle de la surface vers le point de penalty (de la touche au second poteau, 39 m, il montait à 6 m).
-- Mesures 3D (`scratchpad/empire/mesure3d.mjs`, 48 temps forts, joueurs réalistes) : images où le pied ou le tibia entre
-  de plus de 2 cm dans le ballon 472 → 115 (avant la frappe 293 → 24) ; prise : ballon-milieu des gants 9-10 cm,
-  glissement 2 cm ; parade : gant-ballon 3 cm.
+- Mesures 3D (`scratchpad/empire/mesure3d.mjs`, 48 temps forts, joueurs réalistes, version finale) : images où le pied ou le tibia entre
+  de plus de 2 cm dans le ballon 472 → 102 (avant la frappe 293 → 24), temps forts touchés 46 → 27 sur 48 ; prise :
+  ballon-milieu des gants 22-33 → 3 cm,
+  glissement 1 cm ; parade : gant-ballon 13-22 → 3 cm ; centres (temps forts « centre ») sommet médian 2,8 m, max 4,9 m.
 - Bancs : `tools/sim/temps-forts.mjs` 98/98 ; `tmp/robuste.mjs 5` 480 temps forts, 0 forcé, instant décisif médiane
   9,8 s, max 18,5 s ; `tmp/finitions.mjs` centres 22 têtes sur 23.
 - Reste à faire (audit) : caméra du téléphone (cadrage dynamique : ballon, receveur, but, gardien), défense de la surface

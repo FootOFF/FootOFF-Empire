@@ -12,6 +12,7 @@ export const CHANGELOG = [
       t('Chaque ballon part à la vitesse d’un vrai coup de pied : centres tendus, jamais plus haut que 4,5 m, frappes de 65 à 120 km/h, têtes plus douces ; l’attaquant lit le centre et ajuste sa course à sa trajectoire.'),
       t('Le pied frappe au bon instant, au ras de la chaussure : le ballon ne traverse plus le tibia avant la passe ; chaque joueur frappe de son pied fort, et le ballon conduit reste devant la foulée.'),
       t('Plus de limite de quinze secondes : les contre-attaques vont au bout, et les constructions ont plus souvent trois ou quatre relais.'),
+      t('La défense protège sa surface : la ligne recule avec le ballon, chacun suit un appel côté but, le bloc coulisse vers le ballon ; le gardien se place sur la bissectrice de l’angle de tir.'),
       t('Le tir sur le poteau ressort au lieu de rentrer, et le ballon s’arrête sur les panneaux publicitaires.'),
       t('Les joueurs tournent avec de l’inertie au lieu de pivoter sur place, et finissent leurs courses sans traîner.'),
       t('Les joueurs et le ballon ont leur ombre sur la pelouse : on lit la hauteur d’un ballon aérien.'),
