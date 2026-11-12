@@ -139,8 +139,12 @@ export function createMatchScene(parent) {
   }
   function deadBall(x, z) { Object.assign(b, { state: 'dead', owner: -1, x, z, y: 0, vx: 0, vz: 0, vy: 0, sx: 0, sy: 0, sz: 0, strike: null, fixed: true }); }
   function give(i) {
+    const recv = b.state === 'pass' || b.state === 'free';
     Object.assign(b, { state: 'held', owner: i, vx: 0, vz: 0, vy: 0, sx: 0, sy: 0, sz: 0, strike: null });
     if (H) H.poss = teamOf(i); // équipe en possession (1.0.19 : l'adversaire peut l'avoir avant de la perdre)
+    // le contrôle (1.0.23, « passes et contrôles ») : une réception au sol, le pied va au ballon (joueurs réalistes), sauf
+    // s'il l'attendait déjà (réception annoncée par la passe)
+    if (recv && H && b.y < 0.06 && !(agents[i].recvIn > -0.3)) agents[i].recvIn = 0;
   }
   // Contact de la frappe (1.0.18, chantier du PDG : « les joueurs frappent à côté du ballon ») : le point où le pied du
   // geste 3D touche le ballon, pour un joueur au point (x, z) qui regarde h ; sans joueurs réalistes, le pied de frappe
@@ -256,7 +260,7 @@ export function createMatchScene(parent) {
   function put(i, u, v, faceU = GOAL_X, faceV = 0) {
     const a = agents[i];
     [a.x, a.z] = at(u, v);
-    Object.assign(a, { vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0, saveSide: 0, saveH: 0, saveLead: 0, saveKind: 0, saveId: 0, tackleId: 0, tackleLead: 0, tackleT: 0, headId: 0, headLead: 0, headT: 0, jumpAt: -1 });
+    Object.assign(a, { vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0, saveSide: 0, saveH: 0, saveLead: 0, saveKind: 0, saveId: 0, tackleId: 0, tackleLead: 0, tackleT: 0, headId: 0, headLead: 0, headT: 0, recvIn: -9, jumpAt: -1 });
     const [fx, fz] = at(faceU, faceV);
     a.h = Math.atan2(fz - a.z, fx - a.x);
     H.home.set(i, [u, v]);
@@ -1467,6 +1471,11 @@ export function createMatchScene(parent) {
       // le receveur visé s'étire pour contrôler la passe qui lui est destinée (1,5 m) ; le ballon vient ensuite à son pied
       // en douceur (ballUpdate), jamais d'un bond. Une reprise ne part jamais du corps (1.0.19) : la tête la reprend au
       // contact du front ; sinon il contrôle, et la frappe suit (geste suivant, élan et contact du pied)
+      // le contrôle (1.0.23) : la réception annoncée à la 3D 0,2 s avant, quand il est là pour la prendre au sol (le pied va
+      // au-devant du ballon)
+      if (!firstShot && !headed && !firstPass && !bt.recvCue && b.y < 0.05 && left <= 0.2 && left > -0.1 && Math.hypot(rcv.x - tx, rcv.z - tz) < 0.15) {
+        bt.recvCue = true; rcv.recvIn = Math.max(0, left);
+      }
       const waitStrike = swinging || strikeComing;
       const stretch = !headNow && !waitStrike && b.y < 0.09 && Math.hypot(b.x - rcv.x, b.z - rcv.z) < REACH * 1.5;
       if (!waitStrike && (touching(bt.to, headNow) || stretch)) {
@@ -1605,7 +1614,11 @@ export function createMatchScene(parent) {
         const [hu, hv] = planAt(i, H.t);
         const k = slotOf(i), w = H.t * (0.6 + k * 0.05) + k * 2.1;
         if (teamOf(i) === D) { steerUV(i, hu - 0.2 + Math.sin(w) * 0.08, hv + Math.cos(w * 0.8) * 0.1, 0.36, dt, [b.x, b.z]); continue; }
-        if (i === presser) { const c = agents[carrier]; const [cu, cv] = uvOf(c.x, c.z); steerUV(i, cu - 0.13, cv * 0.95, 0.55, dt, [c.x, c.z]); continue; }
+        if (i === presser) { // (au contact, il temporise face au porteur)
+          const c = agents[carrier]; const [cu, cv] = uvOf(c.x, c.z);
+          steerUV(i, cu - 0.13, cv * 0.95, 0.55, dt, [c.x, c.z, Math.hypot(c.x - agents[i].x, c.z - agents[i].z) < 0.25]);
+          continue;
+        }
         // défenseurs et milieux se placent entre le ballon et leur but ; les attaquants (et le buteur) pressent haut
         const high = roleOf(i) === 'A' || i === H.shooter;
         steerUV(i, high ? hu : Math.min(hu, bu - 0.25), hv + (bv - hv) * 0.25 + Math.sin(w) * 0.04, 0.42, dt, [b.x, b.z]);
@@ -1723,8 +1736,9 @@ export function createMatchScene(parent) {
         steerUV(i, Math.min(tu, line), hv + (bv - hv) * 0.08 + Math.cos(w * 0.8) * 0.18, clamp(0.3 + (lag - 0.25) * 0.35, 0.3, 0.62), dt, [b.x, b.z]);
         continue;
       }
-      if (lane && i === H.laneWho) { // il ferme l'angle, face au tireur
-        agents[i].steer(lane[0], lane[1], SPRINT * 0.9, dt, b.x, b.z);
+      if (lane && i === H.laneWho) { // il ferme l'angle ; arrivé (moins de 3 m), il fait face au tireur
+        const near = Math.hypot(lane[0] - agents[i].x, lane[1] - agents[i].z) < 0.3;
+        agents[i].steer(lane[0], lane[1], SPRINT * 0.9, dt, b.x, b.z, near);
         continue;
       }
       if (chase.has(i)) { // course de repli, côté but du point visé ou du porteur
@@ -1739,7 +1753,10 @@ export function createMatchScene(parent) {
       if (i === presser) { // pressing : il se place entre le porteur et le but
         const c = agents[carrier];
         const [cu, cv] = uvOf(c.x, c.z);
-        steerUV(i, cu + 0.12, cv * 0.92, i === H.lunge ? 0.5 : 0.42, dt, [c.x, c.z]);
+        // au contact (moins de 2,5 m), il temporise face au porteur, en pas chassés et à reculons (1.0.23, « pressing et
+        // duels » : il lui tournait le dos en courant vers sa place)
+        const duel = Math.hypot(c.x - agents[i].x, c.z - agents[i].z) < 0.25;
+        steerUV(i, cu + 0.12, cv * 0.92, i === H.lunge ? 0.5 : 0.42, dt, [c.x, c.z, duel]);
         continue;
       }
       // marquage dans la surface : côté but de l'attaquant le plus proche ; sinon le bloc recule et coulisse
@@ -2020,6 +2037,7 @@ export function createMatchScene(parent) {
         // un saut retombe dès qu'il n'est plus entretenu (0.8.24, audit de la charte : le joueur qui avait dévié de la tête,
         // gardé dans l'action, restait suspendu à 70 cm du sol jusqu'à la fin, ralenti compris)
         if (a.lift && !(H && a.jumpAt === H.t)) a.lift = Math.max(0, a.lift - dt * 0.4);
+        if (a.recvIn > -1) a.recvIn -= dt; // le contrôle : le temps depuis la réception (1.0.23)
         // pose (players.js) : gardien prêt, plongeon, ballon serré ; saut de la tête, bras levés
         let want = slotOf(i) === 0 && H?.phase !== 'end' ? a.poseWant || 0 : a.lift > 0.004 ? 4 : 0;
         if (slotOf(i) === 0 && H && H.phase === 'react') want = b.state === 'keeper' && teamOf(i) === H.D ? 3 : 2; // après l'instant décisif

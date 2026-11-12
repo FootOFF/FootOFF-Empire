@@ -1137,6 +1137,17 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Contrôles et duels (1.0.23)
+
+- Contrôle (`receiveIK`) : à la réception d'une passe au sol, le pied du côté du ballon va à sa rencontre (0,18 s avant
+  le contact, 0,2 s après, pondéré en douceur) et l'amortit de l'intérieur (cheville à 1,5 cm derrière le ballon) ;
+  jamais pendant un geste, jamais au-delà d'une jambe tendue. Le moteur annonce la réception 0,2 s avant quand le
+  receveur est en place (`recvIn`, compte à rebours), sinon au contact (`give`).
+- Duel : le défenseur qui presse fait face au porteur à moins de 2,5 m (allures de côté et à reculons des joueurs
+  réalistes) ; le défenseur qui ferme l'angle de frappe fait face au tireur une fois en place.
+- Revue de qualité (13 types d'actions filmés, 2026-11-12) : aucune erreur de page, aucun défaut visible. Mesure 3D
+  inchangée : pied-ballon 3 cm, gants-ballon 14 cm.
+
 ## Coups de tête (1.0.22)
 
 - Geste de la tête : Mixamo « header soccerball » (pack déjà téléchargé le 2026-10-29, `Mixamo_FootOFF/x`), ajouté à

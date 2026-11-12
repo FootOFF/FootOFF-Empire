@@ -725,6 +725,26 @@ export function createPlayers3D(parent, max = 22) {
     const k = far > 0 ? Math.max(0, 1 - far / (0.25 * s)) : 1; // ballon hors de portée : la correction s'efface
     twoBone(L.thigh, L.calf, L.foot, T, w * k);
   }
+  // Contrôle (1.0.23, chantier du PDG : « passes et contrôles ») : à la réception d'une passe au sol, le pied du côté du
+  // ballon va à sa rencontre (0,18 s avant le contact annoncé par le moteur, 0,2 s après) et l'amortit de l'intérieur ;
+  // jamais pendant un geste, jamais au-delà d'une jambe tendue
+  const BALL_R = 0.011; // rayon du ballon (unités du jeu)
+  function receiveIK(p) {
+    const ag = p.ag;
+    if (!look || !ag || p.shot || !(ag.recvIn > -0.25)) return;
+    const x = -ag.recvIn; // temps depuis le contact (négatif : avant)
+    const w = x < -0.18 || x > 0.2 ? 0 : x < 0 ? smooth(1 + x / 0.18) : smooth(1 - x / 0.2);
+    if (w <= 0.001) return;
+    const dx = look.x - ag.x, dz = look.z - ag.z;
+    const d = Math.hypot(dx, dz) || 1;
+    const L = p.legs[dx * -Math.sin(ag.h) + dz * Math.cos(ag.h) > 0 ? 1 : 0]; // le ballon à sa droite : le pied droit
+    const T = V().set(look.x - (dx / d) * (BALL_R + 0.004), look.y - BALL_R + 0.009, look.z - (dz / d) * (BALL_R + 0.004));
+    const hip = L.thigh.getWorldPosition(V()); const knee = L.calf.getWorldPosition(V());
+    const reach = (knee.distanceTo(hip) + L.foot.getWorldPosition(V()).distanceTo(knee)) * 1.02;
+    const far = T.distanceTo(hip) - reach;
+    const k = far > 0 ? Math.max(0, 1 - far / (0.25 * p.root.scale.x)) : 1; // ballon hors de portée : la correction s'efface
+    twoBone(L.thigh, L.calf, L.foot, T, w * k * 0.85);
+  }
   // Les mains du gardien (1.0.18, chantier du PDG : « le ballon le frappe au milieu du corps ») : autour du contact de
   // l'arrêt, les gants vont au ballon (les deux mains de part et d'autre pour une prise, la main la plus proche derrière le
   // ballon pour une parade) ; ensuite le ballon capté reste entre ses gants (ballAnchor).
@@ -916,6 +936,7 @@ export function createPlayers3D(parent, max = 22) {
         gaze(p, p.ag, dt);
         footIK(p, dt);
         strikeIK(p);
+        receiveIK(p);
         keeperIK(p);
         if (p.keeper) { // le ballon entre ses gants : le milieu des deux mains, un peu devant les paumes
           const hl = p.root.getObjectByName('hand_l'); const hr = p.root.getObjectByName('hand_r');

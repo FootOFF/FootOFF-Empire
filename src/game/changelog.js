@@ -5,6 +5,13 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.23', date: '2026-11-12', title: t('Contrôles et duels'),
+    items: [
+      t('À la réception d’une passe au sol, le pied du joueur va à la rencontre du ballon et l’amortit.'),
+      t('Le défenseur qui presse temporise face au porteur, en pas chassés et à reculons, au lieu de lui tourner le dos ; celui qui ferme l’angle de frappe fait face au tireur.'),
+    ],
+  },
+  {
     version: '1.0.22', date: '2026-11-12', title: t('Coups de tête'),
     items: [
       t('Les coups de tête ont leur geste : le joueur s’élève, arme le buste en arrière et frappe le ballon du front, au moment où il arrive, sur les centres, les corners et les dégagements.'),
