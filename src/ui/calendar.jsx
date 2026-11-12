@@ -1,17 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DIVISIONS } from '../game/constants';
 import { outcomeOf, seasonFixtures } from '../game/fixtures';
-import { STAGES, STAGES_SHORT, cupPrize, leagueLength, penaltySkills, shootoutWinChance } from '../game/cups';
+import { STAGES, STAGES_SHORT, cupPrize, leagueLength } from '../game/cups';
 import { TICKET_POLICIES, awayGate, expectedGate, ticketPrice } from '../game/economy';
 import { TACTICS, formationOf, lineupRating } from '../game/tactics';
 import { standingsOf } from '../game/season';
-import { awayElevenOf, prematchOdds } from '../game/live';
 import { teamKitOf } from '../game/kits';
 import { ordinal } from '../game/utils';
 import { ClubCrest, Crest } from './crest';
 import { Eyebrow } from './kit';
 import { IconCheck, IconChevron, IconClose, IconLock, IconPlay, IconStar, IconTrophy } from './icons';
-import { fmtMoney, fmtNum, fmtPrice, fmtRating, homeFirst, roundPercents, scoreText } from './format';
+import { fmtMoney, fmtNum, fmtPrice, fmtRating, homeFirst, scoreText } from './format';
 import { useSwipe } from './gestures';
 import { uiSound } from './uisound';
 import { clubStars } from '../game/crest';
@@ -175,29 +174,6 @@ function Fact({ label, sub, tone = '', wide = false, children }) {
   );
 }
 
-// Pronostic du prochain match : les chances calculées par le moteur du match, avec le onze et la tactique actuels
-// (les mêmes que celles de l'avant-match tant qu'on n'y change rien).
-function Odds({ odds, qualify }) {
-  const [w, d, l] = roundPercents([odds.win, odds.draw, odds.loss]); // somme toujours égale à 100 %
-  return (
-    <section className="sc-odds">
-      <div className="sc-odds-head">
-        <span>{t('Pronostic avec ton onze actuel')}</span>
-        {qualify != null && <span>{tr('Qualification <0/>', [<b>{Math.round(qualify * 100)} %</b>])}</span>}
-      </div>
-      <div className="sc-odds-bar" aria-hidden="true">
-        <i className="w" style={{ flexGrow: odds.win }} />
-        <i className="d" style={{ flexGrow: odds.draw }} />
-        <i className="l" style={{ flexGrow: odds.loss }} />
-      </div>
-      <div className="sc-odds-legend">
-        <span className="w">{tr('<0/>victoire', [<b>{w.label}</b>])}</span>
-        <span className="d">{tr('<0/>nul', [<b>{d.label}</b>])}</span>
-        <span className="l">{tr('<0/>défaite', [<b>{l.label}</b>])}</span>
-      </div>
-    </section>
-  );
-}
 
 // Buteurs groupés par joueur : « Martin 12′, 54′ · Diallo 78′ ».
 function scorersOf(m) {
@@ -249,10 +225,6 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
   // l'avantage du terrain passe de l'autre côté (pronostic compris)
   const gate = future && opp ? (f.away ? awayGate(state) : expectedGate(state, opp, f.comp)) : null;
   const policy = TICKET_POLICIES[state.ticketPolicy || 'standard'];
-  const odds = f.status === 'next' && opp ? prematchOdds(state, { oppStrength: opp.strength, home: !f.away, away: awayElevenOf(state, { opp }) }) : null;
-  // coupe : qualifié en gagnant, ou aux tirs au but après un nul (chance exacte, comme à l'avant-match)
-  const pens = odds && f.comp !== 'league' ? penaltySkills(state.lineup.map((id) => state.players.find((p) => p.id === id)).filter(Boolean)) : null;
-  const qualify = pens ? odds.win + odds.draw * shootoutWinChance(pens.home, pens.away) : null;
   const edge = future && ours != null && theirs ? edgeOf(ours, theirs) : null;
   const cup = f.comp !== 'league' ? state.cups?.[f.comp] : null;
   const lost = cup?.results?.find((x) => !x.won);
@@ -279,7 +251,6 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
   } else if (future && opp) {
     body = (
       <>
-        {odds && <Odds odds={odds} qualify={qualify} />}
         <div className="sc-facts">
           {edge && <Fact label={t('Rapport de force')} sub={edge.sub} tone={edge.tone}>{edge.text}</Fact>}
           {f.away ? (

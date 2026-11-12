@@ -1,14 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useGlass } from './glass';
 import { divisionOf } from '../game/constants';
 import { repLevel } from '../game/reputation';
 import { activeChapter } from '../game/journey';
 import { seasonObjectives } from '../game/objectives';
-import { awayElevenOf, prematchOdds } from '../game/live';
 import { matchContext, standingsOf } from '../game/season';
 import { ClubCrest, Crest } from './crest';
 import { AnimatedMoney } from './moneyfx';
-import { fmtMoney, roundPercents } from './format';
+import { fmtMoney } from './format';
 import {
   IconCal, IconCheck, IconChevron, IconCoin, IconEmpire, IconMenu, IconMoon, IconPlay, IconStadium, IconStar, IconSun,
   IconTarget, IconTrophy, IconUsers, IconClock, IconEye, IconCrane, IconStaff, IconClose, IconTransfer, IconShield, IconLock,
@@ -213,8 +212,8 @@ export function Dock({ panel, onPanel, badges = {}, keys = false }) {
   );
 }
 
-// Prochain match : écusson de l'adversaire, compétition et journée, nom, chances de victoire (le pronostic de
-// l'avant-match, calculé sur le même moteur avec le onze et la tactique enregistrés), bouton Jouer (touche J).
+// Prochain match : écusson de l'adversaire, compétition et journée, nom, bouton Jouer (touche J). Plus de chances de
+// victoire (1.0.34, décision du PDG : aucun chiffre de prévision, comme dans un jeu de gestion à la Football Manager).
 // league (partie de championnat entre amis) : { pending : la journée est jouée, notre match est à regarder ; sent : notre
 // équipe est validée ; deadline : l'heure de la journée ; onWatch(skip) ; seasonOver : la ligue est passée à la saison
 // suivante ; kickoff : tous ont validé, coup d'envoi à cette heure (0.8.6) ; deadlineAt : l'heure de la journée à l'horloge
@@ -228,7 +227,6 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
   const waitSeason = done && league && !league.seasonOver; // dernière journée appliquée, la ligue n'a pas encore tourné
   // J : jouer (ou bilan de fin de saison) ; rien pendant le compte à rebours, les équipes sont verrouillées
   useHudKey(['KeyJ'], () => (watch ? league.onWatch() : done ? (waitSeason ? null : onEndSeason()) : league?.kickoff ? null : onPlay()), keys);
-  const odds = useMemo(() => (ctx ? prematchOdds(state, { oppStrength: ctx.opp.strength, home: ctx.home !== false, away: awayElevenOf(state, ctx) }) : null), [state]); // eslint-disable-line react-hooks/exhaustive-deps
   const titleRef = useFitText(ctx?.opp.name, 17);
   const eyeRef = useFitText(`${ctx?.short}${ctx?.home}${state.round}`, 10); // « Coupe · Demies · Domicile » raccourci sur PC
   if (watch) { // la journée est jouée : notre match nous attend, comme un direct
@@ -271,7 +269,6 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
   }
   const opp = ctx.opp;
   const champ = ctx.comp === 'league'; // journée de championnat (sinon un tour de coupe)
-  const [w, d, l] = roundPercents([odds.win, odds.draw, odds.loss]); // les chiffres de l'avant-match, au point près
   return (
     <>
     {league?.deadline && <LeagueStrip league={league} />}
@@ -282,13 +279,6 @@ export function MatchCta({ state, onPlay, onEndSeason, keys = false, league = nu
           {champ ? <>{t('J')}{state.round + 1}/{state.schedule.length}</> : ctx.short} · {ctx.home === false ? t('Extérieur') : t('Domicile')}
         </span>
         <strong className="hud-match-title" ref={titleRef} title={opp.name}>{opp.name}</strong>
-        <span className="hm-odds" title={t('Pronostic : victoire {label}, nul {label2}, défaite {label3}', { label: w.label, label2: d.label, label3: l.label })}>
-          <span className="tri" aria-hidden="true"><i style={{ flexGrow: odds.win * 100 }} /><i style={{ flexGrow: odds.draw * 100 }} /><i style={{ flexGrow: odds.loss * 100 }} /></span>
-          <span className="hm-odds-text">
-            <span className="hm-odds-long">{tr('<0/> de victoire', [<b>{w.label}</b>])}</span>
-            <b className="hm-odds-short">{w.label}</b>{/* carte resserrée (tablette, petit PC) : le pourcentage seul */}
-          </span>
-        </span>
       </div>
       {league ? (
         league.kickoff ? (

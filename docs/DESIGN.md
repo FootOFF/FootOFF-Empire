@@ -1137,6 +1137,56 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Tableau tactique (1.0.34)
+
+Chantier tactique du PDG (12/11, maquettes et 16 questions, direction A choisie : « tableau animé en haut, réglages
+dessous »). Phase 1, sans toucher au calcul des matchs ni aux ligues entre amis (qui rejouent les journées) : le coup
+d'envoi envoie toujours le onze, la tactique et le dispositif, rien de plus.
+- Avant-match (`match.jsx PreMatch`) : la composition est toujours dépliée, sur un tableau noir aux lignes dorées
+  (`LineupBoard` avec `tactic`, `ui/tacticboard.jsx`). Sous le terrain (`middle`), les trois plans en grands boutons
+  (pictogramme du bloc et nom) puis le dispositif ; puis le banc, en une rangée qui défile au téléphone. Colonne de droite
+  (dessous au téléphone) : la fiche du plan (description, effet exact sur les occasions, crans), le dispositif, les
+  plans de mi-temps, le pronostic.
+- Les trois tactiques deviennent des préréglages (`PRESETS`, crans de 1 à 5) : Offensive pressing 4, ligne 4, largeur 4 ;
+  Équilibrée 3, 3, 3 ; Bloc bas 2, 2, 2. Jamais de chiffres (PDG, 12/11) : cinq crans dorés et le mot du cran (pressing :
+  très bas à très haut ; ligne : très basse à très haute ; largeur : très étroite à très large).
+- Le bloc (`shapeOf`) : la ligne monte (défenseurs ×1, milieux ×0,75, attaquants ×0,45 d'un décalage de 6 % par cran) ou
+  recule (défenseurs ×0,5, milieux ×0,55 : ils sont déjà bas sur le schéma), le pressing pousse milieux (0,6 %) et
+  attaquants (2,5 % par cran), la largeur écarte de 5 % par cran (resserré, la défense garde sa largeur) ; le gardien
+  avance derrière une ligne haute, reste sur sa ligne en bloc bas. Équilibrée = le dispositif exact. Dessins (en pixels,
+  `BoardMarks`) : zone de pressing hachurée, ligne défensive au pied des défenseurs, courses (latéraux projetés, relais de
+  l'axe, contres) qui se tracent une fois l'équipe en place ; tout glisse en 0,55 s. Les noms et la condition sont posés
+  sur un fond noir (lisibles sur les hachures, la ligne passe dessous).
+- Taille des joueurs (`useChipScale`, jeux `sets`) : la plus grande où aucun ne touche son voisin dans aucun des trois
+  plans, pour qu'elle ne change pas d'un plan à l'autre. Mesuré (12/11, `echelle.mjs`) : au téléphone (342 × 428 px) 89 à
+  95 % de la taille de la 1.0.33 selon le dispositif ; au PC 99 à 100 %. Amplitudes choisies pour cela (essais
+  `echelle2.mjs` / `echelle3.mjs` : la première version resserrait le bloc bas jusqu'à 69 %).
+- « Annuler » (et Ctrl+Z) : pile des 30 derniers états (onze, plan, dispositif). Sons (`sound.js`, PDG : « un son feutré
+  quand l'équipe se replace ») : `shift-up` / `shift-down` quand le bloc avance ou recule, `shift` pour un dispositif ou un
+  onze proposé, `swap` pour deux joueurs échangés, `back` pour annuler ; rien au-dessus de 600 Hz. Pas de vibration
+  nouvelle (choix du PDG).
+- Temps forts 3D (`matchplay.js`, `TAC3D`) : le direct transmet la tactique des deux équipes (`spec.tactic`,
+  `spec.awayTactic` : la nôtre, et le plan adverse `oppPlan`). L'équipe qui attaque fait monter sa défense de 3,5 m et
+  ses latéraux de 7 m, s'écarte de 8 % en Offensive ; reste 3 m plus bas en Bloc bas. Celle qui défend sort 4,5 m plus
+  haut et presse 20 % plus vite en Offensive, recule de 4,5 m, se resserre de 14 % et presse 20 % moins vite en Bloc
+  bas. Visuel seulement.
+- Aucun chiffre de prévision (décision du PDG du 12/11 au soir, « vers un jeu Football Manager », rien à la place) : plus
+  de chances de victoire, de nul ou de défaite (avant-match, carte du prochain match, calendrier, direct, mi-temps), plus
+  de buts attendus avant le match, plus d'effet des plans et des dispositifs en pourcentages, plus de chance de
+  qualification en coupe. Restent le niveau des équipes et les statistiques du match en cours (buts attendus compris).
+  Règles du jeu, tutoriel et écran titre réécrits. Le calcul ne change pas (`prematchOdds` reste pour `preOdds`).
+- Relecture de la charte (brand-guardian, veto puis validé avec réserves levées) : courses qui partent du bord du portrait
+  (jamais de la note), 28 px de trait au moins, arrêtées 5 px avant le joueur visé ; ligne défensive sous les plaques des
+  défenseurs et 10 px au-dessus du gardien ; banc en deux cartes entières qui défilent carte par carte ; jauges sur deux
+  rangs sous 320 px (`@container tbg`) ; fond #141414 vers #08090a ; pictogrammes en trois barres. `useFitText` observe le
+  premier parent qui a une boîte (un parent en `display: contents` n'en a pas) et réduit au pixel près.
+- Mesures : banc `tools/sim/temps-forts.mjs` 98/98 ; robustesse `tmp/robuste.mjs` 10 graines (960 actions) avec les trois
+  tactiques des deux côtés : les 2 mêmes défauts anciens qu'en 1.0.33 (mêlées forcées, graines 296087 et 353241), après
+  avoir neutralisé la tactique sur les mêlées et coups de pied arrêtés (sinon 4 mêlées sans frappe) ; captures du vrai
+  jeu au téléphone (390 et 375 px), au PC, au téléphone couché, en anglais et en arabe, sans erreur.
+- Ensuite (phase 2, après le championnat) : mode expert (curseurs libres, rôles, consignes), plans A, B et C, consignes
+  rapides en match, bilan ; ils changent le calcul : relever `LEAGUE_ENGINE` et publier le site d'abord.
+
 ## Gardien : plongeons et buts encaissés (1.0.33)
 
 Choix du PDG (12/11) : la caméra actuelle (A) reste au téléphone ; les maquettes `phoneEnd` / `phoneClose` restent

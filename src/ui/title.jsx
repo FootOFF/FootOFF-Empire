@@ -67,7 +67,7 @@ function SideCard({ id, state, foreign = null, settings, leagues = null }) {
       <section className="cm-card">
         <span className="eyebrow">{t('Règles du jeu')}</span>
         <p className="cm-card-lead">{tr('Tout ce qui décide, <0>en clair.</0>', [(c) => <em>{c}</em>])}</p>
-        <p className="cm-card-note">{t('Le match et son pronostic exact, les joueurs et leur condition, le mercato et la valeur, l’argent, la réputation.')}</p>
+        <p className="cm-card-note">{t('Le match et le tableau tactique, les joueurs et leur condition, le mercato et la valeur, l’argent, la réputation.')}</p>
       </section>
     );
   }

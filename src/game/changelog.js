@@ -5,6 +5,17 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.34', date: '2026-11-12', title: t('Tableau tactique, sans pronostic'),
+    items: [
+      t('L’avant-match devient un tableau tactique noir et or : l’équipe se place selon son plan, avec sa zone de pressing, sa ligne défensive et ses courses, et tout se replace à chaque changement.'),
+      t('Offensive, Équilibrée et Bloc bas deviennent des plans qui règlent d’un coup le pressing, la ligne défensive et la largeur, chacun sur une échelle dorée de cinq crans.'),
+      t('Le onze se compose sur le même tableau : le plan et le dispositif juste dessous, puis le banc, en une rangée au téléphone.'),
+      t('« Annuler » revient sur le dernier changement du onze, du plan ou du dispositif (Ctrl+Z au clavier) ; un son feutré accompagne l’équipe qui se replace.'),
+      t('Plus aucune prévision, comme sur un vrai banc : ni chances de victoire, de nul ou de défaite, ni buts attendus, ni effet des plans et des dispositifs en pourcentages, ni chance de qualification.'),
+      t('Dans les temps forts 3D, chaque équipe joue sa tactique : en Offensive, la défense monte et les latéraux se projettent ; en Bloc bas, l’équipe recule et ses lignes se resserrent ; le pressing se déclenche plus ou moins tôt.'),
+    ],
+  },
+  {
     version: '1.0.33', date: '2026-11-12', title: t('Gardien : plongeons et buts encaissés'),
     items: [
       t('Le gardien battu ne se jette plus à travers le ballon : pris à contre-pied, ou plongeon du bon côté, mains trop courtes ; le ballon ne touche plus son corps.'),

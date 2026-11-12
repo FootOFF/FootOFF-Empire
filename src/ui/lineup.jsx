@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { POS_LABELS } from '../game/constants';
 import { absenceOf, available, fitFactor, fitOf, playerRating, ratingAt } from '../game/players';
@@ -6,10 +6,12 @@ import { FORMATIONS, FORMATION_ORDER, FRESH_FIT, autoLineup, fitWeight, formatio
 import { fmtRating } from './format';
 import { RatingBadge } from './kit';
 import { haptic } from './haptics';
+import { uiSound } from './uisound';
 import { Portrait } from './portrait';
 import { IconCheck } from './icons';
 import { comma, t, tn, tr } from '../i18n/index';
 import { useFitText } from './fittext';
+import { BoardMarks, boardPx, shapeOf, shapesOf } from './tacticboard';
 
 // Composition interactive, la même partout (onglet Composition de l'Effectif, avant-match, mi-temps) : le terrain
 // avec le onze à ses postes (portrait, note au poste, nom, condition), le banc en cartes en dessous. Le terrain se
@@ -61,7 +63,10 @@ function clashes(a, pa, b, pb, s) {
   }
   return false;
 }
-function useChipScale(pitchRef, rootRef, pitch, key) {
+// sets : les jeux de postes à respecter (le dispositif ; au tableau tactique, ses trois blocs, 1.0.34, pour que la taille
+// ne change pas d'un plan à l'autre). onBox(W, H, wide, geo) : la taille du terrain et la forme d'un joueur à l'échelle
+// (geo : centre et rayon du portrait, demi-hauteur et demi-largeur du joueur, depuis son centre), pour ce qu'on dessine.
+function useChipScale(pitchRef, rootRef, sets, key, onBox) {
   useLayoutEffect(() => {
     const el = pitchRef.current;
     const root = rootRef.current;
@@ -69,14 +74,13 @@ function useChipScale(pitchRef, rootRef, pitch, key) {
     const fit = () => {
       const W = el.clientWidth;
       const H = el.clientHeight;
-      const chips = [...el.querySelectorAll('.lu-chip')];
-      if (chips.length !== pitch.length || !W || !H) return;
       const wide = root.clientWidth >= WIDE;
-      const at = ([x, y]) => (wide ? [W * (0.05 + (100 - y) * 0.009), H * (0.05 + x * 0.009)] : [W * (0.09 + x * 0.0082), H * (0.05 + y * 0.009)]);
-      const pts = pitch.map(at);
+      const chips = [...el.querySelectorAll('.lu-chip')];
+      if (chips.length !== sets[0].length || !W || !H) { onBox?.(W, H, wide, null); return; }
+      const ptsSets = sets.map((set) => set.map((p) => boardPx(p, W, H, wide)));
       const parts = chips.map(chipParts);
       const ok = (s) => {
-        for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) if (clashes(pts[i], parts[i], pts[j], parts[j], s)) return false;
+        for (const pts of ptsSets) for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) if (clashes(pts[i], parts[i], pts[j], parts[j], s)) return false;
         return true;
       };
       let lo = 0.6;
@@ -84,13 +88,22 @@ function useChipScale(pitchRef, rootRef, pitch, key) {
       if (ok(hi)) lo = hi;
       else for (let k = 0; k < 12; k++) { const mid = (lo + hi) / 2; if (ok(mid)) lo = mid; else hi = mid; }
       el.style.setProperty('--lu-s', lo.toFixed(3));
+      if (onBox) {
+        const c = chips[0];
+        const f = c.querySelector('.lu-face');
+        const r = (v) => Math.round(v * lo * 10) / 10;
+        onBox(W, H, wide, f && {
+          faceDy: r(f.offsetTop + f.offsetHeight / 2 - c.offsetHeight / 2), faceR: r(f.offsetWidth / 2),
+          halfH: r(c.offsetHeight / 2), halfW: r(c.offsetWidth / 2),
+        });
+      }
     };
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);
     ro.observe(root);
     return () => ro.disconnect();
-  }, [pitchRef, rootRef, pitch, key]);
+  }, [pitchRef, rootRef, sets, key, onBox]);
 }
 
 // noms courts lisibles : « Joubert », ou « F. Joubert » quand deux joueurs portent le même nom
@@ -103,14 +116,7 @@ export function displayNames(players) {
   }));
 }
 
-// Dispositif : six formations. Leur effet exact sur les occasions (tactics.js : les nôtres et celles de l'adversaire,
-// dans la même proportion), en mots sous le choix.
-export function formationEffect(id) {
-  const f = FORMATIONS[id];
-  if (!f || f.for === 1) return t('Occasions : la référence.');
-  const pct = Math.round((f.for - 1) * 100);
-  return t('Occasions : {v}{abs} % des deux côtés.', { v: pct > 0 ? '+' : '−', abs: Math.abs(pct) });
-}
+// Dispositif : six formations ; leur effet se lit dans leur description, sans chiffre (1.0.34, décision du PDG)
 export function FormationPicker({ value, onChange }) {
   return (
     <div className="formations" role="radiogroup" aria-label={t('Dispositif')}>
@@ -202,9 +208,17 @@ function BenchFit({ value }) {
   return <span className={`lu-bfit ${FIT_TONE(v)}`} title={t('Condition physique : {v} %', { v })}>{v} %</span>;
 }
 
-export function LineupBoard({ players, lineup, formation, onChange, locked = null, booked = null, maxIn = Infinity, original = null, notes = null, hurt = null, unavailable = null, fitness = null }) {
+// tactic (avant-match, 1.0.34) : le terrain devient le tableau tactique noir et or (tacticboard.jsx) : l'équipe se place
+// selon le plan, avec sa zone de pressing, sa ligne défensive et ses courses, et glisse en place à chaque changement.
+// middle : ce qui se range entre le terrain et le banc (les réglages du plan, sous le tableau).
+export function LineupBoard({ players, lineup, formation, onChange, locked = null, booked = null, maxIn = Infinity, original = null, notes = null, hurt = null, unavailable = null, fitness = null, tactic = null, middle = null }) {
   const slots = slotsOf(formation);
-  const pitch = formationOf(formation).pitch;
+  const base = formationOf(formation).pitch;
+  const pitch = useMemo(() => (tactic ? shapeOf(formation, tactic) : base), [formation, tactic, base]);
+  const board = !!tactic;
+  const sets = useMemo(() => (board ? shapesOf(formation) : [base]), [board, formation, base]);
+  const [box, setBox] = useState(null); // taille du terrain en pixels (dessins du tableau)
+  const onBox = useCallback((W, H, wide, geo) => setBox((b) => (b && b.W === W && b.H === H && b.wide === wide && JSON.stringify(b.geo) === JSON.stringify(geo) ? b : { W, H, wide, geo })), []);
   const byId = useMemo(() => Object.fromEntries(players.map((p) => [p.id, p])), [players]);
   const names = useMemo(() => displayNames(players), [players]);
   const canEnter = (p) => available(p) && !unavailable?.has(p.id);
@@ -218,7 +232,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
   const drag = useRef(null);
   const root = useRef(null);
   const pitchEl = useRef(null);
-  useChipScale(pitchEl, root, pitch, lineup.join(','));
+  useChipScale(pitchEl, root, sets, lineup.join(','), board ? onBox : null);
   const isLocked = (id) => !!locked?.has(id);
   const entering = (next) => (original ? next.filter((id) => id !== null && !original.includes(id)).length : 0);
   const keyOf = (item) => (item ? `${item.kind}:${item.kind === 'slot' ? item.k : item.id}` : null);
@@ -254,6 +268,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
       if (entering(next) > maxIn) return false; // plus de changement disponible
     }
     haptic('tap');
+    if (board) uiSound('swap'); // tableau tactique : un son feutré quand l'équipe se replace (PDG, 12/11)
     onChange(next);
     return true;
   };
@@ -333,10 +348,11 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
     : t('Glisse un joueur sur un poste, ou choisis-en deux pour les échanger');
 
   return (
-    <div className={`lu ${ghost ? 'dragging' : ''}`} ref={root} data-noswipe="">
+    <div className={`lu ${board ? 'tb' : ''} ${ghost ? 'dragging' : ''}`} ref={root} data-noswipe="">
       {outHint && <p className="lu-hint lu-hint-out" role="status">{outHint}</p>}
       <div className="lu-pitch" ref={pitchEl}>
         <div className="p2-lines"><i className="half" /><i className="circle" /><i className="box top" /><i className="box bottom" /><i className="six top" /><i className="six bottom" /></div>
+        {board && <BoardMarks formation={formation} tactic={tactic} P={pitch} box={box} />}
         {lineup.map((id, k) => {
           const p = byId[id];
           if (!p) return null;
@@ -353,7 +369,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
               type="button"
               data-drop={key}
               className={cls.filter(Boolean).join(' ')}
-              style={{ '--x': `${pitch[k][0]}%`, '--y': `${pitch[k][1]}%` }}
+              style={{ '--x': `${+pitch[k][0].toFixed(2)}%`, '--y': `${+pitch[k][1].toFixed(2)}%` }}
               title={isLocked(id) ? t('Expulsé : il ne peut pas être remplacé ; déplace-le sur le poste à laisser vide') : isHurt(id) ? t('Blessé : à remplacer par un joueur du banc, ou à déplacer sur le poste à laisser vide') : `${POS_LABELS[pos]}${natural ? '' : t(' · hors de son poste ({toLowerCase})', { toLowerCase: POS_LABELS[p.pos].toLowerCase() })}`}
               aria-label={`${p.name}, ${POS_LABELS[pos].toLowerCase()}${out ? '' : t(', niveau {fmtRating}', { fmtRating: fmtRating(cur) })}${isLocked(id) ? t(', expulsé, poste laissé vide') : isHurt(id) ? t(', blessé') : ''}`}
               {...handlers({ kind: 'slot', k })}
@@ -372,9 +388,10 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
           );
         })}
       </div>
+      {middle}
       <div className="lu-bench">
         <div className="lu-bench-head">
-          <span className="lu-bench-title mark-head">{t('Remplaçants')}</span>
+          <span className="lu-bench-title mark-head">{t('Remplaçants')}{board && bench.length > 0 && <em className="lu-count">{bench.length}</em>}</span>
           {left !== null && <span className={`lu-left ${left === 0 ? 'none' : ''}`}>{left === 0 ? t('Plus de changement') : tn(left, '{left} changement possible', '{left} changements possibles', { left }, left > 1)}</span>}
         </div>
         <div className="lu-bench-grid">
@@ -434,7 +451,7 @@ export function LineupEditor({ state, run }) {
         <div className="lu-card">
           <h3 className="pm-sh mark-head">{t('Dispositif')}</h3>
           <FormationPicker value={formation} onChange={(f) => save(reshapeLineup(state.players, state.lineup, f), f)} />
-          <p className="pm-blurb">{formationOf(formation).blurb} <span className="pm-effect">{formationEffect(formation)}</span></p>
+          <p className="pm-blurb">{formationOf(formation).blurb}</p>
         </div>
         <div className="lu-card lu-legend">
           <h3 className="pm-sh mark-head">{t('Repères')}</h3>

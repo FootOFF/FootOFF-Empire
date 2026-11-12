@@ -374,6 +374,15 @@ export function createStadiumSound() {
         src.start(t);
       }
       else if (kind === 'select') { tone(660, 680, 0, 0.09, 0.035, 'triangle'); tone(990, 1010, 0.06, 0.14, 0.03, 'triangle'); }
+      // tableau tactique (1.0.34, PDG du 12/11 : « un son feutré quand l'équipe se replace ») : un accord grave et doux
+      // (do, sol, rien au-dessus de 600 Hz) qui glisse vers le haut quand le bloc avance (plan plus offensif), vers le bas
+      // quand il recule, reste posé pour un nouveau dispositif ou un nouveau onze ; deux joueurs échangés : un frôlement
+      else if (kind === 'shift' || kind === 'shift-up' || kind === 'shift-down') {
+        const g = kind === 'shift-up' ? 1.06 : kind === 'shift-down' ? 0.94 : 1.005;
+        tone(196, 196 * g, 0, 0.34, 0.034);
+        tone(294, 294 * g, 0.04, 0.3, 0.02);
+        tone(392, 392 * g, 0.08, 0.26, 0.009, 'triangle');
+      } else if (kind === 'swap') { tone(330, 336, 0, 0.1, 0.022); tone(440, 446, 0.05, 0.12, 0.012); }
       else if (kind === 'back') tone(720, 480, 0, 0.11, 0.03, 'triangle');
       // en jeu : onglet (clic très bref), panneau qui s'ouvre (souffle qui monte) ou se ferme (qui descend),
       // notification (une note claire), succès (trois notes qui montent, scintillantes), geste refusé (deux notes

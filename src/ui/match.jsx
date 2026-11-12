@@ -2,14 +2,16 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { HOME_KIT, kitHex, matchKits } from '../game/kits';
 import { flushSync } from 'react-dom';
 import { TACTICS, TACTIC_ORDER, autoLineup, fitWeight, formationOf, lineupRating, reshapeLineup, slotsOf } from '../game/tactics';
-import { roundPercents, fmtMoney, fmtNum, fmtRating } from './format';
-import { LIVE_VERSION, SUBS_MAX, awayElevenOf, createLiveMatch, highlightOf, liveKeyOf, pairSubs, prematchOdds, prematchXg, statsOf, subMinute } from '../game/live';
+import { fmtMoney, fmtNum, fmtRating } from './format';
+import { LIVE_VERSION, SUBS_MAX, createLiveMatch, highlightOf, liveKeyOf, pairSubs, statsOf, subMinute } from '../game/live';
 import { saveLive } from '../game/save';
 import { available, fitAt, ratingAt } from '../game/players';
 import { Portrait } from './portrait';
 import { teamCodes } from './teamcode';
-import { FormationPicker, LineupActions, LineupBoard, displayNames, formationEffect } from './lineup';
-import { IconCheck, IconChevron, IconClose, IconFast, IconMute, IconPlay, IconSound, IconUsers } from './icons';
+import { FormationPicker, LineupActions, LineupBoard, displayNames } from './lineup';
+import { IconCheck, IconChevron, IconClose, IconFast, IconMute, IconPlay, IconSound, IconUndo, IconUsers } from './icons';
+import { PresetGauges, PresetPicker } from './tacticboard';
+import { uiSound } from './uisound';
 import { IconAssist, IconBall, IconMedic, IconSwap, IconWhistle, RatingBadge, VersusBar } from './kit';
 import { useKeydown } from './presence';
 import { deName } from '../game/names';
@@ -18,50 +20,24 @@ import { SEC_PER_MIN, matchFeed } from '../game/matchFeed';
 import { ClubCrest, Crest } from './crest';
 import { clubStars } from '../game/crest';
 import { POS_LABELS, divisionOf } from '../game/constants';
-import { penaltySkills, shootoutWinChance } from '../game/cups';
-import { pctOf } from '../game/mercato';
 import { standingsOf } from '../game/season';
 import { useFitText } from './fittext';
 import { HT_CASES } from '../game/league';
 import { arrangeFor, planView } from '../game/leagueClub';
 import { colon, comma, ordinal as ordinalText, t, tn, tr } from '../i18n/index';
 
-// Avant-match (onze + tactique + pronostic) et match en direct (score, chrono, fil de commentaires,
+// Avant-match (onze, tableau tactique) et match en direct (score, chrono, fil de commentaires,
 // vitesse, mi-temps avec changements sur le terrain). La 3D derrière est en mode « jour de match ».
-
-// Pronostic : la barre victoire / nul / défaite, puis les trois chances en grand (les chiffres du moteur, arrondis
-// pour faire 100 %).
-function OddsBar({ odds }) {
-  const [w, d, l] = roundPercents([odds.win, odds.draw, odds.loss]); // somme toujours égale à 100 %
-  return (
-    <div className="odds">
-      <div className="odds-bar" aria-hidden="true">
-        <i className="w" style={{ flexGrow: odds.win * 100 }} />
-        <i className="d" style={{ flexGrow: odds.draw * 100 }} />
-        <i className="l" style={{ flexGrow: odds.loss * 100 }} />
-      </div>
-      <div className="odds-legend">
-        <span className="w">{tr('<0/>Victoire', [<b>{w.label}</b>])}</span>
-        <span className="d">{tr('<0/>Nul', [<b>{d.label}</b>])}</span>
-        <span className="l">{tr('<0/>Défaite', [<b>{l.label}</b>])}</span>
-      </div>
-    </div>
-  );
-}
-
-// Effet exact d'une tactique sur les occasions (tactics.js : les nôtres, celles de l'adversaire).
-const signed = (k) => { const v = Math.round((k - 1) * 100); return `${v > 0 ? '+' : '−'}${Math.abs(v)} %`; };
-export const tacticEffect = (id) => {
-  const row = TACTICS[id];
-  return row.for === 1 && row.against === 1 ? t('le plan de référence') : t('{signed} d’occasions · {signed2} subies', { signed: signed(row.for), signed2: signed(row.against) });
-};
+// Aucun chiffre de prévision (1.0.34, décision du PDG du 12/11, « vers un jeu Football Manager ») : ni chances de
+// victoire, de nul ou de défaite, ni buts attendus avant le match, ni effet des plans en pourcentages, ni chance de
+// qualification. Chacun juge son match seul ; le calcul ne change pas.
 
 function TacticPicker({ value, onChange, compact }) {
   return (
-    <div className={`tactics ${compact ? 'compact' : ''}`} role="radiogroup" aria-label={t('Tactique')}>
+    <div className={`tactics ${compact ? 'compact' : ''}`} role="radiogroup" aria-label={t('Plan de jeu')}>
       {TACTIC_ORDER.map((id) => (
         <button key={id} role="radio" aria-checked={value === id} className={value === id ? 'active' : ''} onClick={() => onChange(id)}>
-          <span className="tac-top"><strong>{TACTICS[id].name}</strong><em>{tacticEffect(id)}</em></span>
+          <span className="tac-top"><strong>{TACTICS[id].name}</strong></span>
           {!compact && <span className="tac-blurb">{TACTICS[id].blurb}</span>}
         </button>
       ))}
@@ -201,11 +177,16 @@ function HalftimePlans({ players, lineup, formation, tactic, plans, onChange, st
 
 // Championnat entre amis (ctx.comp « friends », league.jsx) : la même affiche pour valider son équipe d'une journée,
 // sans classement de division ni billetterie ; ctx.opp.crest : l'écusson d'un club d'ami ; ctx.goLabel : le bouton.
+// Tableau tactique (1.0.34, demande du PDG du 12/11, direction A) : le onze se compose sur un tableau noir et or qui
+// place l'équipe selon le plan (zone de pressing, ligne défensive, courses) ; sous le tableau, les trois plans en grands
+// boutons et le dispositif, puis le banc ; tout glisse en place, avec un son feutré. « Annuler » (ou Ctrl+Z) revient sur
+// le dernier changement. Le coup d'envoi envoie toujours le onze, la tactique et le dispositif, rien de plus : le
+// calcul du match ne change pas.
 export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const [lineup, setLineup] = useState(() => [...state.lineup]);
-  const [tactic, setTactic] = useState(state.tactic || 'balanced');
+  const [tactic, setTactic] = useState(TACTICS[state.tactic] ? state.tactic : 'balanced');
   const [formation, setFormation] = useState(formationOf(state.formation).id);
-  const [board, setBoard] = useState(() => !narrowScreen()); // composition dépliée sur PC, repliée sur téléphone
+  const [hist, setHist] = useState([]); // états précédents, pour annuler (les 30 derniers)
   const friends = !!state.league; // partie de championnat entre amis : son match se joue sans elle (plans de mi-temps)
   const [plans, setPlans] = useState(() => ({ ...(state.league?.plans || {}) })); // plans de mi-temps (ligue)
   const [plansOpen, setPlansOpen] = useState(null); // situation ouverte dans la fenêtre des plans
@@ -214,17 +195,27 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const rating = lineupRating(state.players, lineup, formation, fitWeight);
   const rested = lineupRating(state.players, lineup, formation);
   const tired = rested - rating >= 0.05 ? rested - rating : 0;
-  const home = ctx.home !== false; // à l'extérieur (Élite) : l'avantage du terrain est à l'adversaire, pronostic compris
-  // même moteur que le pronostic (calcul exact, expulsions à venir comprises : gardé tant que rien ne change)
-  // le onze adverse et ses signes (0.8.5) : ils comptent dans le pronostic ; ils ne s'affichent plus (0.8.10, demande du PDG)
-  const away = useMemo(() => awayElevenOf(state, ctx), [state, ctx]);
-  const xg = useMemo(() => prematchXg(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength, home, away }), [state, lineup, tactic, formation, ctx.opp.strength, home, away]);
-  const odds = useMemo(() => prematchOdds(state, { lineup, tactic, formation, oppStrength: ctx.opp.strength, home, away }), [state, lineup, tactic, formation, ctx.opp.strength, home, away]);
-  // coupe : qualifié en gagnant, ou en gagnant la séance de tirs au but après un nul (chance exacte, tireurs et gardien de
-  // ce onze) ; le nul ne compte plus pour une demi-qualification
-  const pens = ctx.knockout ? penaltySkills(lineup.map((id) => state.players.find((p) => p.id === id)).filter(Boolean)) : null;
-  const qualify = pens ? odds.win + odds.draw * shootoutWinChance(pens.home, pens.away) : null;
-  const reshape = (f) => { setFormation(f); setLineup(reshapeLineup(state.players, lineup, f)); };
+  const home = ctx.home !== false; // à l'extérieur (Élite) : l'avantage du terrain est à l'adversaire
+  // chaque changement garde l'état d'avant (annuler) ; sound : le son de l'équipe qui se replace
+  const commit = (next, sound) => {
+    setHist((h) => [...h.slice(-29), { lineup, tactic, formation }]);
+    if (next.lineup) setLineup(next.lineup);
+    if (next.tactic) setTactic(next.tactic);
+    if (next.formation) setFormation(next.formation);
+    if (sound) uiSound(sound);
+  };
+  const undo = () => {
+    const prev = hist[hist.length - 1];
+    if (!prev) return;
+    setHist(hist.slice(0, -1));
+    setLineup(prev.lineup);
+    setTactic(prev.tactic);
+    setFormation(prev.formation);
+    uiSound('back');
+  };
+  const reshape = (f) => { if (f !== formation) commit({ formation: f, lineup: reshapeLineup(state.players, lineup, f) }, 'shift'); };
+  // le bloc monte (plan plus offensif) ou recule : le son monte ou descend avec lui
+  const pickTactic = (id) => { if (id !== tactic) commit({ tactic: id }, TACTIC_ORDER.indexOf(id) < TACTIC_ORDER.indexOf(tactic) ? 'shift-up' : 'shift-down'); };
   const form = formationOf(formation);
   // classement des deux clubs (championnat), dès la première journée jouée
   const table = ctx.comp === 'friends' ? [] : standingsOf(state);
@@ -236,7 +227,11 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const homeRef = useFitText(state.clubName, 22);
   const awayRef = useFitText(ctx.opp.name, 22);
 
-  useKeydown((e) => { if (e.key === 'Escape' && !plansOpen) onCancel(); });
+  useKeydown((e) => {
+    if (plansOpen) return;
+    if (e.key === 'Escape') onCancel();
+    else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
+  });
   // téléphone : glisser vers le bas (contenu tout en haut) ramène au complexe, comme pour les autres fenêtres ; la
   // composition dépliée garde son propre geste (data-noswipe, lineup.jsx)
   const ref = useRef(null);
@@ -255,7 +250,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   };
   const [left, right] = home ? [usTeam, themTeam] : [themTeam, usTeam];
   return (
-    <div ref={ref} className={`matchscreen prematch ${board ? 'board-open' : 'board-closed'}`}>
+    <div ref={ref} className="matchscreen prematch board-open">
       <span className="grip" aria-hidden="true" />
       <header className="pm-head">
         <p className={`pm-eyebrow comp-${ctx.comp || 'league'}`}>{league ? `${divisionOf(state).name} · ` : ''}{ctx.label || t('Journée {v} / {length}', { v: state.round + 1, length: state.schedule.length })} · {home ? t('À domicile') : t('À l’extérieur')}</p>
@@ -287,41 +282,37 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
       </header>
 
       <div className="pm-grid">
-        {board ? (
-          <section className="pm-xi glass" aria-label={t('Onze de départ')}>
-            <div className="pm-xi-head">
-              <h3 className="pm-sh mark-head">{tr('Onze de départ · <0/>', [<span className="nowrap">{form.name}</span>])}</h3>
-              <span className="pm-level">{tr('Niveau <0/><1/>', [<b>{fmtRating(rating)}</b>, tired > 0 && <em className="pm-tired" title={t('{fmtRating} au repos', { fmtRating: fmtRating(rested) })}>{tr('fatigue −<0/>', [fmtRating(tired)])}</em>])}</span>
-              <LineupActions state={state} lineup={lineup} formation={formation} onApply={setLineup} />
-              <button type="button" className="pm-fold" onClick={() => setBoard(false)}>{t('Replier')}</button>
-            </div>
-            <LineupBoard players={state.players} lineup={lineup} formation={formation} onChange={setLineup} fitness={(p) => fitAt(p, 0)} />
-          </section>
-        ) : (
-          <div className="pm-compo">
-            <CompoCard title={t('Composition')} detail={t('Onze en {name} · niveau {fmtRating}{v}', { name: form.name, fmtRating: fmtRating(rating), v: tired ? t(' (fatigue −{fmtRating})', { fmtRating: fmtRating(tired) }) : '' })} onOpen={() => setBoard(true)} />
-            <LineupActions state={state} lineup={lineup} formation={formation} onApply={setLineup} />
+        <section className="pm-xi glass" aria-label={t('Onze de départ')}>
+          <div className="pm-xi-head">
+            <h3 className="pm-sh mark-head">{tr('Onze de départ · <0/>', [<span className="nowrap">{form.name}</span>])}</h3>
+            <span className="pm-level">{tr('Niveau <0/><1/>', [<b>{fmtRating(rating)}</b>, tired > 0 && <em className="pm-tired" title={t('{fmtRating} au repos', { fmtRating: fmtRating(rested) })}>{tr('fatigue −<0/>', [fmtRating(tired)])}</em>])}</span>
+            <button type="button" className="tb-undo" onClick={undo} disabled={!hist.length} title={t('Annuler le dernier changement')} aria-label={t('Annuler le dernier changement')}>{tr('<0/>Annuler', [<IconUndo data-rtl-flip="" />])}</button>
+            <LineupActions state={state} lineup={lineup} formation={formation} onApply={(l) => commit({ lineup: l }, 'shift')} />
           </div>
-        )}
+          <LineupBoard
+            players={state.players} lineup={lineup} formation={formation} tactic={tactic} onChange={(l) => commit({ lineup: l })} fitness={(p) => fitAt(p, 0)}
+            middle={(
+              <div className="pm-quick">
+                <PresetPicker value={tactic} onChange={pickTactic} />
+                <FormationPicker value={formation} onChange={reshape} />
+              </div>
+            )}
+          />
+        </section>
         <section className="pm-plan glass" aria-label={t('Dispositif et tactique')}>
-          <h3 className="pm-sh mark-head">{t('Dispositif')}</h3>
-          <FormationPicker value={formation} onChange={reshape} />
-          <p className="pm-blurb">{form.blurb} <span className="pm-effect">{formationEffect(formation)}</span></p>
-          <h3 className="pm-sh mark-head">{t('Tactique')}</h3>
-          <TacticPicker value={tactic} onChange={setTactic} />
+          <h3 className="pm-sh mark-head">{tr('Tactique · <0/>', [<span className="pm-plan-name">{TACTICS[tactic].name}</span>])}</h3>
+          <p className="pm-blurb">{TACTICS[tactic].blurb}</p>
+          <PresetGauges tactic={tactic} />
+          <h3 className="pm-sh mark-head">{tr('Dispositif · <0/>', [<span className="pm-plan-name">{form.name}</span>])}</h3>
+          <p className="pm-blurb">{form.blurb}</p>
           {friends && <>
             <h3 className="pm-sh mark-head">{t('Plans de mi-temps')}</h3>
             <PlansSummary players={state.players} lineup={lineup} formation={formation} tactic={tactic} plans={plans} onOpen={setPlansOpen} />
           </>}
         </section>
         <div className="pm-go">
-          <section className="pm-odds glass" aria-label={t('Pronostic')}>
-            <div className="pm-odds-head">
-              <h3 className="pm-sh mark-head">{t('Pronostic')}</h3>
-              <span className="pm-xg">{tr('Buts attendus <0/> – <1/>', [<b>{fmtRating(home ? xg.for : xg.against)}</b>, <b>{fmtRating(home ? xg.against : xg.for)}</b>])}</span>
-            </div>
-            <OddsBar odds={odds} />
-            {ctx.knockout && <p className="pm-xg pm-ko">{tr('Élimination directe, tirs au but en cas d’égalité (<0/> % pour toi) · qualification <1/>', [pctOf(shootoutWinChance(pens.home, pens.away)), <b>{pctOf(qualify)} %</b>])}</p>}
+          <section className="pm-odds pm-kick glass" aria-label={t('Coup d’envoi')}>
+            {ctx.knockout && <p className="pm-xg pm-ko">{t('Élimination directe : tirs au but en cas d’égalité.')}</p>}
             <button className="btn btn-xl" onClick={() => onKickoff(lineup, tactic, formation, friends ? plans : undefined)}>{ctx.goLabel ? <><IconCheck /> {ctx.goLabel}</> : <><IconPlay className="fill" />{t(' Coup d’envoi')}</>}</button>
           </section>
         </div>
@@ -785,7 +776,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     hlRef.current = { id, e, type, started: performance.now(), revealed: false };
     setHl({ id, type, e, replay: false });
     Object.assign(matchFeed, {
-      hl: { id, e, type, half, replay: true, homeNames: homeNames(), awayNames: awayNames(), homeLooks: homeLooks(), awayLooks: awayLooks(), awayFormation: awayFormationNow(), formation: formationNow() },
+      // la tactique des deux équipes (1.0.34) : la 3D place les blocs et règle le pressing comme le tableau de l'avant-match
+      hl: { id, e, type, half, replay: true, homeNames: homeNames(), awayNames: awayNames(), homeLooks: homeLooks(), awayLooks: awayLooks(), awayFormation: awayFormationNow(), formation: formationNow(), tactic: live.state.tactic, awayTactic: live.state.oppPlan?.tactic || 'balanced' },
       hlAck: 0, hlReveal: 0, hlDone: 0, hlClock: clockRef.current, hlPhase: '', hlBeat: 0, show3D: true,
     });
   };
@@ -987,23 +979,10 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   // score affiché = buts déjà révélés par le direct (le moteur connaît la suite de la mi-temps)
   const goalsH = shown.filter((e) => e.type === 'goal' && e.side === 'home').length;
   const goalsA = shown.filter((e) => e.type === 'goal' && e.side === 'away').length;
-  // minute du pronostic : la minute affichée, la fin de la première période à la pause, la minute d'effet d'un changement
+  // minute de la condition affichée sur le terrain : la minute affichée, la fin de la première période à la pause, la
+  // minute d'effet d'un changement (plus de pronostic du direct, 1.0.34 : décision du PDG, aucun chiffre de prévision)
   const oddsMinute = phase === 'halftime' ? live.halfEnd : sub?.at ?? minute;
-  // pronostic final, tel que le direct l'a montré (score, cartons et blessures déjà annoncés), avec le onze et la
-  // tactique envisagés pendant un changement ou à la pause
-  const odds = useMemo(() => (phase === 'fulltime' ? null
-    : live.oddsShown(oddsMinute, shown, boardOpen ? { lineup: planned, tactic: tactic2, formation: form2 } : {})), [oddsMinute, shown, phase, plan, tactic2, form2, lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  // notre club en visiteur (match revu en ligue, 1.0.2, bug relevé par le PDG) : le moteur donne les chances du club qui
-  // reçoit ; retournées, ce sont les nôtres (victoire en or, défaite en rouge). Le PDG menait 0-1 à la 83e et lisait
-  // « 1 % · 15 % · 84 % ».
-  const ours = odds && side === 'away' ? { ...odds, win: odds.loss, loss: odds.win } : odds;
   const st = useMemo(() => statsOf(shown), [shown]);
-  const pronoBlock = ( // mi-temps et changement : le pronostic final (match revu : dans la seconde colonne)
-    <div className="ht-block">
-      <span className="ht-label">{tr('Pronostic final<0/>', [phase === 'subs' ? t(' avec ces changements') : ''])}</span>
-      {ours && <OddsBar odds={ours} />}
-    </div>
-  );
   // match revu : le moteur a déjà joué les deux périodes, la possession de la pause est celle de la première
   const poss = phase === 'halftime' && replay ? live.possessionAt(1, live.halfEnd)
     : phase === 'halftime' || phase === 'fulltime' ? m.stats.possession : live.possessionAt(half, minute);
@@ -1013,7 +992,6 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const period = phase === 'halftime' ? t('Mi-temps') : phase === 'fulltime' ? t('Fin du match{v}', { v: m.pens ? t(' · t.a.b. {a}-{b}', { a: m.pens[0], b: m.pens[1] }) : '' }) : tn(half, '1re période', '2e période', {}, !(half === 1));
   const clockEl = phase === 'halftime' ? t('Mi-temps') : phase === 'fulltime' ? t('Terminé{v}', { v: m.pens ? t(' · t.a.b. {a}-{b}', { a: m.pens[0], b: m.pens[1] }) : '' })
     : <>{replay ? <span className="lv-replay">{t('Rejeu')}</span> : <i className={`live-dot ${phase === 'subs' ? 'hold' : ''}`} />}{minuteLabel}′</>; // un match revu n'est pas un direct : pas de point rouge
-  const pct = ours ? roundPercents([ours.win, ours.draw, ours.loss]) : null;
   const xiNames = displayNames(state.players);
   const names = useMemo(() => ({ short: xiNames, byName: Object.fromEntries(state.players.map((p) => [p.name, p.id])) }), [lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const fitOf = (r) => { const p = state.players.find((q) => q.id === r.id); return p ? Math.round(fitAt(p, minute, since(r.id))) : null; };
@@ -1052,12 +1030,6 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     />
   );
 
-  const prono = pct && (
-    <div className="lv-prono" title={t('Chances de victoire, de nul et de défaite à la fin du match, calculées sur le moteur à partir de ce que le direct a montré')}>
-      <div className="lv-prono-head"><span>{t('Pronostic final')}</span><b><em className="w">{pct[0].label}</em> · {pct[1].label} · <em className="l">{pct[2].label}</em></b></div>
-      <div className="odds-bar" aria-hidden="true"><i className="w" style={{ flexGrow: ours.win * 100 }} /><i className="d" style={{ flexGrow: ours.draw * 100 }} /><i className="l" style={{ flexGrow: ours.loss * 100 }} /></div>
-    </div>
-  );
   const viewNow = view === 'notes' && !tabbedScreen() ? 'stats' : view;
 
   return (
@@ -1107,7 +1079,6 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
             </div>
             <div className="lv-sec stats">
               <LiveStats st={st} poss={poss} flip={flip} />
-              {prono}
               <Momentum shown={shown} upTo={slotOf(clockRef.current, half)} possHalf={m.stats.possHalf} names={[m.home, m.away]} codes={codes} flip={flip} />
             </div>
             <div className="lv-sec feed">
@@ -1199,7 +1170,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
                     : <p className="ht-note">{t('Ni but, ni carton, ni blessé en première période.')}</p>}
                 </div>
               </>
-            ) : pronoBlock}
+            ) : null}
             {!board && !replay && (
               <CompoCard
                 title={t('Composition et changements')}
@@ -1228,7 +1199,6 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
               <div className="ht-block ht-b-momentum">
                 <Momentum shown={shown} upTo={slotOf(live.halfEnd, 1)} possHalf={m.stats.possHalf} names={[m.home, m.away]} codes={codes} flip={flip} />
               </div>
-              {pronoBlock}
               <div className="ht-block ht-b-replay">
                 <span className="ht-label">{t('Changements de la mi-temps')}</span>
                 <p className="ht-note">{t('Prévus dans les plans de mi-temps validés avant le match.')}</p>

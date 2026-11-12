@@ -11,13 +11,14 @@ export function useFitText(text, min) {
     const fit = () => {
       el.style.fontSize = '';
       el.classList.remove('long');
-      if (el.scrollWidth <= el.clientWidth + 1) return;
+      // au pixel près (1.0.34) : un débordement d'un seul pixel affiche déjà les points de suspension (« LEMAÎT… »)
+      if (el.scrollWidth <= el.clientWidth) return;
       const max = parseFloat(getComputedStyle(el).fontSize);
       // jamais plus grand qu'au départ (1.0.14) : au téléphone couché, le nom de l'avant-match part de 18 px pour un
       // minimum de 22 : il grossissait, puis était raccourci (« ESTUDIANTES DE CAS… »)
       const floor = Math.min(min, max * 0.75);
       el.style.fontSize = `${Math.max(floor, Math.floor((max * el.clientWidth) / el.scrollWidth))}px`;
-      if (el.scrollWidth > el.clientWidth + 1) el.classList.add('long');
+      if (el.scrollWidth > el.clientWidth) el.classList.add('long');
     };
     fit();
     document.fonts?.ready.then(() => { if (ref.current === el) fit(); });
@@ -28,7 +29,12 @@ export function useFitText(text, min) {
     // changer la largeur du parent laissait parfois un nom raccourci (« BLEUS BOIS-J… » à l'avant-match)
     const late = [setTimeout(fit, 400), setTimeout(fit, 1200)];
     const ro = new ResizeObserver(fit);
-    ro.observe(el.parentElement);
+    // le premier parent qui a une boîte (1.0.34, relecture de la charte) : un parent en « display: contents » (carte d'un
+    // remplaçant au téléphone) n'a pas de taille, l'observer ne remesurait jamais le nom (« LEMAÎT… » à 375 px)
+    let box = el.parentElement;
+    while (box && box !== document.body && getComputedStyle(box).display === 'contents') box = box.parentElement;
+    ro.observe(box || el.parentElement);
+    ro.observe(el);
     return () => { ro.disconnect(); late.forEach(clearTimeout); document.fonts?.removeEventListener?.('loadingdone', fit); };
   }, [text, min]);
   return ref;

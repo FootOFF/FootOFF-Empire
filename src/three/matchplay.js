@@ -65,6 +65,18 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 // Schéma de l'avant-match (en %, attaque vers le haut) → repère d'équipe : u vers le but adverse, v en travers.
 const anchorsOf = (formation) => formationOf(formation).pitch.map(([x, y]) => [-4.7 + (88 - y) * (6.7 / 73), ((x - 50) / 36) * 2.3]);
 
+// Tactique des deux équipes (1.0.34, chantier tactique du PDG : « consignes visibles partout dans la 3D »), la même que
+// sur le tableau de l'avant-match (ui/tacticboard.jsx) : l'équipe qui attaque fait monter sa défense, plus encore ses
+// latéraux, et s'écarte (Offensive : latéraux projetés) ou reste en retrait (Bloc bas) ; celle qui défend sort haut et
+// presse vite (Offensive) ou recule devant sa surface, resserrée, et presse sans se jeter (Bloc bas). En dixièmes de
+// terrain (1 = 10 m). Visuel seulement : l'issue de l'action est celle du moteur du match.
+const TAC3D = Object.assign(Object.create(null), {
+  offensive: { up: 0.35, wingUp: 0.35, wide: 1.08, block: -0.45, comp: 0.92, press: 1.2 },
+  balanced: { up: 0, wingUp: 0, wide: 1, block: 0, comp: 1, press: 1 },
+  low: { up: -0.3, wingUp: 0, wide: 0.95, block: 0.45, comp: 0.86, press: 0.8 },
+});
+const tac3dOf = (id) => TAC3D[id] || TAC3D.balanced;
+
 // durée estimée d'une suite de gestes (s) (1.0.19 ; 1.0.24 : un centre, un dégagement, une passe lobée volent plus
 // longtemps qu'une passe au sol)
 const estBeats = (beats) => beats.reduce((t, x) => t + (x.t === 'wait' ? x.dur : x.t === 'pass' ? (x.style === 'cross' || x.style === 'clear' || x.style === 'lob' ? 1.7 : 1.3) : x.t === 'carry' ? Math.min(x.max ?? 1.5, 1.5) : x.t === 'intercept' ? 1.6 : x.t === 'tackle' ? 2.2 : 0.8), 0);
@@ -348,21 +360,27 @@ export function createMatchScene(parent) {
   }
   // attaque installée : la défense de l'équipe qui attaque monte au milieu, ses attaquants sur la ligne adverse ; la
   // défense adverse en bloc devant sa surface, ses attaquants à mi-terrain
+  // (1.0.34) selon la tactique de chacune : la défense qui attaque monte plus ou moins (ses latéraux plus encore), le
+  // bloc qui défend recule ou sort, se resserre ou s'écarte
   function baseShape() {
     const { A, D } = H;
+    const ta = H.tac[A];
+    const td = H.tac[D];
     for (let k = 0; k < 11; k++) {
       const i = A * 11 + k;
       if (!active(i)) continue;
       const [au, av] = S.anchors[A][k];
-      if (k === 0) put(i, -4.6, 0);
-      else put(i, clamp(au * 0.6 + 2.0, -1.4, 3.5), clamp(av * 1.05, -3.0, 3.0));
+      if (k === 0) { put(i, -4.6, 0); continue; }
+      const role = roleOf(i);
+      const du = role === 'D' ? ta.up + (Math.abs(av) > 1.5 ? ta.wingUp : 0) : role === 'M' ? ta.up * 0.6 : 0;
+      put(i, clamp(au * 0.6 + 2.0 + du, -1.4, 3.5), clamp(av * 1.05 * ta.wide, -3.0, 3.0));
     }
     for (let k = 0; k < 11; k++) {
       const i = D * 11 + k;
       if (!active(i)) continue;
       const [au, av] = S.anchors[D][k];
       if (k === 0) put(i, KEEP_U, 0, 0, 0);
-      else put(i, clamp(1.9 - au * 0.5, 0.6, 4.6), clamp(-av * 0.85, -2.6, 2.6), 0, 0);
+      else put(i, clamp(1.9 - au * 0.5 + td.block, 0.6, 4.6), clamp(-av * 0.85 * td.comp, -2.6, 2.6), 0, 0);
     }
   }
   // place un joueur de champ adverse près d'un point (le défenseur le plus proche de ce point y va)
@@ -399,6 +417,10 @@ export function createMatchScene(parent) {
       speed: 1, est: 4, // toujours à vitesse normale : ×4 n'accélère que le jeu entre deux temps forts (0.8.9)
     };
     H.roles = [rolesOf(0), rolesOf(1)];
+    // tactique de chaque équipe (1.0.34) ; mêlée et coups de pied arrêtés : tout le monde défend dans sa surface, la
+    // disposition est celle du geste, quel que soit le plan (un défenseur de plus dans les six mètres coupait la déviation
+    // de la mêlée : 4 actions sur 960 sans frappe, mesuré au banc tmp/robuste.mjs)
+    H.tac = ['scramble', 'corner', 'freekick', 'penalty'].includes(H.kind) ? [TAC3D.balanced, TAC3D.balanced] : [tac3dOf(spec.tactic), tac3dOf(spec.awayTactic)];
     // le pied fort de chacun (1.0.25, audit du contact : tous les buteurs frappaient du gauche, ballon conduit à droite, la
     // frappe le tirait à travers les pieds) : trois joueurs sur quatre droitiers, toujours le même pour un même joueur
     for (let i = 0; i < N; i++) agents[i].foot = (hash(`${names[teamOf(i)][slotOf(i)] || i}|pied`) >>> 0) % 4 === 0 ? 'l' : 'r';
@@ -2050,7 +2072,8 @@ export function createMatchScene(parent) {
         // au contact (moins de 2,5 m), il temporise face au porteur, en pas chassés et à reculons (1.0.23, « pressing et
         // duels » : il lui tournait le dos en courant vers sa place)
         const duel = Math.hypot(c.x - agents[i].x, c.z - agents[i].z) < 0.25;
-        steerUV(i, cu + 0.12, cv * 0.92, i === H.lunge ? 0.5 : 0.42, dt, [c.x, c.z, duel]);
+        // (1.0.34) il sort plus vite sous un pressing haut, plus lentement en bloc bas ; le tacle prévu garde son élan
+        steerUV(i, cu + 0.12, cv * 0.92, i === H.lunge ? 0.5 : 0.42 * H.tac[D].press, dt, [c.x, c.z, duel]);
         continue;
       }
       // la défense de la surface (1.0.25, audit collectif : au moment du centre, aucun défenseur entre le buteur et le

@@ -149,7 +149,7 @@ export function stepContent(step, s) {
       return {
         ...base,
         title: t('Joue ton premier match'),
-        text: t('Choisis ton onze et ta tactique, regarde le pronostic bouger, puis vis la rencontre en direct.'),
+        text: t('Choisis ton onze et ton plan sur le tableau tactique, puis vis la rencontre en direct.'),
         why: t('Chaque match à domicile remplit la caisse, et chaque victoire rapproche de la montée.'),
         cta: t('Jouer le match'),
         action: { kind: 'match' },
