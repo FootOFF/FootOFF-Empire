@@ -1137,6 +1137,20 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Appuis et repli (1.0.29)
+
+- Verrou des appuis (`footIK`) repris du prototype de l'audit des déplacements : posé = pointe animée basse (< 2,5 cm)
+  et lente (< 1,2 m/s), levé = haute (> 4,5 cm) ou rapide (> 2,5 m/s) ; le verrou suit l'animation à 0,12 m/s au-delà
+  d'une zone morte de 4 cm (3/s au-delà de 15 cm), ne se relâche que pied levé, en 0,15 s ; un nouvel appui part de la
+  cible courante. Banc `tmp/audit-locomotion/loco3d.mjs` (48 temps forts, joueurs 3D) : écart verrou-animation > 20 cm
+  16,8 → 8,1 %, relâches p90 31 → 20 cm. Les pivots à 945°/s de la 1.0.24 (3 389 images) sont tombés à 150 depuis la
+  1.0.25 (rotation avec inertie) ; marche 30 → 22 % du temps.
+- Repli face au jeu (`backpedal`) : un défenseur dont la course l'éloigne du ballon (à moins de 30 m) recule face à lui
+  sur moins de 3 m ou au trot (2,5 m/s au plus), hystérésis 0,4 s. Course à reculons 1,3 → 4,9 %, de côté 2,0 → 4,4 %.
+- Essais écartés, mesurés : l'échelle d'allures avec les foulées Mixamo (glisse des appuis > 0,5 m/s 15,0 → 19,8 %) et
+  une conduite par touches à dents de scie (images pied dans le ballon en conduite 32 → 52-61) ; une vraie conduite
+  par touches devra être calée sur la foulée 3D.
+
 ## Après l'arrêt (1.0.28)
 
 - `afterStep` (réaction des issues autres que but et carton) : ballon capté (`mode 'dist'`) : le gardien tient (1 s

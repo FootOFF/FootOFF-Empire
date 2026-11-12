@@ -5,6 +5,13 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.29', date: '2026-11-12', title: t('Appuis et repli'),
+    items: [
+      t('Les pieds tiennent mieux au sol : un appui suit la foulée en douceur et ne se relâche qu’une fois le pied levé, sans ces petits sauts du pied.'),
+      t('Sur quelques mètres, un défenseur qui recule reste face au jeu, à reculons ou en pas chassés ; il ne se retourne que pour une vraie course.'),
+    ],
+  },
+  {
     version: '1.0.28', date: '2026-11-12', title: t('Après l’arrêt'),
     items: [
       t('Après une prise, le gardien se relève, se tourne vers un partenaire et relance : ballon roulé, lancé à la main ou dégagé de volée selon la distance ; le partenaire va au-devant du ballon et le contrôle.'),
