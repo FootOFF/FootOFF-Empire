@@ -1137,6 +1137,19 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Coups de tête (1.0.22)
+
+- Geste de la tête : Mixamo « header soccerball » (pack déjà téléchargé le 2026-10-29, `Mixamo_FootOFF/x`), ajouté à
+  `FootOFF_3D_Sources/scripts/mixamo_clips.json` sous le nom `Header`, transféré sur place ; les 54 gestes existants
+  ressortent identiques de la reconstruction (vérifié piste par piste), `resample` puis `meshopt` reproduit l'ancien
+  `anims.glb` à l'octet près. Le buste part en arrière (0,5 à 0,8 s) puis le front frappe : contact à 0,93 s. Le moteur
+  annonce la tête une seconde avant l'arrivée du ballon (`headId`, `headLead`) ; le saut reste celui du moteur. Centres,
+  corners, dégagements et déviations de la tête.
+- Ralentis : le tacle et la tête sont enregistrés (numéro, avance, instant du signal, `REC` 23) et repris là où ils en
+  sont ; un geste fini depuis plus de 1,5 à 1,8 s n'est pas rejoué (un tacle d'avant le ralenti se rejouait au début).
+- Mesure 3D (48 temps forts) : pied-ballon 3 cm en médiane, aucun au-delà de 10 cm ; gants-ballon 14 cm (24 avant),
+  aucun ballon plus près du ventre que des gants.
+
 ## Dégagements (1.0.21)
 
 - Frappe lointaine (`long`), une fois sur deux : centre de l'aile vers un défenseur placé au point de penalty, qui le

@@ -141,6 +141,9 @@ async function build() {
   for (const [n, f] of [['GK_Dive_L', reachT], ['GK_Dive_R', reachT], ['GK_Catch_Low', meetT], ['GK_Catch_Mid', meetT], ['GK_Catch_High', handPeak], ['GK_Block_L', lowT], ['GK_Block_R', lowT], ['GK_Miss', handPeak], ['Foul_Tackle', lowT]]) {
     if (A.clips[n]) A.marks[n] = f(n);
   }
+  // la tête (1.0.22, Mixamo « header soccerball ») : le buste part en arrière (0,5 à 0,8 s) puis le front revient frapper
+  // le ballon ; contact à 0,93 s (mesuré sur le geste : la tête au plus vite vers l'avant, au plus haut)
+  if (A.clips.Header) A.marks.Header = Math.min(0.93, A.clips.Header.duration * 0.6);
   // les mains au contact de chaque arrêt (1.0.18) : où sont-elles par rapport au gardien (prise : entre les deux mains ;
   // plongeon, arrêt du corps : la main qui va le plus loin) ; le moteur place le gardien pour qu'elles soient au ballon
   A.saveHands = {};
@@ -794,6 +797,13 @@ export function createPlayers3D(parent, max = 22) {
       // le tacle capté se termine debout : un seul relevé (audit, 0.8.24 : enchaîné au relevé de Mixamo, qui part du
       // sol, le fautif se relevait deux fois)
     }
+    // la tête (1.0.22) : le contact du geste tombe à l'arrivée du ballon annoncée par le moteur ; le saut reste celui du
+    // moteur (le geste est pris sur place)
+    if (ag.headId && ag.headId !== p.headSeen && A.clips.Header) {
+      p.headSeen = ag.headId;
+      const off = A.marks.Header - (ag.headLead || 0);
+      if (off >= 0) gesture(p, 'Header', { at: off, fade: 0.12 }); else p.pending = { name: 'Header', wait: -off };
+    }
     if (Math.abs(ag.roll || 0) > 0.5 && !p.fell && A.clips.Foul_Fall) {
       p.fell = true;
       gesture(p, 'Foul_Fall', { at: A.marks.Foul_Fall, fade: 0.1 });
@@ -869,7 +879,7 @@ export function createPlayers3D(parent, max = 22) {
       for (const p of slots) {
         if (!p) continue;
         if (p.shot) { p.shot.stop(); p.shot = null; }
-        p.cheering = false; p.locoW = 1; p.fade = 0; p.prevKick = 0; p.pose = 0; p.lx = undefined; p.back = 0; p.pending = null; p.holding = false; p.saveSeen = 0; p.tackleSeen = 0; p.fell = false; p.after = null; p.frozen = false;
+        p.cheering = false; p.locoW = 1; p.fade = 0; p.prevKick = 0; p.pose = 0; p.lx = undefined; p.back = 0; p.pending = null; p.holding = false; p.saveSeen = 0; p.tackleSeen = 0; p.headSeen = 0; p.fell = false; p.after = null; p.frozen = false;
         p.lh = undefined; p.roll = 0; p.pitch = 0; p.yaw = undefined; p.lookUp = undefined; p.gw = 0; p.dirF = 1; p.dirR = 0;
         for (const L of p.legs) { L.lock = null; L.w = 0; L.prevB = null; L.free = false; L.held = false; }
       }

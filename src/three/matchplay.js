@@ -256,7 +256,7 @@ export function createMatchScene(parent) {
   function put(i, u, v, faceU = GOAL_X, faceV = 0) {
     const a = agents[i];
     [a.x, a.z] = at(u, v);
-    Object.assign(a, { vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0, saveSide: 0, saveH: 0, saveLead: 0, saveKind: 0, saveId: 0, tackleId: 0, tackleLead: 0, jumpAt: -1 });
+    Object.assign(a, { vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0, saveSide: 0, saveH: 0, saveLead: 0, saveKind: 0, saveId: 0, tackleId: 0, tackleLead: 0, tackleT: 0, headId: 0, headLead: 0, headT: 0, jumpAt: -1 });
     const [fx, fz] = at(faceU, faceV);
     a.h = Math.atan2(fz - a.z, fx - a.x);
     H.home.set(i, [u, v]);
@@ -862,7 +862,7 @@ export function createMatchScene(parent) {
     const lead = Math.max(0.1, (KICK_CONTACT - agents[i].kick) * KICK_TIME) + bs / (wall ? 2.5 : 2.9);
     const slide = !wall && Math.hypot(qx - a.x, qz - a.z) > 0.04; // déjà sur la ligne : il fait barrage du corps
     H.block = { who: best, q: [qx, qz], y: wall ? H.rr(0.12, 0.17) : slide ? H.rr(0.015, 0.04) : H.rr(0.03, 0.08), wall, slide, t0: H.t, lead, from: [a.x, a.z], done: false };
-    if (slide) Object.assign(a, { tackleId: H.id * 8 + 6, tackleLead: lead });
+    if (slide) Object.assign(a, { tackleId: H.id * 8 + 6, tackleLead: lead, tackleT: H.t });
     H.blocks = (H.blocks || 0) + 1; // mesure (banc)
   }
   // le contreur : la glissade pilotée de sa place jusqu'au point de passage (jambe tendue, 85 cm, au contact) ; dans le
@@ -1295,7 +1295,7 @@ export function createMatchScene(parent) {
         if (!bt.slide && (gap < 0.2 || (H.bt > 1.2 && gap < 0.34))) { // à 2 m (3,4 m s'il tarde) il se jette, jambe tendue vers le ballon
           bt.slide = H.t + TACKLE_LEAD;
           bt.from = [a.x, a.z, H.t];
-          Object.assign(a, { tackleId: H.id * 8 + 5, tackleLead: TACKLE_LEAD });
+          Object.assign(a, { tackleId: H.id * 8 + 5, tackleLead: TACKLE_LEAD, tackleT: H.t });
         }
         if (bt.slide) { // la glissade : un jaillissement, de sa place jusqu'au ballon, jambe tendue (90 cm) au contact
           const dx = b.x - bt.from[0], dz = b.z - bt.from[1], dd = Math.hypot(dx, dz) || 1;
@@ -1459,6 +1459,9 @@ export function createMatchScene(parent) {
         const jt = 0.32;
         rcv.lift = left < jt && left > -jt ? 0.07 * Math.max(0, 1 - (left / jt) ** 2) : rcv.lift * 0.8;
         rcv.jumpAt = H.t; // saut entretenu à cet instant (sinon il retombe)
+        // le geste de la tête (1.0.22, joueurs réalistes) : annoncé une seconde avant, son contact calé sur l'arrivée du
+        // ballon (le joueur ne faisait que sauter, le ballon repartait de lui sans mouvement du buste ni de la tête)
+        if (!bt.headCue && left <= 1.0) { bt.headCue = true; Object.assign(rcv, { headId: H.id * 8 + 4, headLead: Math.max(0, left), headT: H.t }); }
       }
       const headNow = headed && b.y > 0.1;
       // le receveur visé s'étire pour contrôler la passe qui lui est destinée (1,5 m) ; le ballon vient ensuite à son pied
@@ -1528,13 +1531,13 @@ export function createMatchScene(parent) {
         // contact qui fait la faute
         if (!bt.tackle && gap < 0.16) {
           bt.tackle = H.t + TACKLE_LEAD;
-          Object.assign(off, { tackleId: H.id * 8 + 7, tackleLead: TACKLE_LEAD });
+          Object.assign(off, { tackleId: H.id * 8 + 7, tackleLead: TACKLE_LEAD, tackleT: H.t });
         }
         if ((bt.tackle && H.t >= bt.tackle) || gap < 0.05 || H.bt > 4) {
           bt.contact = H.t;
           H.foulAt = H.t;
           vic.roll = (Math.random() < 0.5 ? -1 : 1) * 1.35; // le porteur s'écroule (3D : il trébuche sur le tacle et reste au sol)
-          if (!bt.tackle) { bt.tackle = H.t; Object.assign(off, { tackleId: H.id * 8 + 7, tackleLead: 0 }); }
+          if (!bt.tackle) { bt.tackle = H.t; Object.assign(off, { tackleId: H.id * 8 + 7, tackleLead: 0, tackleT: H.t }); }
           vic.vx *= 0.3; vic.vz *= 0.3;
           deadBall(b.x, b.z);
         }
@@ -1871,12 +1874,15 @@ export function createMatchScene(parent) {
   }
 
   // --- Ralenti : l'action rejouée depuis son enregistrement ----------------------------------------------------------
-  const REC = 17; // par joueur : x, z, cap, foulée, allure, frappe, plongeon, joie, saut, chute, pose, tir (joueurs 3D), arrêt (côté, hauteur, avance, issue, numéro)
+  // par joueur : x, z, cap, foulée, allure, frappe, plongeon, joie, saut, chute, pose, tir (joueurs 3D), arrêt (côté,
+  // hauteur, avance, issue, numéro) ; 1.0.22 : tacle et tête (numéro, avance, instant du signal), rejoués à leur instant
+  const REC = 23;
   function record() {
     const a = new Float32Array(N * REC);
     for (let i = 0; i < N; i++) {
       const g = agents[i];
-      a.set([g.x, g.z, g.h, g.phase, g.gait, g.kick, g.lean, g.cheer, g.lift, g.roll, g.pose || 0, g.kickKind === 'shot' ? 1 : 0, g.saveSide || 0, g.saveH || 0, g.saveLead || 0, g.saveKind || 0, g.saveId || 0], i * REC);
+      a.set([g.x, g.z, g.h, g.phase, g.gait, g.kick, g.lean, g.cheer, g.lift, g.roll, g.pose || 0, g.kickKind === 'shot' ? 1 : 0, g.saveSide || 0, g.saveH || 0, g.saveLead || 0, g.saveKind || 0, g.saveId || 0,
+        g.tackleId || 0, g.tackleLead || 0, g.tackleT || 0, g.headId || 0, g.headLead || 0, g.headT || 0], i * REC);
     }
     H.rec.push({ t: H.t, a, b: [b.x, b.y, b.z], q: ballMesh.quaternion.toArray() });
   }
@@ -1919,6 +1925,11 @@ export function createMatchScene(parent) {
       g.pose = f0.a[o + 10]; // une pose ne s'interpole pas (sa partie entière est son type)
       g.kickKind = f0.a[o + 11] ? 'shot' : 'pass';
       g.saveSide = f0.a[o + 12]; g.saveH = f0.a[o + 13]; g.saveLead = f0.a[o + 14]; g.saveKind = f0.a[o + 15]; g.saveId = f0.a[o + 16];
+      // tacle, tête : le geste reprend là où il en est à cet instant du ralenti (son avance diminuée du temps écoulé
+      // depuis le signal) ; terminé depuis longtemps, il n'est pas rejoué
+      const tT = f0.a[o + 19], hT = f0.a[o + 22];
+      g.tackleId = f0.a[o + 17] && H.rt - tT < 1.8 ? f0.a[o + 17] : 0; g.tackleLead = f0.a[o + 18] - (H.rt - tT);
+      g.headId = f0.a[o + 20] && H.rt - hT < 1.5 ? f0.a[o + 20] : 0; g.headLead = f0.a[o + 21] - (H.rt - hT);
     }
     b.x = L(f0.b[0], f1.b[0]); b.y = L(f0.b[1], f1.b[1]); b.z = L(f0.b[2], f1.b[2]);
     qa.fromArray(f0.q); qb.fromArray(f1.q);

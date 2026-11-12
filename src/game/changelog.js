@@ -5,6 +5,13 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.22', date: '2026-11-12', title: t('Coups de tête'),
+    items: [
+      t('Les coups de tête ont leur geste : le joueur s’élève, arme le buste en arrière et frappe le ballon du front, au moment où il arrive, sur les centres, les corners et les dégagements.'),
+      t('Les ralentis rejouent les tacles, les contres et les têtes à leur instant ; un tacle d’avant le ralenti ne se rejoue plus à contretemps au début.'),
+    ],
+  },
+  {
     version: '1.0.21', date: '2026-11-12', title: t('Dégagements'),
     items: [
       t('Dégagements : sur une frappe lointaine sur deux, un centre est repoussé de la tête par un défenseur, le ballon retombe aux vingt mètres et c’est de là que part la frappe.'),
