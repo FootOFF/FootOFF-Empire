@@ -5,6 +5,17 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.19', date: '2026-11-12', title: t('Récupérations et contre-attaques'),
+    items: [
+      t('Dans les temps forts, l’équipe qui a le ballon au début n’est plus forcément celle qui finit l’action : une fois sur deux, l’adversaire le perd sur un pressing, une passe coupée ou un tacle glissé, et c’est le contre.'),
+      t('Pendant que l’adversaire a le ballon, ton équipe défend : le bloc se resserre entre le ballon et le but, le plus proche presse le porteur, les attaquants restent hauts.'),
+      t('Une reprise part toujours du pied, au contact : le tireur arme son geste quand le ballon arrive vraiment sur lui ; trop tard, il contrôle puis frappe. Sur un centre, l’attaquant s’élance et reprend le ballon de la tête.'),
+      t('Un joueur qui vient de passer le ballon suit l’action au lieu de rester planté : il fait son appel dans un une-deux. L’intercepteur coupe la trajectoire du ballon au lieu de lui courir après.'),
+      t('Les joueurs en retard sur l’action courent au lieu de trottiner ; une passe n’attend plus son receveur en roulant au pas ; le buteur n’est plus utilisé en relais loin de sa place.'),
+      t('Les temps forts restent sous les quinze secondes de jeu.'),
+    ],
+  },
+  {
     version: '1.0.18', date: '2026-11-12', title: t('Le ballon, le pied, les gants'),
     items: [
       t('Un vrai ballon dans les temps forts : freiné par l’air, il s’enroule sur les frappes brossées, rebondit et roule sur l’herbe, frappe les montants et finit au fond des filets.'),

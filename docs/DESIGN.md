@@ -1137,6 +1137,39 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Récupérations et contre-attaques (1.0.19)
+
+Demande du PDG (2026-11-11, dans la nuit, avant le championnat entre amis du vendredi) : « l'équipe qui a le ballon au
+début du temps fort n'est pas forcément celle qui termine l'action… récupérations, contre-attaques… de la variation et du
+réalisme. Dans la défense aussi. » Ses choix : environ une fois sur deux, quinze secondes au plus, tacles et
+interceptions, tirs contrés, pressing et duels, dégagements (les tirs contrés et les dégagements restent à faire).
+- Retournement (`buildUp`) : une action de jeu sur deux (85 % des contres) commence chez l'adversaire, qui perd le
+  ballon. Passe coupée (`intercept`) : le couple receveur visé et intercepteur où notre joueur est le plus près de la
+  ligne de passe ; la passe arrive au point de coupe quand il y est, il l'y attend puis coupe la trajectoire. Tacle glissé
+  (`tackle`) : il fond sur le porteur sans ralentir, se jette à 2 m, la glissade est pilotée jusqu'au ballon, jambe tendue
+  au contact ; le ballon file vers un coéquipier qui suit. Récupération haute (pressing près de la surface adverse) ; sur
+  un contre, dans notre moitié. Banc : 35 retournements sur 72 actions de jeu (coups de pied arrêtés exclus).
+- Rôles inversés tant que l'adversaire a le ballon (`H.poss`) : ses joueurs soutiennent le porteur ; les nôtres se
+  resserrent entre le ballon et leur but, le plus proche presse, les attaquants restent hauts.
+- Les acteurs du geste en cours (`H.busy`) sont recalculés à chaque image ; celui qui vient de jouer finit son geste
+  (`H.hold` : 0,45 s après une passe, 1,15 s pour le tacleur qui se relève) puis suit l'action. La liste n'était jamais
+  vidée : un joueur qui avait passé le ballon restait planté jusqu'à la fin du temps fort (le buteur d'un une-deux ne
+  faisait pas son appel).
+- Reprise du pied : l'élan part quand le ballon, sur sa trajectoire simulée (`meetBall`), arrivera sur le pied de frappe
+  à l'instant du contact ; pendant l'élan, le ballon est amené au point exact (quelques centimètres) ; trop tard pour
+  armer, il contrôle puis frappe (geste suivant). Avant, 122 reprises sur 432 frappes du banc partaient du corps, sans
+  geste (ballon à 1,5 m) ; plus aucune.
+- Remise (`layoff`) : dans la finale, une passe au sol vers un receveur encore loin ne roule plus au pas ; elle part à sa
+  vitesse vers le point de sa course où il l'aura à temps. Centre de la finale : l'attaquant sprinte (temps de course avec
+  accélération, `runTime`), le point du centre reste au cœur de la surface (jamais en deçà de 4,15) ; le buteur d'un
+  centre ou d'un centre en retrait fait son appel dès le début de la finale.
+- Course d'interception (`cutPoint`, dans `gather`) : un joueur qui va chercher un ballon qui file coupe sa trajectoire
+  (premier point atteint à temps) au lieu de lui courir après (jusqu'à 8 s de poursuite au banc).
+- Mesures. Banc `tools/sim/temps-forts.mjs` : 98 temps forts, aucun raté, instant décisif de 4,5 à 14,8 s (moyenne 9,0 s ;
+  aucun au-delà de 15 s, deux avant). Finitions : centres et corners 16 sur 16 de la tête ; centres en retrait 14 sur 16
+  et une-deux 15 sur 16 en reprise du pied. 3D (48 temps forts) : 137 départs du ballon, pied-ballon 3 cm en médiane,
+  aucun au-delà de 10 cm (4 avant) ; gants-ballon 24 cm en médiane (32 avant).
+
 ## Le ballon, le pied, les gants (1.0.18)
 
 Demande du PDG (2026-11-11, avant le championnat entre amis du vendredi) : « je vois les joueurs frapper à côté du
