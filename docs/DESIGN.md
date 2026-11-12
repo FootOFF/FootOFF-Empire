@@ -1137,6 +1137,15 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Dégagements (1.0.21)
+
+- Frappe lointaine (`long`), une fois sur deux : centre de l'aile vers un défenseur placé au point de penalty, qui le
+  repousse de la tête (style `clear` : une chandelle de 15 à 20 m, 1 à 1,6 s) ; le ballon retombe sur le tireur aux
+  vingt mètres, qui contrôle et frappe. Les attaquants font leurs appels dans la surface pendant le centre.
+- Quinze secondes au plus, même après une longue relance : passé 8,5 s, les conduites de balle de la finale durent 0,5 s
+  au plus, et le tireur n'attend plus le défenseur qui ferme l'angle passé 11 s. Banc : 98 temps forts, aucun raté,
+  instant décisif de 4,5 à 14,7 s (moyenne 9,0 s).
+
 ## Tirs contrés, corps à corps (1.0.20)
 
 Suite du chantier du PDG du 2026-11-11 (championnat entre amis du vendredi) : « tirs contrés, seulement quand l'issue est

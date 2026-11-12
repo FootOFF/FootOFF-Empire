@@ -5,6 +5,13 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.21', date: '2026-11-12', title: t('Dégagements'),
+    items: [
+      t('Dégagements : sur une frappe lointaine sur deux, un centre est repoussé de la tête par un défenseur, le ballon retombe aux vingt mètres et c’est de là que part la frappe.'),
+      t('Même après une longue relance, un temps fort reste sous les quinze secondes : les dernières conduites de balle sont écourtées.'),
+    ],
+  },
+  {
     version: '1.0.20', date: '2026-11-12', title: t('Tirs contrés, corps à corps'),
     items: [
       t('Tirs contrés : sur une frappe qui finit à côté, un défenseur ferme l’angle et se jette, ou le mur saute ; le ballon est dévié en corner ou par-dessus la barre.'),

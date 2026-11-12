@@ -493,6 +493,23 @@ export function createMatchScene(parent) {
         break;
       }
       case 'long': { // frappe lointaine après une passe à l'entrée de la zone
+        if (r() < 0.5) { // dégagement (1.0.20, choix du PDG) : un centre repoussé de la tête, le ballon retombe aux 20 mètres
+          const wing = mate(['M', 'D', 'A']);
+          const def = nearestTo(D, 4.6, s * 0.2);
+          put(wing, 3.3, s * 2.75); give(wing);
+          put(def, 4.62, s * 0.2, 0, 0);
+          put(shooter, 2.42, s * rr(0.15, 0.45));
+          boxRuns(otherAttackers(2, [shooter, wing]));
+          beats = [
+            { t: 'carry', who: wing, to: [3.6, s * 2.8], speed: 0.5, max: 1.4 },
+            { t: 'pass', from: wing, to: def, at: [4.6, s * rr(0.0, 0.35)], style: 'cross', y1: HEAD },
+            { t: 'pass', from: def, to: shooter, at: [2.5, s * rr(0.1, 0.4)], style: 'clear', head: true, first: true },
+            { t: 'carry', who: shooter, to: [2.62, s * 0.22], speed: 0.3, max: 0.45 },
+            { t: 'shot', who: shooter, style: 'long' },
+          ];
+          H.cleared = true;
+          break;
+        }
         const mid = mate(['M', 'D']);
         put(mid, 1.55, s * 1.45); give(mid);
         put(shooter, 2.25, s * 0.35);
@@ -811,6 +828,7 @@ export function createMatchScene(parent) {
   const passTimeOf = (style, d) => (
     style === 'cross' ? clamp(0.75 + d * 0.13, 0.85, 1.5)
       : style === 'flick' ? 0.5
+        : style === 'clear' ? clamp(0.75 + d * 0.22, 1.0, 1.6) // dégagement de la tête : une chandelle de 15 à 20 m
         : style === 'lob' ? clamp(0.8 + d * 0.22, 1.1, 2.0)
           : style === 'through' ? clamp(d / 1.25, 0.6, 2.0)
             : clamp(d / 1.2, 0.45, 2.0)
@@ -1196,7 +1214,10 @@ export function createMatchScene(parent) {
       if (!gather(bt.who, dt)) return; // il va d'abord au ballon
       const [tx, tz] = bt.to === 'plan' ? at(...planAt(bt.who, H.t + 0.8)) : at(...bt.to);
       agents[bt.who].steer(tx, tz, bt.speed, dt);
-      if (Math.hypot(tx - agents[bt.who].x, tz - agents[bt.who].z) < 0.035 || H.bt > (bt.max ?? 3)) next();
+      // le temps fort a déjà duré (une relance longue) : les conduites de la finale sont écourtées (1.0.20, quinze secondes
+      // au plus)
+      const late = H.finale && H.t > 8.5 ? 0.5 : Infinity;
+      if (Math.hypot(tx - agents[bt.who].x, tz - agents[bt.who].z) < 0.035 || H.bt > Math.min(bt.max ?? 3, late)) next();
       return;
     }
     if (bt.t === 'runup') { // élan vers le ballon arrêté (penalty, coup franc, corner) : il le prend au contact
@@ -1473,7 +1494,7 @@ export function createMatchScene(parent) {
       // 1.0.20 : une frappe qui finira à côté, un défenseur qui vient fermer l'angle : il prend le temps d'une touche (au
       // plus 0,8 s), le défenseur arrive sur la trajectoire et contre la frappe
       let closing = false;
-      if (H.outcome === 'w' && H.laneWho >= 0 && H.bt < 0.8 && !b.fixed) {
+      if (H.outcome === 'w' && H.laneWho >= 0 && H.bt < 0.8 && !b.fixed && H.t < 11) {
         const L = Math.hypot(gx - p.x, gz - p.z) || 1, d = agents[H.laneWho];
         closing = Math.hypot(d.x - (p.x + ((gx - p.x) / L) * 0.25), d.z - (p.z + ((gz - p.z) / L) * 0.25)) > 0.12;
       }
