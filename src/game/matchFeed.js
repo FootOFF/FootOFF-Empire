@@ -25,6 +25,7 @@ export const matchFeed = {
   hlAck: 0,
   hlReveal: 0,
   hlDone: 0,
+  hlBeat: 0, // dernière image de la scène pendant un temps fort (1.0.25, match.jsx)
   hlClock: 0,
   hlPhase: '',
   show3D: false,
@@ -34,6 +35,6 @@ if (import.meta.env?.DEV && typeof window !== 'undefined') window.__matchFeed = 
 
 export function resetFeed() {
   Object.assign(matchFeed, {
-    active: false, phase: 'off', half: 1, clock: 0, speed: 1, homeNames: [], awayNames: [], homeLooks: [], awayLooks: [], hl: null, hlAck: 0, hlReveal: 0, hlDone: 0, hlPhase: '', show3D: false,
+    active: false, phase: 'off', half: 1, clock: 0, speed: 1, homeNames: [], awayNames: [], homeLooks: [], awayLooks: [], hl: null, hlAck: 0, hlReveal: 0, hlDone: 0, hlBeat: 0, hlPhase: '', show3D: false,
   });
 }

@@ -135,8 +135,13 @@ async function build() {
   // y pose le ballon avant la frappe, et la jambe s'y ajuste au contact
   A.contact = { Pass: kickContact('Pass', A.marks.Pass), Shot: kickContact('Shot', A.marks.Shot) };
   A.marks.Pass = A.contact.Pass.t; A.marks.Shot = A.contact.Shot.t; // le moteur cale son contact sur le vrai
+  // l'autre pied (1.0.25) : la frappe du droit et la passe du gauche, miroirs des gestes captés (le moteur choisit selon le
+  // pied fort du joueur, matchplay.js)
+  if (A.clips.Shot && !A.clips.Shot_R) A.clips.Shot_R = mirrorClip(A.clips.Shot, 'Shot_R');
+  if (A.clips.Pass && !A.clips.Pass_L) A.clips.Pass_L = mirrorClip(A.clips.Pass, 'Pass_L');
+  for (const n of ['Shot_R', 'Pass_L']) { A.contact[n] = kickContact(n, footPeak(n)); A.marks[n] = A.contact[n].t; }
   // après la frappe, le joueur repart (1.0.18 : il restait trois secondes dans la fin du geste capté, planté)
-  A.ends = { ...(A.ends || {}), Pass: A.marks.Pass + 0.5, Shot: A.marks.Shot + 0.65 };
+  A.ends = { ...(A.ends || {}), Pass: A.marks.Pass + 0.5, Shot: A.marks.Shot + 0.65, Pass_L: A.marks.Pass_L + 0.5, Shot_R: A.marks.Shot_R + 0.65 };
   // arrêts du gardien (Mixamo, 0.8.24) : l'instant du contact dans chaque geste ; plongeon : la main la plus loin du
   // corps ; prise : les mains qui se rejoignent sur le ballon ; prise haute, saut manqué : les mains au plus haut ;
   // arrêt du corps : le bassin au plus bas
@@ -224,19 +229,48 @@ function kickContact(name, peak) {
   const p0 = at(Math.max(0, peak - dt)); const p1 = at(peak);
   const foot = p1.r.distanceTo(p0.r) >= p1.l.distanceTo(p0.l) ? 'r' : 'l';
   // le contact : le bas de la course du pied qui frappe, juste avant son pic de vitesse (au pic, le pied est déjà dans
-  // l'accompagnement, 30 à 40 cm plus loin et en train de remonter)
+  // l'accompagnement, 30 à 40 cm plus loin et en train de remonter). 1.0.25 (audit du contact pied-ballon) : seulement
+  // parmi les instants où ce pied file vers l'avant (au moins 60 % de sa vitesse de pointe) ; le point le plus bas de la
+  // fenêtre était, pour la passe, le pied encore posé 0,11 s avant le coup de pied : le ballon partait d'un pied immobile
+  // après avoir été tiré à travers le tibia
+  const speedAt = (tt) => at(tt)[foot].distanceTo(at(tt - 1 / 240)[foot]) * 240;
+  const vPk = speedAt(peak);
   let t = peak; let low = Infinity;
-  for (let tt = peak - 0.16; tt <= peak + 0.005; tt += 1 / 240) { const y = at(tt)[foot].y; if (y < low) { low = y; t = tt; } }
+  for (let tt = peak - 0.3; tt <= peak + 0.005; tt += 1 / 240) {
+    if (tt < 1 / 240 || speedAt(tt) < 0.6 * vPk) continue;
+    const y = at(tt)[foot].y; if (y < low) { low = y; t = tt; }
+  }
   const a0 = at(Math.max(0, t - dt)); const a1 = at(t);
   const toe = a1[foot]; const ankle = a1[foot === 'r' ? 'ar' : 'al'];
   const dir = toe.clone().sub(a0[foot]); dir.y = 0;
   if (dir.lengthSq() < 1e-8) dir.set(0, 0, 1);
   dir.normalize();
-  // le ballon touché par le cou-de-pied : à mi-chemin entre la cheville et la pointe, poussé d'un rayon (11 cm) dans le
-  // sens du pied, posé au sol
+  // le ballon touché par le pied, au ras de la chaussure (1.0.25) : le sommet de la chaussure le plus avancé dans le sens
+  // du coup de pied (à hauteur du ballon), plus un rayon (11 cm) et 5 mm ; avant, un point fixe à 13 cm du milieu du pied
+  // laissait la chaussure 4 à 6 cm dans le ballon au contact
   const mid = toe.clone().add(ankle).multiplyScalar(0.5);
-  const c = mid.clone().addScaledVector(dir, 0.11 + 0.02); c.y = 0.11;
+  const front = bootFront(probeAt(name, t), foot, mid, dir);
+  const c = mid.clone().addScaledVector(dir, (front ?? 0.11) + 0.11 + 0.005); c.y = 0.11;
   return { foot, t, fwd: c.z, left: c.x, ball: c, fromToe: c.clone().sub(toe), dir: [dir.x, dir.z] };
+}
+// l'avancée de la chaussure (sommets du pied à hauteur du ballon, peau animée) le long de dir, depuis le point mid (m)
+function bootFront(root, foot, mid, dir) {
+  let front = null; const v = new THREE.Vector3();
+  root.traverse((o) => {
+    if (!o.isSkinnedMesh) return;
+    const ids = new Set(); o.skeleton.bones.forEach((bn, k) => { if (bn.name === `foot_${foot}` || bn.name === `ball_${foot}`) ids.add(k); });
+    if (!ids.size) return;
+    const si = o.geometry.attributes.skinIndex; const sw = o.geometry.attributes.skinWeight;
+    for (let i = 0; i < si.count; i++) {
+      let w = 0; for (let k = 0; k < 4; k++) if (ids.has(si.getComponent(i, k))) w += sw.getComponent(i, k);
+      if (w < 0.5) continue;
+      o.getVertexPosition(i, v); v.applyMatrix4(o.matrixWorld);
+      if (Math.abs(v.y - 0.11) > 0.06) continue;
+      const proj = (v.x - mid.x) * dir.x + (v.z - mid.z) * dir.z;
+      if (front === null || proj > front) front = proj;
+    }
+  });
+  return front;
 }
 function probeAt(name, t) { // un clip à un instant donné, sur un modèle seul à l'origine (modèle réutilisé)
   if (!probeAt.root) { probeAt.root = SkeletonUtils.clone(A.base.scene); probeAt.mixer = new THREE.AnimationMixer(probeAt.root); }
@@ -715,19 +749,28 @@ export function createPlayers3D(parent, max = 22) {
   // Contact de la frappe (1.0.18, chantier du PDG : « les joueurs frappent à côté du ballon ») : autour du contact du
   // geste (0,16 s avant, 0,1 s après), le pied qui frappe va au ballon (la pointe là où le geste capté l'aurait mise par
   // rapport au ballon) ; jamais au-delà d'une jambe tendue.
+  // 1.0.25 : le geste entier est décalé de l'écart qu'il aurait au contact (la pointe du geste capté au contact, comparée à
+  // celle qui touche ce ballon) ; avant, la cheville était tirée vers sa place du contact dès 0,16 s avant : le pied y
+  // arrivait trop tôt, la jambe traversait le ballon (mesuré une fois le dosage réparé)
   function strikeIK(p) {
     const c = p.kickC;
     if (!c || !look) return;
     if (!p.shot || p.shot.getClip().name !== c.name) { p.kickC = null; return; }
     const x = p.shot.time - c.t;
-    const w = x < -0.16 || x > 0.1 ? 0 : x < 0 ? smooth(1 + x / 0.16) : smooth(1 - x / 0.1);
+    const w = x < -0.22 || x > 0.08 ? 0 : x < 0 ? smooth(1 + x / 0.22) : smooth(1 - x / 0.08);
     if (w <= 0.001) return;
     const L = p.legs[c.foot === 'l' ? 0 : 1];
     const s = p.root.scale.x;
-    const off = A.contact[c.name].fromToe.clone().applyQuaternion(p.root.quaternion).multiplyScalar(s);
-    const toeT = look.clone().sub(off); // la pointe là où elle touche ce ballon
-    const toe = L.ball.getWorldPosition(V()); const ankle = L.foot.getWorldPosition(V());
-    const T = toeT.add(ankle.sub(toe)); // la cheville qui y porte la pointe
+    const C = A.contact[c.name];
+    const q = p.root.quaternion;
+    // après le contact, le pied passe là où était le ballon (il ne le poursuit plus : audit, la chaussure suivait le ballon
+    // qui part et restait dedans sur les passes lentes)
+    if (x >= 0 && !c.hit) c.hit = look.clone();
+    const ball = x >= 0 ? c.hit : look;
+    const toeC = C.ball.clone().sub(C.fromToe).multiplyScalar(s).applyQuaternion(q).add(p.root.position); // pointe du geste au contact
+    const toeT = ball.clone().sub(C.fromToe.clone().multiplyScalar(s).applyQuaternion(q)); // la pointe qui touche ce ballon
+    const ankle = L.foot.getWorldPosition(V());
+    const T = ankle.add(toeT.sub(toeC)); // la cheville de l'instant, décalée de l'écart du contact
     const hip = L.thigh.getWorldPosition(V());
     const reach = (L.calf.getWorldPosition(V()).distanceTo(hip) + L.foot.getWorldPosition(V()).distanceTo(L.calf.getWorldPosition(V()))) * 1.02;
     const far = T.distanceTo(hip) - reach;
@@ -745,9 +788,15 @@ export function createPlayers3D(parent, max = 22) {
     const w = x < -0.18 || x > 0.2 ? 0 : x < 0 ? smooth(1 + x / 0.18) : smooth(1 - x / 0.2);
     if (w <= 0.001) return;
     const dx = look.x - ag.x, dz = look.z - ag.z;
-    const d = Math.hypot(dx, dz) || 1;
-    const L = p.legs[dx * -Math.sin(ag.h) + dz * Math.cos(ag.h) > 0 ? 1 : 0]; // le ballon à sa droite : le pied droit
-    const T = V().set(look.x - (dx / d) * (BALL_R + 0.004), look.y - BALL_R + 0.009, look.z - (dz / d) * (BALL_R + 0.004));
+    const right = dx * -Math.sin(ag.h) + dz * Math.cos(ag.h) > 0;
+    const L = p.legs[right ? 1 : 0]; // le ballon à sa droite : le pied droit
+    // 1.0.25 : l'intérieur du pied contre le ballon (le pied à côté de lui, le ballon à hauteur de la voûte), au lieu de la
+    // cheville posée devant le ballon : la pointe, devant la cheville, entrait dans le ballon (correction réparée, mesurée)
+    const sg = right ? 1 : -1; const s = p.root.scale.x;
+    const sx = -Math.sin(ag.h) * sg, sz = Math.cos(ag.h) * sg; // vers l'extérieur du pied qui contrôle
+    const fx = Math.cos(ag.h), fz = Math.sin(ag.h);
+    const side = BALL_R + 0.045 * s, back = 0.09 * s; // 4,5 cm (demi-pied) ; 9 cm (cheville → voûte)
+    const T = V().set(look.x + sx * side - fx * back, look.y - BALL_R + 0.009, look.z + sz * side - fz * back);
     const hip = L.thigh.getWorldPosition(V()); const knee = L.calf.getWorldPosition(V());
     const reach = (knee.distanceTo(hip) + L.foot.getWorldPosition(V()).distanceTo(knee)) * 1.02;
     const far = T.distanceTo(hip) - reach;
@@ -814,9 +863,10 @@ export function createPlayers3D(parent, max = 22) {
     const v = d > 3 ? (ag.speed || 0) * 10 : d / Math.max(dt, 1e-4);
     p.speed = d > 3 ? v : p.speed + (v - p.speed) * Math.min(1, dt * 12);
     if (ag.kick > 0 && p.prevKick === 0) { // frappe : le contact du clip tombe au contact du moteur
-      const name = ag.kickKind === 'shot' ? 'Shot' : 'Pass';
+      const name = ag.kickKind === 'shot' ? (ag.foot === 'r' && A.contact.Shot_R ? 'Shot_R' : 'Shot') : (ag.foot === 'l' && A.contact.Pass_L ? 'Pass_L' : 'Pass');
       // (la frappe démarre en cours de geste quand le moteur la lance tard : le contact reste calé)
-      gesture(p, name, { at: A.marks[name] - (KICK_CONTACT - Math.min(KICK_CONTACT, ag.kick)) * KICK_TIME, fade: 0.12 });
+      // (1.0.25 : moins une image, celle que le mélangeur ajoute dès cette image-ci ; le geste avait une image d'avance)
+      gesture(p, name, { at: A.marks[name] - (KICK_CONTACT - Math.min(KICK_CONTACT, ag.kick)) * KICK_TIME - dt, fade: 0.12 });
       p.kickC = { name, foot: A.contact[name].foot, t: A.marks[name] };
     }
     p.prevKick = ag.kick || 0;

@@ -29,7 +29,7 @@ export function makeBall() {
 export function stepFree(s, dt) {
   const v = Math.hypot(s.vx, s.vy, s.vz);
   let ax = 0, ay = 0, az = 0;
-  const air = s.y > 0.0005 || s.vy > 0.02;
+  const air = s.noGround || s.y > 0.0005 || s.vy > 0.02;
   if (air) {
     ay -= G;
     // frottement de l'air
@@ -46,7 +46,7 @@ export function stepFree(s, dt) {
     const k = Math.exp(-SPIN_DECAY * dt);
     s.sx *= k; s.sy *= k; s.sz *= k;
     s.ground = false;
-    if (s.y <= 0) {
+    if (s.y <= 0 && !s.noGround) {
       s.y = 0;
       if (s.vy < -0.035) { // rebond : l'herbe rend moins aux chocs forts
         const vy = -s.vy;
@@ -80,6 +80,7 @@ const tmp = makeBall();
 export function simulate(start, T, sub = 1 / 240, onStep = null) {
   Object.assign(tmp, start);
   tmp.skid = start.skid || 0;
+  tmp.noGround = !!start.noGround;
   let t = 0;
   while (t < T - 1e-9) {
     const h = Math.min(sub, T - t);
@@ -92,7 +93,7 @@ export function simulate(start, T, sub = 1 / 240, onStep = null) {
 
 // Résout la vitesse de départ pour que le ballon parti de (x, y, z), avec la rotation donnée, soit en (tx, ty, tz) au
 // bout de T secondes (frappe, centre, passe) ; au sol (ground) : roulé tout du long, ty ignoré. Renvoie { vx, vy, vz }.
-export function solveLaunch(from, to, T, { spin = [0, 0, 0], ground = false } = {}) {
+export function solveLaunch(from, to, T, { spin = [0, 0, 0], ground = false, air = false } = {}) {
   const [tx, ty, tz] = to;
   const T1 = Math.max(0.08, T);
   // première estimation : sans air
@@ -114,13 +115,37 @@ export function solveLaunch(from, to, T, { spin = [0, 0, 0], ground = false } = 
     // l'effet éventuel (rare au sol) est ignoré : direction droite vers la cible
     return { vx: ux * v0, vy: 0, vz: uz * v0 };
   }
+  // air (1.0.25) : la cible est atteinte en vol, sans rebond avant (sinon le calcul pouvait converger vers un ballon
+  // rasant qui rebondit et roule jusqu'au point visé : un « lob » à hauteur de genou)
   for (let it = 0; it < 16; it++) {
-    const e = simulate({ x: from.x, y: from.y, z: from.z, vx, vy, vz, sx: spin[0], sy: spin[1], sz: spin[2], skid: 0 }, T1);
+    const e = simulate({ x: from.x, y: from.y, z: from.z, vx, vy, vz, sx: spin[0], sy: spin[1], sz: spin[2], skid: 0, noGround: air }, T1);
     const ex = tx - e.x, ey = ty - e.y, ez = tz - e.z;
     if (Math.hypot(ex, ey, ez) < 0.0006) break;
     vx += (ex / T1) * 1.05; vy += (ey / T1) * 1.05; vz += (ez / T1) * 1.05;
   }
   return { vx, vy, vz };
+}
+
+// Frappe à vitesse donnée (1.0.25, chantier du PDG : « les centres vont super haut ») : un vrai pied donne une vitesse au
+// ballon, le temps de vol en découle. Trajectoire tendue (la branche basse : le temps le plus court pour cette vitesse) ;
+// renvoie { vx, vy, vz, T } ; hors de portée à cette vitesse : la trajectoire la plus économe, marquée short. Avant,
+// le temps de vol était imposé (souvent celui de la course du receveur) : le centre « attendait » l'attaquant en montant
+// à 4-6,5 m.
+export function solveBySpeed(from, to, v0, opts = {}) {
+  const d = Math.hypot(to[0] - from.x, to[2] - from.z); const h = to[1] - from.y;
+  const o = { ...opts, air: opts.ground ? false : (opts.air ?? true) };
+  const speed = (T) => { const v = solveLaunch(from, to, T, o); return { v, s: Math.hypot(v.vx, v.vy, v.vz), T }; };
+  let lo = Math.max(0.05, d / (v0 * 1.02));
+  let hi = Math.max(lo + 0.05, Math.sqrt((2 * Math.hypot(d, h)) / G)); // le temps du lancer le plus économe (sans air)
+  let rh = speed(hi);
+  if (rh.s > v0) return { ...rh.v, T: hi, short: true };
+  const rl = speed(lo);
+  if (rl.s <= v0) return { ...rl.v, T: lo };
+  for (let k = 0; k < 16 && hi - lo > 0.004; k++) {
+    const m = (lo + hi) / 2; const rm = speed(m);
+    if (rm.s > v0) lo = m; else { hi = m; rh = rm; }
+  }
+  return { ...rh.v, T: rh.T };
 }
 
 // Chocs avec les montants et la barre d'un but en x = gx (signe : côté), après un pas : renvoie 'post', 'bar' ou null.

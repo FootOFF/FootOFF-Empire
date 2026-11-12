@@ -5,7 +5,7 @@ import { createPlayersAuto, identityOf } from './players3d';
 import { formationOf, slotsOf } from '../game/tactics';
 import { matchFeed } from '../game/matchFeed';
 import { hash, rng } from '../game/faces';
-import { hitFrame, simulate, solveLaunch, stepFree, stepNet } from './ballphysics';
+import { hitFrame, simulate, solveBySpeed, solveLaunch, stepFree, stepNet } from './ballphysics';
 
 // Le match sur la pelouse du stade, seulement les jours de match.
 //  - Avant le coup d'envoi (jour de match, pas encore de direct) : échauffement, chaque équipe dans sa moitié.
@@ -52,6 +52,9 @@ const RECV = 0.05; // contact pied-ballon (u) : un ballon arrêté se prend à c
 const TACKLE_LEAD = 0.55; // s : du départ du tacle glissé au contact de la jambe tendue (geste 3D calé dessus)
 const REACH = 0.1; // portée d'une jambe tendue (u, un mètre du corps) : un ballon qui passe là, au sol, est contrôlé
 const G = 0.981; // pesanteur (u/s²)
+// la jambe du tacle glissé au contact (1.0.25, mesurée sur le geste capté : pointe à 99 cm du bassin, chaussure 8 cm plus
+// loin) : le glisseur s'arrête là, le pied touche le ballon ; à 85 cm (estimé), la chaussure traversait le ballon 12 images
+const SLIDE_REACH = 0.112;
 
 const clamp = THREE.MathUtils.clamp;
 const teamOf = (i) => (i < 11 ? 0 : 1);
@@ -61,10 +64,12 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 // Schéma de l'avant-match (en %, attaque vers le haut) → repère d'équipe : u vers le but adverse, v en travers.
 const anchorsOf = (formation) => formationOf(formation).pitch.map(([x, y]) => [-4.7 + (88 - y) * (6.7 / 73), ((x - 50) / 36) * 2.3]);
 
-// durée estimée d'une suite de gestes (s), pour tenir un temps fort sous 15 s (choix du PDG, 1.0.19)
-// (1.0.24 : un centre, un dégagement, une passe lobée volent plus longtemps qu'une passe au sol)
+// durée estimée d'une suite de gestes (s) (1.0.19 ; 1.0.24 : un centre, un dégagement, une passe lobée volent plus
+// longtemps qu'une passe au sol)
 const estBeats = (beats) => beats.reduce((t, x) => t + (x.t === 'wait' ? x.dur : x.t === 'pass' ? (x.style === 'cross' || x.style === 'clear' || x.style === 'lob' ? 1.7 : 1.3) : x.t === 'carry' ? Math.min(x.max ?? 1.5, 1.5) : x.t === 'intercept' ? 1.6 : x.t === 'tackle' ? 2.2 : 0.8), 0);
-const HL_BUDGET = 12.6; // s du début à l'instant décisif, plan de coupe compris (le dernier geste et l'issue font le reste)
+// budget souple (1.0.25, le PDG lève la limite des 15 s, « pour de meilleurs résultats ») : il ne retire un relais qu'aux
+// constructions démesurées ; plus aucune action n'est écourtée pour tenir un chronomètre
+const HL_BUDGET = 22;
 
 export function createMatchScene(parent) {
   const players = createPlayersAuto(parent, N, () => createPlayers(parent, N)); // joueurs réalistes dès qu'ils sont chargés
@@ -113,10 +118,12 @@ export function createMatchScene(parent) {
   const active = (i) => !S.out[i];
   const world = (t, u, v) => [u * S.dir[t], v * S.dir[t]];
   const local = (t, x, z) => [x * S.dir[t], z * S.dir[t]];
+  // 1.0.25 (audit du contact) : du côté du pied fort, 6 cm de l'axe (12 avant, dans la course du pied droit)
   const footSpot = (p, ahead = 0.042) => {
     const [fx, fz] = p.forward();
     const [sx, sz] = p.side();
-    return [p.x + fx * ahead + sx * 0.012, p.z + fz * ahead + sz * 0.012];
+    const lat = p.foot === 'l' ? -0.006 : 0.006;
+    return [p.x + fx * ahead + sx * lat, p.z + fz * ahead + sz * lat];
   };
   const teamIdx = (t) => Array.from({ length: 11 }, (_, k) => t * 11 + k);
 
@@ -151,8 +158,10 @@ export function createMatchScene(parent) {
   // Contact de la frappe (1.0.18, chantier du PDG : « les joueurs frappent à côté du ballon ») : le point où le pied du
   // geste 3D touche le ballon, pour un joueur au point (x, z) qui regarde h ; sans joueurs réalistes, le pied de frappe
   // simple (42 cm devant, 12 cm à droite)
+  // le geste de frappe selon le pied (1.0.25) : la frappe captée est du gauche, la passe du droit ; leurs miroirs pour l'autre
+  const kickClip = (kind, foot) => (kind === 'shot' ? (foot === 'r' ? 'Shot_R' : 'Shot') : (foot === 'l' ? 'Pass_L' : 'Pass'));
   function strikeSpot(i, kind, h, x = agents[i].x, z = agents[i].z) {
-    const c = players.kickSpot?.(i, kind === 'shot' ? 'Shot' : 'Pass') || { fwd: 0.042, right: 0.012 };
+    const c = players.kickSpot?.(i, kickClip(kind, agents[i].foot)) || { fwd: 0.042, right: agents[i].foot === 'l' ? -0.012 : 0.012 };
     return [x + Math.cos(h) * c.fwd - Math.sin(h) * c.right, z + Math.sin(h) * c.fwd + Math.cos(h) * c.right];
   }
   // où sera un joueur qui freine jusqu'à l'arrêt (steer vers lui-même : décélération ACCEL), au bout de T secondes
@@ -193,14 +202,15 @@ export function createMatchScene(parent) {
   // (un centre reste dans la surface : jamais en deçà de minU)
   function layoff(bt, tx, tz, minU = -Infinity) {
     const rc = agents[bt.to];
-    const nat = (qx, qz) => passTimeOf(bt.style, Math.hypot(qx - b.x, qz - b.z));
+    const nat = (qx, qz) => { const d = Math.hypot(qx - b.x, qz - b.z); return aerialStyle(bt.style) ? flightEst(kickSpeed(bt, d), d) + ARMED - 0.1 : passTimeOf(bt.style, d); };
     const run = (qx, qz) => runTime(bt, qx, qz);
-    if (run(tx, tz) <= nat(tx, tz) * 1.35) return null;
+    const air = aerialStyle(bt.style); // (1.0.25) un centre ne l'attend plus : il doit y être à l'heure du ballon
+    if (run(tx, tz) <= nat(tx, tz) * (air ? 1.05 : 1.35)) return null;
     let lo = 0, hi = 1;
     for (let it = 0; it < 12; it++) {
       const f = (lo + hi) / 2;
       const qx = rc.x + (tx - rc.x) * f, qz = rc.z + (tz - rc.z) * f;
-      if (run(qx, qz) <= nat(qx, qz) * 1.3) lo = f; else hi = f;
+      if (run(qx, qz) <= nat(qx, qz) * (air ? 1.0 : 1.3)) lo = f; else hi = f;
     }
     const [ru] = uvOf(rc.x, rc.z), [tu] = uvOf(tx, tz);
     if (minU > -Infinity && tu > ru + 1e-6) lo = Math.max(lo, clamp((minU - ru) / (tu - ru), 0, 1));
@@ -350,6 +360,9 @@ export function createMatchScene(parent) {
       speed: 1, est: 4, // toujours à vitesse normale : ×4 n'accélère que le jeu entre deux temps forts (0.8.9)
     };
     H.roles = [rolesOf(0), rolesOf(1)];
+    // le pied fort de chacun (1.0.25, audit du contact : tous les buteurs frappaient du gauche, ballon conduit à droite, la
+    // frappe le tirait à travers les pieds) : trois joueurs sur quatre droitiers, toujours le même pour un même joueur
+    for (let i = 0; i < N; i++) agents[i].foot = (hash(`${names[teamOf(i)][slotOf(i)] || i}|pied`) >>> 0) % 4 === 0 ? 'l' : 'r';
     Object.assign(b, { sx: 0, sy: 0, sz: 0, skid: 0, strike: null, fixed: false, hit: null });
     card.visible = false;
     baseShape();
@@ -734,8 +747,9 @@ export function createMatchScene(parent) {
     }
     // les relais : de l'arrière vers l'avant, souvent d'un côté à l'autre, jusqu'au joueur de la finale (après un
     // retournement, une ou deux passes : la contre-attaque va vite)
-    const k0 = H.turn ? 1 : counter ? (r() < 0.5 ? 1 : 2) : 2 + (r() < 0.3 ? 1 : 0);
-    // le budget de temps (15 s au plus, choix du PDG) : moins de relais quand la finale est longue
+    // 1.0.25 (le PDG lève la limite des 15 s) : une construction placée a plus souvent trois ou quatre relais
+    const k0 = H.turn ? 1 : counter ? (r() < 0.5 ? 1 : 2) : 2 + (r() < 0.45 ? 1 : 0) + (r() < 0.2 ? 1 : 0);
+    // le budget de temps (souple depuis la 1.0.25) : moins de relais seulement quand la finale est très longue
     const room = HL_BUDGET - CUT - 0.6 - estBeats(finale) - estBeats(chain);
     const k = clamp(Math.min(k0, Math.floor(room / 1.75) + 1), 1, k0);
     const seq = [];
@@ -822,14 +836,80 @@ export function createMatchScene(parent) {
   // passe vers (tx, tz) en T secondes : au sol (le ballon ralentit en roulant), ou aérienne jusqu'à la hauteur y1.
   // 1.0.18 : vraie physique (air, effet, herbe), la vitesse de départ est résolue pour arriver à l'heure ; un centre
   // part brossé (il s'enroule), une passe au sol roule droit
-  function launchBall(tx, tz, T, { ground = false, y1 = 0, curl = 0 } = {}) {
+  // 1.0.25 (chantier du PDG : « les centres vont super haut », audit du ballon) : un ballon aérien part à la vitesse d'un
+  // vrai coup de pied (speed, u/s) et son temps de vol en découle (solveBySpeed, trajectoire tendue) ; une passe au sol ne
+  // part jamais à plus de 25 m/s (elle prend plus de temps). Renvoie le temps de vol réel.
+  function launchBall(tx, tz, T, { ground = false, y1 = 0, curl = 0, speed = 0, back = 0 } = {}) {
     spinOff();
     if (ground) b.y = 0;
-    const spin = [0, curl, 0];
-    const v = solveLaunch({ x: b.x, y: b.y, z: b.z }, [tx, y1, tz], T, { spin, ground });
-    Object.assign(b, { vx: v.vx, vy: v.vy, vz: v.vz, sx: 0, sy: ground ? 0 : curl, sz: 0, skid: ground ? 0.08 : 0 });
+    // effet : brossé autour de la verticale (curl), rétro autour de l'axe d × haut (back : le ballon porte, la trajectoire
+    // part plus tendue pour la même vitesse, 1.0.25)
+    const dl = Math.hypot(tx - b.x, tz - b.z) || 1;
+    const spin = [(-(tz - b.z) / dl) * back, curl, ((tx - b.x) / dl) * back];
+    const from = { x: b.x, y: b.y, z: b.z };
+    let v;
+    if (!ground && speed > 0) { v = solveBySpeed(from, [tx, y1, tz], speed, { spin }); T = v.T; } else {
+      v = solveLaunch(from, [tx, y1, tz], T, { spin, ground, air: !ground });
+      for (let k = 0; ground && k < 4 && Math.hypot(v.vx, v.vz) > 2.5; k++) { T *= Math.hypot(v.vx, v.vz) / 2.45; v = solveLaunch(from, [tx, y1, tz], T, { spin, ground }); }
+    }
+    Object.assign(b, { vx: v.vx, vy: v.vy, vz: v.vz, sx: ground ? 0 : spin[0], sy: ground ? 0 : curl, sz: ground ? 0 : spin[2], skid: ground ? 0.08 : 0 });
     b.owner = -1;
+    return T;
   }
+  // temps de vol exact d'un ballon aérien vers (tx, tz), calculé une fois par point visé (1.0.25 : le centre part quand
+  // l'attaquant peut y être à l'heure de CE ballon ; l'estimation approchée le faisait partir trop tôt)
+  function flightOf(bt, tx, tz, full = false) {
+    const d = Math.hypot(tx - b.x, tz - b.z);
+    const v0 = kickSpeed(bt, d);
+    const key = `${tx.toFixed(2)}|${tz.toFixed(2)}|${v0.toFixed(3)}`;
+    if (bt.fl?.key !== key) {
+      const spin = [-(tz - b.z) / (d || 1) * BACK[bt.style], 0, (tx - b.x) / (d || 1) * BACK[bt.style]];
+      const s0 = { x: b.x, y: 0, z: b.z };
+      const v = solveBySpeed(s0, [tx, bt.y1 || (bt.style === 'lob' ? 0.06 : 0.04), tz], v0, { spin });
+      let apex = 0;
+      simulate({ ...s0, vx: v.vx, vy: v.vy, vz: v.vz, sx: spin[0], sy: 0, sz: spin[2], skid: 0, noGround: true }, v.T, 1 / 120, (s) => { apex = Math.max(apex, s.y); return false; });
+      bt.fl = { key, T: v.T, apex };
+    }
+    return full ? bt.fl : bt.fl.T;
+  }
+  // le centre de la finale vers l'attaquant qui l'attaque (1.0.25) : le point de rencontre et la vitesse du centre
+  // s'ajustent à sa course. D'abord le point le plus proche de la cible qu'il atteint à l'heure du ballon (jamais à plus de
+  // 14 m du but), puis un centre moins fouetté (jusqu'à 22 m/s) tant que son sommet reste sous 4 m ; ce que la course ne
+  // permet pas, aucun ballon ne le compense en montant
+  function fitCross(bt, tx, tz) {
+    const rc = agents[bt.to];
+    // (recherche au temps de vol approché, vérifié ensuite au temps exact : un calcul exact coûte quelques millisecondes)
+    const lateEst = (qx, qz) => { const d = Math.hypot(qx - b.x, qz - b.z); return runTime(bt, qx, qz) - (flightEst(kickSpeed(bt, d), d) + ARMED - 0.05); };
+    const late = (qx, qz) => runTime(bt, qx, qz) - (flightOf(bt, qx, qz) + ARMED - 0.05);
+    if (late(tx, tz) <= 0) return [tx, tz];
+    // d'abord un centre moins fouetté, tant que son sommet reste sous 4 m
+    for (let k = 0; k < 7 && late(tx, tz) > 0; k++) {
+      const keep = bt.v0; bt.v0 = keep - 0.1;
+      if (bt.v0 < 2.2 || flightOf(bt, tx, tz, true).apex > 0.4) { bt.v0 = keep; break; }
+    }
+    if (late(tx, tz) <= 0) return [tx, tz];
+    // puis le point de rencontre vers lui, le long de la ligne qui le joint à la cible (jamais à plus de 14 m du but)
+    let lo = 0, hi = 1;
+    const pt = (f) => [tx + (rc.x - tx) * f, tz + (rc.z - tz) * f];
+    for (let it = 0; it < 8; it++) { const f = (lo + hi) / 2; if (lateEst(...pt(f)) <= 0) hi = f; else lo = f; }
+    let f = hi;
+    while (f > 0 && uvOf(...pt(f))[0] < 3.85) f -= 0.05;
+    return pt(Math.max(0, f));
+  }
+  const BACK = { cross: 0.25, lob: 0.35, clear: 0.15 }; // rétro des ballons aériens
+  // vitesse du coup de pied d'une passe aérienne (u/s), tirée une fois par passe : centre fouetté 25 à 29 m/s (un sur cinq
+  // brossé, 21 à 24 m/s, vers le second poteau), transversale ou longue passe selon la distance, dégagement de la tête
+  function kickSpeed(bt, d) {
+    if (bt.v0) return bt.v0;
+    const { rr } = H;
+    bt.v0 = bt.style === 'cross' ? clamp(2.35 + d * 0.12, 2.5, 2.95) * rr(0.97, 1.03) // tendu, plus fort de loin
+      : bt.style === 'clear' ? rr(1.45, 1.75)
+        : clamp(0.95 + d * 0.42, 1.3, 3.0) * rr(0.95, 1.05); // (jusqu’à 30 m/s pour un long ballon de 50 m)
+    return bt.v0;
+  }
+  // temps de vol attendu d'un ballon aérien à cette vitesse (approché ; la frappe le calcule exactement)
+  const flightEst = (v0, d) => (d / v0) * (1 + 0.35 * (d / v0));
+  const aerialStyle = (s) => s === 'cross' || s === 'lob' || s === 'clear';
   // durées réalistes (0.8.7) : une passe au sol file à 12 m/s de moyenne et arrive moins vite ; une transversale est lobée
   const passTimeOf = (style, d) => (
     style === 'cross' ? clamp(0.75 + d * 0.13, 0.85, 1.5)
@@ -884,7 +964,7 @@ export function createMatchScene(parent) {
     const [qx, qz] = k.q;
     const dx = qx - k.from[0], dz = qz - k.from[1], dd = Math.hypot(dx, dz);
     if (!k.slide) { a.steer(a.x, a.z, 0, dt, b.x, b.z); return; } // barrage : il fait face au tireur
-    const r = Math.min(0.085, dd * 0.9);
+    const r = Math.min(SLIDE_REACH, dd * 0.9);
     const tx = qx - (dx / dd) * r, tz = qz - (dz / dd) * r;
     const f = clamp((H.t - k.t0) / Math.max(0.05, k.lead), 0, 1);
     const e = 1 - (1 - f) * (1 - f);
@@ -907,7 +987,7 @@ export function createMatchScene(parent) {
     if (H.block) { // tir contré : le ballon part vers le point de passage, où le défenseur le touche
       const k = H.block;
       const [qx, qz] = k.q;
-      const sp = { foot: rr(2.6, 3.2), volley: rr(2.7, 3.2), long: rr(3.0, 3.5), poke: rr(1.9, 2.3), curl: 2.5 }[style] || 2.8;
+      const sp = { foot: rr(2.2, 2.9), volley: rr(2.4, 2.9), long: rr(2.6, 3.1), poke: rr(1.3, 1.8), curl: 2.5 }[style] || 2.5;
       const T = Math.max(0.06, Math.hypot(qx - b.x, qz - b.z) / sp);
       spinOff();
       const v = solveLaunch({ x: b.x, y: b.y, z: b.z }, [qx, k.y, qz], T, { spin: [0, 0, 0] });
@@ -931,15 +1011,21 @@ export function createMatchScene(parent) {
     } else if (outcome === 'p') {
       if (H.r() < 0.3 && style !== 'head') { tv = rr(-0.25, 0.25); h = BAR; } else { tv = (H.r() < 0.5 ? -1 : 1) * GOAL_HALF; h = rr(0.04, 0.2); }
     } else if (H.r() < 0.4 && style !== 'pen') { tv = rr(-0.3, 0.3); h = rr(0.32, 0.55); } else { tv = (H.r() < 0.5 ? -1 : 1) * rr(0.46, 0.85); h = rr(0.02, 0.22); }
-    const speed = { foot: rr(2.6, 3.2), head: rr(1.6, 2.0), volley: rr(2.7, 3.2), long: rr(3.0, 3.5), pen: rr(2.5, 2.9), poke: rr(1.9, 2.3) }[style] || 2.8;
+    // vitesse du pied au départ (1.0.25, audit : les frappes partaient à 113-128 km/h en médiane, jusqu'à 164 km/h de loin,
+    // les têtes à 17-22 m/s ; en vrai, frappe placée 18-24 m/s, appuyée 24-30, en force 30-34, tête 11-16) : u/s
+    const r0 = H.r();
+    const v0 = { foot: r0 < 0.4 ? rr(1.8, 2.4) : r0 < 0.9 ? rr(2.4, 3.0) : rr(3.0, 3.4), head: rr(1.1, 1.6), volley: rr(2.2, 3.0), long: rr(2.5, 3.1), pen: r0 < 0.6 ? rr(2.0, 2.4) : rr(2.6, 2.9), poke: rr(1.2, 1.8) }[style] || 2.5;
     const [gx, gz] = at(GOAL_X + 0.02, tv);
     const d = Math.hypot(gx - b.x, gz - b.z);
-    const T = style === 'curl' ? clamp(d / 2.0, 1.0, 1.4) : d / speed;
     // 1.0.18 : vraie physique. La frappe enroulée (coup franc) part de côté et revient vers le but ; les autres frappes ont
     // un peu d'effet au hasard ; la tête et le penalty, aucun. La vitesse de départ est résolue pour la cible du moteur.
     spinOff();
     const curl = style === 'curl' ? Math.sign(bv || 1) * rr(0.75, 1.0) : style === 'head' || style === 'pen' ? 0 : rr(-0.25, 0.25);
-    const v = solveLaunch({ x: b.x, y: b.y, z: b.z }, [gx, h, gz], T, { spin: [0, curl, 0] });
+    const from = { x: b.x, y: b.y, z: b.z };
+    let T = style === 'curl' ? clamp(d / 2.0, 1.0, 1.4) : d / (0.92 * v0);
+    let v = solveLaunch(from, [gx, h, gz], T, { spin: [0, curl, 0] });
+    // le temps de vol qui donne cette vitesse de pied (point fixe : |v| ≈ d/T)
+    for (let k = 0; style !== 'curl' && k < 3; k++) { T *= Math.hypot(v.vx, v.vy, v.vz) / v0; v = solveLaunch(from, [gx, h, gz], T, { spin: [0, curl, 0] }); }
     Object.assign(b, { vx: v.vx, vy: v.vy, vz: v.vz, sx: 0, sy: curl, sz: 0, skid: 0, hit: null });
     b.state = 'shot';
     b.owner = -1;
@@ -965,7 +1051,8 @@ export function createMatchScene(parent) {
     // par-dessus la barre) ; une frappe molle ou sur lui, il la capte dans les gants et la serre contre lui
     const vMs = Math.hypot(b.vx, b.vy, b.vz) * 10;
     const far = Math.abs(side), hm = hc * 10 + 0.11;
-    const parry = outcome === 's' && (far > 1.35 || (far > 0.7 && vMs > 22) || hm > 2.05 || (H.pen && far > 0.6));
+    // (1.0.25 : une frappe de plus de 27 m/s n'est jamais captée, même sur lui : il la repousse)
+    const parry = outcome === 's' && (far > 1.35 || (far > 0.7 && vMs > 20) || vMs > 27 || hm > 2.05 || (H.pen && far > 0.6));
     H.dive = { v: reach, at: H.t + (H.pen ? 0.06 : Math.max(0.05, tc - 0.42)), from: kv, catch: outcome === 's', parry };
     H.shot = { T, t0: H.t, tv, h, style, from: [bu, bv], tc, ku };
     // saveLead : le temps de la frappe au contact ; saveId : un arrêt par frappe (la 3D lance le geste dès la frappe)
@@ -1015,6 +1102,7 @@ export function createMatchScene(parent) {
     }
   }
   function ballUpdate(dt) {
+    const lag = b.lag || 0; b.lag = 0; // (contactNow) la part de l'image d'avant le contact du pied
     if (b.state === 'held') {
       const p = agents[b.owner];
       if (b.strike) { // frappe armée : la dernière touche pousse le ballon là où le pied le touchera
@@ -1028,9 +1116,16 @@ export function createMatchScene(parent) {
       if (b.fixed) { b.y = 0; return; } // ballon arrêté (coup de pied arrêté) : il attend le tireur
       // conduite : le ballon devant le pied, rattrapé à chaque foulée ; la cible anticipe la course (sans quoi le ballon
       // traînait derrière le pied d'autant que le joueur allait vite)
-      const [sx, sz] = footSpot(p, 0.04 + 0.025 * Math.abs(Math.sin(p.phase * 0.5)));
+      // 1.0.25 (audit du contact : la pointe du pied droit traversait le ballon une fois par seconde de conduite) : le
+      // ballon devant la foulée (57 cm à l'arrêt, 87 cm lancé), poussé à chaque pas ; et il ne rejoint jamais le pied plus
+      // vite que le joueur ne court, 3 m/s de plus au plus (le contrôle l'aspirait à 14 m/s, plus vite qu'il n'arrivait)
+      const ahead = 0.057 + 0.03 * clamp((p.speed - 0.15) / 0.45, 0, 1) + 0.012 * Math.abs(Math.sin(p.phase * 0.5));
+      const [sx, sz] = footSpot(p, ahead);
       const k = Math.min(1, dt * 12);
-      b.x += (sx + p.vx / 12 - b.x) * k; b.z += (sz + p.vz / 12 - b.z) * k;
+      let mx = (sx + p.vx / 12 - b.x) * k, mz = (sz + p.vz / 12 - b.z) * k;
+      const cap = (Math.hypot(p.vx, p.vz) + 0.3) * dt, mm = Math.hypot(mx, mz);
+      if (mm > cap) { mx *= cap / mm; mz *= cap / mm; }
+      b.x += mx; b.z += mz;
       b.y = Math.max(0, b.y - dt * 1.2);
       return;
     }
@@ -1047,7 +1142,7 @@ export function createMatchScene(parent) {
     if (b.state === 'dead') return;
     const [u0] = uvOf(b.x, b.z);
     const p0 = [b.x, b.y, b.z];
-    ballPhysics(dt);
+    if (dt - lag > 1e-6) ballPhysics(dt - lag);
     if (b.state === 'net') return; // au fond des filets (stepNet)
     if (b.state !== 'shot') return;
     const [u1, v1] = uvOf(b.x, b.z);
@@ -1168,8 +1263,12 @@ export function createMatchScene(parent) {
     return false;
   }
   // durée d'une passe vers (tx, tz) : celle du geste, ou davantage si le receveur a besoin de plus de temps pour y être
+  // 1.0.25 : un ballon aérien ne s'étire plus pour attendre son receveur (il montait à 4-6,5 m) ; c'est le receveur
+  // (layoff) ou le moment du centre qui s'ajustent
   function passTime(bt, tx, tz) {
-    return Math.max(passTimeOf(bt.style, Math.hypot(tx - b.x, tz - b.z)), runTime(bt, tx, tz));
+    const d = Math.hypot(tx - b.x, tz - b.z);
+    if (aerialStyle(bt.style)) return flightOf(bt, tx, tz);
+    return Math.max(passTimeOf(bt.style, d), runTime(bt, tx, tz));
   }
   // la course du receveur jusqu'au point visé : un joueur arrêté met plus d'une seconde à prendre sa vitesse (ACCEL
   // 0,55 u/s²), sa course est comptée large ; l'attaquant qui attaque un centre de la finale sprinte (1.0.19)
@@ -1200,7 +1299,14 @@ export function createMatchScene(parent) {
   };
   // le contact du pied tombe pendant cette image (1.0.18) : le ballon part dans l'image même du contact du geste (une
   // image plus tard, le pied d'une frappe, lancé à plus de 10 m/s, avait déjà dépassé le ballon de 20 à 40 cm)
-  const contactNow = (p, dt) => p.kick > 0 && p.kick + (dt * 0.5) / KICK_TIME >= KICK_CONTACT;
+  // 1.0.25 : le contact tombe dans l'image où le geste 3D l'atteint (il partait une à deux images plus tard : le pied
+  // était déjà dans le ballon) ; le ballon ne vole que la part de l'image qui suit le contact (b.lag), il part du pied
+  const contactNow = (p, dt) => {
+    const x = (p.kick + dt / KICK_TIME - KICK_CONTACT) * KICK_TIME; // temps du geste après le contact, à la fin de l'image
+    if (!(p.kick > 0) || x < 0) return false;
+    b.lag = clamp(dt - x, 0, dt);
+    return true;
+  };
   function runBeats(dt) {
     const bt = H.beats[H.k];
     // les acteurs du geste en cours, recalculés à chaque image (1.0.19) : eux seuls échappent au placement collectif ;
@@ -1224,8 +1330,10 @@ export function createMatchScene(parent) {
       agents[bt.who].steer(tx, tz, bt.speed, dt);
       // le temps fort a déjà duré (une relance longue) : les conduites de la finale sont écourtées (1.0.20, quinze secondes
       // au plus)
-      const late = H.finale && H.t > 8.5 ? 0.5 : Infinity;
-      if (Math.hypot(tx - agents[bt.who].x, tz - agents[bt.who].z) < 0.035 || H.bt > Math.min(bt.max ?? 3, late)) next();
+      // (1.0.25, demande du PDG : « la limite des 15 secondes est une contrainte, je veux la lever ») : plus de conduite
+      // écourtée après 8,5 s ; elle coupait toutes les contre-attaques (frappe à 24 m au lieu de 17) et faisait monter les
+      // centres partis trop tôt
+      if (Math.hypot(tx - agents[bt.who].x, tz - agents[bt.who].z) < 0.035 || H.bt > (bt.max ?? 3)) next();
       return;
     }
     if (bt.t === 'runup') { // élan vers le ballon arrêté (penalty, coup franc, corner) : il le prend au contact
@@ -1307,7 +1415,7 @@ export function createMatchScene(parent) {
         }
         if (bt.slide) { // la glissade : un jaillissement, de sa place jusqu'au ballon, jambe tendue (90 cm) au contact
           const dx = b.x - bt.from[0], dz = b.z - bt.from[1], dd = Math.hypot(dx, dz) || 1;
-          const tx = b.x - (dx / dd) * 0.085, tz = b.z - (dz / dd) * 0.085;
+          const tx = b.x - (dx / dd) * SLIDE_REACH, tz = b.z - (dz / dd) * SLIDE_REACH;
           const f = clamp((H.t - bt.from[2]) / Math.max(0.05, bt.slide - bt.from[2]), 0, 1);
           const e = 1 - (1 - f) * (1 - f);
           const nx = bt.from[0] + (tx - bt.from[0]) * e, nz = bt.from[1] + (tz - bt.from[1]) * e;
@@ -1359,8 +1467,8 @@ export function createMatchScene(parent) {
             bt.target = at(au + (ru - au) * 0.6, av + (rv - av) * 0.6);
           }
           const [tx, tz] = bt.target;
-          const T = passTimeOf(bt.style, Math.hypot(tx - b.x, tz - b.z));
-          launchBall(tx, tz, T, { y1: 0.04 });
+          const dh = Math.hypot(tx - b.x, tz - b.z);
+          const T = launchBall(tx, tz, passTimeOf(bt.style, dh), { y1: 0.04, speed: aerialStyle(bt.style) ? kickSpeed(bt, dh) : 0, back: BACK[bt.style] || 0 });
           bt.launched = true; bt.T = T; bt.t0 = H.t; b.state = 'pass';
           H.hold.set(bt.from, H.t + 0.4);
           return;
@@ -1370,7 +1478,8 @@ export function createMatchScene(parent) {
         // le receveur se met en route vers le point visé
         const lead = passTime(bt, tx, tz) + ARMED;
         const [ttu, ttv] = uvOf(tx, tz);
-        const [hx, hz] = ttu > H.line - 0.03 ? at(H.line - 0.03, ttv) : [tx, tz]; // en jeu jusqu'au départ du ballon
+        // en jeu jusqu'au départ du ballon (1.0.25 : il part dès l'élan du passeur, comme un attaquant qui lance sa course)
+        const [hx, hz] = ttu > H.line - 0.03 && !(p.kick > 0) ? at(H.line - 0.03, ttv) : [tx, tz];
         rcv.steer(hx, hz, Math.min(SPRINT, Math.hypot(hx - rcv.x, hz - rcv.z) / Math.max(0.15, lead - 0.05) + 0.05), dt, b.x, b.z);
         if (!gather(bt.from, dt)) return; // le passeur doit d'abord avoir le ballon
         // il frappe en finissant de se tourner, quand son receveur est en jeu (il attend son appel, au plus 1,6 s)
@@ -1379,24 +1488,32 @@ export function createMatchScene(parent) {
         if (!p.kick && ready && (p.facing(tx, tz) < 1.0 || H.bt > 0.35) && (onside(bt.to) || H.bt > 1.6)) {
           // remise (1.0.19) : au sol, vers le receveur encore loin ; un centre de la finale, au plus près de l'attaquant qui
           // l'attaque, sans sortir du cœur de la surface
-          if (H.finale && (bt.style === 'ground' || (bt.style === 'cross' && teamOf(bt.to) === H.A))) {
-            const q = layoff(bt, tx, tz, bt.style === 'cross' ? Math.min(4.15, uvOf(tx, tz)[0]) : -Infinity);
+          // (1.0.25) une longue passe vers un partenaire encore loin attend son appel (1,4 s au plus), au lieu d'un ballon qui
+          // monte pour l'attendre ; un attaquant qui attend le départ du ballon sur la ligne du hors-jeu n'est pas attendu
+          const heldOnside = Math.hypot(hx - tx, hz - tz) > 0.01;
+          const waitRun = aerialStyle(bt.style) && teamOf(bt.to) === teamOf(bt.from) && !heldOnside && H.bt < 1.4 && runTime(bt, tx, tz) > passTime(bt, tx, tz) + ARMED - 0.1;
+          if (!waitRun) {
+            let q = null;
+            if (H.finale && bt.style === 'ground') q = layoff(bt, tx, tz);
+            else if (H.finale && bt.style === 'cross' && teamOf(bt.to) === H.A) q = fitCross(bt, tx, tz); // point et vitesse selon sa course
             if (q) { bt.target = q; [tx, tz] = q; }
+            p.kick = 0.001; p.kickKind = 'pass'; p.kickH = Math.atan2(tz - p.z, tx - p.x);
+            armStrike(bt.from, 'pass', p.kickH); // 1.0.18 : le ballon là où le pied le touchera
           }
-          p.kick = 0.001; p.kickKind = 'pass'; p.kickH = Math.atan2(tz - p.z, tx - p.x);
-          armStrike(bt.from, 'pass', p.kickH); // 1.0.18 : le ballon là où le pied le touchera
         }
         p.steer(p.x, p.z, 0, dt, tx, tz);
         if (contactNow(p, dt)) {
           if (!onside(bt.to)) H.offside = (H.offside || 0) + 1; // mesure (banc) : jamais atteint
-          const T = passTime(bt, tx, tz);
+          let T = passTime(bt, tx, tz);
           // un partenaire encore loin : la passe part en l'air (une transversale prend son temps), jamais un ballon qui roule
           // au pas (1.0.19)
           const dd = Math.hypot(tx - b.x, tz - b.z);
           if (!H.finale && bt.style === 'ground' && dd > 1.4 && T > passTimeOf('ground', dd) * 1.5) bt.style = 'lob';
           // un centre part brossé (il s'enroule vers le but ou s'en éloigne), une transversale un peu ; au sol, droit
           const curl = bt.style === 'cross' ? (H.r() < 0.5 ? -1 : 1) * H.rr(0.25, 0.55) : bt.style === 'lob' ? H.rr(-0.2, 0.2) : 0;
-          launchBall(tx, tz, T, { ground: bt.style === 'ground' || bt.style === 'through', y1: bt.y1 || 0, curl });
+          // (1.0.25) un ballon aérien part à la vitesse du coup de pied, son temps de vol en découle
+          // (une passe lobée arrive à hauteur de cuisse, 60 cm : le receveur la contrôle avant qu'elle rebondisse et file)
+          T = launchBall(tx, tz, T, { ground: bt.style === 'ground' || bt.style === 'through', y1: bt.y1 || (bt.style === 'lob' ? 0.06 : 0), curl, speed: aerialStyle(bt.style) ? kickSpeed(bt, dd) : 0, back: BACK[bt.style] || 0 });
           bt.launched = true; bt.T = T; bt.t0 = H.t; b.state = 'pass';
           H.hold.set(bt.from, H.t + 0.45);
         }
@@ -1510,7 +1627,7 @@ export function createMatchScene(parent) {
       // 1.0.20 : une frappe qui finira à côté, un défenseur qui vient fermer l'angle : il prend le temps d'une touche (au
       // plus 0,8 s), le défenseur arrive sur la trajectoire et contre la frappe
       let closing = false;
-      if (H.outcome === 'w' && H.laneWho >= 0 && H.bt < 0.8 && !b.fixed && H.t < 11) {
+      if (H.outcome === 'w' && H.laneWho >= 0 && H.bt < 0.8 && !b.fixed) {
         const L = Math.hypot(gx - p.x, gz - p.z) || 1, d = agents[H.laneWho];
         closing = Math.hypot(d.x - (p.x + ((gx - p.x) / L) * 0.25), d.z - (p.z + ((gz - p.z) / L) * 0.25)) > 0.12;
       }
@@ -1994,6 +2111,7 @@ export function createMatchScene(parent) {
     if (S.play === 'warmup') warmupUpdate(dt);
     let cut = false;
     if (S.play === 'live' && H) {
+      if (H.phase !== 'end' && typeof performance !== 'undefined') matchFeed.hlBeat = performance.now(); // la scène bat (match.jsx)
       const step = dt * H.speed;
       if (H.phase === 'cut' || H.phase === 'play' || H.phase === 'react') {
         H.t += step;
@@ -2005,7 +2123,7 @@ export function createMatchScene(parent) {
           separate();
           ballUpdate(step);
           if (H.revealed) H.phase = 'react'; // (jamais pendant le plan de coupe : la construction dure bien plus)
-          else if (H.t > H.est + 10) { H.forced = true; reveal(); H.phase = 'react'; } // une action qui n'aboutit pas : l'issue s'affiche quand même (filet de sécurité, jamais atteint au banc)
+          else if (H.t > H.est + 14) { H.forced = true; reveal(); H.phase = 'react'; } // une action qui n'aboutit pas : l'issue s'affiche quand même (filet de sécurité, jamais atteint au banc)
           if (!H.revealed) matchFeed.hlClock = H.e.at - HL_PRE * (1 - Math.min(0.98, H.t / Math.max(1, H.est)));
         } else {
           reactStep(step);

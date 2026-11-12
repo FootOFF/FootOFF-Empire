@@ -125,7 +125,7 @@ window.runHL = (e, times, opts = {}) => {
   let t = 0, k = 0, revealAt = null;
   const dt = 1 / 60;
   const wanted = [...times].sort((a, b) => a - b);
-  while (t < 40 && (k < wanted.length || matchFeed.hlDone !== spec.id)) {
+  while (t < 90 && (k < wanted.length || matchFeed.hlDone !== spec.id)) {
     const mi = squad.update(dt, t);
     t += dt;
     if (mi) cam(mi, dt);

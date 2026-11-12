@@ -28,7 +28,7 @@ for (let i = 0; i < N; i++) {
   const spec = { id: ++id, e, type: 'red', half: 2, replay: true, speed: 1, homeNames: NAMES, awayNames: NAMES.map((n) => `X${n}`), formation: '433', awayFormation: '442', offHome: [], offAway: [] };
   Object.assign(matchFeed, { hl: spec, hlAck: 0, hlReveal: 0, hlDone: 0, hlClock: e.at - 0.12, hlPhase: '' });
   let t = 0, foul = null;
-  while (t < 40) {
+  while (t < 90) {
     squad.update(1 / 60, t);
     t += 1 / 60;
     const d = squad.debug;

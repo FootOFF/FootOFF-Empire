@@ -30,7 +30,7 @@ function play(e, type, half) {
   const spec = { id: ++id, e, type, half, replay: true, speed: 1, homeNames: NAMES, awayNames: NAMES.map((n) => `X${n}`), formation: '433', awayFormation: '442', offHome: [], offAway: [] };
   Object.assign(matchFeed, { hl: spec, hlAck: 0, hlReveal: 0, hlDone: 0, hlClock: e.at - 0.12, hlPhase: '' });
   let t = 0, reveal = null, kicked = false;
-  while (t < 40) {
+  while (t < 90) {
     squad.update(1 / 60, t);
     t += 1 / 60;
     if (squad.ball.state === 'shot') kicked = true;

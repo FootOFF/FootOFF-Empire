@@ -345,7 +345,12 @@ const ICON = { goal: <IconBall />, sub: <IconSwap />, injury: <IconMedic />, kic
 const LOOKAHEAD = 14; // minutes simulées d'avance sur l'horloge : les temps forts se préparent avant leur instant
 const HL_PRE = 0.2; // minutes de jeu entre le début d'un temps fort et son instant décisif (l'action se construit : 8 à 12 s, 0.8.7)
 const HL_ACK = 1500; // ms : une scène 3D qui ne répond pas laisse le direct continuer sans elle
-const HL_MAX = 50000; // ms : au-delà, le temps fort se termine quoi qu'il arrive (onglet caché, scène bloquée)
+// 1.0.25 (le PDG lève la limite des 15 s) : le filet de sécurité ne mesure plus le temps d'horloge seul (sur un téléphone
+// lent, le temps de la scène va moins vite que l'horloge : un long temps fort aurait été coupé avant son but). La scène
+// bat (matchFeed.hlBeat) à chaque image ; un temps fort se termine si elle ne bat plus depuis 15 s (onglet caché, scène
+// bloquée), ou au bout de deux minutes quoi qu'il arrive
+const HL_MAX = 120000; // ms
+const HL_STALL = 15000; // ms
 const HL_LABEL = { goal: t('Temps fort'), big: t('Temps fort'), save: t('Temps fort'), post: t('Temps fort'), penalty: t('Penalty'), red: t('Temps fort') };
 
 // Les classes tirées des données du match sont toujours préfixées (ev-side-…, ev-out-…) : un nom nu comme
@@ -710,7 +715,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
       active: !preview, ended: false, phase, half, clock: clockRef.current, speed,
       formation: formationNow(), homeNames: homeNames(), awayNames: awayNames(), homeLooks: homeLooks(), awayLooks: awayLooks(),
       awayFormation: awayFormationNow(), awayName: live.state.away,
-      hl: null, hlAck: 0, hlReveal: 0, hlDone: 0, hlClock: 0, hlPhase: '', show3D: false,
+      hl: null, hlAck: 0, hlReveal: 0, hlDone: 0, hlClock: 0, hlPhase: '', hlBeat: 0, show3D: false,
     });
     return () => { Object.assign(matchFeed, { active: false, hl: null, show3D: false }); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -781,7 +786,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     setHl({ id, type, e, replay: false });
     Object.assign(matchFeed, {
       hl: { id, e, type, half, replay: true, homeNames: homeNames(), awayNames: awayNames(), homeLooks: homeLooks(), awayLooks: awayLooks(), awayFormation: awayFormationNow(), formation: formationNow() },
-      hlAck: 0, hlReveal: 0, hlDone: 0, hlClock: clockRef.current, hlPhase: '', show3D: true,
+      hlAck: 0, hlReveal: 0, hlDone: 0, hlClock: clockRef.current, hlPhase: '', hlBeat: 0, show3D: true,
     });
   };
   const endHighlight = () => {
@@ -817,7 +822,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
         }
         if (!h.revealed && matchFeed.hlReveal === h.id) { h.revealed = true; revealTo(h.e.at, { through: h.e }); }
         if (matchFeed.hlPhase === 'replay') setHl((x) => (x && !x.replay ? { ...x, replay: true } : x));
-        if (matchFeed.hlDone === h.id || now - h.started > HL_MAX) endHighlight();
+        const stalled = now - Math.max(h.started, matchFeed.hlBeat || 0) > HL_STALL;
+        if (matchFeed.hlDone === h.id || now - h.started > HL_MAX || stalled) endHighlight();
         return;
       }
       if (pause.current > 0) { pause.current -= dt; return; }
