@@ -1155,12 +1155,15 @@ inactives. Corrections relevées au contrôle de la vidéo filmée dans le vrai 
   la poitrine) ; petit saut (20 cm) pour un ballon à 1,5 m ou plus.
 - `separate` : seuls le tireur jusqu'au contact, le gardien pendant la frappe et le contreur restent intouchables ; deux
   joueurs en fin de geste sont écartés à parts égales.
-- Jamais dans ses filets (déjà 10 actions sur 144 en 1.0.32, surtout des penalties) : la cible du plongeon reste devant la
-  ligne (`GOAL_X - 0,03`) ; la suite de la course après le contact ne se fait que le long de la ligne ; au premier instant
-  de l'après-action, un gardien qui a plongé a une vitesse nulle (il glissait sur son élan jusqu'à 1,5 m dans le but) et
-  reste au sol 0,9 s ; personne ne court après un ballon dont le point de rattrapage est derrière la ligne de but.
+- Jamais dans ses filets ni dans un poteau (1.0.32 : tête, buste ou bassin derrière la ligne dans 16 actions sur 144,
+  contre un poteau dans 3) : le bassin du plongeon reste à 60 cm au moins devant la ligne et à 1 m en dedans des poteaux
+  (cible et suite de la course, qui ne se fait que le long de la ligne) ; le gardien se tient à 88 cm au moins du poteau
+  (0,28 au lieu de 0,32) ; après un plongeon, sa vitesse est nulle au sol, après un arrêt comme après un but (il glissait
+  sur son élan jusqu'à 1,7 m, contre le poteau ou dans ses filets) ; personne ne court après un ballon dont le point de
+  rattrapage est derrière la ligne de but.
 - Mesures (banc `gardien3d.mjs`, joueurs 3D, 144 actions dont 44 buts hors penalty) : ballon dans le corps du gardien
-  battu 6 → 0 ; gardien derrière sa ligne 10 → 0 ; course du plongeon au contact / course captée 0,44 → 1,27 (médianes).
+  battu 6 → 0 ; tête, buste ou bassin derrière la ligne 16 → 0 ; contre un poteau 3 → 0 ; course du plongeon au contact /
+  course captée 0,44 → 1,27 (médianes).
 
 ## Contact de la tête et points du terrain (1.0.32)
 

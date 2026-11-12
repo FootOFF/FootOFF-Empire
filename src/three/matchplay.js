@@ -1164,7 +1164,9 @@ export function createMatchScene(parent) {
       H.dive.root = [bx2 - (fx * hand.fwd - fz * hand.right), bz2 - (fz * hand.fwd + fx * hand.right)];
       // (1.0.33) jamais derrière sa ligne : au penalty, sur sa ligne, la main placée au ballon le reculait dans le but ;
       // les bras rattrapent les quelques centimètres
-      { const [ru, rv] = uvOf(H.dive.root[0], H.dive.root[1]); if (ru > GOAL_X - 0.03) H.dive.root = at(GOAL_X - 0.03, rv); }
+      // (1.0.33, vu dans le vrai jeu : couché sur sa ligne au pied du poteau, la tête dans le cadre) : le bassin à 60 cm au
+      // moins devant la ligne et en dedans des poteaux ; le haut du corps qui part en arrière reste devant le but
+      { const [ru, rv] = uvOf(H.dive.root[0], H.dive.root[1]); if (ru > GOAL_X - 0.06 || Math.abs(rv) > GOAL_HALF - 0.1) H.dive.root = at(Math.min(ru, GOAL_X - 0.06), clamp(rv, -GOAL_HALF + 0.1, GOAL_HALF - 0.1)); }
       H.dive.tc = H.t + tc;
       H.dive.clip = hand.clip;
       // un ballon plus haut que les mains du plongeon (ou de la prise sautée) : le gardien s'élève (1.0.25, jusqu'à 70 cm),
@@ -2125,7 +2127,7 @@ export function createMatchScene(parent) {
       let nx = dv0.start[0] + (dv0.root[0] - dv0.start[0]) * Math.min(e, 1), nz = dv0.start[1] + (dv0.root[1] - dv0.start[1]) * Math.min(e, 1);
       if (e > 1) { // la suite de la course : le long de sa ligne seulement, jamais derrière elle ni au-delà du poteau
         const [su, sv] = uvOf(dv0.start[0], dv0.start[1]); const [ru, rv] = uvOf(dv0.root[0], dv0.root[1]);
-        [nx, nz] = at(Math.min(ru, GOAL_X - 0.03), clamp(sv + (rv - sv) * e, -GOAL_HALF - 0.02, GOAL_HALF + 0.02));
+        [nx, nz] = at(Math.min(ru, GOAL_X - 0.06), clamp(sv + (rv - sv) * e, -GOAL_HALF + 0.1, GOAL_HALF - 0.1));
       }
       a.vx = (nx - a.x) / Math.max(dt, 1e-4); a.vz = (nz - a.z) / Math.max(dt, 1e-4);
       a.x = nx; a.z = nz; a.speed = Math.hypot(a.vx, a.vz);
@@ -2142,7 +2144,8 @@ export function createMatchScene(parent) {
     const dist = Math.max(0.3, GOAL_X - su);
     const depth = clamp(0.06 + dist * 0.05, 0.08, 0.3);
     const a1 = Math.atan2(GOAL_HALF - sv, GOAL_X - su), a2 = Math.atan2(-GOAL_HALF - sv, GOAL_X - su);
-    let u = GOAL_X - depth, v = clamp(sv + Math.tan((a1 + a2) / 2) * (u - su), -0.32, 0.32);
+    // (1.0.33 : au plus près, 88 cm en dedans du poteau ; à 46 cm, sur un corner, sa tête heurtait le poteau dès son plongeon)
+    let u = GOAL_X - depth, v = clamp(sv + Math.tan((a1 + a2) / 2) * (u - su), -0.28, 0.28);
     // position d'attente : appuis fléchis, bras ouverts, quand une frappe se prépare (porteur dans les 25 m, penalty)
     const bt = H.beats[H.k];
     const threat = !H.shot && (H.pen || bt?.t === 'shot' || (b.state === 'held' && teamOf(b.owner) === H.A && bu > BOX - 0.9));
@@ -2183,7 +2186,8 @@ export function createMatchScene(parent) {
         else if (teamOf(i) === A && slotOf(i) !== 0) {
           const ang = slotOf(i) * 2.4, r = 0.075 + (slotOf(i) % 3) * 0.03;
           a.steer(sc.x + Math.cos(ang) * r, sc.z + Math.sin(ang) * r, 0.62, dt, sc.x, sc.z);
-        } else a.steer(a.x, a.z, 0, dt);
+        } else if (i === H.keeper && H.dive && H.t >= H.dive.at) a.vx = a.vz = a.speed = 0; // (1.0.33) au sol après son plongeon : il ne glisse plus sur son élan (jusqu'à 1,7 m, contre le poteau)
+        else a.steer(a.x, a.z, 0, dt);
       }
     } else if (outcome === 'red') {
       const off = agents[H.offender];
