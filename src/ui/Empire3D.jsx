@@ -304,6 +304,7 @@ export default function Empire3D({
     const stadium = ctx.plots.get('t0');
     // les jours de match : notre onze contre l'adversaire, et le public dans les tribunes
     const squad = createMatchScene(stadium.wrapper);
+    if (import.meta.env.DEV) window.__squad = squad; // (débogage de la réalisation en développement)
     squad.setFormation(stateRef.current.formation);
     stadium.squad = squad;
     const crowd = createCrowd(stadium.wrapper);

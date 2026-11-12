@@ -13,7 +13,7 @@ export function createTvCamera(camera) {
   // zone de sécurité : sous le score, au-dessus des commandes. Mesuré au banc (192 temps forts, iPhone en portrait) :
   // cage entière à la frappe 57 → 78 %, gardien 62 → 94 %, ballon hors champ 8 → 3,6 %, à-coup maximal 91 → 38.
   const ORBIT = {
-    phone: { R: 6.5, elev: 0.6, zFollow: 0.85, wMin: 1.5, wMax: 3.6, wPlay: 2.0, wAttack: 1.7, wSet: 2.2, wCel: 1.8, loose: true, wShould: 2.4, omegaAim: 3.0, omegaIn: 1.2, omegaOut: 3.5, top: 112, bottom: 100, side: 6 },
+    phone: { R: 6.5, elev: 0.8, zFollow: 0.85, wMin: 1.5, wMax: 3.6, wPlay: 2.0, wAttack: 1.7, wSet: 2.2, wCel: 1.8, loose: true, wShould: 2.4, omegaAim: 3.0, omegaIn: 1.2, omegaOut: 3.5, top: 112, bottom: 100, side: 6 },
     land: { R: 6.5, elev: 0.5, zFollow: 0.7, wMin: 2.2, wMax: 5.5, wPlay: 3.8, wAttack: 3.0, wSet: 3.2, wCel: 2.2, loose: false, omegaAim: 3.0, omegaIn: 1.2, omegaOut: 3.5, top: 70, bottom: 70, side: 50 },
     desk: { R: 7.0, elev: 0.5, zFollow: 0.7, wMin: 2.8, wMax: 6.5, wPlay: 5.0, wAttack: 3.9, wSet: 4.0, wCel: 2.6, loose: false, omegaAim: 3.0, omegaIn: 1.2, omegaOut: 3.2, top: 80, bottom: 80, side: 10 },
   };
@@ -117,5 +117,6 @@ export function createTvCamera(camera) {
     }
     void dirA;
   }
+  if (import.meta.env?.DEV && typeof window !== 'undefined') window.__tv = { orb, aim: orbAim, camera, ORBIT };
   return { step, aim: orbAim, reset() { orb.init = false; } };
 }

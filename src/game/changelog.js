@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.26', date: '2026-11-12', title: t('Réalisation télé'),
+    items: [
+      t('Nouvelle caméra des temps forts, comme à la télévision : elle cadre le ballon, le porteur, le receveur et, quand une frappe se prépare, la cage et le gardien ; elle anticipe la trajectoire et ne donne plus d’à-coups.'),
+      t('Sur téléphone, la caméra filme de plus haut : la pelouse remplit l’écran ; couché, le téléphone a son propre cadrage, plus serré.'),
+      t('Les corners se jouent comme en vrai : appels au premier et au second poteau, un joueur devant le gardien, un à l’entrée de la surface, chaque attaquant marqué.'),
+    ],
+  },
+  {
     version: '1.0.25', date: '2026-11-12', title: t('Gardiens, centres et contacts'),
     items: [
       t('Le gardien prend le ballon dans ses gants : ses bras vont au ballon, le geste suit la hauteur du tir (prise basse, à mi-hauteur ou haute, plongeon bas ou haut, il s’élève pour un ballon haut) et le ballon reste dans ses mains sans glisser.'),

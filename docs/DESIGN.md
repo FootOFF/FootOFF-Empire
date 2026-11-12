@@ -1137,6 +1137,23 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Réalisation télé (1.0.26)
+
+- Caméra des temps forts (`src/three/broadcast.js`, partagée par Empire3D.jsx et le banc `tools/sim/temps-forts.js`) :
+  téléobjectif dans l'axe de la tribune principale, à 65-70 m, jamais sous le couloir de la caméra télé (toit de
+  l'arène) ; cadrage de groupe : le ballon, sa position simulée 0,5 s plus loin, le porteur, le receveur (au téléphone
+  seulement s'il tient dans 24 m), et la cage avec le gardien quand une frappe se prépare (indices du moteur :
+  `mi.world`, receveur de la passe en vol ou annoncée, tireur de la finale) ; le zoom (champ de vision) fait la place ;
+  ressorts amortis critiques sur la visée et le zoom (vitesse continue) ; le ballon ne sort jamais de la zone sûre
+  (sous le score, au-dessus des commandes). Trois profils : téléphone debout (caméra à 46°, la pelouse remplit l'écran),
+  téléphone couché (cadrage propre, plus serré que le PC), PC. Banc de l'audit (192 temps forts, prototype) : au
+  téléphone, cage entière à la frappe 57 → 78 %, gardien 62 → 94 %, ballon hors champ 8 → 3,6 %, à-coup maximal 91 → 38 ;
+  au PC, cage 83 → 98 %, gardien 95 → 100 %. Plan de coupe et ralentis : inchangés, objectif normal rétabli.
+- Corners : disposition réelle (appels au premier poteau, au second, au point de penalty, écran devant le gardien,
+  entrée de la surface, solution courte, trois en couverture ; défense : marquage côté but des attaquants de la surface,
+  trois en zone, un au premier poteau, un à l'entrée de la surface). Bancs : corners 24 têtes sur 24 ; 480 temps forts,
+  0 problème.
+
 ## Gardiens, centres et contacts (1.0.25)
 
 Demande du PDG (12/11, matin) : lever la limite des 15 s, travailler la trajectoire du ballon, le contrôle, « que le pied ne
