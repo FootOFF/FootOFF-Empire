@@ -38,11 +38,15 @@ const LOOK_CHAIN = [['spine_02', 0.15], ['spine_03', 0.2], ['neck_01', 0.25], ['
 // os retouchés après l'animation (inclinaison, regard, appuis) : leur pose animée est remise avant chaque image (0.8.24 :
 // le moteur d'animation ne réécrit un os que si sa valeur a changé ; sur un joueur immobile, la retouche s'ajoutait à
 // elle-même d'image en image et le joueur finissait plié en deux)
-const RETOUCHED = ['spine_01', 'spine_02', 'spine_03', 'neck_01', 'head', 'thigh_l', 'calf_l', 'foot_l', 'thigh_r', 'calf_r', 'foot_r'];
+const RETOUCHED = ['spine_01', 'spine_02', 'spine_03', 'neck_01', 'head', 'thigh_l', 'calf_l', 'foot_l', 'thigh_r', 'calf_r', 'foot_r', 'upperarm_l', 'lowerarm_l', 'hand_l', 'upperarm_r', 'lowerarm_r', 'hand_r'];
+const smooth = (x) => { const t = Math.max(0, Math.min(1, x)); return t * t * (3 - 2 * t); };
 
 let loading = null;
 let A = null; // ressources prêtes : { base, clips, gaits, marks, mask (pilosité), skins (trois peaux) }
 export const players3dReady = () => !!A;
+export const players3dAssets = () => A; // inspection (bancs d'essai)
+// inspection (bancs d'essai) : position des os d'un clip à un instant, modèle seul à l'origine (m, il regarde +z)
+export const players3dProbe = (name, t, bones) => { const r = probeAt(name, t); return Object.fromEntries(bones.map((n) => [n, wpos(r, n).toArray().map((x) => +x.toFixed(3))])); };
 export function loadPlayers3D() {
   if (!loading) loading = build().catch((e) => { console.warn('joueurs 3D indisponibles', e); loading = null; throw e; });
   return loading;
@@ -121,6 +125,13 @@ async function build() {
   A.marks = {
     Pass: footPeak('Pass'), Shot: footPeak('Shot'), Save_1: handPeak('Save_1'), Save_1_M: handPeak('Save_1_M'),
   };
+  // contact de la frappe (1.0.18, chantier du PDG : « les joueurs frappent à côté du ballon ») : au contact du geste
+  // capté, où est le pied qui frappe, et où doit être le ballon (devant le coup de pied, dans le sens du pied) ; le moteur
+  // y pose le ballon avant la frappe, et la jambe s'y ajuste au contact
+  A.contact = { Pass: kickContact('Pass', A.marks.Pass), Shot: kickContact('Shot', A.marks.Shot) };
+  A.marks.Pass = A.contact.Pass.t; A.marks.Shot = A.contact.Shot.t; // le moteur cale son contact sur le vrai
+  // après la frappe, le joueur repart (1.0.18 : il restait trois secondes dans la fin du geste capté, planté)
+  A.ends = { ...(A.ends || {}), Pass: A.marks.Pass + 0.5, Shot: A.marks.Shot + 0.65 };
   // arrêts du gardien (Mixamo, 0.8.24) : l'instant du contact dans chaque geste ; plongeon : la main la plus loin du
   // corps ; prise : les mains qui se rejoignent sur le ballon ; prise haute, saut manqué : les mains au plus haut ;
   // arrêt du corps : le bassin au plus bas
@@ -129,6 +140,17 @@ async function build() {
   const lowT = (n) => probe(n, (r, t) => ({ t, y: wpos(r, 'pelvis').y })).slice(8).reduce((b, x) => (x.y < b.y ? x : b), { y: 9, t: 0 }).t;
   for (const [n, f] of [['GK_Dive_L', reachT], ['GK_Dive_R', reachT], ['GK_Catch_Low', meetT], ['GK_Catch_Mid', meetT], ['GK_Catch_High', handPeak], ['GK_Block_L', lowT], ['GK_Block_R', lowT], ['GK_Miss', handPeak], ['Foul_Tackle', lowT]]) {
     if (A.clips[n]) A.marks[n] = f(n);
+  }
+  // les mains au contact de chaque arrêt (1.0.18) : où sont-elles par rapport au gardien (prise : entre les deux mains ;
+  // plongeon, arrêt du corps : la main qui va le plus loin) ; le moteur place le gardien pour qu'elles soient au ballon
+  A.saveHands = {};
+  for (const n of ['GK_Dive_L', 'GK_Dive_R', 'GK_Catch_Low', 'GK_Catch_Mid', 'GK_Catch_High', 'GK_Block_L', 'GK_Block_R', 'GK_Miss', 'Save_1', 'Save_1_M']) {
+    if (!A.clips[n] || A.marks[n] === undefined) continue;
+    const r = probeAt(n, A.marks[n]);
+    const hl = wpos(r, 'hand_l'); const hr = wpos(r, 'hand_r');
+    const both = n.startsWith('GK_Catch') || n.startsWith('GK_Block');
+    const h = both ? hl.clone().add(hr).multiplyScalar(0.5) : (Math.abs(hl.x) > Math.abs(hr.x) ? hl : hr);
+    A.saveHands[n] = { fwd: h.z, left: h.x, up: h.y };
   }
   // la faute (0.8.24, audit de la charte : le porteur ne tombait jamais) : le tacle glissé touche quand le corps est au
   // plus bas ; la chute du porteur part au moment où son bassin plonge vers le sol (le trébuchement capté avant, une
@@ -144,7 +166,7 @@ async function build() {
     // pas à cette chute sur le ventre : 114° d'écart, le fondu passait par la position debout)
     const low = y.slice(8).reduce((m, x) => Math.min(m, x.y), 9);
     const rest = y.filter((x) => x.y < low + 0.1 * (y[0].y - low)).pop();
-    A.ends = { Foul_Fall: rest ? rest.t : A.clips.Foul_Fall.duration };
+    A.ends = { ...(A.ends || {}), Foul_Fall: rest ? rest.t : A.clips.Foul_Fall.duration };
   }
   return A;
 }
@@ -183,6 +205,38 @@ function footPeak(name) {
     }
   }
   return best.t;
+}
+// Où frappe le pied au contact d'un geste de frappe : le pied le plus vif à cet instant, le point du ballon (son centre)
+// juste devant le coup de pied dans le sens du mouvement du pied, et, pour la jambe, ce centre vu depuis l'os de la pointe
+// du pied. Repère du modèle à l'origine (il regarde +z, sa gauche est +x), en mètres, taille de base.
+function kickContact(name, peak) {
+  const dt = 1 / 120;
+  const at = (tt) => { const r = probeAt(name, tt); return { l: wpos(r, 'ball_l'), r: wpos(r, 'ball_r'), al: wpos(r, 'foot_l'), ar: wpos(r, 'foot_r') }; };
+  const p0 = at(Math.max(0, peak - dt)); const p1 = at(peak);
+  const foot = p1.r.distanceTo(p0.r) >= p1.l.distanceTo(p0.l) ? 'r' : 'l';
+  // le contact : le bas de la course du pied qui frappe, juste avant son pic de vitesse (au pic, le pied est déjà dans
+  // l'accompagnement, 30 à 40 cm plus loin et en train de remonter)
+  let t = peak; let low = Infinity;
+  for (let tt = peak - 0.16; tt <= peak + 0.005; tt += 1 / 240) { const y = at(tt)[foot].y; if (y < low) { low = y; t = tt; } }
+  const a0 = at(Math.max(0, t - dt)); const a1 = at(t);
+  const toe = a1[foot]; const ankle = a1[foot === 'r' ? 'ar' : 'al'];
+  const dir = toe.clone().sub(a0[foot]); dir.y = 0;
+  if (dir.lengthSq() < 1e-8) dir.set(0, 0, 1);
+  dir.normalize();
+  // le ballon touché par le cou-de-pied : à mi-chemin entre la cheville et la pointe, poussé d'un rayon (11 cm) dans le
+  // sens du pied, posé au sol
+  const mid = toe.clone().add(ankle).multiplyScalar(0.5);
+  const c = mid.clone().addScaledVector(dir, 0.11 + 0.02); c.y = 0.11;
+  return { foot, t, fwd: c.z, left: c.x, ball: c, fromToe: c.clone().sub(toe), dir: [dir.x, dir.z] };
+}
+function probeAt(name, t) { // un clip à un instant donné, sur un modèle seul à l'origine (modèle réutilisé)
+  if (!probeAt.root) { probeAt.root = SkeletonUtils.clone(A.base.scene); probeAt.mixer = new THREE.AnimationMixer(probeAt.root); }
+  const { root, mixer } = probeAt;
+  mixer.stopAllAction();
+  mixer.clipAction(A.clips[name]).reset().play();
+  mixer.setTime(t);
+  root.updateMatrixWorld(true);
+  return root;
 }
 function handPeak(name) { // le plongeon : la main au plus haut
   const s = probe(name, (r, t) => ({ t, y: Math.max(wpos(r, 'hand_l').y, wpos(r, 'hand_r').y) }));
@@ -622,6 +676,89 @@ export function createPlayers3D(parent, max = 22) {
       L.thigh.updateMatrixWorld(true);
     });
   }
+  // IK à deux os (1.0.18) : amène l'os du bout (cheville, poignet) en T (monde), le genou ou le coude gardant le plan
+  // où il plie ; le bout garde son orientation monde ; w dose le geste capté et la correction.
+  const iq = [new THREE.Quaternion(), new THREE.Quaternion(), new THREE.Quaternion()];
+  function twoBone(top, mid, end, T, w, poleHint = null) {
+    if (w <= 0.001) return;
+    iq[0].copy(top.quaternion); iq[1].copy(mid.quaternion); iq[2].copy(end.quaternion);
+    const Hp = top.getWorldPosition(V()); const K = mid.getWorldPosition(V()); const E = end.getWorldPosition(V());
+    const l1 = K.distanceTo(Hp); const l2 = E.distanceTo(K);
+    const d = Math.max(1e-5, Math.min(T.distanceTo(Hp), l1 + l2 - 1e-5));
+    const dir = T.clone().sub(Hp).normalize();
+    const along = (l1 * l1 - l2 * l2 + d * d) / (2 * d);
+    const h = Math.sqrt(Math.max(0, l1 * l1 - along * along));
+    const pole = (poleHint ? poleHint.clone() : K.clone().sub(Hp)); pole.sub(dir.clone().multiplyScalar(pole.dot(dir)));
+    if (pole.lengthSq() < 1e-12) pole.set(0, 1, 0);
+    pole.normalize();
+    const K2 = Hp.clone().addScaledVector(dir, along).addScaledVector(pole, h);
+    const eq = end.getWorldQuaternion(new THREE.Quaternion());
+    aim(top, K.clone().sub(Hp), K2.clone().sub(Hp));
+    const K3 = mid.getWorldPosition(V()); const E3 = end.getWorldPosition(V());
+    aim(mid, E3.sub(K3), T.clone().sub(K3));
+    end.quaternion.copy(end.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(eq));
+    if (w < 1) { top.quaternion.slerpQuaternions(iq[0], top.quaternion, w); mid.quaternion.slerpQuaternions(iq[1], mid.quaternion, w); end.quaternion.slerpQuaternions(iq[2], end.quaternion, w); }
+    top.updateMatrixWorld(true);
+  }
+  // Contact de la frappe (1.0.18, chantier du PDG : « les joueurs frappent à côté du ballon ») : autour du contact du
+  // geste (0,16 s avant, 0,1 s après), le pied qui frappe va au ballon (la pointe là où le geste capté l'aurait mise par
+  // rapport au ballon) ; jamais au-delà d'une jambe tendue.
+  function strikeIK(p) {
+    const c = p.kickC;
+    if (!c || !look) return;
+    if (!p.shot || p.shot.getClip().name !== c.name) { p.kickC = null; return; }
+    const x = p.shot.time - c.t;
+    const w = x < -0.16 || x > 0.1 ? 0 : x < 0 ? smooth(1 + x / 0.16) : smooth(1 - x / 0.1);
+    if (w <= 0.001) return;
+    const L = p.legs[c.foot === 'l' ? 0 : 1];
+    const s = p.root.scale.x;
+    const off = A.contact[c.name].fromToe.clone().applyQuaternion(p.root.quaternion).multiplyScalar(s);
+    const toeT = look.clone().sub(off); // la pointe là où elle touche ce ballon
+    const toe = L.ball.getWorldPosition(V()); const ankle = L.foot.getWorldPosition(V());
+    const T = toeT.add(ankle.sub(toe)); // la cheville qui y porte la pointe
+    const hip = L.thigh.getWorldPosition(V());
+    const reach = (L.calf.getWorldPosition(V()).distanceTo(hip) + L.foot.getWorldPosition(V()).distanceTo(L.calf.getWorldPosition(V()))) * 1.02;
+    const far = T.distanceTo(hip) - reach;
+    const k = far > 0 ? Math.max(0, 1 - far / (0.25 * s)) : 1; // ballon hors de portée : la correction s'efface
+    twoBone(L.thigh, L.calf, L.foot, T, w * k);
+  }
+  // Les mains du gardien (1.0.18, chantier du PDG : « le ballon le frappe au milieu du corps ») : autour du contact de
+  // l'arrêt, les gants vont au ballon (les deux mains de part et d'autre pour une prise, la main la plus proche derrière le
+  // ballon pour une parade) ; ensuite le ballon capté reste entre ses gants (ballAnchor).
+  const sideV = V(); const toBall = V();
+  function keeperIK(p) {
+    const c = p.saveC;
+    if (!c || !look || !p.keeper) return;
+    if (!p.shot || p.shot.getClip().name !== c.name) { p.saveC = null; return; }
+    const x = p.shot.time - c.t;
+    const w = x < -0.22 || x > 0.12 ? 0 : x < 0 ? smooth(1 + x / 0.22) : smooth(1 - x / 0.12);
+    if (w <= 0.001) return;
+    const s = p.root.scale.x;
+    const R = 0.011; // rayon du ballon (unités du jeu : 11 cm)
+    const h = p.ag.h;
+    sideV.set(-Math.sin(h), 0, Math.cos(h)); // sa droite
+    for (const k of [0, 1]) {
+      const sfx = k ? '_r' : '_l';
+      const up = p.root.getObjectByName(`upperarm${sfx}`); const lo = p.root.getObjectByName(`lowerarm${sfx}`); const ha = p.root.getObjectByName(`hand${sfx}`);
+      if (!up || !lo || !ha) continue;
+      const hp = ha.getWorldPosition(V());
+      let T;
+      if (c.catch) { // prise : une main de chaque côté du ballon, un peu derrière
+        T = look.clone().addScaledVector(sideV, (k ? 1 : -1) * (R + 0.035 * s)).addScaledVector(V().set(Math.cos(h), 0, Math.sin(h)), -0.02 * s);
+      } else { // parade : la main derrière le ballon, côté corps
+        toBall.subVectors(look, hp); const dd = toBall.length() || 1;
+        T = look.clone().addScaledVector(toBall, -(R + 0.03 * s) / dd);
+        // la main la plus loin du ballon ne force pas
+        const other = p.root.getObjectByName(`hand${k ? '_l' : '_r'}`).getWorldPosition(V());
+        if (other.distanceTo(look) < hp.distanceTo(look) - 0.05 * s) continue;
+      }
+      const sh = up.getWorldPosition(V());
+      const reach = (lo.getWorldPosition(V()).distanceTo(sh) + ha.getWorldPosition(V()).distanceTo(lo.getWorldPosition(V()))) * 1.05;
+      const far = T.distanceTo(sh) - reach;
+      const kk = far > 0 ? Math.max(0, 1 - far / (0.35 * s)) : 1;
+      twoBone(up, lo, ha, T, w * kk, V().set(0, -1, 0).addScaledVector(sideV, k ? 0.5 : -0.5));
+    }
+  }
   // gestes d'après l'état de l'agent du moteur (matchplay.js)
   function drive(p, ag, dt) {
     // vitesse réelle : le déplacement de l'agent (ralentis compris), jamais une consigne ; un saut de position (changement
@@ -641,7 +778,9 @@ export function createPlayers3D(parent, max = 22) {
     p.speed = d > 3 ? v : p.speed + (v - p.speed) * Math.min(1, dt * 12);
     if (ag.kick > 0 && p.prevKick === 0) { // frappe : le contact du clip tombe au contact du moteur
       const name = ag.kickKind === 'shot' ? 'Shot' : 'Pass';
-      gesture(p, name, { at: A.marks[name] - KICK_CONTACT * KICK_TIME, fade: 0.12 });
+      // (la frappe démarre en cours de geste quand le moteur la lance tard : le contact reste calé)
+      gesture(p, name, { at: A.marks[name] - (KICK_CONTACT - Math.min(KICK_CONTACT, ag.kick)) * KICK_TIME, fade: 0.12 });
+      p.kickC = { name, foot: A.contact[name].foot, t: A.marks[name] };
     }
     p.prevKick = ag.kick || 0;
     const pose = Math.floor(ag.pose || 0);
@@ -674,6 +813,7 @@ export function createPlayers3D(parent, max = 22) {
       const name = saveClip(ag);
       const off = (A.marks[name] ?? 0) - (ag.saveLead || 0);
       if (off >= 0) gesture(p, name, { at: off, fade: 0.15 }); else p.pending = { name, wait: -off };
+      p.saveC = { name, t: A.marks[name] ?? 0, catch: ag.saveKind === 1 };
     } else if (pose === 2 && p.pose !== 2 && !ag.saveId) {
       const name = (ag.lean || 0) >= 0 ? 'Save_1' : 'Save_1_M';
       gesture(p, name, { at: A.marks[name] - 0.32, fade: 0.1 });
@@ -747,8 +887,11 @@ export function createPlayers3D(parent, max = 22) {
       p.root.position.set(ag.x, y + (ag.lift || 0), ag.z);
       p.root.rotation.set(0, Math.PI / 2 - ag.h, 0); // le modèle regarde +z ; le cap h du moteur vise (cos h, sin h)
     },
-    commit(count) {
-      const dt = Math.min(0.05, clock.getDelta()) * ts;
+    commit(count, dtIn) {
+      // pas de temps du moteur du match quand il le donne (1.0.18 : les gestes avancent au même pas que l'action, y compris
+      // dans les captures et les bancs d'essai qui jouent plus vite que le temps réel) ; sinon l'horloge
+      const real = clock.getDelta();
+      const dt = Math.min(0.05, dtIn ?? real) * ts;
       for (let i = 0; i < slots.length; i++) {
         const p = slots[i];
         if (!p) continue;
@@ -762,7 +905,36 @@ export function createPlayers3D(parent, max = 22) {
         bodyLean(p, p.ag, dt);
         gaze(p, p.ag, dt);
         footIK(p, dt);
+        strikeIK(p);
+        keeperIK(p);
+        if (p.keeper) { // le ballon entre ses gants : le milieu des deux mains, un peu devant les paumes
+          const hl = p.root.getObjectByName('hand_l'); const hr = p.root.getObjectByName('hand_r');
+          if (hl && hr) {
+            const a = (p.anchor ||= V());
+            a.copy(hl.getWorldPosition(V())).add(hr.getWorldPosition(V())).multiplyScalar(0.5);
+            a.x += Math.cos(p.ag.h) * 0.004; a.z += Math.sin(p.ag.h) * 0.004;
+          }
+        }
       }
+    },
+    // point du ballon au contact d'une frappe du joueur i (geste capté), dans son repère : devant (fwd), à droite (right),
+    // en unités du jeu, à sa taille ; null sans joueurs réalistes
+    kickSpot(i, name) {
+      const p = slots[i]; const c = A.contact?.[name];
+      if (!p || !c) return null;
+      const s = 0.1 * (p.height / BASE_H);
+      return { fwd: c.fwd * s, right: -c.left * s };
+    },
+    // le ballon tenu par le gardien i : entre ses gants (position monde) ; null sans joueurs réalistes
+    ballAnchor(i) { const p = slots[i]; return p && p.anchor ? p.anchor : null; },
+    // l'arrêt que fera le gardien i (agent ag : saveSide, saveH, saveKind) : ses mains au contact, dans son repère
+    // (devant, à droite, en haut), en unités du jeu ; null sans joueurs réalistes
+    saveHand(i, ag) {
+      const p = slots[i]; if (!p || !A.saveHands) return null;
+      const n = saveClip(ag); const c = A.saveHands[n];
+      if (!c) return null;
+      const s = 0.1 * (p.height / BASE_H);
+      return { fwd: c.fwd * s, right: -c.left * s, up: c.up * s, clip: n };
     },
     dispose() {
       for (const p of slots) if (p) { parent.remove(p.root); p.mixer.stopAllAction(); for (const o of p.meshes) { o.material.dispose(); if (o.geometry !== o.userData.g0) o.geometry.dispose(); } }
@@ -796,8 +968,11 @@ export function createPlayersAuto(parent, max, makeProcedural) {
     reset: () => cur.reset?.(),
     setIdentity(i, d) { ids[i] = d; cur.setIdentity?.(i, d); },
     setLook: (...a) => cur.setLook?.(...a),
+    kickSpot: (...a) => cur.kickSpot?.(...a) ?? null,
+    saveHand: (...a) => cur.saveHand?.(...a) ?? null,
+    ballAnchor: (...a) => cur.ballAnchor?.(...a) ?? null,
     setAgent: (...a) => cur.setAgent(...a),
-    commit: (n) => cur.commit(n),
+    commit: (n, dt) => cur.commit(n, dt),
     dispose() { gone = true; cur.dispose(); },
   };
 }

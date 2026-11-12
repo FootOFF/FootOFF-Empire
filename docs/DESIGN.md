@@ -1137,6 +1137,38 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Le ballon, le pied, les gants (1.0.18)
+
+Demande du PDG (2026-11-11, avant le championnat entre amis du vendredi) : « je vois les joueurs frapper à côté du
+ballon… le gardien ne capte pas la balle de façon réaliste, le ballon le frappe bizarrement au milieu du corps. La
+physique n'est pas bonne. » Ses choix : gardien selon la frappe, ballon réaliste, publication au fil de l'eau.
+- Mesure d'avant (48 temps forts, joueurs réalistes, caméra libre, banc de la session) : au départ du ballon, pied à
+  26 cm du ballon en médiane (jusqu'à 1,11 m ; 124 départs sur 150 à plus de 10 cm) ; aux arrêts, la main la plus proche
+  à 0,52 à 1,75 m du ballon (médiane 1,32 m), le ballon capté ramené au ventre (point fixe à 90 cm, devant le corps).
+- Ballon physique (`ballphysics.js`) : pesanteur, air (Cd 0,25), effet Magnus (frappe enroulée : jusqu'à 70 cm de courbe
+  à mi-chemin sur 20 m), rotation qui s'use, rebonds amortis (0,74 m après une chute de 2 m), glissé puis roulement
+  (une passe à 12 m/s roule 44 m), montants et barre (cylindres de 12 cm), filet qui freine et retient. Chaque passe et
+  chaque frappe sont résolues (`solveLaunch`) pour arriver au point et à l'instant voulus par le moteur : l'issue ne
+  change pas. Le point où le tir croise la ligne du gardien vient de la vraie trajectoire.
+- Contact du pied : le point du ballon au contact de chaque geste capté (`kickContact` : le bas de la course du pied qui
+  frappe, juste avant son pic de vitesse ; la frappe touche du pied gauche, la passe du droit) ; pendant l'élan, la
+  dernière touche pousse le ballon jusque-là (`armStrike`, `strikeSpot`), le tireur d'un coup de pied arrêté se place
+  pour que son pied tombe sur le ballon, qui ne bouge pas ; le ballon part dans l'image même du contact (`contactNow`) ;
+  la jambe s'ajuste au ballon autour du contact (IK à deux os, `strikeIK`). Le ballon conduit ne traîne plus derrière le
+  pied (la cible anticipe la course).
+- Gardien selon la frappe : forte ou loin de lui (plus de 1,35 m, ou plus de 0,7 m et plus de 22 m/s, ou plus haut que
+  2,05 m) il plonge et repousse, sur le côté assez fort pour sortir en corner, ou par-dessus la barre si le tir est haut
+  et central ; sinon il capte. Il se détend pour que ses mains, au contact de son geste (`saveHands` : entre les deux
+  mains pour une prise, la main tendue pour un plongeon), soient là où passe le ballon ; les gants vont au ballon autour
+  du contact (`keeperIK`) ; le ballon s'arrête au point de contact et le ballon capté reste entre ses gants
+  (`ballAnchor`).
+- Les gestes avancent au pas du moteur (`commit(n, dt)`), ce qui rend les captures accélérées fidèles ; après une passe
+  ou une frappe, le joueur repart (fin du geste 0,5 à 0,65 s après le contact, au lieu de 3 s).
+- Mesure d'après (mêmes 48 temps forts) : pied-ballon 3 cm en médiane (passes 3 cm, frappes 2 cm ; 149 départs sur 153 à
+  10 cm ou moins), le pied traverse le ballon ; aux arrêts, aucun ballon plus près du ventre que des gants (4 à 9 sur 12
+  avant), gants à 32 cm de la course du ballon en médiane (deux au contact). Banc `tools/sim/temps-forts.mjs` : 98 temps
+  forts, aucun raté ; `pronostic.mjs` inchangé.
+
 ## Temps forts façon retransmission (0.8.7)
 
 Demande du PDG (2026-10-28) : « le ballon se téléporte trop, il y a trop d'incohérences, les actions ne sont pas

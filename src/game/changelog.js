@@ -5,6 +5,15 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.18', date: '2026-11-12', title: t('Le ballon, le pied, les gants'),
+    items: [
+      t('Un vrai ballon dans les temps forts : freiné par l’air, il s’enroule sur les frappes brossées, rebondit et roule sur l’herbe, frappe les montants et finit au fond des filets.'),
+      t('Chaque passe et chaque frappe partent au contact du pied : le joueur ajuste sa dernière touche et frappe vraiment le ballon, au lieu de frapper à côté.'),
+      t('Le gardien joue avec ses mains : une frappe molle ou sur lui, il la capte et la garde dans ses gants ; une frappe forte ou dans un coin, il plonge et la repousse en corner ou par-dessus la barre.'),
+      t('Après une passe ou une frappe, le joueur repart aussitôt au lieu de rester planté dans la fin de son geste.'),
+    ],
+  },
+  {
     version: '1.0.17', date: '2026-10-31', title: t('Écran titre stable'),
     items: [
       t('Sur ordinateur, dans une fenêtre qui n’est pas en plein écran, le logo et le menu de l’écran titre ne sautillent plus : la mise en page s’ajuste une fois pour toutes à la hauteur de la fenêtre.'),

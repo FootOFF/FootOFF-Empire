@@ -76,8 +76,44 @@ function cam(mi, dt) {
   camera.position.copy(target).addScaledVector(tvDir, dist);
   camera.lookAt(target);
 }
+// caméra rapprochée des bancs d'essai (captures, mesures du contact) : 'ball' suit le ballon de côté, à hauteur
+// d'homme ; 'keeper' regarde le gardien qui défend depuis le côté du but. Jamais utilisée par le jeu.
+const close = new THREE.Vector3();
+function closeCam(mode, dt, snap) {
+  const b = squad.ball;
+  let tx = b.x, ty = 0.06 + b.y * 0.5, tz = b.z;
+  if (mode === 'keeper') {
+    const dbg = squad.debug;
+    const k = dbg ? squad.agents[dbg.keeper] : null;
+    if (k) { tx = k.x * 0.7 + b.x * 0.3; tz = k.z * 0.7 + b.z * 0.3; ty = 0.09; }
+  }
+  const want = new THREE.Vector3(tx, ty, tz);
+  close.lerp(want, snap ? 1 : 1 - Math.exp(-dt * 6));
+  camera.position.set(close.x + (mode === 'keeper' ? -Math.sign(close.x || 1) * 0.55 : 0), close.y + 0.16, close.z + 0.62);
+  camera.lookAt(close);
+}
 let id = 0;
 const NAMES = ['G1', 'D1', 'D2', 'D3', 'D4', 'M1', 'M2', 'M3', 'A1', 'A2', 'A3'];
+// pas à pas pour les captures vidéo et les mesures (outil de développement) : hlStart pose le temps forts, hlStep avance
+// d'une image et rend l'image si demandé ; window.hlProbe(t, squad, scene), s'il existe, est appelé à chaque image
+window.hlScene = scene;
+window.hlSquad = squad;
+let stepT = 0, stepSpec = null, stepCam = 'tv';
+window.hlStart = (e, opts = {}) => {
+  stepSpec = { id: ++id, e, type: opts.type || 'big', half: opts.half || 1, replay: opts.replay ?? true, speed: 1, homeNames: NAMES, awayNames: NAMES.map((n) => `X${n}`), formation: opts.formation || '433', awayFormation: opts.awayFormation || '442', offHome: [], offAway: [] };
+  Object.assign(matchFeed, { hl: stepSpec, hlAck: 0, hlReveal: 0, hlDone: 0, hlPhase: '' });
+  stepT = 0; stepCam = opts.cam || 'tv';
+  return stepSpec.id;
+};
+window.hlStep = (dt = 1 / 30, render = true, quality = 0.82) => {
+  const mi = squad.update(dt, stepT);
+  stepT += dt;
+  if (stepCam === 'tv') { if (mi) cam(mi, dt); } else closeCam(stepCam, dt, stepT <= dt * 1.5 || mi?.cut);
+  window.hlProbe?.(stepT, squad, scene);
+  const out = { t: +stepT.toFixed(3), phase: matchFeed.hlPhase, reveal: matchFeed.hlReveal === stepSpec?.id, done: matchFeed.hlDone === stepSpec?.id };
+  if (render) { renderer.render(scene, camera); out.url = canvas.toDataURL('image/jpeg', quality); }
+  return out;
+};
 // joue un temps fort et rend les images demandées (secondes depuis le début), plus l'instant décisif
 window.runHL = (e, times, opts = {}) => {
   const spec = { id: ++id, e, type: opts.type || 'big', half: opts.half || 1, replay: opts.replay ?? true, speed: 1, homeNames: NAMES, awayNames: NAMES.map((n) => `X${n}`), formation: opts.formation || '433', awayFormation: opts.awayFormation || '442', offHome: [], offAway: [] };
