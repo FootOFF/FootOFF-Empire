@@ -1137,6 +1137,60 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Gardiens, centres et contacts (1.0.25)
+
+Demande du PDG (12/11, matin) : lever la limite des 15 s, travailler la trajectoire du ballon, le contrôle, « que le pied ne
+traverse plus le ballon », la prise du gardien (« le ballon recalcule sa position à la dernière seconde pour se placer dans
+ses mains »), les centres « super hauts » ; viser le niveau des jeux de football 3D publics. Audit complet préalable en huit
+angles (ballon, gardien, contact pied-ballon, déplacements, logique collective, durée, caméra, références réelles), chacun
+mesuré sur bancs (node, joueurs 3D compris).
+
+- **IK dosé réparé** (`players3d.js`, `twoBone`) : `slerpQuaternions(a, b)` copie `a` dans le quaternion avant de lire `b` ;
+  appelé avec `b` = ce même quaternion, il rendait le geste capté tel quel. Toute correction dosée sous 100 % était annulée
+  depuis la 1.0.18 : les mains du gardien n'allaient jamais au ballon (0,000 m de déplacement mesuré), le contrôle de la
+  1.0.23 n'a jamais agi, la frappe n'était corrigée qu'à l'image exacte du contact.
+- **Prise du gardien** : geste choisi sur la hauteur du centre du ballon comparée aux mains de chaque geste au contact
+  (prise basse 55 cm, mi-hauteur 117, haute 222 ; arrêt du corps 31 ; plongeon bas 74, haut 108 — plongeons miroirs
+  `GK_DiveLo_R`, `GK_DiveHi_L`) ; envol (`H.dive.lift`, 70 cm au plus) quand le ballon passe plus haut que les mains du
+  plongeon ; IK des bras dès 0,3 s avant le contact, gardé 0,35 s après une prise ; le geste en attente garde son contact.
+  Ballon capté : posé après `players.commit` à l'écart mesuré au contact, résorbé en 0,1 s (`b.grip`), puis il suit les
+  gants (avant : tiré à 30/s vers l'ancre de l'image d'avant). Après l'arrêt, le gardien ne tourne plus sur lui-même ; il
+  regarde passer les tirs à plus de 3 m ou au-dessus de la barre ; parade : vitesse de sortie choisie d'abord (7-14 m/s).
+  Mesures 3D (36 arrêts) : ballon-milieu des gants à la prise 33 → 7 cm (médiane), glissement dans les gants 38 → 1 cm par
+  image, gant-ballon à la parade 22 → 3 cm.
+- **Ballon selon la vitesse du pied** (`ballphysics.solveBySpeed`) : un ballon aérien part à une vitesse de coup de pied
+  et son temps de vol en découle (branche tendue) ; `solveLaunch(..., { air })` atteint la cible en vol (plus de « lob »
+  rasant qui rebondit) ; rétro (backspin) sur centres, lobs, dégagements. Centres 25-33 m/s, sommet plafonné à 4,5 m ;
+  `fitCross` ajuste le point de rencontre et la vitesse (jusqu'à 22 m/s si le sommet reste sous 4 m) à la course de
+  l'attaquant, qui part dès l'élan du centreur et lit la vraie trajectoire en vol (point à hauteur de tête atteignable).
+  Frappes : vitesse de pied (placée 18-24 m/s, appuyée 24-30, en force 30-34 ; tête 11-16), temps de vol par point fixe.
+  Passes au sol plafonnées à 25 m/s. Poteau visé par l'extérieur ; un ballon libre qui n'est pas un but ne franchit plus
+  la ligne entre les montants ; panneaux publicitaires ; rebond perdu une fois sur cinq réparé.
+- **Contact du pied** : `kickContact` cherche le contact parmi les instants où le pied file vers l'avant (la passe était
+  calée 0,11 s trop tôt, pied posé, ballon tiré à travers le tibia) et place le ballon au ras de la chaussure (sommets de
+  la peau animée) ; `strikeIK` décale tout le geste de l'écart du contact et vise ensuite le point du contact ; le contact
+  tombe dans l'image où le geste l'atteint, le ballon ne vole que la part de l'image qui suit (`b.lag`) ; le geste 3D
+  n'a plus une image d'avance. Pied fort par joueur (un sur quatre gaucher), gestes miroirs `Shot_R`, `Pass_L`. Ballon
+  conduit devant la foulée (57-87 cm), du côté du pied fort ; un contrôle ne l'aspire plus plus vite que le joueur. Tacle
+  glissé à la portée mesurée (1,12 m).
+- **Durée** : plus de conduite écourtée après 8,5 s ni de fermeture d'angle abandonnée après 11 s ; budget souple 22 s ;
+  plus de relais ; filet de sécurité de match.jsx sur le battement de la scène (`matchFeed.hlBeat`, 15 s sans image) et
+  2 min au plus ; issue forcée à `H.est + 14`.
+- **Déplacements** (`motion.js`) : rotation avec inertie (30 rad/s², 60 en frappe) au lieu de pivots à 945°/s ; arrivée à
+  freinage constant (4 m/s²) au lieu d'une approche exponentielle ; phase de foulée fixe par joueur (rejeu identique).
+- **Ombres** : tache douce sous chaque joueur (instanciée, élargie au saut) et sous le ballon (pâlit et s'écarte en
+  montant) ; textures calculées (`DataTexture`), aucune lumière ni carte d'ombres ajoutée.
+- Plafonds de hauteur : centre 4,5 m, passe lobée 5 m (le pied frappe plus fort, 33 m/s au plus) ; le centre part de
+  l'angle de la surface vers le point de penalty (de la touche au second poteau, 39 m, il montait à 6 m).
+- Mesures 3D (`scratchpad/empire/mesure3d.mjs`, 48 temps forts, joueurs réalistes) : images où le pied ou le tibia entre
+  de plus de 2 cm dans le ballon 472 → 115 (avant la frappe 293 → 24) ; prise : ballon-milieu des gants 9-10 cm,
+  glissement 2 cm ; parade : gant-ballon 3 cm.
+- Bancs : `tools/sim/temps-forts.mjs` 98/98 ; `tmp/robuste.mjs 5` 480 temps forts, 0 forcé, instant décisif médiane
+  9,8 s, max 18,5 s ; `tmp/finitions.mjs` centres 22 têtes sur 23.
+- Reste à faire (audit) : caméra du téléphone (cadrage dynamique : ballon, receveur, but, gardien), défense de la surface
+  (ligne qui recule, marquage des appels, corners), vie après l'issue (rebond, relance du gardien), premier contrôle et
+  conduite par touches, plongeons avec le déplacement capté, filet incliné.
+
 ## Quinze secondes au plus (1.0.24)
 
 - Banc de robustesse `tmp/robuste.mjs` (hors dépôt) : 480 temps forts (12 actions × 4 issues × 2 côtés × 5 graines,

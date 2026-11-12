@@ -84,6 +84,44 @@ export function createMatchScene(parent) {
   card.renderOrder = 10;
   parent.add(card);
 
+  // ombres au sol (1.0.25, audit de la caméra : aucune ombre dans le match, les joueurs flottaient et la hauteur d'un ballon
+  // aérien ne se lisait pas) : une tache douce sous chaque joueur (plus large et plus pâle quand il saute) et sous le ballon
+  // (qui s'éloigne de lui en montant) ; textures calculées, aucun canvas (bancs sous node)
+  const blobTex = (() => {
+    const n = 64, d = new Uint8Array(n * n * 4);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const r = Math.hypot(x + 0.5 - n / 2, y + 0.5 - n / 2) / (n / 2);
+      const a = r >= 1 ? 0 : r < 0.45 ? 0.62 - 0.24 * (r / 0.45) : 0.38 * (1 - (r - 0.45) / 0.55);
+      d[(y * n + x) * 4 + 3] = Math.round(a * 255);
+    }
+    const t = new THREE.DataTexture(d, n, n); t.needsUpdate = true; return t;
+  })();
+  const shadowGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+  const shadowMat = new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, opacity: 0.5, depthWrite: false, color: 0x000000, fog: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  const shadows = new THREE.InstancedMesh(shadowGeo, shadowMat, N);
+  shadows.renderOrder = 1; shadows.frustumCulled = false; shadows.visible = false;
+  parent.add(shadows);
+  const ballShadowMat = shadowMat.clone();
+  const ballShadow = new THREE.Mesh(shadowGeo, ballShadowMat);
+  ballShadow.renderOrder = 1; ballShadow.visible = false;
+  parent.add(ballShadow);
+  const shM = new THREE.Matrix4(), shQ = new THREE.Quaternion(), shP = new THREE.Vector3(), shS = new THREE.Vector3();
+  function placeShadows(show) {
+    shadows.visible = ballShadow.visible = show;
+    if (!show) return;
+    for (let i = 0; i < N; i++) {
+      const a = agents[i];
+      const k = S.out[i] ? 0 : 0.07 * (1 + (a.lift || 0) * 4);
+      shP.set(a.x + 0.006, S.baseY + 0.0015, a.z + 0.006); shS.set(k, 1, k);
+      shadows.setMatrixAt(i, shM.compose(shP, shQ, shS));
+    }
+    shadows.instanceMatrix.needsUpdate = true;
+    const y = Math.max(0, b.y);
+    ballShadow.position.set(b.x + 0.004 + y * 0.35, S.baseY + 0.0015, b.z + 0.004 + y * 0.35);
+    ballShadow.scale.setScalar(0.026 * (1 + y * 1.5));
+    ballShadowMat.opacity = 0.6 * clamp(1 - y / 0.6, 0.25, 1);
+  }
+
   const agents = Array.from({ length: N }, () => Object.assign(new Agent(0, 0, 0), { lift: 0, roll: 0 }));
   const S = {
     baseY: 0.006,
@@ -272,7 +310,7 @@ export function createMatchScene(parent) {
   function put(i, u, v, faceU = GOAL_X, faceV = 0) {
     const a = agents[i];
     [a.x, a.z] = at(u, v);
-    Object.assign(a, { vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0, saveSide: 0, saveH: 0, saveLead: 0, saveKind: 0, saveId: 0, tackleId: 0, tackleLead: 0, tackleT: 0, headId: 0, headLead: 0, headT: 0, recvIn: -9, jumpAt: -1 });
+    Object.assign(a, { vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0, saveSide: 0, saveH: 0, saveLead: 0, saveKind: 0, saveId: 0, tackleId: 0, tackleLead: 0, tackleT: 0, headId: 0, headLead: 0, headT: 0, recvIn: -9, jumpAt: -1, om: 0, liftV: 0, phase: (i * 2.399) % 6.283 }); // (1.0.25 : phase fixe, un temps fort se rejoue à l’identique)
     const [fx, fz] = at(faceU, faceV);
     a.h = Math.atan2(fz - a.z, fx - a.x);
     H.home.set(i, [u, v]);
@@ -281,7 +319,7 @@ export function createMatchScene(parent) {
   function place(i, u, v, faceU = GOAL_X, faceV = 0) {
     const a = agents[i];
     [a.x, a.z] = at(u, v);
-    Object.assign(a, { vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0, saveSide: 0, saveH: 0, saveLead: 0, saveKind: 0, saveId: 0 });
+    Object.assign(a, { vx: 0, vz: 0, speed: 0, kick: 0, lean: 0, leanTo: 0, leanHold: 0, cheer: 0, lift: 0, roll: 0, saveSide: 0, saveH: 0, saveLead: 0, saveKind: 0, saveId: 0, om: 0, liftV: 0, phase: (i * 2.399) % 6.283 });
     const [fx, fz] = at(faceU, faceV);
     a.h = Math.atan2(fz - a.z, fx - a.x);
   }
@@ -437,8 +475,10 @@ export function createMatchScene(parent) {
         boxRuns(otherAttackers(2, [shooter, wing]));
         const style = header || !volley ? 'head' : 'volley';
         beats = [
-          { t: 'carry', who: wing, to: [3.55, s * 2.85], speed: 0.52, max: 2.6 },
-          { t: 'pass', from: wing, to: shooter, at: [4.55, -s * rr(0.1, 0.45)], style: 'cross', y1: style === 'head' ? HEAD : 0.07 },
+          // (1.0.25 : le centre part de l'angle de la surface, pas de la ligne de touche, vers le point de penalty ou un peu
+          // au-delà ; de la touche au second poteau, 39 m, il fallait un ballon à 6 m de haut)
+          { t: 'carry', who: wing, to: [3.6, s * 2.5], speed: 0.52, max: 2.6 },
+          { t: 'pass', from: wing, to: shooter, at: [4.55, -s * rr(-0.12, 0.3)], style: 'cross', y1: style === 'head' ? HEAD : 0.07 },
           { t: 'shot', who: shooter, style, first: true },
         ];
         break;
@@ -902,7 +942,7 @@ export function createMatchScene(parent) {
   function kickSpeed(bt, d) {
     if (bt.v0) return bt.v0;
     const { rr } = H;
-    bt.v0 = bt.style === 'cross' ? clamp(2.35 + d * 0.12, 2.5, 2.95) * rr(0.97, 1.03) // tendu, plus fort de loin
+    bt.v0 = bt.style === 'cross' ? clamp(2.2 + d * 0.2, 2.5, 3.2) * rr(0.97, 1.03) // tendu, plus fort de loin
       : bt.style === 'clear' ? rr(1.45, 1.75)
         : clamp(0.95 + d * 0.42, 1.3, 3.0) * rr(0.95, 1.05); // (jusqu’à 30 m/s pour un long ballon de 50 m)
     return bt.v0;
@@ -1009,8 +1049,11 @@ export function createMatchScene(parent) {
       tv = clamp(kv + rr(-0.24, 0.24), -0.31, 0.31);
       h = rr(lowH[0] + 0.01, lowH[1]);
     } else if (outcome === 'p') {
-      if (H.r() < 0.3 && style !== 'head') { tv = rr(-0.25, 0.25); h = BAR; } else { tv = (H.r() < 0.5 ? -1 : 1) * GOAL_HALF; h = rr(0.04, 0.2); }
-    } else if (H.r() < 0.4 && style !== 'pen') { tv = rr(-0.3, 0.3); h = rr(0.32, 0.55); } else { tv = (H.r() < 0.5 ? -1 : 1) * rr(0.46, 0.85); h = rr(0.02, 0.22); }
+      // (1.0.25, audit du ballon : visé sur l'axe du montant, le ballon touchait l'intérieur et rentrait trois fois sur
+      // dix, puis traversait le filet) : il frappe le montant par l'extérieur, la barre par le dessus, et ressort
+      const RR = 0.017; // montant (6 mm) + ballon (11 mm)
+      if (H.r() < 0.3 && style !== 'head') { tv = rr(-0.25, 0.25); h = BAR + RR * rr(0.35, 0.85); } else { tv = (H.r() < 0.5 ? -1 : 1) * (GOAL_HALF + RR * rr(0.4, 0.9)); h = rr(0.04, 0.2); }
+    } else if (H.r() < 0.4 && style !== 'pen') { tv = rr(-0.3, 0.3); h = style === 'head' ? rr(0.25, 0.32) : rr(0.27, 0.4); } else { tv = (H.r() < 0.5 ? -1 : 1) * rr(0.46, 0.85); h = rr(0.02, 0.22); } // (au-dessus : 30 cm à 1,6 m de la barre, plus jamais 3 m)
     // vitesse du pied au départ (1.0.25, audit : les frappes partaient à 113-128 km/h en médiane, jusqu'à 164 km/h de loin,
     // les têtes à 17-22 m/s ; en vrai, frappe placée 18-24 m/s, appuyée 24-30, en force 30-34, tête 11-16) : u/s
     const r0 = H.r();
@@ -1043,6 +1086,14 @@ export function createMatchScene(parent) {
       tc = t; crossV = s.z * dirA; hc = s.y;
       return true;
     });
+    // une frappe sans espoir (à plus de 3 m de lui, ou au-dessus de la barre) : il la regarde passer, sans plongeon ni saut
+    // (1.0.25, audit du gardien : il plongeait sur des tirs à 6 m du cadre et sautait sous des ballons à 4-5 m)
+    if (outcome === 'w' && !H.pen && (Math.abs(crossV - kv) > 0.3 || hc > 0.27)) {
+      H.dive = null;
+      H.shot = { T, t0: H.t, tv, h, style, from: [bu, bv], tc, ku };
+      Object.assign(kp, { saveKind: 0, saveLead: tc });
+      return T;
+    }
     // le gardien : où plonger, et quand (un penalty se plonge au moment de la frappe)
     const reach = outcome === 's' ? crossV : outcome === 'g' ? (H.r() < 0.55 ? -Math.sign(tv || 1) * rr(0.12, 0.28) : tv * rr(0.25, 0.55)) : tv * rr(0.4, 0.8);
     const [cx, cz] = at(ku, reach);
@@ -1144,6 +1195,18 @@ export function createMatchScene(parent) {
     const p0 = [b.x, b.y, b.z];
     if (dt - lag > 1e-6) ballPhysics(dt - lag);
     if (b.state === 'net') return; // au fond des filets (stepNet)
+    if (b.state === 'free') {
+      const [uf, vf] = uvOf(b.x, b.z);
+      // (1.0.25, audit du ballon) un ballon libre qui n'est pas un but ne franchit jamais la ligne entre les montants : il
+      // en ressort (poteau rentrant, parade) au lieu de traverser le filet
+      if (H.outcome !== 'g' && uf > GOAL_X - BALL_R && uf < GOAL_X + 0.1 && Math.abs(vf) < GOAL_HALF && b.y < BAR) { [b.x] = at(GOAL_X - BALL_R, vf); b.vx = -b.vx * 0.5; }
+      // les panneaux publicitaires (90 cm, 5 m derrière les lignes) arrêtent le ballon qui sort (il traversait, une fois sur cinq)
+      const ex = Math.abs(b.x) - (5.75 - BALL_R), ez = Math.abs(b.z) - (3.85 - BALL_R);
+      if (b.y + BALL_R < 0.09 && (ex > 0 || ez > 0)) {
+        if (ex > 0) { b.x = Math.sign(b.x) * (5.75 - BALL_R); b.vx *= -0.35; b.vz *= 0.6; }
+        if (ez > 0) { b.z = Math.sign(b.z) * (3.85 - BALL_R); b.vz *= -0.35; b.vx *= 0.6; }
+      }
+    }
     if (b.state !== 'shot') return;
     const [u1, v1] = uvOf(b.x, b.z);
     // tir contré : au point de passage, le ballon touche le défenseur et file hors du cadre (en corner, une fois sur
@@ -1200,21 +1263,24 @@ export function createMatchScene(parent) {
   }
   // la parade (1.0.18, choix du PDG : « dévié en corner ») : le gant repousse le ballon hors du cadre, sur le côté
   // (assez fort pour passer le montant avant la ligne de but) ou, haut et au centre, par-dessus la barre
+  // 1.0.25 (audit du ballon : un penalty repoussé repartait à 41-65 m/s, une claquette montait à 38 m) : la vitesse de
+  // sortie se choisit d'abord, 7 à 14 m/s (un tiers de la frappe), puis la direction qui passe le montant ou la barre ;
+  // près de la ligne, le ballon peut revenir en jeu, comme sur une vraie parade
   function parryBall(u1, v1) {
     const sp = Math.hypot(b.vx, b.vy, b.vz);
+    const out = clamp(sp * H.rr(0.3, 0.45), 0.7, 1.4);
     const dir = S.dir[H.A];
     const high = b.y > BAR * 0.62 && Math.abs(v1) < GOAL_HALF * 0.75;
     const toLine = Math.max(0.02, GOAL_X - u1);
     let du, dv, dy;
     if (high) { // claquée par-dessus
-      du = sp * 0.32; dv = Math.sign(v1 || 1) * sp * 0.08;
-      const t = toLine / du;
-      dy = Math.max(0.45, (BAR + 0.05 - b.y + 0.5 * 0.981 * t * t) / t);
+      const t = clamp(0.2 + (BAR + 0.05 - b.y) * 2, 0.2, 0.45);
+      du = toLine / t; dv = Math.sign(v1 || 1) * out * 0.15;
+      dy = (BAR + 0.05 - b.y + 0.5 * G * t * t) / t;
     } else { // repoussée sur le côté, en corner
-      du = sp * 0.22;
-      const t = toLine / du;
-      const need = (GOAL_HALF + 0.07 - Math.abs(v1)) / t;
-      dv = Math.sign(v1 || (H.r() < 0.5 ? 1 : -1)) * Math.max(sp * 0.3, need);
+      dv = Math.sign(v1 || (H.r() < 0.5 ? 1 : -1)) * out * 0.9;
+      const tPost = (GOAL_HALF + 0.07 - Math.abs(v1)) / Math.abs(dv);
+      du = clamp((0.8 * toLine) / Math.max(0.05, tPost), -0.3, 0.22 * sp);
       dy = 0.12 + H.r() * 0.15;
     }
     Object.assign(b, { vx: du * dir, vz: dv * dir, vy: dy, sx: 0, sy: 0, sz: 0, state: 'free' });
@@ -1511,6 +1577,10 @@ export function createMatchScene(parent) {
           if (!H.finale && bt.style === 'ground' && dd > 1.4 && T > passTimeOf('ground', dd) * 1.5) bt.style = 'lob';
           // un centre part brossé (il s'enroule vers le but ou s'en éloigne), une transversale un peu ; au sol, droit
           const curl = bt.style === 'cross' ? (H.r() < 0.5 ? -1 : 1) * H.rr(0.25, 0.55) : bt.style === 'lob' ? H.rr(-0.2, 0.2) : 0;
+          // un centre ne monte jamais au-delà de 4,5 m (choix du PDG, 1.0.25) : de loin, il est fouetté plus fort (33 m/s au plus)
+          // (une longue passe lobée non plus au-delà de 5 m : elle part plus tendue, jusqu'à 33 m/s)
+          const capY = { cross: 0.45, lob: 0.5 }[bt.style];
+          if (capY) for (let k = 0; k < 10 && kickSpeed(bt, dd) < 3.3 && flightOf(bt, tx, tz, true).apex > capY; k++) bt.v0 += 0.1;
           // (1.0.25) un ballon aérien part à la vitesse du coup de pied, son temps de vol en découle
           // (une passe lobée arrive à hauteur de cuisse, 60 cm : le receveur la contrôle avant qu'elle rebondisse et file)
           T = launchBall(tx, tz, T, { ground: bt.style === 'ground' || bt.style === 'through', y1: bt.y1 || (bt.style === 'lob' ? 0.06 : 0), curl, speed: aerialStyle(bt.style) ? kickSpeed(bt, dd) : 0, back: BACK[bt.style] || 0 });
@@ -1541,6 +1611,20 @@ export function createMatchScene(parent) {
           const [ggx, ggz] = at(GOAL_X, 0);
           const [ox, oz] = strikeSpot(bt.to, 'shot', Math.atan2(ggz - tz, ggx - tx), 0, 0);
           gx = tx - ox; gz = tz - oz;
+        }
+        // (1.0.25) il lit le centre : toutes les 0,1 s, le premier point de la vraie trajectoire du ballon à hauteur de tête
+        // (1 à 2,4 m) qu'il peut atteindre à temps ; il y va, au lieu du point prévu au départ (manqué d'un mètre, il
+        // poursuivait le ballon jusque derrière la ligne de but)
+        if (headed && left > -0.1 && b.state === 'pass') {
+          if (!(bt.meetT > H.t - 0.1)) {
+            bt.meetT = H.t; bt.meet = null;
+            simulate({ x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, sx: b.sx || 0, sy: b.sy || 0, sz: b.sz || 0, skid: 0 }, Math.max(0.3, left + 0.5), 1 / 60, (s, t) => {
+              if (s.y < 0.09 || s.y > 0.23) return false;
+              if (Math.hypot(s.x - rcv.x, s.z - rcv.z) / (SPRINT * 0.95) <= t + 0.04) { bt.meet = [s.x, s.z, t]; return true; }
+              return false;
+            });
+          }
+          if (bt.meet) { [gx, gz] = bt.meet; tl = Math.max(0.02, bt.meet[2] - (H.t - bt.meetT)); }
         }
         const dd = Math.hypot(gx - rcv.x, gz - rcv.z);
         if (headed && left > 0 && dd > 1e-4) { // (1.0.19) il attaque le centre : à fond, puis à l'allure qui l'amène au point à l'heure, sans freiner devant
@@ -1998,7 +2082,14 @@ export function createMatchScene(parent) {
         a.steer(x, z, x === a.x && z === a.z ? 0 : 0.42, dt, off.x, off.z);
       }
     } else {
-      for (let i = 0; i < N; i++) if (active(i)) agents[i].steer(agents[i].x, agents[i].z, 0, dt, b.x, b.z);
+      // (1.0.25, audit du gardien : après l'arrêt, couché ou ballon en mains, il tournait sur lui-même pour regarder le
+      // ballon qu'il tenait, jusqu'à 450°) : le gardien qui vient d'arrêter ne bouge plus, les autres regardent le ballon
+      for (let i = 0; i < N; i++) {
+        if (!active(i)) continue;
+        const a = agents[i];
+        if (i === H.keeper && outcome === 's') { a.vx = a.vz = a.speed = 0; continue; }
+        a.steer(a.x, a.z, 0, dt, b.x, b.z);
+      }
     }
     const hold = outcome === 'g' ? 2.9 : outcome === 'red' ? 2.6 : 1.5;
     if (H.react > hold / H.speed) {
@@ -2106,7 +2197,7 @@ export function createMatchScene(parent) {
       if (spec && spec.id !== lastId) { lastId = spec.id; startHL(spec); }
       if (!spec && H && H.phase !== 'end') H.phase = 'end'; // passé par le direct
     }
-    if (!visible) { players.commit(0); card.visible = false; return null; }
+    if (!visible) { players.commit(0); card.visible = false; placeShadows(false); return null; }
     applyLooks(S.play === 'live' ? matchFeed.hl : null);
     if (S.play === 'warmup') warmupUpdate(dt);
     let cut = false;
@@ -2206,6 +2297,7 @@ export function createMatchScene(parent) {
       b.prev = [b.x, b.z];
       placeBall(ballMesh, b, S.baseY);
     } else ballMesh.position.set(b.x, S.baseY + BALL_R + b.y, b.z);
+    placeShadows(S.play === 'live' || S.play === 'warmup');
     if (S.play === 'live' && H && (H.phase === 'play' || H.phase === 'react')) record();
     // carton brandi au-dessus du fautif
     if (H && H.cardOf !== undefined && H.phase === 'react') {
@@ -2265,6 +2357,8 @@ export function createMatchScene(parent) {
       [ballMesh, ...warmBalls].forEach((m) => { parent.remove(m); m.geometry.dispose(); m.material.dispose(); });
       parent.remove(card);
       Object.values(cardMats).forEach((m) => m.dispose());
+      parent.remove(shadows); parent.remove(ballShadow);
+      shadows.dispose(); shadowGeo.dispose(); shadowMat.dispose(); ballShadowMat.dispose(); blobTex.dispose();
     },
   };
 }

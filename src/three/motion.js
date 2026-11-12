@@ -31,7 +31,9 @@ export class Agent {
   steer(tx, tz, speed, dt, fx, fz, look = false) {
     const dx = tx - this.x, dz = tz - this.z;
     const d = Math.hypot(dx, dz);
-    const want = d > 0.004 ? Math.min(speed, d * 1.6) : 0;
+    // arrivée (1.0.25, audit des déplacements : freinage exponentiel, chaque course finissait en marche lente, 30 % du
+    // temps à marcher) : un freinage franc à 4 m/s², sous la limite d'accélération (jamais de dépassement)
+    const want = d > 0.004 ? Math.min(speed, Math.sqrt(2 * 0.4 * Math.max(0, d - 0.003))) : 0;
     const dvx = (d > 1e-6 ? (dx / d) * want : 0) - this.vx;
     const dvz = (d > 1e-6 ? (dz / d) * want : 0) - this.vz;
     const dv = Math.hypot(dvx, dvz);
@@ -56,8 +58,16 @@ export class Agent {
     // demi-tour : il pivote plus vite (on ne court pas longtemps à reculons), et sur place, presque arrêté (moins de
     // 1,5 m/s), d'un appui (0.8.24 : il repartait avant d'avoir pivoté et courait un instant à reculons) ; une frappe se
     // tourne vite vers sa cible
-    const rate = kicking ? TURN * 3 : Math.abs(diff) > 1.6 ? (this.speed < 0.15 ? TURN * 3 : TURN * 1.7) : TURN;
-    this.h += THREE.MathUtils.clamp(diff, -rate * dt, rate * dt);
+    // 1.0.25 (audit des déplacements : pivots sur place à 945°/s, douze fois par temps fort, les pieds patinaient autour
+    // du joueur) : la rotation a une inertie (accélération angulaire de 30 rad/s², 60 pour une frappe) et s'arrête
+    // pile sur le cap voulu ; demi-tour lancé plus vif, frappe vive
+    const rate = kicking ? TURN * 1.6 : Math.abs(diff) > 1.6 ? TURN * (this.speed < 0.15 ? 1.4 : 1.7) : TURN;
+    const alpha = kicking ? 60 : 30;
+    const wantOm = Math.sign(diff) * Math.min(rate, Math.sqrt(2 * alpha * Math.abs(diff)));
+    this.om = (this.om || 0) + THREE.MathUtils.clamp(wantOm - (this.om || 0), -alpha * dt, alpha * dt);
+    let st = this.om * dt;
+    if (Math.sign(st) === Math.sign(diff) && Math.abs(st) >= Math.abs(diff)) { st = diff; this.om = 0; }
+    this.h += st;
     // foulée : un cycle complet (deux pas) couvre 1,6 m en marchant, jusqu'à 3,8 m en sprint
     const g = THREE.MathUtils.clamp(this.speed / 0.7, 0, 1);
     this.gait += (g - this.gait) * Math.min(1, dt * 8);

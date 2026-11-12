@@ -5,6 +5,19 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.25', date: '2026-11-12', title: t('Gardiens, centres et contacts'),
+    items: [
+      t('Le gardien prend le ballon dans ses gants : ses bras vont au ballon, le geste suit la hauteur du tir (prise basse, à mi-hauteur ou haute, plongeon bas ou haut, il s’élève pour un ballon haut) et le ballon reste dans ses mains sans glisser.'),
+      t('Le gardien regarde passer les tirs sans espoir au lieu de plonger, ne tourne plus sur lui-même après un arrêt, et une parade repart à la vitesse d’une vraie parade.'),
+      t('Chaque ballon part à la vitesse d’un vrai coup de pied : centres tendus, jamais plus haut que 4,5 m, frappes de 65 à 120 km/h, têtes plus douces ; l’attaquant lit le centre et ajuste sa course à sa trajectoire.'),
+      t('Le pied frappe au bon instant, au ras de la chaussure : le ballon ne traverse plus le tibia avant la passe ; chaque joueur frappe de son pied fort, et le ballon conduit reste devant la foulée.'),
+      t('Plus de limite de quinze secondes : les contre-attaques vont au bout, et les constructions ont plus souvent trois ou quatre relais.'),
+      t('Le tir sur le poteau ressort au lieu de rentrer, et le ballon s’arrête sur les panneaux publicitaires.'),
+      t('Les joueurs tournent avec de l’inertie au lieu de pivoter sur place, et finissent leurs courses sans traîner.'),
+      t('Les joueurs et le ballon ont leur ombre sur la pelouse : on lit la hauteur d’un ballon aérien.'),
+    ],
+  },
+  {
     version: '1.0.24', date: '2026-11-12', title: t('Quinze secondes au plus'),
     items: [
       t('Un tir contré se conclut au moment du contre : l’issue s’affiche et le ballon file ensuite hors du terrain (il mettait jusqu’à deux secondes à sortir).'),

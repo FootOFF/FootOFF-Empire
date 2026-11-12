@@ -29,7 +29,8 @@ export function makeBall() {
 export function stepFree(s, dt) {
   const v = Math.hypot(s.vx, s.vy, s.vz);
   let ax = 0, ay = 0, az = 0;
-  const air = s.noGround || s.y > 0.0005 || s.vy > 0.02;
+  // (1.0.25, audit du ballon : un ballon qui tombe, posé à 0 par le pas d'avant, perdait son rebond une fois sur cinq)
+  const air = s.noGround || s.y > 0.0005 || s.vy > 0.02 || s.vy < -0.035;
   if (air) {
     ay -= G;
     // frottement de l'air
