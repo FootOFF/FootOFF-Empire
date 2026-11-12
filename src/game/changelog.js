@@ -5,6 +5,16 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.33', date: '2026-11-12', title: t('Gardien : plongeons et buts encaissés'),
+    items: [
+      t('Le gardien battu ne se jette plus à travers le ballon : pris à contre-pied, ou plongeon du bon côté, mains trop courtes ; le ballon ne touche plus son corps.'),
+      t('Le plongeon parcourt la distance du geste capté et se poursuit après le contact, au lieu de retomber sur place ; un ballon proche se prend d’un pas de côté.'),
+      t('Après une parade des deux mains, le gardien ne ramène plus les mains contre lui comme s’il avait capté ; il part d’un petit saut.'),
+      t('Le gardien ne finit plus dans ses filets après un plongeon ou une parade : il ne glisse plus sur son élan et ne court plus après un ballon sorti derrière le but.'),
+      t('Deux joueurs qui finissent un geste (frappe, glissade) ne se traversent plus.'),
+    ],
+  },
+  {
     version: '1.0.32', date: '2026-11-12', title: t('Contact de la tête et points du terrain'),
     items: [
       t('Au coup de tête, le buste et le cou se penchent pour que le front aille au ballon : il ne repart plus au-dessus de la tête ni à côté.'),

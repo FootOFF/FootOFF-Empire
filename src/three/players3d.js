@@ -211,6 +211,20 @@ async function build() {
   if (A.divePath.GK_Dive_L) A.divePath.GK_DiveLo_R = A.divePath.GK_Dive_L;
   if (A.divePath.GK_Dive_R) A.divePath.GK_DiveHi_L = A.divePath.GK_Dive_R;
   if (A.divePath.GK_Block_R) A.divePath.GK_Block_L = A.divePath.GK_Block_R;
+  // la portée captée à chaque instant d'un plongeon (1.0.33, contrôle de la vidéo filmée dans le vrai jeu : sur un
+  // ballon à 1,5 m, le corps ne parcourait que 0,7 m au lieu des 1,2 m du geste, le gardien tombait presque sur place) :
+  // course du bassin + main la plus loin du corps ; un ballon plus proche est touché plus tôt dans le geste, le corps
+  // ayant parcouru ce que le geste capté lui fait parcourir à cet instant
+  A.diveReach = {};
+  for (const n of ['GK_Dive_L', 'GK_Dive_R', 'GK_DiveLo_R', 'GK_DiveHi_L', 'GK_Block_L', 'GK_Block_R']) {
+    const P = A.divePath[n];
+    if (!A.clips[n] || !P || A.marks[n] === undefined) continue;
+    const at = (tt) => { const k = Math.max(0, Math.min(P.t.length - 1, (tt / P.t[P.t.length - 1]) * (P.t.length - 1))); const i = Math.floor(k), f = k - i; return P.x[i] + (P.x[Math.min(i + 1, P.x.length - 1)] - P.x[i]) * f; };
+    A.diveReach[n] = probe(n, (r, t) => {
+      const hl = wpos(r, 'hand_l'); const hr = wpos(r, 'hand_r'); const h = Math.abs(hl.x) > Math.abs(hr.x) ? hl : hr;
+      return { t, fwd: h.z, left: h.x, up: h.y, reach: at(t) + Math.abs(h.x) };
+    });
+  }
   if (import.meta.env?.DEV && typeof window !== 'undefined') window.__saveHands = { hands: A.saveHands, marks: A.marks, dur: Object.fromEntries(Object.entries(A.clips).map(([k, c]) => [k, c.duration])) };
   // la faute (0.8.24, audit de la charte : le porteur ne tombait jamais) : le tacle glissé touche quand le corps est au
   // plus bas ; la chute du porteur part au moment où son bassin plonge vers le sol (le trébuchement capté avant, une
@@ -869,7 +883,7 @@ export function createPlayers3D(parent, max = 22) {
   // 60 cm, contre 35) ; le geste en attente de son départ garde son contact (il était perdu : aucune main au ballon)
   function keeperIK(p) {
     const c = p.saveC;
-    if (!c || !look || !p.keeper) return;
+    if (!c || !look || !p.keeper || c.beaten) return; // (1.0.33) battu : ses mains ne vont pas chercher le ballon qui le passe
     if (p.pending?.name === c.name) return;
     if (!p.shot || p.shot.getClip().name !== c.name) { p.saveC = null; return; }
     const x = p.shot.time - c.t;
@@ -998,16 +1012,27 @@ export function createPlayers3D(parent, max = 22) {
       // debout à sa place d'un coup, comme au début d'un ralenti
       if (p.frozen && p.shot) { p.shot.stop(); p.shot = null; p.frozen = false; p.fade = 0; p.locoW = 1; }
     }
-    if (p.pending) { p.pending.wait -= dt; if (p.pending.wait <= 0) { gesture(p, p.pending.name, { fade: 0.15 }); p.pending = null; } }
+    if (p.pending) {
+      p.pending.wait -= dt;
+      if (p.pending.wait <= 0) {
+        gesture(p, p.pending.name, { fade: 0.15 });
+        if (p.saveC?.palms && p.saveC.name === p.pending.name) p.shotEnd = p.saveC.t + 0.35; // (parade des deux mains, ci-dessous)
+        p.pending = null;
+      }
+    }
     // l'arrêt du gardien (0.8.24) : dès la frappe, le geste qui convient, son contact calé sur l'arrivée du ballon (le
     // plongeon du moteur, 0,1 à 0,4 s avant le contact, laissait trop peu de temps : le gardien se retrouvait couché d'un
     // coup, jambes à travers la pelouse) ; sans arrêt annoncé, l'ancien plongeon au signal du moteur
     if (ag.saveId && ag.saveId !== p.saveSeen && A.clips.GK_Dive_L) {
       p.saveSeen = ag.saveId;
       const name = saveClip(ag);
-      const off = (A.marks[name] ?? 0) - (ag.saveLead || 0);
+      const st = saveTime(p, ag, name).t; // (1.0.33 : plus tôt dans le plongeon pour un ballon proche)
+      const off = st - (ag.saveLead || 0);
       if (off >= 0) gesture(p, name, { at: off, fade: 0.15 }); else p.pending = { name, wait: -off };
-      p.saveC = { name, t: A.marks[name] ?? 0, catch: ag.saveKind === 1, palms: ag.saveKind === 2 && name.startsWith('GK_Catch') };
+      p.saveC = { name, t: st, catch: ag.saveKind === 1, palms: ag.saveKind === 2 && name.startsWith('GK_Catch'), beaten: ag.saveKind === 3 };
+      // (1.0.33) la parade des deux mains s'arrête 0,35 s après le contact : la fin du geste de prise ramenait les mains
+      // contre la poitrine, comme s'il avait capté le ballon qu'il venait de repousser
+      if (p.saveC.palms) p.shotEnd = st + 0.35;
     } else if (pose === 2 && p.pose !== 2 && !ag.saveId) {
       const name = (ag.lean || 0) >= 0 ? 'Save_1' : 'Save_1_M';
       gesture(p, name, { at: A.marks[name] - 0.32, fade: 0.1 });
@@ -1019,7 +1044,7 @@ export function createPlayers3D(parent, max = 22) {
       gesture(p, (pool.length ? pool : CELEBRATIONS)[p.seed % (pool.length || CELEBRATIONS.length)], { fade: 0.3 });
     }
     if (ag.cheer < 0.05) p.cheering = false;
-    if (p.shot && !p.frozen && p.shot.time >= p.shotEnd - 0.05 && !p.cheering && pose !== 2) {
+    if (p.shot && !p.frozen && p.shot.time >= p.shotEnd - 0.05 && !p.cheering && (pose !== 2 || (p.saveC?.palms && p.shot.getClip().name === p.saveC.name))) {
       // le porteur fauché reste au sol, figé au repos de sa chute, tant que le moteur l'y garde ; sinon, le geste suivant
       // ou le retour à la course
       if (p.fell && p.shot.getClip().name === 'Foul_Fall') { p.shot.paused = true; p.frozen = true; }
@@ -1038,6 +1063,21 @@ export function createPlayers3D(parent, max = 22) {
   // 55 cm, à mi-hauteur 117 cm, haute 222 cm ; arrêt du corps 31 cm ; plongeon bas 74 cm, haut 108 cm). Avant, l'arrêt du
   // corps (mains à 31 cm) partait sur des ballons à 90 cm, la prise à mi-hauteur sur des ballons à 60 cm : les mains
   // passaient 30 à 55 cm à côté, et le ballon était ensuite tiré dans les gants.
+  // l'instant du contact dans le geste d'arrêt (1.0.33) : pour un plongeon, le dernier instant (jusqu'au contact capté,
+  // au plus 0,45 s avant) où la portée captée ne dépasse pas la distance du ballon, à la taille du gardien ; sinon le
+  // contact capté. Renvoie l'échantillon (t, main : fwd, left, up) ou { t } seul
+  function saveTime(p, ag, name) {
+    const R = A.diveReach?.[name]; const m = A.marks[name] ?? 0;
+    if (!R) return { t: m };
+    const L = (Math.abs(ag.saveSide || 0) * BASE_H) / (p.height || BASE_H);
+    let best = null, first = null;
+    for (const q of R) {
+      if (q.t > m + 1e-6 || q.t < m - 0.45) continue;
+      if (!first) first = q;
+      if (q.reach <= L + 1e-6) best = q;
+    }
+    return best || first || { t: m };
+  }
   function saveClip(ag) {
     const side = ag.saveSide || 0; const h = (ag.saveH || 0) + 0.11; const far = Math.abs(side);
     if (!ag.saveKind || !A.clips.GK_Dive_L) return (ag.lean || 0) >= 0 ? 'Save_1' : 'Save_1_M';
@@ -1048,6 +1088,9 @@ export function createPlayers3D(parent, max = 22) {
     if (far < 0.45 && ag.saveKind === 2 && h >= 1.3) return 'GK_Catch_High';
     if (far < 0.45 && !(ag.saveKind === 2 && h < 1.0)) return h < 0.82 ? 'GK_Catch_Low' : h < 1.75 ? 'GK_Catch_Mid' : 'GK_Catch_High';
     if (far < 1.1 && h < 0.6) return left ? 'GK_Block_L' : 'GK_Block_R';
+    // (1.0.33) un arrêt à moins de 1,1 m, à mi-hauteur ou plus haut : un pas de côté et les mains (prise, ou parade des
+    // deux mains), pas un plongeon écourté qui le couchait presque sur place
+    if (ag.saveKind !== 3 && far < 1.1) return h < 1.3 || (h < 1.75 && ag.saveKind !== 2) ? 'GK_Catch_Mid' : 'GK_Catch_High';
     if (!A.clips.GK_DiveLo_R) return left ? 'GK_Dive_L' : 'GK_Dive_R';
     return h < 0.95 ? (left ? 'GK_Dive_L' : 'GK_DiveLo_R') : (left ? 'GK_DiveHi_L' : 'GK_Dive_R');
   }
@@ -1139,12 +1182,14 @@ export function createPlayers3D(parent, max = 22) {
     cueMark(name) { return A?.marks?.[name] ?? null; },
     // la part de la course latérale captée d'un plongeon faite entre les instants t0 et t du geste, rapportée à celle
     // faite jusqu'à son contact (marks) ; null sans course captée
-    diveProgress(name, t0, t) {
-      const P = A?.divePath?.[name]; const m = A?.marks?.[name];
+    // (1.0.33 : contact donné par le moteur, mark ; au-delà du contact, la course continue comme dans le geste capté,
+    // valeur au-dessus de 1 : le gardien ne retombait pas sur place)
+    diveProgress(name, t0, t, mark) {
+      const P = A?.divePath?.[name]; const m = mark ?? A?.marks?.[name];
       if (!P || m === undefined) return null;
       const at = (tt) => { const k = Math.max(0, Math.min(P.t.length - 1, (tt / P.t[P.t.length - 1]) * (P.t.length - 1))); const i = Math.floor(k), f = k - i; return P.x[i] + ((P.x[Math.min(i + 1, P.x.length - 1)] - P.x[i]) * f); };
       const den = at(m) - at(t0);
-      return den > 1e-3 ? Math.max(0, Math.min(1, (at(t) - at(t0)) / den)) : null;
+      return den > 1e-3 ? Math.max(0, (at(t) - at(t0)) / den) : null;
     },
     // le ballon tenu par le gardien i : entre ses gants (position monde) ; null sans joueurs réalistes
     ballAnchor(i) { const p = slots[i]; return p && p.anchor ? p.anchor : null; },
@@ -1152,10 +1197,12 @@ export function createPlayers3D(parent, max = 22) {
     // (devant, à droite, en haut), en unités du jeu ; null sans joueurs réalistes
     saveHand(i, ag) {
       const p = slots[i]; if (!p || !A.saveHands) return null;
-      const n = saveClip(ag); const c = A.saveHands[n];
+      const n = saveClip(ag);
+      const q = A.diveReach?.[n] ? saveTime(p, ag, n) : null; // (1.0.33) la main à l'instant du contact choisi
+      const c = q && q.fwd !== undefined ? q : A.saveHands[n];
       if (!c) return null;
       const s = 0.1 * (p.height / BASE_H);
-      return { fwd: c.fwd * s, right: -c.left * s, up: c.up * s, clip: n };
+      return { fwd: c.fwd * s, right: -c.left * s, up: c.up * s, clip: n, t: q?.t ?? A.marks[n] };
     },
     dispose() {
       for (const p of slots) if (p) { parent.remove(p.root); p.mixer.stopAllAction(); for (const o of p.meshes) { o.material.dispose(); if (o.geometry !== o.userData.g0) o.geometry.dispose(); } }

@@ -1137,6 +1137,31 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Gardien : plongeons et buts encaissés (1.0.33)
+
+Choix du PDG (12/11) : la caméra actuelle (A) reste au téléphone ; les maquettes `phoneEnd` / `phoneClose` restent
+inactives. Corrections relevées au contrôle de la vidéo filmée dans le vrai jeu :
+- But encaissé (`shoot`) : le plongeon est mené comme un arrêt (mains au point visé, corps sur la course du geste capté) ;
+  pris à contre-pied (55 %, et toujours si le ballon passe à moins de 1,6 m de lui) ou du bon côté, les mains 50 à 90 cm
+  avant le ballon. Avant : plongeon sur place vers 55 % du point visé, et le guidage des mains (`keeperIK`) tirait le
+  bras sur le ballon ; il ne joue plus pour un gardien battu (`saveC.beaten`).
+- Plongeon : `A.diveReach` (course du bassin captée + main la plus loin, à chaque instant) ; `saveTime` choisit le contact
+  plus tôt dans le geste pour un ballon proche (au plus 0,45 s avant le contact capté) ; `saveHand` rend la main à cet
+  instant ; `diveProgress(name, t0, t, mark)` dépasse 1 après le contact (le corps poursuit sa course, 1,2 m au plus,
+  jamais au-delà du poteau ni derrière la ligne) ; l'envol (`lift`) suit l'avancée du geste (entier au contact capté).
+- Arrêt à moins de 1,1 m, à 0,6 m de haut ou plus : pas de côté et `GK_Catch_Mid` / `GK_Catch_High` (prise, ou parade
+  des deux mains), au lieu d'un plongeon écourté.
+- Parade des deux mains : le geste s'arrête 0,35 s après le contact (la fin du geste de prise ramenait les mains contre
+  la poitrine) ; petit saut (20 cm) pour un ballon à 1,5 m ou plus.
+- `separate` : seuls le tireur jusqu'au contact, le gardien pendant la frappe et le contreur restent intouchables ; deux
+  joueurs en fin de geste sont écartés à parts égales.
+- Jamais dans ses filets (déjà 10 actions sur 144 en 1.0.32, surtout des penalties) : la cible du plongeon reste devant la
+  ligne (`GOAL_X - 0,03`) ; la suite de la course après le contact ne se fait que le long de la ligne ; au premier instant
+  de l'après-action, un gardien qui a plongé a une vitesse nulle (il glissait sur son élan jusqu'à 1,5 m dans le but) et
+  reste au sol 0,9 s ; personne ne court après un ballon dont le point de rattrapage est derrière la ligne de but.
+- Mesures (banc `gardien3d.mjs`, joueurs 3D, 144 actions dont 44 buts hors penalty) : ballon dans le corps du gardien
+  battu 6 → 0 ; gardien derrière sa ligne 10 → 0 ; course du plongeon au contact / course captée 0,44 → 1,27 (médianes).
+
 ## Contact de la tête et points du terrain (1.0.32)
 
 Second contrôle (9 relecteurs, vidéo filmée dans le vrai jeu au téléphone) : sur un centre, le ballon repartait au niveau

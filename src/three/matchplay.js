@@ -1129,7 +1129,16 @@ export function createMatchScene(parent) {
       return T;
     }
     // le gardien : où plonger, et quand (un penalty se plonge au moment de la frappe)
-    const reach = outcome === 's' ? crossV : outcome === 'g' ? (H.r() < 0.55 ? -Math.sign(tv || 1) * rr(0.12, 0.28) : tv * rr(0.25, 0.55)) : tv * rr(0.4, 0.8);
+    // un but (1.0.33, contrôle de la vidéo filmée dans le vrai jeu : le ballon passait à travers le gardien, qui plongeait
+    // sur place vers le ballon sans l'atteindre) : pris à contre-pied (et toujours si le ballon passe à moins de 1,6 m de
+    // lui), ou plongeon du bon côté, les mains 50 à 90 cm avant le ballon ; jamais le corps sur la course du ballon
+    let reach;
+    if (outcome === 's') reach = crossV;
+    else if (outcome === 'g') {
+      const sg = Math.sign(crossV - kv) || Math.sign(tv || 1);
+      reach = H.r() < 0.55 || Math.abs(crossV - kv) < 0.16 ? kv - sg * rr(0.12, 0.25) : crossV - sg * rr(0.05, 0.09);
+      reach = clamp(reach, -GOAL_HALF - 0.04, GOAL_HALF + 0.04);
+    } else reach = tv * rr(0.4, 0.8);
     const [cx, cz] = at(ku, reach);
     const side = ((cx - kp.x) * Math.sin(kp.h) - (cz - kp.z) * Math.cos(kp.h)) * 10; // m, sa gauche positive
     // selon la frappe (choix du PDG, 1.0.18) : une frappe forte ou loin de lui, il plonge et la repousse (en corner, ou
@@ -1145,16 +1154,28 @@ export function createMatchScene(parent) {
     // l'arrêt (1.0.18, chantier du PDG : « le ballon le frappe au milieu du corps ») : le gardien se détend pour que ses
     // mains, au contact de son geste, soient là où passe le ballon (prise : entre les deux mains ; plongeon : la main
     // tendue) ; un tir qui le bat le voit se jeter vers son point de plongeon, comme avant
-    const hand = outcome === 's' ? players.saveHand?.(H.keeper, kp) : null;
+    // (1.0.33) tous les plongeons sont menés ainsi, but et tir à côté compris : les mains vont au point visé (le ballon
+    // pour un arrêt, le point de plongeon sinon), le corps suit la course du geste capté
+    const hand = players.saveHand?.(H.keeper, kp);
     if (hand) {
-      const [bx2, bz2] = at(ku, crossV);
+      const [bx2, bz2] = at(ku, outcome === 's' ? crossV : reach);
+      H.dive.mark = hand.t;
       const fx = Math.cos(kp.h), fz = Math.sin(kp.h);
       H.dive.root = [bx2 - (fx * hand.fwd - fz * hand.right), bz2 - (fz * hand.fwd + fx * hand.right)];
+      // (1.0.33) jamais derrière sa ligne : au penalty, sur sa ligne, la main placée au ballon le reculait dans le but ;
+      // les bras rattrapent les quelques centimètres
+      { const [ru, rv] = uvOf(H.dive.root[0], H.dive.root[1]); if (ru > GOAL_X - 0.03) H.dive.root = at(GOAL_X - 0.03, rv); }
       H.dive.tc = H.t + tc;
       H.dive.clip = hand.clip;
       // un ballon plus haut que les mains du plongeon (ou de la prise sautée) : le gardien s'élève (1.0.25, jusqu'à 70 cm),
       // au plus haut au contact ; les mains n'avaient que les bras pour rattraper l'écart
-      if (/^GK_(Dive|Catch_High)/.test(hand.clip || '')) H.dive.lift = clamp(hc + BALL_R - hand.up, 0, 0.07);
+      // (1.0.33) l'envol suit l'avancée du plongeon : entier au contact capté, nul au début de la détente (un ballon proche,
+      // touché tôt dans le geste, soulevait le gardien de 70 cm alors qu'il quittait à peine le sol)
+      const mk0 = players.cueMark?.(hand.clip) ?? hand.t ?? 0;
+      const ph = clamp(1 - (mk0 - (hand.t ?? mk0)) / 0.45, 0, 1);
+      if (/^GK_(Dive|Catch_High)/.test(hand.clip || '')) H.dive.lift = clamp(hc + BALL_R - hand.up, 0, 0.07 * ph * ph);
+      // (1.0.33) la parade haute des deux mains part d'un petit saut (il attendait le ballon pieds à plat, bras tendus)
+      if (parry && /^GK_Catch/.test(hand.clip || '') && hm >= 1.5) H.dive.lift = Math.max(H.dive.lift || 0, 0.02);
     }
     return T;
   }
@@ -1837,7 +1858,11 @@ export function createMatchScene(parent) {
     if (bt && ((bt.t === 'tackle' && !bt.contact) || bt.t === 'foul')) { duel.add(bt.who); duel.add(bt.victim); } // (après le tacle, le porteur contourne le tacleur au sol)
     if (bt?.t === 'steal') { duel.add(bt.who); if (b.owner >= 0) duel.add(b.owner); }
     if (H.outcome === 'red' && H.foulAt !== undefined) { duel.add(H.offender); duel.add(H.victim); }
-    const fixed = (i) => agents[i].kick > 0 || H.hold.has(i) || (slotOf(i) === 0 && !!H.shot) || (H.block?.who === i && !H.block.done);
+    // intouchables : le tireur jusqu'au contact de son pied, le gardien pendant la frappe, le contreur ; sinon un joueur
+    // en fin de geste (frappe partie, glissade, passe) ne bouge que si l'autre est intouchable ou lui aussi en fin de
+    // geste (1.0.33, contrôle de la vidéo filmée dans le vrai jeu : deux joueurs en fin de geste se traversaient)
+    const locked = (i) => (agents[i].kick > 0 && agents[i].kick < KICK_CONTACT + 0.05) || (slotOf(i) === 0 && !!H.shot) || (H.block?.who === i && !H.block.done);
+    const fixed = (i) => locked(i) || agents[i].kick > 0 || H.hold.has(i);
     for (let i = 0; i < N; i++) {
       if (!active(i) || duel.has(i)) continue;
       const a = agents[i];
@@ -1846,13 +1871,14 @@ export function createMatchScene(parent) {
         const c = agents[j];
         const dx = c.x - a.x, dz = c.z - a.z, d2 = dx * dx + dz * dz;
         if (d2 >= BODY * BODY) continue;
+        const li = locked(i), lj = locked(j);
+        if (li && lj) continue;
         const fi = fixed(i), fj = fixed(j);
-        if (fi && fj) continue;
         const d = Math.sqrt(d2);
         // (exactement superposés : écartés de côté, selon leurs numéros)
         const ux = d > 1e-5 ? dx / d : Math.cos(i * 2.4), uz = d > 1e-5 ? dz / d : Math.sin(i * 2.4);
         const o = BODY - d;
-        const wi = fi ? 0 : fj ? 1 : 0.5, wj = 1 - wi;
+        const wi = li ? 0 : lj ? 1 : fi && !fj ? 0 : fj && !fi ? 1 : 0.5, wj = 1 - wi;
         a.x -= ux * o * wi; a.z -= uz * o * wi;
         c.x += ux * o * wj; c.z += uz * o * wj;
       }
@@ -2088,9 +2114,19 @@ export function createMatchScene(parent) {
       const f = clamp((H.t - dv0.start[2]) / span, 0, 1);
       let e = 1 - (1 - f) * (1 - f);
       // la course du geste capté (1.0.30) : lente à l'appel, vive en vol, au lieu d'une glissade debout
-      const mk = dv0.clip ? players.cueMark?.(dv0.clip) : null;
-      if (mk !== null && mk !== undefined) { const pr = players.diveProgress?.(dv0.clip, mk - span, mk - (dv0.tc - H.t)); if (pr !== null && pr !== undefined) e = pr; }
-      const nx = dv0.start[0] + (dv0.root[0] - dv0.start[0]) * e, nz = dv0.start[1] + (dv0.root[1] - dv0.start[1]) * e;
+      const mk = dv0.clip ? (dv0.mark ?? players.cueMark?.(dv0.clip)) : null;
+      if (mk !== null && mk !== undefined) {
+        const pr = players.diveProgress?.(dv0.clip, mk - span, mk - (dv0.tc - H.t), mk);
+        // (1.0.33) après le contact, le corps continue sa course comme dans le geste capté (1,2 m au plus) : il ne
+        // retombait plus sur place, tête la première
+        const D = Math.hypot(dv0.root[0] - dv0.start[0], dv0.root[1] - dv0.start[1]);
+        if (pr !== null && pr !== undefined) e = Math.min(pr, 1 + 0.12 / Math.max(D, 0.02));
+      }
+      let nx = dv0.start[0] + (dv0.root[0] - dv0.start[0]) * Math.min(e, 1), nz = dv0.start[1] + (dv0.root[1] - dv0.start[1]) * Math.min(e, 1);
+      if (e > 1) { // la suite de la course : le long de sa ligne seulement, jamais derrière elle ni au-delà du poteau
+        const [su, sv] = uvOf(dv0.start[0], dv0.start[1]); const [ru, rv] = uvOf(dv0.root[0], dv0.root[1]);
+        [nx, nz] = at(Math.min(ru, GOAL_X - 0.03), clamp(sv + (rv - sv) * e, -GOAL_HALF - 0.02, GOAL_HALF + 0.02));
+      }
       a.vx = (nx - a.x) / Math.max(dt, 1e-4); a.vz = (nz - a.z) / Math.max(dt, 1e-4);
       a.x = nx; a.z = nz; a.speed = Math.hypot(a.vx, a.vz);
       if (dv0.lift && H.t <= dv0.tc + 0.02) { a.lift = dv0.lift * (1 - (1 - f) * (1 - f)); a.jumpAt = H.t; a.liftV = 0; } // l'envol
@@ -2183,6 +2219,9 @@ export function createMatchScene(parent) {
       const loose = !caught && (b.state === 'free' || b.state === 'pass') && inPlay();
       H.after = { mode: caught ? 'dist' : loose ? 'loose' : 'idle', stage: 'hold', t0: H.react, end: caught ? 30 : loose ? 4.5 : 1.5 };
       if (caught) H.after.hold = Math.abs(K.saveSide || 0) > 0.45 || (K.saveH || 0) < 0.45 ? 2.4 : 1.0; // couché : il se relève
+      // (1.0.33) un gardien qui vient de plonger est au sol : il ne glisse pas sur son élan (il finissait jusqu'à 1,5 m
+      // dans ses filets)
+      if (H.dive && H.t >= H.dive.at) { K.vx = K.vz = K.speed = 0; H.after.down = H.react + 0.9; }
     }
     const af = H.after;
     const el = H.react - af.t0;
@@ -2237,10 +2276,13 @@ export function createMatchScene(parent) {
     }
     if (af.mode === 'loose') {
       if (af.chaser === undefined) { // le plus proche du ballon, défenseur (ou le gardien, tout près)
+        // (1.0.33) personne ne court après un ballon qui sort derrière le but (le gardien traversait ses filets)
         let best = -1, bd = Infinity;
-        for (const j of teamIdx(D)) { if (!active(j)) continue; const [cx, cz] = cutPoint(j, 2.5, SPRINT); const d = Math.hypot(agents[j].x - cx, agents[j].z - cz) + (slotOf(j) === 0 ? 0.25 : 0); if (d < bd) { bd = d; best = j; } }
+        for (const j of teamIdx(D)) { if (!active(j)) continue; const [cx, cz] = cutPoint(j, 2.5, SPRINT); if (uvOf(cx, cz)[0] > GOAL_X - 0.01) continue; const d = Math.hypot(agents[j].x - cx, agents[j].z - cz) + (slotOf(j) === 0 ? 0.25 : 0); if (d < bd) { bd = d; best = j; } }
         af.chaser = best;
       }
+      if (af.chaser < 0) { if (!inPlay()) af.end = Math.min(af.end, Math.max(af.t0 + 1.5, H.react + 0.6)); K.steer(K.x, K.z, 0, dt, b.x, b.z); return; }
+      if (af.down && H.react < af.down && af.chaser === H.keeper) { K.vx = K.vz = K.speed = 0; return; } // il se relève d'abord
       if (af.chaser !== H.keeper) K.steer(K.x, K.z, 0, dt, b.x, b.z);
       if (!inPlay()) { af.end = Math.min(af.end, Math.max(af.t0 + 1.5, H.react + 0.6)); agents[af.chaser]?.steer(agents[af.chaser].x, agents[af.chaser].z, 0, dt, b.x, b.z); return; }
       if (gather(af.chaser, dt, SPRINT * 0.85)) af.end = Math.min(af.end, Math.max(af.t0 + 1.5, H.react + 0.8));
@@ -2515,7 +2557,7 @@ export function createMatchScene(parent) {
     get ball() { return b; },
     get agents() { return agents; }, // lecture seule (inspection en développement)
     get debug() {
-      return H && { after: H.after ? { mode: H.after.mode, stage: H.after.stage, clip: H.after.clip ?? null } : null, lane: H.laneWho ?? null, block: H.block ? { who: H.block.who, wall: H.block.wall, slide: H.block.slide, done: H.block.done } : null, turn: H.turn || null, slide: H.beats[H.k]?.slide ?? null, gapT: H.beats[H.k]?.t === 'tackle' ? +Math.hypot(agents[H.beats[H.k].who].x - agents[H.beats[H.k].victim].x, agents[H.beats[H.k].who].z - agents[H.beats[H.k].victim].z).toFixed(3) : null, offside: H.offside || 0, swaps: H.swaps || 0, line: H.line, A: H.A, keeper: H.keeper, victim: H.victim, offender: H.offender, foulAt: H.foulAt ?? null, dirA: S.dir[H.A], id: H.id, kind: H.kind, outcome: H.outcome, phase: H.phase, beat: H.beats[H.k]?.t, k: H.k, t: +H.t.toFixed(2), revealed: H.revealed, forced: !!H.forced, finaleT: H.finaleT ?? (H.fk === 0 ? 0 : null), est: H.est, fk: H.fk, bstate: b.state, owner: b.owner, bt: H.beats[H.k] && { t: H.beats[H.k].t, from: H.beats[H.k].from, to: H.beats[H.k].to, who: H.beats[H.k].who }, ball: { state: b.state, x: +b.x.toFixed(2), z: +b.z.toFixed(2), y: +b.y.toFixed(2) } };
+      return H && { dive: H.dive ? { v: H.dive.v, from: H.dive.from, clip: H.dive.clip ?? null, tc: H.dive.tc ?? null, at: H.dive.at, root: H.dive.root ?? null, mark: H.dive.mark ?? null } : null, after: H.after ? { mode: H.after.mode, stage: H.after.stage, clip: H.after.clip ?? null } : null, lane: H.laneWho ?? null, block: H.block ? { who: H.block.who, wall: H.block.wall, slide: H.block.slide, done: H.block.done } : null, turn: H.turn || null, slide: H.beats[H.k]?.slide ?? null, gapT: H.beats[H.k]?.t === 'tackle' ? +Math.hypot(agents[H.beats[H.k].who].x - agents[H.beats[H.k].victim].x, agents[H.beats[H.k].who].z - agents[H.beats[H.k].victim].z).toFixed(3) : null, offside: H.offside || 0, swaps: H.swaps || 0, line: H.line, A: H.A, keeper: H.keeper, victim: H.victim, offender: H.offender, foulAt: H.foulAt ?? null, dirA: S.dir[H.A], id: H.id, kind: H.kind, outcome: H.outcome, phase: H.phase, beat: H.beats[H.k]?.t, k: H.k, t: +H.t.toFixed(2), revealed: H.revealed, forced: !!H.forced, finaleT: H.finaleT ?? (H.fk === 0 ? 0 : null), est: H.est, fk: H.fk, bstate: b.state, owner: b.owner, bt: H.beats[H.k] && { t: H.beats[H.k].t, from: H.beats[H.k].from, to: H.beats[H.k].to, who: H.beats[H.k].who }, ball: { state: b.state, x: +b.x.toFixed(2), z: +b.z.toFixed(2), y: +b.y.toFixed(2) } };
     },
     dispose() {
       matchFeed.scene = false;
