@@ -121,6 +121,32 @@ export async function decodeCode(code) {
     return validSave(s) ? s : null;
   } catch { return null; }
 }
+// Code de transfert (1.0.35) : tout ce qu'un navigateur garde, en un seul code, pour l'app installée sur iPhone (elle ne
+// voit pas les données de Safari) ou pour quitter le navigateur d'Instagram : la partie solo (ou rien) et les codes de
+// reprise des clubs de championnat. « FOT1: » + JSON compressé ; « FOT0: » sans compression.
+export async function exportTransfer(state, leagues = []) {
+  const bytes = new TextEncoder().encode(JSON.stringify({ v: 1, save: state ? { ...state, lastSeen: Date.now() } : null, leagues }));
+  if (typeof CompressionStream === 'function') return `FOT1:${bytesToB64(await pipe(bytes, new CompressionStream('gzip')))}`;
+  return `FOT0:${bytesToB64(bytes)}`;
+}
+export const isTransferCode = (code) => /^\s*FOT[01]:/.test(code || '');
+// La partie principale telle qu'elle est rangée (celle d'une autre langue comprise), pour le code de transfert
+export function rawSave() {
+  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return validSave(s) ? s : null; } catch { return null; }
+}
+// { save (brute, non réparée, ou null), leagues: [codes de reprise] }, ou null si le code est illisible
+export async function decodeTransfer(code) {
+  try {
+    const m = /^\s*FOT([01]):([A-Za-z0-9+/=\s]+)$/.exec(code || '');
+    if (!m) return null;
+    let bytes = b64ToBytes(m[2].replace(/\s+/g, ''));
+    if (m[1] === '1') bytes = await pipe(bytes, new DecompressionStream('gzip'));
+    const d = JSON.parse(new TextDecoder().decode(bytes));
+    const save = d?.save && validSave(d.save) ? d.save : null;
+    const leagues = Array.isArray(d?.leagues) ? d.leagues.filter((x) => typeof x === 'string').slice(0, 6) : [];
+    return save || leagues.length ? { save, leagues } : null;
+  } catch { return null; }
+}
 // Partie importée d'une autre langue : rangée telle quelle (l'ancienne devient la copie de secours), elle sera réparée au
 // chargement, une fois le jeu rechargé dans sa langue.
 export function importForeign(raw) {

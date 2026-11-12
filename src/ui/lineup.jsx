@@ -279,8 +279,41 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
     const [kind, v] = el.dataset.drop.split(':');
     return kind === 'slot' ? { kind, k: Number(v) } : { kind, id: Number(v) };
   };
+  // Glissé jusqu'au bord de l'écran (1.0.35, PDG : « les remplaçants sont trop en bas, il faut défiler, et je n'arrive
+  // plus à les placer ») : pendant un glissé, la page ne défile pas au doigt ; elle défile donc toute seule quand le
+  // doigt approche du haut ou du bas de la zone qui défile, et la cible se recalcule sous le doigt.
+  const scrollerOf = (el) => {
+    for (let n = el?.parentElement; n; n = n.parentElement) {
+      if (/(auto|scroll)/.test(getComputedStyle(n).overflowY) && n.scrollHeight > n.clientHeight + 1) return n;
+    }
+    return document.scrollingElement;
+  };
+  const viewOf = (sc) => (sc === document.scrollingElement ? { top: 0, bottom: window.innerHeight } : sc.getBoundingClientRect());
+  const edgeLoop = () => {
+    const d = drag.current;
+    if (!d?.moved) return;
+    const r = viewOf(d.scroller);
+    const EDGE = 76;
+    const v = d.py < r.top + EDGE ? d.py - (r.top + EDGE) : d.py > r.bottom - EDGE ? d.py - (r.bottom - EDGE) : 0;
+    if (v) {
+      d.scroller.scrollTop += Math.sign(v) * Math.min(18, 4 + Math.abs(v) * 0.22);
+      setOver(keyOf(targetAt(d.px, d.py)));
+    }
+    d.raf = requestAnimationFrame(edgeLoop);
+  };
+  // Remplaçant choisi d'un toucher : le terrain vient en vue (il est souvent au-dessus, hors de l'écran)
+  const revealPitch = () => {
+    const pitchBox = pitchEl.current?.getBoundingClientRect();
+    const sc = scrollerOf(root.current);
+    if (!pitchBox || !sc) return;
+    const r = viewOf(sc);
+    if (pitchBox.top >= r.top - 4 && pitchBox.bottom <= r.bottom + 4) return; // déjà en vue
+    const by = pitchBox.height <= r.bottom - r.top - 96 ? pitchBox.top + pitchBox.height / 2 - (r.top + r.bottom) / 2 : pitchBox.top - r.top - 8;
+    sc.scrollBy({ top: by, behavior: 'smooth' });
+  };
   const reset = () => {
     clearTimeout(drag.current?.timer);
+    cancelAnimationFrame(drag.current?.raf || 0);
     drag.current = null;
     setGhost(null);
     setOver(null);
@@ -303,6 +336,10 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
     if (!d.armed) { if (far) reset(); return; } // le doigt a bougé avant la saisie : c'est un défilement
     if (!d.moved && !far) return;
     d.moved = true;
+    d.px = e.clientX;
+    d.py = e.clientY;
+    d.scroller ||= scrollerOf(root.current);
+    d.raf ||= requestAnimationFrame(edgeLoop);
     setGhost({ x: e.clientX, y: e.clientY, p: playerOf(d.item), from: keyOf(d.item) });
     setOver(keyOf(targetAt(e.clientX, e.clientY)));
   };
@@ -318,6 +355,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
     if (sel && act(sel, item)) { setSel(null); return; }
     if (item.kind === 'bench' && !canEnter(byId[item.id])) return;
     setSel(item);
+    if (item.kind === 'bench') revealPitch();
   };
   const handlers = (item) => ({
     onPointerDown: (e) => down(e, item),
@@ -416,6 +454,15 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
         </div>
         <p className="lu-hint">{hint}</p>
       </div>
+      {/* remplaçant choisi d'un toucher : un bandeau en bas de l'écran dit quoi faire ensuite, avec « Annuler » */}
+      {sel?.kind === 'bench' && byId[sel.id] && createPortal(
+        <div className="lu-pick" role="status">
+          <Portrait p={byId[sel.id]} size={34} />
+          <span className="lu-pick-text">{t('{v} : choisis un poste ou un joueur pour l’y placer', { v: byId[sel.id].name })}</span>
+          <button type="button" className="linkbtn" onClick={() => { uiSound('back'); setSel(null); }}>{t('Annuler')}</button>
+        </div>,
+        document.body,
+      )}
       {ghost && createPortal(
         <div className="lu-ghost" style={{ left: ghost.x, top: ghost.y }} aria-hidden="true">
           <span className="lu-face"><Portrait p={ghost.p} size={52} /><span className="lu-rate">{ghostOut ? '—' : fmtRating(playerRating(ghost.p))}</span></span>

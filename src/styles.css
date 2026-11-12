@@ -1516,6 +1516,38 @@ html[lang="ar"] .sqc-xi { line-height: 1.45; padding: 0 7px; font-size: 12px; }
 .confirm-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .confirm-actions .btn { flex: 1 1 auto; padding: 12px 26px; } /* un libellé long (« Effacer et recommencer ») passe à la ligne entier, jamais rogné */
 .btn.danger { background: linear-gradient(135deg, #b5544a, #e07a6f); color: #160807; box-shadow: 0 8px 24px rgba(224, 122, 111, .25); }
+/* Installer le jeu (1.0.35, ui/install.jsx) : la feuille des confirmations, avec l'icône du jeu et des étapes illustrées ;
+   les mots à chercher sur le téléphone (Partager, « Sur l'écran d'accueil »…) en or */
+.pwa-scrim { z-index: 46; }
+/* opaque : le menu de l'écran titre ne transparaît pas ; le contenu défile, les boutons restent en bas */
+.scrim .pwa-card.glass { background: #0d0d0e; }
+.pwa-card { width: min(460px, 100%); gap: 0; max-height: calc(100% - 32px); overflow: hidden; }
+.pwa-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; margin: 0 -24px; padding: 2px 24px 14px; }
+.pwa-actions { flex: none; margin: 0 -24px; padding: 12px 24px 0; box-shadow: 0 -14px 18px -10px rgba(0, 0, 0, .7); border-top: 1px solid var(--line); }
+@media (max-height: 500px) { .pwa-card { width: min(640px, 100%); } } /* téléphone couché : plus large, moins haut */
+.pwa-head { display: flex; align-items: center; gap: 14px; }
+.pwa-icon { width: 56px; height: 56px; flex: none; border-radius: 12px; box-shadow: 0 0 0 1px var(--gold-line), 0 10px 24px rgba(0, 0, 0, .5); }
+.pwa-titles { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.confirm-card .pwa-titles h3 { font-family: var(--font-disp); font-weight: 700; font-size: var(--d-xl); line-height: 1.05; text-transform: uppercase; letter-spacing: .01em; }
+.pwa-steps { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pwa-step { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; background: rgba(255, 255, 255, .035); border: 1px solid var(--line); border-radius: var(--r-md); }
+.pwa-num { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: var(--r-sm); color: var(--gold-light); background: var(--gold-soft); border: 1px solid var(--gold-line); }
+.pwa-num svg { width: 22px; height: 22px; }
+.pwa-step-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pwa-step-text strong { font-family: var(--font-disp); font-weight: 600; font-size: var(--d-md); color: var(--text); line-height: 1.2; }
+.pwa-step-text > span { font-size: var(--t-sm); color: var(--text-2); line-height: 1.45; }
+.pwa-label { color: var(--gold-light); font-weight: 600; }
+.pwa-carry { border-color: var(--gold-line); background: linear-gradient(120deg, rgba(199, 161, 90, .1), rgba(199, 161, 90, .02)); }
+.pwa-carry.done .pwa-num { background: var(--gold-grad); color: var(--gold-ink); border-color: transparent; }
+.pwa-copy { align-self: flex-start; margin-top: 8px; }
+.pwa-self { margin-top: 6px; font-style: normal; font-size: var(--t-sm); color: var(--gold-light); }
+.pwa-card .cm-code { min-height: 72px; height: 72px; margin-top: 8px; }
+.pwa-native { font-size: var(--t-sm); color: var(--text-2); line-height: 1.5; }
+.pwa-install svg { width: 18px; height: 18px; margin-inline-end: 8px; vertical-align: -3px; }
+.pwa-paste { display: flex; flex-direction: column; gap: 6px; font-size: var(--t-sm); color: var(--text-2); }
+.pwa-paste .cm-code { height: 96px; }
+.cm-row.cm-install strong { color: var(--gold-light); }
+.cm-install-go { width: 16px; height: 16px; flex: none; color: var(--gold); } /* déjà retourné en arabe (icons.jsx, flip) */
 /* interrupteurs (réglages) et choix segmentés (panneaux) */
 .switch { position: relative; width: 48px; height: 28px; border-radius: 2px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, .06); flex-shrink: 0; transition: background var(--dur-fast), border-color var(--dur-fast); }
 .switch i { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 1px; background: var(--muted); transition: transform var(--dur) var(--ease), background var(--dur-fast); }
@@ -3011,6 +3043,15 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--text);
 }
 .lu-ghost .lu-face { box-shadow: 0 0 0 3px var(--gold-light), 0 14px 28px rgba(0, 0, 0, .6); }
+/* remplaçant choisi d'un toucher (1.0.35) : bandeau en bas de l'écran, au-dessus de tout, tant qu'il attend son poste */
+.lu-pick {
+  position: fixed; z-index: 9998; left: 12px; right: 12px; margin: 0 auto; bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: min(460px, calc(100vw - 24px)); display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  background: #0d0d0e; border: 1px solid var(--gold-line); border-radius: var(--r-md); box-shadow: 0 16px 36px rgba(0, 0, 0, .65);
+  animation: fo-up .25s var(--ease);
+}
+.lu-pick-text { flex: 1; min-width: 0; font-size: var(--t-sm); line-height: 1.35; color: var(--text); }
+.lu-pick .linkbtn { flex: none; }
 
 /* « Meilleur onze » : ce qu'il apporte (+0,4), ou que le onze est déjà le meilleur possible */
 .lu-best {

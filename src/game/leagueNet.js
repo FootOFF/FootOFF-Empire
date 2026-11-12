@@ -332,6 +332,17 @@ export function parseResumeCode(raw) {
   if (rest.length || !isLeagueCode((code || '').toUpperCase()) || !b64.test(id || '') || !b64.test(secret || '')) return null;
   return { code: code.toUpperCase(), id, secret };
 }
+// Reprise d'un club par son code (code de transfert vers l'app installée, 1.0.35) : vérifié auprès du serveur, puis
+// gardé sur cet appareil ; son club revient du casier à la première entrée. Null si le code est illisible.
+export async function resumeLeague(raw) {
+  const parsed = parseResumeCode(raw);
+  if (!parsed) return null;
+  if (!myLeagues().some((m) => m.code === parsed.code) && myLeagues().length >= MAX_MY_LEAGUES) return null;
+  const d = await leagueState(parsed);
+  const m = { ...parsed, pseudo: d.me.pseudo, club: d.me.club, name: d.league.name, settings: d.league.settings, at: Date.now() };
+  rememberLeague(m);
+  return m;
+}
 
 // Invitation reçue par lien (…/footoffempire/?ligue=CODE) : lue une fois au démarrage, puis retirée de l'adresse
 // (gardée ici : un second appel rend le même code).

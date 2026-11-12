@@ -19,6 +19,7 @@ import { errorReport } from './errlog';
 import { canFullscreen, setFullscreen, useFullscreen } from './fullscreen';
 import { isRTL, t, tr } from '../i18n/index';
 import { LINK, SOCIALS } from './socials';
+import { inAppBrowser, installKind, openInstall } from './pwa';
 
 export { setUiSound, uiSound } from './uisound';
 
@@ -185,7 +186,8 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
   const fullscreen = useFullscreen();
   // Retour en tête (0.8.8, demande du PDG) : la même ligne qu'avant, fixe au-dessus de la liste qui défile, première de
   // la navigation ; le curseur s'ouvre sur Musique
-  const rows = [{ id: 'back' }, { id: 'music', disabled: !onMusicVolume }, { id: 'sound', disabled: !onSfxVolume }, { id: 'vibration', disabled: !canVibrate }, { id: 'fluid', disabled: !onToggleFluid }, ...(fsOk ? [{ id: 'fullscreen' }] : []),
+  const installable = installKind() || (inAppBrowser() ? 'inapp' : null); // installer le jeu (1.0.35) : la feuille d'installation
+  const rows = [{ id: 'back' }, ...(installable ? [{ id: 'install' }] : []), { id: 'music', disabled: !onMusicVolume }, { id: 'sound', disabled: !onSfxVolume }, { id: 'vibration', disabled: !canVibrate }, { id: 'fluid', disabled: !onToggleFluid }, ...(fsOk ? [{ id: 'fullscreen' }] : []),
     { id: 'export', disabled: !save || !onExport }, { id: 'import', disabled: !onImport }, { id: 'report' }, ...SOCIALS.map((x) => ({ id: x.id }))];
   const at = (id) => rows.findIndex((r) => r.id === id); // rang d'une entrée (le plein écran n'existe que sur PC)
   const menu = useMenu(rows, { initial: focus ? Math.max(0, at(focus)) : at('music'), onBack: () => (mode === 'menu' ? onBack() : setMode('menu')), active: active && mode === 'menu' });
@@ -264,6 +266,16 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
       <span className="cm-row-text"><strong>{t('Retour')}</strong></span>
     </button>
     <div className="cm-settings" role="menu" aria-label={t('Réglages')}>
+      {installable && (
+        <button type="button" role="menuitem" className={`cm-row cm-install ${cur === at('install') ? 'on' : ''}`} {...row(at('install'))} onClick={() => { uiSound('select'); openInstall(); }}>
+          <span className="cm-bar" aria-hidden="true" />
+          <span className="cm-row-text">
+            <strong>{t('Installer le jeu')}</strong>
+            <span>{installable === 'pc' ? t('Dans sa propre fenêtre, ouvert d’un clic depuis ton ordinateur.') : t('Sur ton écran d’accueil : plein écran, ouvert d’un geste depuis son icône.')}</span>
+          </span>
+          <IconChevron className="cm-install-go" />
+        </button>
+      )}
       <VolumeRow id="music" label={t('Musique')} text={t('La musique du jeu, en fond. Elle s’efface pendant les matchs et reprend ensuite.')} aria={t('Volume de la musique')}
         off={t('Coupée')} value={musicVolume} onChange={onMusicVolume} on={cur === at('music')} keys={active && mode === 'menu'} rowProps={row(at('music'))} />
       <VolumeRow id="sound" label={t('Sons')} text={t('Ambiance du stade, sifflet, pièces et sons du menu.')} aria={t('Volume des sons')}

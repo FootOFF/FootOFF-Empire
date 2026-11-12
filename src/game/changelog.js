@@ -5,6 +5,15 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.35', date: '2026-11-13', title: t('Installer le jeu'),
+    items: [
+      t('Au téléphone, le jeu recommande de l’installer sur l’écran d’accueil et montre comment, pas à pas : sur iPhone, sur Android (un vrai bouton Installer) et depuis le navigateur intégré d’Instagram ou de TikTok.'),
+      t('Sur iPhone, l’app installée ne voit pas ce que garde le navigateur : la partie et les clubs de championnat se copient en un code, que l’app propose de coller à sa première ouverture.'),
+      t('« Installer le jeu » est aussi en tête des Réglages, et dans les notifications des championnats sur iPhone.'),
+      t('Au téléphone, les changements se font sans peine : touche un remplaçant et le terrain vient à l’écran, avec un bandeau qui dit quoi faire ensuite ; glisse-le vers le haut et la page défile toute seule.'),
+    ],
+  },
+  {
     version: '1.0.34', date: '2026-11-12', title: t('Tableau tactique, sans pronostic'),
     items: [
       t('L’avant-match devient un tableau tactique noir et or : l’équipe se place selon son plan, avec sa zone de pressing, sa ligne défensive et ses courses, et tout se replace à chaque changement.'),
