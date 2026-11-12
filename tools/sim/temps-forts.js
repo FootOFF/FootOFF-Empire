@@ -57,7 +57,10 @@ const aspect = W / H;
 const camera = new THREE.PerspectiveCamera(aspect < 1 ? 42 + (1 - aspect) * 26 : 42, aspect, 0.1, 400);
 const TV = { pos: new THREE.Vector3(0, 5.4, 10.8), target: new THREE.Vector3(0, 0, 0.8) };
 const tvDir = new THREE.Vector3().subVectors(TV.pos, TV.target).normalize();
-const SHOT = { wide: { play: 6.2, attack: 4.8, set: 4.2, card: 3.6, celebrate: 3.3, replay: 3.4 }, narrow: { play: 3.7, attack: 3.1, set: 2.9, card: 2.5, celebrate: 2.3, replay: 2.4 } };
+// (largeurs de plan d'Empire3D, SHOT_WIDTH ; ?zoom=0.8 resserre tous les plans de 20 %, pour comparer des cadrages)
+const ZOOM = Number(params.get('zoom') || 1);
+const SHOT = { wide: { play: 6.2, attack: 4.8, set: 4.2, card: 3.6, celebrate: 3.3, replay: 3.4 }, narrow: { play: 3.0, attack: 2.7, set: 2.7, card: 2.4, celebrate: 2.2, replay: 2.3 } };
+for (const s of Object.values(SHOT)) for (const k of Object.keys(s)) s[k] *= ZOOM;
 const target = new THREE.Vector3();
 let dist = 9;
 function cam(mi, dt) {
