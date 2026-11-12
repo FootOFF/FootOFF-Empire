@@ -1137,6 +1137,23 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Après l'arrêt (1.0.28)
+
+- `afterStep` (réaction des issues autres que but et carton) : ballon capté (`mode 'dist'`) : le gardien tient (1 s
+  debout, 2,4 s couché le temps de se relever), vise un défenseur à 15-40 m (au plus près de 28 m) pendant 0,7 s, puis
+  relance : roulé sous 24 m (`GK_Roll`), lancé à la main jusqu'à 36 m (`GK_Throw`, 20-24 m/s, sommet ≤ 4 m), volée
+  au-delà (`GK_DropKick`, 26-32 m/s, ≤ 6 m) ; le geste est annoncé à la 3D (`cueId/cueName/cueLead`, `players.cueMark`)
+  et le ballon part à son instant clé (main la plus vive au-dessus de l'épaule pour le lancer) ; pendant l'élan, le
+  ballon est dans la main qui lance (`A.throwHand`). Le receveur va au point de chute tant que le ballon est en l'air,
+  puis le contrôle. Ballon libre sur la pelouse (`'loose'`, poteau, parade) : le défenseur le plus proche (ou le gardien)
+  va le chercher ; ballon sorti : tout le monde s'arrête et regarde. Défense qui s'écarte pour relancer, attaque qui
+  repart. Fin : contrôle + 0,9 s, ballon sorti + 0,6 s (1,5 s au moins), 12 s au plus.
+- Nouveaux gestes Mixamo (bibliothèque gratuite déjà sur le disque) : `GK_Throw`, `GK_Roll`, `GK_DropKick`, et, pour la
+  suite, `Walk_Mx`, `Jog_Mx`, `Run_Mx`, `Receive` ; les 55 pistes existantes identiques octet pour octet ; `anims.glb`
+  3,19 → 3,55 Mo.
+- Banc `tmp/apres.mjs` (144 arrêts et poteaux) : 27 prises sur 27 relancées et contrôlées (19 à la main, 8 roulées) ;
+  poteaux et parades : ballon repris ou sorti ; 4,5 s au plus après l'instant décisif hors relance, 6,7 s avec.
+
 ## Filets et ralentis (1.0.27)
 
 - Filet (`ballphysics.stepNet`) : le pan incliné du stade (de la barre, 2,44 m, au sol 2 m derrière la ligne, `NET_BACK`)

@@ -5,6 +5,13 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.28', date: '2026-11-12', title: t('Après l’arrêt'),
+    items: [
+      t('Après une prise, le gardien se relève, se tourne vers un partenaire et relance : ballon roulé, lancé à la main ou dégagé de volée selon la distance ; le partenaire va au-devant du ballon et le contrôle.'),
+      t('Après un poteau ou une parade, le défenseur le plus proche (ou le gardien) va chercher le ballon ; la défense s’écarte pour relancer, l’attaque repart ; plus personne ne reste figé.'),
+    ],
+  },
+  {
     version: '1.0.27', date: '2026-11-12', title: t('Filets et ralentis'),
     items: [
       t('Le ballon d’un but reste dans le filet : il s’y enfonce et retombe au fond, au lieu de le traverser.'),

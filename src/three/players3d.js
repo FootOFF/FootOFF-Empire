@@ -165,6 +165,21 @@ async function build() {
     const h = both ? hl.clone().add(hr).multiplyScalar(0.5) : (Math.abs(hl.x) > Math.abs(hr.x) ? hl : hr);
     A.saveHands[n] = { fwd: h.z, left: h.x, up: h.y };
   }
+  // relance du gardien (1.0.28, Mixamo : lancer à la main, ballon roulé, dégagement de volée) : l'instant où le ballon
+  // part, la main (ou le pied) la plus vive de la seconde moitié du geste
+  const fastest = (n, bones, minY = -1) => { // (minY : la main au-dessus de l'épaule, pour un lancer par-dessus)
+    const s = probe(n, (r, t) => ({ t, p: bones.map((b) => wpos(r, b)) }));
+    let best = { v: 0, t: 0, b: bones[0] };
+    for (let i = 8; i < s.length - 2; i++) for (let k = 0; k < bones.length; k++) { if (s[i].p[k].y < minY) continue; const v = s[i].p[k].distanceTo(s[i - 1].p[k]) / (s[i].t - s[i - 1].t); if (v > best.v) best = { v, t: s[i].t, b: bones[k] }; }
+    fastest.bone = best.b;
+    return best.t;
+  };
+  A.throwHand = {}; // la main qui lance (le ballon y est tenu pendant l'élan)
+  if (A.clips.GK_Throw) { A.marks.GK_Throw = fastest('GK_Throw', ['hand_r', 'hand_l'], 1.45); A.throwHand.GK_Throw = fastest.bone; }
+  if (A.clips.GK_Roll) { A.marks.GK_Roll = fastest('GK_Roll', ['hand_r', 'hand_l']); A.throwHand.GK_Roll = fastest.bone; }
+  if (A.clips.GK_DropKick) A.marks.GK_DropKick = fastest('GK_DropKick', ['ball_r', 'ball_l']);
+  A.ends = { ...(A.ends || {}) };
+  for (const n of ['GK_Throw', 'GK_Roll', 'GK_DropKick']) if (A.marks[n] !== undefined) A.ends[n] = Math.min(A.clips[n].duration, A.marks[n] + 0.7);
   if (import.meta.env?.DEV && typeof window !== 'undefined') window.__saveHands = { hands: A.saveHands, marks: A.marks, dur: Object.fromEntries(Object.entries(A.clips).map(([k, c]) => [k, c.duration])) };
   // la faute (0.8.24, audit de la charte : le porteur ne tombait jamais) : le tacle glissé touche quand le corps est au
   // plus bas ; la chute du porteur part au moment où son bassin plonge vers le sol (le trébuchement capté avant, une
@@ -888,6 +903,12 @@ export function createPlayers3D(parent, max = 22) {
       const off = A.marks.Header - (ag.headLead || 0);
       if (off >= 0) gesture(p, 'Header', { at: off, fade: 0.12 }); else p.pending = { name: 'Header', wait: -off };
     }
+    // geste annoncé par le moteur (1.0.28 : relance du gardien) : son instant clé (marks) tombe cueLead secondes après
+    if (ag.cueId && ag.cueId !== p.cueSeen && A.clips[ag.cueName]) {
+      p.cueSeen = ag.cueId;
+      const off = (A.marks[ag.cueName] ?? 0) - (ag.cueLead || 0);
+      if (off >= 0) gesture(p, ag.cueName, { at: off, fade: 0.2 }); else p.pending = { name: ag.cueName, wait: -off };
+    }
     if (Math.abs(ag.roll || 0) > 0.5 && !p.fell && A.clips.Foul_Fall) {
       p.fell = true;
       gesture(p, 'Foul_Fall', { at: A.marks.Foul_Fall, fade: 0.1 });
@@ -969,7 +990,7 @@ export function createPlayers3D(parent, max = 22) {
       for (const p of slots) {
         if (!p) continue;
         if (p.shot) { p.shot.stop(); p.shot = null; }
-        p.cheering = false; p.locoW = 1; p.fade = 0; p.prevKick = 0; p.pose = 0; p.lx = undefined; p.back = 0; p.pending = null; p.holding = false; p.saveSeen = 0; p.tackleSeen = 0; p.headSeen = 0; p.fell = false; p.after = null; p.frozen = false;
+        p.cheering = false; p.locoW = 1; p.fade = 0; p.prevKick = 0; p.pose = 0; p.lx = undefined; p.back = 0; p.pending = null; p.holding = false; p.saveSeen = 0; p.tackleSeen = 0; p.headSeen = 0; p.cueSeen = 0; p.fell = false; p.after = null; p.frozen = false;
         p.lh = undefined; p.roll = 0; p.pitch = 0; p.yaw = undefined; p.lookUp = undefined; p.gw = 0; p.dirF = 1; p.dirR = 0;
         for (const L of p.legs) { L.lock = null; L.w = 0; L.prevB = null; L.free = false; L.held = false; }
       }
@@ -1010,7 +1031,12 @@ export function createPlayers3D(parent, max = 22) {
         keeperIK(p);
         if (p.keeper) { // le ballon entre ses gants : le milieu des deux mains, un peu devant les paumes
           const hl = p.root.getObjectByName('hand_l'); const hr = p.root.getObjectByName('hand_r');
-          if (hl && hr) {
+          const thr = p.shot && A.throwHand?.[p.shot.getClip().name]; // relance à la main (1.0.28) : dans la main qui lance
+          if (thr) {
+            const hand = p.root.getObjectByName(thr); const fore = p.root.getObjectByName(thr === 'hand_r' ? 'lowerarm_r' : 'lowerarm_l');
+            const hp = hand.getWorldPosition(V()); const dir = hp.clone().sub(fore.getWorldPosition(V())).normalize();
+            (p.anchor ||= V()).copy(hp).addScaledVector(dir, 0.011 + 0.06 * p.root.scale.x);
+          } else if (hl && hr) {
             const a = (p.anchor ||= V());
             a.copy(hl.getWorldPosition(V())).add(hr.getWorldPosition(V())).multiplyScalar(0.5);
             a.x += Math.cos(p.ag.h) * 0.004; a.z += Math.sin(p.ag.h) * 0.004;
@@ -1026,6 +1052,8 @@ export function createPlayers3D(parent, max = 22) {
       const s = 0.1 * (p.height / BASE_H);
       return { fwd: c.fwd * s, right: -c.left * s };
     },
+    // l'instant clé d'un geste annoncé (1.0.28 : le ballon quitte la main du gardien), en secondes depuis son début
+    cueMark(name) { return A?.marks?.[name] ?? null; },
     // le ballon tenu par le gardien i : entre ses gants (position monde) ; null sans joueurs réalistes
     ballAnchor(i) { const p = slots[i]; return p && p.anchor ? p.anchor : null; },
     // l'arrêt que fera le gardien i (agent ag : saveSide, saveH, saveKind) : ses mains au contact, dans son repère
@@ -1072,6 +1100,7 @@ export function createPlayersAuto(parent, max, makeProcedural) {
     kickSpot: (...a) => cur.kickSpot?.(...a) ?? null,
     saveHand: (...a) => cur.saveHand?.(...a) ?? null,
     ballAnchor: (...a) => cur.ballAnchor?.(...a) ?? null,
+    cueMark: (...a) => cur.cueMark?.(...a) ?? null,
     setAgent: (...a) => cur.setAgent(...a),
     commit: (n, dt) => cur.commit(n, dt),
     dispose() { gone = true; cur.dispose(); },
