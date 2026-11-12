@@ -5,6 +5,7 @@
 // rend des images à des instants donnés (captures sans écran).
 import * as THREE from 'three';
 import { createMatchScene } from '../../src/three/matchplay.js';
+import { createTvCamera } from '../../src/three/broadcast.js';
 import { matchFeed } from '../../src/game/matchFeed.js';
 
 const params = new URLSearchParams(location.search);
@@ -63,7 +64,16 @@ const SHOT = { wide: { play: 6.2, attack: 4.8, set: 4.2, card: 3.6, celebrate: 3
 for (const s of Object.values(SHOT)) for (const k of Object.keys(s)) s[k] *= ZOOM;
 const target = new THREE.Vector3();
 let dist = 9;
+// réalisation télé du jeu (1.0.26, three/broadcast.js) ; ?cam=ancienne pour l'ancien plan large
+const tvCam = createTvCamera(camera);
+const OLD_CAM = params.get('cam') === 'ancienne';
 function cam(mi, dt) {
+  if (mi.world && !OLD_CAM && mi.cam !== 'cutaway' && !(mi.cam === 'replay' && mi.angle)) {
+    tvCam.step(mi, dt, W, H, Math.asin(tvDir.y));
+    return;
+  }
+  const baseFov = aspect < 1 ? 42 + (1 - aspect) * 26 : 42;
+  if (camera.fov !== baseFov) { camera.fov = baseFov; camera.updateProjectionMatrix(); tvCam.reset(); }
   const narrow = W <= 760;
   const width = SHOT[narrow ? 'narrow' : 'wide'][mi.cam] || 4.8;
   const perUnit = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * (W / H);

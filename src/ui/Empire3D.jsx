@@ -20,6 +20,7 @@ import { momentAt } from '../three/sky';
 import { PARVIS, createTrophies } from '../three/trophies';
 import { honoursOf } from '../game/honours';
 import { createMatchScene } from '../three/matchplay';
+import { createTvCamera } from '../three/broadcast';
 import { matchFeed } from '../game/matchFeed';
 import { createCrowd } from '../three/crowd';
 import { matchKits } from '../game/kits';
@@ -693,8 +694,16 @@ export default function Empire3D({
       controls.maxPolarAngle = POLAR;
       if (camera.near !== NEAR) { camera.near = NEAR; camera.updateProjectionMatrix(); }
     };
+    // réalisation télé (1.0.26, three/broadcast.js)
+    const tv = createTvCamera(camera);
     const broadcastStep = (mi, dt) => {
+      const W0 = mount.clientWidth, H0 = Math.max(1, mount.clientHeight);
+      const baseFov = fovFor(W0 / H0);
       // plan de coupe (0.8.7) : plan large du stade, en lent travelling, le temps de la mise en place de l'action
+      if (mi.cam === 'cutaway' || (mi.cam === 'replay' && mi.angle)) { // (objectif normal : le zoom de la réalisation est rendu)
+        if (camera.fov !== baseFov) { camera.fov = baseFov; camera.updateProjectionMatrix(); }
+        tv.reset();
+      }
       if (mi.cam === 'cutaway') {
         const side = mi.side || 1, k = mi.t || 0;
         controls.target.set(0, 0, 0.6);
@@ -727,6 +736,7 @@ export default function Empire3D({
       const view = arena ? TV_VIEW_ARENA : TV_VIEW;
       tvDir.subVectors(view.pos, view.target).normalize();
       const W = mount.clientWidth, H = Math.max(1, mount.clientHeight);
+      if (mi.world) { tv.step(mi, dt, W, H, Math.asin(tvDir.y)); controls.target.copy(tv.aim); return; } // réalisation télé (1.0.26)
       const narrow = W <= 760;
       const freeW = W; // pendant un temps fort, toute la largeur de l'écran est à la 3D
       const width = SHOT_WIDTH[narrow ? 'narrow' : 'wide'][mi.cam] || SHOT_WIDTH.wide.play;
@@ -1048,6 +1058,10 @@ export default function Empire3D({
       if (mi?.cut) ctx.camTween = null; // un temps fort commence : la réalisation prend la main tout de suite
       if (!(mi?.cam === 'replay' && mi.angle)) ctx.restorePolar(); // l'angle sous l'horizon n'est permis que le temps du ralenti
       if (mi && modeRef.current.live && mi.live && !ctx.camTween && !(ctx.userCam > performance.now())) broadcastStep(mi, dt);
+      else { // hors réalisation télé : l'objectif normal (le téléobjectif du direct ne survit pas au temps fort, 1.0.26)
+        const bf = fovFor(mount.clientWidth / Math.max(1, mount.clientHeight));
+        if (Math.abs(camera.fov - bf) > 0.01) { camera.fov = bf; camera.updateProjectionMatrix(); }
+      }
       ctx.anims.forEach((a) => { a.update(dt); if (a.done) ctx.anims.delete(a); });
       if (ctx.holo) { // aperçu : l'hologramme sort de terre puis respire
         const h = ctx.holo;

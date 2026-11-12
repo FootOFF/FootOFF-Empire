@@ -524,12 +524,28 @@ export function createMatchScene(parent) {
       }
       case 'corner': { // corner rentrant, reprise de la tête
         const taker = mate(['M', 'D', 'A']);
-        for (const i of teamIdx(A)) if (active(i) && slotOf(i) > 0 && i !== taker && i !== shooter) { const [hu, hv] = H.home.get(i); put(i, clamp(hu, 2.4, 4.6), hv * 0.6); }
-        for (const i of teamIdx(D)) if (active(i) && slotOf(i) > 0) { const [hu, hv] = H.home.get(i); put(i, clamp(hu + 0.5, 3.4, 4.85), hv * 0.55, 0, 0); }
+        // (1.0.25, audit collectif : un seul attaquant dans la surface, sept à 22-28 m, dix défenseurs à 11-18 m ; la tête
+        // était libre) : la disposition d'un vrai corner. Attaque : appels au premier poteau, au second, au point de penalty,
+        // un joueur devant le gardien, un à l'entrée de la surface (second ballon), une solution courte ; trois restent en
+        // couverture. Défense : chaque attaquant de la surface marqué côté but, trois en zone devant le but, un au premier
+        // poteau, un à l'entrée de la surface ; le reste devant
+        const rank = (i) => ({ A: 0, M: 1, D: 2 }[roleOf(i)] ?? 3);
+        const others = teamIdx(A).filter((i) => active(i) && slotOf(i) > 0 && i !== taker && i !== shooter).sort((x, y) => rank(x) - rank(y));
+        const START = [[4.3, s * 0.55], [4.2, -s * 0.15], [3.95, s * 0.05], [5.02, s * 0.06], [3.55, -s * 0.25], [4.95, s * 2.55], [0.3, 0.9], [0.3, -0.9], [1.6, 0]];
+        others.forEach((i, k) => { const p = START[k] || [1.0, (k % 2 ? 1 : -1) * 0.6]; put(i, p[0], p[1]); });
+        const RUNS = [[4.82, s * 0.3], [4.74, -s * 0.42], [4.4, 0]];
+        others.slice(0, 3).forEach((i, k) => H.runs.set(i, RUNS[k]));
         put(taker, GOAL_X - 0.03, s * 3.38, GOAL_X - 1, 0);
         deadBall(...at(GOAL_X - 0.01, s * 3.33));
         put(shooter, 4.25, -s * 0.45);
-        boxRuns(otherAttackers(3, [shooter, taker]));
+        const inBox = [shooter, ...others.slice(0, 4)];
+        const defs = teamIdx(D).filter((i) => active(i) && slotOf(i) > 0).sort((x, y) => rank(y) - rank(x)); // défenseurs d'abord
+        const ZONE = [[4.9, s * 0.2], [4.9, -s * 0.05], [4.9, -s * 0.3], [5.12, s * 0.32], [3.7, 0], [2.7, 0.7], [2.7, -0.7]];
+        let z = 0;
+        defs.forEach((i, k) => {
+          if (k < inBox.length) { const [au, av] = uvOf(agents[inBox[k]].x, agents[inBox[k]].z); put(i, Math.min(GOAL_X - 0.08, au + 0.08), av * 0.92, 0, 0); }
+          else { const p = ZONE[z++] || [2.5, 0]; put(i, p[0], p[1], 0, 0); }
+        });
         beats = [
           { t: 'wait', dur: 0.9 + CUT }, // la mise en place se joue pendant le plan de coupe : l'attente visible reste la même
           { t: 'runup', who: taker, back: 0.18 },
@@ -2349,9 +2365,14 @@ export function createMatchScene(parent) {
       const w = clamp((fu - 2.2) / 2.4, 0, 1) * 0.4;
       if (w > 0) { const [gx, gz] = at(GOAL_X, 0); focus = { x: focus.x + (gx - focus.x) * w, z: focus.z + (gz - focus.z) * w * 0.5 }; }
     }
+    // ce que la réalisation doit savoir pour cadrer comme à la télévision (1.0.26, audit de la caméra) : le ballon et les
+    // joueurs, le receveur de la passe en vol ou qui se prépare, le tireur de la finale, le gardien qui défend
+    const bt = H.beats[H.k];
+    const pass = bt?.t === 'pass' && typeof bt.to === 'number';
+    const world = { b, ag: agents, bt: bt?.t ?? null, recvTo: pass && bt.launched ? bt.to : -1, recvNext: pass && !bt.launched ? bt.to : -1, shooter: H.shooter ?? -1, keeper: H.keeper ?? -1 };
     return {
       x: focus.x, z: focus.z, vx: mover.vx || 0, vz: mover.vz || 0, cam, live: true, cut, slow: H.phase === 'replay',
-      angle: H.phase === 'replay' ? H.replayAngle : null, goalX: S.dir[H.A] * GOAL_X, bx: b.x, by: b.y, bz: b.z,
+      angle: H.phase === 'replay' ? H.replayAngle : null, goalX: S.dir[H.A] * GOAL_X, bx: b.x, by: b.y, bz: b.z, world,
     };
   }
 
