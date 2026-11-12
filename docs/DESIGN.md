@@ -1137,6 +1137,17 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Filets et ralentis (1.0.27)
+
+- Filet (`ballphysics.stepNet`) : le pan incliné du stade (de la barre, 2,44 m, au sol 2 m derrière la ligne, `NET_BACK`)
+  au lieu d'une boîte de 1,6 m à toit plat ; ressort raide le long de sa normale (6000/s², amorti 130/s), 6 cm au plus
+  dans les mailles. Banc de l'audit (120 buts) : ballon au-delà du filet dessiné médiane 21 → 3 cm, max 1,09 m → 8 cm,
+  buts à plus de 30 cm 52 → 0.
+- Ralenti d'un but : il part de la passe décisive (`H.assistT`, 2,6 à 4,5 s avant le but), plan de tribune au
+  téléobjectif (`replayAngle` 'side', réalisation télé), coupe derrière la cage 0,25 s avant la frappe ('goal') ; vitesse
+  0,5, jusqu'à 0,35 autour du contact (`H.rSpeed`, gestes 3D compris). L'ancien angle au ras de la pelouse (caméra à moins
+  de 3 m des joueurs) n'est plus utilisé.
+
 ## Réalisation télé (1.0.26)
 
 - Caméra des temps forts (`src/three/broadcast.js`, partagée par Empire3D.jsx et le banc `tools/sim/temps-forts.js`) :

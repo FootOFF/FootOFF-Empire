@@ -183,26 +183,30 @@ export function hitFrame(s, gx) {
 // Dans le filet : le ballon entré dans la cage (au-delà de la ligne en gx) est freiné par les mailles en quelques
 // dizaines de centimètres, les côtés et le toit le retiennent, puis il retombe au fond. Renvoie l'enfoncement du filet
 // (0..1) pour le gonfler à l'image.
+// 1.0.27 (audit du ballon : le ballon d'un but traversait le filet dessiné sept fois sur dix, jusqu'à 1,1 m) : le filet
+// est celui du stade, un pan incliné de la barre (2,44 m) jusqu'au sol 2 m derrière la ligne (NET_BACK), et deux côtés ;
+// les mailles sont un ressort amorti raide le long de la normale du pan (le ballon s'y enfonce de quelques dizaines de
+// centimètres puis retombe au fond). Le centre du ballon sert de repère (ses 11 cm de rayon compris).
+export const NET_BACK = 0.2;
 export function stepNet(s, gx, dt) {
   const dir = Math.sign(gx) || 1;
-  const depth = (s.x - gx) * dir; // profondeur dans la cage
-  // les mailles : un ressort amorti qui ne pousse que vers l'intérieur du terrain, au-delà de 1,2 m de profondeur
-  const back = GOAL.depth * 0.6;
-  let push = 0;
-  if (depth > back) {
-    push = depth - back;
-    const k = 120, c = 10;
-    const vin = s.vx * dir;
-    const a = -(k * push + c * Math.max(0, vin));
-    s.vx += a * dir * dt;
+  const NH = GOAL.bar;
+  const nL = Math.hypot(1 / NET_BACK, 1 / NH);
+  const nx = dir / NET_BACK / nL, ny = 1 / NH / nL; // normale du pan, vers l'extérieur (derrière et en haut)
+  const penOf = () => ((s.x - gx) * dir / NET_BACK + (s.y + BALL_R) / NH - 1) / nL + BALL_R;
+  let pen = penOf();
+  if (pen > 0) {
+    const vn = s.vx * nx + s.vy * ny;
+    const a = -(6000 * pen + 130 * Math.max(0, vn));
+    s.vx += a * nx * dt; s.vy += a * ny * dt;
   }
-  // côtés et toit : les mailles amortissent
+  // côtés : les mailles amortissent
   if (Math.abs(s.z) > GOAL.half - BALL_R) { s.z = Math.sign(s.z) * (GOAL.half - BALL_R); s.vz *= -0.2; s.vx *= 0.7; }
-  if (s.y > GOAL.bar - BALL_R) { s.y = GOAL.bar - BALL_R; s.vy = Math.min(0, s.vy) * 0.2; s.vx *= 0.8; }
   // le filet freine tout mouvement
   const damp = Math.exp(-2.2 * dt);
   s.vx *= damp; s.vz *= damp;
   stepFree(s, dt);
-  if ((s.x - gx) * dir > GOAL.depth - BALL_R) { s.x = gx + dir * (GOAL.depth - BALL_R); s.vx = Math.min(0, s.vx * dir) * dir * 0.1; }
-  return Math.min(1, push / (GOAL.depth * 0.35));
+  pen = penOf();
+  if (pen > 0.006) { s.x -= (pen - 0.006) * nx; s.y = Math.max(0, s.y - (pen - 0.006) * ny); } // jamais plus de 6 cm dans les mailles
+  return Math.min(1, Math.max(0, pen) / 0.03);
 }

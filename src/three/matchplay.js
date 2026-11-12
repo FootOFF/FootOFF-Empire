@@ -1604,6 +1604,7 @@ export function createMatchScene(parent) {
           // (une passe lobée arrive à hauteur de cuisse, 60 cm : le receveur la contrôle avant qu'elle rebondisse et file)
           T = launchBall(tx, tz, T, { ground: bt.style === 'ground' || bt.style === 'through', y1: bt.y1 || (bt.style === 'lob' ? 0.06 : 0), curl, speed: aerialStyle(bt.style) ? kickSpeed(bt, dd) : 0, back: BACK[bt.style] || 0 });
           bt.launched = true; bt.T = T; bt.t0 = H.t; b.state = 'pass';
+          if (bt.to === H.shooter) H.assistT = H.t; // la passe décisive : le ralenti part d’elle (1.0.27)
           H.hold.set(bt.from, H.t + 0.45);
         }
         return;
@@ -2156,12 +2157,17 @@ export function createMatchScene(parent) {
   function startReplay() {
     H.phase = 'replay';
     players.reset?.(); // chacun repart de sa place au début de l'action, sans la célébration en cours (0.8.20)
-    // derrière la cage, ou au ras de la pelouse ; un penalty, toujours derrière la cage (au ras de la pelouse, la caméra
-    // se plaçait parmi les joueurs alignés hors de la surface et cachait le gardien)
-    const angle = H.r() < 0.5 ? 'goal' : 'low';
-    H.replayAngle = H.pen ? 'goal' : angle;
-    H.rt = Math.max(H.rec[0].t, H.revealT - REPLAY_BEFORE);
+    // ralenti façon télévision (1.0.27, audit de la caméra : 2,6 s avant le but, souvent la frappe seule, sous un angle
+    // tiré au sort, le plus bas filmant à trois mètres des joueurs) : il part de la passe décisive (4,5 s avant le but au
+    // plus), filmé de la tribune au téléobjectif ('side'), puis coupe derrière la cage juste avant la frappe ('goal'),
+    // plus lent autour du contact ; un penalty, toujours derrière la cage
+    H.replayAngle = H.pen || !H.shot ? 'goal' : 'side';
+    const before = H.assistT !== undefined ? clamp(H.revealT - H.assistT + 0.4, REPLAY_BEFORE, 4.5) : REPLAY_BEFORE;
+    H.rt = Math.max(H.rec[0].t, H.revealT - before);
     H.rEnd = Math.min(H.rec[H.rec.length - 1].t, H.revealT + REPLAY_AFTER);
+    H.shotT = H.shot?.t0 ?? null;
+    if (H.shotT !== null && H.rt > H.shotT - 0.6) H.replayAngle = 'goal'; // trop court pour deux plans
+    H.rSpeed = REPLAY_SPEED;
     H.cut = true;
     matchFeed.hlPhase = 'replay';
     matchFeed.onReplay?.(); // l'étiquette « Ralenti » change sur l'image même de la coupe (0.8.24)
@@ -2172,7 +2178,11 @@ export function createMatchScene(parent) {
   }
   const qa = new THREE.Quaternion(), qb = new THREE.Quaternion();
   function replayStep(dt) {
-    H.rt += dt * REPLAY_SPEED;
+    // plus lent autour de la frappe (0,35 au lieu de 0,5), sans à-coup ; la coupe derrière la cage 0,25 s avant le contact
+    const near = H.shotT !== null && H.shotT !== undefined ? Math.abs(H.rt - H.shotT) : 9;
+    H.rSpeed = REPLAY_SPEED - 0.15 * clamp(1 - (near - 0.2) / 0.5, 0, 1);
+    H.rt += dt * H.rSpeed;
+    if (H.replayAngle === 'side' && H.shotT !== null && H.rt >= H.shotT - 0.25) { H.replayAngle = 'goal'; H.cut = true; }
     if (H.rt >= H.rEnd) { finish(); return; }
     const rec = H.rec;
     let k = 0;
@@ -2307,7 +2317,7 @@ export function createMatchScene(parent) {
       if (S.out[i]) players.setAgent(i, agents[i], -2, 0.0001);
       else players.setAgent(i, agents[i], S.baseY);
     }
-    players.timeScale = H && H.phase === 'replay' ? REPLAY_SPEED : 1; // joueurs 3D : gestes au ralenti eux aussi
+    players.timeScale = H && H.phase === 'replay' ? (H.rSpeed || REPLAY_SPEED) : 1; // joueurs 3D : gestes au ralenti eux aussi
     // tous les regards suivent le ballon pendant un temps fort (0.8.24)
     if (S.play === 'live' && H) players.setLook?.(b.x, S.baseY + BALL_R + b.y, b.z); else players.setLook?.(null);
     players.commit(N, dt);

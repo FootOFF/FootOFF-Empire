@@ -68,12 +68,20 @@ let dist = 9;
 const tvCam = createTvCamera(camera);
 const OLD_CAM = params.get('cam') === 'ancienne';
 function cam(mi, dt) {
-  if (mi.world && !OLD_CAM && mi.cam !== 'cutaway' && !(mi.cam === 'replay' && mi.angle)) {
+  if (mi.world && !OLD_CAM && mi.cam !== 'cutaway' && !(mi.cam === 'replay' && mi.angle && mi.angle !== 'side')) {
     tvCam.step(mi, dt, W, H, Math.asin(tvDir.y));
     return;
   }
   const baseFov = aspect < 1 ? 42 + (1 - aspect) * 26 : 42;
   if (camera.fov !== baseFov) { camera.fov = baseFov; camera.updateProjectionMatrix(); tvCam.reset(); }
+  if (mi.cam === 'replay' && mi.angle === 'goal' && !OLD_CAM) { // ralenti derrière la cage (comme Empire3D)
+    const sgn = Math.sign(mi.goalX) || 1;
+    const want = new THREE.Vector3(mi.goalX + sgn * 0.95, 0.62, THREE.MathUtils.clamp(mi.bz * 0.35, -0.5, 0.5));
+    const aim = new THREE.Vector3(mi.bx * 0.65 + mi.goalX * 0.35, Math.min(0.22, Math.max(0.03, (mi.by || 0) * 0.6)), mi.bz * 0.65);
+    if (mi.cut) { camera.position.copy(want); target.copy(aim); } else { camera.position.lerp(want, 1 - Math.exp(-dt * 2.5)); target.lerp(aim, 1 - Math.exp(-dt * 6)); }
+    camera.lookAt(target);
+    return;
+  }
   const narrow = W <= 760;
   const width = SHOT[narrow ? 'narrow' : 'wide'][mi.cam] || 4.8;
   const perUnit = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * (W / H);

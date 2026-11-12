@@ -5,6 +5,13 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.27', date: '2026-11-12', title: t('Filets et ralentis'),
+    items: [
+      t('Le ballon d’un but reste dans le filet : il s’y enfonce et retombe au fond, au lieu de le traverser.'),
+      t('Le ralenti d’un but part de la passe décisive, filmé de la tribune, puis passe derrière la cage juste avant la frappe et ralentit encore au moment du contact.'),
+    ],
+  },
+  {
     version: '1.0.26', date: '2026-11-12', title: t('Réalisation télé'),
     items: [
       t('Nouvelle caméra des temps forts, comme à la télévision : elle cadre le ballon, le porteur, le receveur et, quand une frappe se prépare, la cage et le gardien ; elle anticipe la trajectoire et ne donne plus d’à-coups.'),

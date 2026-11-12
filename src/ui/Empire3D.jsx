@@ -701,7 +701,7 @@ export default function Empire3D({
       const W0 = mount.clientWidth, H0 = Math.max(1, mount.clientHeight);
       const baseFov = fovFor(W0 / H0);
       // plan de coupe (0.8.7) : plan large du stade, en lent travelling, le temps de la mise en place de l'action
-      if (mi.cam === 'cutaway' || (mi.cam === 'replay' && mi.angle)) { // (objectif normal : le zoom de la réalisation est rendu)
+      if (mi.cam === 'cutaway' || (mi.cam === 'replay' && mi.angle && mi.angle !== 'side')) { // (objectif normal : le zoom de la réalisation est rendu)
         if (camera.fov !== baseFov) { camera.fov = baseFov; camera.updateProjectionMatrix(); }
         tv.reset();
       }
@@ -713,7 +713,7 @@ export default function Empire3D({
         return;
       }
       // ralenti sous un autre angle (0.8.7) : derrière la cage attaquée, ou au ras de la pelouse sur le côté de l'action
-      if (mi.cam === 'replay' && mi.angle) {
+      if (mi.cam === 'replay' && mi.angle && mi.angle !== 'side') { // (1.0.27 : 'side', la tribune au téléobjectif, passe par la réalisation télé)
         controls.minDistance = 0.3;
         controls.maxPolarAngle = Math.PI * 0.499;
         if (camera.near !== 0.06) { camera.near = 0.06; camera.updateProjectionMatrix(); }
