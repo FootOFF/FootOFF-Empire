@@ -903,6 +903,35 @@ export function createPlayers3D(parent, max = 22) {
       const kk = far > 0 ? Math.max(0, 1 - far / (0.6 * s)) : 1;
       twoBone(up, lo, ha, T, w * kk, V().set(0, -1, 0).addScaledVector(sideV, k ? 0.5 : -0.5));    }
   }
+  // la tête au ballon (1.0.32) : autour du contact du geste « Header », le buste, le haut du dos puis le cou se penchent
+  // pour que le front aille au ballon (le geste capté est joué sur place, le moteur prend la tête à 60 cm près : sans
+  // cela, le ballon repartait au-dessus de la tête ou à côté)
+  const hdA = V(), hdB = V(), hdP = V(), hdT = V(), hdU = V(), hdQ = new THREE.Quaternion(), hdI = new THREE.Quaternion();
+  const HEAD_CHAIN = [['spine_02', 0.4, 0.3], ['spine_03', 0.5, 0.3], ['neck_01', 1, 0.45]]; // os, part du reste, angle max (rad)
+  function headIK(p) {
+    if (!look || !p.shot || p.shot.getClip() !== A.clips.Header) return;
+    const x = p.shot.time - A.marks.Header;
+    const w = x < -0.25 || x > 0.18 ? 0 : x < 0 ? smooth(1 + x / 0.25) : smooth(1 - x / 0.18);
+    if (w <= 0.001) return;
+    const s = p.root.scale.x;
+    const head = p.root.getObjectByName('head');
+    for (const [name, share, maxA] of HEAD_CHAIN) {
+      const bone = p.root.getObjectByName(name);
+      if (!bone) continue;
+      p.root.updateMatrixWorld(true);
+      head.getWorldPosition(hdA); hdA.y += 0.09 * s; // centre de la tête (l'os est à la base du crâne)
+      hdB.subVectors(look, hdA);
+      const dist = hdB.length(); const touch = 0.011 + 0.1 * s; // rayon du ballon + celui de la tête
+      if (dist <= touch) break;
+      hdT.copy(hdA).addScaledVector(hdB, (dist - touch) / dist); // où doit venir le centre de la tête
+      bone.getWorldPosition(hdP);
+      hdU.subVectors(hdA, hdP).normalize(); hdB.subVectors(hdT, hdP).normalize();
+      hdQ.setFromUnitVectors(hdU, hdB);
+      const ang = 2 * Math.acos(Math.min(1, Math.abs(hdQ.w)));
+      const f = Math.min(share, maxA / Math.max(ang, 1e-6)) * w;
+      toBody(bone, hdI.identity().slerp(hdQ, f));
+    }
+  }
   // gestes d'après l'état de l'agent du moteur (matchplay.js)
   function drive(p, ag, dt) {
     // vitesse réelle : le déplacement de l'agent (ralentis compris), jamais une consigne ; un saut de position (changement
@@ -1082,6 +1111,7 @@ export function createPlayers3D(parent, max = 22) {
         strikeIK(p);
         receiveIK(p);
         keeperIK(p);
+        headIK(p);
         if (p.keeper) { // le ballon entre ses gants : le milieu des deux mains, un peu devant les paumes
           const hl = p.root.getObjectByName('hand_l'); const hr = p.root.getObjectByName('hand_r');
           const thr = p.shot && A.throwHand?.[p.shot.getClip().name]; // relance à la main (1.0.28) : dans la main qui lance

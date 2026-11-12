@@ -1137,6 +1137,17 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Contact de la tête et points du terrain (1.0.32)
+
+Second contrôle (9 relecteurs, vidéo filmée dans le vrai jeu au téléphone) : sur un centre, le ballon repartait au niveau
+des mains levées, au-dessus de la tête ; le point de penalty se voyait plus que le ballon.
+- `headIK` (players3d) : de 0,25 s avant à 0,18 s après le contact du geste `Header`, `spine_02`, `spine_03` puis
+  `neck_01` tournent (au plus 0,3 / 0,3 / 0,45 rad) pour amener le centre de la tête au contact du ballon (`look`). Le
+  moteur garde sa tolérance (`headTouch` : 30 cm, ou au plus près du passage sous 60 cm) : la resserrer à 40 cm sans
+  le buste laissait deux centres sans tête sur 480 (un but annoncé tiré du poteau de corner, ballon jamais au fond).
+  Mesuré (72 têtes, joueurs 3D) : tête-ballon 13 → 7 cm (médianes), robustesse 480 temps forts : 0 problème.
+- Marquages (ground.js) : points central et de réparation de 22 cm (rayon 5 cm + trait de 6 cm), au lieu de 30 cm.
+
 ## Têtes, parades et ballon (1.0.31)
 
 Contrôle image par image de la vidéo des nouveautés (8 relecteurs indépendants, puis tournage dans le vrai jeu au

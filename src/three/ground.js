@@ -253,8 +253,10 @@ float pLines( vec2 p, vec2 a, float r0, float r1, float r2, vec2 fw, vec3 fr ) {
 	float dy = a.x < P + E ? abs( a.y - Q ) : 1e3; // touches
 	dy = min( dy, a.x > P - 16.5 - E && a.x < P ? abs( a.y - 20.16 ) : 1e3 );
 	dy = min( dy, a.x > P - 5.5 - E && a.x < P ? abs( a.y - 9.16 ) : 1e3 );
-	float d0 = min( abs( r0 - 9.15 ), max( r0 - 0.09, 0.0 ) ); // rond et point central (15 cm)
-	float d1 = min( a.x < P - 16.5 ? abs( r1 - 9.15 ) : 1e3, max( r1 - 0.09, 0.0 ) ); // arcs et points de réparation
+	// points central et de réparation : 22 cm de diamètre, comme le ballon (1.0.32 ; 30 cm avant, plus gros et plus
+	// lumineux que le ballon au téléphone, on le prenait pour lui)
+	float d0 = min( abs( r0 - 9.15 ), max( r0 - 0.05, 0.0 ) ); // rond et point central
+	float d1 = min( a.x < P - 16.5 ? abs( r1 - 9.15 ) : 1e3, max( r1 - 0.05, 0.0 ) ); // arcs et points de réparation
 	float d2 = a.x < P && a.y < Q ? abs( r2 - 1.0 ) : 1e3; // arcs de coin
 	if ( min( min( dx, dy ), min( d0, min( d1, d2 ) ) ) > 0.06 + max( max( fw.x, fw.y ), max( fr.x, max( fr.y, fr.z ) ) ) ) return 0.0;
 	float c = max( pCov( dx, fw.x ), pCov( dy, fw.y ) );

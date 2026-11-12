@@ -5,6 +5,13 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.32', date: '2026-11-12', title: t('Contact de la tête et points du terrain'),
+    items: [
+      t('Au coup de tête, le buste et le cou se penchent pour que le front aille au ballon : il ne repart plus au-dessus de la tête ni à côté.'),
+      t('Les points de penalty et le point central ont leur taille réglementaire, celle du ballon : on ne les prend plus pour le ballon au téléphone.'),
+    ],
+  },
+  {
     version: '1.0.31', date: '2026-11-12', title: t('Têtes, parades et ballon'),
     items: [
       t('Le coup de tête part du front : le ballon repart quand la tête revient frapper, plus pendant qu’elle est encore en arrière ; le saut se règle sur la hauteur du centre.'),

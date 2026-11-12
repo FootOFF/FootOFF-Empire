@@ -1328,14 +1328,14 @@ export function createMatchScene(parent) {
   function next() { H.k += 1; H.bt = 0; if (H.k >= H.fk && !H.finale) { H.finale = true; H.finaleT = H.t; } }
   // la tête au contact (1.0.31, contrôle de la vidéo des nouveautés : le ballon repartait à 50 cm de la tête, 0,1 s avant
   // le coup de tête, dès qu'il passait à 60 cm du corps) : le centre du ballon au front (centre de la tête, saut compris,
-  // un peu devant), à 30 cm près, ou au plus près de son passage s'il frôle la tête à moins de 70 cm
+  // un peu devant), à 30 cm près, ou au plus près de son passage s'il frôle la tête à moins de 60 cm (le buste et le cou y amènent le front, players3d headIK)
   const headTouch = (bt) => {
     const p = agents[bt.to];
     if (!(b.y > 0.1 && b.y < 0.27)) { bt.hd = 9; return false; }
     const [fx, fz] = p.forward();
     const d = Math.hypot(b.x - (p.x + fx * 0.008), b.y + BALL_R - (HEAD_Y + (p.lift || 0)), b.z - (p.z + fz * 0.008));
     const prev = bt.hd ?? 9; bt.hd = d;
-    return d < 0.03 || (prev < 0.07 && d > prev);
+    return d < 0.03 || (prev < 0.06 && d > prev);
   };
   const touching = (i) => {
     const p = agents[i];
