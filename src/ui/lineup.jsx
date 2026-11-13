@@ -47,7 +47,7 @@ function chipParts(chip) { // rectangles du joueur, sans l'échelle, centrés su
   const face = chip.querySelector('.lu-face');
   if (face) {
     add(face.offsetLeft, face.offsetTop, face.offsetWidth, face.offsetHeight);
-    for (const b of face.querySelectorAll('.lu-rate, .lu-note')) add(face.offsetLeft + b.offsetLeft, face.offsetTop + b.offsetTop, b.offsetWidth, b.offsetHeight);
+    for (const b of face.querySelectorAll('.lu-rate, .lu-note, .lu-flag, .lu-hurt')) add(face.offsetLeft + b.offsetLeft, face.offsetTop + b.offsetTop, b.offsetWidth, b.offsetHeight);
   }
   for (const b of chip.querySelectorAll(':scope > .lu-name, :scope > .lu-fit')) add(b.offsetLeft, b.offsetTop, b.offsetWidth, b.offsetHeight);
   return rects;
@@ -64,6 +64,28 @@ function clashes(a, pa, b, pb, s) {
   }
   return false;
 }
+// Dispositif libre (1.0.41) : deux joueurs d'un même couloir sur des rangées voisines de la grille (milieu défensif et
+// milieu dans l'axe, latéral et piston, milieu offensif et attaquant sur un côté) seraient trop près l'un de l'autre au
+// téléphone ; sur le tableau seulement, ils s'écartent jusqu'à LANE_GAP (en % du terrain). Les six dispositifs tout faits
+// n'ont aucune paire si proche : leur dessin ne change pas. Le moteur et la 3D gardent les postes de la grille.
+const LANE_GAP = 13; // 13 : le 4-2-3-1 en Offensive et en Bloc bas a une paire à 13,1, il ne bouge pas
+export function spreadLanes(P) {
+  const out = P.map(([x, y]) => [x, y]);
+  for (let pass = 0; pass < 3; pass++) {
+    for (let i = 1; i < out.length; i++) {
+      for (let j = i + 1; j < out.length; j++) {
+        const [a, b] = [out[i], out[j]];
+        const dy = Math.abs(a[1] - b[1]);
+        if (Math.abs(a[0] - b[0]) >= 9 || dy >= LANE_GAP) continue;
+        const d = (LANE_GAP - dy) / 2;
+        const [hi, lo] = a[1] <= b[1] ? [a, b] : [b, a];
+        hi[1] = Math.max(4.5, hi[1] - d);
+        lo[1] = Math.min(84, lo[1] + d);
+      }
+    }
+  }
+  return out;
+}
 // sets : les jeux de postes à respecter (le dispositif ; au tableau tactique, ses trois blocs, 1.0.34, pour que la taille
 // ne change pas d'un plan à l'autre). onBox(W, H, wide, geo) : la taille du terrain et la forme d'un joueur à l'échelle
 // (geo : centre et rayon du portrait, demi-hauteur et demi-largeur du joueur, depuis son centre), pour ce qu'on dessine.
@@ -79,15 +101,21 @@ function useChipScale(pitchRef, rootRef, sets, key, onBox) {
       const chips = [...el.querySelectorAll('.lu-chip')];
       if (chips.length !== sets[0].length || !W || !H) { onBox?.(W, H, wide, null); return; }
       const ptsSets = sets.map((set) => set.map((p) => boardPx(p, W, H, wide)));
-      const parts = chips.map(chipParts);
+      el.classList.remove('lu-tight');
+      let parts = chips.map(chipParts);
       const ok = (s) => {
         for (const pts of ptsSets) for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) if (clashes(pts[i], parts[i], pts[j], parts[j], s)) return false;
         return true;
       };
-      let lo = 0.6;
-      let hi = 1.3;
-      if (ok(hi)) lo = hi;
-      else for (let k = 0; k < 12; k++) { const mid = (lo + hi) / 2; if (ok(mid)) lo = mid; else hi = mid; }
+      const search = () => {
+        let lo = 0.6;
+        let hi = 1.3;
+        if (ok(hi)) return hi;
+        for (let k = 0; k < 12; k++) { const mid = (lo + hi) / 2; if (ok(mid)) lo = mid; else hi = mid; }
+        return lo;
+      };
+      let lo = search();
+      if (!ok(lo)) { el.classList.add('lu-tight'); parts = chips.map(chipParts); lo = search(); }
       el.style.setProperty('--lu-s', lo.toFixed(3));
       if (onBox) {
         const c = chips[0];
@@ -223,10 +251,10 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
   const posts = postsOf(formation);
   const cells = formationOf(formation).cells;
   const [shapeMsg, setShapeMsg] = useState(null); // un déplacement refusé (une ligne vide) : la raison, un instant
-  const base = formationOf(formation).pitch;
-  const pitch = useMemo(() => (tactic ? shapeOf(formation, tactic) : base), [formation, tactic, base]);
+  const base = useMemo(() => spreadLanes(formationOf(formation).pitch), [formation]);
+  const pitch = useMemo(() => (tactic ? spreadLanes(shapeOf(formation, tactic)) : base), [formation, tactic, base]);
   const board = !!tactic;
-  const sets = useMemo(() => (board ? shapesOf(formation) : [base]), [board, formation, base]);
+  const sets = useMemo(() => (board ? shapesOf(formation).map(spreadLanes) : [base]), [board, formation, base]);
   const [box, setBox] = useState(null); // taille du terrain en pixels (dessins du tableau)
   const onBox = useCallback((W, H, wide, geo) => setBox((b) => (b && b.W === W && b.H === H && b.wide === wide && JSON.stringify(b.geo) === JSON.stringify(geo) ? b : { W, H, wide, geo })), []);
   const byId = useMemo(() => Object.fromEntries(players.map((p) => [p.id, p])), [players]);
@@ -430,8 +458,8 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
   return (
     <div className={`lu ${board ? 'tb' : ''} ${ghost ? 'dragging' : ''} ${showCells ? 'shaping' : ''}`} ref={root} data-noswipe="">
       {outHint && <p className="lu-hint lu-hint-out" role="status">{outHint}</p>}
-      {shapeMsg && <p className="lu-hint lu-hint-out" role="status">{shapeMsg}</p>}
       <div className="lu-pitch" ref={pitchEl}>
+        {shapeMsg && <p className="lu-toast" role="status">{shapeMsg}</p>}
         <div className="p2-lines"><i className="half" /><i className="circle" /><i className="box top" /><i className="box bottom" /><i className="six top" /><i className="six bottom" /></div>
         {board && <BoardMarks formation={formation} tactic={tactic} P={pitch} box={box} />}
         {showCells && ALL_CELLS.filter((c) => !cells.includes(c)).map((c) => {

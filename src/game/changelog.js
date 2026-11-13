@@ -635,7 +635,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.7.0', date: '2026-10-27', title: t('Le match façon FM'),
+    version: '0.7.0', date: '2026-10-27', title: t('Le match en direct'), // « Le match façon FM » jusqu'en 1.0.40 : plus de marque citée (PDG, 13/11)
     items: [
       t('Plus de terrain en permanence pendant le match : le centre du match montre le score avec les buteurs, les statistiques en direct (possession, tirs, tirs cadrés, grosses occasions, buts attendus, arrêts, poteaux, cartons), les temps forts et le pronostic.'),
       t('Les notes des joueurs des deux équipes évoluent pendant le match : buts, passes décisives, tirs cadrés, arrêts, cartons, résultat. Tes joueurs gardent leur condition sous leur nom. Sur téléphone, onglets Stats, Notes et Le fil.'),

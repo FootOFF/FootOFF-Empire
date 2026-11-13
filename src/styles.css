@@ -2974,9 +2974,9 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 /* rtl:ignore */
 .lu-cell {
   --lu-cdy: -17px; position: absolute; z-index: 0; left: calc(9% + var(--x) * .82); top: calc(5% + var(--y) * .9);
-  transform: translate(-50%, -50%) translateY(var(--lu-cdy)) scale(var(--lu-s, 1));
+  transform: translate(-50%, -50%) scale(var(--lu-s, 1)) translateY(var(--lu-cdy)); /* le décalage suit l'échelle des joueurs */
   width: 48px; height: 48px; padding: 0; border: 1.5px dashed rgba(199, 161, 90, .65); border-radius: 50%;
-  background: rgba(12, 13, 15, .6); color: var(--gold-light);
+  background: rgba(12, 13, 15, .94); color: var(--gold-light);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   font-family: var(--font-disp); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; cursor: pointer;
@@ -2984,11 +2984,22 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 }
 .lu-cell b { font-size: 12px; letter-spacing: .04em; }
 .lu-cell em { font-style: normal; font-size: 13px; color: var(--text); }
-.lu-cell.over { border-style: solid; border-color: var(--gold-light); background: rgba(199, 161, 90, .3); transform: translate(-50%, -50%) translateY(var(--lu-cdy)) scale(calc(var(--lu-s, 1) * 1.15)); }
+.lu-cell.over { border-style: solid; border-color: var(--gold-light); background: rgba(199, 161, 90, .3); transform: translate(-50%, -50%) scale(calc(var(--lu-s, 1) * 1.15)) translateY(var(--lu-cdy)); }
 @container lu (min-width: 480px) { /* rtl:ignore */ .lu-cell { left: calc(5% + (100% - var(--y)) * .9); top: calc(5% + var(--x) * .9); } }
 @container lu (max-width: 479px) { .lu-cell { --lu-cdy: -13px; width: 40px; height: 40px; gap: 2px; } .lu-cell b { font-size: 11px; } .lu-cell em { font-size: 12px; } }
 /* pendant le choix d'un poste, noms et condition s'effacent : les cases libres restent lisibles */
 .lu.shaping .lu-chip :is(.lu-name, .lu-fit) { opacity: 0; transition: opacity .15s; } /* le joueur choisi est nommé dans l'aide */
+.lu.shaping :is(.tb-run, .tb-line) { opacity: .2; transition: opacity .15s; } /* les flèches du tableau ne traversent plus les cercles */
+/* refus d'un poste libre (une ligne vide) : par-dessus le terrain sans le décaler, sur le gardien (jamais une case
+   possible) : en bas du terrain dressé, à gauche du terrain couché */
+.lu-toast {
+  position: absolute; z-index: 6; bottom: 8px; left: 12px; right: 12px; width: fit-content; max-width: calc(100% - 24px); margin: 0 auto;
+  padding: 8px 12px; background: var(--plate-solid); color: var(--text); font-size: 13px; line-height: 1.35; text-align: center;
+  box-shadow: 0 0 0 1px rgba(199, 161, 90, .5), 0 8px 24px rgba(0, 0, 0, .55); pointer-events: none; animation: fo-in .2s var(--ease);
+}
+@container lu (min-width: 480px) { /* rtl:ignore */ .lu-toast { bottom: auto; top: 50%; left: 8px; right: auto; max-width: 26%; margin: 0; transform: translateY(-50%); } }
+/* terrain très serré (échelle minimale) : le pourcentage de condition s'efface, la barre reste */
+.lu-pitch.lu-tight .lu-fit em { display: none; }
 /* niveau qu'aurait le joueur choisi à ce poste */
 .lu-alt {
   --slant: 4px; position: absolute; top: -10px; right: -18px; min-width: 30px; height: 18px; padding: 0 6px; display: grid; place-items: center;
@@ -3003,6 +3014,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .lu-note .ui-rate.good { background: #16301f; color: var(--green); }
 .lu-note .ui-rate.low { background: #331917; color: var(--red); }
 .lu-flag { position: absolute; top: -4px; right: -2px; transform: rotate(8deg); }
+.lu-face:has(> .lu-alt) > .lu-flag { top: 64%; right: auto; left: -12px; transform: translateY(-50%) rotate(8deg); } /* la note d'échange prend le coin ; sous la note du match */
 .lu-hurt { position: absolute; left: -4px; bottom: -2px; width: 16px; height: 16px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 2px var(--plate-solid); }
 .lu-hurt::before, .lu-hurt::after { content: ''; position: absolute; left: 50%; top: 50%; width: 8px; height: 2px; background: #fff; transform: translate(-50%, -50%); }
 .lu-hurt::after { transform: translate(-50%, -50%) rotate(90deg); }

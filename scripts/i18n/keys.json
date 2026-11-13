@@ -5502,7 +5502,7 @@
    ]
   },
   {
-   "k": "Le match façon FM",
+   "k": "Le match en direct",
    "kind": "t",
    "where": [
     "game/changelog.js:638"
@@ -10979,7 +10979,7 @@
    "kind": "t",
    "where": [
     "game/mercato.js:41",
-    "ui/lineup.jsx:496"
+    "ui/lineup.jsx:524"
    ]
   },
   {
@@ -11748,7 +11748,7 @@
    "kind": "t",
    "where": [
     "game/players.js:32",
-    "game/posts.js:30"
+    "game/posts.js:31"
    ]
   },
   {
@@ -11982,98 +11982,98 @@
    "k": "Défenseur gauche",
    "kind": "t",
    "where": [
-    "game/posts.js:31"
+    "game/posts.js:32"
    ]
   },
   {
    "k": "Défenseur central",
    "kind": "t",
    "where": [
-    "game/posts.js:31"
+    "game/posts.js:32"
    ]
   },
   {
    "k": "Défenseur droit",
    "kind": "t",
    "where": [
-    "game/posts.js:31"
+    "game/posts.js:32"
    ]
   },
   {
    "k": "Défenseur latéral gauche",
    "kind": "t",
    "where": [
-    "game/posts.js:32"
+    "game/posts.js:33"
    ]
   },
   {
    "k": "Milieu défensif central",
    "kind": "t",
    "where": [
-    "game/posts.js:32"
+    "game/posts.js:33"
    ]
   },
   {
    "k": "Défenseur latéral droit",
    "kind": "t",
    "where": [
-    "game/posts.js:32"
+    "game/posts.js:33"
    ]
   },
   {
    "k": "Milieu gauche",
    "kind": "t",
    "where": [
-    "game/posts.js:33"
+    "game/posts.js:34"
    ]
   },
   {
    "k": "Milieu central",
    "kind": "t",
    "where": [
-    "game/posts.js:33"
+    "game/posts.js:34"
    ]
   },
   {
    "k": "Milieu droit",
    "kind": "t",
    "where": [
-    "game/posts.js:33"
+    "game/posts.js:34"
    ]
   },
   {
    "k": "Milieu offensif gauche",
    "kind": "t",
    "where": [
-    "game/posts.js:34"
+    "game/posts.js:35"
    ]
   },
   {
    "k": "Milieu offensif central",
    "kind": "t",
    "where": [
-    "game/posts.js:34"
+    "game/posts.js:35"
    ]
   },
   {
    "k": "Milieu offensif droit",
    "kind": "t",
    "where": [
-    "game/posts.js:34"
+    "game/posts.js:35"
    ]
   },
   {
    "k": "Attaquant gauche",
    "kind": "t",
    "where": [
-    "game/posts.js:35"
+    "game/posts.js:36"
    ]
   },
   {
    "k": "Buteur",
    "kind": "one",
    "where": [
-    "game/posts.js:35",
+    "game/posts.js:36",
     "ui/calendar.jsx:239"
    ]
   },
@@ -12081,127 +12081,127 @@
    "k": "Attaquant droit",
    "kind": "t",
    "where": [
-    "game/posts.js:35"
+    "game/posts.js:36"
    ]
   },
   {
    "k": "GB",
    "kind": "t",
    "where": [
-    "game/posts.js:41"
+    "game/posts.js:42"
    ]
   },
   {
    "k": "DG",
    "kind": "t",
    "where": [
-    "game/posts.js:42"
+    "game/posts.js:43"
    ]
   },
   {
    "k": "DC",
    "kind": "t",
    "where": [
-    "game/posts.js:42"
+    "game/posts.js:43"
    ]
   },
   {
    "k": "DD",
    "kind": "t",
    "where": [
-    "game/posts.js:42"
+    "game/posts.js:43"
    ]
   },
   {
    "k": "DLG",
    "kind": "t",
    "where": [
-    "game/posts.js:43"
+    "game/posts.js:44"
    ]
   },
   {
    "k": "MDC",
    "kind": "t",
    "where": [
-    "game/posts.js:43"
+    "game/posts.js:44"
    ]
   },
   {
    "k": "DLD",
    "kind": "t",
    "where": [
-    "game/posts.js:43"
+    "game/posts.js:44"
    ]
   },
   {
    "k": "MG",
    "kind": "t",
    "where": [
-    "game/posts.js:44"
+    "game/posts.js:45"
    ]
   },
   {
    "k": "MC",
    "kind": "t",
    "where": [
-    "game/posts.js:44"
+    "game/posts.js:45"
    ]
   },
   {
    "k": "MD",
    "kind": "t",
    "where": [
-    "game/posts.js:44"
+    "game/posts.js:45"
    ]
   },
   {
    "k": "MOG",
    "kind": "t",
    "where": [
-    "game/posts.js:45"
+    "game/posts.js:46"
    ]
   },
   {
    "k": "MOC",
    "kind": "t",
    "where": [
-    "game/posts.js:45"
+    "game/posts.js:46"
    ]
   },
   {
    "k": "MOD",
    "kind": "t",
    "where": [
-    "game/posts.js:45"
+    "game/posts.js:46"
    ]
   },
   {
    "k": "ATG",
    "kind": "t",
    "where": [
-    "game/posts.js:46"
+    "game/posts.js:47"
    ]
   },
   {
    "k": "BT",
    "kind": "t",
    "where": [
-    "game/posts.js:46"
+    "game/posts.js:47"
    ]
   },
   {
    "k": "ATD",
    "kind": "t",
    "where": [
-    "game/posts.js:46"
+    "game/posts.js:47"
    ]
   },
   {
    "k": "Ton dispositif, poste par poste.",
    "kind": "t",
    "where": [
-    "game/posts.js:170",
-    "ui/lineup.jsx:126"
+    "game/posts.js:196",
+    "ui/lineup.jsx:154"
    ]
   },
   {
@@ -14544,7 +14544,7 @@
    "where": [
     "ui/academy.jsx:644",
     "ui/build.jsx:294",
-    "ui/lineup.jsx:176",
+    "ui/lineup.jsx:204",
     "ui/match.jsx:289"
    ]
   },
@@ -15546,8 +15546,8 @@
    "kind": "t",
    "where": [
     "ui/calendar.jsx:245",
-    "ui/lineup.jsx:124",
-    "ui/lineup.jsx:555",
+    "ui/lineup.jsx:152",
+    "ui/lineup.jsx:583",
     "ui/match.jsx:141"
    ]
   },
@@ -16355,7 +16355,7 @@
    "kind": "t",
    "where": [
     "ui/confirm.jsx:13",
-    "ui/lineup.jsx:518",
+    "ui/lineup.jsx:546",
     "ui/match.jsx:596",
     "ui/match.jsx:1457"
    ]
@@ -20664,7 +20664,7 @@
    "k": "Libre",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:127",
+    "ui/lineup.jsx:155",
     "ui/mercato.jsx:708",
     "ui/mercato.jsx:756"
    ]
@@ -20673,37 +20673,37 @@
    "k": "Meilleur onze",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:158",
-    "ui/lineup.jsx:158"
+    "ui/lineup.jsx:186",
+    "ui/lineup.jsx:186"
    ]
   },
   {
    "k": "Les meilleures notes, sans regarder la condition physique",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:158"
+    "ui/lineup.jsx:186"
    ]
   },
   {
    "k": "Onze frais",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:163",
-    "ui/lineup.jsx:163"
+    "ui/lineup.jsx:191",
+    "ui/lineup.jsx:191"
    ]
   },
   {
    "k": "Les meilleurs joueurs à {FRESH_FIT} % de condition physique ou plus ; un joueur fatigué seulement si personne de frais ne tient son poste",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:163"
+    "ui/lineup.jsx:191"
    ]
   },
   {
    "k": "{fmtRating} au repos",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:176",
+    "ui/lineup.jsx:204",
     "ui/match.jsx:289"
    ]
   },
@@ -20711,7 +20711,7 @@
    "k": "fatigue −<0/>",
    "kind": "tr",
    "where": [
-    "ui/lineup.jsx:176",
+    "ui/lineup.jsx:204",
     "ui/match.jsx:289"
    ]
   },
@@ -20719,198 +20719,198 @@
    "k": "Faire tourner",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:184"
+    "ui/lineup.jsx:212"
    ]
   },
   {
    "k": "Rotation en place",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:184"
+    "ui/lineup.jsx:212"
    ]
   },
   {
    "k": "Les remplaçants du dernier match jouent, complétés par les titulaires les plus reposés",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:184"
+    "ui/lineup.jsx:212"
    ]
   },
   {
    "k": "Condition physique : {v} %",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:204",
-    "ui/lineup.jsx:215"
+    "ui/lineup.jsx:232",
+    "ui/lineup.jsx:243"
    ]
   },
   {
    "k": "condition {v} %",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:204"
+    "ui/lineup.jsx:232"
    ]
   },
   {
    "k": "Il faut au moins un défenseur, un milieu et un attaquant.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:271"
+    "ui/lineup.jsx:299"
    ]
   },
   {
    "k": "{v} ne joue plus : choisis le poste à laisser vide (jamais celui du gardien)",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:417"
+    "ui/lineup.jsx:445"
    ]
   },
   {
    "k": "Expulsés : déplace-les sur les postes à laisser vides",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:418"
+    "ui/lineup.jsx:446"
    ]
   },
   {
    "k": "Expulsé : déplace-le sur le poste à laisser vide",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:418"
+    "ui/lineup.jsx:446"
    ]
   },
   {
    "k": "{v} : choisis un poste libre pour changer le dispositif, ou un coéquipier pour échanger",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:421"
+    "ui/lineup.jsx:449"
    ]
   },
   {
    "k": "{v} : choisis un poste ou un joueur pour l’y placer",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:422",
-    "ui/lineup.jsx:517"
+    "ui/lineup.jsx:450",
+    "ui/lineup.jsx:545"
    ]
   },
   {
    "k": "Glisse un joueur sur un poste libre pour créer ton dispositif, ou sur un coéquipier pour les échanger",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:423"
+    "ui/lineup.jsx:451"
    ]
   },
   {
    "k": "Glisse un joueur sur un poste, ou choisis-en deux pour les échanger",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:424"
+    "ui/lineup.jsx:452"
    ]
   },
   {
    "k": "{post} : y placer {name}",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:443"
+    "ui/lineup.jsx:471"
    ]
   },
   {
    "k": "Expulsé : il ne peut pas être remplacé ; déplace-le sur le poste à laisser vide",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:467"
+    "ui/lineup.jsx:495"
    ]
   },
   {
    "k": "Blessé : à remplacer par un joueur du banc, ou à déplacer sur le poste à laisser vide",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:467"
+    "ui/lineup.jsx:495"
    ]
   },
   {
    "k": "· hors de son poste ({toLowerCase})",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:467"
+    "ui/lineup.jsx:495"
    ]
   },
   {
    "k": ", niveau {fmtRating}",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:468"
+    "ui/lineup.jsx:496"
    ]
   },
   {
    "k": ", expulsé, poste laissé vide",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:468"
+    "ui/lineup.jsx:496"
    ]
   },
   {
    "k": ", blessé",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:468"
+    "ui/lineup.jsx:496"
    ]
   },
   {
    "k": "Remplaçants",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:488"
+    "ui/lineup.jsx:516"
    ]
   },
   {
    "k": "Plus de changement",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:489"
+    "ui/lineup.jsx:517"
    ]
   },
   {
    "k": "{left} changement possible",
    "kind": "one",
    "where": [
-    "ui/lineup.jsx:489"
+    "ui/lineup.jsx:517"
    ]
   },
   {
    "k": "{left} changements possibles",
    "kind": "other",
    "where": [
-    "ui/lineup.jsx:489"
+    "ui/lineup.jsx:517"
    ]
   },
   {
    "k": "Aucun remplaçant : recrute au mercato.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:492"
+    "ui/lineup.jsx:520"
    ]
   },
   {
    "k": "Déjà sorti",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:496"
+    "ui/lineup.jsx:524"
    ]
   },
   {
    "k": "{name}, {toLowerCase}, niveau {fmtRating}{v}",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:500"
+    "ui/lineup.jsx:528"
    ]
   },
   {
    "k": "Onze de départ · <0/>",
    "kind": "tr",
    "where": [
-    "ui/lineup.jsx:547",
+    "ui/lineup.jsx:575",
     "ui/match.jsx:288"
    ]
   },
@@ -20918,7 +20918,7 @@
    "k": "Repères",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:560",
+    "ui/lineup.jsx:588",
     "ui/mercato.jsx:185"
    ]
   },
@@ -20926,42 +20926,42 @@
    "k": "Le chiffre à côté du portrait est le niveau du joueur <0>à ce poste</0>.",
    "kind": "tr",
    "where": [
-    "ui/lineup.jsx:561"
+    "ui/lineup.jsx:589"
    ]
   },
   {
    "k": "Contour en pointillés rouges : il joue hors de son poste<0/>.",
    "kind": "tr",
    "where": [
-    "ui/lineup.jsx:562"
+    "ui/lineup.jsx:590"
    ]
   },
   {
    "k": "({offPos} dans ton onze)",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:562"
+    "ui/lineup.jsx:590"
    ]
   },
   {
    "k": "Joueur choisi : chaque poste affiche le niveau qu’il y aurait, en vert s’il y ferait mieux, en rouge sinon.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:563"
+    "ui/lineup.jsx:591"
    ]
   },
   {
    "k": "Barre et pourcentage sous le nom : condition physique. Un joueur fatigué joue moins bien et se blesse plus souvent ; les absents (blessés, suspendus) restent sur le banc, grisés.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:564"
+    "ui/lineup.jsx:592"
    ]
   },
   {
    "k": "Ce onze est repris à l’avant-match, où tu peux encore le retoucher.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:565"
+    "ui/lineup.jsx:593"
    ]
   },
   {
