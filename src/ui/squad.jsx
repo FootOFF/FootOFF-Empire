@@ -22,6 +22,7 @@ import { Portrait } from './portrait';
 import { ClubCrest, Crest } from './crest';
 import { clubStars } from '../game/crest';
 import { HeroShot } from './heroshot';
+import { detailsOf } from '../game/attributes';
 import { ourKit, teamKitOf } from '../game/kits';
 import { uiSound } from './uisound';
 import { divRef, tierOf } from './kit';
@@ -623,6 +624,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
   const fams = p.pos === 'G' ? ['gk'] : ['tech', 'phys', 'tac'];
   const all = attrsOf(p);
   const keys = new Set(Object.entries(WEIGHTS[p.pos]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => k));
+  const det = useMemo(() => detailsOf(p), [p]); // attributs détaillés façon FM (game/attributes.js), affichage seul
   const fee = costOf(p, state);
   // valeur de marché (avec ses saisons de contrat pour un joueur du club) ; une vente rapporte autour de 85 % (plus avec
   // un grand club ou en négociant)
@@ -697,6 +699,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
             <div className="sh-tags">
               <span className={`sh-tag ${role === t('Titulaire') ? 'on' : ''}`}>{role}</span>
               <span className="sh-tag">{footLabel(p.foot, true)}</span>
+              <span className="sh-tag height">{t('{v} m', { v: det.height.toFixed(2).replace('.', fmtRating(1.5).charAt(1)) })}</span>
               {!market && <AbsentTag p={p} long />}
               {!market && p.academy && <span className="sh-tag on">{t('Formé au club')}</span>}
               {listed && <span className="sh-tag sale">{t('En vente')}</span>}
@@ -800,6 +803,28 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
             <span className="sh-cap">{t('Attributs')}</span>
             <span className="sh-legend">{tr('<0/> clés au poste · <1>or</1> : fort pour ta division', [<i className="key" />, (c) => <em>{c}</em>])}</span>
           </div>
+          {/* 1.0.38 (PDG : « des notes sur 20 visibles… un jeu complet type FM ») : tous les attributs, sur 20, en trois
+              colonnes (technique ou gardien, mental, physique) ; ils détaillent les caractéristiques de base, plus bas */}
+          <div className="fm-grid">
+            {det.cats.map((c) => (
+              <div className={`fm-cat ${c.cat}`} key={c.cat}>
+                <span className="fm-catname">{c.name}</span>
+                {c.rows.map((a) => (
+                  <div className={`fm-attr ${keys.has(a.base.replace('g.', '')) ? 'key' : ''}`} key={a.key}>
+                    <span>{a.name}</span>
+                    <b className={heat(Math.round(a.v), refLvl)}>{Math.round(a.v)}</b>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="sh-sec">
+          <div className="sh-row stack">
+            <span className="sh-cap">{t('Caractéristiques de base')}</span>
+            <span className="sh-legend">{t('elles font son niveau au poste')}</span>
+          </div>
           <div className={`sh-fams n${fams.length}`}>
             {fams.map((fam) => (
               <div className="sh-fam" key={fam}>
@@ -807,8 +832,8 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
                 {all.filter((a) => a.fam === fam).map((a) => (
                   <div className={`sh-attr ${keys.has(a.key) ? 'key' : ''}`} key={a.key}>
                     <span>{a.name}</span>
-                    <b className={heat(a.v, refLvl)}>{Math.round(a.v)}</b>
-                    <span className="sh-track"><i className={heat(a.v, refLvl)} style={{ width: `${(a.v / 20) * 100}%` }} /></span>
+                    <b className={heat(Math.round(a.v), refLvl)}>{Math.round(a.v)}</b>
+                    <span className="sh-track"><i className={heat(Math.round(a.v), refLvl)} style={{ width: `${(a.v / 20) * 100}%` }} /></span>
                   </div>
                 ))}
               </div>

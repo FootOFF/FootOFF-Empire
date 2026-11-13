@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.38', date: '2026-11-13', title: t('Fiches complètes'),
+    items: [
+      t('La fiche du joueur montre tous ses attributs sur 20 : technique (finition, passes, contrôle, jeu aérien…), mental (vision, décisions, sang-froid…), physique (vitesse, détente, endurance…) ; pour le gardien, réflexes, prise de balle, sorties et relances.'),
+      t('Ils détaillent ses caractéristiques de base, toujours affichées en dessous : son profil, sa taille, son âge et ses signes distinctifs les nuancent.'),
+      t('Sa taille s’affiche sur sa carte.'),
+    ],
+  },
+  {
     version: '1.0.37', date: '2026-11-13', title: t('Direct et fiches en 3D'),
     items: [
       t('Le direct se lit comme une appli de sport : le score et les écussons en tête, puis quatre onglets, Faits, Compos, Stats et Le fil.'),

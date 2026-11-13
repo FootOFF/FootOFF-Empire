@@ -6473,3 +6473,26 @@ button.lv2-pl { cursor: pointer; }
 /* rtl:ignore */
 [dir='rtl'] .lv2-sheet-shot { left: 86px; }
 [dir='rtl'] .lv2-motm-name b, [dir='rtl'] .lv-goal2-name, [dir='rtl'] .sh2-name b { line-height: 1.18; }
+
+/* ============================================================== attributs façon FM 1.0.38 (fiche joueur)
+   Trois colonnes (technique ou gardien, mental, physique), chaque attribut sur 20 : le nom à gauche, la note à droite
+   dans la couleur de l'Effectif (or : fort pour la division ; rouge : faible) ; une ligne fine entre deux attributs. */
+.fm-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 18px; } /* (la fiche est une feuille étroite, même sur PC) */
+.fm-cat:nth-child(3) { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; }
+.fm-cat:nth-child(3) .fm-catname { grid-column: 1 / -1; }
+.fm-cat { display: flex; flex-direction: column; min-width: 0; }
+.fm-catname { margin-bottom: 4px; padding-bottom: 6px; border-bottom: 1px solid rgba(222, 193, 127, .35); font-family: var(--font-disp); font-weight: 700; font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--gold-light); }
+.fm-attr { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, .05); }
+.fm-attr > span { min-width: 0; font-size: 14px; color: var(--text); overflow-wrap: break-word; hyphens: manual; }
+.sh-tag.height { text-transform: none; } /* « 1,83 m », jamais « 1,83 M » (un million) */
+.sh-row.stack { flex-direction: column; align-items: flex-start; gap: 2px; } /* titre long : la légende passe dessous */
+.sh-row.stack .sh-legend { text-align: start; }
+.fm-attr.key > span::before { content: ''; display: inline-block; width: 5px; height: 5px; margin-inline-end: 6px; border-radius: 50%; background: var(--gold); vertical-align: 3px; }
+.fm-attr b { flex: none; min-width: 26px; text-align: end; font-family: var(--font-disp); font-weight: 700; font-size: 19px; line-height: 1; font-variant-numeric: tabular-nums; }
+.fm-attr b.hi, .fm-attr b.good { color: var(--gold-light); }
+.fm-attr b.low { color: var(--red); }
+@media (max-width: 760px) {
+  .fm-grid { gap: 6px 16px; }
+  .fm-attr > span { font-size: 13px; }
+  .fm-attr b { font-size: 18px; }
+}
