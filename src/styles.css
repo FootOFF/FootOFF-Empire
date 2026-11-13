@@ -3008,6 +3008,8 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 }
 .lu-alt.up { color: var(--gold-ink); background: var(--green); }
 .lu-alt.down { color: #fff; background: #b4524a; }
+.lu-alt.off { visibility: hidden; animation: none; } /* place réservée : la taille des joueurs en tient compte */
+.lu-pick-out { justify-content: center; text-align: center; } /* refus d'un poste libre (téléphone) */
 /* note du match (mi-temps) et carton */
 .lu-note { position: absolute; top: -6px; left: -16px; pointer-events: none; }
 .lu-note .ui-rate { min-width: 26px; height: 16px; font-size: 11px; padding: 0 3px; border-radius: 2px; background: var(--plate-3); color: var(--text); }

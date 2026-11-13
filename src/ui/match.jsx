@@ -592,7 +592,7 @@ function HalftimeChanges({ state, m, plan, formation, halftime = true, onReset }
       {moved && !reshaped && <span className="ht-moved">{moves.length && moves.length <= 3 ? moves.join(' · ') : t('Postes réorganisés')}</span>}
       {empty.length > 0 && <span className="ht-moved">{emptyText(empty)}</span>}
       <div className="ht-changes-foot">
-        <span>{tr('Niveau du onze <0/> → <1/>', [fmtRating(before), <b className={after >= before ? 'up' : 'down'}>{fmtRating(after)}</b>])}</span>
+        <span>{tr('Niveau du onze <0/> → <1/>', [fmtRating(before), <b className={fmtRating(after) === fmtRating(before) ? '' : after > before ? 'up' : 'down'}>{fmtRating(after)}</b>])}</span>
         <button className="linkbtn sub-reset" onClick={onReset}>{t('Annuler')}</button>
       </div>
     </div>

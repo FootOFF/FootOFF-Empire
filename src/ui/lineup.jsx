@@ -47,7 +47,7 @@ function chipParts(chip) { // rectangles du joueur, sans l'échelle, centrés su
   const face = chip.querySelector('.lu-face');
   if (face) {
     add(face.offsetLeft, face.offsetTop, face.offsetWidth, face.offsetHeight);
-    for (const b of face.querySelectorAll('.lu-rate, .lu-note, .lu-flag, .lu-hurt')) add(face.offsetLeft + b.offsetLeft, face.offsetTop + b.offsetTop, b.offsetWidth, b.offsetHeight);
+    for (const b of face.querySelectorAll('.lu-rate, .lu-note, .lu-flag, .lu-hurt, .lu-alt')) add(face.offsetLeft + b.offsetLeft, face.offsetTop + b.offsetTop, b.offsetWidth, b.offsetHeight);
   }
   for (const b of chip.querySelectorAll(':scope > .lu-name, :scope > .lu-fit')) add(b.offsetLeft, b.offsetTop, b.offsetWidth, b.offsetHeight);
   return rects;
@@ -459,7 +459,7 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
     <div className={`lu ${board ? 'tb' : ''} ${ghost ? 'dragging' : ''} ${showCells ? 'shaping' : ''}`} ref={root} data-noswipe="">
       {outHint && <p className="lu-hint lu-hint-out" role="status">{outHint}</p>}
       <div className="lu-pitch" ref={pitchEl}>
-        {shapeMsg && <p className="lu-toast" role="status">{shapeMsg}</p>}
+        {shapeMsg && (root.current?.clientWidth || 0) >= WIDE && <p className="lu-toast" role="status">{shapeMsg}</p>}
         <div className="p2-lines"><i className="half" /><i className="circle" /><i className="box top" /><i className="box bottom" /><i className="six top" /><i className="six bottom" /></div>
         {board && <BoardMarks formation={formation} tactic={tactic} P={pitch} box={box} />}
         {showCells && ALL_CELLS.filter((c) => !cells.includes(c)).map((c) => {
@@ -499,7 +499,9 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
               <span className="lu-face">
                 <Portrait p={p} size={52} />
                 <span className="lu-rate">{out ? '—' : fmtRating(cur)}</span>
-                {preview !== null && <span className={`lu-alt ${preview > cur ? 'up' : preview < cur ? 'down' : ''}`}>{fmtRating(preview)}</span>}
+                {/* note d'échange : toujours là, invisible hors choix, pour que la taille des joueurs lui réserve sa place
+                    (relecture 1.0.41) ; comparée au dixième affiché (une égalité n'est ni verte ni rouge) */}
+                <span key={preview === null ? 'off' : 'on'} className={`lu-alt ${preview === null ? 'off' : fmtRating(preview) === fmtRating(cur) ? '' : preview > cur ? 'up' : 'down'}`} aria-hidden={preview === null || undefined}>{fmtRating(preview === null ? cur : preview)}</span>
                 {notes?.[id] != null && <span className="lu-note"><RatingBadge value={notes[id]} size="sm" /></span>}
                 {(isLocked(id) || booked?.has(id)) && <i className={`card ${isLocked(id) ? 'red' : 'yellow'} lu-flag`} />}
                 {isHurt(id) && <i className="lu-hurt" aria-hidden="true" />}
@@ -538,6 +540,12 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
         </div>
         <p className="lu-hint">{hint}</p>
       </div>
+      {/* refus d'un poste libre, terrain dressé (téléphone) : bandeau fixe en bas de l'écran, au-dessus des barres du bas
+          (« Coup d'envoi », « Reprendre », bas de l'Équipe), jamais coupé (relecture 1.0.41) */}
+      {shapeMsg && (root.current?.clientWidth || 0) < WIDE && createPortal(
+        <div className="lu-pick lu-pick-out" role="status"><span className="lu-pick-text">{shapeMsg}</span></div>,
+        document.body,
+      )}
       {/* remplaçant choisi d'un toucher : un bandeau en bas de l'écran dit quoi faire ensuite, avec « Annuler » */}
       {sel?.kind === 'bench' && byId[sel.id] && createPortal(
         <div className="lu-pick" role="status">
