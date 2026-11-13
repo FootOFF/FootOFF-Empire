@@ -438,6 +438,21 @@ export function identityOf(pl = {}, pos = 'M') {
   return { seed, face: f, origin: originOf(pl.name || ''), age, pos, height, style, beard, hair, beardCol, brow, grey };
 }
 // morphs du visage et de la carrure (clés du modèle, 0 à 1)
+// Visages sans caricature (1.0.45, PDG : « des visages qui ne soient pas difformes ») : au-delà de ces poids, les cibles
+// MakeHuman font des joues en ballon, un menton en pointe, un nez démesuré ; chaque trait est plafonné, les traits
+// opposés ne se cumulent pas, le nez et le bas du visage sont limités dans leur ensemble. (Appliqué après les tirages :
+// les carrures et les autres traits de chaque joueur ne changent pas.)
+const FACE_CAP = { nose_wide: 0.55, nose_narrow: 0.45, nose_long: 0.4, nose_hump: 0.5, nose_flare: 0.4, lips_full: 0.55, mouth_wide: 0.45, chin_strong: 0.5, chin_narrow: 0.3, jaw_wide: 0.55, cheekbones: 0.5, cheeks_full: 0.3, ears_big: 0.35, ears_flap: 0.6, head_square: 0.45, head_oval: 0.3, forehead_tall: 0.25, brow_heavy: 0.2 };
+function tameFace(m) {
+  for (const [k, c] of Object.entries(FACE_CAP)) if (m[k] > c) m[k] = c;
+  if (m.nose_wide && m.nose_narrow) { if (m.nose_wide >= m.nose_narrow) m.nose_narrow = 0; else m.nose_wide = 0; }
+  if (m.chin_strong && m.chin_narrow) { if (m.chin_strong >= m.chin_narrow) m.chin_narrow = 0; else m.chin_strong = 0; }
+  const group = (ks, max) => { const sum = ks.reduce((acc, k) => acc + (m[k] || 0), 0); if (sum > max) for (const k of ks) if (m[k]) m[k] *= max / sum; };
+  group(['nose_wide', 'nose_narrow', 'nose_long', 'nose_hump', 'nose_flare'], 0.9);
+  group(['chin_strong', 'chin_narrow', 'jaw_wide', 'head_square'], 1.0);
+  group(['cheeks_full', 'head_oval', 'head_square', 'cheekbones'], 0.8);
+  if ((m.chin_narrow || 0) > 0.15) m.forehead_tall = Math.min(m.forehead_tall || 0, 0.1); // (menton fin sous un front haut : visage en amande)
+}
 const EXTRA = ['nose_wide', 'nose_narrow', 'nose_long', 'nose_hump', 'nose_flare', 'lips_full', 'mouth_wide', 'chin_strong', 'chin_narrow', 'cheekbones', 'cheeks_full', 'ears_big', 'head_square'];
 export function recipe(id) {
   const f = id.face || {}; const r = rand(id.seed ^ 0x5bd1e995);
@@ -469,6 +484,7 @@ export function recipe(id) {
   if (MESH[id.style] === 'short04') { // coupe plaquée : elle dégage tout le visage, qui doit rester marqué
     m.jaw_wide = Math.max(m.jaw_wide, 0.45); m.chin_strong = Math.max(m.chin_strong, 0.4); m.chin_narrow = Math.min(m.chin_narrow || 0, 0.2);
   }
+  tameFace(m);
   // carrure : défenseurs et gardiens plus solides, milieux plus fins
   const builds = { G: [0.25, 0.35, 0.4], D: [0.2, 0.35, 0.45], M: [0.5, 0.2, 0.3], A: [0.4, 0.2, 0.4] }[id.pos] || [0.4, 0.3, 0.3];
   const x = r(); const b = x < builds[0] ? 'build_lean' : x < builds[0] + builds[1] ? 'build_stocky' : 'build_strong';

@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.45', date: '2026-11-13', title: t('Joueurs 3D plus naturels'),
+    items: [
+      t('Silhouette plus naturelle : des épaules et un buste plus fins, des bras plus déliés, un cou un peu plus long.'),
+      t('Maillot ajusté aux épaules et aux manches : il ne gonfle plus en épaulettes.'),
+      t('Visages plus nets et plus adultes : joues plus creuses, pommettes, menton et arcade plus marqués, et plus aucun trait poussé jusqu’à la caricature.'),
+    ],
+  },
+  {
     version: '1.0.44', date: '2026-11-13', title: t('Le ballon reste en jeu'),
     items: [
       t('Temps forts : un centre ou un long ballon ne file plus en touche ; il meurt sur la ligne, où son receveur le reprend, et aucune action ne se joue plus hors du terrain.'),
