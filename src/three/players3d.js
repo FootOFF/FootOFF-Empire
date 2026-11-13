@@ -80,7 +80,9 @@ async function build() {
     tex(`${URL}skin_ao.jpg`, false).catch(() => null),
     ...[0, 1, 2, 3, 4].map((k) => tex(`${URL}skin_${k}.jpg`, true)),
   ]);
-  const scalp = Object.fromEntries((await Promise.all(SCALP_KEYS.map((k) => tex(`${URL}scalp/${k}.webp`, false).then((t) => [k, t]).catch(() => null)))).filter(Boolean));
+  // (?scalp=<dossier> en développement : des peintures d'essai, à côté de celles du jeu)
+  const SCALP_DIR = (import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).get('scalp')) || 'scalp';
+  const scalp = Object.fromEntries((await Promise.all(SCALP_KEYS.map((k) => tex(`${URL}${SCALP_DIR}/${k}.webp`, false).then((t) => [k, t]).catch(() => null)))).filter(Boolean));
   knit.wrapS = knit.wrapT = THREE.RepeatWrapping;
   knit.repeat.set(70, 70); // maille de 3 mm environ sur l'atlas du corps
   const clips = {};
@@ -502,6 +504,10 @@ export function recipe(id) {
     m.jaw_wide = Math.max(m.jaw_wide, 0.45); m.chin_strong = Math.max(m.chin_strong, 0.4); m.chin_narrow = Math.min(m.chin_narrow || 0, 0.2);
   }
   tameFace(m);
+  // front (1.0.48, PDG : « quelques joueurs en C et d'autres en B ») : un joueur sur deux a le front plus petit (moins haut, tempes
+  // plus étroites, moins bombé), les autres le front de la base ; tous ont la lisière plus basse. (Lu dans la graine, sans
+  // tirage de plus : les autres traits des joueurs ne changent pas.)
+  if (((id.seed >>> 11) & 1) === 1) { m.forehead_small = 0.9 + ((id.seed >>> 13) % 11) / 100; m.forehead_tall = 0; }
   // carrure : défenseurs et gardiens plus solides, milieux plus fins
   const builds = { G: [0.25, 0.35, 0.4], D: [0.2, 0.35, 0.45], M: [0.5, 0.2, 0.3], A: [0.4, 0.2, 0.4] }[id.pos] || [0.4, 0.3, 0.3];
   const x = r(); const b = x < builds[0] ? 'build_lean' : x < builds[0] + builds[1] ? 'build_stocky' : 'build_strong';
