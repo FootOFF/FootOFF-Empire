@@ -5,6 +5,16 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.40', date: '2026-11-13', title: t('Joueurs 3D retravaillés'),
+    items: [
+      t('Buste des joueurs 3D retravaillé : les pectoraux ne se dessinent plus sous le maillot, qui tombe droit sur une silhouette en V.'),
+      t('Col et manches retravaillés : le col épouse le cou et le maillot tombe plus proprement sous les bras.'),
+      t('Short, chaussettes et gants retouchés : un short ample, des chaussettes qui entrent proprement dans la chaussure, des gants de gardien au poignet net.'),
+      t('En photo, les joueurs se tiennent naturellement : bras le long du corps, mains détendues, regard vers l’objectif.'),
+      t('Visages plus humains : un teint plus naturel, une peau moins cireuse, des yeux et des cils mieux dessinés.'),
+    ],
+  },
+  {
     version: '1.0.39', date: '2026-11-13', title: t('Cohérence tactique'),
     items: [
       t('Ton plan de jeu doit coller à tes joueurs : l’Offensive demande du souffle, des défenseurs rapides et une relance propre ; le Bloc bas, une défense solide et des attaquants rapides ; l’Équilibrée, de la passe et du jeu aérien devant.'),

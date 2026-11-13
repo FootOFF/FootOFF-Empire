@@ -35,7 +35,7 @@ const TRAVEL = { f: [0, 1], b: [0, -1], r: [-1, 0], l: [1, 0] }; // sens de la m
 const ALL_GAITS = new Set([...GAIT_NAMES, ...Object.values(GAIT_SETS).flat(), KEEPER_GAITS.idle, ...KEEPER_GAITS.r, ...KEEPER_GAITS.l]);
 const KICK_TIME = 0.6; const KICK_CONTACT = 0.55; // matchplay.js : la frappe dure 0,6 s, contact à 55 %
 const CELEBRATIONS = ['Celebrate_1', 'Celebrate_2', 'Celebrate_3'];
-const GLOVE_HEX = 0xf1efe9; // gants du gardien : blanc cassé
+const GLOVE_HEX = 0xdedad2; // gants du gardien : blanc cassé, un peu ombré (le blanc pur faisait jouet)
 const LOOK_CHAIN = [['spine_02', 0.15], ['spine_03', 0.2], ['neck_01', 0.25], ['head', 0.4]]; // part du regard par os
 // os retouchés après l'animation (inclinaison, regard, appuis) : leur pose animée est remise avant chaque image (0.8.24 :
 // le moteur d'animation ne réécrit un os que si sa valeur a changé ; sur un joueur immobile, la retouche s'ajoutait à
@@ -65,8 +65,11 @@ const tex = (u, srgb) => new Promise((res, rej) => new THREE.TextureLoader().loa
 }, undefined, rej));
 
 async function build() {
-  const [base, anims, mask, knit, ...skins] = await Promise.all([
+  // skin_ao.jpg (1.0.40) : ombres de contact de la peau, cuites dans Blender (FootOFF_3D_Sources/scripts/bake_ao.py) : creux
+  // des yeux, narines, commissures, oreilles, cou sous la mâchoire, ombre des manches et du short sur la peau
+  const [base, anims, mask, knit, ao, ...skins] = await Promise.all([
     load(`${URL}footballer.glb`), load(`${URL}anims.glb`), tex(`${URL}face_mask.png`, false), tex(`${URL}knit.png`, false),
+    tex(`${URL}skin_ao.jpg`, false).catch(() => null),
     ...[0, 1, 2, 3, 4].map((k) => tex(`${URL}skin_${k}.jpg`, true)),
   ]);
   knit.wrapS = knit.wrapT = THREE.RepeatWrapping;
@@ -115,7 +118,13 @@ async function build() {
     }
     o.geometry.setAttribute('aKit', new THREE.BufferAttribute(kit, 2));
   });
-  A = { base, clips, mask, knit, skins };
+  A = { base, clips, mask, knit, skins, ao };
+  // buste et maillot (1.0.40) : la transformation de repos de chaque maillage, prise sur le modèle partagé (jamais animé)
+  base.scene.updateMatrixWorld(true);
+  A.rest = {};
+  base.scene.traverse((o) => { if (o.isSkinnedMesh && o.skeleton) A.rest[o.name] = restMatrix(o); });
+  prepareInner(base.scene);
+  { const hq = base.scene.getObjectByName('head').getWorldQuaternion(new THREE.Quaternion()); A.headFace = hq.invert(); } // (portrait : le visage regarde l'objectif)
   // célébrations : celles où le joueur se laisse glisser à genoux (le bassin descend de plus d'un quart) sont gardées au
   // buteur, qui arrive lancé ; ses coéquipiers, arrêtés près de lui, lèvent les bras debout
   A.slides = new Set(CELEBRATIONS.filter((n) => {
@@ -464,11 +473,14 @@ export function recipe(id) {
   return m;
 }
 // teinte de la peau : la luminosité va vers le teint du portrait, la teinte reste celle de la peau (chaude, jamais grise)
+// 1.0.40 (PDG : « les visages font peur ») : la peau claire tournait au blanc de porcelaine (éclaircie de 12 % et grisée
+// vers le ton d'aplat du portrait) ; elle garde maintenant la chaleur de la photo de peau, au plus un peu assombrie
 function skinTint(sk, tex) {
   const t = new THREE.Color(SKINS[sk] || SKINS[2]); const m = new THREE.Color(FACE_MEAN[tex]);
-  const k = clamp(Math.sqrt(lum(t) / lum(m)), 0.8, 1.12); // (au-delà, une peau claire tourne au blanc cireux)
-  const h = (a, b) => clamp((a / b) ** 0.08, 0.94, 1.06);
-  return new THREE.Color(k * h(t.r, m.r), k * h(t.g, m.g), k * h(t.b, m.b));
+  // (les trois photos de peau claire sont très pâles : un peu plus soutenues, plus chaudes)
+  const k = clamp(Math.sqrt(lum(t) / lum(m)), 0.8, 1.0) * (tex <= 2 ? 0.88 : 1);
+  const h = (a, b) => clamp((a / b) ** 0.05, 0.97, 1.03);
+  return new THREE.Color(k * h(t.r, m.r), k * h(t.g, m.g) * (tex <= 2 ? 0.95 : 0.985), k * h(t.b, m.b) * (tex <= 2 ? 0.88 : 0.96));
 }
 // Yeux (1.0.38, PDG : « ils font peur… humainement bcp plus réalistes ») : la texture d'origine a un iris presque noir,
 // qui se lit de loin comme un œil tout noir, et une cornée mate (aucun reflet : un regard vide). Iris redessinés sur la
@@ -492,8 +504,8 @@ function eyeTextures(src) {
   EYES = IRIS.map(([light, dark], k) => {
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const g = c.getContext('2d'); g.drawImage(img, 0, 0);
-    // blanc de l'œil un peu plus clair (il était gris), jamais pur
-    g.globalCompositeOperation = 'screen'; g.fillStyle = 'rgba(70, 66, 62, 0.55)'; g.fillRect(0, 0, W, H);
+    // blanc de l'œil à peine éclairci (1.0.40 : trop blanc, le regard paraissait fixe et effrayé)
+    g.globalCompositeOperation = 'screen'; g.fillStyle = 'rgba(60, 56, 52, 0.2)'; g.fillRect(0, 0, W, H);
     g.globalCompositeOperation = 'source-over';
     for (const e of iris) {
       if (!e) continue;
@@ -546,8 +558,10 @@ function paintable(mat, u) {
     sh.uniforms.uScalp = u.scalp;
     sh.uniforms.uSleeve = u.sleeve; // gardien : manches longues (couleur, 1) ; sinon (…, 0)
     sh.uniforms.uGlove = u.glove;
-    sh.vertexShader = `attribute vec2 aKit;\nvarying vec2 vKit;\n${sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vKit = aKit;')}`;
-    sh.fragmentShader = `uniform sampler2D uMask;\nuniform vec4 uBeard;\nuniform vec3 uHair;\nuniform vec3 uScalp;\nuniform vec4 uSleeve;\nuniform vec4 uGlove;\nvarying vec2 vKit;\n${sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+    sh.uniforms.uShirtIn = u.shirtIn; // couches intérieures (1.0.40) : sous le maillot, sous le short
+    sh.uniforms.uShortsIn = u.shortsIn;
+    sh.vertexShader = `attribute vec2 aKit;\nattribute vec3 aIn;\nvarying vec2 vKit;\nvarying vec2 vIn;\n${sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vKit = aKit;\n  vIn = aIn.xy;').replace('#include <project_vertex>', '#include <project_vertex>\n  if ( aIn.z > 0.001 ) gl_Position = projectionMatrix * vec4( mvPosition.xyz + normalize( mvPosition.xyz ) * 0.03 * aIn.z * length( modelMatrix[ 0 ].xyz ), 1.0 );')}`;
+    sh.fragmentShader = `uniform sampler2D uMask;\nuniform vec4 uBeard;\nuniform vec3 uHair;\nuniform vec3 uScalp;\nuniform vec4 uSleeve;\nuniform vec4 uGlove;\nuniform vec3 uShirtIn;\nuniform vec3 uShortsIn;\nvarying vec2 vKit;\nvarying vec2 vIn;\n${sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
   float hairK = 0.0;
   {
     vec4 fm = texture2D(uMask, vMapUv);
@@ -559,15 +573,342 @@ function paintable(mat, u) {
     float n = fract(sin(dot(floor(gp), vec2(12.9898, 78.233))) * 43758.5453);
     n = mix(n, fract(sin(dot(floor(gp * 0.37), vec2(39.346, 11.135))) * 24634.6345), 0.35); // deux échelles de grain
     float far = clamp(length(fwidth(gp)) - 2.5, 0.0, 1.0);
-    float k = mix(smoothstep(n - 0.18, n + 0.18, d) * min(1.0, d * 2.0), d * 0.9, far);
+    float k = mix(smoothstep(n - 0.3, n + 0.3, d) * min(1.0, d * 2.0), d * 0.9, far); // (1.0.40 : grain plus doux, la barbe ne fait plus « sale »)
     hairK = clamp(k, 0.0, 1.0);
     diffuseColor.rgb = mix(diffuseColor.rgb, hairCol, hairK * 0.9);
   }
-  float sleeveK = clamp(vKit.x * 1.6, 0.0, 1.0) * uSleeve.a;
-  float gloveK = clamp(vKit.y * 1.6, 0.0, 1.0) * uGlove.a;
-  diffuseColor.rgb = mix(mix(diffuseColor.rgb, uSleeve.rgb, sleeveK), uGlove.rgb, gloveK);`).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = mix(mix(roughnessFactor, 0.95, hairK), 0.88, max(sleeveK, gloveK)); // poil, tissu et gants mats')}`;
+  // gardien : manche longue et gant aux bords nets (1.0.40 : un dégradé flou faisait fondre la manche dans le gant)
+  float sleeveK = smoothstep(0.3, 0.55, vKit.x) * uSleeve.a;
+  float gloveK = smoothstep(0.35, 0.6, vKit.y) * uGlove.a;
+  diffuseColor.rgb = mix(mix(diffuseColor.rgb, uSleeve.rgb, sleeveK), uGlove.rgb, gloveK);
+  // couches intérieures : la peau près des ouvertures (bras dans la manche, cuisse dans le short, base du cou), la couleur
+  // de la tenue partout ailleurs (là où le corps peut percer le tissu, rien ne se voit)
+  float inK = max(vIn.x, vIn.y);
+  diffuseColor.rgb = mix(diffuseColor.rgb, uShirtIn, vIn.x);
+  diffuseColor.rgb = mix(diffuseColor.rgb, uShortsIn, vIn.y);`).replace('#include <opaque_fragment>', 'outgoingLight *= mix( 1.0, 0.3, max( vIn.x, vIn.y ) );\n  #include <opaque_fragment>').replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = mix(mix(roughnessFactor, 0.95, hairK), 0.88, max(max(sleeveK, gloveK), inK)); // poil, tissu et gants mats')}`;
   };
-  mat.customProgramCacheKey = () => 'footoff-peau';
+  // la lumière traverse la peau (1.0.40) : au bord des ombres, le rouge s'étale plus loin que le vert et le bleu (éclairage
+  // « enveloppé », comme la diffusion sous la peau) ; sans cela, un visage paraît en plâtre
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = (sh, r) => {
+    prev(sh, r);
+    sh.fragmentShader = sh.fragmentShader.replace('reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );',
+      `{
+    float ndlS = dot( geometryNormal, directLight.direction );
+    vec3 wrapS = vec3( 0.32, 0.13, 0.08 );
+    vec3 sss = clamp( ( vec3( ndlS ) + wrapS ) / ( 1.0 + wrapS ), 0.0, 1.0 );
+    reflectedLight.directDiffuse += mix( irradiance, sss * directLight.color, 0.6 ) * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );
+  }`);
+  };
+  mat.customProgramCacheKey = () => 'footoff-peau-2';
+}
+// Buste d'homme et maillot de football (1.0.40, PDG : « les joueurs 3D ont des poitrines qui ressortent énormément, et
+// des petits défauts au col et à la tenue »). Corrigé dans la géométrie, en mètres dans la pose de repos (le modèle
+// regarde +z), à la cuisson de chaque joueur, morphs compris :
+// - les pectoraux sous le maillot se lisaient comme une poitrine : tout ce qui dépasse la ligne du sternum, de la base
+//   des pectoraux au haut du torse, est ramené vers elle (85 %), ombrage recalculé (sinon les bosses restent dessinées) ;
+// - le maillot tombe droit, comme un maillot de football et non un t-shirt ajusté : un peu plus ample à la taille ;
+// - la couche intérieure (le corps aux couleurs du maillot, sous le tissu) rentre de 5 mm : elle perçait le tissu au col
+//   (une marche noire), sous l'aisselle (des pointes) et à l'ourlet du short.
+const TORSO = { cloth: new Set(['male_casualsuit04', 'male_casualsuit04_1']), inner: new Set(['base_1', 'base_5']) };
+const sinkAt = (y) => smooth01(0.98, 1.03, y) * (1 - smooth01(1.36, 1.42, y)); // (torse : sous le tissu, loin du cou et de la taille)
+// taille fine (1.0.40, relecture : « silhouette en tonneau ») : jusqu'à 5 % de largeur en moins autour de la taille, rien
+// sous les hanches ni au-dessus des côtes ; même fonction pour le maillot, le short et le corps dessous
+const taperAt = (y) => 1 - 0.05 * smooth01(0.9, 1.0, y) * (1 - smooth01(1.1, 1.27, y));
+const smooth01 = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+function restMatrix(o) { // positions quantifiées (meshopt) -> mètres dans la pose de repos ; la même pour tous les os
+  const sk = o.skeleton;
+  const M = sk.bones[0].matrixWorld.clone().multiply(sk.boneInverses[0]);
+  return o.matrixWorld.clone().multiply(o.bindMatrixInverse).multiply(M).multiply(o.bindMatrix);
+}
+function reshapeTorso(name, pos, nor, index, Rm) {
+  const cloth = TORSO.cloth.has(name);
+  const n = pos.length / 3;
+  const Ri = Rm.clone().invert();
+  const scale = Rm.getMaxScaleOnAxis();
+  const v = new THREE.Vector3();
+  const P = new Float32Array(pos.length);
+  for (let i = 0; i < n; i++) { v.fromArray(pos, i * 3).applyMatrix4(Rm); v.toArray(P, i * 3); }
+  // ligne du sternum : l'avant du maillage au milieu (|x| < 3,5 cm), tranche par tranche de 1 cm
+  const mid = new Map();
+  for (let i = 0; i < n; i++) {
+    const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2];
+    if (Math.abs(x) > 0.035 || z <= 0 || y < 1.0 || y > 1.5) continue;
+    const k = Math.round(y * 100);
+    if (!(mid.get(k) >= z)) mid.set(k, z);
+  }
+  const midAt = (y) => { // la tranche la plus proche qui en a une
+    const k = Math.round(y * 100);
+    for (let d = 0; d < 6; d++) { if (mid.has(k - d)) return mid.get(k - d); if (mid.has(k + d)) return mid.get(k + d); }
+    return null;
+  };
+  const w = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    let x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2];
+    let wt = 0;
+    // pectoraux : ce qui dépasse le sternum revient vers lui
+    const ax = Math.abs(x);
+    const band = smooth01(1.1, 1.2, y) * (1 - smooth01(1.33, 1.43, y));
+    const lat = smooth01(0.012, 0.045, ax) * (1 - smooth01(0.16, 0.21, ax));
+    const front = smooth01(0.03, 0.07, z);
+    const k = band * lat * front;
+    if (k > 0) {
+      const zm = midAt(y);
+      if (zm != null && z > zm - 0.002) { z -= k * 0.85 * (z - (zm - 0.002)); wt = Math.max(wt, k); }
+    }
+    // galbe latéral (vu de trois quarts, le côté proche bombait encore en poitrine) : le devant du buste suit une ellipse
+    // large, plate au centre, qui recule vers les flancs ; ce qui dépasse y revient
+    const kb = smooth01(1.1, 1.18, y) * (1 - smooth01(1.36, 1.44, y)) * smooth01(0.03, 0.08, ax) * smooth01(0.02, 0.05, z);
+    if (kb > 0) {
+      const zm = midAt(y);
+      if (zm != null) {
+        const W = 0.215;
+        const ze = zm * Math.sqrt(Math.max(0, 1 - (ax / W) ** 2)) - 0.002;
+        if (z > ze) { z -= kb * 0.85 * (z - ze); wt = Math.max(wt, kb); }
+      }
+    }
+    // silhouette en V : la taille s'affine (toutes les couches du torse de la même façon, le tissu garde son aisance)
+    const tp = taperAt(y);
+    if (tp < 1) { x *= tp; wt = Math.max(wt, (1 - tp) * 12); }
+    P[i * 3] = x; P[i * 3 + 2] = z; w[i] = wt;
+  }
+  // retour aux unités du maillage pour les sommets déplacés ; la couche intérieure rentre de 5 mm sous le tissu du torse
+  const inner = TORSO.inner.has(name) && nor;
+  for (let i = 0; i < n; i++) {
+    // (aisselle : 15 mm, le tissu y est tiré par le bras)
+    const pit = inner ? smooth01(0.1, 0.14, Math.abs(P[i * 3])) * smooth01(1.2, 1.26, P[i * 3 + 1]) * (1 - smooth01(1.36, 1.42, P[i * 3 + 1])) : 0;
+    const sk = inner ? sinkAt(P[i * 3 + 1]) * (1 + 2 * pit) : 0;
+    if (!w[i] && !sk) continue;
+    v.fromArray(P, i * 3).applyMatrix4(Ri);
+    if (sk) {
+      const nx = nor[i * 3], ny = nor[i * 3 + 1], nz = nor[i * 3 + 2]; const l = Math.hypot(nx, ny, nz) || 1; const d = (0.005 / scale) * sk;
+      v.x -= (nx / l) * d; v.y -= (ny / l) * d; v.z -= (nz / l) * d;
+    }
+    v.toArray(pos, i * 3);
+  }
+  // ombrage : normales recalculées là où la forme a changé (sommets soudés par position : pas de couture)
+  if (!nor || !index) return;
+  const acc = new Map(); const keyOf = (i) => `${Math.round(pos[i * 3] * 4000)},${Math.round(pos[i * 3 + 1] * 4000)},${Math.round(pos[i * 3 + 2] * 4000)}`;
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), e1 = new THREE.Vector3(), e2 = new THREE.Vector3();
+  const idx = index.array;
+  for (let f = 0; f < idx.length; f += 3) {
+    const i0 = idx[f], i1 = idx[f + 1], i2 = idx[f + 2];
+    if (!w[i0] && !w[i1] && !w[i2]) continue;
+    a.fromArray(pos, i0 * 3); b.fromArray(pos, i1 * 3); c.fromArray(pos, i2 * 3);
+    e1.subVectors(b, a); e2.subVectors(c, a); e1.cross(e2); // (aire comprise : les grandes faces pèsent plus)
+    for (const j of [i0, i1, i2]) { const kk = keyOf(j); const s0 = acc.get(kk) || [0, 0, 0]; s0[0] += e1.x; s0[1] += e1.y; s0[2] += e1.z; acc.set(kk, s0); }
+  }
+  for (let i = 0; i < n; i++) {
+    if (!w[i]) continue;
+    const s0 = acc.get(keyOf(i)); if (!s0) continue;
+    const l = Math.hypot(s0[0], s0[1], s0[2]); if (!l) continue;
+    const ox = nor[i * 3], oy = nor[i * 3 + 1], oz = nor[i * 3 + 2]; const ol = Math.hypot(ox, oy, oz) || 1;
+    // même sens que l'ancienne normale (l'enroulement des faces peut varier d'un vêtement à l'autre)
+    const sg = (s0[0] * ox + s0[1] * oy + s0[2] * oz) < 0 ? -1 : 1;
+    const t = Math.min(1, w[i] * 1.6);
+    const nx = ox / ol * (1 - t) + sg * s0[0] / l * t, ny = oy / ol * (1 - t) + sg * s0[1] / l * t, nz = oz / ol * (1 - t) + sg * s0[2] / l * t;
+    const nl = Math.hypot(nx, ny, nz) || 1;
+    nor[i * 3] = nx / nl; nor[i * 3 + 1] = ny / nl; nor[i * 3 + 2] = nz / nl;
+  }
+}
+// Short de football (1.0.40) : le short moulait la cuisse comme un cuissard ; il s'évase autour de chaque cuisse, de
+// plus en plus vers l'ourlet (axes hanche-genou de la pose de repos, en mètres).
+const LEG = { hip: [0.109, 0.923, -0.007], knee: [0.149, 0.508, 0.027] };
+function reshapeShorts(pos, Rm) {
+  const n = pos.length / 3;
+  const Ri = Rm.clone().invert();
+  const v = new THREE.Vector3();
+  for (let i = 0; i < n; i++) {
+    v.fromArray(pos, i * 3).applyMatrix4(Rm);
+    if (v.y > 0.93) continue;
+    const sx = v.x >= 0 ? 1 : -1;
+    const t = (LEG.hip[1] - v.y) / (LEG.hip[1] - LEG.knee[1]);
+    const cx = sx * (LEG.hip[0] + (LEG.knee[0] - LEG.hip[0]) * t), cz = LEG.hip[2] + (LEG.knee[2] - LEG.hip[2]) * t;
+    const f = 1 + 0.07 * smooth01(0.88, 0.64, v.y); // (jusqu'à +7 % de rayon à l'ourlet : ample, pas évasé)
+    v.x = cx + (v.x - cx) * f; v.z = cz + (v.z - cz) * f;
+    v.x *= taperAt(v.y); // (la taille du short suit celle du maillot)
+    v.applyMatrix4(Ri).toArray(pos, i * 3);
+  }
+}
+// Couches intérieures (1.0.40) : le corps sous le maillot (base_1), sous le short (base_2), sous le col (base_5). aIn.x :
+// part de la couleur du maillot, aIn.y : de celle du short ; 0 = peau. Peau près des ouvertures (dans la manche jusqu'à
+// 4 cm, à la base du cou, sur 1,5 cm au-dessus de l'ourlet du short), tenue ailleurs.
+function prepareInner(scene) {
+  const meshes = {};
+  scene.traverse((o) => { if (o.isSkinnedMesh) meshes[o.name] = o; });
+  const V = new THREE.Vector3();
+  const restOf = (o, i) => V.fromBufferAttribute(o.geometry.attributes.position, i).applyMatrix4(A.rest[o.name]);
+  const bone = (n) => scene.getObjectByName(n).getWorldPosition(new THREE.Vector3());
+  const arm = {};
+  for (const s of ['l', 'r']) {
+    const S = bone(`upperarm_${s}`), E = bone(`lowerarm_${s}`);
+    arm[s] = { S, axis: E.clone().sub(S).normalize(), hem: -Infinity };
+  }
+  const trim = meshes.male_casualsuit04_1;
+  if (trim) for (let i = 0; i < trim.geometry.attributes.position.count; i++) {
+    const v = restOf(trim, i);
+    if (Math.abs(v.x) < 0.2) continue;
+    const a = arm[v.x > 0 ? 'l' : 'r'];
+    a.hem = Math.max(a.hem, v.clone().sub(a.S).dot(a.axis));
+  }
+  let hemY = 0.628;
+  const sh = meshes.Kit_ShortsCloth;
+  if (sh) { hemY = Infinity; for (let i = 0; i < sh.geometry.attributes.position.count; i++) { const v = restOf(sh, i); if (Math.abs(v.x) > 0.06) hemY = Math.min(hemY, v.y); } }
+  for (const name of ['base', 'base_1', 'base_2', 'base_5']) {
+    const o = meshes[name];
+    if (!o || !A.rest[name]) continue;
+    const n = o.geometry.attributes.position.count;
+    const att = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      const v = restOf(o, i);
+      // couches intérieures : en retrait derrière le tissu (voir le shader), sauf au col (rien à y cacher, et le retrait y
+      // laissait voir le bord intérieur du maillot)
+      if (name === 'base_1') att[i * 3 + 2] = 1 - smooth01(1.36, 1.4, v.y);
+      if (name === 'base_1') {
+        // dans la manche aussi, la couleur du maillot (on y voit la doublure) : la peau y perçait aux jonctions de l'aisselle
+        let kit = 1;
+        kit *= 1 - smooth01(1.415, 1.448, v.y); // à la base du cou
+        att[i * 3] = kit;
+      } else if (name === 'base_2') {
+        att[i * 3 + 1] = 1; // l'intérieur du short, dans l'ombre jusqu'à l'ourlet (relecture : un liseré plus clair que la cuisse)
+      }
+    }
+    o.geometry.setAttribute('aIn', new THREE.BufferAttribute(att, 3));
+  }
+  // pied sous la chaussure : la chaussette à la cheville seulement (en haut de la chaussure) ; plus bas, la couleur de la
+  // chaussure (quand le pied perce le côté de la chaussure, rien ne se voit)
+  const ft = meshes.base_4;
+  if (ft && A.rest.base_4) {
+    const n = ft.geometry.attributes.position.count; const att = new Float32Array(n);
+    // le bord de la chaussure, secteur par secteur autour de la cheville (plus bas devant, à la languette, plus haut au talon) :
+    // ce qui dépasse le bord est la chaussette, ce qui reste dessous la chaussure
+    const SECT = 36;
+    const shoe = meshes.shoes06;
+    const ank = { l: bone('foot_l'), r: bone('foot_r') };
+    const rim = { l: new Float32Array(SECT).fill(-1), r: new Float32Array(SECT).fill(-1) };
+    const sectOf = (v, sd) => Math.min(SECT - 1, Math.floor(((Math.atan2(v.x - ank[sd].x, v.z - ank[sd].z) + Math.PI) / (2 * Math.PI)) * SECT));
+    if (shoe && A.rest.shoes06) {
+      for (let i = 0; i < shoe.geometry.attributes.position.count; i++) {
+        const v = restOf(shoe, i); const sd = v.x > 0 ? 'l' : 'r'; const k = sectOf(v, sd);
+        rim[sd][k] = Math.max(rim[sd][k], v.y);
+      }
+    }
+    const above = (o, att) => {
+      for (let i = 0; i < att.length; i++) {
+        const v = restOf(o, i); const sd = v.x > 0 ? 'l' : 'r'; const k = sectOf(v, sd);
+        const r0 = Math.max(rim[sd][k], rim[sd][(k + 1) % SECT], rim[sd][(k + SECT - 1) % SECT]);
+        att[i] = r0 < 0 ? smooth01(0.097, 0.105, v.y) : smooth01(r0 - 0.006, r0 + 0.002, v.y);
+      }
+      o.geometry.setAttribute('aFoot', new THREE.BufferAttribute(att, 1));
+    };
+    above(ft, att);
+    // la chaussette aussi descend dans la chaussure : sous le bord, elle prend la couleur de la chaussure (sinon elle
+    // perçait la languette en deux points de couleur)
+    const sock = meshes.base_3;
+    if (sock && A.rest.base_3) above(sock, new Float32Array(sock.geometry.attributes.position.count));
+  }
+  // Aisselle (1.0.40, PDG : « travaille encore plus pour que cette pointe sous l'aisselle disparaisse ») : la peau du bras
+  // juste sous la manche, l'ourlet et le bas de la manche gardaient une part de poids sur le torse ; bras baissé, ils
+  // restaient en arrière et s'étiraient vers le flanc en une écharde. Près de l'ourlet, ils suivent le bras seul, comme un
+  // tube rigide ; le pli se fait plus haut, sous le tissu.
+  const ARM = /^(upperarm|lowerarm|hand|index|middle|ring|pinky|thumb)_/;
+  // points de l'ourlet de chaque manche (anneau en biais : plus haut côté aisselle), pour mesurer la distance à l'ourlet
+  const hemPts = { l: [], r: [] };
+  if (trim) for (let i = 0; i < trim.geometry.attributes.position.count; i++) {
+    const v = restOf(trim, i).clone();
+    if (v.y < 1.42 && Math.abs(v.x) > 0.12) hemPts[v.x > 0 ? 'l' : 'r'].push(v);
+  }
+  // k(v) : part « tube rigide du bras » d'un sommet, selon sa distance à l'ourlet (dans le volume de la manche seulement)
+  const rigid = (o, near, far) => {
+    if (!o) return;
+    const g = o.geometry; const si = g.attributes.skinIndex; const sw = g.attributes.skinWeight;
+    const bones = o.skeleton.bones;
+    for (let i = 0; i < si.count; i++) {
+      const v = restOf(o, i).clone();
+      if (Math.abs(v.x) < 0.12) continue;
+      const side = v.x > 0 ? 'l' : 'r'; const a = arm[side];
+      const d = v.clone().sub(a.S); const t = d.dot(a.axis);
+      if (t < 0.02 || d.addScaledVector(a.axis, -t).length() > 0.1) continue; // (la manche et le bras, jamais le flanc)
+      let dh = Infinity; for (const h of hemPts[side]) dh = Math.min(dh, h.distanceTo(v));
+      const k = 1 - smooth01(near, far, dh);
+      if (k <= 0) continue;
+      const idx = [si.getX(i), si.getY(i), si.getZ(i), si.getW(i)];
+      const w = [sw.getX(i), sw.getY(i), sw.getZ(i), sw.getW(i)];
+      const isArm = idx.map((b, j) => w[j] > 0 && ARM.test(bones[b]?.name || ''));
+      const armSum = w.reduce((acc, x, j) => acc + (isArm[j] ? x : 0), 0);
+      if (armSum <= 1e-4 || armSum > 0.999) continue;
+      const nw = w.map((x, j) => (1 - k) * x + k * (isArm[j] ? x / armSum : 0));
+      sw.setXYZW(i, nw[0], nw[1], nw[2], nw[3]);
+    }
+    sw.needsUpdate = true;
+  };
+  rigid(meshes.base, 0.03, 0.07); // la peau du bras sous l'ourlet
+  rigid(meshes.base_1, 0.02, 0.05); // le bras dans la manche, près de l'ourlet
+  rigid(meshes.male_casualsuit04, 0.02, 0.05); // le bas de la manche
+  rigid(trim, 0.03, 0.04); // l'ourlet entier (k = 1 sur tout l'anneau)
+  // Envers du tissu (1.0.40, relecture : « la face intérieure grise de l'ourlet », « un liseré plus clair que la cuisse ») :
+  // l'ourlet roulé des manches et du short a des faces tournées vers le membre ; vues par l'ouverture, elles restent dans
+  // l'ombre (aBack, lu par le shader du tissu)
+  const innerSide = (o, axisOf) => {
+    if (!o || !A.rest[o.name] || !o.geometry.attributes.normal) return;
+    const g = o.geometry; const n = g.attributes.position.count; const Nn = g.attributes.normal;
+    const nm = new THREE.Matrix3().getNormalMatrix(A.rest[o.name]);
+    const att = new Float32Array(n); const nn = new THREE.Vector3();
+    for (let i = 0; i < n; i++) {
+      const v = restOf(o, i).clone();
+      nn.fromBufferAttribute(Nn, i).applyMatrix3(nm).normalize();
+      const [P, D] = axisOf(v);
+      const rad = v.clone().sub(P); rad.addScaledVector(D, -rad.dot(D));
+      if (rad.lengthSq() < 1e-8) continue;
+      att[i] = smooth01(-0.05, -0.35, nn.dot(rad.normalize()));
+    }
+    g.setAttribute('aBack', new THREE.BufferAttribute(att, 1));
+  };
+  const legAxis = (v) => {
+    const sx = v.x >= 0 ? 1 : -1;
+    const H0 = new THREE.Vector3(sx * LEG.hip[0], LEG.hip[1], LEG.hip[2]); const K0 = new THREE.Vector3(sx * LEG.knee[0], LEG.knee[1], LEG.knee[2]);
+    return [H0, K0.sub(H0).normalize()];
+  };
+  const bodyAxis = (v) => {
+    const a = arm[v.x > 0 ? 'l' : 'r'];
+    if (Math.abs(v.x) > 0.17 && v.clone().sub(a.S).dot(a.axis) > 0) return [a.S, a.axis];
+    return [new THREE.Vector3(0, v.y, 0), new THREE.Vector3(0, 1, 0)];
+  };
+  innerSide(meshes.Kit_ShortsCloth, legAxis);
+  // entre les jambes, le short est à l'ombre de l'autre jambe (le studio ne calcule pas cette ombre) : le pan intérieur
+  // de chaque jambe, tourné vers l'autre, s'assombrit (il se voyait plus clair que la cuisse sous l'ourlet)
+  { const o = meshes.Kit_ShortsCloth;
+    if (o?.geometry.attributes.aBack) {
+      const att = o.geometry.attributes.aBack; const Nn = o.geometry.attributes.normal; const nm = new THREE.Matrix3().getNormalMatrix(A.rest[o.name]); const nn = new THREE.Vector3();
+      for (let i = 0; i < att.count; i++) {
+        const v = restOf(o, i); const sx = v.x >= 0 ? 1 : -1;
+        nn.fromBufferAttribute(Nn, i).applyMatrix3(nm).normalize();
+        const between = smooth01(-0.1, -0.55, nn.x * sx) * (1 - smooth01(0.84, 0.92, v.y));
+        att.setX(i, Math.max(att.getX(i), 0.65 * between));
+      }
+      att.needsUpdate = true;
+    } }
+  innerSide(trim, bodyAxis);
+  // le maillot lui-même : seulement l'envers roulé au bord de la manche (à 2,5 cm de l'ourlet au plus) ; ailleurs, sous
+  // l'aisselle, le flanc du torse passait pour l'intérieur de la manche et s'assombrissait en losange
+  innerSide(meshes.male_casualsuit04, bodyAxis);
+  { const o = meshes.male_casualsuit04; const ab = o?.geometry.attributes.aBack;
+    if (ab) {
+      for (let i = 0; i < ab.count; i++) {
+        const v = restOf(o, i).clone(); let dh = Infinity;
+        for (const h of hemPts[v.x > 0 ? 'l' : 'r']) dh = Math.min(dh, h.distanceTo(v));
+        ab.setX(i, ab.getX(i) * (1 - smooth01(0.015, 0.025, dh)));
+      }
+      ab.needsUpdate = true;
+    } }
+}
+function taperMesh(pos, Rm) { // le corps sous le short suit la taille
+  const Ri = Rm.clone().invert(); const v = new THREE.Vector3();
+  for (let i = 0; i < pos.length / 3; i++) {
+    v.fromArray(pos, i * 3).applyMatrix4(Rm);
+    const tp = taperAt(v.y); if (tp >= 1) continue;
+    v.x *= tp; v.applyMatrix4(Ri).toArray(pos, i * 3);
+  }
 }
 // morphs cuits : positions et normales calculées une fois par joueur (le modèle partagé garde ses clés)
 function bake(mesh, m) {
@@ -591,6 +932,11 @@ function bake(mesh, m) {
     const dn = g0.morphAttributes.normal?.[j];
     if (nor && dn) for (let i = 0; i < dn.count; i++) { nor[i * 3] += w * dn.getX(i); nor[i * 3 + 1] += w * dn.getY(i); nor[i * 3 + 2] += w * dn.getZ(i); }
   }
+  const name = mesh.userData.restName ?? mesh.name;
+  const Rm = A.rest?.[name];
+  if (Rm && (TORSO.cloth.has(name) || TORSO.inner.has(name))) reshapeTorso(name, pos, nor, g0.index, Rm);
+  if (Rm && name === 'Kit_ShortsCloth') reshapeShorts(pos, Rm);
+  if (Rm && name === 'base_2') taperMesh(pos, Rm);
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   if (nor) g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
   if (mesh.geometry !== g0) mesh.geometry.dispose();
@@ -603,7 +949,10 @@ function bake(mesh, m) {
 // torse bombé se lisait comme une poitrine, sur des épaules étroites. Épaules plus larges (le bras s'écarte au bout de la
 // clavicule), haut du torse moins profond (os spine_03 ; le cou et les clavicules en gardent la mesure d'origine, donc
 // la tête et les bras aussi). Les clips n'animent que la position du bassin : ces réglages tiennent.
-const SHOULDER = 1.11, CHEST_Z = 0.9;
+// 1.0.40 (PDG : « les épaules comparées au dos, ce n'est pas naturel ») : les épaules élargies par les os étiraient le
+// maillot à l'emmanchure et faisaient des épaulettes vues de dos ; la carrure revient au modèle, la silhouette en V vient
+// de la taille (taperAt) et le buste plat du maillot (reshapeTorso).
+const SHOULDER = 1, CHEST_Z = 1;
 function athletic(root) {
   for (const s of ['l', 'r']) { const u = root.getObjectByName(`upperarm_${s}`); if (u) u.position.multiplyScalar(SHOULDER); }
   const c = root.getObjectByName('spine_03'); if (c) c.scale.set(1, 1, CHEST_Z);
@@ -618,7 +967,7 @@ export function createPlayers3D(parent, max = 22) {
   function make(i) {
     const root = SkeletonUtils.clone(A.base.scene);
     const mats = {}; const hairs = {}; const brows = {}; const meshes = [];
-    const u = { beard: { value: new THREE.Vector4() }, hair: { value: new THREE.Color() }, scalp: { value: new THREE.Color() }, sleeve: { value: new THREE.Vector4() }, glove: { value: new THREE.Vector4() } };
+    const u = { beard: { value: new THREE.Vector4() }, hair: { value: new THREE.Color() }, scalp: { value: new THREE.Color() }, sleeve: { value: new THREE.Vector4() }, glove: { value: new THREE.Vector4() }, shirtIn: { value: new THREE.Color() }, shortsIn: { value: new THREE.Color() } };
     root.traverse((o) => {
       if (!o.isMesh) return;
       o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false;
@@ -634,21 +983,80 @@ export function createPlayers3D(parent, max = 22) {
         softHair(o.material);
       }
       if (key === 'Eyes') { // cornée brillante : un reflet dans chaque œil
-        Object.assign(o.material, { roughness: 0.06, envMapIntensity: 1.5 });
+        Object.assign(o.material, { roughness: 0.08, envMapIntensity: 0.9 });
         o.castShadow = false;
+        // (1.0.40) la paupière supérieure ombre le haut du globe, les coins de l'œil sont dans l'ombre des orbites
+        o.material.onBeforeCompile = (sh) => {
+          sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+  {
+    vec3 en = normalize( vNormal );
+    diffuseColor.rgb *= mix( 1.0, 0.62, smoothstep( 0.1, 0.42, en.y ) ) * mix( 1.0, 0.78, smoothstep( 0.32, 0.64, abs( en.x ) ) ); // (paupière : sans fermer l'œil, sinon le regard se renfrogne)
+  }`);
+        };
+        o.material.customProgramCacheKey = () => 'footoff-yeux';
       }
       if (key === 'Brows' || key === 'Lashes') { // poils fins posés sur la peau : fondus
         Object.assign(o.material, { transparent: true, depthWrite: false, alphaTest: 0.02, side: THREE.DoubleSide });
         o.castShadow = false; o.renderOrder = 1;
       }
-      if (key === 'Skin') { o.material.map = A.skins[1]; o.material.needsUpdate = true; paintable(o.material, u); }
+      if (key === 'Skin') { // (1.0.40 : peau plus mate, moins plastique ; ombres de contact)
+        o.material.map = A.skins[1]; o.material.roughness = 0.6;
+        if (A.ao) { o.material.aoMap = A.ao; o.material.aoMapIntensity = 1; }
+        o.material.needsUpdate = true; paintable(o.material, u);
+      }
       if (['Kit_Shirt', 'Kit_Shorts', 'Kit_Socks', 'Kit_Trim'].includes(key)) { // tissu : maille, mat, peu de reflets
-        Object.assign(o.material, { normalMap: A.knit, roughness: 0.86, envMapIntensity: 0.7 });
-        o.material.normalScale.set(0.38, 0.38);
+        Object.assign(o.material, { normalMap: A.knit, roughness: 0.86, envMapIntensity: 0.25 }); // (1.0.40 : moins de reflet gris : les dessous de manche restaient gris délavé)
+        o.material.normalScale.set(0.22, 0.22); // (1.0.40 : maille plus douce, sans moirage au téléphone)
+        // (1.0.40) l'envers du tissu, vu par l'ouverture d'une manche ou sous l'ourlet du short, reste dans l'ombre : il se
+        // voyait plus clair que la cuisse
+        o.material.onBeforeCompile = (sh) => {
+          sh.vertexShader = `attribute float aBack;\nvarying float vBack;\n${sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vBack = aBack;')}`;
+          sh.fragmentShader = `varying float vBack;\n${sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n  float backK = gl_FrontFacing ? vBack : 1.0;\n  diffuseColor.rgb *= mix( 1.0, 0.18, backK );').replace('#include <opaque_fragment>', 'outgoingLight *= mix( 1.0, 0.2, backK );\n  #include <opaque_fragment>')}`;
+        };
+        o.material.customProgramCacheKey = () => 'footoff-tissu';
       }
       if (key === 'Kit_Boots' || key === 'Kit_Sole') Object.assign(o.material, { roughness: 0.8, envMapIntensity: 0.6 }); // synthétique mat
+      // (1.0.40) la semelle de la chaussure d'origine remonte sur le côté en une virgule claire, qu'on pourrait prendre pour un
+      // logo d'équipementier : elle prend la couleur de la chaussure
+      if (key === 'Kit_Sole') o.material.color.setHex(0x1d1d1d);
     });
     athletic(root);
+    root.traverse((b) => { if (b.isBone && /^(index|middle|ring|pinky|thumb)_/.test(b.name)) b.userData.rest = b.quaternion.clone(); });
+    // couche intérieure du maillot et de ses bords (1.0.40) : peinte comme la peau. Sous le tissu, elle ne se voit pas ; elle
+    // ne paraissait qu'entre le col et le cou (une bande aux couleurs du maillot, une marche noire) ou au bord d'une manche
+    // corps sous la tenue : le matériau de la peau, coloré par aIn (prepareInner) ; le pied sous la chaussure prend la
+    // couleur de la chaussette (il dépassait en escalier noir au haut de la chaussure)
+    const skinMat = mats.Skin?.[0];
+    if (skinMat) {
+      for (const o of meshes) {
+        if (!['base_1', 'base_2', 'base_5'].includes(o.name)) continue;
+        const old = o.material;
+        o.material = skinMat;
+        for (const k of ['Kit_Shirt', 'Kit_Shorts', 'Kit_Trim']) if (mats[k]) mats[k] = mats[k].filter((x) => x !== old);
+      }
+    }
+    const foot = meshes.find((o) => o.name === 'base_4');
+    if (foot && mats.Kit_Boots) {
+      mats.Kit_Boots = mats.Kit_Boots.filter((x) => x !== foot.material); mats.FootIn = [foot.material];
+      Object.assign(foot.material, { roughness: 0.85 });
+      const boot = new THREE.Color(0x1d1d1d);
+      foot.material.onBeforeCompile = (sh) => {
+        sh.uniforms.uBoot = { value: boot };
+        sh.vertexShader = `attribute float aFoot;\nvarying float vFoot;\n${sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vFoot = aFoot;')}`;
+        sh.fragmentShader = `uniform vec3 uBoot;\nvarying float vFoot;\n${sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n  diffuseColor.rgb = mix( uBoot, diffuseColor.rgb, vFoot );')}`;
+      };
+      foot.material.customProgramCacheKey = () => 'footoff-pied';
+    }
+    const sockM = meshes.find((o) => o.name === 'base_3');
+    if (sockM?.geometry.attributes.aFoot) {
+      const boot = new THREE.Color(0x1d1d1d);
+      sockM.material.onBeforeCompile = (sh) => {
+        sh.uniforms.uBoot = { value: boot };
+        sh.vertexShader = `attribute float aFoot;\nvarying float vFoot;\n${sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vFoot = aFoot;')}`;
+        sh.fragmentShader = `uniform vec3 uBoot;\nvarying float vFoot;\n${sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n  diffuseColor.rgb = mix( uBoot, diffuseColor.rgb, vFoot );')}`;
+      };
+      sockM.material.customProgramCacheKey = () => 'footoff-chaussette';
+    }
     parent.add(root);
     const mixer = new THREE.AnimationMixer(root);
     const act = (g, name = g.name) => ({ ...g, name, a: mixer.clipAction(A.clips[name]), dur: A.clips[name].duration });
@@ -697,8 +1105,10 @@ export function createPlayers3D(parent, max = 22) {
     const bw = f.bw === 'thick' || (f.bw !== 'fine' && id.seed % 3 === 0) ? 'thick' : 'normal';
     for (const [k, o] of Object.entries(p.brows)) o.visible = k === bw;
     for (const mat of p.mats.Brows || []) mat.color.set(id.brow).multiplyScalar(2);
+    // cils (1.0.40) : de la couleur des sourcils, assombrie (gris clair, ceux du bas faisaient une frange blanche sous l'œil)
+    for (const mat of p.mats.Lashes || []) mat.color.set(id.brow).multiplyScalar(0.55);
     // barbe : celle du portrait ; un adulte imberbe garde une ombre de barbe
-    const [bR, bG, bB] = id.beard === 'none' && id.age >= 21 ? [0.18, 0, 0] : BEARD[id.beard] || BEARD.none;
+    const [bR, bG, bB] = id.beard === 'none' && id.age >= 21 ? [0.27, 0, 0] : BEARD[id.beard] || BEARD.none; // (1.0.40 : ombre de barbe plus marquée, un visage d'homme et non de mannequin)
     // cheveux ras : partout sous une coupe (la lisière se fond), pleine densité sans coupe
     p.u.beard.value.set(bR, bG, bB, SCALP[id.style] ?? (mesh ? 0.9 : 0.95));
     // poils : toujours plus sombres que la peau ; barbe à la couleur des cheveux (assombrie, jamais grise), cheveux ras
@@ -1194,6 +1604,9 @@ export function createPlayers3D(parent, max = 22) {
       for (const m of p.mats.Kit_Shirt || []) m.color.setHex(hex);
       for (const m of p.mats.Kit_Socks || []) m.color.setHex(hex);
       for (const m of p.mats.Kit_Shorts || []) m.color.setHex(trim);
+      for (const m of p.mats.FootIn || []) m.color.setHex(hex); // (le pied dans la chaussure : la chaussette)
+      p.u.shirtIn.value.setHex(hex).multiplyScalar(0.5); // (l'intérieur du maillot, vu par la manche : dans l'ombre)
+      p.u.shortsIn.value.setHex(trim).multiplyScalar(0.3); // (l'intérieur du short, dans l'ombre : jamais plus clair que la cuisse)
       for (const m of p.mats.Kit_Trim || []) m.color.setHex(trim); // col et bords des manches
       // le gardien (premier de chaque onze) : manches longues de son maillot, gants
       const keeper = i % 11 === 0;
@@ -1212,25 +1625,115 @@ export function createPlayers3D(parent, max = 22) {
       }
     },
     setIdentity(i, id) { identity(slots[i] || make(i), id); },
-    // Studio photo (three/hero3d.js, 1.0.38) : pose de portrait officiel, les mains jointes dans le dos (les poings
-    // serrés de l'attente, bras ballants, faisaient raide), épaules ouvertes ; à appeler après commit, avant le rendu.
-    portrait(i) {
+    // Studio photo (three/hero3d.js) : pose de portrait, à appeler après commit, avant le rendu. 1.0.40 (PDG : « des
+    // poitrines qui ressortent énormément ») : les mains jointes dans le dos (1.0.37) tiraient les épaules en arrière,
+    // bombaient le buste et ouvraient le maillot sous l'aisselle ; les bras tombent maintenant le long du corps, coudes à
+    // peine fléchis, mains ouvertes contre les cuisses.
+    portrait(i, look = null) {
       const p = slots[i];
       if (!p) return;
-      p.root.updateMatrixWorld(true);
-      const q = p.root.getWorldQuaternion(new THREE.Quaternion());
+      const root = p.root;
+      root.updateMatrixWorld(true);
+      const q = root.getWorldQuaternion(new THREE.Quaternion());
       const fwd = V().set(0, 0, 1).applyQuaternion(q);
-      const hl = p.root.getObjectByName('thigh_l').getWorldPosition(V());
-      const hr = p.root.getObjectByName('thigh_r').getWorldPosition(V());
+      const down = V().set(0, -1, 0);
+      const B = (n) => root.getObjectByName(n);
+      const wp = (b) => b.getWorldPosition(V());
+      const s = root.scale.x;
+      // rotation (repère du monde) appliquée à un os autour de sa propre attache
+      const turn = (bone, qd) => {
+        const pw = bone.parent.getWorldQuaternion(new THREE.Quaternion()).invert();
+        bone.quaternion.copy(pw.multiply(qd.clone().multiply(bone.getWorldQuaternion(new THREE.Quaternion()))));
+        bone.updateMatrixWorld(true);
+      };
+      const turnAxis = (bone, axis, ang) => { if (Math.abs(ang) > 1e-5 && axis.lengthSq() > 1e-10) turn(bone, new THREE.Quaternion().setFromAxisAngle(axis.clone().normalize(), ang)); };
+      const hl = wp(B('thigh_l')), hr = wp(B('thigh_r'));
       const c = hl.clone().add(hr).multiplyScalar(0.5);
-      const s = p.root.scale.x;
+      const D = THREE.MathUtils.degToRad;
       for (const [side, hip] of [['l', hl], ['r', hr]]) {
         const out = hip.clone().sub(c).setY(0).normalize(); // vers son côté
-        const up = p.root.getObjectByName(`upperarm_${side}`); const lo = p.root.getObjectByName(`lowerarm_${side}`); const ha = p.root.getObjectByName(`hand_${side}`);
+        const palm = out.clone().negate(); // paume vers la cuisse
+        const up = B(`upperarm_${side}`); const lo = B(`lowerarm_${side}`); const ha = B(`hand_${side}`);
         if (!up || !lo || !ha) continue;
-        const T = c.clone().addScaledVector(fwd, -0.17 * s).addScaledVector(out, 0.035 * s).add(V().set(0, 0.05 * s, 0));
-        twoBone(up, lo, ha, T, 1, out.clone().addScaledVector(fwd, -0.9));
+        // 1) doigts : pose de liaison (droits), on les replie plus bas
+        ha.traverse((b) => { if (b !== ha && b.isBone && b.userData.rest) b.quaternion.copy(b.userData.rest); });
+        root.updateMatrixWorld(true);
+        // 2) bras le long du corps (1.0.40, PDG : « leur position est totalement non naturelle ») : le poignet à côté de la
+        // cuisse, juste à l'écart du short, à hauteur de l'aine ; le coude légèrement fléchi, vers l'arrière
+        const S = wp(up);
+        const l1 = wp(lo).distanceTo(S), l2 = wp(ha).distanceTo(wp(lo));
+        const lat = (v) => v.clone().sub(c).dot(out); // écart latéral au milieu du bassin
+        const dx = lat(hip) + (globalThis.__ARM_OUT ?? 0.125) * s - lat(S); // le poignet : 12,5 cm à l'extérieur de la hanche
+        const dz = 0.035 * s;
+        const reach = 0.975 * (l1 + l2);
+        const dy = Math.sqrt(Math.max(0.01, reach * reach - dx * dx - dz * dz));
+        const T = S.clone().addScaledVector(out, dx).addScaledVector(fwd, dz).addScaledVector(down, dy);
+        twoBone(up, lo, ha, T, 1, fwd.clone().negate().addScaledVector(out, 0.35));
+        root.updateMatrixWorld(true);
+        // 3) main : doigts vers le bas (un peu en avant), pouce en avant, paume vers la cuisse ; la rotation du poignet est
+        // partagée avec l'avant-bras (sinon le poignet se tord)
+        const fore = wp(ha).sub(wp(lo)).normalize();
+        const basis = () => {
+          const f = wp(B(`middle_01_${side}`)).sub(wp(ha)).normalize();
+          const a = wp(B(`index_01_${side}`)).sub(wp(B(`pinky_01_${side}`)));
+          a.addScaledVector(f, -a.dot(f)).normalize();
+          return new THREE.Matrix4().makeBasis(f, a, V().crossVectors(f, a));
+        };
+        const f2 = fore.clone().addScaledVector(fwd, 0.08).addScaledVector(palm, 0.1).normalize();
+        const a2 = fwd.clone().addScaledVector(f2, -fwd.dot(f2)).normalize();
+        const target = new THREE.Matrix4().makeBasis(f2, a2, V().crossVectors(f2, a2));
+        const need = () => new THREE.Quaternion().setFromRotationMatrix(target.clone().multiply(basis().clone().transpose()));
+        // part de torsion autour de l'avant-bras, donnée à l'avant-bras pour moitié
+        const qn = need();
+        const tw = new THREE.Quaternion(qn.x, qn.y, qn.z, qn.w);
+        const pr = V(qn.x, qn.y, qn.z).projectOnVector(fore);
+        tw.set(pr.x, pr.y, pr.z, qn.w).normalize();
+        const twistAng = 2 * Math.atan2(V(tw.x, tw.y, tw.z).dot(fore), tw.w);
+        turnAxis(lo, fore, twistAng * 0.5);
+        turn(ha, need());
+        // 4) doigts détendus : serrés les uns contre les autres, légèrement repliés vers la paume, de plus en plus vers
+        // l'auriculaire ; le pouce le long de l'index
+        const CURL = { index: [12, 22, 14], middle: [16, 26, 16], ring: [20, 30, 18], pinky: [24, 34, 20] };
+        const TOWARD = { index: 'middle', ring: 'middle', pinky: 'ring' };
+        const SPREAD = { index: 4, ring: 3, pinky: 7 };
+        for (const [f, angs] of Object.entries(CURL)) {
+          const b1 = B(`${f}_01_${side}`); if (!b1) continue;
+          if (SPREAD[f]) { // rapprocher du doigt voisin
+            const nb = wp(B(`${TOWARD[f]}_01_${side}`)); const dir = wp(B(`${f}_02_${side}`)).sub(wp(b1));
+            const to = nb.clone().sub(wp(b1)); to.addScaledVector(dir.clone().normalize(), -to.dot(dir.clone().normalize()));
+            turnAxis(b1, V().crossVectors(dir, to), D(SPREAD[f]));
+          }
+          const chain = [b1, B(`${f}_02_${side}`), B(`${f}_03_${side}`)];
+          chain.forEach((b, j) => {
+            if (!b) return;
+            const nxt = chain[j + 1];
+            const dir = nxt ? wp(nxt).sub(wp(b)) : wp(b).sub(wp(chain[j - 1]));
+            turnAxis(b, V().crossVectors(dir, palm), D(angs[j]));
+          });
+        }
+        const th = [B(`thumb_01_${side}`), B(`thumb_02_${side}`), B(`thumb_03_${side}`)];
+        th.forEach((b, j) => {
+          if (!b || j === 0) return;
+          const dir = th[j + 1] ? wp(th[j + 1]).sub(wp(b)) : wp(b).sub(wp(th[j - 1]));
+          const to = wp(B(`index_02_${side}`)).sub(wp(b));
+          turnAxis(b, V().crossVectors(dir, to), D(j === 1 ? 10 : 14));
+        });
       }
+      // 5) le regard vers l'objectif (look : position de la caméra) : la tête et le cou se tournent ensemble
+      if (look) {
+        const head = B('head'), neck = B('neck_01');
+        const H0 = wp(head);
+        const faceNow = V().set(0, 0, 1).applyQuaternion(head.getWorldQuaternion(new THREE.Quaternion()).multiply(A.headFace));
+        const want = look.clone().sub(H0).normalize();
+        want.y = THREE.MathUtils.clamp(want.y, -0.18, 0.12); // (jamais le nez en l'air ni sur la poitrine)
+        want.normalize();
+        const qd = new THREE.Quaternion().setFromUnitVectors(faceNow, want);
+        const half = new THREE.Quaternion().slerp(qd, 0.45);
+        turn(neck, half);
+        const faceNow2 = V().set(0, 0, 1).applyQuaternion(head.getWorldQuaternion(new THREE.Quaternion()).multiply(A.headFace));
+        turn(head, new THREE.Quaternion().setFromUnitVectors(faceNow2, want));
+      }
+      root.updateMatrixWorld(true);
     },
     // gardien en photo debout : manches longues et gants sur une place de joueur de champ (son attente est accroupie)
     keeperLook(i, on = true) {

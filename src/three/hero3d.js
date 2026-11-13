@@ -13,6 +13,7 @@ const W = 1020, H = 1500; // la photo est ensuite recadrée au ras du joueur (as
 const cache = new Map();
 let studio = null;
 let queue = Promise.resolve(); // une photo à la fois : le studio n'a qu'un plateau
+const FACE_H = Math.PI / 2; // (bancs d'essai) cap du joueur face à la caméra
 const JOY = 'Celebrate_2'; // la célébration des photos de but, la même pour tous : bras en V, face à l'objectif (planche du 13/11)
 
 function getStudio() {
@@ -23,7 +24,7 @@ function getStudio() {
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.94;
+  renderer.toneMappingExposure = 0.9;
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -32,11 +33,12 @@ function getStudio() {
   // éclairage de portrait (1.0.38) : une lumière principale chaude de trois quarts, haute (elle modèle le visage, au lieu
   // de l'aplatir de face), un débouché froid et faible de l'autre côté, deux contre-jours dorés qui découpent la
   // silhouette sur le noir
-  scene.add(new THREE.HemisphereLight(0xfff1dc, 0x140f08, 0.22));
-  const key = new THREE.DirectionalLight(0xfff1e0, 2.5); key.position.set(-2.3, 2.9, 3.1); scene.add(key);
-  const fill = new THREE.DirectionalLight(0xbfcad8, 0.55); fill.position.set(2.6, 1.3, 2.6); scene.add(fill);
-  const rimL = new THREE.DirectionalLight(0xe8c983, 7.5); rimL.position.set(-2.8, 2.2, -2.2); scene.add(rimL);
-  const rimR = new THREE.DirectionalLight(0xc7a15a, 6.5); rimR.position.set(2.9, 1.6, -2.4); scene.add(rimR);
+  // (1.0.40 : plus doux ; la peau claire brûlait et jaunissait sous une principale trop forte et des contre-jours trop dorés)
+  scene.add(new THREE.HemisphereLight(0xfff1dc, 0x140f08, 0.3));
+  const key = new THREE.DirectionalLight(0xfff3e6, 1.95); key.position.set(-2.6, 2.7, 2.6); scene.add(key);
+  const fill = new THREE.DirectionalLight(0xc6d0dc, 0.75); fill.position.set(2.6, 1.3, 2.6); scene.add(fill);
+  const rimL = new THREE.DirectionalLight(0xecd3a0, 5.2); rimL.position.set(-2.8, 2.2, -2.2); scene.add(rimL);
+  const rimR = new THREE.DirectionalLight(0xd7b67a, 4.4); rimR.position.set(2.9, 1.6, -2.4); scene.add(rimR);
   const group = new THREE.Group();
   scene.add(group);
   const players = createPlayers3D(group, 2);
@@ -57,20 +59,30 @@ async function shoot(look, { kit, pose, steps: at, celeb, frame }) {
   S.players.setKit(i, keeper ? kit.keeper : kit.shirt, kit.trim);
   S.players.keeperLook(i, keeper);
   S.players.setIdentity(i, identityOf(look, look.pos));
-  const ag = { x: 0, z: 0, h: Math.PI / 2 + (pose === 'joy' ? 0.15 : 0.42), speed: 0, cheer: pose === 'joy' ? 1 : 0, scorer: false, pose: 0, celeb: pose === 'joy' ? celeb || JOY : undefined }; // (scorer faux : célébrations debout seulement)
+  const DIAG = frame && !['head', 'bust'].includes(frame);
+  const ag = { x: 0, z: 0, h: DIAG ? FACE_H : Math.PI / 2 + (pose === 'joy' ? 0.15 : 0.42), speed: 0, cheer: pose === 'joy' ? 1 : 0, scorer: false, pose: 0, celeb: pose === 'joy' ? celeb || JOY : undefined }; // (scorer faux : célébrations debout seulement)
   S.players.setAgent(i, ag, 0, 1); // échelle 1 (au match : 0,1) : le joueur mesure sa taille en mètres
   // l'animation se pose : attente (respiration) ou célébration, jusqu'à son geste le plus parlant
   const steps = at ?? (pose === 'joy' ? 100 : 22); // célébration : les bras en V, le visage vers l'avant (planche du 13/11)
   for (let k = 0; k < steps; k++) S.players.commit(2, 1 / 30);
-  if (pose !== 'joy') S.players.portrait(i); // debout : les mains jointes dans le dos
   // cadrage en pied, la tête près du haut de l'image (la carte la laisse déborder)
   const h = 1.85;
-  if (frame === 'head') { S.camera.position.set(0.18, 1.72, 1.35); S.camera.lookAt(0, 1.66, 0); } // gros plan (bancs d'essai)
-  else if (frame === 'bust') { S.camera.position.set(0.25, 1.5, 2.6); S.camera.lookAt(0, 1.42, 0); }
+  const CAM = [0.15, h * 0.4, 6.4]; // légère contre-plongée : un plan de héros
+  const DEV_FRAMES = { // gros plans des bancs d'essai : [position de la caméra, point visé]
+    head: [[0.18, 1.72, 1.35], [0, 1.66, 0]], bust: [[0.25, 1.5, 2.6], [0, 1.42, 0]],
+    profile: [[3.2, 1.3, 0], [0, 1.3, 0]], chest: [[0, 1.3, 1.9], [0, 1.3, 0]], armpit: [[1.1, 1.32, 1.0], [0.18, 1.3, 0]],
+    collar: [[0.2, 1.55, 0.85], [0, 1.47, 0.05]], shorts: [[0.5, 0.85, 1.7], [0, 0.85, 0]], back: [[0, 1.3, -1.9], [0, 1.3, 0]], hand: [[0.75, 0.82, 0.7], [0.25, 0.78, 0]],
+    boots: [[0.55, 0.3, 1.0], [0.08, 0.1, 0]], hem: [[0.55, 0.62, 0.75], [0.12, 0.63, 0]], backfull: [[0, 1.0, -4.2], [0, 1.0, 0]], face: [[0, 1.67, 0.75], [0, 1.66, 0]], face34: [[0.42, 1.67, 0.62], [0, 1.65, 0]], armback: [[0.75, 1.3, -0.95], [0.19, 1.3, 0]], armfront: [[0.55, 1.22, 0.85], [0.19, 1.3, 0]],
+  };
+  // debout : bras le long du corps, mains détendues, le regard vers l'objectif (1.0.40)
+  const LOOKERS = new Set(['head', 'bust', 'face', 'face34']);
+  if (pose !== 'joy') S.players.portrait(i, !DEV_FRAMES[frame] ? new THREE.Vector3(...CAM) : LOOKERS.has(frame) ? new THREE.Vector3(...DEV_FRAMES[frame][0]) : null);
+  if (DEV_FRAMES[frame]) { S.camera.position.set(...DEV_FRAMES[frame][0]); S.camera.lookAt(...DEV_FRAMES[frame][1]); }
   else {
-    S.camera.position.set(0.15, h * 0.4, 6.4); // légère contre-plongée : un plan de héros
+    S.camera.position.set(...CAM);
     S.camera.lookAt(0, h * 0.52, 0);
   }
+  if (import.meta.env.DEV && typeof window !== 'undefined' && window.__heroDebug) window.__heroDebug(S, i); // (bancs d'essai)
   S.renderer.render(S.scene, S.camera);
   // recadrage au ras du joueur (quelques pixels de marge) : la carte place sa tête où elle veut, quelle que soit la pose
   const c2 = document.createElement('canvas');
