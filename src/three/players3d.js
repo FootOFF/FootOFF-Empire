@@ -19,6 +19,8 @@ import { originOf } from '../game/names';
 
 const BASE_H = 1.73; // taille du corps de base (m)
 const URL = `${import.meta.env.BASE_URL}models/players/`;
+// essais de base 3D (développement seulement) : ?base=footballer_v2 charge public/models/players/footballer_v2.glb
+const BASE_GLB = (import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).get('base')) || 'footballer';
 // (1.0.29 : les allures Mixamo Walk_Mx, Jog_Mx, Run_Mx sont dans anims.glb mais pas dans l'échelle : mêlées aux foulées
 // CMU, elles faisaient glisser davantage les appuis, glisse > 0,5 m/s 15,0 → 19,8 % au banc tmp/audit-locomotion)
 const GAIT_NAMES = ['Idle_Loop', 'Walk_Loop', 'Jog_CMU_A', 'Run_CMU_B', 'Run_CMU_C', 'Jog_Fwd_Loop', 'Sprint_Loop'];
@@ -69,7 +71,7 @@ async function build() {
   // skin_ao.jpg (1.0.40) : ombres de contact de la peau, cuites dans Blender (FootOFF_3D_Sources/scripts/bake_ao.py) : creux
   // des yeux, narines, commissures, oreilles, cou sous la mâchoire, ombre des manches et du short sur la peau
   const [base, anims, mask, knit, ao, ...skins] = await Promise.all([
-    load(`${URL}footballer.glb`), load(`${URL}anims.glb`), tex(`${URL}face_mask.png`, false), tex(`${URL}knit.png`, false),
+    load(`${URL}${BASE_GLB}.glb`), load(`${URL}anims.glb`), tex(`${URL}face_mask.png`, false), tex(`${URL}knit.png`, false),
     tex(`${URL}skin_ao.jpg`, false).catch(() => null),
     ...[0, 1, 2, 3, 4].map((k) => tex(`${URL}skin_${k}.jpg`, true)),
   ]);
@@ -556,6 +558,9 @@ function softHair(mat) {
 }
 // peau : barbe, moustache, bouc et cheveux ras peints d'après le masque de pilosité (grain de poil de près, densité
 // moyenne de loin)
+// manches longues et gants du gardien (1.0.43) : sans les ombres de contact cuites sur la peau ; sous le bord de la manche
+// courte, elles traçaient une bande sombre à mi-bras
+const AO_KEEPER = THREE.ShaderChunk.aomap_fragment.replace(/(float ambientOcclusion = [^;]+;)/, '$1\n\tambientOcclusion = mix( ambientOcclusion, 1.0, max( sleeveK, gloveK ) );');
 function paintable(mat, u) {
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uMask = { value: A.mask };
@@ -590,8 +595,9 @@ function paintable(mat, u) {
   // couches intérieures : la peau près des ouvertures (bras dans la manche, cuisse dans le short, base du cou), la couleur
   // de la tenue partout ailleurs (là où le corps peut percer le tissu, rien ne se voit)
   float inK = max(vIn.x, vIn.y);
-  diffuseColor.rgb = mix(diffuseColor.rgb, uShirtIn, vIn.x);
-  diffuseColor.rgb = mix(diffuseColor.rgb, uShortsIn, vIn.y);`).replace('#include <opaque_fragment>', 'outgoingLight *= mix( 1.0, 0.3, max( vIn.x, vIn.y ) );\n  #include <opaque_fragment>').replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = mix(mix(roughnessFactor, 0.95, hairK), 0.88, max(max(sleeveK, gloveK), inK)); // poil, tissu et gants mats')}`;
+  float shirtInK = vIn.x * (1.0 - sleeveK); // (1.0.43) gardien : le bras sous la manche courte reste à la couleur de sa manche longue
+  diffuseColor.rgb = mix(diffuseColor.rgb, uShirtIn, shirtInK);
+  diffuseColor.rgb = mix(diffuseColor.rgb, uShortsIn, vIn.y);`).replace('#include <opaque_fragment>', 'outgoingLight *= mix( 1.0, 0.3, max( shirtInK, vIn.y ) );\n  #include <opaque_fragment>').replace('#include <aomap_fragment>', AO_KEEPER).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = mix(mix(roughnessFactor, 0.95, hairK), 0.88, max(max(sleeveK, gloveK), inK)); // poil, tissu et gants mats')}`;
   };
   // la lumière traverse la peau (1.0.40) : au bord des ombres, le rouge s'étale plus loin que le vert et le bleu (éclairage
   // « enveloppé », comme la diffusion sous la peau) ; sans cela, un visage paraît en plâtre
@@ -750,7 +756,9 @@ function prepareInner(scene) {
     const S = bone(`upperarm_${s}`), E = bone(`lowerarm_${s}`);
     arm[s] = { S, axis: E.clone().sub(S).normalize(), hem: -Infinity };
   }
-  const trim = meshes.male_casualsuit04_1;
+  // bords des manches : leur propre matériau depuis la base v2 (1.0.43, Kit_Cuff), sinon avec le col (Kit_Trim)
+  const cuffs = Object.values(meshes).find((o) => (o.material?.name || '').startsWith('Kit_Cuff'));
+  const trim = cuffs || meshes.male_casualsuit04_1;
   if (trim) for (let i = 0; i < trim.geometry.attributes.position.count; i++) {
     const v = restOf(trim, i);
     if (Math.abs(v.x) < 0.2) continue;
@@ -895,6 +903,7 @@ function prepareInner(scene) {
       att.needsUpdate = true;
     } }
   innerSide(trim, bodyAxis);
+  if (cuffs) innerSide(meshes.male_casualsuit04_1, bodyAxis); // (le col, à part depuis la base v2)
   // le maillot lui-même : seulement l'envers roulé au bord de la manche (à 2,5 cm de l'ourlet au plus) ; ailleurs, sous
   // l'aisselle, le flanc du torse passait pour l'intérieur de la manche et s'assombrissait en losange
   innerSide(meshes.male_casualsuit04, bodyAxis);
@@ -1010,7 +1019,7 @@ export function createPlayers3D(parent, max = 22) {
         if (A.ao) { o.material.aoMap = A.ao; o.material.aoMapIntensity = 1; }
         o.material.needsUpdate = true; paintable(o.material, u);
       }
-      if (['Kit_Shirt', 'Kit_Shorts', 'Kit_Socks', 'Kit_Trim'].includes(key)) { // tissu : maille, mat, peu de reflets
+      if (['Kit_Shirt', 'Kit_Shorts', 'Kit_Socks', 'Kit_Trim', 'Kit_Cuff'].includes(key)) { // tissu : maille, mat, peu de reflets
         Object.assign(o.material, { normalMap: A.knit, roughness: 0.86, envMapIntensity: 0.25 }); // (1.0.40 : moins de reflet gris : les dessous de manche restaient gris délavé)
         o.material.normalScale.set(0.22, 0.22); // (1.0.40 : maille plus douce, sans moirage au téléphone)
         // (1.0.40) l'envers du tissu, vu par l'ouverture d'une manche ou sous l'ourlet du short, reste dans l'ombre : il se
@@ -1629,9 +1638,12 @@ export function createPlayers3D(parent, max = 22) {
       for (const m of p.mats.FootIn || []) m.color.setHex(hex); // (le pied dans la chaussure : la chaussette)
       p.u.shirtIn.value.setHex(hex).multiplyScalar(0.5); // (l'intérieur du maillot, vu par la manche : dans l'ombre)
       p.u.shortsIn.value.setHex(trim).multiplyScalar(0.3); // (l'intérieur du short, dans l'ombre : jamais plus clair que la cuisse)
-      for (const m of p.mats.Kit_Trim || []) m.color.setHex(trim); // col et bords des manches
+      for (const m of p.mats.Kit_Trim || []) m.color.setHex(trim); // col (et bords des manches avant la base v2)
       // le gardien (premier de chaque onze) : manches longues de son maillot, gants
       const keeper = i % 11 === 0;
+      // bords des manches courtes (base v2) : la couleur secondaire ; chez le gardien, celle du maillot (une bande sombre
+      // coupait ses manches longues à mi-bras)
+      for (const m of p.mats.Kit_Cuff || []) m.color.setHex(keeper ? hex : trim);
       const c = new THREE.Color(hex);
       p.u.sleeve.value.set(c.r, c.g, c.b, keeper ? 1 : 0);
       const g = new THREE.Color(GLOVE_HEX);
@@ -1767,6 +1779,9 @@ export function createPlayers3D(parent, max = 22) {
       p.u.sleeve.value.w = on ? 1 : 0;
       const g = new THREE.Color(GLOVE_HEX);
       p.u.glove.value.set(g.r, g.g, g.b, on ? 1 : 0);
+      // bords des manches courtes (1.0.43) : la couleur du maillot du gardien, sinon la couleur secondaire (celle du col)
+      const shirt = p.mats.Kit_Shirt?.[0]?.color; const col = p.mats.Kit_Trim?.[0]?.color;
+      for (const m of p.mats.Kit_Cuff || []) { const c = on ? shirt : col; if (c) m.color.copy(c); }
     },
     setLook(x, y, z) { look = x === null || x === undefined ? null : (look || V()).set(x, y, z); },
     setAgent(i, ag, y, scale = 0.1) {

@@ -1,0 +1,42 @@
+FootOFF Empire · Crédits des ressources 3D
+==========================================
+
+Joueurs 3D
+----------
+Short des joueurs
+  « Male Swimming Trunks 01 », par Mindfront (MakeHuman Community)
+  Source : http://www.makehumancommunity.org/node/329
+  Licence : Creative Commons Attribution 4.0 International (CC BY 4.0)
+  https://creativecommons.org/licenses/by/4.0/
+  Modifications : forme ajustée et retaillée pour un short de football, couleurs du club ; texture d'origine non utilisée.
+
+Ressources du domaine public (CC0), citées par courtoisie
+  Corps, visages, yeux, sourcils, cils, coiffures et chaussures : MakeHuman / MPFB (MakeHuman Community)
+  Maillot : « Crude T-shirt (male) », MakeHuman, retouché par Elvaerwyn
+  Animations : Universal Animation Library, Quaternius
+
+Autres animations
+  Pack de football d'Anderson Rohr (usage commercial permis)
+  Gestes du gardien, têtes, certaines frappes, courses de côté et de recul : Mixamo (Adobe)
+  Foulées : base de données de capture de mouvement de l'université Carnegie Mellon (mocap.cs.cmu.edu), créée grâce au financement NSF EIA-0196217
+
+------------------------------------------
+
+FootOFF Empire · 3D asset credits (English)
+
+Players' shorts
+  "Male Swimming Trunks 01" by Mindfront (MakeHuman Community)
+  Source: http://www.makehumancommunity.org/node/329
+  Licence: Creative Commons Attribution 4.0 International (CC BY 4.0)
+  https://creativecommons.org/licenses/by/4.0/
+  Changes: shape adjusted and recut as football shorts, club colours; original texture not used.
+
+Public domain (CC0) assets, credited as a courtesy
+  Bodies, faces, eyes, eyebrows, eyelashes, hairstyles and shoes: MakeHuman / MPFB (MakeHuman Community)
+  Shirt: "Crude T-shirt (male)", MakeHuman, edited by Elvaerwyn
+  Animations: Universal Animation Library, Quaternius
+
+Other animations
+  Football pack by Anderson Rohr (commercial use permitted)
+  Goalkeeper moves, headers, some kicks, side and backward runs: Mixamo (Adobe)
+  Running strides: Carnegie Mellon University motion capture database (mocap.cs.cmu.edu), created with funding from NSF EIA-0196217

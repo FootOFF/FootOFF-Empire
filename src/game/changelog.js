@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.43', date: '2026-11-13', title: t('Nouvelle base des joueurs 3D'),
+    items: [
+      t('Les joueurs 3D ont une carrure d’athlète : des épaules plus larges, une taille plus fine, le dos droit.'),
+      t('Nouvelle tenue : un col ras du cou, des bords de manches nets, un short plus court et un maillot qui tombe droit.'),
+      t('Le gardien n’a plus de bande sombre à mi-bras sur ses manches longues.'),
+    ],
+  },
+  {
     version: '1.0.42', date: '2026-11-13', title: t('Fiches et visages'),
     items: [
       t('La fiche s’ouvre directement sur le joueur en 3D, sans afficher d’abord son portrait ; la photo se prépare dès que tu touches le joueur.'),
