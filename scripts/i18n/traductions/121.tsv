@@ -1,0 +1,43 @@
+k:Postes libres	Free positioning	Posiciones libres	تمركز حر
+k:Place tes joueurs où tu veux : choisis un joueur du terrain, puis un poste libre de la grille, et ton dispositif se dessine.	Put your players wherever you want: pick a player on the pitch, then a free position on the grid, and your formation takes shape.	Coloca a tus jugadores donde quieras: elige un jugador del campo y luego una posición libre de la cuadrícula, y tu dibujo toma forma.	ضع لاعبيك حيث تشاء: اختر لاعبًا على أرض الملعب، ثم مركزًا شاغرًا في الشبكة، فتتشكل خطتك.
+k:Chaque poste a sa note, tirée des attributs sur 20 : un milieu offensif a besoin de vision, un défenseur latéral de souffle et de centres, un buteur de finition.	Each position has its own rating, drawn from the attributes out of 20: an attacking midfielder needs vision, a wing-back stamina and crossing, a striker finishing.	Cada posición tiene su nota, basada en los atributos sobre 20: un mediapunta necesita visión, un carrilero resistencia y centros, un delantero centro definición.	لكل مركز تقييمه، المستمد من الصفات على 20: يحتاج لاعب الوسط الهجومي إلى الرؤية، والظهير الجناح إلى النفَس والعرضيات، ورأس الحربة إلى دقة الإنهاء.
+k:Les postes portent leurs sigles habituels : DC, DLG, MDC, MOC, BT…	Positions carry their usual abbreviations: DC, WBL, DM, AMC, ST…	Las posiciones llevan sus siglas habituales: DFC, CAI, MCD, MP, DC…	تحمل المراكز رموزها المعتادة: DC وWBL وDM وAMC وST…
+k:Ton dispositif se règle aussi à la mi-temps, en direct et dans les plans de mi-temps des championnats entre amis.	You can also set your formation at half-time, during the live match and in the half-time plans of leagues with friends.	Tu dibujo también se ajusta en el descanso, en directo y en los planes del descanso de las ligas entre amigos.	يمكنك أيضًا ضبط خطتك بين الشوطين، وخلال المباشر، وفي خطط ما بين الشوطين في دوريات الأصدقاء.
+k:poste|Gardien de but	Goalkeeper	Portero	حارس المرمى
+k:Défenseur gauche	Left back	Lateral izquierdo	ظهير أيسر
+k:Défenseur central	Centre back	Defensa central	قلب دفاع
+k:Défenseur droit	Right back	Lateral derecho	ظهير أيمن
+k:Défenseur latéral gauche	Left wing-back	Carrilero izquierdo	ظهير جناح أيسر
+k:Milieu défensif central	Defensive midfielder	Mediocentro defensivo	وسط دفاعي
+k:Défenseur latéral droit	Right wing-back	Carrilero derecho	ظهير جناح أيمن
+k:Milieu gauche	Left midfielder	Medio izquierdo	وسط أيسر
+k:Milieu central	Central midfielder	Mediocentro	وسط ميدان
+k:Milieu droit	Right midfielder	Medio derecho	وسط أيمن
+k:Milieu offensif gauche	Left attacking midfielder	Mediapunta izquierdo	وسط هجومي أيسر
+k:Milieu offensif central	Attacking midfielder	Mediapunta	وسط هجومي
+k:Milieu offensif droit	Right attacking midfielder	Mediapunta derecho	وسط هجومي أيمن
+k:Attaquant gauche	Left forward	Extremo izquierdo	مهاجم أيسر
+k:poste|Buteur	Striker	Delantero centro	رأس الحربة
+k:Attaquant droit	Right forward	Extremo derecho	مهاجم أيمن
+k:poste|GB	GK	POR	GK
+k:poste|DG	DL	LI	DL
+k:poste|DC	DC	DFC	DC
+k:poste|DD	DR	LD	DR
+k:poste|DLG	WBL	CAI	WBL
+k:poste|MDC	DM	MCD	DM
+k:poste|DLD	WBR	CAD	WBR
+k:poste|MG	ML	MI	ML
+k:poste|MC	MC	MC	MC
+k:poste|MD	MR	MD	MR
+k:poste|MOG	AML	MPI	AML
+k:poste|MOC	AMC	MP	AMC
+k:poste|MOD	AMR	MPD	AMR
+k:poste|ATG	LF	EI	LF
+k:poste|BT	ST	DC	ST
+k:poste|ATD	RF	ED	RF
+k:dispositif|Libre	Custom	Libre	حرة
+k:Ton dispositif, poste par poste.	Your formation, position by position.	Tu dibujo, posición por posición.	خطتك، مركزًا مركزًا.
+k:Il faut au moins un défenseur, un milieu et un attaquant.	You need at least one defender, one midfielder and one forward.	Hace falta al menos un defensa, un centrocampista y un delantero.	يلزم مدافع واحد على الأقل، ولاعب وسط، ومهاجم.
+k:{v} : choisis un poste libre pour changer le dispositif, ou un coéquipier pour échanger	{v}: pick a free position to change the formation, or a teammate to swap with	{v}: elige una posición libre para cambiar el dibujo, o un compañero para intercambiaros	{v}: اختر مركزًا شاغرًا لتغيير الخطة، أو زميلًا لتبادل المركزين
+k:Glisse un joueur sur un poste libre pour créer ton dispositif, ou sur un coéquipier pour les échanger	Drag a player onto a free position to build your formation, or onto a teammate to swap them	Arrastra a un jugador a una posición libre para crear tu dibujo, o sobre un compañero para intercambiarlos	اسحب لاعبًا إلى مركز شاغر لبناء خطتك، أو إلى زميل لتبادل مركزيهما
+k:{post} : y placer {name}	{post}: move {name} here	{post}: colocar aquí a {name}	{post}: ضع {name} هنا

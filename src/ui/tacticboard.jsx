@@ -35,18 +35,19 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // taille au téléphone (ils ne se touchent jamais, lineup.jsx useChipScale).
 const LINE = [10, 4, 0, -6, -12];
 const roleOf = (i, [d, m]) => (i === 0 ? 'G' : i <= d ? 'D' : i <= d + m ? 'M' : 'A');
-export function shapeOf(formation, tactic) {
-  const f = formationOf(formation);
+// un point du terrain (r : G, D, M ou A) déplacé comme le bloc ; aussi les cases libres de la grille (lineup.jsx, 1.0.41)
+export function shapePoint([x, y], r, tactic) {
   const st = presetOf(tactic);
   const fx = 1 + (st.width - 3) * 0.05;
   const L = LINE[st.line - 1];
-  return f.pitch.map(([x, y], i) => {
-    const r = roleOf(i, f.lines);
-    if (r === 'G') return [x, L < 0 ? y + L / 4 : L > 0 ? y + 1.5 : y]; // derrière une ligne haute il avance, en bloc bas il reste sur sa ligne
-    const k = { D: [L > 0 ? 0.5 : 1, 0], M: [L > 0 ? 0.55 : 0.75, 0.6], A: [0.45, 2.5] }[r];
-    const kx = r === 'D' && fx < 1 ? 1 : fx; // un bloc resserré garde sa défense en largeur : milieux et attaquants rentrent
-    return [clamp(50 + (x - 50) * kx, 4, 96), clamp(y + L * k[0] - (st.press - 3) * k[1], 4.5, 84)];
-  });
+  if (r === 'G') return [x, L < 0 ? y + L / 4 : L > 0 ? y + 1.5 : y]; // derrière une ligne haute il avance, en bloc bas il reste sur sa ligne
+  const k = { D: [L > 0 ? 0.5 : 1, 0], M: [L > 0 ? 0.55 : 0.75, 0.6], A: [0.45, 2.5] }[r];
+  const kx = r === 'D' && fx < 1 ? 1 : fx; // un bloc resserré garde sa défense en largeur : milieux et attaquants rentrent
+  return [clamp(50 + (x - 50) * kx, 4, 96), clamp(y + L * k[0] - (st.press - 3) * k[1], 4.5, 84)];
+}
+export function shapeOf(formation, tactic) {
+  const f = formationOf(formation);
+  return f.pitch.map((p, i) => shapePoint(p, roleOf(i, f.lines), tactic));
 }
 // les trois blocs d'un dispositif : la taille des joueurs du tableau (lineup.jsx, useChipScale) est celle où aucun ne
 // touche son voisin dans aucun des trois, pour qu'elle ne change pas d'un plan à l'autre

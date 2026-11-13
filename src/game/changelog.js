@@ -5,6 +5,16 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.41', date: '2026-11-13', title: t('Postes libres'),
+    items: [
+      t('Place tes joueurs où tu veux : choisis un joueur du terrain, puis un poste libre de la grille, et ton dispositif se dessine.'),
+      t('Chaque poste a sa note, tirée des attributs sur 20 : un milieu offensif a besoin de vision, un défenseur latéral de souffle et de centres, un buteur de finition.'),
+      t('Les postes portent leurs sigles habituels : DC, DLG, MDC, MOC, BT…'),
+      t('Ton dispositif se règle aussi à la mi-temps, en direct et dans les plans de mi-temps des championnats entre amis.'),
+      t('Championnats entre amis : nouvelle version du moteur des ligues, mets le jeu à jour avant de jouer.'),
+    ],
+  },
+  {
     version: '1.0.40', date: '2026-11-13', title: t('Joueurs 3D retravaillés'),
     items: [
       t('Buste des joueurs 3D retravaillé : les pectoraux ne se dessinent plus sous le maillot, qui tombe droit sur une silhouette en V.'),

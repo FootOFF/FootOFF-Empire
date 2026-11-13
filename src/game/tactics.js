@@ -1,5 +1,6 @@
 import { clamp } from './utils';
 import { available, fitFactor, fitOf, ratingAt } from './players';
+import { cellPitch, gridFormation, ratingAtPost, typeOf } from './posts';
 import { t } from '../i18n/index';
 
 // Onze de départ, dispositif (formation) et tactique : décisions d'avant-match ; la tactique se change aussi à la
@@ -15,36 +16,47 @@ export const FORMATIONS = Object.assign(Object.create(null), {
   '433': {
     id: '433', name: '4-3-3', lines: [4, 3, 3], for: 1, against: 1,
     blurb: t('Trois attaquants, trois milieux : le dispositif de référence, équilibré.'),
-    pitch: [[50, 90], [14, 66], [37, 71], [63, 71], [86, 66], [27, 45], [50, 50], [73, 45], [20, 19], [50, 13], [80, 19]],
+    cells: ['G', '00', '01', '03', '04', '21', '22', '23', '40', '42', '44'],
   },
   '442': {
     id: '442', name: '4-4-2', lines: [4, 4, 2], for: 0.96, against: 0.96,
     blurb: t('Deux lignes de quatre et un duo en pointe : compact, simple, solide.'),
-    pitch: [[50, 90], [14, 66], [37, 71], [63, 71], [86, 66], [14, 44], [38, 48], [62, 48], [86, 44], [36, 18], [64, 18]],
+    cells: ['G', '00', '01', '03', '04', '20', '21', '23', '24', '41', '43'],
   },
   '4231': {
     id: '4231', name: '4-2-3-1', lines: [4, 5, 1], for: 0.93, against: 0.93,
     blurb: t('Deux récupérateurs, trois meneurs, un seul attaquant : on tient le ballon et le match se ferme.'),
-    pitch: [[50, 90], [14, 66], [37, 71], [63, 71], [86, 66], [37, 52], [63, 52], [18, 32], [50, 28], [82, 32], [50, 10]],
+    cells: ['G', '00', '01', '03', '04', '11', '13', '30', '32', '34', '42'],
   },
   '352': {
     id: '352', name: '3-5-2', lines: [3, 5, 2], for: 1.04, against: 1.04,
     blurb: t('Cinq milieux pour dominer l’entrejeu, deux attaquants, mais trois défenseurs seulement.'),
-    pitch: [[50, 90], [26, 70], [50, 68], [74, 70], [10, 40], [32, 52], [50, 39], [68, 52], [90, 40], [36, 18], [64, 18]],
+    cells: ['G', '01', '02', '03', '20', '21', '22', '23', '24', '41', '43'],
   },
   '343': {
     id: '343', name: '3-4-3', lines: [3, 4, 3], for: 1.12, against: 1.12,
     blurb: t('Tout pour l’attaque : beaucoup d’occasions, et beaucoup d’espace laissé derrière.'),
-    pitch: [[50, 90], [26, 70], [50, 68], [74, 70], [14, 46], [38, 50], [62, 50], [86, 46], [20, 20], [50, 13], [80, 20]],
+    cells: ['G', '01', '02', '03', '20', '21', '23', '24', '40', '42', '44'],
   },
   '532': {
     id: '532', name: '5-3-2', lines: [5, 3, 2], for: 0.86, against: 0.86,
     blurb: t('Cinq défenseurs et des contres : match fermé, très difficile à battre.'),
-    pitch: [[50, 90], [8, 57], [28, 70], [50, 68], [72, 70], [92, 57], [28, 44], [50, 48], [72, 44], [36, 20], [64, 20]],
+    cells: ['G', '10', '01', '02', '03', '14', '21', '22', '23', '41', '43'],
   },
 });
+// postes (1.0.41, posts.js) : chaque dispositif tout fait est un ensemble de cases de la grille ; son schéma et ses
+// postes en découlent
+for (const f of Object.values(FORMATIONS)) {
+  f.posts = f.cells.map(typeOf);
+  f.pitch = f.cells.map(cellPitch);
+}
 export const FORMATION_ORDER = ['433', '442', '4231', '352', '343', '532'];
-export const formationOf = (f) => FORMATIONS[f] || FORMATIONS['433'];
+// un dispositif : l'un des six tout faits, ou un dispositif libre de la grille (« g:… », posts.js) ; sinon le 4-3-3
+export const formationOf = (f) => FORMATIONS[f] || gridFormation(f) || FORMATIONS['433'];
+export const isFormation = (f) => !!(FORMATIONS[f] || gridFormation(f));
+export const postsOf = (f) => formationOf(f).posts;
+// note d'un joueur au poste k d'un dispositif (le poste précis : latéral, milieu défensif, ailier…)
+export const ratingAtSlot = (p, f, k) => ratingAtPost(p, postsOf(f)[k] || 'MC');
 export const slotsOf = (f) => {
   const [d, m, a] = formationOf(f).lines;
   return ['G', ...Array(d).fill('D'), ...Array(m).fill('M'), ...Array(a).fill('A')];
@@ -121,11 +133,12 @@ export const fitWeight = (p) => fitFactor(fitOf(p));
 export const restWeight = () => 1;
 export function autoLineup(players, formation = '433', factor = fitWeight) {
   const slots = slotsOf(formation);
+  const posts = postsOf(formation);
   const [nd, nm, na] = formationOf(formation).lines;
   const weight = { G: 0.12, D: 0.3 / nd, M: 0.26 / nm, A: 0.32 / na };
   const cols = players.filter(available);
   while (cols.length < slots.length) cols.push(null); // effectif trop court : poste laissé vide (niveau 3)
-  const cost = slots.map((pos) => cols.map((p) => (p ? -(weight[pos] * ratingAt(p, pos) * factor(p)) - (p.pos === pos ? 1e-4 : 0) : -weight[pos] * 3)));
+  const cost = slots.map((pos, k) => cols.map((p) => (p ? -(weight[pos] * ratingAtPost(p, posts[k]) * factor(p)) - (p.pos === pos ? 1e-4 : 0) : -weight[pos] * 3)));
   return hungarian(cost).map((j) => (cols[j] ? cols[j].id : null));
 }
 
@@ -137,14 +150,16 @@ export const FRESH_FIT = 80;
 const TIRED = 10; // bien plus que tout l'écart de niveau d'une équipe : un joueur frais passe toujours devant
 export function freshLineup(players, formation = '433') {
   const slots = slotsOf(formation);
+  const posts = postsOf(formation);
   const [nd, nm, na] = formationOf(formation).lines;
   const weight = { G: 0.12, D: 0.3 / nd, M: 0.26 / nm, A: 0.32 / na };
   const cols = players.filter(available);
   while (cols.length < slots.length) cols.push(null);
-  const cost = slots.map((pos) => cols.map((p) => {
+  const cost = slots.map((pos, k) => cols.map((p) => {
     if (!p) return 4 * TIRED;
-    const v = weight[pos] * ratingAt(p, pos) * fitWeight(p) + (p.pos === pos ? 1e-4 : 0);
-    const misplaced = ratingAt(p, pos) < 0.8 * ratingAt(p, p.pos);
+    const at = ratingAtPost(p, posts[k]);
+    const v = weight[pos] * at * fitWeight(p) + (p.pos === pos ? 1e-4 : 0);
+    const misplaced = at < 0.8 * ratingAt(p, p.pos);
     return -v + (fitOf(p) < FRESH_FIT ? TIRED : 0) + (misplaced ? 2 * TIRED : 0);
   }));
   return hungarian(cost).map((j) => (cols[j] ? cols[j].id : null));
@@ -159,6 +174,7 @@ export const ROTATE_FIT = 75;
 const STARTER = 100; // coût d'un titulaire du dernier match : il ne joue que faute de remplaçant
 export function rotateLineup(players, last, formation = '433') {
   const slots = slotsOf(formation);
+  const posts = postsOf(formation);
   const [nd, nm, na] = formationOf(formation).lines;
   const weight = { G: 0.12, D: 0.3 / nd, M: 0.26 / nm, A: 0.32 / na };
   const started = new Set((last || []).filter((id) => id !== null));
@@ -171,11 +187,12 @@ export function rotateLineup(players, last, formation = '433') {
   const cols = ok.filter((p) => p.pos !== 'G');
   const rows = slots.map((pos, k) => [pos, k]).filter(([, k]) => k !== gk);
   while (cols.length < rows.length) cols.push(null);
-  const cost = rows.map(([pos]) => cols.map((p) => {
+  const cost = rows.map(([pos, k]) => cols.map((p) => {
     if (!p) return 3 * STARTER; // poste laissé vide : en tout dernier recours
-    const v = weight[pos] * ratingAt(p, pos) * fitWeight(p) + (p.pos === pos ? 1e-4 : 0);
+    const at = ratingAtPost(p, posts[k]);
+    const v = weight[pos] * at * fitWeight(p) + (p.pos === pos ? 1e-4 : 0);
     if (started.has(p.id)) return STARTER - fitOf(p) / 100 - v; // le plus reposé d'abord, à un poste qui lui va
-    return ratingAt(p, pos) < 0.8 * ratingAt(p, p.pos) ? 2 * STARTER - v : -v;
+    return at < 0.8 * ratingAt(p, p.pos) ? 2 * STARTER - v : -v;
   }));
   const pick = hungarian(cost);
   const out = slots.map(() => null);
@@ -188,6 +205,7 @@ export function rotateLineup(players, last, formation = '433') {
 // disponibles, complète au mieux.
 export function repairLineup(players, lineup, formation = '433') {
   const slots = slotsOf(formation);
+  const posts = postsOf(formation);
   const ids = new Set(players.filter(available).map((p) => p.id));
   const seen = new Set();
   const kept = (lineup || []).slice(0, slots.length).map((id) => (ids.has(id) && !seen.has(id) && seen.add(id) ? id : null));
@@ -197,14 +215,14 @@ export function repairLineup(players, lineup, formation = '433') {
   return kept.map((id, k) => {
     if (id !== null) return id;
     const pos = slots[k];
-    rest.sort((a, b) => (b.pos === pos) - (a.pos === pos) || ratingAt(b, pos) - ratingAt(a, pos));
+    rest.sort((a, b) => (b.pos === pos) - (a.pos === pos) || ratingAtPost(b, posts[k]) - ratingAtPost(a, posts[k]));
     const p = rest.shift();
     return p ? p.id : null;
   });
 }
 
 export function ensureLineup(s) {
-  if (!FORMATIONS[s.formation]) s.formation = '433';
+  if (!isFormation(s.formation)) s.formation = '433';
   s.lineup = repairLineup(s.players, s.lineup || autoLineup(s.players, s.formation), s.formation);
   if (!TACTICS[s.tactic]) s.tactic = 'balanced';
   return s;
@@ -227,11 +245,12 @@ export const LEADER_BONUS = 0.3;
 // factorOf(p) : facteur appliqué au niveau de chaque joueur (condition physique en match, live.js) ; absent : aucun.
 export function lineupRating(players, lineup, formation = '433', factorOf = null) {
   const slots = slotsOf(formation);
+  const posts = postsOf(formation);
   const [nd, nm, na] = formationOf(formation).lines;
   const line = { G: [], D: [], M: [], A: [] };
   lineup.forEach((id, k) => {
     const p = players.find((x) => x.id === id);
-    if (slots[k]) line[slots[k]].push(p ? ratingAt(p, slots[k]) * (factorOf ? factorOf(p) : 1) : 3);
+    if (slots[k]) line[slots[k]].push(p ? ratingAtPost(p, posts[k]) * (factorOf ? factorOf(p) : 1) : 3);
   });
   const avg = (a, n) => (a.reduce((s, v) => s + v, 0) + (n - a.length) * 3) / n;
   const leader = lineup.some((id) => players.find((x) => x.id === id)?.traits?.includes('leader')) ? LEADER_BONUS : 0;

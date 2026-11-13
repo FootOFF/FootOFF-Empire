@@ -2806,6 +2806,10 @@ button.sp-chip { background: none; color: var(--text); cursor: pointer; }
 @media (hover: hover) { .formations button:hover:not(.active) { color: var(--text); background: #262a2f; } }
 .formations button.active { background: var(--gold-grad); color: var(--gold-ink); }
 
+/* dispositif libre (1.0.41) : en tête du sélecteur, sur toute la largeur */
+.formations button.own { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 12px; }
+.formations button.own em { font-style: normal; font-size: 13px; letter-spacing: .16em; text-transform: uppercase; }
+
 @media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
   .sq-tabs > button { flex: 1 1 auto; padding: 8px 4px; min-width: 0; font-size: 15px; } /* cinq onglets tiennent sur 375 px (largeur selon le mot) */
   .panel-head .section-tabs > button { flex: none; padding: 0 12px; font-size: 16px; } /* onglets de section : à leur taille, la rangée défile en largeur */
@@ -2963,6 +2967,28 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .lu-chip.hurt .lu-face .pf { filter: grayscale(.6); }
 .lu-chip.hurt .lu-rate { color: var(--red); }
 .lu.dragging .lu-chip:not(.src):not(.locked) .lu-face { box-shadow: 0 0 0 2px var(--gold), 0 6px 16px rgba(0, 0, 0, .45); }
+
+/* postes libres de la grille (1.0.41, comme sur Football Manager) : pendant qu'un joueur du terrain est choisi ou glissé,
+   chaque poste libre montre son nom court et la note du joueur à ce poste ; l'y poser crée le dispositif. Le cercle est
+   à la hauteur des portraits (--lu-cdy : centre du portrait par rapport au centre du joueur). */
+/* rtl:ignore */
+.lu-cell {
+  --lu-cdy: -17px; position: absolute; z-index: 0; left: calc(9% + var(--x) * .82); top: calc(5% + var(--y) * .9);
+  transform: translate(-50%, -50%) translateY(var(--lu-cdy)) scale(var(--lu-s, 1));
+  width: 48px; height: 48px; padding: 0; border: 1.5px dashed rgba(199, 161, 90, .65); border-radius: 50%;
+  background: rgba(12, 13, 15, .6); color: var(--gold-light);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font-family: var(--font-disp); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; cursor: pointer;
+  transition: background .15s, border-color .15s, transform .15s var(--ease);
+}
+.lu-cell b { font-size: 12px; letter-spacing: .04em; }
+.lu-cell em { font-style: normal; font-size: 13px; color: var(--text); }
+.lu-cell.over { border-style: solid; border-color: var(--gold-light); background: rgba(199, 161, 90, .3); transform: translate(-50%, -50%) translateY(var(--lu-cdy)) scale(calc(var(--lu-s, 1) * 1.15)); }
+@container lu (min-width: 480px) { /* rtl:ignore */ .lu-cell { left: calc(5% + (100% - var(--y)) * .9); top: calc(5% + var(--x) * .9); } }
+@container lu (max-width: 479px) { .lu-cell { --lu-cdy: -13px; width: 40px; height: 40px; gap: 2px; } .lu-cell b { font-size: 11px; } .lu-cell em { font-size: 12px; } }
+/* pendant le choix d'un poste, noms et condition s'effacent : les cases libres restent lisibles */
+.lu.shaping .lu-chip :is(.lu-name, .lu-fit) { opacity: 0; transition: opacity .15s; } /* le joueur choisi est nommé dans l'aide */
 /* niveau qu'aurait le joueur choisi à ce poste */
 .lu-alt {
   --slant: 4px; position: absolute; top: -10px; right: -18px; min-width: 30px; height: 18px; padding: 0 6px; display: grid; place-items: center;

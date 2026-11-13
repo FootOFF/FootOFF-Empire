@@ -1,7 +1,8 @@
 import { clamp, pick, ri } from './utils';
 import { CLUB_PREPS, capitalize, clubAfter, deName, isPluralClub } from './names';
 import { penaltySkills, shootout, shootoutWinChance } from './cups';
-import { FORMATIONS, TACTICS, expectedGoals, formationOf, lineupRating, slotsOf } from './tactics';
+import { expectedGoals, formationOf, FORMATIONS, isFormation, lineupRating, postsOf, slotsOf, TACTICS } from './tactics';
+import { ratingAtPost } from './posts';
 import { available, fitAt, fitFactor, ratingAt } from './players';
 import { injuryCut } from './medical';
 import { opponentEleven } from './opponents';
@@ -977,6 +978,7 @@ export function createLiveMatch(s, ctx, saved = null) {
     const hurt = m.lineup.filter((id) => m.out.has(id));
     if (!hurt.length) return;
     const slots = slotsOf(m.formation);
+    const posts = postsOf(m.formation);
     const next = [...m.lineup];
     let ins = 0;
     for (const id of hurt) {
@@ -984,7 +986,7 @@ export function createLiveMatch(s, ctx, saved = null) {
       const k = next.indexOf(id);
       const bench = s.players.filter((p) => !next.includes(p.id) && !m.gone.has(p.id) && !m.out.has(p.id) && available(p));
       if (!bench.length) break;
-      bench.sort((a, b) => ratingAt(b, slots[k]) - ratingAt(a, slots[k]) || (b.pos === slots[k]) - (a.pos === slots[k]));
+      bench.sort((a, b) => ratingAtPost(b, posts[k]) - ratingAtPost(a, posts[k]) || (b.pos === slots[k]) - (a.pos === slots[k]));
       next[k] = bench[0].id;
       ins += 1;
     }
@@ -1020,7 +1022,8 @@ export function createLiveMatch(s, ctx, saved = null) {
     // qui a joué, à quel poste et combien de temps : onze de départ, puis changements montrés
     const lineup = [...m.startLineup];
     let slots = slotsOf(m.startFormation || m.formation);
-    const home = new Map(lineup.map((id, k) => [id, { id, pos: slots[k], in: 0, out: null }]));
+    let posts = postsOf(m.startFormation || m.formation);
+    const home = new Map(lineup.map((id, k) => [id, { id, pos: slots[k], post: posts[k], in: 0, out: null }]));
     // visiteur : son onze de départ (awayStart, gardé quand un plan de mi-temps le change), puis ses entrants
     const away = new Map((m.awayStart || awayRoster).map((p) => [p.name, { p, pos: p.pos, in: 0, out: null }]));
     const awayNow = new Map(awayRoster.map((p) => [p.name, p]));
@@ -1034,7 +1037,7 @@ export function createLiveMatch(s, ctx, saved = null) {
         const rec = home.get(e.outId);
         if (rec && rec.out == null) rec.out = at;
         if (k >= 0) lineup[k] = e.inId;
-        if (!home.has(e.inId)) home.set(e.inId, { id: e.inId, pos: k >= 0 ? slots[k] : null, in: at, out: null });
+        if (!home.has(e.inId)) home.set(e.inId, { id: e.inId, pos: k >= 0 ? slots[k] : null, post: k >= 0 ? posts[k] : null, in: at, out: null });
         continue;
       }
       if (e.type === 'sub' && e.inName) {
@@ -1045,7 +1048,7 @@ export function createLiveMatch(s, ctx, saved = null) {
         continue;
       }
       if (e.type === 'info' && e.side === 'home' && e.lineup) { // dispositif ou postes changés : les postes des entrants suivants
-        if (e.formation) slots = slotsOf(e.formation);
+        if (e.formation) { slots = slotsOf(e.formation); posts = postsOf(e.formation); }
         lineup.splice(0, lineup.length, ...e.lineup);
         continue;
       }
@@ -1078,7 +1081,8 @@ export function createLiveMatch(s, ctx, saved = null) {
       const p = s.players.find((q) => q.id === rec.id);
       if (!p) return null;
       const pos = rec.pos || p.pos;
-      const rating = noteOf({ ...rec, pos, side: 'home', form: m.form[rec.id] }, ratingAt(p, pos) - m.oppStrength, ga);
+      const at = rec.post ? ratingAtPost(p, rec.post) : ratingAt(p, pos); // (1.0.41 : au poste précis)
+      const rating = noteOf({ ...rec, pos, side: 'home', form: m.form[rec.id] }, at - m.oppStrength, ga);
       return { id: p.id, name: p.name, num: p.num, pos, rating, minutes: Math.max(0, Math.min(minute, rec.out ?? minute) - rec.in), on: rec.out == null, goals: rec.goals || 0, assists: rec.assists || 0 };
     }).filter(Boolean);
     const theirs = [...away.values()].map((rec) => ({
@@ -1142,7 +1146,7 @@ export function createLiveMatch(s, ctx, saved = null) {
     }
     const moved = next.filter((id, k) => before.includes(id) && before[k] !== id).length;
     m.lineup = [...next];
-    if (FORMATIONS[formation] && formation !== m.formation) {
+    if (isFormation(formation) && formation !== m.formation) {
       m.formation = formation;
       target.push({ ...make(at, 'info', 'home', t('Changement de dispositif : {home} passe en {name}.', { home: m.home, name: formationOf(formation).name })), half, formation, lineup: [...next] });
     } else if (moved) target.push({ ...make(at, 'info', 'home', t('{home} réorganise son équipe.', { home: m.home })), half, lineup: [...next] });
@@ -1166,7 +1170,7 @@ export function createLiveMatch(s, ctx, saved = null) {
     }
     if (eleven) awayRoster.splice(0, awayRoster.length, ...eleven);
     const plan = { tactic: m.oppPlan?.tactic || 'balanced', formation: m.oppPlan?.formation || m.awayFormation };
-    if (FORMATIONS[formation] && formation !== plan.formation) {
+    if (isFormation(formation) && formation !== plan.formation) {
       plan.formation = formation;
       m.awayFormation = formation;
       target.push({ ...make(45, 'info', 'away', t('Changement de dispositif : {away} passe en {name}.', { away: m.away, name: formationOf(formation).name })), half: 2, formation });

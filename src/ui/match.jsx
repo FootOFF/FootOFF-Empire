@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { HOME_KIT, kitHex, matchKits } from '../game/kits';
 import { flushSync } from 'react-dom';
-import { TACTICS, TACTIC_ORDER, autoLineup, fitWeight, formationOf, lineupRating, reshapeLineup, slotsOf } from '../game/tactics';
+import { TACTICS, TACTIC_ORDER, autoLineup, fitWeight, formationOf, lineupRating, ratingAtSlot, reshapeLineup, slotsOf } from '../game/tactics';
 import { fmtMoney, fmtNum, fmtRating } from './format';
 import { LIVE_VERSION, SUBS_MAX, createLiveMatch, highlightOf, liveKeyOf, pairSubs, statsOf, subMinute } from '../game/live';
 import { saveLive } from '../game/save';
@@ -135,7 +135,7 @@ function HalftimePlans({ players, lineup, formation, tactic, plans, onChange, st
         </div>
         <section className="htp-col htp-board" aria-label={t('Équipe de la seconde période')}>
           <span className="ht-label">{t('Seconde période · condition estimée à la pause')}</span>
-          <LineupBoard players={players} lineup={v.l} formation={v.f} onChange={onBoard} original={lineup} maxIn={SUBS_MAX} fitness={fitness} />
+          <LineupBoard players={players} lineup={v.l} formation={v.f} onChange={onBoard} onShape={(f, l) => set({ f, l })} original={lineup} maxIn={SUBS_MAX} fitness={fitness} />
         </section>
         <section className="htp-col htp-set" aria-label={t('Réglages du plan')}>
           <h3 className="pm-sh mark-head">{t('Dispositif')}</h3>
@@ -291,7 +291,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
             <LineupActions state={state} lineup={lineup} formation={formation} onApply={(l) => commit({ lineup: l }, 'shift')} />
           </div>
           <LineupBoard
-            players={state.players} lineup={lineup} formation={formation} tactic={tactic} onChange={(l) => commit({ lineup: l })} fitness={(p) => fitAt(p, 0)}
+            players={state.players} lineup={lineup} formation={formation} tactic={tactic} onChange={(l) => commit({ lineup: l })} onShape={(f, l) => commit({ formation: f, lineup: l })} fitness={(p) => fitAt(p, 0)}
             middle={(
               <div className="pm-quick">
                 <PresetPicker value={tactic} onChange={pickTactic} />
@@ -1231,6 +1231,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
       lineup={planned}
       formation={form2}
       onChange={setPlan}
+      onShape={replay ? null : (f, l) => { setForm2(f); setPlan(l); }}
       original={m.lineup}
       maxIn={SUBS_MAX - m.subsUsed}
       locked={m.sent.home}
@@ -1249,7 +1250,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     if (!pickP) return [];
     return state.players
       .filter((p) => !m.lineup.includes(p.id) && available(p) && !m.gone.has(p.id) && !m.out.has(p.id))
-      .map((p) => ({ p, at: ratingAt(p, pickSlot), off: p.pos !== pickSlot, fit: Math.round(fitAt(p, minute, minute)) }))
+      .map((p) => ({ p, at: ratingAtSlot(p, m.formation, pick.k), off: p.pos !== pickSlot, fit: Math.round(fitAt(p, minute, minute)) }))
       .sort((a, b) => (a.off - b.off) || (b.at - a.at))
       .slice(0, 3);
   }, [pick, lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps

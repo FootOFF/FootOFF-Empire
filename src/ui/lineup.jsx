@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom';
 import { POS_LABELS } from '../game/constants';
 import { absenceOf, available, fitFactor, fitOf, playerRating, ratingAt } from '../game/players';
-import { FORMATIONS, FORMATION_ORDER, FRESH_FIT, autoLineup, fitWeight, formationOf, freshLineup, lineupRating, reshapeLineup, restWeight, rotateLineup, slotsOf } from '../game/tactics';
+import { FORMATIONS, FORMATION_ORDER, FRESH_FIT, autoLineup, fitWeight, formationOf, freshLineup, lineupRating, postsOf, ratingAtSlot, reshapeLineup, restWeight, rotateLineup, slotsOf } from '../game/tactics';
+import { ALL_CELLS, POST_LINE, POST_NAMES, POST_SHORT, cellPitch, gridFormation, gridId, ratingAtPost, typeOf, usable } from '../game/posts';
 import { fmtRating } from './format';
 import { RatingBadge } from './kit';
 import { haptic } from './haptics';
@@ -11,7 +12,7 @@ import { Portrait } from './portrait';
 import { IconCheck } from './icons';
 import { comma, t, tn, tr } from '../i18n/index';
 import { useFitText } from './fittext';
-import { BoardMarks, boardPx, shapeOf, shapesOf } from './tacticboard';
+import { BoardMarks, boardPx, shapeOf, shapePoint, shapesOf } from './tacticboard';
 
 // Composition interactive, la même partout (onglet Composition de l'Effectif, avant-match, mi-temps) : le terrain
 // avec le onze à ses postes (portrait, note au poste, nom, condition), le banc en cartes en dessous. Le terrain se
@@ -118,8 +119,14 @@ export function displayNames(players) {
 
 // Dispositif : six formations ; leur effet se lit dans leur description, sans chiffre (1.0.34, décision du PDG)
 export function FormationPicker({ value, onChange }) {
+  const own = gridFormation(value); // dispositif libre (1.0.41) : en tête, choisi
   return (
     <div className="formations" role="radiogroup" aria-label={t('Dispositif')}>
+      {own && (
+        <button role="radio" aria-checked="true" className="active own" onClick={() => onChange(value)} title={t('Ton dispositif, poste par poste.')}>
+          <strong>{own.name}</strong><em>{t('Libre', undefined, 'dispositif')}</em>
+        </button>
+      )}
       {FORMATION_ORDER.map((id) => (
         <button key={id} role="radio" aria-checked={value === id} className={value === id ? 'active' : ''} onClick={() => onChange(id)}>
           <strong>{FORMATIONS[id].name}</strong>
@@ -211,8 +218,11 @@ function BenchFit({ value }) {
 // tactic (avant-match, 1.0.34) : le terrain devient le tableau tactique noir et or (tacticboard.jsx) : l'équipe se place
 // selon le plan, avec sa zone de pressing, sa ligne défensive et ses courses, et glisse en place à chaque changement.
 // middle : ce qui se range entre le terrain et le banc (les réglages du plan, sous le tableau).
-export function LineupBoard({ players, lineup, formation, onChange, locked = null, booked = null, maxIn = Infinity, original = null, notes = null, hurt = null, unavailable = null, fitness = null, tactic = null, middle = null }) {
+export function LineupBoard({ players, lineup, formation, onChange, onShape = null, locked = null, booked = null, maxIn = Infinity, original = null, notes = null, hurt = null, unavailable = null, fitness = null, tactic = null, middle = null }) {
   const slots = slotsOf(formation);
+  const posts = postsOf(formation);
+  const cells = formationOf(formation).cells;
+  const [shapeMsg, setShapeMsg] = useState(null); // un déplacement refusé (une ligne vide) : la raison, un instant
   const base = formationOf(formation).pitch;
   const pitch = useMemo(() => (tactic ? shapeOf(formation, tactic) : base), [formation, tactic, base]);
   const board = !!tactic;
@@ -235,7 +245,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
   useChipScale(pitchEl, root, sets, lineup.join(','), board ? onBox : null);
   const isLocked = (id) => !!locked?.has(id);
   const entering = (next) => (original ? next.filter((id) => id !== null && !original.includes(id)).length : 0);
-  const keyOf = (item) => (item ? `${item.kind}:${item.kind === 'slot' ? item.k : item.id}` : null);
+  const keyOf = (item) => (item ? `${item.kind}:${item.kind === 'slot' ? item.k : item.kind === 'cell' ? item.key : item.id}` : null);
 
   // pendant un glissé au doigt, la page ne défile pas (écouteur non passif, React les rend passifs)
   useEffect(() => {
@@ -250,8 +260,32 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
   useEffect(() => { setSel(null); }, [formation]);
 
   const playerOf = (item) => (!item ? null : item.kind === 'slot' ? byId[lineup[item.k]] : byId[item.id]);
+  // Postes libres (1.0.41, PDG : « placer les joueurs où on veut, comme sur Football Manager ») : un joueur du terrain
+  // posé sur une case libre de la grille y change de poste ; le dispositif devient le sien (posts.js, « g:… »).
+  const moveTo = (k, cell) => {
+    if (!onShape || !cells || cells[k] === 'G') return false;
+    const next = [...cells];
+    next[k] = cell;
+    const keys = next.slice(1);
+    if (!usable(keys)) {
+      setShapeMsg(t('Il faut au moins un défenseur, un milieu et un attaquant.'));
+      setTimeout(() => setShapeMsg(null), 2600);
+      return false;
+    }
+    const same = FORMATION_ORDER.find((f) => { const c = FORMATIONS[f].cells.slice(1); return c.every((x) => keys.includes(x)); });
+    const id = same || gridId(keys);
+    const F = formationOf(id);
+    const gk = lineup[cells.indexOf('G')];
+    const order = F.cells.map((c) => (c === 'G' ? gk : lineup[next.indexOf(c)]));
+    haptic('tap');
+    uiSound('shift');
+    onShape(id, order);
+    return true;
+  };
   const act = (from, to) => {
     if (!from || !to) return false;
+    if (to.kind === 'cell') return from.kind === 'slot' && !isLocked(lineup[from.k]) && moveTo(from.k, to.key);
+    if (from.kind === 'cell') return false;
     const next = [...lineup];
     if (from.kind === 'slot' && to.kind === 'slot') {
       if (from.k === to.k) return false; // un expulsé ou un blessé se déplace aussi : son poste devient celui laissé vide
@@ -277,7 +311,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
     const el = document.elementFromPoint(x, y)?.closest('[data-drop]');
     if (!el || !root.current?.contains(el)) return null;
     const [kind, v] = el.dataset.drop.split(':');
-    return kind === 'slot' ? { kind, k: Number(v) } : { kind, id: Number(v) };
+    return kind === 'slot' ? { kind, k: Number(v) } : kind === 'cell' ? { kind, key: v } : { kind, id: Number(v) };
   };
   // Glissé jusqu'au bord de l'écran (1.0.35, PDG : « les remplaçants sont trop en bas, il faut défiler, et je n'arrive
   // plus à les placer ») : pendant un glissé, la page ne défile pas au doigt ; elle défile donc toute seule quand le
@@ -353,6 +387,7 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
   const tap = (item) => {
     if (keyOf(sel) === keyOf(item)) { setSel(null); return; }
     if (sel && act(sel, item)) { setSel(null); return; }
+    if (item.kind === 'cell') return; // déplacement refusé (une ligne vide) : le joueur reste choisi
     if (item.kind === 'bench' && !canEnter(byId[item.id])) return;
     setSel(item);
     if (item.kind === 'bench') revealPitch();
@@ -375,31 +410,52 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
   const selOut = sel?.kind === 'slot' && isOutAt(sel.k);
   const ghostOut = ghost?.from?.startsWith('slot:') && isOutAt(Number(ghost.from.slice(5)));
   const chosen = selOut || ghostOut ? null : playerOf(sel) || ghost?.p || null;
-  const freed = selOut ? slots[sel.k] : null;
+  const freed = selOut ? posts[sel.k] : null;
   const left = original ? maxIn - entering(lineup) : null;
   const sentOn = lineup.filter((id) => isLocked(id)).length;
   const outHint = selOut
     ? t('{v} ne joue plus : choisis le poste à laisser vide (jamais celui du gardien)', { v: playerOf(sel)?.name })
     : sentOn > 1 ? t('Expulsés : déplace-les sur les postes à laisser vides') : sentOn ? t('Expulsé : déplace-le sur le poste à laisser vide') : null;
   const hint = sel && !selOut
-    ? t('{v} : choisis un poste ou un joueur pour l’y placer', { v: playerOf(sel)?.name })
-    : t('Glisse un joueur sur un poste, ou choisis-en deux pour les échanger');
+    ? (onShape && sel.kind === 'slot' && slots[sel.k] !== 'G'
+      ? t('{v} : choisis un poste libre pour changer le dispositif, ou un coéquipier pour échanger', { v: playerOf(sel)?.name })
+      : t('{v} : choisis un poste ou un joueur pour l’y placer', { v: playerOf(sel)?.name }))
+    : onShape ? t('Glisse un joueur sur un poste libre pour créer ton dispositif, ou sur un coéquipier pour les échanger')
+      : t('Glisse un joueur sur un poste, ou choisis-en deux pour les échanger');
+  // cases libres de la grille : visibles quand un joueur du terrain (hors gardien) est choisi ou glissé
+  const moving = sel?.kind === 'slot' ? sel.k : ghost?.from?.startsWith('slot:') ? Number(ghost.from.slice(5)) : null;
+  const showCells = !!onShape && !!cells && moving !== null && slots[moving] !== 'G' && !isOutAt(moving);
+  const movingP = moving !== null ? byId[lineup[moving]] : null;
 
   return (
-    <div className={`lu ${board ? 'tb' : ''} ${ghost ? 'dragging' : ''}`} ref={root} data-noswipe="">
+    <div className={`lu ${board ? 'tb' : ''} ${ghost ? 'dragging' : ''} ${showCells ? 'shaping' : ''}`} ref={root} data-noswipe="">
       {outHint && <p className="lu-hint lu-hint-out" role="status">{outHint}</p>}
+      {shapeMsg && <p className="lu-hint lu-hint-out" role="status">{shapeMsg}</p>}
       <div className="lu-pitch" ref={pitchEl}>
         <div className="p2-lines"><i className="half" /><i className="circle" /><i className="box top" /><i className="box bottom" /><i className="six top" /><i className="six bottom" /></div>
         {board && <BoardMarks formation={formation} tactic={tactic} P={pitch} box={box} />}
+        {showCells && ALL_CELLS.filter((c) => !cells.includes(c)).map((c) => {
+          const [x, y] = tactic ? shapePoint(cellPitch(c), POST_LINE[typeOf(c)], tactic) : cellPitch(c);
+          const key = `cell:${c}`;
+          const v = movingP ? ratingAtPost(movingP, typeOf(c)) : null;
+          return (
+            <button key={c} type="button" data-drop={key} className={`lu-cell ${over === key ? 'over' : ''}`} style={{ '--x': `${x}%`, '--y': `${y}%` }}
+              aria-label={t('{post} : y placer {name}', { post: POST_NAMES[typeOf(c)], name: movingP?.name || '' })} title={POST_NAMES[typeOf(c)]}
+              {...handlers({ kind: 'cell', key: c })}>
+              <b>{POST_SHORT[typeOf(c)]}</b>
+              {v !== null && <em>{fmtRating(v)}</em>}
+            </button>
+          );
+        })}
         {lineup.map((id, k) => {
           const p = byId[id];
           if (!p) return null;
           const pos = slots[k];
           const natural = p.pos === pos;
           const key = `slot:${k}`;
-          const cur = ratingAt(p, pos);
+          const cur = ratingAtSlot(p, formation, k);
           const out = isLocked(id) || isHurt(id);
-          const preview = freed ? (out || pos === 'G' ? null : ratingAt(p, freed)) : chosen && chosen.id !== id ? ratingAt(chosen, pos) : null;
+          const preview = freed ? (out || pos === 'G' ? null : ratingAtPost(p, freed)) : chosen && chosen.id !== id ? ratingAtSlot(chosen, formation, k) : null;
           const cls = ['lu-chip', !natural && !out && 'off', keyOf(sel) === key && 'sel', over === key && 'over', ghost?.from === key && 'src', isLocked(id) && 'locked', isHurt(id) && 'hurt'];
           return (
             <button
@@ -408,8 +464,8 @@ export function LineupBoard({ players, lineup, formation, onChange, locked = nul
               data-drop={key}
               className={cls.filter(Boolean).join(' ')}
               style={{ '--x': `${+pitch[k][0].toFixed(2)}%`, '--y': `${+pitch[k][1].toFixed(2)}%` }}
-              title={isLocked(id) ? t('Expulsé : il ne peut pas être remplacé ; déplace-le sur le poste à laisser vide') : isHurt(id) ? t('Blessé : à remplacer par un joueur du banc, ou à déplacer sur le poste à laisser vide') : `${POS_LABELS[pos]}${natural ? '' : t(' · hors de son poste ({toLowerCase})', { toLowerCase: POS_LABELS[p.pos].toLowerCase() })}`}
-              aria-label={`${p.name}, ${POS_LABELS[pos].toLowerCase()}${out ? '' : t(', niveau {fmtRating}', { fmtRating: fmtRating(cur) })}${isLocked(id) ? t(', expulsé, poste laissé vide') : isHurt(id) ? t(', blessé') : ''}`}
+              title={isLocked(id) ? t('Expulsé : il ne peut pas être remplacé ; déplace-le sur le poste à laisser vide') : isHurt(id) ? t('Blessé : à remplacer par un joueur du banc, ou à déplacer sur le poste à laisser vide') : `${POST_NAMES[posts[k]] || POS_LABELS[pos]}${natural ? '' : t(' · hors de son poste ({toLowerCase})', { toLowerCase: POS_LABELS[p.pos].toLowerCase() })}`}
+              aria-label={`${p.name}, ${(POST_NAMES[posts[k]] || POS_LABELS[pos]).toLowerCase()}${out ? '' : t(', niveau {fmtRating}', { fmtRating: fmtRating(cur) })}${isLocked(id) ? t(', expulsé, poste laissé vide') : isHurt(id) ? t(', blessé') : ''}`}
               {...handlers({ kind: 'slot', k })}
             >
               <span className="lu-face">
@@ -492,7 +548,7 @@ export function LineupEditor({ state, run }) {
           <LevelReadout level={level} />
           <LineupActions state={state} lineup={state.lineup} formation={formation} onApply={(l) => save(l)} />
         </div>
-        <LineupBoard players={state.players} lineup={state.lineup} formation={formation} onChange={(l) => save(l)} />
+        <LineupBoard players={state.players} lineup={state.lineup} formation={formation} onChange={(l) => save(l)} onShape={(f, l) => save(l, f)} />
       </section>
       <aside className="lu-side">
         <div className="lu-card">

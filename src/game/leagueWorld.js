@@ -2,10 +2,11 @@ import { upgradeCost } from './constants';
 import { ATTRS, GK_ATTRS, TRAITS, assignNumber, freshSeason, makePlayer, marketValue, playerRating, progressPlayer, ratingAt } from './players';
 import { BANDS, HAIRS, SKINS } from './faces';
 import { squadName } from './names';
-import { FORMATION_ORDER, autoLineup, lineupRating, slotsOf } from './tactics';
+import { autoLineup, FORMATION_ORDER, lineupRating, postsOf, slotsOf } from './tactics';
 import { ELITE_PACE, bestCat, catsFor, collectiveGain, sessionGain, suggestFor } from './training';
 import { pick, rnd } from './utils';
 import { aiPlanOf } from './coherence';
+import { ratingAtPost } from './posts';
 import { t } from '../i18n/index';
 
 // État d'un championnat entre amis après une journée : chaque club (son budget, ses joueurs), calculé avec les matchs
@@ -198,16 +199,17 @@ export function appliedSheet(players, oppStrength = null, name = null) {
 // disponible à ce poste s'il n'y perd pas plus de 0,3 (les jambes fraîches compensent) ; n au plus. [[sortant, entrant]…]
 function freshLegs(players, lineup, formation, n) {
   const slots = slotsOf(formation);
+  const posts = postsOf(formation);
   const bench = players.filter((p) => !lineup.includes(p.id) && !p.injury && !(p.ban > 0));
   const starters = lineup.map((id, k) => ({ p: players.find((q) => q.id === id), k })).filter((x) => x.p && slots[x.k] !== 'G')
-    .sort((a, b) => ratingAt(a.p, slots[a.k]) - ratingAt(b.p, slots[b.k]) || a.k - b.k);
+    .sort((a, b) => ratingAtPost(a.p, posts[a.k]) - ratingAtPost(b.p, posts[b.k]) || a.k - b.k);
   const out = [];
   const used = new Set();
   for (const { p, k } of starters) {
     if (out.length >= n) break;
-    const pos = slots[k];
-    const sub = bench.filter((q) => !used.has(q.id) && q.pos !== 'G').sort((a, b) => ratingAt(b, pos) - ratingAt(a, pos) || a.id - b.id)[0];
-    if (!sub || ratingAt(sub, pos) < ratingAt(p, pos) - 0.3) continue;
+    const post = posts[k];
+    const sub = bench.filter((q) => !used.has(q.id) && q.pos !== 'G').sort((a, b) => ratingAtPost(b, post) - ratingAtPost(a, post) || a.id - b.id)[0];
+    if (!sub || ratingAtPost(sub, post) < ratingAtPost(p, post) - 0.3) continue;
     used.add(sub.id);
     out.push([p.id, sub.id]);
   }
