@@ -348,6 +348,9 @@ function SocialRows({ cur, at, row }) {
           <IconExternal className="cm-social-out" />
         </a>
       ))}
+      {/* crédits (1.0.47, PDG : « dans un endroit caché avec les réseaux sociaux ») : la notice MIT des coiffures Rocketbox et
+          les autres ressources, en petit sous les réseaux */}
+      <p className="cm-credits"><a href={`${import.meta.env.BASE_URL}credits.txt`} {...LINK}>{t('Crédits')}</a></p>
     </>
   );
 }

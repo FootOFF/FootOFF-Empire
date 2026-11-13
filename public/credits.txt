@@ -1,0 +1,66 @@
+FootOFF Empire · Crédits des ressources 3D
+==========================================
+
+Coiffures des joueurs 3D
+  Coupes de cheveux et cheveux peints repris des avatars de la Microsoft Rocketbox Avatar Library, adaptés à nos joueurs
+  (recalés sur leur crâne, recolorés selon leur portrait).
+  Source : https://github.com/microsoft/Microsoft-Rocketbox
+  Licence MIT, notice reproduite ci-dessous comme la licence l'exige.
+
+Ressources du domaine public (CC0), citées par courtoisie
+  Corps, visages, yeux, sourcils, cils et chaussures : MakeHuman / MPFB (MakeHuman Community)
+  Maillot : « Crude T-shirt » de MakeHuman, version homme retouchée par Elvaerwyn
+  Short : coupé dans le jean d'une tenue décontractée MakeHuman
+  Animations : Universal Animation Library, Quaternius
+
+Autres animations
+  Pack de football d'Anderson Rohr (usage commercial permis)
+  Gestes du gardien, têtes, tacles, chutes et relevés, contrôles de balle, courses de côté et de recul : Mixamo (Adobe)
+  Foulées : base de données de capture de mouvement de l'université Carnegie Mellon (mocap.cs.cmu.edu), créée grâce au financement NSF EIA-0196217
+
+------------------------------------------
+
+FootOFF Empire · 3D asset credits (English)
+
+Players' hairstyles
+  Haircuts and painted hair taken from the avatars of the Microsoft Rocketbox Avatar Library, adapted to our players
+  (fitted to their skulls, recoloured to match their portraits).
+  Source: https://github.com/microsoft/Microsoft-Rocketbox
+  MIT License, notice reproduced below as the licence requires.
+
+Public domain (CC0) assets, credited as a courtesy
+  Bodies, faces, eyes, eyebrows, eyelashes and shoes: MakeHuman / MPFB (MakeHuman Community)
+  Shirt: MakeHuman "Crude T-shirt", male version edited by Elvaerwyn
+  Shorts: cut from the jeans of a MakeHuman casual outfit
+  Animations: Universal Animation Library, Quaternius
+
+Other animations
+  Football pack by Anderson Rohr (commercial use permitted)
+  Goalkeeper moves, headers, tackles, falls and getting up, ball control, side and backward runs: Mixamo (Adobe)
+  Running strides: Carnegie Mellon University motion capture database (mocap.cs.cmu.edu), created with funding from NSF EIA-0196217
+
+------------------------------------------
+
+Microsoft Rocketbox Avatar Library
+
+MIT License
+
+Copyright (c) 2020 Microsoft
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

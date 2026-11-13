@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { GREY, HAIRS, SKINS, agedFace, faceOf, hash } from '../game/faces';
+import { BANDS, GREY, HAIRS, SKINS, agedFace, faceOf, hash } from '../game/faces';
 import { originOf } from '../game/names';
 
 // Joueurs réalistes (chantier du PDG, 2026-10-29 : « atteindre ce modèle », carrures moins musclées, tailles et visages
@@ -60,6 +60,11 @@ export function loadPlayers3D() {
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder); // fichiers compressés (meshopt) : 3 Mo au lieu de 7
 const load = (u) => new Promise((res, rej) => loader.load(u, res, undefined, rej));
 
+// cheveux peints des coupes Rocketbox (1.0.47, rb_scalp.py) : une image par avatar, dans l'espace UV de la peau, chargée à
+// la première utilisation ; sans elle, le grain générique de face_mask.png
+const NO_SCALP = new THREE.DataTexture(new Uint8Array([0, 128, 0, 255]), 1, 1); NO_SCALP.needsUpdate = true;
+const SCALP_KEYS = ['ma01', 'ma05', 'ma06', 'ma07', 'ma08', 'ma09', 'ma10', 'ma14', 'ma20', 'bm02', 'bm03', 'md03', 'sm01', 'sm03']; // (bm07, presque chauve ; ma13, un îlot au sommet du crâne ; ma04 et ma12, crépus : le grain fin)
+const scalpTex = (k) => A.scalp?.[k] || NO_SCALP; // (chargées avec le modèle : une photo de joueur ne doit pas partir avant)
 const tex = (u, srgb) => new Promise((res, rej) => new THREE.TextureLoader().load(u, (t) => {
   t.flipY = false; // convention glTF
   if (srgb) t.colorSpace = THREE.SRGBColorSpace;
@@ -75,6 +80,7 @@ async function build() {
     tex(`${URL}skin_ao.jpg`, false).catch(() => null),
     ...[0, 1, 2, 3, 4].map((k) => tex(`${URL}skin_${k}.jpg`, true)),
   ]);
+  const scalp = Object.fromEntries((await Promise.all(SCALP_KEYS.map((k) => tex(`${URL}scalp/${k}.webp`, false).then((t) => [k, t]).catch(() => null)))).filter(Boolean));
   knit.wrapS = knit.wrapT = THREE.RepeatWrapping;
   knit.repeat.set(70, 70); // maille de 3 mm environ sur l'atlas du corps
   const clips = {};
@@ -121,7 +127,7 @@ async function build() {
     }
     o.geometry.setAttribute('aKit', new THREE.BufferAttribute(kit, 2));
   });
-  A = { base, clips, mask, knit, skins, ao };
+  A = { base, clips, mask, knit, skins, ao, scalp };
   // buste et maillot (1.0.40) : la transformation de repos de chaque maillage, prise sur le modèle partagé (jamais animé)
   base.scene.updateMatrixWorld(true);
   A.rest = {};
@@ -408,15 +414,26 @@ const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 function rand(seed) { let x = (seed >>> 0) || 1; return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return ((x >>> 0) % 100000) / 100000; }; }
 const toneOf = (sk) => (sk <= 2 ? 0 : sk <= 4 ? 1 : 2); // peau claire, mate, foncée (faces.js)
 const FACE_MEAN = ['#df997c', '#ce977e', '#d28059', '#5e372a', '#4b3125']; // teint moyen du visage des cinq peaux (prep_skins.py)
-const SKIN_TEX = [[0], [0, 1], [1, 0], [2, 1], [2], [3, 2], [3, 4], [4, 3]]; // teint du portrait -> peaux possibles
+// teint du portrait -> peaux possibles (1.0.47, PDG : « 1 » ; le teint mat #a26b46 tirait une fois sur deux la peau 2, que
+// la teinte ne peut foncer qu'à 70 % : un portrait brun devenait un visage clair ; la peau 3 seule le rend brun)
+const SKIN_TEX = [[0], [0, 1], [1, 0], [2, 1], [2], [3], [3, 4], [4, 3]];
 const skinTex = (sk, seed) => { const l = SKIN_TEX[sk] || SKIN_TEX[2]; return l[(seed >>> 3) % l.length]; };
 const lum = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
-const MESH = { // coiffure du portrait -> coupe 3D (null : cheveux ras peints, ou crâne rasé)
-  short: 'short01', messy: 'short01', mullet: 'short04', side: 'short04', crop: null, undercut: 'short01', slick: 'short04',
-  receding: 'short04', quiff: 'short01', mohawk: 'short01', long: 'short04', bun: 'short04', ponytail: 'short04',
-  curly: 'curly', afroShort: null, afro: 'curly', hightop: null, locs: null, buzz: null, braids: null, bald: null,
-}; // (curly : coupe courte, ou peints ras pour des cheveux crépus ; cheveux longs, chignon, queue : plaqués en arrière)
-const THIN = new Set(['buzz', 'bald', 'crop', 'undercut', 'receding']); // coupes rases du portrait (crâne visible)
+// Coiffures (1.0.47, PDG : « les meilleures coiffures », « n'en fabrique pas toi même, va en chercher ») : les coupes des
+// avatars Microsoft Rocketbox (licence MIT), de vraies mèches en cartes, recalées sur notre crâne (coiffures_rb.py) ;
+// plusieurs coupes possibles pour une même coiffure du portrait, tirées par joueur. null : cheveux ras peints, ou rasé.
+const MESH = { // coiffure du portrait -> coupes 3D possibles
+  short: ['rb_short', 'rb_neat'], messy: null, mullet: ['rb_short'], side: ['rb_neat'],
+  crop: null, undercut: ['rb_fauxhawk', 'rb_spiky'], slick: ['rb_slick'], receding: null, quiff: ['rb_neat'],
+  mohawk: ['rb_fauxhawk'], long: ['rb_tied'], bun: ['rb_tied'], ponytail: ['rb_tied'],
+  curly: null, afroShort: null, afro: null, hightop: null, locs: null, buzz: null, braids: null, bald: null,
+}; // (en désordre, bouclés, houppe, locks : peints ou coupe nette, les cartes de ces coupes faisaient des écailles ou des
+// lanières ; afro : peints, en cartes il faisait une cage ; longs : attachés)
+// cheveux peints (rb_scalp.py) : ceux de l'avatar de la coupe, sous ses mèches ; sans mèches, ceux d'un avatar à la coiffure
+// rase du portrait (front dégarni : quatre avatars dégarnis)
+const SCALP_OF = { rb_short: 'ma05', rb_quiff: 'ma06', rb_spiky: 'ma07', rb_fauxhawk: 'ma08', rb_tied: 'ma09', rb_neat: 'bm02', rb_slick: 'bm03', rb_locs: 'sm03' };
+const SCALP_STYLE = { crop: ['sm01', 'ma20'], messy: ['ma01', 'ma10'], locs: ['sm03'], curlyStraight: ['ma01', 'ma10'], receding: ['ma14', 'md03'] }; // (rasé, crépus courts, afro : le grain fin d'origine, plus vrai sur ces cheveux que la peinture lisse ; curlyStraight : boucles sur cheveux non crépus)
+const THIN = new Set(['buzz', 'bald', 'crop', 'undercut', 'receding', 'afroShort', 'afro', 'hightop']); // coupes rases du portrait (crâne visible ; crépus courts : grain de cheveux ras, pas de calotte pleine, 1.0.47)
 const SCALP = { buzz: 0.95, braids: 1, locs: 1, afroShort: 1, afro: 1, curly: 1, hightop: 1, bald: 0, crop: 0.85, undercut: 0.85, receding: 0.55 }; // ras
 const BEARD = { // densité peinte : barbe entière, moustache (négatif : sans moustache), bouc
   none: [0, 0, 0], stubble: [0.42, 0, 0], short: [0.78, 0.8, 0.8], full: [1, 1, 1], chinstrap: [0.75, -1, 0.75],
@@ -476,12 +493,12 @@ export function recipe(id) {
   if (f.bw === 'thick') m.brow_heavy = 0.1 + r() * 0.1; // (plus fort, la cible MakeHuman étire le crâne vers l'arrière)
   if (f.sg === 'ears') m.ears_flap = 0.9; else if (f.ea !== 'small') m.ears_big = r() * 0.4;
   // crâne : au-delà, il pointe ; deux fois moins encore sous des cheveux ras (rien ne le cache)
-  const shaved = MESH[id.style] === null || (MESH[id.style] === 'curly' && (f.tx === 'coily' || toneOf(f.sk) === 2));
+  const shaved = MESH[id.style] === null || (id.style === 'curly' && (f.tx === 'coily' || toneOf(f.sk) === 2));
   m.head_oval = Math.min(m.head_oval || 0, 0.3) * (shaved ? 0.5 : 1);
   m.forehead_tall = Math.min(m.forehead_tall || 0, 0.25) * (shaved ? 0.5 : 1);
   m.cheekbones = r() * 0.7;
   m.chin_strong = Math.max(m.chin_strong || 0, r() < 0.6 ? 0.3 + r() * 0.5 : 0);
-  if (MESH[id.style] === 'short04') { // coupe plaquée : elle dégage tout le visage, qui doit rester marqué
+  if (['mullet', 'side', 'slick', 'receding', 'long', 'bun', 'ponytail'].includes(id.style)) { // coupe plaquée : elle dégage tout le visage, qui doit rester marqué (les coiffures de l'ancienne coupe short04 : visages inchangés)
     m.jaw_wide = Math.max(m.jaw_wide, 0.45); m.chin_strong = Math.max(m.chin_strong, 0.4); m.chin_narrow = Math.min(m.chin_narrow || 0, 0.2);
   }
   tameFace(m);
@@ -498,7 +515,9 @@ export function recipe(id) {
 function skinTint(sk, tex) {
   const t = new THREE.Color(SKINS[sk] || SKINS[2]); const m = new THREE.Color(FACE_MEAN[tex]);
   // (les trois photos de peau claire sont très pâles : un peu plus soutenues, plus chaudes)
-  const k = clamp(Math.sqrt(lum(t) / lum(m)), 0.8, 1.0) * (tex <= 2 ? 0.88 : 1);
+  // (1.0.47, relecture : le teint mat #a26b46 sur la peau 3 sortait aussi foncé que #7d4d31 ; il s'éclaircit d'un cran,
+  // lui seul, pour retrouver la nuance de son portrait)
+  const k = clamp(Math.sqrt(lum(t) / lum(m)), 0.8, sk === 5 && tex >= 3 ? 1.3 : 1.0) * (tex <= 2 ? 0.88 : 1);
   const h = (a, b) => clamp((a / b) ** 0.05, 0.97, 1.03);
   return new THREE.Color(k * h(t.r, m.r), k * h(t.g, m.g) * (tex <= 2 ? 0.95 : 0.985), k * h(t.b, m.b) * (tex <= 2 ? 0.88 : 0.96));
 }
@@ -561,17 +580,27 @@ function irisOf(id) {
 }
 // Cheveux en cartes (1.0.38) : la texture MakeHuman, très contrastée, donnait un casque taché ; son grain est adouci
 // (plus de taches sombres), la lumière y glisse un peu (moins mat)
-function softHair(mat) {
+function softHair(mat, strands = false, fringe = false) {
   mat.onBeforeCompile = (sh) => {
-    sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `#ifdef USE_MAP
+    sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', strands ? `#ifdef USE_MAP
+    vec4 sampledDiffuseColor = texture2D( map, vMapUv );
+    diffuseColor.rgb *= mix(0.45, 1.5, sampledDiffuseColor.g); // (texture grise de moyenne 0,5 : l'ombre entre les mèches, leurs reflets ; plus doux, les cartes ne font plus plaques)
+    diffuseColor.a *= sampledDiffuseColor.a;
+    ${fringe ? `if (sampledDiffuseColor.a >= ${HAIR_CORE.toFixed(2)}) discard; // (second passage : les pointes seules, fondues)` : ''}
+  #endif` : `#ifdef USE_MAP
     vec4 sampledDiffuseColor = texture2D( map, vMapUv );
     float hl = smoothstep(0.12, 0.88, sampledDiffuseColor.g);
     diffuseColor.rgb *= mix(0.7, 1.0, hl);
     diffuseColor.a *= sampledDiffuseColor.a;
   #endif`);
   };
-  mat.customProgramCacheKey = () => 'footoff-cheveux';
+  mat.customProgramCacheKey = () => (strands ? (fringe ? 'footoff-meches-pointes' : 'footoff-meches') : 'footoff-cheveux');
 }
+// mèches Rocketbox en deux passages (1.0.47), comme dans les jeux : le cœur des cartes opaque (découpe à HAIR_CORE, il
+// écrit la profondeur), puis les pointes en transparence par-dessus ; une découpe seule faisait des bords de papier
+const HAIR_CORE = 0.6;
+// (1.0.47) coupes Rocketbox : le dessin des mèches est dans la couleur de la texture, la transparence ne fait que le
+// contour de chaque carte ; le grain adouci des cartes MakeHuman en faisait des aplats lisses
 // peau : barbe, moustache, bouc et cheveux ras peints d'après le masque de pilosité (grain de poil de près, densité
 // moyenne de loin)
 // manches longues et gants du gardien (1.0.43) : sans les ombres de contact cuites sur la peau ; sous le bord de la manche
@@ -583,24 +612,29 @@ function paintable(mat, u) {
     sh.uniforms.uBeard = u.beard;
     sh.uniforms.uHair = u.hair;
     sh.uniforms.uScalp = u.scalp;
+    sh.uniforms.uScalpTex = u.scalpTex; // (1.0.47) cheveux peints de la coupe Rocketbox
+    sh.uniforms.uScalpUse = u.scalpUse;
     sh.uniforms.uSleeve = u.sleeve; // gardien : manches longues (couleur, 1) ; sinon (…, 0)
     sh.uniforms.uGlove = u.glove;
     sh.uniforms.uShirtIn = u.shirtIn; // couches intérieures (1.0.40) : sous le maillot, sous le short
     sh.uniforms.uShortsIn = u.shortsIn;
     sh.vertexShader = `attribute vec2 aKit;\nattribute vec3 aIn;\nvarying vec2 vKit;\nvarying vec2 vIn;\n${sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vKit = aKit;\n  vIn = aIn.xy;').replace('#include <project_vertex>', '#include <project_vertex>\n  if ( aIn.z > 0.001 ) gl_Position = projectionMatrix * vec4( mvPosition.xyz + normalize( mvPosition.xyz ) * 0.03 * aIn.z * length( modelMatrix[ 0 ].xyz ), 1.0 );')}`;
-    sh.fragmentShader = `uniform sampler2D uMask;\nuniform vec4 uBeard;\nuniform vec3 uHair;\nuniform vec3 uScalp;\nuniform vec4 uSleeve;\nuniform vec4 uGlove;\nuniform vec3 uShirtIn;\nuniform vec3 uShortsIn;\nvarying vec2 vKit;\nvarying vec2 vIn;\n${sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+    sh.fragmentShader = `uniform sampler2D uMask;\nuniform sampler2D uScalpTex;\nuniform vec2 uScalpUse;\nuniform vec4 uBeard;\nuniform vec3 uHair;\nuniform vec3 uScalp;\nuniform vec4 uSleeve;\nuniform vec4 uGlove;\nuniform vec3 uShirtIn;\nuniform vec3 uShortsIn;\nvarying vec2 vKit;\nvarying vec2 vIn;\n${sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
   float hairK = 0.0;
   {
     vec4 fm = texture2D(uMask, vMapUv);
     float bd = max(max(fm.r * uBeard.x, fm.g * uBeard.y), fm.b * uBeard.z) * (1.0 - fm.g * max(0.0, -uBeard.y));
-    float sd = fm.a * uBeard.w;
+    vec4 st = texture2D(uScalpTex, vMapUv); // (1.0.47) cheveux peints de la coupe : R couverture, G dessin des mèches
+    float sd = mix(fm.a * uBeard.w, clamp(smoothstep(0.05, 0.75, st.r) * uScalpUse.y, 0.0, 1.0), uScalpUse.x); // (sous 0,05 : rien, les traits fins disparaissent ; lisière fondue)
     float d = max(bd, sd);
-    vec3 hairCol = sd > bd ? uScalp : uHair; // barbe : la couleur des poils ; cheveux ras : plus sombres (racines)
+    bool painted = sd > bd;
+    vec3 hairCol = painted ? uScalp * mix(1.0, mix(0.4, 1.6, st.g), uScalpUse.x) : uHair; // barbe : la couleur des poils ; cheveux ras : plus sombres (racines)
     vec2 gp = vMapUv * 1536.0;
     float n = fract(sin(dot(floor(gp), vec2(12.9898, 78.233))) * 43758.5453);
     n = mix(n, fract(sin(dot(floor(gp * 0.37), vec2(39.346, 11.135))) * 24634.6345), 0.35); // deux échelles de grain
     float far = clamp(length(fwidth(gp)) - 2.5, 0.0, 1.0);
     float k = mix(smoothstep(n - 0.3, n + 0.3, d) * min(1.0, d * 2.0), d * 0.9, far); // (1.0.40 : grain plus doux, la barbe ne fait plus « sale »)
+    if (painted) k = mix(k, sd, uScalpUse.x); // (la peinture de la coupe a son propre dessin : pas de grain)
     hairK = clamp(k, 0.0, 1.0);
     diffuseColor.rgb = mix(diffuseColor.rgb, hairCol, hairK * (sd > bd ? 0.97 : 0.9)); // (cheveux : couvrants)
   }
@@ -1007,20 +1041,31 @@ export function createPlayers3D(parent, max = 22) {
   function make(i) {
     const root = SkeletonUtils.clone(A.base.scene);
     const mats = {}; const hairs = {}; const brows = {}; const meshes = [];
-    const u = { beard: { value: new THREE.Vector4() }, hair: { value: new THREE.Color() }, scalp: { value: new THREE.Color() }, sleeve: { value: new THREE.Vector4() }, glove: { value: new THREE.Vector4() }, shirtIn: { value: new THREE.Color() }, shortsIn: { value: new THREE.Color() } };
+    const u = { beard: { value: new THREE.Vector4() }, hair: { value: new THREE.Color() }, scalp: { value: new THREE.Color() }, sleeve: { value: new THREE.Vector4() }, glove: { value: new THREE.Vector4() }, shirtIn: { value: new THREE.Color() }, shortsIn: { value: new THREE.Color() }, scalpTex: { value: NO_SCALP }, scalpUse: { value: new THREE.Vector2(0, 1) } };
     root.traverse((o) => {
-      if (!o.isMesh) return;
+      if (!o.isMesh || o.userData.isSoft) return;
       o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false;
       o.material = o.material.clone();
       meshes.push(o);
       const n = (o.material.name || '').split('.')[0];
-      const key = n.startsWith('Kit_') ? n : n.startsWith('Hair_') ? 'Hair' : n.startsWith('Brows_') ? 'Brows' : n === 'Eyes' || n === 'Lashes' ? n : 'Skin';
+      const key = n.startsWith('Kit_') ? n : n.startsWith('Hair_') ? 'Hair' : n.startsWith('Brows_') ? 'Brows' : n === 'Eyes' || n === 'Lashes' || n === 'Band' ? n : 'Skin';
       (mats[key] ||= []).push(o.material);
       if (key === 'Hair') hairs[n.slice(5)] = o;
+      if (key === 'Hair' && n.startsWith('Hair_rb_')) {
+        const fm = o.material.clone();
+        Object.assign(fm, { transparent: true, depthWrite: false, alphaTest: 0.02, alphaToCoverage: false, side: THREE.DoubleSide, roughness: 0.78 });
+        softHair(fm, true, true);
+        const soft = new THREE.SkinnedMesh(o.geometry, fm);
+        soft.bind(o.skeleton, o.bindMatrix); soft.name = `${o.name}_pointes`; soft.renderOrder = 2; soft.frustumCulled = false; soft.castShadow = false; soft.userData.isSoft = true;
+        o.parent.add(soft); o.userData.soft = soft;
+        (mats.Hair ||= []).push(fm);
+      }
       if (key === 'Brows') brows[n.slice(6)] = o;
-      if (key === 'Hair') { // cartes de cheveux : découpe nette, lissée par l'antialias
-        Object.assign(o.material, { transparent: false, depthWrite: true, alphaTest: 0.3, alphaToCoverage: true, side: THREE.FrontSide, roughness: 0.62 });
-        softHair(o.material);
+      if (key === 'Hair') { // cartes de cheveux : découpe nette, lissée par l'antialias ; les cartes Rocketbox, simples
+        // plans, se voient des deux côtés
+        const rbh = n.startsWith('Hair_rb_');
+        Object.assign(o.material, { transparent: false, depthWrite: true, alphaTest: rbh ? HAIR_CORE : 0.3, alphaToCoverage: !rbh, side: rbh ? THREE.DoubleSide : THREE.FrontSide, roughness: rbh ? 0.78 : 0.62 }); // (cartes Rocketbox : cœur opaque, pointes au second passage)
+        softHair(o.material, n.startsWith('Hair_rb_'));
       }
       if (key === 'Eyes') { // cornée brillante : un reflet dans chaque œil
         Object.assign(o.material, { roughness: 0.08, envMapIntensity: 0.9 });
@@ -1056,6 +1101,7 @@ export function createPlayers3D(parent, max = 22) {
         o.material.customProgramCacheKey = () => 'footoff-tissu';
       }
       if (key === 'Kit_Boots' || key === 'Kit_Sole') Object.assign(o.material, { roughness: 0.8, envMapIntensity: 0.6 }); // synthétique mat
+      if (key === 'Band') { Object.assign(o.material, { roughness: 0.92, envMapIntensity: 0.2, map: null, normalMap: A.knit }); o.material.normalScale.set(0.35, 0.35); o.visible = false; } // bandeau (1.0.47) : tissu éponge mat, à maille, montré selon le portrait
       // (1.0.40) la semelle de la chaussure d'origine remonte sur le côté en une virgule claire, qu'on pourrait prendre pour un
       // logo d'équipementier : elle prend la couleur de la chaussure
       if (key === 'Kit_Sole') o.material.color.setHex(0x1d1d1d);
@@ -1120,7 +1166,7 @@ export function createPlayers3D(parent, max = 22) {
     const idleBall = keeper && A.clips.GK_Idle_Ball ? mixer.clipAction(A.clips.GK_Idle_Ball) : null; // ballon serré dans les gants
     if (idleBall) { idleBall.play(); idleBall.setEffectiveWeight(0); }
     const mod = RETOUCHED.map((n) => root.getObjectByName(n));
-    const p = { i, root, mixer, mats, hairs, brows, meshes, u, gaits, dg, legs, keeper, idleBall, holdW: 0, mod, base: mod.map(() => new THREE.Quaternion()), hasBase: false, pelvis, spine, k: 1, dirF: 1, dirR: 0, phase: 0, locoW: 1, fade: 0, shot: null, shotEnd: 0, prevKick: 0, cheering: false, pose: 0, speed: 0, height: BASE_H, seed: i + 1 };
+    const p = { i, root, mixer, mats, hairs, brows, meshes, u, band: meshes.find((o) => (o.material.name || '').split('.')[0] === 'Band') || null, gaits, dg, legs, keeper, idleBall, holdW: 0, mod, base: mod.map(() => new THREE.Quaternion()), hasBase: false, pelvis, spine, k: 1, dirF: 1, dirR: 0, phase: 0, locoW: 1, fade: 0, shot: null, shotEnd: 0, prevKick: 0, cheering: false, pose: 0, speed: 0, height: BASE_H, seed: i + 1 };
     slots[i] = p;
     root.userData.player = p; // inspection (bancs d'essai)
     identity(p, identityOf({ id: `slot${i}` }, i % 11 === 0 ? 'G' : 'M'));
@@ -1132,18 +1178,28 @@ export function createPlayers3D(parent, max = 22) {
     const f = id.face;
     const m = recipe(id);
     for (const o of p.meshes) bake(o, m);
+    for (const o of p.meshes) if (o.userData.soft) { o.userData.soft.geometry = o.geometry; o.userData.soft.morphTargetInfluences = undefined; o.userData.soft.morphTargetDictionary = undefined; }
     const tex = skinTex(f.sk ?? 2, id.seed);
     for (const mat of p.mats.Skin || []) { mat.map = A.skins[tex]; mat.color.copy(skinTint(f.sk ?? 2, tex)); }
-    let mesh = MESH[id.style] === undefined ? 'fade' : MESH[id.style];
-    if (mesh === 'curly') mesh = f.tx === 'coily' || toneOf(f.sk) === 2 ? null : 'short01';
-    // cheveux noirs ou brun foncé (1.0.38) : en cartes, ils faisaient un casque sombre et brillant ; peints ras, ils sont
-    // vrais (les coupes en cartes restent aux cheveux clairs, châtains, roux, blonds et gris)
-    // clarté des cheveux en sRGB (1.0.42 : la couleur three.js est linéaire ; mesurée ainsi, châtains, roux et même blonds
-    // passaient pour foncés et presque tous les joueurs avaient la même coupe rase peinte, quelle que soit leur coiffure)
+    // la coupe : l'une des coupes de sa coiffure, tirée par joueur ; cheveux crépus coupés court : peints ras
+    const opts = MESH[id.style];
+    let mesh = opts === undefined ? 'rb_short' : opts && opts[(id.seed >>> 5) % opts.length];
+    { const hx0 = parseInt(String(id.hair).slice(1), 16); const hl0 = (0.2126 * ((hx0 >> 16) & 255) + 0.7152 * ((hx0 >> 8) & 255) + 0.0722 * (hx0 & 255)) / 255; if (mesh === 'rb_short' && hl0 < 0.25) mesh = 'rb_neat'; } // (cheveux foncés : la coupe courte en cartes se lisait comme une crête)
+    if (id.style === 'curly' && (f.tx === 'coily' || toneOf(f.sk) === 2)) mesh = null;
+    if (mesh && !p.hairs[mesh]) mesh = null; // (base sans cette coupe : cheveux peints)
+    // cheveux noirs ou brun foncé (1.0.38) : les cartes MakeHuman faisaient un casque sombre et brillant, ils étaient peints
+    // ras ; les coupes Rocketbox (1.0.47), aux mèches fines et transparentes, servent à toutes les couleurs
+    // clarté des cheveux en sRGB (1.0.42 : la couleur three.js est linéaire)
     const hx = parseInt(String(id.hair).slice(1), 16); const hl = (0.2126 * ((hx >> 16) & 255) + 0.7152 * ((hx >> 8) & 255) + 0.0722 * (hx & 255)) / 255; // (sRGB, 0 à 1)
-    const shortDark = !!mesh && hl < 0.25; // (cheveux courts peints : plus denses et plus sombres qu'un crâne rasé)
+    const shortDark = !!mesh && !mesh.startsWith('rb_') && hl < 0.25; // (cheveux courts peints : plus denses et plus sombres qu'un crâne rasé)
     if (shortDark) mesh = null;
-    for (const [k, o] of Object.entries(p.hairs)) o.visible = k === mesh;
+    for (const [k, o] of Object.entries(p.hairs)) { o.visible = k === mesh; if (o.userData.soft) o.userData.soft.visible = o.visible; }
+    const sopt = mesh ? (SCALP_OF[mesh] ? [SCALP_OF[mesh]] : null) : SCALP_STYLE[id.style === 'curly' && f.tx !== 'coily' && toneOf(f.sk) !== 2 ? 'curlyStraight' : id.style];
+    const scalpKey = sopt && sopt[(id.seed >>> 7) % sopt.length];
+    p.u.scalpTex.value = scalpKey ? scalpTex(scalpKey) : NO_SCALP;
+    p.u.scalpUse.value.set(scalpKey ? 1 : 0, id.style === 'receding' ? 1.3 : 1.1);
+    // bandeau (1.0.47, PDG : « 3. Aussi ») : celui du portrait, à sa couleur (blanc, noir ou or)
+    if (p.band) { p.band.visible = f.sg === 'band'; if (p.band.visible) p.band.material.color.set(BANDS[f.bc] || BANDS[0]).multiplyScalar(0.92); }
     for (const mat of p.mats.Hair || []) mat.color.set(id.hair).multiplyScalar(1.55); // (grain adouci : texture plus claire en moyenne)
     const eyes = A.eyeTex ||= eyeTextures(p.mats.Eyes?.[0]?.map);
     for (const mat of p.mats.Eyes || []) if (eyes) mat.map = eyes[irisOf(id)];
@@ -1182,12 +1238,14 @@ export function createPlayers3D(parent, max = 22) {
     // sous une coupe en cartes, la lisière peinte prend la teinte des cartes (1.0.42 : une bande brune tachetée
     // apparaissait entre les cheveux roux ou châtains et le front)
     // (jamais plus clair que le front : même plafond que les poils peints ; le gris d'un grisonnant y échappe en proportion)
-    if (mesh) { const c = new THREE.Color(id.hair).multiplyScalar(1.15); const cap = 0.42 * skinL; const L = lum(c); if (L > cap) c.multiplyScalar(cap / L + (1 - cap / L) * greyK); p.u.scalp.value.copy(c); }
+    // (1.0.47) cheveux peints d'une coupe Rocketbox : la couleur des cheveux, comme ses mèches (plus la teinte sombre des racines
+    // d'un crâne ras : des cheveux châtains peints sortaient presque noirs, en bonnet)
+    if (mesh || scalpKey) { const c = new THREE.Color(id.hair).multiplyScalar(1.15); const cap = 0.42 * skinL; const L = lum(c); if (L > cap) c.multiplyScalar(cap / L + (1 - cap / L) * greyK); p.u.scalp.value.copy(c); }
     // cheveux peints (1.0.42, PDG : cohérence avec le portrait) : une vraie chevelure du portrait (tout sauf ras, rasé,
     // très court ou dégarni) reste pleine en 3D, et foncée si elle est brune ou noire ; le crâne transparaissait, tous
     // paraissaient châtain clair, mèches et afros compris. Cheveux noirs ou bruns coupés court : jamais une brosse rousse.
     const full = !mesh && !THIN.has(id.style);
-    if (!mesh && hl < 0.25) p.u.scalp.value.multiplyScalar(0.5);
+    if (!mesh && !scalpKey && hl < 0.25) p.u.scalp.value.multiplyScalar(0.5); // (pas sous une peinture Rocketbox : son dessin se perdrait dans le noir)
     if (full) p.u.beard.value.w = 1.7;
     else if (shortDark) p.u.beard.value.w = 1;
   }
