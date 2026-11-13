@@ -121,19 +121,10 @@ export async function decodeCode(code) {
     return validSave(s) ? s : null;
   } catch { return null; }
 }
-// Code de transfert (1.0.35) : tout ce qu'un navigateur garde, en un seul code, pour l'app installée sur iPhone (elle ne
-// voit pas les données de Safari) ou pour quitter le navigateur d'Instagram : la partie solo (ou rien) et les codes de
-// reprise des clubs de championnat. « FOT1: » + JSON compressé ; « FOT0: » sans compression.
-export async function exportTransfer(state, leagues = []) {
-  const bytes = new TextEncoder().encode(JSON.stringify({ v: 1, save: state ? { ...state, lastSeen: Date.now() } : null, leagues }));
-  if (typeof CompressionStream === 'function') return `FOT1:${bytesToB64(await pipe(bytes, new CompressionStream('gzip')))}`;
-  return `FOT0:${bytesToB64(bytes)}`;
-}
+// Code de transfert (1.0.35) : la partie solo et les codes de reprise des clubs de championnat en un seul code,
+// « FOT1: » + JSON compressé (« FOT0: » sans compression). Il n'est plus proposé dans le message d'installation (1.0.36,
+// décision du PDG), mais un code copié avec la 1.0.35 se colle encore dans « Restaurer un code de sauvegarde ».
 export const isTransferCode = (code) => /^\s*FOT[01]:/.test(code || '');
-// La partie principale telle qu'elle est rangée (celle d'une autre langue comprise), pour le code de transfert
-export function rawSave() {
-  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return validSave(s) ? s : null; } catch { return null; }
-}
 // { save (brute, non réparée, ou null), leagues: [codes de reprise] }, ou null si le code est illisible
 export async function decodeTransfer(code) {
   try {

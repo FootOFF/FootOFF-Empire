@@ -270,7 +270,7 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
         <button type="button" role="menuitem" className={`cm-row cm-install ${cur === at('install') ? 'on' : ''}`} {...row(at('install'))} onClick={() => { uiSound('select'); openInstall(); }}>
           <span className="cm-bar" aria-hidden="true" />
           <span className="cm-row-text">
-            <strong>{t('Installer le jeu')}</strong>
+            <strong>{t('Installer l’app')}</strong>
             <span>{installable === 'pc' ? t('Dans sa propre fenêtre, ouvert d’un clic depuis ton ordinateur.') : t('Sur ton écran d’accueil : plein écran, ouvert d’un geste depuis son icône.')}</span>
           </span>
           <IconChevron className="cm-install-go" />

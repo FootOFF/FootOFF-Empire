@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.36', date: '2026-11-13', title: t('Installer l’app'),
+    items: [
+      t('Le message d’installation recommande fortement l’app : il revient à chaque visite au téléphone tant que le jeu n’est pas installé, avec les trois avantages de l’app, plein écran, ouvert d’un geste et notifications des championnats.'),
+      t('« Installer l’app » apparaît en or dans le menu de l’écran titre, juste sous « Continuer ».'),
+      t('Plus d’étape pour copier sa partie : l’installation se fait en trois gestes.'),
+    ],
+  },
+  {
     version: '1.0.35', date: '2026-11-13', title: t('Installer le jeu'),
     items: [
       t('Au téléphone, le jeu recommande de l’installer sur l’écran d’accueil et montre comment, pas à pas : sur iPhone, sur Android (un vrai bouton Installer) et depuis le navigateur intégré d’Instagram ou de TikTok.'),

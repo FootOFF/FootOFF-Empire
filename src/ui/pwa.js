@@ -60,28 +60,13 @@ export async function promptInstall() {
   } catch { return 'unavailable'; }
 }
 
-// Rappel : « Plus tard » le repousse de 3 jours, puis 7, puis 30 ; « Compris » d'un jour (le joueur l'installe sans doute
-// tout de suite). Ouvert depuis les réglages, il s'affiche toujours.
-const KEY = 'fo-installer';
-const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null') || {}; } catch { return {}; } };
-const write = (v) => { try { localStorage.setItem(KEY, JSON.stringify({ ...read(), ...v })); } catch { /* stockage plein */ } };
-const DAY = 24 * 3600 * 1000;
-export function installDue(now = Date.now()) {
+// La feuille s'invite à chaque visite au téléphone et à la tablette tant que le jeu n'est pas installé (1.0.36, PDG :
+// « je veux recommander absolument d'installer l'app ») ; « Plus tard » ne la ferme que pour cette visite (App). Sur
+// ordinateur, elle ne s'ouvre que depuis les réglages ou le menu de l'écran titre.
+export function installDue() {
   const kind = installKind();
-  if (kind !== 'ios' && kind !== 'android') return false; // la feuille ne s'invite qu'au téléphone et à la tablette
-  const { later = 0 } = read();
-  return now >= later;
+  return kind === 'ios' || kind === 'android';
 }
-export function installLater(soon = false, now = Date.now()) {
-  if (soon) { write({ later: now + DAY }); return; }
-  const n = (read().n || 0) + 1;
-  write({ n, later: now + [3, 7, 30][Math.min(n, 3) - 1] * DAY });
-}
-
-// Première ouverture de l'app installée : la carte « Colle ta partie » ne revient plus une fois vue
-const WELCOME = 'fo-app-accueil';
-export const welcomeDue = () => { try { return isStandalone() && !localStorage.getItem(WELCOME); } catch { return false; } };
-export const welcomeDone = () => { try { localStorage.setItem(WELCOME, '1'); } catch { /* stockage plein */ } };
 
 // Ouvrir la feuille depuis n'importe où (réglages, notifications des championnats) : App écoute.
 export const openInstall = () => window.dispatchEvent(new CustomEvent('fo-install'));

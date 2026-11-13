@@ -240,7 +240,7 @@ function Notifs() {
       {state === 'off' && <p className="dir-note">{t('Sois prévenu sur ce téléphone, même jeu fermé : un ami qui arrive, une offre au mercato, plus qu’une heure pour valider ton équipe, le coup d’envoi.')}</p>}
       {state === 'denied' && <p className="dir-note">{t('Bloquées pour le jeu : autorise-les dans les réglages de ton téléphone, puis reviens ici.')}</p>}
       {state === 'install' && <p className="dir-note">{t('Sur iPhone, elles arrivent quand le jeu est sur ton écran d’accueil : dans Safari, touche Partager, puis « Sur l’écran d’accueil », et ouvre le jeu depuis son icône.')}</p>}
-      {state === 'install' && <button type="button" className="btn ghost" onClick={() => { uiSound('select'); openInstall(); }}>{t('Installer le jeu')}</button>}
+      {state === 'install' && <button type="button" className="btn ghost" onClick={() => { uiSound('select'); openInstall(); }}>{t('Installer l’app')}</button>}
       <Problem text={problem} />
       {state === 'off' && <button type="button" className="btn ghost" disabled={busy} onClick={turnOn}>{t('Activer les notifications')}</button>}
       {state === 'on' && <button type="button" className="linkbtn" disabled={busy} onClick={turnOff}>{t('Désactiver sur cet appareil')}</button>}

@@ -13,6 +13,7 @@ import { randomClubName } from '../game/names';
 import { DIVISIONS } from '../game/constants';
 import { CREST_EMBLEMS, CREST_GROUNDS, CREST_PATTERNS, CREST_SHAPES, CREST_STYLES, CREST_TEXTS, clubStars, normalizeCrest, randomCrest, withStyle } from '../game/crest';
 import { colon, LANGS, LANG_NAMES, langName, preferredLang, t, tn, tr } from '../i18n/index';
+import { inAppBrowser, installKind, openInstall } from './pwa';
 
 // Écran titre, façon jeu de console : le complexe tourne lentement en 3D derrière (mode vitrine d'Empire3D), le
 // menu à gauche (en bas sur téléphone), la carte de l'entrée choisie à droite. Trois vues : menu, réglages,
@@ -123,12 +124,14 @@ const clubProgress = ({ name, code, progress: p }) => {
 
 // Entrées du menu principal : Continuer (s'il y a une partie ; liveNote : un match interrompu qui reprendra à la minute
 // près), Nouvelle partie, Championnats entre amis (leagues, quand ils sont ouverts), Réglages, FootOFF Media.
-function menuItems(state, { onContinue, onNew, onSettings, onRules, onMedia }, liveNote = null, leagues = null, foreign = null) {
+function menuItems(state, { onContinue, onNew, onSettings, onRules, onMedia, onInstall }, liveNote = null, leagues = null, foreign = null, install = null) {
   const saved = state || foreign; // la carrière enregistrée (foreign : fondée dans une autre langue)
   const div = saved && DIVISIONS[saved.divisionIndex];
   const summary = saved && t('{clubName} · {name} · Saison {seasonNumber}', { clubName: saved.clubName, name: div.name, seasonNumber: saved.seasonNumber });
   return [
     ...(saved ? [{ id: 'continue', label: t('Continuer'), sub: state ? liveNote || summary : `${summary} · ${LANG_NAMES[foreign.lang]}`, onSelect: onContinue }] : []),
+    // Installer l'app (1.0.36, PDG : « recommander absolument ») : juste sous Continuer tant que le jeu n'est pas installé
+    ...(install ? [{ id: 'install', tone: 'install', label: t('Installer l’app'), sub: install === 'pc' ? t('Dans sa propre fenêtre, ouvert d’un clic depuis ton ordinateur.') : t('Fortement recommandé : plein écran, ouvert d’un geste, notifications'), onSelect: onInstall }] : []),
     { id: 'new', label: t('Nouvelle partie'), sub: saved ? t('Fonder un autre club') : t('Fonde ton club et bâtis ton empire'), onSelect: onNew },
     ...(leagues ? (leagues.clubs || []).map((m) => ({ id: `club-${m.code}`, label: m.club.name, sub: clubProgress(m), onSelect: () => leagues.onPlay(m) })) : []),
     ...(leagues ? [{ id: 'leagues', label: t('Championnats entre amis'), sub: leagues.count ? tn(leagues.count, '{count} championnat · créer, rejoindre, classements', '{count} championnats · créer, rejoindre, classements', { count: leagues.count }, leagues.count > 1) : t('Rejoins tes amis avec leur code'), onSelect: leagues.onOpen }] : []),
@@ -264,7 +267,7 @@ export function TitleScreen({ state, foreign = null, view, onView, onContinue, o
   const active = !blocked;
   const pref = preferredLang(); // langue proposée pour la nouvelle partie
   const saved = state || foreign;
-  const items = menuItems(state, { onContinue, onNew: onNewGame, onSettings: () => onView('settings'), onRules: () => onView('rules'), onMedia: () => onView('media') }, liveNote, leagues, foreign);
+  const items = menuItems(state, { onContinue, onNew: onNewGame, onSettings: () => onView('settings'), onRules: () => onView('rules'), onMedia: () => onView('media'), onInstall: openInstall }, liveNote, leagues, foreign, installKind() || (inAppBrowser() ? 'inapp' : null));
   const menu = useMenu(items, { active: active && view === 'menu' }); // l'entrée active est gardée au retour des réglages
   const current = items[Math.min(menu.cur, items.length - 1)].id;
   const [entered, setEntered] = useState(false); // la première apparition joue l'animation d'entrée complète

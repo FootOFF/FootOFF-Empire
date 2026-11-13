@@ -7,9 +7,9 @@ import { BUILDINGS, DIVISIONS, upgradeCost } from './game/constants';
 import { fmtMoney } from './ui/format';
 import { clubAfter, withArticle } from './game/names';
 import { dealOnScreen, leagueNote } from './ui/mercato';
-import { clearGame, clearLive, decodeCode, decodeTransfer, exportCode, exportTransfer, importForeign, importSave, isTransferCode, langOf, lastLoad, loadGame, loadLive, rawSave, saveGame } from './game/save';
-import { AppWelcome, InstallSheet } from './ui/install';
-import { installDue, installLater, welcomeDone, welcomeDue } from './ui/pwa';
+import { clearGame, clearLive, decodeCode, decodeTransfer, exportCode, importForeign, importSave, isTransferCode, langOf, lastLoad, loadGame, loadLive, saveGame } from './game/save';
+import { InstallSheet } from './ui/install';
+import { installDue } from './ui/pwa';
 import { LIVE_VERSION, liveKeyOf } from './game/live';
 import { applyUpdate } from './ui/updates';
 import { CrashScreen } from './ui/crash';
@@ -36,7 +36,7 @@ import { DirectionView } from './ui/direction';
 import { MedicalView } from './ui/medical';
 import { LeagueView } from './ui/league';
 import { deadlineText, isLeagueCode, leagueLang, leagueOpen } from './game/league';
-import { LeagueError, deadlineAt, kickoffAt, leagueHumans, leagueResults, myLeagues, publishRoster, pulseUrgent, refreshLeague, resumeCodeOf, resumeLeague, sendMove, sendSheet, syncPush, takeInvite, takeOpen, userActive, watchPulse, autoAskPush } from './game/leagueNet';
+import { LeagueError, deadlineAt, kickoffAt, leagueHumans, leagueResults, myLeagues, publishRoster, pulseUrgent, refreshLeague, resumeLeague, sendMove, sendSheet, syncPush, takeInvite, takeOpen, userActive, watchPulse, autoAskPush } from './game/leagueNet';
 import { applyLeagueRound, closeGoneDeals, createLeagueClub, leagueClubProgress, leagueRequest, leagueRoster, leagueRosterSig, loadLeagueClub, myReplay, readLeagueClub, saveLeagueClub, settleLeague, syncLeagueClub, teamSheet } from './game/leagueClub';
 import { adoptPulled, cloudNote, cloudPlan, isPushing, markUnreadable, playedPrint, pullClub, pushClub, savedWhen, stageOf, syncOf } from './game/leagueCloud';
 import ConfirmDialog from './ui/confirm';
@@ -168,9 +168,9 @@ export default function App({ preview = null }) {
     return boot.intent?.hub ? { open: boot.intent.hub } : null; // championnat rouvert dans sa langue (league.jsx)
   });
   const [tapCode, setTapCode] = useState(null); // en jeu : championnat ouvert par une notification touchée
-  // Installer le jeu (1.0.35, ui/install.jsx) : 'auto' (au téléphone, une fois par visite, sur l'écran titre, sauf
-  // « Plus tard » récent), 'manual' (réglages, notifications des championnats), 'welcome' (première ouverture de l'app
-  // installée, sans partie ni championnat : coller la partie copiée dans le navigateur)
+  // Installer le jeu (1.0.35, ui/install.jsx) : 'auto' (au téléphone, à chaque visite tant que le jeu n'est pas installé,
+  // sur l'écran titre ; « Plus tard » ne la ferme que pour cette visite, 1.0.36), 'manual' (menu de l'écran titre,
+  // réglages, notifications des championnats)
   const [install, setInstall] = useState(null);
   const installSeen = useRef(false);
   useEffect(() => {
@@ -182,10 +182,6 @@ export default function App({ preview = null }) {
     if (preview || installSeen.current || install || screen !== 'title' || !booted || titleView !== 'menu' || confirm || leagueHub) return undefined;
     const id = setTimeout(() => {
       installSeen.current = true;
-      if (welcomeDue()) {
-        if (!state && !foreign && !myLeagues().length) { setInstall('welcome'); return; }
-        welcomeDone(); // l'app a déjà une partie (Android : la même que le navigateur)
-      }
       if (installDue()) setInstall('auto');
     }, 1400);
     return () => clearTimeout(id);
@@ -1402,25 +1398,12 @@ export default function App({ preview = null }) {
         )}
       </Presence>
       <Presence>
-        {install && install !== 'welcome' && !confirm && (
+        {install && !confirm && (
           <InstallSheet
-            // la carrière (jamais le club de ligue en cours : il revient par son code de reprise) et les clubs de championnat
-            onCopy={(state && !state.league) || rawSave() || myLeagues().length ? () => exportTransfer(state && !state.league ? state : rawSave(), myLeagues().map(resumeCodeOf)) : null}
-            leagues={myLeagues().length}
             onClose={(how, kind) => {
-              if (how === 'later') installLater();
-              else if (how === 'ok') installLater(true);
-              else if (how === 'installed') notify({ kind: 'success', eyebrow: t('Application'), title: t('FootOFF Empire s’installe'), text: kind === 'pc' ? t('Il s’ouvre dans sa propre fenêtre, puis d’un clic depuis son icône.') : t('Il arrive sur ton écran d’accueil : ouvre-le depuis son icône.') });
+              if (how === 'installed') notify({ kind: 'success', eyebrow: t('Application'), title: t('FootOFF Empire s’installe'), text: kind === 'pc' ? t('Il s’ouvre dans sa propre fenêtre, puis d’un clic depuis son icône.') : t('Il arrive sur ton écran d’accueil : ouvre-le depuis son icône.') });
               setInstall(null);
             }}
-          />
-        )}
-      </Presence>
-      <Presence>
-        {install === 'welcome' && !confirm && (
-          <AppWelcome
-            onPaste={async (code) => { const err = await settings.onImport(code); if (!err) { welcomeDone(); setInstall(null); } return err; }}
-            onClose={() => { welcomeDone(); setInstall(null); }}
           />
         )}
       </Presence>
