@@ -41,6 +41,7 @@ const LOOK_CHAIN = [['spine_02', 0.15], ['spine_03', 0.2], ['neck_01', 0.25], ['
 // le moteur d'animation ne réécrit un os que si sa valeur a changé ; sur un joueur immobile, la retouche s'ajoutait à
 // elle-même d'image en image et le joueur finissait plié en deux)
 const RETOUCHED = ['spine_01', 'spine_02', 'spine_03', 'neck_01', 'head', 'thigh_l', 'calf_l', 'foot_l', 'thigh_r', 'calf_r', 'foot_r', 'upperarm_l', 'lowerarm_l', 'hand_l', 'upperarm_r', 'lowerarm_r', 'hand_r'];
+const STANCE = new Set(['pelvis', 'spine_01', 'spine_02', 'spine_03', 'neck_01', 'head', 'clavicle_l', 'clavicle_r', 'thigh_l', 'calf_l', 'foot_l', 'ball_l', 'thigh_r', 'calf_r', 'foot_r', 'ball_r']); // tenue droite des photos
 const smooth = (x) => { const t = Math.max(0, Math.min(1, x)); return t * t * (3 - 2 * t); };
 
 let loading = null;
@@ -1027,6 +1028,10 @@ export function createPlayers3D(parent, max = 22) {
     });
     athletic(root);
     root.traverse((b) => { if (b.isBone && /^(index|middle|ring|pinky|thumb)_/.test(b.name)) b.userData.rest = b.quaternion.clone(); });
+    // pose de construction du tronc, des épaules et des jambes, gardée pour les photos (1.0.43, PDG : « le buste est encore
+    // beaucoup trop avancé, un creux dans le dos, les épaules trop en arrière ») : l'animation d'attente est une garde de
+    // footballeur (un pied devant, cou et tête projetés de 14 à 18°) qui, en photo, bombait la poitrine et creusait le dos
+    root.traverse((b) => { if (b.isBone && STANCE.has(b.name)) { b.userData.bind = b.quaternion.clone(); if (b.name === 'pelvis') b.userData.bindPos = b.position.clone(); } });
     // couche intérieure du maillot et de ses bords (1.0.40) : peinte comme la peau. Sous le tissu, elle ne se voit pas ; elle
     // ne paraissait qu'entre le col et le cou (une bande aux couleurs du maillot, une marche noire) ou au bord d'une manche
     // corps sous la tenue : le matériau de la peau, coloré par aIn (prepareInner) ; le pied sous la chaussure prend la
@@ -1649,6 +1654,9 @@ export function createPlayers3D(parent, max = 22) {
       const p = slots[i];
       if (!p) return;
       const root = p.root;
+      // tenue droite (1.0.43) : tronc, épaules et jambes dans leur pose de construction, buste droit, dos sans creux, pieds
+      // parallèles ; les bras et le regard se posent ensuite
+      root.traverse((b) => { if (b.isBone && b.userData.bind) { b.quaternion.copy(b.userData.bind); if (b.userData.bindPos) b.position.copy(b.userData.bindPos); } });
       root.updateMatrixWorld(true);
       const q = root.getWorldQuaternion(new THREE.Quaternion());
       const fwd = V().set(0, 0, 1).applyQuaternion(q);
