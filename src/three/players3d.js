@@ -923,6 +923,15 @@ function prepareInner(scene) {
   // le maillot lui-même : seulement l'envers roulé au bord de la manche (à 2,5 cm de l'ourlet au plus) ; ailleurs, sous
   // l'aisselle, le flanc du torse passait pour l'intérieur de la manche et s'assombrissait en losange
   innerSide(meshes.male_casualsuit04, bodyAxis);
+  // le bas du maillot (1.0.46, relecture : un repli de l'ourlet, jambe levée, montrait l'envers presque noir, un trait à la
+  // hanche) : près de l'ourlet du bas, l'envers garde environ 40 % de la couleur du maillot (aFold, lu par le shader)
+  { const o = meshes.male_casualsuit04;
+    if (o) {
+      const n = o.geometry.attributes.position.count; const att = new Float32Array(n); let low = Infinity;
+      for (let i = 0; i < n; i++) low = Math.min(low, restOf(o, i).y);
+      for (let i = 0; i < n; i++) att[i] = 1 - smooth01(low + 0.015, low + 0.045, restOf(o, i).y);
+      o.geometry.setAttribute('aFold', new THREE.BufferAttribute(att, 1));
+    } }
   { const o = meshes.male_casualsuit04; const ab = o?.geometry.attributes.aBack;
     if (ab) {
       for (let i = 0; i < ab.count; i++) {
@@ -1041,8 +1050,8 @@ export function createPlayers3D(parent, max = 22) {
         // (1.0.40) l'envers du tissu, vu par l'ouverture d'une manche ou sous l'ourlet du short, reste dans l'ombre : il se
         // voyait plus clair que la cuisse
         o.material.onBeforeCompile = (sh) => {
-          sh.vertexShader = `attribute float aBack;\nvarying float vBack;\n${sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vBack = aBack;')}`;
-          sh.fragmentShader = `varying float vBack;\n${sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n  float backK = gl_FrontFacing ? vBack : 1.0;\n  diffuseColor.rgb *= mix( 1.0, 0.18, backK );').replace('#include <opaque_fragment>', 'outgoingLight *= mix( 1.0, 0.2, backK );\n  #include <opaque_fragment>')}`;
+          sh.vertexShader = `attribute float aBack;\nattribute float aFold;\nvarying float vBack;\nvarying float vFold;\n${sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vBack = aBack;\n  vFold = aFold;')}`;
+          sh.fragmentShader = `varying float vBack;\nvarying float vFold;\n${sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n  float backK = gl_FrontFacing ? vBack : 1.0 - 0.55 * vFold;\n  diffuseColor.rgb *= mix( 1.0, 0.18, backK );').replace('#include <opaque_fragment>', 'outgoingLight *= mix( 1.0, 0.2, backK );\n  #include <opaque_fragment>')}`;
         };
         o.material.customProgramCacheKey = () => 'footoff-tissu';
       }
@@ -1148,17 +1157,32 @@ export function createPlayers3D(parent, max = 22) {
     const [bR, bG, bB] = id.beard === 'none' && id.age >= 21 ? [0.27, 0, 0] : BEARD[id.beard] || BEARD.none; // (1.0.40 : ombre de barbe plus marquée, un visage d'homme et non de mannequin)
     // cheveux ras : partout sous une coupe (la lisière se fond), pleine densité sans coupe
     p.u.beard.value.set(bR, bG, bB, SCALP[id.style] ?? (mesh ? 0.9 : 0.95));
-    // poils : toujours plus sombres que la peau ; barbe à la couleur des cheveux (assombrie, jamais grise), cheveux ras
-    // plus sombres encore (racines, ombre)
+    // poils : plus sombres que la peau ; barbe à la couleur des cheveux (assombrie), cheveux ras plus sombres encore
+    // (racines, ombre) ; sauf le gris d'un grisonnant, qui échappe à ce plafond en proportion (1.0.46 : sur peau foncée, il
+    // sortait presque noir, loin du gris de son portrait)
     const skinL = lum(new THREE.Color(FACE_MEAN[tex]).multiply(skinTint(f.sk ?? 2, tex)));
-    const tone = (k, capK) => { const c = new THREE.Color(id.beardCol).multiplyScalar(k); if (lum(c) > capK * skinL) c.multiplyScalar((capK * skinL) / lum(c)); return c; };
+    // (relecture de la 1.0.45 : une barbe tirée d'un blond cendré virait au kaki sur peau claire) : jamais plus verte que
+    // rouge, tirée vers le brun
+    // les cheveux clairs (blond, blond cendré) donnent une barbe plus rousse et plus brune que la chevelure, comme dans la
+    // réalité : sans cela, un blond doré mêlé à une peau rosée virait au kaki
+    // (relecture de la 1.0.46 : un test de clarté prenait le gris d'un grisonnant pour du blond, et sa barbe brunissait) :
+    // les deux blonds de la palette seulement, et un grisonnant garde le gris de son portrait, en proportion
+    const blond = f.hc === 4 || f.hc === 6;
+    const warm = (c) => {
+      const o = c.clone();
+      if (blond) c.lerp(new THREE.Color(0x6a3f22).multiplyScalar(c.r / 0.11), 0.5);
+      if (c.g > c.r * 0.82) c.g = c.r * 0.82; if (c.b > c.g * 0.7) c.b = c.g * 0.7;
+      return c.lerp(o, id.grey || 0);
+    };
+    const greyK = id.grey || 0;
+    const tone = (k, capK) => { const c = warm(new THREE.Color(id.beardCol).multiplyScalar(k)); const cap = capK * skinL; const L = lum(c); if (L > cap) c.multiplyScalar(cap / L + (1 - cap / L) * greyK); return c; };
     p.u.hair.value.copy(tone(0.75, 0.55));
     const sc = tone(0.55, 0.42);
     p.u.scalp.value.copy(sc.lerp(new THREE.Color().setScalar(lum(sc)), 0.45)); // ras : moins saturé (jamais une calotte rousse)
     // sous une coupe en cartes, la lisière peinte prend la teinte des cartes (1.0.42 : une bande brune tachetée
     // apparaissait entre les cheveux roux ou châtains et le front)
-    // (jamais plus clair que le front : même plafond que les poils peints)
-    if (mesh) { const c = new THREE.Color(id.hair).multiplyScalar(1.15); const cap = 0.42 * skinL; if (lum(c) > cap) c.multiplyScalar(cap / lum(c)); p.u.scalp.value.copy(c); }
+    // (jamais plus clair que le front : même plafond que les poils peints ; le gris d'un grisonnant y échappe en proportion)
+    if (mesh) { const c = new THREE.Color(id.hair).multiplyScalar(1.15); const cap = 0.42 * skinL; const L = lum(c); if (L > cap) c.multiplyScalar(cap / L + (1 - cap / L) * greyK); p.u.scalp.value.copy(c); }
     // cheveux peints (1.0.42, PDG : cohérence avec le portrait) : une vraie chevelure du portrait (tout sauf ras, rasé,
     // très court ou dégarni) reste pleine en 3D, et foncée si elle est brune ou noire ; le crâne transparaissait, tous
     // paraissaient châtain clair, mèches et afros compris. Cheveux noirs ou bruns coupés court : jamais une brosse rousse.

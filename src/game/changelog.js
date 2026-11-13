@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.46', date: '2026-11-13', title: t('Finitions des joueurs 3D'),
+    items: [
+      t('Le bas du maillot et la ceinture du short suivent davantage le bassin : le trait sombre qui apparaissait à la hanche en mouvement est atténué.'),
+      t('La barbe des joueurs blonds tire sur le brun chaud, comme dans la réalité, au lieu du kaki.'),
+      t('Les joueurs grisonnants gardent une barbe et des cheveux ras gris en 3D, comme sur leur portrait, quelle que soit leur peau.'),
+    ],
+  },
+  {
     version: '1.0.45', date: '2026-11-13', title: t('Joueurs 3D plus naturels'),
     items: [
       t('Silhouette plus naturelle : des épaules et un buste plus fins, des bras plus déliés, un cou un peu plus long.'),
