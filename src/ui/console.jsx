@@ -329,13 +329,6 @@ export function SettingsView({ settings, onBack, active = true, focus = null }) 
       </button>
       {/* Suivre FootOFF (0.8.17) : les comptes officiels, ouverts dans un nouvel onglet */}
       <SocialRows cur={cur} at={at} row={row} />
-      {/* crédits (1.0.43) : le short des joueurs 3D vient d'un vêtement sous licence CC BY 4.0, qui demande de nommer son
-          auteur ; le détail de toutes les ressources dans credits.txt ; noms latins isolés (arabe : le titre se coupait à
-          l'envers) */}
-      <p className="cm-credits">
-        {t('Short 3D d’après « {title} » de {author}, sous licence {license}, forme modifiée.', { title: '⁨Male Swimming Trunks 01⁩', author: '⁨Mindfront⁩', license: '⁨CC BY 4.0⁩' })}{' '}
-        <a href={`${import.meta.env.BASE_URL}credits.txt`} {...LINK}>{t('Tous les crédits')}</a>
-      </p>
     </div>
     </>
   );

@@ -3600,9 +3600,6 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
 .cm-social-icon { width: 20px; height: 20px; flex: none; color: var(--gold-light); }
 .cm-social .cm-row-text strong { font-size: 18px; }
 .cm-social-out { width: 15px; height: 15px; flex: none; color: var(--muted); }
-/* crédits des ressources (1.0.43) : une note discrète au bas des réglages */
-.cm-credits { margin: 14px 0 0; padding: 0 26px 34px; font-size: 11px; line-height: 1.55; color: var(--muted); }
-.cm-credits a { color: var(--gold-light); text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
 .cm-social.on .cm-social-out { color: var(--gold-light); }
 @media (orientation: landscape) and (max-height: 500px) { .social-strip { gap: 6px; } .social-link { width: 42px; height: 42px; } } /* au doigt : des cibles franches */
 @media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {

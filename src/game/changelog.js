@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.44', date: '2026-11-13', title: t('Le ballon reste en jeu'),
+    items: [
+      t('Temps forts : un centre ou un long ballon ne file plus en touche ; il meurt sur la ligne, où son receveur le reprend, et aucune action ne se joue plus hors du terrain.'),
+      t('Un ballon sorti derrière le but reste sorti : il ne relance plus le jeu après un rebond sur les panneaux.'),
+      t('Short des joueurs 3D : nouvelle coupe, même longueur.'),
+    ],
+  },
+  {
     version: '1.0.43', date: '2026-11-13', title: t('Nouvelle base des joueurs 3D'),
     items: [
       t('Les joueurs 3D ont une carrure d’athlète : des épaules plus larges, une taille plus fine, le dos droit.'),

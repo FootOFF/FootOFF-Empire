@@ -28,6 +28,7 @@ import { hitFrame, simulate, solveBySpeed, solveLaunch, stepFree, stepNet } from
 
 const N = 22;
 const GOAL_X = 5.25;
+const TOUCH_Z = 3.4; // (1.0.44) la ligne de touche : demi-largeur du terrain, 34 m
 const GOAL_HALF = 0.366; // demi-largeur du but (7,32 m)
 const BAR = 0.244; // hauteur de la barre (2,44 m)
 const KICK_TIME = 0.6;
@@ -1257,6 +1258,12 @@ export function createMatchScene(parent) {
       const cap = (Math.hypot(p.vx, p.vz) + 0.3) * dt, mm = Math.hypot(mx, mz);
       if (mm > cap) { mx *= cap / mm; mz *= cap / mm; }
       b.x += mx; b.z += mz;
+      // (1.0.44) conduite le long d'une ligne : le ballon, devant le pied, reste dans le terrain
+      if (H.phase === 'play' || H.phase === 'cut') {
+        const lz = TOUCH_Z - BALL_R, lx = GOAL_X - BALL_R;
+        if (Math.abs(b.z) > lz) b.z = Math.sign(b.z) * lz;
+        if (Math.abs(b.x) > lx) b.x = Math.sign(b.x) * lx;
+      }
       b.y = Math.max(0, b.y - dt * 1.2);
       return;
     }
@@ -1275,6 +1282,26 @@ export function createMatchScene(parent) {
     const p0 = [b.x, b.y, b.z];
     if (dt - lag > 1e-6) ballPhysics(dt - lag);
     if (b.state === 'net') return; // au fond des filets (stepNet)
+    // les lignes pendant l'action (1.0.44, PDG : « le ballon est sorti des limites du terrain, au-delà des supporters même,
+    // et les joueurs ont continué de jouer ») : avant la frappe, une passe ou un ballon libre qui roule ne quitte jamais le
+    // terrain ; il meurt sur la ligne, où son receveur le reprend (au banc, 10 temps forts sur 288 : un centre ou un ballon
+    // long filait en touche, le receveur le contrôlait dehors et poursuivait l'action)
+    if ((H.phase === 'play' || H.phase === 'cut') && !H.shot && (b.state === 'pass' || b.state === 'free') && b.y < 0.15) {
+      const lz = TOUCH_Z - BALL_R, lx = GOAL_X - BALL_R;
+      // freinage avant la ligne (relecture de la 1.0.44 : arrêté net, un ballon qui filait à 8 m/s semblait heurter un
+      // mur) : dès qu'il faudrait plus de 10 m/s² pour qu'il s'arrête sur la ligne, il ralentit juste assez pour y mourir
+      const brake = (pos, vel, lim) => {
+        const sg = Math.sign(pos) || 1, vo = vel * sg;
+        if (vo <= 0) return vel;
+        const need = (vo * vo) / (2 * Math.max(lim - Math.abs(pos), 0.002));
+        return need < 1 ? vel : sg * Math.max(0, vo - Math.min(need, 6) * dt);
+      };
+      b.vz = brake(b.z, b.vz, lz);
+      b.vx = brake(b.x, b.vx, lx);
+      // (seul le ballon qui sort : un corner, posé à 1 cm au-delà de la limite, part vers l'intérieur sans être freiné)
+      if (Math.abs(b.z) > lz && b.vz * b.z > 0) { b.z = Math.sign(b.z) * lz; b.vz = 0; b.vx *= 0.5; }
+      if (Math.abs(b.x) > lx && b.vx * b.x > 0) { b.x = Math.sign(b.x) * lx; b.vx = 0; b.vz *= 0.5; }
+    }
     if (b.state === 'free') {
       const [uf, vf] = uvOf(b.x, b.z);
       // (1.0.25, audit du ballon) un ballon libre qui n'est pas un but ne franchit jamais la ligne entre les montants : il
@@ -1442,7 +1469,9 @@ export function createMatchScene(parent) {
   // point visé d'un relais de la construction : le receveur vient au ballon, à quelques mètres de lui dans la direction de
   // sa place (il la rejoint ensuite balle au pied) ; ailleurs, le point donné par la finale
   const targetOf = (bt) => {
-    if (bt.at !== 'plan') return at(...bt.at);
+    // (1.0.44) un point visé écrit à l'avance reste dans le terrain, comme celui d'un appel (PDG : « le ballon est sorti des
+    // limites du terrain… et les joueurs ont continué de jouer »)
+    if (bt.at !== 'plan') { const [au, av] = bt.at; return at(clamp(au, -GOAL_X + 0.08, GOAL_X - 0.08), clamp(av, -3.2, 3.2)); }
     const rc = agents[bt.to];
     const [pu, pv] = planAt(bt.to, H.t + 1.2);
     const [ru, rv] = uvOf(rc.x, rc.z);
@@ -1658,7 +1687,7 @@ export function createMatchScene(parent) {
             let q = null;
             if (H.finale && bt.style === 'ground') q = layoff(bt, tx, tz);
             else if (H.finale && bt.style === 'cross' && teamOf(bt.to) === H.A) q = fitCross(bt, tx, tz); // point et vitesse selon sa course
-            if (q) { bt.target = q; [tx, tz] = q; }
+            if (q) { q = [clamp(q[0], -GOAL_X + 0.08, GOAL_X - 0.08), clamp(q[1], -3.2, 3.2)]; bt.target = q; [tx, tz] = q; } // (1.0.44 : dans le terrain)
             p.kick = 0.001; p.kickKind = 'pass'; p.kickH = Math.atan2(tz - p.z, tx - p.x);
             armStrike(bt.from, 'pass', p.kickH); // 1.0.18 : le ballon là où le pied le touchera
           }
@@ -2240,7 +2269,8 @@ export function createMatchScene(parent) {
   function afterStep(dt) {
     const { A, D } = H;
     const K = agents[H.keeper];
-    const inPlay = () => Math.abs(b.x) < GOAL_X - 0.005 && Math.abs(b.z) < 3.4;
+    // (1.0.44) un ballon sorti reste sorti : revenu sur la pelouse après un rebond sur les panneaux, il ne relance jamais le jeu
+    const inPlay = () => { if (Math.abs(b.x) >= GOAL_X - 0.005 || Math.abs(b.z) >= TOUCH_Z) H.wasOut = true; return !H.wasOut; };
     if (!H.after) {
       const caught = b.state === 'keeper';
       const loose = !caught && (b.state === 'free' || b.state === 'pass') && inPlay();
