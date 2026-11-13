@@ -1125,6 +1125,9 @@ export function createPlayers3D(parent, max = 22) {
     p.u.hair.value.copy(tone(0.75, 0.55));
     const sc = tone(0.55, 0.42);
     p.u.scalp.value.copy(sc.lerp(new THREE.Color().setScalar(lum(sc)), 0.45)); // ras : moins saturé (jamais une calotte rousse)
+    // sous une coupe en cartes, la lisière peinte prend la teinte des cartes (1.0.42 : une bande brune tachetée
+    // apparaissait entre les cheveux roux ou châtains et le front)
+    if (mesh) p.u.scalp.value.set(id.hair).multiplyScalar(1.15);
     // cheveux peints (1.0.42, PDG : cohérence avec le portrait) : une vraie chevelure du portrait (tout sauf ras, rasé,
     // très court ou dégarni) reste pleine en 3D, et foncée si elle est brune ou noire ; le crâne transparaissait, tous
     // paraissaient châtain clair, mèches et afros compris. Cheveux noirs ou bruns coupés court : jamais une brosse rousse.
