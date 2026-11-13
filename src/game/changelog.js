@@ -5,7 +5,7 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
-    version: '1.0.47', date: '2026-11-14', title: t('Vraies coiffures pour les joueurs 3D'),
+    version: '1.0.47', date: '2026-11-13', title: t('Vraies coiffures pour les joueurs 3D'),
     items: [
       t('Les joueurs 3D ont de vraies coiffures, au lieu d’une calotte unie : coupes courtes, raie sur le côté, cheveux plaqués, crête et cheveux attachés, avec des mèches et une lisière plus naturelles.'),
       t('Les joueurs dégarnis sur leur portrait le sont aussi en 3D.'),
