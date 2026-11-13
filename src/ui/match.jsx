@@ -7,7 +7,7 @@ import { LIVE_VERSION, SUBS_MAX, createLiveMatch, highlightOf, liveKeyOf, pairSu
 import { saveLive } from '../game/save';
 import { available, fitAt, ratingAt } from '../game/players';
 import { Portrait } from './portrait';
-import { HeroShot } from './heroshot';
+import { HeroShot, prefetchHero } from './heroshot';
 import { teamCodes } from './teamcode';
 import { FormationPicker, LineupActions, LineupBoard, displayNames } from './lineup';
 import { IconCheck, IconChevron, IconClose, IconFast, IconMute, IconPlay, IconSound, IconUndo, IconUsers } from './icons';
@@ -709,7 +709,7 @@ function KeyStats({ st, poss, flip = false, us = 0 }) {
 
 // Les deux onze sur le terrain, portraits et notes du match : notre équipe en bas (vers le haut), l'adversaire en haut.
 // Un des nôtres touché : sa fiche s'ouvre (onPick), avec les remplaçants les mieux placés pour son poste.
-function LivePitch({ m, state, notesNow, shown, names, us = 'home', onPick = null, picked = null }) {
+function LivePitch({ m, state, notesNow, shown, names, us = 'home', onPick = null, picked = null, kit = null }) {
   const homePos = shapeOf(m.formation, m.tactic);
   const awayPos = shapeOf(m.awayFormation || '442', m.oppPlan?.tactic || 'balanced');
   const facts = useMemo(() => {
@@ -760,7 +760,7 @@ function LivePitch({ m, state, notesNow, shown, names, us = 'home', onPick = nul
         const Tag = onPick ? 'button' : 'span';
         return (
           <Tag key={`h${id}`} type={onPick ? 'button' : undefined} className={`lv2-pl ours ${m.sent.home.has(id) ? 'off' : ''} ${picked === id ? 'on' : ''}`} style={place(homePos[k] || [50, 50], 'home')}
-            onClick={onPick ? () => onPick(id, k) : undefined} aria-label={onPick ? t('{v} : sa fiche et ses remplaçants', { v: p.name }) : undefined}>
+            onClick={onPick ? () => onPick(id, k) : undefined} onPointerDown={onPick && kit ? () => prefetchHero(p, { kit }) : undefined} aria-label={onPick ? t('{v} : sa fiche et ses remplaçants', { v: p.name }) : undefined}>
             <span className="lv2-pl-face"><Portrait p={p} size={38} />{rateHome.has(id) && <RatingBadge value={rateHome.get(id)} size="sm" />}{marks(id)}</span>
             <span className="lv2-pl-name">{names.short[id] || lastName(p.name)}</span>
           </Tag>
@@ -780,7 +780,7 @@ function PlayerSheet({ p, kit, slot, rating, fit, cands, canSub, onSwap, onOpen,
     <div className="scrim lv2-scrim" onClick={onClose}>
       <div ref={cardRef} className="lv2-sheet" role="dialog" aria-modal="true" aria-label={p.name} onClick={(e) => e.stopPropagation()}>
         {/* 1.0.37 : le joueur 3D, dans la tenue du match, dépasse du haut de la feuille (hors de la zone qui défile) */}
-        <HeroShot p={p} kit={kit} className="lv2-sheet-shot" fallback={<Portrait p={p} size={64} className="lv2-sheet-wait" />} />
+        <HeroShot p={p} kit={kit} className="lv2-sheet-shot" fallback={<i className="lv2-sheet-wait" aria-hidden="true" />} />
         <div className="lv2-sheet-in">
         <span className="grip" aria-hidden="true" />
         <div className="lv2-sheet-head">
@@ -1300,7 +1300,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
           <section className="lv2-sec compos" aria-label={t('Compos')}>
             <div className="lv2-card lv2-pitch-card">
               <div className="lv2-form-tag top">{`${m[side === 'away' ? 'home' : 'away']} · ${formationOf(side === 'away' ? m.formation : m.awayFormation || '442').name}`}</div>
-              <LivePitch m={m} state={state} notesNow={notesNow} shown={shown} names={names} us={side} onPick={replay || side === 'away' ? null : (id, k) => setPick({ id, k })} picked={pick?.id} />
+              <LivePitch m={m} state={state} notesNow={notesNow} shown={shown} names={names} us={side} onPick={replay || side === 'away' ? null : (id, k) => setPick({ id, k })} picked={pick?.id} kit={kits.home} />
               <div className="lv2-form-tag bottom">{`${m[side]} · ${formationOf(side === 'away' ? m.awayFormation || '442' : m.formation).name}`}{!replay && side !== 'away' ? ` · ${t('touche un joueur')}` : ''}</div>
             </div>
             <div className="lv2-card">

@@ -318,7 +318,8 @@ button.hud-cell { cursor: pointer; transition: background var(--dur-fast), filte
 }
 @media (hover: hover) { .staff-hide:hover { text-decoration-color: currentColor; } }
 @keyframes staff-in { from { opacity: 0; transform: translateX(10px); } }
-@media (prefers-reduced-motion: reduce) { .staff-bubble { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .sh2-wait, .lv2-sheet-wait { animation: sh2-show .25s ease .4s forwards; } .staff-bubble { animation: none; } }
 
 /* ---- prochain match (hud.jsx MatchCta) ---- */
 .hud-match {
@@ -6359,7 +6360,11 @@ button.lv2-pl { cursor: pointer; }
 .sh2-glow { position: absolute; z-index: -1; left: 50%; top: 18%; width: 300px; height: 300px; margin-left: -150px; border-radius: 50%; background: radial-gradient(circle, rgba(222, 193, 127, .3), rgba(222, 193, 127, 0) 66%); pointer-events: none; }
 .sh2-shot { position: absolute; left: 50%; bottom: 58px; width: auto; max-width: 96%; height: 492px; object-fit: contain; object-position: bottom; transform: translateX(calc(var(--hx, .5) * -100%)); filter: drop-shadow(0 18px 24px rgba(0, 0, 0, .55)); pointer-events: none; animation: sh2-in .6s var(--ease); }
 @keyframes sh2-in { from { opacity: 0; transform: translate(calc(var(--hx, .5) * -100%), 18px) scale(.97); } }
-.sh2-wait { position: absolute; left: 50%; top: 70px; transform: translateX(-50%); width: 190px; height: 190px; border-radius: 50%; opacity: .55; box-shadow: 0 0 0 3px rgba(222, 193, 127, .4); animation: sh2-pulse 1.4s ease-in-out infinite; }
+/* en attendant la photo 3D (1.0.42) : rien pendant 0,4 s (la photo arrive presque toujours avant), puis un anneau or qui
+   tourne ; jamais le portrait dessiné, qu'on voyait une fraction de seconde avant le joueur 3D */
+.sh2-wait { position: absolute; left: 50%; top: 150px; width: 72px; height: 72px; margin-left: -36px; border-radius: 50%; border: 2px solid rgba(222, 193, 127, .22); border-top-color: var(--gold-light); opacity: 0; animation: sh2-spin .9s linear infinite, sh2-show .25s ease .4s forwards; }
+@keyframes sh2-spin { to { transform: rotate(360deg); } }
+@keyframes sh2-show { to { opacity: 1; } }
 @keyframes sh2-pulse { 50% { opacity: .3; } }
 .sh2-floor { position: absolute; left: 50%; bottom: 58px; width: 210px; height: 26px; margin-left: -105px; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, .75), rgba(0, 0, 0, 0)); z-index: -1; }
 .sh2-top { position: absolute; left: 18px; right: 18px; top: 16px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
@@ -6502,7 +6507,7 @@ button.lv2-pl { cursor: pointer; }
   position: absolute; z-index: 2; left: calc(100% - 86px); top: -104px; width: auto; height: 214px; max-width: 160px; object-fit: contain; object-position: bottom;
   transform: translateX(calc(var(--hx, .5) * -100%)); filter: drop-shadow(0 12px 16px rgba(0, 0, 0, .55)); pointer-events: none; animation: lv2-shot-in .5s var(--ease);
 }
-.lv2-sheet-wait { position: absolute; z-index: 2; right: 54px; top: 22px; border-radius: 50%; box-shadow: 0 0 0 2px var(--gold-light); }
+.lv2-sheet-wait { position: absolute; z-index: 2; right: 66px; top: 26px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(222, 193, 127, .22); border-top-color: var(--gold-light); opacity: 0; animation: sh2-spin .9s linear infinite, sh2-show .25s ease .4s forwards; }
 .lv2-sheet-rate { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .lv2-sheet-who b { font-size: 20px; }
 

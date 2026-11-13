@@ -11,6 +11,7 @@ import { ourKit } from '../game/kits';
 
 const W = 1020, H = 1500; // la photo est ensuite recadrée au ras du joueur (assez fine pour les écrans très denses)
 const cache = new Map();
+const done = new Map(); // photos déjà faites (clé → { url, hx }) : la fiche les montre dès sa première image (1.0.42)
 let studio = null;
 let queue = Promise.resolve(); // une photo à la fois : le studio n'a qu'un plateau
 const FACE_H = Math.PI / 2; // (bancs d'essai) cap du joueur face à la caméra
@@ -120,16 +121,21 @@ async function shoot(look, { kit, pose, steps: at, celeb, frame }) {
 
 // Photo d'un joueur (players.js) : promesse de { url, hx } (adresse d'une image PNG, position de la tête sur sa largeur),
 // ou null si la 3D est indisponible. kit : la tenue (game/kits.js) ; par défaut la nôtre.
+const keyOf = (p, { kit = ourKit(), pose = 'stand', steps, celeb, frame } = {}) => `${p.id ?? p.name}|${p.age}|${p.pos}|${kit.shirt}|${kit.trim}|${kit.keeper}|${pose}|${steps ?? ''}|${celeb ?? ''}|${frame ?? ''}`;
 export function heroOf(p, { kit = ourKit(), pose = 'stand', steps, celeb, frame } = {}) {
   if (!p) return Promise.resolve(null);
   const look = { id: p.id, name: p.name, age: p.age, pos: p.pos, face: p.face };
-  const key = `${p.id ?? p.name}|${p.age}|${p.pos}|${kit.shirt}|${kit.trim}|${kit.keeper}|${pose}|${steps ?? ''}|${celeb ?? ''}|${frame ?? ''}`;
+  const key = keyOf(p, { kit, pose, steps, celeb, frame });
   if (!cache.has(key)) {
-    const job = queue.then(() => shoot(look, { kit, pose, steps, celeb, frame })).catch((e) => { console.warn('[studio] photo impossible', e); cache.delete(key); return null; });
+    const job = queue.then(() => shoot(look, { kit, pose, steps, celeb, frame }))
+      .then((s) => { if (s) done.set(key, s); return s; })
+      .catch((e) => { console.warn('[studio] photo impossible', e); cache.delete(key); return null; });
     queue = job.then(() => null, () => null);
     cache.set(key, job);
   }
   return cache.get(key);
 }
+// la photo, si elle est déjà faite (sinon null) : sans attente, donc sans image de repli entre deux fiches
+export const heroReady = (p, opts) => (p ? done.get(keyOf(p, opts)) || null : null);
 
 if (import.meta.env.DEV) window.__heroOf = heroOf; // bancs d'essai

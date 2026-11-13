@@ -21,7 +21,7 @@ import { FollowButton, LeagueOffer, ListingSheet, Mercato, Negotiation, SaleNego
 import { Portrait } from './portrait';
 import { ClubCrest, Crest } from './crest';
 import { clubStars } from '../game/crest';
-import { HeroShot } from './heroshot';
+import { HeroShot, prefetchHero } from './heroshot';
 import { detailsOf } from '../game/attributes';
 import { ourKit, teamKitOf } from '../game/kits';
 import { uiSound } from './uisound';
@@ -110,6 +110,14 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
 
   const shown = filter === 'all' ? squad : squad.filter((p) => p.pos === filter);
   const count = (id) => (id === 'all' ? squad.length : squad.filter((p) => p.pos === id).length);
+  // 1.0.42 : la 3D (studio photo, modèles) se charge dans un moment calme dès l'arrivée sur l'Effectif, avec la photo du
+  // premier joueur : la première fiche ouverte n'attend plus le chargement (environ 4 s auparavant, portrait affiché)
+  useEffect(() => {
+    if (!squad.length) return undefined;
+    const go = () => prefetchHero(squad[0], { kit: ourKit() });
+    const idle = typeof requestIdleCallback === 'function' ? requestIdleCallback(go, { timeout: 2500 }) : setTimeout(go, 1200);
+    return () => (typeof cancelIdleCallback === 'function' ? cancelIdleCallback(idle) : clearTimeout(idle));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const find = (id) => state.players.find((p) => p.id === id) || findOnMarket(state, id);
 
   // vendre : une seule voie, la mise en vente puis la négociation des offres reçues (vue Offres du mercato)
@@ -156,6 +164,14 @@ export function SquadView({ state, run, ask, onClose, onFinances, mode = 'squad'
     const next = list[(i + d + list.length) % list.length];
     if (next) setSheet({ ...sheet, id: next.id });
   };
+  const kitFor = (p) => (state.players.some((q) => q.id === p.id) ? ourKit() : p.club ? teamKitOf(p.club) : FREE_KIT);
+  useEffect(() => {
+    if (!sheet || !list.length) return undefined;
+    const i = list.findIndex((p) => p.id === sheet.id);
+    if (i < 0) return undefined;
+    const t = setTimeout(() => { for (const d of [1, -1]) { const q = list[(i + d + list.length) % list.length]; if (q && q.id !== sheet.id) prefetchHero(q, { kit: kitFor(q) }); } }, 350);
+    return () => clearTimeout(t);
+  }, [sheet?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // mode « sheet » : Échap passe par onEscape (pas de Panel ici), et le tout se retire quand plus rien n'est ouvert
   useKeydown((e) => { if (mode === 'sheet' && e.key === 'Escape') onEscape(); });
@@ -425,7 +441,7 @@ function PlayerCard({ p, state, refLvl, index, onOpen }) {
   const pot = potentialRange(p, state);
   return (
     <li style={{ '--k': Math.min(index, 18) }}>
-      <button type="button" className={`sqc ${tierOf(r, refLvl)} ${absent ? 'out' : ''}`} onClick={onOpen} aria-label={t('Fiche de {name}, niveau {fmtRating}{v}', { name: p.name, fmtRating: fmtRating(r), v: absent ? `${comma()}${absent.short.toLowerCase()}` : '' })}>
+      <button type="button" className={`sqc ${tierOf(r, refLvl)} ${absent ? 'out' : ''}`} onClick={onOpen} onPointerDown={() => prefetchHero(p, { kit: ourKit() })} onMouseEnter={() => prefetchHero(p, { kit: ourKit() })} aria-label={t('Fiche de {name}, niveau {fmtRating}{v}', { name: p.name, fmtRating: fmtRating(r), v: absent ? `${comma()}${absent.short.toLowerCase()}` : '' })}>
         {/* colonne de gauche (note, poste, XI, numéro) à la largeur de « 20,0 », portrait dans la place qui reste :
             une note à deux chiffres ne mord plus sur le médaillon */}
         <span className="sqc-top">
@@ -504,7 +520,7 @@ function PlayerTable({ title, cols, span = cols.length, players, state, refLvl, 
             const starter = state.lineup?.includes(p.id);
             const f = formAvg(p);
             return (
-              <tr key={p.id} onClick={() => onOpen(p)} tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(p); }}>
+              <tr key={p.id} onClick={() => onOpen(p)} onPointerDown={() => prefetchHero(p, { kit: ourKit() })} onMouseEnter={() => prefetchHero(p, { kit: ourKit() })} tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(p); }}>
                 <td className="c-name">
                   <span className="sq-who">
                     <Portrait p={p} size={34} />
@@ -680,7 +696,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
         <section className={`sh-hero2 ${tierOf(r, refLvl)}`}>
           <i className="sh2-glow" aria-hidden="true" />
           <HeroShot p={p} kit={market ? (p.club ? teamKitOf(p.club) : FREE_KIT) : ourKit()} className="sh2-shot"
-            fallback={<Portrait p={p} size={190} club={market ? p.club || null : null} free={market && !p.club} className="sh2-wait" />} />
+            fallback={<i className="sh2-wait" aria-hidden="true" />} />
           <i className="sh2-floor" aria-hidden="true" />
           <div className="sh2-top">
             {/* la colonne de gauche (note, poste, numéro) laisse le joueur 3D dégagé ; à droite, l'écusson de son club */}

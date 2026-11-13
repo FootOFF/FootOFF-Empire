@@ -5,6 +5,13 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.42', date: '2026-11-13', title: t('Fiches et visages'),
+    items: [
+      t('La fiche d’un joueur s’ouvre directement sur son joueur 3D, sans afficher d’abord son portrait ; la photo se prépare dès que tu touches le joueur.'),
+      t('Le joueur 3D ressemble davantage à son portrait : la couleur de ses yeux, et des cheveux pleins de leur vraie couleur ; les cheveux châtains, roux et blonds retrouvent leur coupe.'),
+    ],
+  },
+  {
     version: '1.0.41', date: '2026-11-13', title: t('Postes libres'),
     items: [
       t('Place tes joueurs où tu veux : choisis un joueur du terrain, puis un poste libre de la grille, et ton dispositif se dessine.'),

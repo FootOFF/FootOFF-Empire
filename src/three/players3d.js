@@ -413,6 +413,7 @@ const MESH = { // coiffure du portrait -> coupe 3D (null : cheveux ras peints, o
   receding: 'short04', quiff: 'short01', mohawk: 'short01', long: 'short04', bun: 'short04', ponytail: 'short04',
   curly: 'curly', afroShort: null, afro: 'curly', hightop: null, locs: null, buzz: null, braids: null, bald: null,
 }; // (curly : coupe courte, ou peints ras pour des cheveux crépus ; cheveux longs, chignon, queue : plaqués en arrière)
+const THIN = new Set(['buzz', 'bald', 'crop', 'undercut', 'receding']); // coupes rases du portrait (crâne visible)
 const SCALP = { buzz: 0.95, braids: 1, locs: 1, afroShort: 1, afro: 1, curly: 1, hightop: 1, bald: 0, crop: 0.85, undercut: 0.85, receding: 0.55 }; // ras
 const BEARD = { // densité peinte : barbe entière, moustache (négatif : sans moustache), bouc
   none: [0, 0, 0], stubble: [0.42, 0, 0], short: [0.78, 0.8, 0.8], full: [1, 1, 1], chinstrap: [0.75, -1, 0.75],
@@ -431,7 +432,7 @@ export function identityOf(pl = {}, pos = 'M') {
   const hair = grey ? mixHex(base, GREY, grey) : base;
   const beardCol = grey ? mixHex(base, '#6f6b66', grey) : base;
   const brow = mixHex(hair, '#17110d', f.hc === 4 || f.hc === 6 || grey >= 0.6 ? 0.55 : 0.35); // sourcils toujours lisibles
-  return { seed, face: f, origin: originOf(pl.name || ''), age, pos, height, style, beard, hair, beardCol, brow };
+  return { seed, face: f, origin: originOf(pl.name || ''), age, pos, height, style, beard, hair, beardCol, brow, grey };
 }
 // morphs du visage et de la carrure (clés du modèle, 0 à 1)
 const EXTRA = ['nose_wide', 'nose_narrow', 'nose_long', 'nose_hump', 'nose_flare', 'lips_full', 'mouth_wide', 'chin_strong', 'chin_narrow', 'cheekbones', 'cheeks_full', 'ears_big', 'head_square'];
@@ -528,8 +529,12 @@ function eyeTextures(src) {
   });
   return EYES;
 }
-// couleur des yeux : brun foncé ou brun pour les teints sombres ; plus variés pour les teints clairs
+// couleur des yeux : celle du portrait (1.0.42, PDG : cohérence entre l'image du joueur et son joueur 3D ; elle était
+// tirée au hasard d'après le teint, des yeux bleus sur le portrait devenaient bruns) ; sinon, brun foncé ou brun pour les
+// teints sombres, plus variés pour les teints clairs
+const IRIS_OF = { dark: 0, brown: 1, hazel: 2, green: 3, blue: 4 };
 function irisOf(id) {
+  if (IRIS_OF[id.face?.ec] !== undefined) return IRIS_OF[id.face.ec];
   const r = rand(id.seed ^ 0x2545f491)();
   if ((id.face?.sk ?? 2) >= 4) return r < 0.7 ? 0 : 1;
   if ((id.face?.sk ?? 2) >= 3) return r < 0.45 ? 0 : r < 0.85 ? 1 : 2;
@@ -575,7 +580,7 @@ function paintable(mat, u) {
     float far = clamp(length(fwidth(gp)) - 2.5, 0.0, 1.0);
     float k = mix(smoothstep(n - 0.3, n + 0.3, d) * min(1.0, d * 2.0), d * 0.9, far); // (1.0.40 : grain plus doux, la barbe ne fait plus « sale »)
     hairK = clamp(k, 0.0, 1.0);
-    diffuseColor.rgb = mix(diffuseColor.rgb, hairCol, hairK * 0.9);
+    diffuseColor.rgb = mix(diffuseColor.rgb, hairCol, hairK * (sd > bd ? 0.97 : 0.9)); // (cheveux : couvrants)
   }
   // gardien : manche longue et gant aux bords nets (1.0.40 : un dégradé flou faisait fondre la manche dans le gant)
   float sleeveK = smoothstep(0.3, 0.55, vKit.x) * uSleeve.a;
@@ -1094,7 +1099,9 @@ export function createPlayers3D(parent, max = 22) {
     if (mesh === 'curly') mesh = f.tx === 'coily' || toneOf(f.sk) === 2 ? null : 'short01';
     // cheveux noirs ou brun foncé (1.0.38) : en cartes, ils faisaient un casque sombre et brillant ; peints ras, ils sont
     // vrais (les coupes en cartes restent aux cheveux clairs, châtains, roux, blonds et gris)
-    const hc = new THREE.Color(id.hair); const hl = 0.2126 * hc.r + 0.7152 * hc.g + 0.0722 * hc.b; // (sRGB, 0 à 1)
+    // clarté des cheveux en sRGB (1.0.42 : la couleur three.js est linéaire ; mesurée ainsi, châtains, roux et même blonds
+    // passaient pour foncés et presque tous les joueurs avaient la même coupe rase peinte, quelle que soit leur coiffure)
+    const hx = parseInt(String(id.hair).slice(1), 16); const hl = (0.2126 * ((hx >> 16) & 255) + 0.7152 * ((hx >> 8) & 255) + 0.0722 * (hx & 255)) / 255; // (sRGB, 0 à 1)
     const shortDark = !!mesh && hl < 0.25; // (cheveux courts peints : plus denses et plus sombres qu'un crâne rasé)
     if (shortDark) mesh = null;
     for (const [k, o] of Object.entries(p.hairs)) o.visible = k === mesh;
@@ -1118,7 +1125,13 @@ export function createPlayers3D(parent, max = 22) {
     p.u.hair.value.copy(tone(0.75, 0.55));
     const sc = tone(0.55, 0.42);
     p.u.scalp.value.copy(sc.lerp(new THREE.Color().setScalar(lum(sc)), 0.45)); // ras : moins saturé (jamais une calotte rousse)
-    if (shortDark) { p.u.scalp.value.multiplyScalar(0.5); p.u.beard.value.w = 1; } // cheveux noirs ou bruns coupés court : jamais une brosse rousse
+    // cheveux peints (1.0.42, PDG : cohérence avec le portrait) : une vraie chevelure du portrait (tout sauf ras, rasé,
+    // très court ou dégarni) reste pleine en 3D, et foncée si elle est brune ou noire ; le crâne transparaissait, tous
+    // paraissaient châtain clair, mèches et afros compris. Cheveux noirs ou bruns coupés court : jamais une brosse rousse.
+    const full = !mesh && !THIN.has(id.style);
+    if (!mesh && hl < 0.25) p.u.scalp.value.multiplyScalar(0.5);
+    if (full) p.u.beard.value.w = 1.7;
+    else if (shortDark) p.u.beard.value.w = 1;
   }
   function gesture(p, name, { fade = 0.18, at = 0 } = {}) {
     if (p.shot) p.shot.fadeOut(fade);
