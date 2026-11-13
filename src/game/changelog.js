@@ -5,6 +5,17 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.39', date: '2026-11-13', title: t('Cohérence tactique'),
+    items: [
+      t('Ton plan de jeu doit coller à tes joueurs : l’Offensive demande du souffle, des défenseurs rapides et une relance propre ; le Bloc bas, une défense solide et des attaquants rapides ; l’Équilibrée, de la passe et du jeu aérien devant.'),
+      t('Le plan qui colle à ton effectif pèse bien plus que celui d’en face, qui ne compte plus qu’un peu.'),
+      t('Les attributs comptent en match : sur les centres et les corners, la reprise revient souvent au meilleur de la tête, défenseurs compris ; les coups francs et les frappes de loin suivent les balles arrêtées et les tirs de loin.'),
+      t('Chaque club de l’ordinateur joue le plan qui colle à ses joueurs, avec sa préférence de jeu, et réagit au score de la pause ; son plan se découvre dans le commentaire du direct.'),
+      t('Les signes distinctifs et les missions des recruteurs se décrivent en mots, sans pourcentage.'),
+      t('Championnats entre amis : nouvelle version du moteur des ligues, mets le jeu à jour avant de jouer.'),
+    ],
+  },
+  {
     version: '1.0.38', date: '2026-11-13', title: t('Fiches complètes'),
     items: [
       t('La fiche du joueur montre tous ses attributs sur 20 : technique (finition, passes, contrôle, jeu aérien…), mental (vision, décisions, sang-froid…), physique (vitesse, détente, endurance…) ; pour le gardien, réflexes, prise de balle, sorties et relances.'),

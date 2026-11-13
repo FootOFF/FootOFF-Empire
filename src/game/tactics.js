@@ -238,19 +238,21 @@ export function lineupRating(players, lineup, formation = '433', factorOf = null
   return 0.12 * avg(line.G, 1) + 0.3 * avg(line.D, nd) + 0.26 * avg(line.M, nm) + 0.32 * avg(line.A, na) + leader;
 }
 
-// Buts attendus (sur 90 minutes) selon l'écart de niveau, la tactique et l'avantage du terrain (home : à domicile ; à
-// l'extérieur, en Élite, l'avantage passe à l'adversaire). opp : le plan de jeu de l'adversaire quand il est connu
-// (championnat entre amis : { tactic, formation }) ; il joue en miroir (sa prise de risque ouvre aussi le match).
-export function expectedGoals(rating, oppStrength, tacticId, formationId = '433', home = true, opp = null) {
-  const t = TACTICS[tacticId] || TACTICS.balanced;
+// Buts attendus (sur 90 minutes) selon l'écart de niveau, la cohérence tactique et l'avantage du terrain (home : à domicile ;
+// à l'extérieur, en Élite, l'avantage passe à l'adversaire). opp : le plan de l'adversaire ({ tactic, formation }) ; son
+// dispositif ouvre ou ferme le match comme le nôtre. duel (1.0.39, coherence.js) : { adv, vol } — l'avantage tactique compte
+// comme du niveau, l'ouverture multiplie les occasions des deux côtés. tacticId ne sert plus qu'à la compatibilité : le
+// plan agit à travers le duel (avant la 1.0.35, chaque tactique multipliait seule les occasions, sans tenir compte de
+// celle d'en face).
+export function expectedGoals(rating, oppStrength, tacticId, formationId = '433', home = true, opp = null, duel = null) {
   const f = formationOf(formationId);
-  const ot = opp ? TACTICS[opp.tactic] || TACTICS.balanced : null;
   const of = opp ? formationOf(opp.formation) : null;
-  const diff = rating - oppStrength;
+  const diff = rating - oppStrength + (duel?.adv ?? 0);
+  const vol = duel?.vol ?? 1;
   const bonus = home ? HOME_BONUS : 1 / HOME_BONUS;
   return {
-    for: clamp(1.15 + diff * 0.22, 0.15, 3.6) * t.for * f.for * bonus * (opp ? ot.against * of.against : 1),
-    against: clamp(1.15 - diff * 0.22, 0.15, 3.6) * t.against * f.against / bonus * (opp ? ot.for * of.for : 1),
+    for: clamp(1.15 + diff * 0.22, 0.15, 3.6) * vol * f.for * bonus * (of ? of.against : 1),
+    against: clamp(1.15 - diff * 0.22, 0.15, 3.6) * vol * f.against / bonus * (of ? of.for : 1),
   };
 }
 

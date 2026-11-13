@@ -687,7 +687,8 @@ export function createPlayers3D(parent, max = 22) {
     // cheveux noirs ou brun foncé (1.0.38) : en cartes, ils faisaient un casque sombre et brillant ; peints ras, ils sont
     // vrais (les coupes en cartes restent aux cheveux clairs, châtains, roux, blonds et gris)
     const hc = new THREE.Color(id.hair); const hl = 0.2126 * hc.r + 0.7152 * hc.g + 0.0722 * hc.b; // (sRGB, 0 à 1)
-    if (mesh && hl < 0.25) mesh = null;
+    const shortDark = !!mesh && hl < 0.25; // (cheveux courts peints : plus denses et plus sombres qu'un crâne rasé)
+    if (shortDark) mesh = null;
     for (const [k, o] of Object.entries(p.hairs)) o.visible = k === mesh;
     for (const mat of p.mats.Hair || []) mat.color.set(id.hair).multiplyScalar(1.55); // (grain adouci : texture plus claire en moyenne)
     const eyes = A.eyeTex ||= eyeTextures(p.mats.Eyes?.[0]?.map);
@@ -707,6 +708,7 @@ export function createPlayers3D(parent, max = 22) {
     p.u.hair.value.copy(tone(0.75, 0.55));
     const sc = tone(0.55, 0.42);
     p.u.scalp.value.copy(sc.lerp(new THREE.Color().setScalar(lum(sc)), 0.45)); // ras : moins saturé (jamais une calotte rousse)
+    if (shortDark) { p.u.scalp.value.multiplyScalar(0.5); p.u.beard.value.w = 1; } // cheveux noirs ou bruns coupés court : jamais une brosse rousse
   }
   function gesture(p, name, { fade = 0.18, at = 0 } = {}) {
     if (p.shot) p.shot.fadeOut(fade);

@@ -460,7 +460,6 @@ function whenText(state, ret) {
   return t('après la journée {round}', { round: ret.round });
 }
 // chance d'au moins un grand potentiel, jamais 0 % ni 100 % quand ce n'est pas certain
-const pctOf = (p) => (p <= 0 ? '0 %' : p >= 1 ? '100 %' : `${Math.min(99, Math.max(1, Math.round(p * 100)))} %`);
 
 // Mission des recruteurs (0.6.1, repensée en 0.8.12, academy.js) : une cible (poste ou profil), une durée de deux à
 // quatre repérages, puis ce qu'ils verront et ramèneront, avec les chances exactes d'y trouver un grand potentiel. En
@@ -538,10 +537,6 @@ function MissionCard({ state, run, ask, notify }) {
         {MISSION_STEPS.map((n) => <button key={n} type="button" className={steps === n ? 'active' : ''} onClick={() => setSteps(n)}>{span(n)}</button>)}
       </div>
       <p className="ac-plan-text">{tr('Ils verront <0/> et ramèneront <1/> <2/>.', [<b>{missionCount(target, plan.seen)}</b>, <b>{tn(plan.back, 'le plus prometteur', 'les {back} plus prometteurs', { back: plan.back }, plan.back > 1)}</b>, whenText(state, plan.ret)])}</p>
-      <div className="ac-mission-odds" aria-label={t('Chances exactes')}>
-        <span>{tr('Un potentiel de 16 ou plus parmi eux <0/>', [<b>{pctOf(plan.p16)}</b>])}</span>
-        <span>{tr('De 18 ou plus <0/>', [<b>{pctOf(plan.p18)}</b>])}</span>
-      </div>
       <div className="ac-level-next">
         <span>{t('Pendant la mission, la liste des jeunes repérés ne se renouvelle pas ; en échange, tes recruteurs en observent deux fois plus.')}</span>
         <button type="button" className="btn btn-sm" onClick={launch}>{t('Lancer la mission')}</button>

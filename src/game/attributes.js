@@ -3,9 +3,10 @@ import { t } from '../i18n/index';
 
 // Attributs détaillés façon Football Manager (1.0.38, PDG : « des fiches de joueurs avec des notes sur 20 visibles, jeu
 // aérien, contrôle, tirs, passe… un jeu complet type FM »).
-// Les 9 caractéristiques du jeu (players.js, ATTRS), et les 6 du gardien (GK_ATTRS), restent la base du niveau, de la
-// progression et du moteur des matchs : rien de ce module n'entre dans le calcul d'un match (les ligues entre amis le
-// rejouent à l'identique chez chacun). Chacune se détaille en attributs de sa famille ; leur moyenne pondérée la redonne
+// Les 9 caractéristiques du jeu (players.js, ATTRS), et les 6 du gardien (GK_ATTRS), restent la base du niveau et de la
+// progression. Depuis la 1.0.39 (moteur des ligues 5), trois attributs détaillés entrent aussi dans le match (live.js,
+// fmOf) : le jeu aérien sur les centres et les corners, les balles arrêtées sur les coups francs, les tirs de loin sur les
+// frappes lointaines. Chacune se détaille en attributs de sa famille ; leur moyenne pondérée la redonne
 // à peu près (un joueur à 12 en Passe a des Passes, une Vision, des Centres autour de 12), plus ou moins selon son profil
 // (graine fixe du joueur), sa taille (jeu aérien, détente), son âge (anticipation, accélération) et ses signes distinctifs.
 

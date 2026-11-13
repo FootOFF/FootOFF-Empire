@@ -5,6 +5,7 @@ import { squadName } from './names';
 import { FORMATION_ORDER, autoLineup, lineupRating, slotsOf } from './tactics';
 import { ELITE_PACE, bestCat, catsFor, collectiveGain, sessionGain, suggestFor } from './training';
 import { pick, rnd } from './utils';
+import { aiPlanOf } from './coherence';
 import { t } from '../i18n/index';
 
 // État d'un championnat entre amis après une journée : chaque club (son budget, ses joueurs), calculé avec les matchs
@@ -173,7 +174,9 @@ export function aiBuild(club) {
 // 0,35, se replie en bloc bas plus faible de 1,2, joue équilibré entre les deux.
 const AI_GAP = 0.35;
 const AI_LOW = 1.2;
-export function appliedSheet(players, oppStrength = null) {
+// name (1.0.35) : le nom du club, dont l'identité de jeu penche vers l'attaque, l'équilibre ou le bloc bas ; 1.0.39
+// (coherence.js) : il joue le plan qui colle à ses joueurs
+export function appliedSheet(players, oppStrength = null, name = null) {
   let best = null;
   for (const f of FORMATION_ORDER) {
     const lineup = autoLineup(players, f);
@@ -181,7 +184,8 @@ export function appliedSheet(players, oppStrength = null) {
     if (!best || r > best.r + 1e-9) best = { f, lineup, r };
   }
   const gap = oppStrength == null ? 0 : best.r - oppStrength;
-  const tactic = gap > AI_GAP ? 'offensive' : gap < -AI_LOW ? 'low' : 'balanced';
+  const onze = best.lineup.map((id) => players.find((p) => p.id === id)).filter(Boolean);
+  const tactic = name ? aiPlanOf(name, gap, onze) : gap > AI_GAP ? 'offensive' : gap < -AI_LOW ? 'low' : 'balanced';
   const fresh = (n) => freshLegs(players, best.lineup, best.f, n);
   const ht = {
     lead: { t: tactic === 'offensive' ? 'balanced' : 'low', ...(fresh(1).length ? { s: fresh(1) } : {}) },

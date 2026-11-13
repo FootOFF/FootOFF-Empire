@@ -40,18 +40,19 @@ export const WEIGHTS = {
 };
 
 // Signes distinctifs : une touche de personnalité, avec un vrai effet en match (0.8.5 : environ +0,1 point par match là où
-// le signe agit, mesuré ; live.js, TRAIT_FX, et tactics.js, LEADER_BONUS). Les adversaires ont les leurs.
+// le signe agit, mesuré ; live.js, TRAIT_FX, et tactics.js, LEADER_BONUS). Les adversaires ont les leurs. Décrits en mots,
+// sans pourcentage (1.0.35, décision du PDG : plus de chiffres de prévision ; les valeurs restent dans TRAIT_FX).
 export const TRAITS = {
-  finisseur: { name: t('Finisseur'), desc: t('Transforme 50 % d’occasions de plus que les autres.') },
-  passeur: { name: t('Passeur'), desc: t('Son équipe se crée 10 % d’occasions en plus, et il délivre bien plus souvent la passe décisive.') },
-  infatigable: { name: t('Infatigable'), desc: t('Se fatigue 40 % moins vite. À partir de la 70e minute, son équipe se crée 40 % d’occasions en plus.') },
-  fleche: { name: t('Flèche'), desc: t('Sa vitesse fait la différence : 9 % d’occasions en plus pour son équipe, 15 % en bloc bas.') },
-  roc: { name: t('Roc'), desc: t('Gagne ses duels : l’adversaire se crée 10 % d’occasions en moins.') },
-  leader: { name: t('Leader'), desc: t('Son onze gagne en sérénité : +0,3 au niveau d’équipe (un seul leader compte).') },
-  sangChaud: { name: t('Sang chaud'), desc: t('Engagé dans les duels (3 % d’occasions en plus), mais son équipe prend 40 % de cartons jaunes en plus et 2,2 fois plus de rouges.') },
-  frappe: { name: t('Frappe lointaine'), desc: t('Tente souvent sa chance de loin : 9 % d’occasions en plus pour son équipe.') },
-  grandsSoirs: { name: t('Joueur des grands soirs'), desc: t('Contre un adversaire plus fort, il transforme 30 % d’occasions de plus, et son équipe s’en crée 6 % de plus.') },
-  chat: { name: t('Chat'), desc: t('Réflexes de félin : l’adversaire transforme 12 % d’occasions en moins, et rate plus souvent ses penalties.') },
+  finisseur: { name: t('Finisseur'), desc: t('Transforme bien plus d’occasions que les autres.') },
+  passeur: { name: t('Passeur'), desc: t('Son équipe se crée plus d’occasions, et il délivre bien plus souvent la passe décisive.') },
+  infatigable: { name: t('Infatigable'), desc: t('Se fatigue bien moins vite ; en fin de match, son équipe se crée nettement plus d’occasions.') },
+  fleche: { name: t('Flèche'), desc: t('Sa vitesse fait la différence : son équipe se crée plus d’occasions, surtout en bloc bas.') },
+  roc: { name: t('Roc'), desc: t('Gagne ses duels : l’adversaire se crée moins d’occasions.') },
+  leader: { name: t('Leader'), desc: t('Son onze gagne en sérénité : le niveau de l’équipe monte un peu (un seul leader compte).') },
+  sangChaud: { name: t('Sang chaud'), desc: t('Engagé dans les duels, il apporte quelques occasions, mais son équipe prend bien plus de cartons, jaunes comme rouges.') },
+  frappe: { name: t('Frappe lointaine'), desc: t('Tente souvent sa chance de loin : son équipe se crée plus d’occasions.') },
+  grandsSoirs: { name: t('Joueur des grands soirs'), desc: t('Contre un adversaire plus fort, il transforme bien plus d’occasions, et son équipe s’en crée davantage.') },
+  chat: { name: t('Chat'), desc: t('Réflexes de félin : l’adversaire transforme moins d’occasions, et rate plus souvent ses penalties.') },
 };
 
 const r1 = (v) => Math.round(v * 10) / 10;

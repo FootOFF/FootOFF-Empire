@@ -21,7 +21,10 @@ import { LANGS, numLocale, t } from '../i18n/index';
 // numéro plus haut que le sien. À relever là-bas, et publier le site, AVANT de publier un jeu au moteur relevé.
 // 2 (0.8.3) : plans de mi-temps, mercato immédiat (mouvements du serveur rejoués) ; un match sans plan ni mouvement se
 // joue comme en version 1. 3 (0.8.4) : équilibre « Prudente » des tactiques (tactics.js) et ordinateur accordé.
-export const LEAGUE_ENGINE = 4;
+// 4 (0.8.5) : signes distinctifs des deux équipes. 5 (1.0.39) : cohérence tactique (coherence.js : le plan doit coller
+// aux joueurs, un peu à l'adversaire), identité de jeu des clubs de l'ordinateur, commentaire des plans. (Le duel de la
+// 1.0.35, qui avait déjà fait passer le site à 5, n'a jamais été publié.)
+export const LEAGUE_ENGINE = 5;
 export const LEAGUE_CLUBS = 8; // amis complétés par l'ordinateur
 export const LEAGUE_MIN_HUMANS = 2;
 export const MAX_MY_LEAGUES = 3; // championnats à la fois sur un appareil
@@ -370,7 +373,7 @@ export function playLeagueRound(league, members, teams, world, moves = []) {
   // l'équipe automatique (club de l'ordinateur, ami absent ou sans équipe) se compose en joueur appliqué, d'après le
   // niveau de son adversaire du jour
   const level = sides.map((x) => (x.sheet.auto ? appliedSheet(x.players) : x.sheet)).map((sh, slot) => lineupRating(sides[slot].players, sh.lineup, sh.formation));
-  const applied2 = (slot, opp) => (sides[slot].sheet.auto ? { ...sides[slot], sheet: appliedSheet(sides[slot].players, level[opp]) } : sides[slot]);
+  const applied2 = (slot, opp) => (sides[slot].sheet.auto ? { ...sides[slot], sheet: appliedSheet(sides[slot].players, level[opp], sides[slot].name) } : sides[slot]);
   const matches = (leagueFixtures(league)[league.round] || []).map(([h, a]) => {
     sides[h] = applied2(h, a);
     sides[a] = applied2(a, h);

@@ -1137,6 +1137,38 @@ jamais en match) et aucun changement d'écusson en cours de partie.
 - Bandeau du but au téléphone : le score se pose exactement sur le biais de « BUT », jamais dessous (le premier chiffre
   était rogné). Carte du prochain match : la jauge cède la place avant « x % de victoire », qui ne passe plus sous Jouer.
 
+## Cohérence tactique (1.0.39)
+
+Vision du PDG (12/11, tard) : « Football Manager, c'est surtout un plan cohérent, une tactique cohérente », pas répondre
+au plan de l'adversaire tout le temps. Ses choix : le plan colle aux joueurs (le cœur), réglages cohérents entre eux, un
+peu l'adversaire (léger), rien ne s'affiche (seuls les résultats le disent). Le duel tactique de la 1.0.35 (cycle des
+parades, poids fort), jamais publié, a été converti : on garde son profil des onze, l'identité de jeu des clubs de
+l'ordinateur, leur réaction à la pause et le commentaire des plans.
+- `src/game/coherence.js` : `profileOf` (vitesse et puissance des attaquants, passe de la relance, vitesse et défense des
+  défenseurs, endurance ; relatif à la propre moyenne des joueurs, puis recentré sur la forme ordinaire d'un onze, `BASE`,
+  mesurée sur 2 000 onze : un défenseur est toujours meilleur en défense qu'ailleurs, +2,7 en moyenne) ; `NEEDS` : ce que
+  chaque plan demande (Offensive : endurance 0,78, vitesse des défenseurs 0,65, relance 0,52 ; Équilibrée : relance 0,45,
+  jeu aérien 0,32, défense 0,25 ; Bloc bas : défense 0,78, vitesse des attaquants 0,75, jeu aérien 0,15, en niveaux par
+  point de profil) ; le pressing s'use après l'heure de jeu selon l'endurance ; le cycle des plans au tiers du duel
+  (Offensive > Équilibrée 0,4 ; Équilibrée > Bloc bas 0,28 ; Bloc bas > Offensive 0,35) ; dispositifs comme le duel ;
+  ouverture : +12 % d'occasions par équipe en Offensive, −13 % par bloc bas. `tacticalFit` renvoie { adv, vol, key, by }
+  (`expectedGoals(…, duel)` : l'avantage s'ajoute à l'écart de niveau).
+- Mesures (`tools/sim/coherence.mjs`, 1 000 matchs par cas) : écart entre le plan le mieux accordé et le pire, médiane
+  0,59 niveau (90e centile 1,13) ; le plan le mieux accordé rapporte +0,14 point par match à domicile, +0,11 à
+  l'extérieur, +0,20 face à plus fort d'un niveau, par rapport à « toujours Équilibrée » ; le pire −0,07 à −0,21.
+- Ordinateur (`aiPlanOf(name, gap, players)`) : le plan qui colle à ses joueurs, +0,12 pour son identité de jeu (tirée de
+  son nom), plus offensif quand il est plus fort ; à la pause, mené il monte, devant et plus faible il recule. Ligue :
+  les équipes automatiques (`appliedSheet`) choisissent de même.
+- Attributs détaillés en match (`fmOf`, live.js ; attributs de la 1.0.38) : sur un centre ou un corner, le finisseur est
+  tiré au jeu aérien (au cube), sur un coup franc aux balles arrêtées ; la qualité de la reprise suit l'attribut comparé
+  à la finition (moyenne inchangée). Mesure (`tools/sim/attributs-match.mjs`, 1 500 matchs) : 2,3 à 2,4 buts par match,
+  23 % sur centre ou corner, dont 32 % marqués par des défenseurs.
+- Direct : le plan adverse s'annonce à la 3e minute, puis ce qui fait la différence quand un plan colle nettement à ses
+  joueurs (pressing, contres, jeu sur les côtés ; trois fois au plus), et le changement de plan de l'ordinateur à la
+  reprise (`tools/sim/commentaire-plans.mjs`). Aucun chiffre.
+- Moteur des ligues 5 (`LEAGUE_ENGINE`) ; le site accepte déjà 5 (`ENGINE_CURRENT`, commit 345bf67 du site, publié pour
+  le duel). Signes distinctifs et missions des recruteurs décrits en mots, sans pourcentage.
+
 ## Tableau tactique (1.0.34)
 
 Chantier tactique du PDG (12/11, maquettes et 16 questions, direction A choisie : « tableau animé en haut, réglages

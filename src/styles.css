@@ -6283,6 +6283,7 @@ button.lv2-pl { cursor: pointer; }
    reste en bas, à portée du pouce */
 .matchscreen.live.lv2-on .halftime { top: auto; bottom: 0; left: 0; right: 0; width: auto; max-width: none; height: auto; max-height: calc(100% - 214px); margin: 0; padding: 16px 16px 0; border-radius: 22px 22px 0 0; background: #141416; clip-path: none; box-shadow: 0 -18px 40px rgba(0, 0, 0, .55); }
 .matchscreen.live.lv2-on .halftime .ht-go { position: sticky; bottom: 0; z-index: 2; margin: 0 -16px; padding: 10px 16px calc(14px + var(--hb, 0px)); background: #141416; }
+.matchscreen.live.lv2-on .halftime .btn, .matchscreen.live.lv2-on .fulltime .btn { border-radius: 30px; clip-path: none; } /* (1.0.39) boutons en pastilles, comme tout le nouveau direct */
 @media (min-width: 1100px) and (min-height: 620px) {
   .matchscreen.live.lv2-on .halftime { left: 0; right: 0; bottom: 0; width: min(1100px, 100%); margin: 0 auto; max-height: calc(100% - 250px); }
 }
