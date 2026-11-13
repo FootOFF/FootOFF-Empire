@@ -8,9 +8,10 @@ import { t } from '../i18n/index';
 // Le terrain est une grille de 5 lignes (de la défense à l'attaque) × 5 couloirs (gauche, trois au centre, droite), plus
 // le gardien : 26 postes. Un dispositif est le gardien et 10 postes de la grille, chacun occupé par un joueur.
 // Chaque poste a sa note : celle de sa ligne (players.js, ratingAt : défense, milieu ou attaque, avec la pénalité d'un
-// joueur hors de sa ligne), plus ce que le profil du joueur (attributs sur 20 de la fiche, attributes.js) apporte ou
-// retire à ce poste précis par rapport à sa ligne : un ailier rapide et bon dribbleur gagne sur le côté, un défenseur
-// lent perd en latéral, un meneur a besoin de vision. Les dispositifs tout faits (433, 442…) sont des postes de la grille.
+// joueur hors de sa ligne) à son meilleur poste de la ligne, un peu moins ailleurs selon ce que son profil (attributs sur
+// 20 de la fiche, attributes.js) apporte à chaque poste : un défenseur lent perd en latéral, un meneur sans vision perd
+// en milieu offensif, un ailier gaucher est à sa place à gauche. Les dispositifs tout faits (433, 442…) sont des postes
+// de la grille.
 
 export const ROWS = 5;
 export const COLS = 5;
@@ -91,14 +92,39 @@ export function postProfile(p, type) {
 // un joueur ordinaire vaut à chaque poste la note de sa ligne, et seul ce qui le distingue compte
 const BIAS = { DC: 0.632, DG: -0.632, DD: -0.632, DLG: -1.365, DLD: -1.365, MDC: -0.325, MG: 0.192, MD: 0.192, MC: 0.336, MOG: -0.364, MOD: -0.364, MOC: 0.162, ATG: 0.156, ATD: 0.156, BT: -0.156 };
 const GAIN = 1.2; // poids du profil : environ un demi-point de note entre un joueur taillé pour le poste et un autre
-// ce que le poste apporte ou retire au joueur par rapport à sa ligne, en points de note
+// convenance brute du joueur à chaque poste (profil calé, plus le pied : un gaucher sur le côté gauche, un droitier sur
+// le côté droit), gardée tant que le joueur ne change pas
+const LINE_POSTS = { D: ['DG', 'DC', 'DD', 'DLG', 'DLD'], M: ['MDC', 'MG', 'MC', 'MD', 'MOG', 'MOC', 'MOD'], A: ['ATG', 'BT', 'ATD'] };
+const fitMemo = new Map();
+// tolérance (comme la familiarité d'un poste dans FM) : un poste à moins de 0,8 point du meilleur ne coûte rien, seul un
+// vrai contre-emploi coûte. Mesuré sur 40 effectifs de départ (scratchpad niveau.mjs) : le meilleur onze automatique
+// perd 0,01 à 0,09 de niveau selon le dispositif par rapport à la 1.0.40 (0,26 à 0,41 sans tolérance), moins avec un
+// effectif complet ; centrer les écarts sur zéro (premier essai) faisait au contraire gagner l'équipe qui choisit.
+const ALLOW = 0.8;
+function fitsOf(p) {
+  const key = `${p.id ?? p.name}|${p.age}|${p.pos}|${p.foot}|${p.a ? Object.values(p.a).join(',') : ''}|${(p.traits || []).join(',')}`;
+  let f = fitMemo.get(key);
+  if (!f) {
+    if (fitMemo.size > 4000) fitMemo.clear();
+    f = {};
+    for (const type of Object.values(LINE_POSTS).flat()) {
+      let d = GAIN * (postProfile(p, type) - (BIAS[type] || 0));
+      const side = LEFT.has(type) ? 'gauche' : RIGHT.has(type) ? 'droit' : null;
+      if (side) d += p.foot === side ? 0.2 : p.foot === 'les deux' ? 0.15 : CUT_IN.has(type) ? 0 : -0.15;
+      f[type] = d;
+    }
+    for (const [line, types] of Object.entries(LINE_POSTS)) f[line] = Math.max(...types.map((type) => f[type]));
+    fitMemo.set(key, f);
+  }
+  return f;
+}
+// ce que le poste retire au joueur, en points de note : à son meilleur poste de la ligne, rien (il vaut la note de sa
+// ligne, comme un joueur à son poste naturel dans Football Manager) ; ailleurs, l'écart à ce meilleur poste. Placer
+// chacun à son meilleur poste ne gonfle donc jamais le niveau d'une équipe (le mode solo garde sa difficulté, 1.0).
 export function postDelta(p, type) {
-  if (type === 'G' || !p?.a || p.pos === 'G') return 0;
-  let d = GAIN * (postProfile(p, type) - (BIAS[type] || 0));
-  // le pied : un gaucher sur le côté gauche, un droitier sur le côté droit
-  const side = LEFT.has(type) ? 'gauche' : RIGHT.has(type) ? 'droit' : null;
-  if (side) d += p.foot === side ? 0.2 : p.foot === 'les deux' ? 0.15 : CUT_IN.has(type) ? 0 : -0.15;
-  return clamp(d, -2.5, 2);
+  if (type === 'G' || !p?.a || p.pos === 'G' || !POST_LINE[type]) return 0;
+  const f = fitsOf(p);
+  return clamp(f[type] - f[POST_LINE[type]] + ALLOW, -2.5, 0);
 }
 // note d'un joueur à un poste de la grille (type de poste : 'DC', 'MOG'…)
 export function ratingAtPost(p, type) {
