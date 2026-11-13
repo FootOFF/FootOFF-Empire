@@ -7,10 +7,11 @@ import { LIVE_VERSION, SUBS_MAX, createLiveMatch, highlightOf, liveKeyOf, pairSu
 import { saveLive } from '../game/save';
 import { available, fitAt, ratingAt } from '../game/players';
 import { Portrait } from './portrait';
+import { HeroShot } from './heroshot';
 import { teamCodes } from './teamcode';
 import { FormationPicker, LineupActions, LineupBoard, displayNames } from './lineup';
 import { IconCheck, IconChevron, IconClose, IconFast, IconMute, IconPlay, IconSound, IconUndo, IconUsers } from './icons';
-import { PresetGauges, PresetPicker } from './tacticboard';
+import { PresetGauges, PresetPicker, shapeOf } from './tacticboard';
 import { uiSound } from './uisound';
 import { IconAssist, IconBall, IconMedic, IconSwap, IconWhistle, RatingBadge, VersusBar } from './kit';
 import { useKeydown } from './presence';
@@ -420,23 +421,33 @@ function Momentum({ shown, upTo, possHalf, names, codes, flip = false }) {
 // sa saison), le score. Tout se lit du côté qui marque (banner.side), pas du nôtre : un match revu où l'on jouait à
 // l'extérieur (replay, side « away ») a l'équipe qui reçoit dans state et nous dans m.awayRoster (0.8.8 : le but d'un
 // ami s'affichait à notre nom).
-function GoalBanner({ banner, state, m, shown, codes, flip = false, replay = false }) {
+function GoalBanner({ banner, state, m, shown, codes, kits, crestOf, flip = false, replay = false }) {
   const ours = banner.ours;
   const home = banner.side === 'home';
   const p = home ? state.players.find((q) => q.id === banner.playerId) : (m.awayRoster || []).find((q) => q.name === banner.player);
   const nth = home && !replay && p ? (p.season?.goals || 0) + shown.filter((e) => e.type === 'goal' && e.playerId === banner.playerId
     && (e.half < banner.half || (e.half === banner.half && e.at <= banner.at))).length : 0;
   // passeur : « passe d’Eliott », « passe de Marc » (élision, 0.8.24)
-  const facts = [`${banner.minute}′`, banner.q === 'pen' && t('sur penalty'), banner.assist && t('passe {deName}', { deName: deName(banner.assist) }), nth && t('{v} but de la saison', { v: tn(nth, 'premier', '{nth}e', { nth }, !(nth === 1)) })].filter(Boolean);
+  const facts = [`\u2066${banner.minute}′\u2069`, banner.q === 'pen' && t('sur penalty'), banner.assist && t('passe {deName}', { deName: deName(banner.assist) }), nth && t('{v} but de la saison', { v: tn(nth, 'premier', '{nth}e', { nth }, !(nth === 1)) })].filter(Boolean);
+  // 1.0.37 (PDG : « du moderne… la vraie 3D ») : une carte de but façon habillage télé, le buteur en 3D dans la tenue du
+  // match, en pleine célébration, qui déborde du haut de la carte ; le score entre les deux écussons.
+  const [L, R] = flip ? ['away', 'home'] : ['home', 'away'];
   return (
-    <div className={`lv-goal ${ours ? 'ours' : 'theirs'} ${banner.fast ? 'fast' : ''}`} role="status">
-      <span className="lv-goal-word">{ours ? t('But !') : t('But {v}', { v: codes[home ? 0 : 1] })}</span>
-      <span className="lv-goal-who">
-        {p && <Portrait p={p} club={home ? (replay ? m.home : null) : m.away} size={64} />}
-        <span className="lv-goal-text"><b>{banner.player}</b><small>{facts.join(' · ')}</small></span>
+    <>
+    {/* un voile sombre le temps de la carte (hors temps fort : la 3D du but reste visible) */}
+    <i className={`lv-goal2-scrim ${banner.fast ? 'fast' : ''}`} aria-hidden="true" />
+    <div className={`lv-goal2 ${ours ? 'ours' : 'theirs'} ${banner.fast ? 'fast' : ''}`} role="status">
+      {p && <HeroShot p={p} kit={kits[banner.side]} pose="joy" className="lv-goal2-shot" />}
+      <span className="lv-goal2-word">{ours ? t('But !') : t('But {v}', { v: codes[home ? 0 : 1] })}</span>
+      <b className="lv-goal2-name">{banner.player}</b>
+      <small className="lv-goal2-facts">{facts.join(' · ')}</small>
+      <span className="lv-goal2-score">
+        {crestOf(L, 'lv-goal2-crest')}
+        <b>{banner.score[L]}</b><i>-</i><b>{banner.score[R]}</b>
+        {crestOf(R, 'lv-goal2-crest')}
       </span>
-      <span className="lv-goal-score">{flip ? `${banner.score.away}-${banner.score.home}` : `${banner.score.home}-${banner.score.away}`}</span>
     </div>
+    </>
   );
 }
 
@@ -450,14 +461,14 @@ function ScoreFacts({ shown, side, pos = side }) {
     if (e.type === 'goal') {
       const k = e.player;
       if (!goals.has(k)) goals.set(k, []);
-      goals.get(k).push(`${e.minute}′${e.q === 'pen' ? t(' (pen.)') : ''}`);
+      goals.get(k).push(`\u2066${e.minute}′\u2069${e.q === 'pen' ? t(' (pen.)') : ''}`); // (arabe : « 45+1′ » reste d'un bloc)
     } else if (e.type === 'red') reds.push({ who: e.player, minute: e.minute });
   }
   if (!goals.size && !reds.length) return <ul className={`lv-facts ${pos}`} />;
   return (
     <ul className={`lv-facts ${pos}`}>
       {[...goals].map(([who, mins]) => <li key={`g${who}`}><IconBall /><span><b>{lastName(who)}</b> {mins.join(comma())}</span></li>)}
-      {reds.map((r) => <li key={`r${r.who}`}><i className="card red" aria-label={t('carton rouge')} /><span><b>{lastName(r.who)}</b> {r.minute}′</span></li>)}
+      {reds.map((r) => <li key={`r${r.who}`}><i className="card red" aria-label={t('carton rouge')} /><span><b>{lastName(r.who)}</b> <bdi dir="ltr">{r.minute}′</bdi></span></li>)}
     </ul>
   );
 }
@@ -612,6 +623,198 @@ function AwayCrest({ ctx, name, className }) {
   return ctx.opp?.crest ? <ClubCrest crest={ctx.opp.crest} name={name} className={className} /> : <Crest name={name} className={className} />;
 }
 
+// ------------------------------------------------------------------------------------------------ direct 1.0.37
+// Demande du PDG (13/11) : un direct plus riche et plus moderne, dans l'esprit de FotMob, en noir et or ; les temps forts
+// restent en 3D, vue télé, plein écran. Quatre onglets en pastilles au téléphone (Faits, Compos, Stats, Le fil), les
+// quatre à la fois en colonnes sur grand écran. Aucun chiffre de prévision (1.0.34) : seulement ce qui s'est passé.
+
+// Événements clés de part et d'autre d'une ligne de minutes (l'équipe de gauche à gauche), le plus récent en haut
+function KeyEvents({ shown, L, names }) {
+  const rows = shown.filter((e) => e.side && ['goal', 'yellow', 'red', 'sub', 'injury'].includes(e.type));
+  if (!rows.length) return <p className="lv2-empty">{t('Pas encore de but ni de carton.')}</p>;
+  const nameOf = (id, nm) => (id != null && names.short[id]) || lastName(nm || '');
+  return (
+    <ol className="lv2-events">
+      {rows.map((e, i) => {
+        const left = e.side === L;
+        const body = e.type === 'goal'
+          ? <><IconBall /><span><b>{lastName(e.player)}{e.q === 'pen' ? t(' (pen.)') : ''}</b>{e.assist && <em>{t('passe {deName}', { deName: deName(e.assist) })}</em>}</span></>
+          : e.type === 'yellow' || e.type === 'red'
+            ? <><i className={`card ${e.type}`} aria-hidden="true" /><span><b>{lastName(e.player)}</b></span></>
+            : e.type === 'injury'
+              ? <><IconMedic className="hurt" /><span><b>{lastName(e.player)}</b><em>{t('blessé')}</em></span></>
+              : <><IconSwap className="sub" /><span><b className="in">{nameOf(e.inId, e.inName)}</b><em className="out">{nameOf(e.outId, e.outName)}</em></span></>;
+        return (
+          <li key={`${e.half}-${e.at}-${i}`} className={e.type}>
+            <span className="lv2-ev l">{left && body}</span>
+            <span className={`lv2-ev-min ${e.type === 'goal' ? 'goal' : ''}`}>{e.minute}′</span>
+            <span className="lv2-ev r">{!left && body}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+// Le mieux noté des deux équipes à cet instant (1.0.37) : son joueur 3D en pied, dans la tenue du match, qui déborde du
+// haut de la carte ; sa note en or, son nom en grand, son club.
+function TopPlayer({ notesNow, state, m, kits, crestOf, ours = 'home' }) {
+  const all = [...notesNow.home.map((r) => ({ ...r, side: 'home' })), ...notesNow.away.map((r) => ({ ...r, side: 'away' }))].filter((r) => r.rating != null && r.minutes > 0);
+  if (!all.length) return null;
+  const best = all.reduce((a, b) => (b.rating > a.rating ? b : a));
+  const p = best.side === 'home' ? state.players.find((q) => q.id === best.id) : (m.awayRoster || []).find((q) => q.name === best.name);
+  const facts = [
+    best.goals ? tn(best.goals, 'un but', '{n} buts', {}, best.goals > 1) : null,
+    best.assists ? tn(best.assists, 'une passe décisive', '{n} passes décisives', {}, best.assists > 1) : null,
+  ].filter(Boolean);
+  const [first, ...rest] = best.name.split(' ');
+  return (
+    <section className={`lv2-motm2 ${best.side === ours ? 'ours' : 'theirs'}`}>
+      {p && <HeroShot p={p} kit={kits[best.side]} className="lv2-motm-shot"
+        fallback={<Portrait p={p} club={best.side === 'home' ? null : m.away} size={92} className="lv2-motm-wait" />} />}
+      <i className="lv2-motm-floor" aria-hidden="true" />
+      <div className="lv2-motm-rate"><span className="lv2-motm-eyebrow">{t('Homme du match, pour l’instant')}</span><b>{fmtRating(best.rating)}</b></div>
+      <div className="lv2-motm-info">
+        <h3 className="lv2-motm-name">{rest.length > 0 && <small>{first}</small>}<b>{rest.length ? rest.join(' ') : first}</b></h3>
+        <span className="lv2-motm-club">{crestOf(best.side, 'lv2-motm-crest')}<span>{best.side === 'home' ? m.home : m.away}</span></span>
+        {facts.length > 0 && <span className="lv2-motm-facts">{facts.join(' · ')}</span>}
+      </div>
+    </section>
+  );
+}
+
+// Chiffres clés, la valeur en tête dans une pastille (or : nous ; gris : eux)
+function KeyStats({ st, poss, flip = false, us = 0 }) {
+  const [a, b] = flip ? [1, 0] : [0, 1];
+  const pv = [poss, 100 - poss];
+  const pill = (v, w, k) => (v > w ? `lead ${k === us ? 'us' : 'them'}` : '');
+  const rows = [[t('Tirs'), st.shots], [t('Tirs cadrés'), st.on], [t('Grosses occasions'), st.big], [t('Arrêts'), st.saves], [t('Poteaux'), st.post]];
+  return (
+    <section className="lv2-card">
+      <h3 className="lv2-title">{t('Chiffres clés')}</h3>
+      <div className="lv2-poss">
+        <div className="lv2-poss-nums"><b className={a === us ? 'us' : ''}>{pv[a]} %</b><span>{t('Possession')}</span><b className={b === us ? 'us' : ''}>{pv[b]} %</b></div>
+        <div className="lv2-poss-bar"><i className={a === us ? 'us' : 'them'} style={{ flex: pv[a] }} /><i className={b === us ? 'us' : 'them'} style={{ flex: pv[b] }} /></div>
+      </div>
+      {rows.map(([label, v]) => (
+        <div key={label} className="lv2-srow">
+          <span><b className={pill(v[a], v[b], a)}>{fmtNum(v[a])}</b></span>
+          <span className="lv2-slabel">{label}</span>
+          <span><b className={pill(v[b], v[a], b)}>{fmtNum(v[b])}</b></span>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+// Les deux onze sur le terrain, portraits et notes du match : notre équipe en bas (vers le haut), l'adversaire en haut.
+// Un des nôtres touché : sa fiche s'ouvre (onPick), avec les remplaçants les mieux placés pour son poste.
+function LivePitch({ m, state, notesNow, shown, names, us = 'home', onPick = null, picked = null }) {
+  const homePos = shapeOf(m.formation, m.tactic);
+  const awayPos = shapeOf(m.awayFormation || '442', m.oppPlan?.tactic || 'balanced');
+  const facts = useMemo(() => {
+    const f = new Map();
+    const at = (k) => { if (!f.has(k)) f.set(k, { goals: 0, yellow: 0, red: 0, inAt: null, hurt: false }); return f.get(k); };
+    for (const e of shown) {
+      const home = e.side === 'home';
+      const key = (id, nm) => (home ? id ?? names.byName[nm] : nm);
+      if (e.type === 'goal') at(key(e.playerId, e.player)).goals++;
+      else if (e.type === 'yellow') at(key(e.playerId, e.player)).yellow++;
+      else if (e.type === 'red') at(key(e.playerId, e.player)).red++;
+      else if (e.type === 'injury') at(key(e.playerId, e.player)).hurt = true;
+      else if (e.type === 'sub') at(home ? e.inId : e.inName).inAt = e.minute;
+    }
+    return f;
+  }, [shown, names]);
+  const rateHome = new Map(notesNow.home.map((r) => [r.id, r.rating]));
+  const rateAway = new Map(notesNow.away.map((r) => [r.name, r.rating]));
+  const bottom = us; // notre camp en bas
+  // le gardien (y ≈ 92 sur le tableau) près de son but, les attaquants vers le rond central, sans jamais toucher le bord
+  const place = ([x, y], side) => (side === bottom
+    ? { left: `${x}%`, top: `${94 - (92 - y) * 0.46}%` }
+    : { left: `${100 - x}%`, top: `${6 + (92 - y) * 0.46}%` });
+  const marks = (k) => {
+    const f = facts.get(k);
+    if (!f) return null;
+    return (
+      <span className="lv2-pl-marks">
+        {Array.from({ length: Math.min(3, f.goals) }, (_, i) => <IconBall key={i} />)}
+        {f.red > 0 ? <i className="card red" /> : f.yellow > 0 ? <i className="card yellow" /> : null}
+        {f.hurt && <IconMedic className="hurt" />}
+        {f.inAt && <em className="in">{f.inAt}′</em>}
+      </span>
+    );
+  };
+  const home = m.lineup.map((id, k) => ({ id, k, p: state.players.find((q) => q.id === id) })).filter((x) => x.p);
+  const away = (m.awayRoster || []).map((p, k) => ({ k, p }));
+  return (
+    <div className="lv2-pitch" role="group" aria-label={t('Les deux équipes sur le terrain')}>
+      <div className="lv2-lines" aria-hidden="true"><i className="half" /><i className="circle" /><i className="box top" /><i className="box bottom" /></div>
+      {away.map(({ k, p }) => (
+        <span key={`a${p.name}`} className={`lv2-pl them ${m.sent.away.has(p.name) ? 'off' : ''}`} style={place(awayPos[k] || [50, 50], 'away')}>
+          <span className="lv2-pl-face"><Portrait p={p} club={m.away} size={38} />{rateAway.has(p.name) && <RatingBadge value={rateAway.get(p.name)} size="sm" />}{marks(p.name)}</span>
+          <span className="lv2-pl-name">{lastName(p.name)}</span>
+        </span>
+      ))}
+      {home.map(({ id, k, p }) => {
+        const Tag = onPick ? 'button' : 'span';
+        return (
+          <Tag key={`h${id}`} type={onPick ? 'button' : undefined} className={`lv2-pl ours ${m.sent.home.has(id) ? 'off' : ''} ${picked === id ? 'on' : ''}`} style={place(homePos[k] || [50, 50], 'home')}
+            onClick={onPick ? () => onPick(id, k) : undefined} aria-label={onPick ? t('{v} : sa fiche et ses remplaçants', { v: p.name }) : undefined}>
+            <span className="lv2-pl-face"><Portrait p={p} size={38} />{rateHome.has(id) && <RatingBadge value={rateHome.get(id)} size="sm" />}{marks(id)}</span>
+            <span className="lv2-pl-name">{names.short[id] || lastName(p.name)}</span>
+          </Tag>
+        );
+      })}
+    </div>
+  );
+}
+
+// Fiche d'un des nôtres touché sur le terrain : note, condition, faits du match, et les trois remplaçants les mieux placés
+// pour son poste (choix du PDG : toucher le joueur qui sort, et le banc toujours visible dans les changements)
+function PlayerSheet({ p, kit, slot, rating, fit, cands, canSub, onSwap, onOpen, onClose }) {
+  const cardRef = useRef(null);
+  useSwipe(cardRef, { onDown: onClose, downMedia: PHONE });
+  useKeydown((e) => { if (e.key === 'Escape') { e.stopImmediatePropagation(); onClose(); } }, { capture: true });
+  return (
+    <div className="scrim lv2-scrim" onClick={onClose}>
+      <div ref={cardRef} className="lv2-sheet" role="dialog" aria-modal="true" aria-label={p.name} onClick={(e) => e.stopPropagation()}>
+        {/* 1.0.37 : le joueur 3D, dans la tenue du match, dépasse du haut de la feuille (hors de la zone qui défile) */}
+        <HeroShot p={p} kit={kit} className="lv2-sheet-shot" fallback={<Portrait p={p} size={64} className="lv2-sheet-wait" />} />
+        <div className="lv2-sheet-in">
+        <span className="grip" aria-hidden="true" />
+        <div className="lv2-sheet-head">
+          <span className="lv2-sheet-who">
+            <b>{p.name}</b>
+            <span className="lv2-sub">{POS_LABELS[slot]}{fit != null ? ` · ${t('condition {fit} %', { fit })}` : ''}</span>
+            {rating != null && <span className="lv2-sheet-rate"><RatingBadge value={rating} /><span className="lv2-sub">{t('Note du match')}</span></span>}
+          </span>
+        </div>
+        {canSub && cands.length > 0 && (
+          <>
+            <h3 className="lv2-title">{t('Le remplacer par')}</h3>
+            <div className="lv2-cands">
+              {cands.map((c, i) => (
+                <button key={c.p.id} type="button" className={`lv2-cand ${i === 0 ? 'best' : ''}`} onClick={() => onSwap(c.p.id)}>
+                  <Portrait p={c.p} size={40} />
+                  <span className="lv2-cand-text"><b>{c.p.name}</b><span className={c.off ? 'warn' : i === 0 ? 'gold' : ''}>{c.off ? t('Hors de son poste') : i === 0 ? t('Le mieux placé pour ce poste') : t('Condition {fit} %', { fit: c.fit })}</span></span>
+                  <span className="lv2-cand-rate"><b>{fmtRating(c.at)}</b><small>{t('au poste')}</small></span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {!canSub && <p className="lv2-empty">{t('Plus de changement possible.')}</p>}
+        <div className="lv2-sheet-foot">
+          <button type="button" className="btn ghost" onClick={onClose}>{t('Fermer')}</button>
+          {canSub && <button type="button" className="btn" onClick={onOpen}>{t('Tous les changements')}</button>}
+        </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // replay : un match déjà joué d'un bloc (championnat entre amis, league.js replayOf), revu avec ses temps forts en 3D :
 // ni changement ni consigne, rien n'est retiré, aucune sauvegarde du direct.
 // side : notre camp dans le match revu (championnat entre amis, à l'extérieur : 'away') ; les buts de notre camp sont fêtés.
@@ -651,7 +854,9 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const [sub, setSub] = useState(null); // changement en cours de jeu : { at: minute d'effet, note, err }
   const [lineupKey, setLineupKey] = useState(0); // le onze a changé : la scène 3D relit les noms
   // ce que montre le centre du match : stats, notes (téléphone : les PC les voient en colonnes) ou le fil
-  const [view, setView] = useState(preview?.view || 'stats');
+  // onglet du direct (1.0.37) : faits, compos, stats ou le fil (aperçu de galerie : l'ancien « notes » mène aux compos)
+  const [view, setView] = useState(() => ({ notes: 'compos', stats: 'stats', feed: 'feed' }[preview?.view] || 'faits'));
+  const [pick, setPick] = useState(null); // un des nôtres touché sur le terrain : { id, k }, sa fiche est ouverte
   // téléphone : la colonne de notes montrée (home : celle de gauche) ; d'abord la nôtre, à droite quand on joue chez
   // l'adversaire (l'équipe qui reçoit passe à gauche)
   const [notesSide, setNotesSide] = useState(() => (side === 'home' && live.state.atHome === false ? 'away' : 'home'));
@@ -860,12 +1065,19 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
 
   // changement en cours de jeu : le match s'arrête, la composition s'ouvre ; le changement prendra effet au prochain
   // arrêt de jeu (une à deux minutes plus tard, après tout ce que le direct a montré)
+  // changement choisi depuis la fiche d'un joueur (1.0.37) : le match s'arrête, la composition s'ouvre avec ce changement
+  // déjà posé ; « Reprendre » le confirme, comme tout changement
+  function openSubsWith(outId, inId) {
+    openSubs(null, true);
+    setPlan(m.lineup.map((id) => (id === outId ? inId : id)));
+    setPick(null);
+  }
   function openSubs(note = null, open = false) {
     const at = subMinute(clockRef.current);
     setPlan([...m.lineup]);
     setTactic2(m.tactic);
     setForm2(m.formation);
-    setBoard(open || !narrowScreen());
+    setBoard(true); // 1.0.37 (choix du PDG) : la composition et le banc toujours ouverts pour changer
     setSub({ at, note, err: null });
     setPhase('subs');
   }
@@ -936,7 +1148,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     sound.whistle(1);
   };
 
-  useEffect(() => { if (phase === 'halftime') { setPlan([...m.lineup]); setTactic2(m.tactic); setForm2(m.formation); setBoard(!!preview?.board); } }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (phase === 'halftime') { setPlan([...m.lineup]); setTactic2(m.tactic); setForm2(m.formation); setBoard(!replay || !!preview?.board); } }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   // nouveau dispositif : les joueurs encore en jeu replacés au mieux ; un expulsé ou un blessé non remplacé prend le poste
   // qui pèse le moins (on peut l'y déplacer ensuite, le poste où on le pose est celui laissé vide)
   const reshapePlan = (f) => {
@@ -1030,75 +1242,97 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     />
   );
 
-  const viewNow = view === 'notes' && !tabbedScreen() ? 'stats' : view;
+  // fiche d'un des nôtres touché sur le terrain : les trois remplaçants les mieux placés pour son poste, frais d'abord
+  const pickP = pick ? state.players.find((p) => p.id === pick.id) : null;
+  const pickSlot = pick ? slotsOf(m.formation)[pick.k] : null;
+  const pickCands = useMemo(() => {
+    if (!pickP) return [];
+    return state.players
+      .filter((p) => !m.lineup.includes(p.id) && available(p) && !m.gone.has(p.id) && !m.out.has(p.id))
+      .map((p) => ({ p, at: ratingAt(p, pickSlot), off: p.pos !== pickSlot, fit: Math.round(fitAt(p, minute, minute)) }))
+      .sort((a, b) => (a.off - b.off) || (b.at - a.at))
+      .slice(0, 3);
+  }, [pick, lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const us = side === 'away' ? 1 : 0; // notre camp dans les tableaux de stats (home, away)
 
   return (
-    <div className={`matchscreen live ${phase !== 'playing' ? 'paused' : ''} ${hl ? 'hl' : ''} ${side === 'away' ? 'ours-away' : ''}`}>
-      <div className="lv-centre" aria-hidden={hl ? 'true' : undefined}>
-        <header className="lv-board">
-          <p className="lv-eyebrow">{round}{m.atHome === false ? t(' · Extérieur') : ''} · {period}</p>
-          <div className="lv-sb" aria-label={`${teamName[L]} ${teamGoals[L]}, ${teamName[R]} ${teamGoals[R]}`}>
-            <div className="lv-sb-team home">
-              {crestOf(L, 'lv-sb-crest')}
-              <b title={teamName[L]} ref={nameL}><span className="hide-sm">{teamName[L]}</span><span className="show-sm">{teamCode[L]}</span></b>
+    <div className={`matchscreen live lv2-on ${phase !== 'playing' ? 'paused' : ''} ${hl ? 'hl' : ''} ${side === 'away' ? 'ours-away' : ''}`}>
+      <div className="lv-centre lv2" aria-hidden={hl ? 'true' : undefined}>
+        <header className="lv2-head" style={{ '--kL': kitHex(kits[L].shirt), '--kR': kitHex(kits[R].shirt) }}>
+          <p className="lv2-eyebrow">{round}{m.atHome === false ? t(' · Extérieur') : ''} · {period}</p>
+          <div className="lv2-sb" aria-label={`${teamName[L]} ${teamGoals[L]}, ${teamName[R]} ${teamGoals[R]}`}>
+            <div className="lv2-team">
+              {crestOf(L, 'lv2-crest')}
+              <b title={teamName[L]} ref={nameL}>{teamName[L]}</b>
+              <ScoreFacts shown={shown} side={L} pos="home" />
             </div>
-            <div className="lv-sb-mid">
-              <span className="lv-sb-score"><b key={`${L}${teamGoals[L]}`}>{teamGoals[L]}</b><i>-</i><b key={`${R}${teamGoals[R]}`}>{teamGoals[R]}</b></span>
-              <span className={`lv-sb-clock is-${phase}`}>{clockEl}</span>
+            <div className="lv2-mid">
+              <span className="lv2-score"><b key={`${L}${teamGoals[L]}`}>{teamGoals[L]}</b><i>-</i><b key={`${R}${teamGoals[R]}`}>{teamGoals[R]}</b></span>
+              <span className={`lv2-clock is-${phase}`}>{clockEl}</span>
             </div>
-            <div className="lv-sb-team away">
-              <b title={teamName[R]} ref={nameR}><span className="hide-sm">{teamName[R]}</span><span className="show-sm">{teamCode[R]}</span></b>
-              {crestOf(R, 'lv-sb-crest')}
+            <div className="lv2-team">
+              {crestOf(R, 'lv2-crest')}
+              <b title={teamName[R]} ref={nameR}>{teamName[R]}</b>
+              <ScoreFacts shown={shown} side={R} pos="away" />
             </div>
-          </div>
-          <div className="lv-sb-facts">
-            <ScoreFacts shown={shown} side={L} pos="home" />
-            <ScoreFacts shown={shown} side={R} pos="away" />
           </div>
         </header>
 
-        <div className="lv-tabs" role="tablist" aria-label={t('Centre du match')}>
-          {[['stats', t('Stats')], ['notes', t('Notes')], ['feed', t('Le fil')]].map(([id, label]) => (
-            <button key={id} role="tab" aria-selected={view === id} className={`${view === id ? 'on' : ''} ${id === 'notes' ? 'only-sm' : ''}`} onClick={() => setView(id)}>{label}</button>
+        <div className="lv2-tabs" role="tablist" aria-label={t('Centre du match')}>
+          {[['faits', t('Faits')], ['compos', t('Compos')], ['stats', t('Stats')], ['feed', t('Le fil')]].map(([id, label]) => (
+            <button key={id} type="button" role="tab" aria-selected={view === id} className={view === id ? 'on' : ''} onClick={() => setView(id)}>{label}</button>
           ))}
         </div>
 
-        <div className={`lv-cols view-${viewNow} notes-${notesSide}`}>
-          <section className="lv-col home" aria-label={t('Notes de {v}', { v: teamName[L] })}>
-            <div className="lv-col-head">
-              <h3 className="pm-sh mark-head">{teamName[L]}</h3>
-              <span className="lv-col-sub">{t('Notes du match')}</span>
+        <div className={`lv2-body view-${view}`}>
+          <section className="lv2-sec faits" aria-label={t('Faits du match')}>
+            <TopPlayer notesNow={notesNow} state={state} m={m} kits={kits} crestOf={crestOf} ours={side} />
+            <div className="lv2-card">
+              <h3 className="lv2-title">{t('Événements')}</h3>
+              <KeyEvents shown={shown} L={L} names={names} />
             </div>
-            <TeamNotes rows={L === 'home' ? homeRows : awayRows} shown={shown} side={L} fitOf={L === 'home' ? fitOf : null} names={names} />
-          </section>
-          <section className="lv-mid" aria-label={t('Statistiques et fil du match')}>
-            <div className="lv-mid-tabs" role="tablist" aria-label={t('Statistiques ou fil')}>
-              {[['stats', t('Statistiques')], ['feed', t('Le fil')]].map(([id, label]) => (
-                <button key={id} role="tab" aria-selected={viewNow === id} className={viewNow === id ? 'on' : ''} onClick={() => setView(id)}>{label}</button>
-              ))}
-            </div>
-            <div className="lv-sec stats">
-              <LiveStats st={st} poss={poss} flip={flip} />
+            <div className="lv2-card lv2-dom">
               <Momentum shown={shown} upTo={slotOf(clockRef.current, half)} possHalf={m.stats.possHalf} names={[m.home, m.away]} codes={codes} flip={flip} />
             </div>
-            <div className="lv-sec feed">
+            <KeyStats st={st} poss={poss} flip={flip} us={us} />
+          </section>
+          <section className="lv2-sec compos" aria-label={t('Compos')}>
+            <div className="lv2-card lv2-pitch-card">
+              <div className="lv2-form-tag top">{`${m[side === 'away' ? 'home' : 'away']} · ${formationOf(side === 'away' ? m.formation : m.awayFormation || '442').name}`}</div>
+              <LivePitch m={m} state={state} notesNow={notesNow} shown={shown} names={names} us={side} onPick={replay || side === 'away' ? null : (id, k) => setPick({ id, k })} picked={pick?.id} />
+              <div className="lv2-form-tag bottom">{`${m[side]} · ${formationOf(side === 'away' ? m.awayFormation || '442' : m.formation).name}`}{!replay && side !== 'away' ? ` · ${t('touche un joueur')}` : ''}</div>
+            </div>
+            <div className="lv2-card">
+              <div className="lv2-notes-head">
+                <h3 className="lv2-title">{t('Notes du match')}</h3>
+                <div className="lv2-mini-tabs" role="tablist" aria-label={t('Équipe')}>
+                  {[['home', codes[0]], ['away', codes[1]]].map(([id, label]) => (
+                    <button key={id} type="button" role="tab" aria-selected={notesSide === id} className={notesSide === id ? 'on' : ''} onClick={() => setNotesSide(id)}>{label}</button>
+                  ))}
+                </div>
+              </div>
+              <TeamNotes rows={notesSide === 'home' ? homeRows : awayRows} shown={shown} side={notesSide} fitOf={notesSide === 'home' ? fitOf : null} names={names} />
+            </div>
+          </section>
+          <section className="lv2-sec stats" aria-label={t('Statistiques')}>
+            <div className="lv2-card">
+              <h3 className="lv2-title">{t('Statistiques')}</h3>
+              <LiveStats st={st} poss={poss} flip={flip} />
+            </div>
+          </section>
+          <section className="lv2-sec feed" aria-label={t('Le fil')}>
+            <div className="lv2-card">
+              <h3 className="lv2-title">{t('Le fil')}</h3>
               <ol className="feed-list">{shown.map((e) => <EventRow key={keyOf(e)} e={e} />)}</ol>
             </div>
           </section>
-          <section className="lv-col away" aria-label={t('Notes de {v}', { v: teamName[R] })}>
-            <div className="lv-col-head">
-              <h3 className="pm-sh mark-head">{teamName[R]}</h3>
-              <span className="lv-col-sub">{t('Notes du match')}</span>
-            </div>
-            <TeamNotes rows={R === 'home' ? homeRows : awayRows} shown={shown} side={R} fitOf={R === 'home' ? fitOf : null} names={names} />
-          </section>
-          <div className="lv-notes-switch" role="tablist" aria-label={t('Équipe')}>
-            {[['home', teamName[L]], ['away', teamName[R]]].map(([id, label]) => (
-              <button key={id} role="tab" aria-selected={notesSide === id} className={notesSide === id ? 'on' : ''} onClick={() => setNotesSide(id)}>{label}</button>
-            ))}
-          </div>
         </div>
       </div>
+
+      {pickP && phase === 'playing' && !hl && (
+        <PlayerSheet p={pickP} kit={kits.home} slot={pickSlot} rating={notes[pickP.id] ?? null} fit={Math.round(fitAt(pickP, minute, since(pickP.id)))} cands={pickCands} canSub={canSub()}
+          onSwap={(inId) => openSubsWith(pickP.id, inId)} onOpen={() => { setPick(null); openSubs(null, true); }} onClose={() => setPick(null)} />
+      )}
 
       {/* pendant un temps fort : le score façon télé au-dessus de la 3D */}
       <header className="lv-top">
@@ -1116,7 +1350,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
         </div>
       )}
 
-      {banner && <GoalBanner key={`${banner.half}-${banner.at}`} banner={banner} state={state} m={m} shown={shown} codes={codes} flip={flip} replay={!!replay} />}
+      {banner && <GoalBanner key={`${banner.half}-${banner.at}`} banner={banner} state={state} m={m} shown={shown} codes={codes} kits={kits} crestOf={crestOf} flip={flip} replay={!!replay} />}
 
       {phase === 'playing' && (hl ? (
         <div className="live-controls lv-controls">

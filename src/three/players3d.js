@@ -400,7 +400,7 @@ const SKIN_TEX = [[0], [0, 1], [1, 0], [2, 1], [2], [3, 2], [3, 4], [4, 3]]; // 
 const skinTex = (sk, seed) => { const l = SKIN_TEX[sk] || SKIN_TEX[2]; return l[(seed >>> 3) % l.length]; };
 const lum = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
 const MESH = { // coiffure du portrait -> coupe 3D (null : cheveux ras peints, ou crâne rasé)
-  short: 'fade', messy: 'short01', mullet: 'short04', side: 'short04', crop: 'fade', undercut: 'fade', slick: 'short04',
+  short: 'short01', messy: 'short01', mullet: 'short04', side: 'short04', crop: null, undercut: 'short01', slick: 'short04',
   receding: 'short04', quiff: 'short01', mohawk: 'short01', long: 'short04', bun: 'short04', ponytail: 'short04',
   curly: 'curly', afroShort: null, afro: 'curly', hightop: null, locs: null, buzz: null, braids: null, bald: null,
 }; // (curly : coupe courte, ou peints ras pour des cheveux crépus ; cheveux longs, chignon, queue : plaqués en arrière)
@@ -460,7 +460,7 @@ export function recipe(id) {
   const builds = { G: [0.25, 0.35, 0.4], D: [0.2, 0.35, 0.45], M: [0.5, 0.2, 0.3], A: [0.4, 0.2, 0.4] }[id.pos] || [0.4, 0.3, 0.3];
   const x = r(); const b = x < builds[0] ? 'build_lean' : x < builds[0] + builds[1] ? 'build_stocky' : 'build_strong';
   m[b] = 0.3 + r() * 0.6;
-  m.neck_thick = b === 'build_lean' ? 0 : r() * 0.5;
+  m.neck_thick = (b === 'build_lean' ? 0.3 : 0.45) + r() * 0.35; // (1.0.38 : un cou d'athlète, jamais filiforme)
   return m;
 }
 // teinte de la peau : la luminosité va vers le teint du portrait, la teinte reste celle de la peau (chaude, jamais grise)
@@ -469,6 +469,72 @@ function skinTint(sk, tex) {
   const k = clamp(Math.sqrt(lum(t) / lum(m)), 0.8, 1.12); // (au-delà, une peau claire tourne au blanc cireux)
   const h = (a, b) => clamp((a / b) ** 0.08, 0.94, 1.06);
   return new THREE.Color(k * h(t.r, m.r), k * h(t.g, m.g), k * h(t.b, m.b));
+}
+// Yeux (1.0.38, PDG : « ils font peur… humainement bcp plus réalistes ») : la texture d'origine a un iris presque noir,
+// qui se lit de loin comme un œil tout noir, et une cornée mate (aucun reflet : un regard vide). Iris redessinés sur la
+// même texture (pupille, couleur, fibres, cercle sombre du bord), six couleurs selon la graine et le teint ; la cornée
+// devient brillante (le reflet de la lumière dans l'œil).
+const IRIS = [['#4a2e18', '#24150b'], ['#6b4523', '#30200f'], ['#8a6a35', '#3d2c12'], ['#6a7a44', '#2f381a'], ['#6f8fae', '#2e4256'], ['#7f8a90', '#3b4246']];
+let EYES = null;
+function eyeTextures(src) {
+  if (EYES) return EYES;
+  if (!src?.image) return null;
+  const img = src.image; const W = img.width, H = img.height;
+  const c0 = document.createElement('canvas'); c0.width = W; c0.height = H;
+  const g0 = c0.getContext('2d', { willReadFrequently: true }); g0.drawImage(img, 0, 0);
+  const d = g0.getImageData(0, 0, W, H).data;
+  // les deux iris : pixels sombres de chaque quart (haut droit, bas gauche), sans le petit disque gris du coin
+  const iris = [[W / 2, 0, W, H / 2], [0, H / 2, W * 0.62, H]].map(([x0, y0, x1, y1]) => {
+    let sx = 0, sy = 0, n = 0;
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) { const i = (y * W + x) * 4; if (d[i] + d[i + 1] + d[i + 2] < 210) { sx += x; sy += y; n++; } }
+    return n ? { x: sx / n, y: sy / n, r: Math.sqrt(n / Math.PI) * 1.04 } : null;
+  });
+  EYES = IRIS.map(([light, dark], k) => {
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+    // blanc de l'œil un peu plus clair (il était gris), jamais pur
+    g.globalCompositeOperation = 'screen'; g.fillStyle = 'rgba(70, 66, 62, 0.55)'; g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'source-over';
+    for (const e of iris) {
+      if (!e) continue;
+      const r = e.r;
+      const grd = g.createRadialGradient(e.x, e.y, r * 0.3, e.x, e.y, r);
+      grd.addColorStop(0, '#050403'); grd.addColorStop(0.36, '#0b0806'); grd.addColorStop(0.42, light); grd.addColorStop(0.78, dark);
+      grd.addColorStop(0.92, '#140d08'); grd.addColorStop(1, 'rgba(20, 14, 10, 0)');
+      g.fillStyle = grd; g.beginPath(); g.arc(e.x, e.y, r, 0, Math.PI * 2); g.fill();
+      // fibres de l'iris : rayons clairs et sombres (graine fixe par couleur)
+      let sd = 97 + k * 31; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+      for (let j = 0; j < 90; j++) {
+        const a = rnd() * Math.PI * 2; const r0 = r * (0.42 + rnd() * 0.08); const r1 = r * (0.7 + rnd() * 0.22);
+        g.strokeStyle = rnd() < 0.5 ? `rgba(255, 236, 200, ${0.08 + rnd() * 0.1})` : `rgba(0, 0, 0, ${0.1 + rnd() * 0.12})`;
+        g.lineWidth = 0.6 + rnd() * 0.8; g.beginPath(); g.moveTo(e.x + Math.cos(a) * r0, e.y + Math.sin(a) * r0); g.lineTo(e.x + Math.cos(a) * r1, e.y + Math.sin(a) * r1); g.stroke();
+      }
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.flipY = src.flipY; t.colorSpace = src.colorSpace; t.wrapS = src.wrapS; t.wrapT = src.wrapT; t.anisotropy = 4;
+    return t;
+  });
+  return EYES;
+}
+// couleur des yeux : brun foncé ou brun pour les teints sombres ; plus variés pour les teints clairs
+function irisOf(id) {
+  const r = rand(id.seed ^ 0x2545f491)();
+  if ((id.face?.sk ?? 2) >= 4) return r < 0.7 ? 0 : 1;
+  if ((id.face?.sk ?? 2) >= 3) return r < 0.45 ? 0 : r < 0.85 ? 1 : 2;
+  return r < 0.25 ? 0 : r < 0.5 ? 1 : r < 0.65 ? 2 : r < 0.75 ? 3 : r < 0.93 ? 4 : 5;
+}
+// Cheveux en cartes (1.0.38) : la texture MakeHuman, très contrastée, donnait un casque taché ; son grain est adouci
+// (plus de taches sombres), la lumière y glisse un peu (moins mat)
+function softHair(mat) {
+  mat.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `#ifdef USE_MAP
+    vec4 sampledDiffuseColor = texture2D( map, vMapUv );
+    float hl = smoothstep(0.12, 0.88, sampledDiffuseColor.g);
+    diffuseColor.rgb *= mix(0.7, 1.0, hl);
+    diffuseColor.a *= sampledDiffuseColor.a;
+  #endif`);
+  };
+  mat.customProgramCacheKey = () => 'footoff-cheveux';
 }
 // peau : barbe, moustache, bouc et cheveux ras peints d'après le masque de pilosité (grain de poil de près, densité
 // moyenne de loin)
@@ -533,6 +599,17 @@ function bake(mesh, m) {
   mesh.morphTargetDictionary = undefined;
 }
 
+// Carrure d'homme (1.0.38, PDG : « ils font peur… humainement bcp plus réalistes ») : sous le maillot, le haut du
+// torse bombé se lisait comme une poitrine, sur des épaules étroites. Épaules plus larges (le bras s'écarte au bout de la
+// clavicule), haut du torse moins profond (os spine_03 ; le cou et les clavicules en gardent la mesure d'origine, donc
+// la tête et les bras aussi). Les clips n'animent que la position du bassin : ces réglages tiennent.
+const SHOULDER = 1.11, CHEST_Z = 0.9;
+function athletic(root) {
+  for (const s of ['l', 'r']) { const u = root.getObjectByName(`upperarm_${s}`); if (u) u.position.multiplyScalar(SHOULDER); }
+  const c = root.getObjectByName('spine_03'); if (c) c.scale.set(1, 1, CHEST_Z);
+  for (const n of ['neck_01', 'clavicle_l', 'clavicle_r']) { const b = root.getObjectByName(n); if (b) b.scale.set(1, 1, 1 / CHEST_Z); }
+}
+
 export function createPlayers3D(parent, max = 22) {
   if (!A) throw new Error('loadPlayers3D() d’abord');
   const slots = [];
@@ -553,7 +630,12 @@ export function createPlayers3D(parent, max = 22) {
       if (key === 'Hair') hairs[n.slice(5)] = o;
       if (key === 'Brows') brows[n.slice(6)] = o;
       if (key === 'Hair') { // cartes de cheveux : découpe nette, lissée par l'antialias
-        Object.assign(o.material, { transparent: false, depthWrite: true, alphaTest: 0.3, alphaToCoverage: true, side: THREE.DoubleSide });
+        Object.assign(o.material, { transparent: false, depthWrite: true, alphaTest: 0.3, alphaToCoverage: true, side: THREE.FrontSide, roughness: 0.62 });
+        softHair(o.material);
+      }
+      if (key === 'Eyes') { // cornée brillante : un reflet dans chaque œil
+        Object.assign(o.material, { roughness: 0.06, envMapIntensity: 1.5 });
+        o.castShadow = false;
       }
       if (key === 'Brows' || key === 'Lashes') { // poils fins posés sur la peau : fondus
         Object.assign(o.material, { transparent: true, depthWrite: false, alphaTest: 0.02, side: THREE.DoubleSide });
@@ -566,6 +648,7 @@ export function createPlayers3D(parent, max = 22) {
       }
       if (key === 'Kit_Boots' || key === 'Kit_Sole') Object.assign(o.material, { roughness: 0.8, envMapIntensity: 0.6 }); // synthétique mat
     });
+    athletic(root);
     parent.add(root);
     const mixer = new THREE.AnimationMixer(root);
     const act = (g, name = g.name) => ({ ...g, name, a: mixer.clipAction(A.clips[name]), dur: A.clips[name].duration });
@@ -601,8 +684,14 @@ export function createPlayers3D(parent, max = 22) {
     for (const mat of p.mats.Skin || []) { mat.map = A.skins[tex]; mat.color.copy(skinTint(f.sk ?? 2, tex)); }
     let mesh = MESH[id.style] === undefined ? 'fade' : MESH[id.style];
     if (mesh === 'curly') mesh = f.tx === 'coily' || toneOf(f.sk) === 2 ? null : 'short01';
+    // cheveux noirs ou brun foncé (1.0.38) : en cartes, ils faisaient un casque sombre et brillant ; peints ras, ils sont
+    // vrais (les coupes en cartes restent aux cheveux clairs, châtains, roux, blonds et gris)
+    const hc = new THREE.Color(id.hair); const hl = 0.2126 * hc.r + 0.7152 * hc.g + 0.0722 * hc.b; // (sRGB, 0 à 1)
+    if (mesh && hl < 0.25) mesh = null;
     for (const [k, o] of Object.entries(p.hairs)) o.visible = k === mesh;
-    for (const mat of p.mats.Hair || []) mat.color.set(id.hair).multiplyScalar(2);
+    for (const mat of p.mats.Hair || []) mat.color.set(id.hair).multiplyScalar(1.55); // (grain adouci : texture plus claire en moyenne)
+    const eyes = A.eyeTex ||= eyeTextures(p.mats.Eyes?.[0]?.map);
+    for (const mat of p.mats.Eyes || []) if (eyes) mat.map = eyes[irisOf(id)];
     // sourcils : jamais des sourcils d'épilation (le portrait « fin » prend la ligne normale, « normal » l'une ou l'autre)
     const bw = f.bw === 'thick' || (f.bw !== 'fine' && id.seed % 3 === 0) ? 'thick' : 'normal';
     for (const [k, o] of Object.entries(p.brows)) o.visible = k === bw;
@@ -1041,7 +1130,7 @@ export function createPlayers3D(parent, max = 22) {
     if (ag.cheer > 0.3 && !p.cheering) { // le buteur : toutes les célébrations ; ses coéquipiers : debout (jamais à genoux)
       const pool = ag.scorer ? CELEBRATIONS : CELEBRATIONS.filter((n) => !A.slides.has(n));
       p.cheering = true;
-      gesture(p, (pool.length ? pool : CELEBRATIONS)[p.seed % (pool.length || CELEBRATIONS.length)], { fade: 0.3 });
+      gesture(p, (ag.celeb && A.clips?.[ag.celeb] ? ag.celeb : null) || (pool.length ? pool : CELEBRATIONS)[p.seed % (pool.length || CELEBRATIONS.length)], { fade: 0.3 }); // ag.celeb : une célébration choisie (studio photo)
     }
     if (ag.cheer < 0.05) p.cheering = false;
     if (p.shot && !p.frozen && p.shot.time >= p.shotEnd - 0.05 && !p.cheering && (pose !== 2 || (p.saveC?.palms && p.shot.getClip().name === p.saveC.name))) {
@@ -1121,6 +1210,34 @@ export function createPlayers3D(parent, max = 22) {
       }
     },
     setIdentity(i, id) { identity(slots[i] || make(i), id); },
+    // Studio photo (three/hero3d.js, 1.0.38) : pose de portrait officiel, les mains jointes dans le dos (les poings
+    // serrés de l'attente, bras ballants, faisaient raide), épaules ouvertes ; à appeler après commit, avant le rendu.
+    portrait(i) {
+      const p = slots[i];
+      if (!p) return;
+      p.root.updateMatrixWorld(true);
+      const q = p.root.getWorldQuaternion(new THREE.Quaternion());
+      const fwd = V().set(0, 0, 1).applyQuaternion(q);
+      const hl = p.root.getObjectByName('thigh_l').getWorldPosition(V());
+      const hr = p.root.getObjectByName('thigh_r').getWorldPosition(V());
+      const c = hl.clone().add(hr).multiplyScalar(0.5);
+      const s = p.root.scale.x;
+      for (const [side, hip] of [['l', hl], ['r', hr]]) {
+        const out = hip.clone().sub(c).setY(0).normalize(); // vers son côté
+        const up = p.root.getObjectByName(`upperarm_${side}`); const lo = p.root.getObjectByName(`lowerarm_${side}`); const ha = p.root.getObjectByName(`hand_${side}`);
+        if (!up || !lo || !ha) continue;
+        const T = c.clone().addScaledVector(fwd, -0.17 * s).addScaledVector(out, 0.035 * s).add(V().set(0, 0.05 * s, 0));
+        twoBone(up, lo, ha, T, 1, out.clone().addScaledVector(fwd, -0.9));
+      }
+    },
+    // gardien en photo debout : manches longues et gants sur une place de joueur de champ (son attente est accroupie)
+    keeperLook(i, on = true) {
+      const p = slots[i];
+      if (!p) return;
+      p.u.sleeve.value.w = on ? 1 : 0;
+      const g = new THREE.Color(GLOVE_HEX);
+      p.u.glove.value.set(g.r, g.g, g.b, on ? 1 : 0);
+    },
     setLook(x, y, z) { look = x === null || x === undefined ? null : (look || V()).set(x, y, z); },
     setAgent(i, ag, y, scale = 0.1) {
       const p = slots[i] || make(i);

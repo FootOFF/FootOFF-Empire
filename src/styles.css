@@ -6129,3 +6129,347 @@ html[lang="ar"] .pm-tname b.long { line-height: 1.15; }
 .pm-matchup { height: auto; min-height: 84px; } /* avant-match : un nom sur deux lignes, le bandeau grandit au lieu de couper la ligne « niveau » dessous */
 @media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) { .pm-team { height: auto; min-height: 58px; padding-top: 6px; padding-bottom: 6px; } }
 
+/* ============================================================== direct 1.0.37 (esprit FotMob, noir et or)
+   Demande du PDG (13/11) : plus d'infos, un style plus moderne ; les temps forts restent en 3D plein écran, vue télé.
+   Téléphone : l'en-tête de score, des onglets en pastilles (Faits, Compos, Stats, Le fil), des cartes arrondies qui
+   défilent, la barre de commandes flottante. Grand écran : les quatre à la fois, en trois colonnes. */
+.lv-centre.lv2 { align-items: stretch; padding: 14px 0 0; font-feature-settings: 'tnum' 1; }
+.lv-centre.lv2::before { display: none; }
+.lv2-head { flex: none; width: min(760px, 100%); align-self: center; padding: 0 16px 6px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.lv2-eyebrow { margin: 0; font-family: var(--font-disp); font-weight: 600; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-light); text-align: center; }
+.lv2-sb { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 10px; }
+.lv2-team { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.lv2-team .lv2-crest { width: 46px; height: 46px; }
+.lv2-team > b { max-width: 100%; font-family: var(--font-body); font-weight: 700; font-size: 14px; line-height: 1.2; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.lv2-team .lv-facts { position: static; display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 0; padding: 0; list-style: none; font-size: 12px; color: var(--text-2); }
+.lv2-team .lv-facts li { display: flex; align-items: center; gap: 5px; }
+.lv2-team .lv-facts svg { width: 11px; height: 11px; }
+.lv2-mid { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 2px; }
+.lv2-score { display: flex; align-items: center; gap: 10px; font-family: var(--font-disp); font-weight: 700; font-size: 54px; line-height: .95; color: var(--text); }
+.lv2-score i { font-style: normal; color: rgba(243, 242, 238, .28); }
+.lv2-score b { display: inline-block; animation: lv2-pop .6s var(--ease); }
+@keyframes lv2-pop { from { transform: scale(1.3); color: var(--gold-light); } }
+.lv2-clock { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px; border-radius: 13px; background: rgba(199, 161, 90, .14); color: var(--gold-light); font-family: var(--font-body); font-weight: 700; font-size: 13px; }
+.lv2-clock .live-dot { margin: 0; }
+.lv2-tabs { flex: none; display: flex; gap: 6px; overflow-x: auto; padding: 8px 12px 10px; scrollbar-width: none; align-self: center; width: min(760px, 100%); }
+.lv2-tabs::-webkit-scrollbar { display: none; }
+.lv2-tabs button { flex: none; height: 36px; padding: 0 16px; border: 0; border-radius: 18px; background: #1a1a1d; color: #cfcbc2; font-family: var(--font-body); font-weight: 600; font-size: 14px; white-space: nowrap; transition: background .2s, color .2s; }
+.lv2-tabs button.on { background: var(--gold-light); color: var(--gold-ink); }
+.lv2-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 2px 12px calc(var(--hud-bottom) + var(--lc-h) + 26px); }
+.lv2-sec { display: none; flex-direction: column; gap: 10px; width: min(760px, 100%); margin: 0 auto; }
+.lv2-body.view-faits .lv2-sec.faits, .lv2-body.view-compos .lv2-sec.compos, .lv2-body.view-stats .lv2-sec.stats, .lv2-body.view-feed .lv2-sec.feed { display: flex; }
+.lv2-card { background: #141416; border-radius: 16px; padding: 14px 14px 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035); }
+.lv2-title { margin: 0; font-family: var(--font-body); font-weight: 700; font-size: 15px; letter-spacing: -.01em; color: var(--text); text-transform: none; }
+.lv2-sub { font-size: 12px; color: #a7a49c; }
+.lv2-empty { margin: 0; font-size: 13px; color: #a7a49c; }
+/* domination : le graphique des temps forts, dans sa carte */
+.lv2-dom .lv-moment { margin: 0; }
+.lv2-dom .lv-moment-head > span:first-child { font-family: var(--font-body); font-weight: 700; font-size: 15px; letter-spacing: -.01em; text-transform: none; color: var(--text); }
+/* événements : de part et d'autre d'une ligne de minutes */
+.lv2-events { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lv2-events li { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr); align-items: center; gap: 8px; min-height: 40px; }
+.lv2-events li + li::before { content: ''; position: absolute; left: 50%; top: -8px; height: 16px; border-left: 1px solid rgba(255, 255, 255, .1); }
+.lv2-ev { display: flex; align-items: center; gap: 8px; font-size: 13px; min-width: 0; }
+.lv2-ev.l { justify-content: flex-end; text-align: right; }
+.lv2-ev.l > span { align-items: flex-end; }
+.lv2-ev > span { display: flex; flex-direction: column; min-width: 0; }
+.lv2-ev b { font-weight: 700; overflow-wrap: anywhere; }
+.lv2-ev em { font-style: normal; font-size: 11px; color: #a7a49c; }
+.lv2-ev svg { width: 15px; height: 15px; flex: none; }
+.lv2-ev .sub { color: #6cc08b; }
+.lv2-ev .in { color: #6cc08b; }
+.lv2-ev .hurt { color: #e5766b; }
+.lv2-ev-min { justify-self: center; min-width: 40px; height: 24px; padding: 0 6px; border-radius: 12px; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: #232327; color: #cfcbc2; }
+.lv2-ev-min.goal { background: var(--gold-light); color: var(--gold-ink); }
+/* homme du match */
+.lv2-motm { flex-direction: row; align-items: center; gap: 12px; }
+.lv2-motm .pf { flex: none; border-radius: 50%; box-shadow: 0 0 0 2px var(--gold-light); }
+.lv2-motm-num { flex: none; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: #1d1d20; color: var(--gold-light); font-weight: 800; font-size: 18px; }
+.lv2-motm-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lv2-motm-text b { font-size: 16px; font-weight: 700; }
+/* chiffres clés : la valeur en tête dans une pastille */
+.lv2-poss { display: flex; flex-direction: column; gap: 6px; }
+.lv2-poss-nums { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; }
+.lv2-poss-nums b { font-weight: 700; }
+.lv2-poss-nums b.us { color: var(--gold-light); }
+.lv2-poss-nums span { font-size: 13px; color: #a7a49c; }
+.lv2-poss-bar { display: flex; gap: 3px; height: 8px; }
+.lv2-poss-bar i { border-radius: 4px; background: #3a3b3f; transition: flex .6s var(--ease); }
+.lv2-poss-bar i.us { background: var(--gold-grad); }
+.lv2-srow { display: grid; grid-template-columns: 64px minmax(0, 1fr) 64px; align-items: center; gap: 6px; font-size: 14px; }
+.lv2-srow > span:last-child { text-align: right; }
+.lv2-srow b { display: inline-grid; place-items: center; min-width: 34px; height: 24px; padding: 0 9px; border-radius: 12px; font-weight: 700; }
+.lv2-srow b.lead.us { background: var(--gold-light); color: var(--gold-ink); }
+.lv2-srow b.lead.them { background: #3a3b3f; color: var(--text); }
+.lv2-slabel { text-align: center; color: #cfcbc2; font-size: 13px; }
+/* compos : les deux onze sur le terrain, portraits et notes */
+.lv2-pitch-card { padding: 10px; gap: 8px; }
+.lv2-form-tag { font-size: 12px; font-weight: 700; color: #cfcbc2; padding: 0 4px; }
+.lv2-form-tag.bottom { color: var(--gold-light); }
+.lv2-pitch { position: relative; height: min(700px, 172vw); border-radius: 12px; overflow: hidden; background: repeating-linear-gradient(180deg, #1a2a1f 0 9%, #182619 9% 18%); }
+.lv2-lines i { position: absolute; border: 1px solid rgba(255, 255, 255, .14); }
+.lv2-lines .half { left: 0; right: 0; top: 50%; height: 0; border-width: 1px 0 0; }
+.lv2-lines .circle { left: 50%; top: 50%; width: 78px; height: 78px; margin: -39px; border-radius: 50%; }
+.lv2-lines .box { left: 24%; right: 24%; height: 11%; }
+.lv2-lines .box.top { top: 0; border-top: 0; }
+.lv2-lines .box.bottom { bottom: 0; border-bottom: 0; }
+.lv2-pl { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 3px; width: 76px; padding: 0; border: 0; background: none; color: var(--text); font: inherit; }
+button.lv2-pl { cursor: pointer; }
+.lv2-pl-face { position: relative; width: 38px; height: 38px; }
+.lv2-pl-face .pf { width: 38px; height: 38px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 2px rgba(255, 255, 255, .85), 0 4px 10px rgba(0, 0, 0, .55); }
+.lv2-pl.ours .lv2-pl-face .pf { box-shadow: 0 0 0 2px var(--gold-light), 0 4px 10px rgba(0, 0, 0, .55); }
+.lv2-pl.on .lv2-pl-face .pf { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(199, 161, 90, .5); }
+.lv2-pl.off { opacity: .45; }
+.lv2-pl-face .ui-rate { position: absolute; top: 50%; right: -31px; transform: translateY(-50%); box-shadow: 0 2px 6px rgba(0, 0, 0, .5); } /* sur le flanc : jamais sur le nom du joueur du dessus (relecture 1.0.37) */
+.lv2-pl-marks { position: absolute; left: -12px; bottom: -4px; display: flex; gap: 2px; align-items: center; }
+.lv2-pl-marks svg { width: 12px; height: 12px; color: #fff; filter: drop-shadow(0 1px 1px #000); }
+.lv2-pl-marks .card { width: 8px; height: 11px; }
+.lv2-pl-marks .in { font-style: normal; font-size: 9px; font-weight: 800; color: #0b1a10; background: #6cc08b; border-radius: 6px; padding: 1px 4px; }
+.lv2-pl-marks .hurt { color: #e5766b; }
+.lv2-pl-name { max-width: 76px; font-size: 11px; font-weight: 600; line-height: 1.15; text-align: center; text-shadow: 0 1px 2px #000; overflow-wrap: anywhere; }
+.lv2-notes-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lv2-mini-tabs { display: flex; gap: 4px; }
+.lv2-mini-tabs button { height: 30px; padding: 0 12px; border: 0; border-radius: 15px; background: #1d1d20; color: #cfcbc2; font: 700 12px var(--font-body); }
+.lv2-mini-tabs button.on { background: var(--text); color: #0b0b0c; }
+.lv2 .lv-notes { margin: 0; }
+.lv2 .lv-srows { gap: 12px; }
+.lv2 .feed-list { margin: 0; padding: 0; max-height: none; overflow: visible; }
+/* fiche d'un des nôtres : ses remplaçants les mieux placés */
+.lv2-scrim { z-index: 30; display: flex; align-items: flex-end; justify-content: center; }
+.lv2-sheet { position: relative; width: min(480px, 100%); max-height: 88%; border-radius: 22px 22px 0 0; background: #141416; display: flex; flex-direction: column; animation: fo-up .3s var(--ease); pointer-events: auto; }
+.lv2-sheet-in { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 16px calc(18px + var(--hb, 0px)); display: flex; flex-direction: column; gap: 12px; border-radius: inherit; }
+.lv2-sheet-in > .grip { display: block; width: 40px; height: 4px; border-radius: 2px; margin: 0 auto; background: #3a3b3f; }
+.lv2-sheet-head { display: flex; align-items: flex-end; gap: 12px; min-height: 92px; padding-inline-end: 132px; }
+.lv2-sheet-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lv2-sheet-who b { font-size: 18px; font-weight: 800; }
+.lv2-cands { display: flex; flex-direction: column; gap: 6px; }
+.lv2-cand { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 56px; padding: 8px 12px; border-radius: 12px; border: 1px solid transparent; background: #1d1d20; color: var(--text); text-align: left; font: inherit; cursor: pointer; }
+.lv2-cand.best { border-color: var(--gold-line); background: #231f15; }
+.lv2-cand .pf { border-radius: 50%; overflow: hidden; }
+.lv2-cand-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lv2-cand-text b { font-size: 14px; font-weight: 700; }
+.lv2-cand-text span { font-size: 12px; color: #a7a49c; }
+.lv2-cand-text .gold { color: var(--gold-light); }
+.lv2-cand-text .warn { color: #e5766b; }
+.lv2-cand-rate { display: flex; flex-direction: column; align-items: flex-end; }
+.lv2-cand-rate b { font-size: 16px; font-weight: 800; color: var(--gold-light); }
+.lv2-cand-rate small { font-size: 11px; color: #a7a49c; }
+.lv2-sheet-foot { display: flex; gap: 8px; }
+.lv2-sheet-foot .btn { flex: 1; border-radius: 26px; clip-path: none; font-size: 16px; }
+/* barre de commandes flottante */
+.matchscreen.live.lv2-on .lv-controls { left: 0; right: 0; width: fit-content; max-width: calc(100% - 24px); margin: 0 auto; border-radius: 28px; clip-path: none; overflow: hidden; background: #1a1a1d; box-shadow: 0 14px 34px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .05); border-top: 0; }
+.matchscreen.live.lv2-on .lv-controls > * + * { border-left: 1px solid rgba(255, 255, 255, .06); }
+.matchscreen.live.lv2-on .lv-controls .lc-speed.on { clip-path: none; }
+.matchscreen.live.lv2-on.paused .lv2-tabs, .matchscreen.live.lv2-on.paused .lv2-body { opacity: .25; pointer-events: none; }
+/* grand écran : les quatre à la fois, en colonnes */
+@media (min-width: 1100px) and (min-height: 620px) {
+  .lv-centre.lv2 { padding-top: 18px; }
+  .lv2-head { width: min(980px, 100%); }
+  .lv2-team .lv2-crest { width: 58px; height: 58px; }
+  .lv2-team > b { font-size: 17px; }
+  .lv2-score { font-size: 64px; }
+  .lv2-tabs { display: none; }
+  .lv2-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 1fr); grid-template-areas: 'faits compos stats' 'faits compos feed'; grid-template-rows: auto 1fr; gap: 14px; width: min(1480px, 100%); margin: 0 auto; padding: 8px 22px calc(var(--hud-bottom) + var(--lc-h) + 26px); align-items: start; }
+  .lv2-body .lv2-sec { display: flex !important; width: auto; margin: 0; }
+  .lv2-sec.faits { grid-area: faits; }
+  .lv2-sec.compos { grid-area: compos; }
+  .lv2-sec.stats { grid-area: stats; }
+  .lv2-sec.feed { grid-area: feed; }
+  .lv2-sec.feed .feed-list { max-height: 420px; overflow-y: auto; }
+  .lv2-pitch { height: 560px; }
+}
+
+/* mi-temps et changement en cours de jeu (1.0.37) : une feuille sous le score, qui monte du bas et défile ; « Reprendre »
+   reste en bas, à portée du pouce */
+.matchscreen.live.lv2-on .halftime { top: auto; bottom: 0; left: 0; right: 0; width: auto; max-width: none; height: auto; max-height: calc(100% - 214px); margin: 0; padding: 16px 16px 0; border-radius: 22px 22px 0 0; background: #141416; clip-path: none; box-shadow: 0 -18px 40px rgba(0, 0, 0, .55); }
+.matchscreen.live.lv2-on .halftime .ht-go { position: sticky; bottom: 0; z-index: 2; margin: 0 -16px; padding: 10px 16px calc(14px + var(--hb, 0px)); background: #141416; }
+@media (min-width: 1100px) and (min-height: 620px) {
+  .matchscreen.live.lv2-on .halftime { left: 0; right: 0; bottom: 0; width: min(1100px, 100%); margin: 0 auto; max-height: calc(100% - 250px); }
+}
+
+/* changements (1.0.37, choix du PDG « A et B ») : le banc reste visible, en bandeau à faire défiler au-dessus de « Reprendre » */
+.matchscreen.live.lv2-on .halftime .lu-bench { position: sticky; bottom: 82px; z-index: 1; margin: 0 -16px; padding: 10px 16px 8px; background: #141416; box-shadow: 0 -14px 18px -6px rgba(0, 0, 0, .65); border-top: 1px solid rgba(255, 255, 255, .06); }
+.matchscreen.live.lv2-on .halftime .lu-bench-grid { display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(150px, 42%); gap: 6px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.matchscreen.live.lv2-on .halftime .lu-bench-grid::-webkit-scrollbar { display: none; }
+.matchscreen.live.lv2-on .halftime .lu-bchip { scroll-snap-align: start; }
+.matchscreen.live.lv2-on .halftime .lu-bench .lu-hint { display: none; }
+
+@media (max-width: 760px) { .matchscreen.live.lv2-on .lv-controls { left: 12px; right: 12px; width: auto; max-width: none; } } /* téléphone : toute la largeur */
+
+/* ============================================================== fiche joueur 1.0.37 (carte du joueur 3D)
+   Demande du PDG (13/11) : « du moderne, faut choquer mes amis » ; références : visuels produit noir et or sur fond bronze,
+   personnages 3D qui débordent des cartes. Le joueur 3D (three/hero3d.js) en pied, dans la tenue de son club, dépasse du
+   haut de la carte ; la note en or, le nom en grand, les étiquettes en pastilles ; le reste en cartes arrondies. */
+.sq-sheet.sh2 { gap: 12px; background: #0b0b0c; }
+.sh-hero2 {
+  --tone: #5b4426; --tone2: #2a2116; position: relative; isolation: isolate; flex-shrink: 0; margin-top: 74px; height: 452px; border-radius: 26px;
+  background:
+    radial-gradient(58% 40% at 50% 30%, rgba(236, 206, 140, .2), rgba(236, 206, 140, 0) 72%),
+    radial-gradient(100% 62% at 50% 104%, var(--tone) 0%, var(--tone2) 46%, transparent 82%),
+    linear-gradient(115deg, rgba(255, 236, 190, 0) 38%, rgba(255, 236, 190, .05) 50%, rgba(255, 236, 190, 0) 62%),
+    linear-gradient(165deg, #1d1b18 0%, #111013 55%, #0b0b0c 100%);
+  box-shadow: inset 0 0 0 1px rgba(222, 193, 127, .24), inset 0 1px 0 rgba(255, 236, 190, .4), 0 24px 50px rgba(0, 0, 0, .55);
+}
+.sh-hero2.silver { --tone: #4a5460; --tone2: #20252c; }
+.sh-hero2.bronze { --tone: #7a4b27; --tone2: #2e1d12; }
+.sh-hero2.gold { --tone: #8f6a2c; --tone2: #352816; }
+.sh-hero2.elite { --tone: #b08636; --tone2: #43321a; box-shadow: inset 0 0 0 1px rgba(222, 193, 127, .55), 0 0 40px rgba(199, 161, 90, .15), 0 24px 50px rgba(0, 0, 0, .55); }
+.sh2-glow { position: absolute; z-index: -1; left: 50%; top: 18%; width: 300px; height: 300px; margin-left: -150px; border-radius: 50%; background: radial-gradient(circle, rgba(222, 193, 127, .3), rgba(222, 193, 127, 0) 66%); pointer-events: none; }
+.sh2-shot { position: absolute; left: 50%; bottom: 58px; width: auto; max-width: 96%; height: 492px; object-fit: contain; object-position: bottom; transform: translateX(calc(var(--hx, .5) * -100%)); filter: drop-shadow(0 18px 24px rgba(0, 0, 0, .55)); pointer-events: none; animation: sh2-in .6s var(--ease); }
+@keyframes sh2-in { from { opacity: 0; transform: translate(calc(var(--hx, .5) * -100%), 18px) scale(.97); } }
+.sh2-wait { position: absolute; left: 50%; top: 70px; transform: translateX(-50%); width: 190px; height: 190px; border-radius: 50%; opacity: .55; box-shadow: 0 0 0 3px rgba(222, 193, 127, .4); animation: sh2-pulse 1.4s ease-in-out infinite; }
+@keyframes sh2-pulse { 50% { opacity: .3; } }
+.sh2-floor { position: absolute; left: 50%; bottom: 58px; width: 210px; height: 26px; margin-left: -105px; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, .75), rgba(0, 0, 0, 0)); z-index: -1; }
+.sh2-top { position: absolute; left: 18px; right: 18px; top: 16px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
+.sh2-rate { display: flex; flex-direction: column; gap: 2px; }
+.sh2-rate b { padding-bottom: .12em; margin-bottom: -.12em; font-family: var(--font-disp); font-weight: 800; font-size: 66px; line-height: .8; background: var(--gold-grad); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 3px 10px rgba(0, 0, 0, .6)); }
+.sh2-rate .sh2-lvl { font-family: var(--font-disp); font-weight: 600; font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-2); }
+.sh2-rate em { font-style: normal; letter-spacing: 0; }
+.sh2-rate em.up { color: var(--green); }
+.sh2-rate em.down { color: var(--red); }
+.sh2-rate .sh2-pos { display: flex; align-items: center; gap: 7px; margin-top: 12px; }
+.sh2-rate .sh2-pos em { font-family: var(--font-disp); font-weight: 700; font-size: 17px; font-style: normal; color: var(--text); letter-spacing: .02em; }
+.sh2-post { font-size: 12px; color: var(--text-2); max-width: 104px; text-shadow: 0 1px 3px #000; }
+.sh2-crest { width: 50px; height: 50px; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .65)); }
+.sh2-crest > * { width: 100%; height: 100%; }
+.sh2-bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 70px 18px 16px; border-radius: 0 0 26px 26px; background: linear-gradient(180deg, rgba(11, 11, 12, 0), rgba(11, 11, 12, .82) 42%, rgba(11, 11, 12, .96)); display: flex; flex-direction: column; gap: 10px; }
+.sh2-name { margin: 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sh2-name small { font-family: var(--font-body); font-size: 15px; font-weight: 500; color: var(--text-2); }
+.sh2-name b { font-family: var(--font-disp); font-weight: 800; font-size: 46px; line-height: .86; text-transform: uppercase; letter-spacing: .01em; overflow-wrap: anywhere; text-shadow: 0 4px 18px rgba(0, 0, 0, .8); }
+.sh-hero2 .sh-tag { border-radius: 14px; background: rgba(255, 255, 255, .07); box-shadow: none; }
+.sh-hero2 .sh-tag.on { background: rgba(199, 161, 90, .16); box-shadow: inset 0 0 0 1px rgba(222, 193, 127, .45); }
+.sh-hero2 .abs-tag { border-radius: 14px; }
+/* le reste de la fiche : des cartes arrondies, comme le direct */
+.sq-sheet.sh2 .sh-sec { padding: 14px 14px 16px; border-top: 0; border-radius: 18px; background: #141416; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035); }
+.sq-sheet.sh2 .sh-tiles { border-radius: 18px; overflow: hidden; background: #141416; }
+.sq-sheet.sh2 .sh-scale { border-radius: 5px; overflow: hidden; }
+.sq-sheet.sh2 .sh-track { border-radius: 3px; overflow: hidden; }
+.sq-sheet.sh2 .sh-track i { border-radius: 3px; }
+.sq-sheet.sh2 .sh-form span { border-radius: 10px; }
+.sq-sheet.sh2 .sh-foot .btn, .sq-sheet.sh2 .sh-sec .btn { border-radius: 26px; clip-path: none; }
+.sq-sheet.sh2 .sh-compare { border-radius: 50%; }
+@media (max-width: 760px) {
+  .sh-hero2 { margin-top: 66px; height: 430px; }
+  .sh2-shot { height: 474px; }
+  .sh2-name b { font-size: 42px; }
+}
+
+/* ============================================================== direct 1.0.37 : le joueur 3D dans le direct
+   Demande du PDG (13/11) : « du moderne au niveau interface match… la vraie 3D ». Le joueur 3D du studio (three/hero3d.js),
+   dans la tenue du match, déborde du haut de ses cartes : homme du match, carte de but (en pleine célébration), feuille
+   du joueur touché. L'en-tête du score prend la couleur de chaque équipe en halo derrière son écusson. */
+.lv2-head { position: relative; isolation: isolate; }
+.lv2-head::before {
+  content: ''; position: absolute; z-index: -1; left: -16px; right: -16px; top: -70px; bottom: -14px; pointer-events: none;
+  background:
+    radial-gradient(30% 58% at 20% 56%, color-mix(in srgb, var(--kL, #c7a15a) 24%, transparent), transparent 74%),
+    radial-gradient(30% 58% at 80% 56%, color-mix(in srgb, var(--kR, #8a8f98) 24%, transparent), transparent 74%);
+}
+@keyframes lv2-shot-in { from { opacity: 0; transform: translate(calc(var(--hx, .5) * -100%), 16px) scale(.97); } }
+
+/* homme du match : la note en or en haut, le nom en bas, le joueur 3D à droite qui sort du haut de la carte */
+.lv2-motm2 {
+  position: relative; isolation: isolate; flex: none; margin-top: 64px; min-height: 190px; padding: 16px 16px 18px; border-radius: 20px;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 14px;
+  background:
+    radial-gradient(50% 72% at 74% 100%, rgba(199, 161, 90, .5), rgba(199, 161, 90, 0) 72%),
+    radial-gradient(36% 46% at 74% 30%, rgba(236, 206, 140, .14), rgba(236, 206, 140, 0) 70%),
+    linear-gradient(140deg, #1e1c19 0%, #131215 58%, #0f0f11 100%);
+  box-shadow: inset 0 0 0 1px rgba(222, 193, 127, .26), inset 0 1px 0 rgba(255, 236, 190, .38), 0 18px 40px rgba(0, 0, 0, .45);
+  animation: fo-fade .4s var(--ease);
+}
+.lv2-motm2.theirs {
+  background:
+    radial-gradient(50% 72% at 74% 100%, rgba(150, 158, 170, .3), rgba(150, 158, 170, 0) 72%),
+    linear-gradient(140deg, #1b1c1f 0%, #131315 58%, #0f0f11 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), inset 0 1px 0 rgba(255, 255, 255, .14), 0 18px 40px rgba(0, 0, 0, .45);
+}
+/* rtl:ignore */
+.lv2-motm-shot {
+  position: absolute; z-index: 0; left: 74%; bottom: 12px; width: auto; height: 254px; max-width: 58%; object-fit: contain; object-position: bottom;
+  transform: translateX(calc(var(--hx, .5) * -100%)); filter: drop-shadow(0 14px 18px rgba(0, 0, 0, .55)); pointer-events: none; animation: lv2-shot-in .6s var(--ease);
+}
+/* rtl:ignore */
+.lv2-motm-wait { position: absolute; z-index: 0; left: 74%; top: 28px; transform: translateX(-50%); border-radius: 50%; box-shadow: 0 0 0 2px rgba(222, 193, 127, .45); opacity: .6; }
+.lv2-motm-floor { position: absolute; z-index: -1; left: 74%; bottom: 6px; width: 150px; height: 18px; margin-left: -75px; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, .7), rgba(0, 0, 0, 0)); }
+.lv2-motm-rate, .lv2-motm-info { position: relative; z-index: 1; }
+.lv2-motm-rate { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; max-width: 56%; }
+.lv2-motm-rate b { padding-bottom: .12em; margin-bottom: -.12em; font-family: var(--font-disp); font-weight: 800; font-size: 56px; line-height: .8; background: var(--gold-grad); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 3px 10px rgba(0, 0, 0, .6)); }
+.lv2-motm2.theirs .lv2-motm-rate b { background: linear-gradient(180deg, #f3f2ee, #b9b6ae); -webkit-background-clip: text; background-clip: text; }
+.lv2-motm-info { display: flex; flex-direction: column; gap: 5px; max-width: 56%; }
+.lv2-motm-eyebrow { font-family: var(--font-disp); font-weight: 600; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-light); text-wrap: balance; }
+.lv2-motm2.theirs .lv2-motm-eyebrow { color: var(--text-2); }
+.lv2-motm-name { margin: 0; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.lv2-motm-name small { font-size: 14px; font-weight: 500; color: var(--text-2); }
+.lv2-motm-name b { font-family: var(--font-disp); font-weight: 800; font-size: 34px; line-height: .88; text-transform: uppercase; overflow-wrap: anywhere; text-shadow: 0 3px 14px rgba(0, 0, 0, .7); }
+.lv2-motm-club { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 12px; color: var(--text-2); overflow-wrap: anywhere; }
+.lv2-motm-crest { width: 20px; height: 20px; flex: none; }
+.lv2-motm-facts { font-size: 12px; font-weight: 600; color: var(--gold-light); }
+
+/* carte de but : « BUT ! » en or, le buteur, le score entre les écussons ; le buteur 3D en pleine célébration à droite */
+.lv-goal2 {
+  position: absolute; z-index: 6; left: var(--gap); bottom: calc(var(--hud-bottom) + var(--lc-h) + 22px); width: min(470px, calc(100% - 2 * var(--gap)));
+  min-height: 140px; padding: 16px 18px; border-radius: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
+  pointer-events: none !important; animation: lg-in 4.2s var(--ease) forwards;
+  background:
+    radial-gradient(52% 80% at 80% 100%, rgba(222, 193, 127, .55), rgba(222, 193, 127, 0) 72%),
+    linear-gradient(135deg, #2a2216 0%, #16130f 55%, #0f0e0d 100%);
+  box-shadow: inset 0 0 0 1px rgba(222, 193, 127, .4), inset 0 1px 0 rgba(255, 236, 190, .5), 0 22px 50px rgba(0, 0, 0, .6);
+}
+.lv-goal2.fast { animation-duration: 1.6s; }
+.lv-goal2.theirs {
+  background:
+    radial-gradient(52% 80% at 80% 100%, rgba(150, 158, 170, .32), rgba(150, 158, 170, 0) 72%),
+    linear-gradient(135deg, #1d1e21 0%, #141416 55%, #0f0f11 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), inset 0 1px 0 rgba(255, 255, 255, .16), 0 22px 50px rgba(0, 0, 0, .6);
+}
+/* rtl:ignore */
+.lv-goal2-shot {
+  position: absolute; z-index: 0; left: 80%; bottom: 10px; width: auto; height: 236px; max-width: 52%; object-fit: contain; object-position: bottom;
+  transform: translateX(calc(var(--hx, .5) * -100%)); filter: drop-shadow(0 14px 18px rgba(0, 0, 0, .55)); pointer-events: none; animation: lv2-shot-in .5s var(--ease);
+}
+.lv-goal2 > :not(.lv-goal2-shot) { position: relative; z-index: 1; max-width: 62%; }
+.lv-goal2-word { padding-bottom: .1em; margin-bottom: -.1em; font-family: var(--font-disp); font-weight: 800; font-size: 48px; line-height: .86; text-transform: uppercase; background: var(--gold-grad); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 3px 10px rgba(0, 0, 0, .5)); }
+.lv-goal2.theirs .lv-goal2-word { font-size: 34px; background: linear-gradient(180deg, #f3f2ee, #b9b6ae); -webkit-background-clip: text; background-clip: text; }
+.lv-goal2-name { font-family: var(--font-disp); font-weight: 800; font-size: 26px; line-height: .95; text-transform: uppercase; overflow-wrap: anywhere; }
+.lv-goal2-facts { font-size: 12px; color: var(--text-2); }
+.lv-goal2-score { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-family: var(--font-disp); font-weight: 800; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+.lv-goal2-score i { font-style: normal; color: rgba(243, 242, 238, .35); }
+.lv-goal2-crest { width: 24px; height: 24px; flex: none; }
+@media (max-width: 760px) { .lv-goal2 { left: 12px; right: 12px; width: auto; } }
+/* le voile du but : sous la carte et sous les commandes (z-index 0, avant elles dans la page), au-dessus du direct */
+.lv-goal2-scrim { position: absolute; inset: 0; z-index: 0; pointer-events: none !important; background: radial-gradient(130% 90% at 50% 100%, rgba(5, 5, 6, .84), rgba(5, 5, 6, .52)); animation: lg-veil 4.2s var(--ease) forwards; }
+.lv-goal2-scrim.fast { animation-duration: 1.6s; }
+.matchscreen.live.hl .lv-goal2-scrim { display: none; }
+@keyframes lg-veil { 0% { opacity: 0; } 8% { opacity: 1; } 86% { opacity: 1; } 100% { opacity: 0; } }
+/* petits écrans et téléphone couché : une carte plus compacte, le buteur plus petit (le score du haut reste visible) */
+@media (max-height: 700px) { .lv-goal2-shot { height: 196px; } }
+@media (max-height: 520px) {
+  .lv-goal2 { min-height: 0; padding: 12px 16px; gap: 3px; }
+  .lv-goal2-word { font-size: 34px; }
+  .lv-goal2.theirs .lv-goal2-word { font-size: 26px; }
+  .lv-goal2-name { font-size: 20px; }
+  .lv-goal2-score { font-size: 20px; margin-top: 2px; }
+  .lv-goal2-crest { width: 20px; height: 20px; }
+  .lv-goal2-shot { height: 150px; }
+}
+
+/* feuille du joueur touché : le joueur 3D en haut à droite, qui sort de la feuille */
+/* rtl:ignore */
+.lv2-sheet-shot {
+  position: absolute; z-index: 2; left: calc(100% - 86px); top: -104px; width: auto; height: 214px; max-width: 160px; object-fit: contain; object-position: bottom;
+  transform: translateX(calc(var(--hx, .5) * -100%)); filter: drop-shadow(0 12px 16px rgba(0, 0, 0, .55)); pointer-events: none; animation: lv2-shot-in .5s var(--ease);
+}
+.lv2-sheet-wait { position: absolute; z-index: 2; right: 54px; top: 22px; border-radius: 50%; box-shadow: 0 0 0 2px var(--gold-light); }
+.lv2-sheet-rate { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.lv2-sheet-who b { font-size: 20px; }
+
+/* arabe : le joueur 3D passe à gauche, le texte à droite (l'ombre au sol et la pastille d'attente s'inversent seules) ;
+   les noms en arabe ont des jambages profonds : un interligne plus large */
+/* rtl:ignore */
+[dir='rtl'] .lv2-motm-shot, [dir='rtl'] .lv2-motm-wait { left: 26%; }
+/* rtl:ignore */
+[dir='rtl'] .lv-goal2-shot { left: 20%; }
+/* rtl:ignore */
+[dir='rtl'] .lv2-sheet-shot { left: 86px; }
+[dir='rtl'] .lv2-motm-name b, [dir='rtl'] .lv-goal2-name, [dir='rtl'] .sh2-name b { line-height: 1.18; }

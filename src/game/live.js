@@ -145,7 +145,7 @@ const T = {
     t('{home} fait tourner, la défense adverse recule.'),
     t('Le capitaine de {home} replace ses coéquipiers.'),
     t('Le banc de {away} s’agite : consignes criées depuis la ligne.'),
-    t('Faute sans gravité au milieu, coup franc indirect pour {home}.'),
+    t('Faute sans gravité au milieu, coup franc pour {home}.'),
     t('Les supporters entonnent le chant du club.'),
     t('Chaleur dans les duels : {away} ne lâche{n} rien.'),
     t('Le gardien de {home} relance court, patiemment.'),
@@ -986,10 +986,10 @@ export function createLiveMatch(s, ctx, saved = null) {
       if (!p) return null;
       const pos = rec.pos || p.pos;
       const rating = noteOf({ ...rec, pos, side: 'home', form: m.form[rec.id] }, ratingAt(p, pos) - m.oppStrength, ga);
-      return { id: p.id, name: p.name, num: p.num, pos, rating, minutes: Math.max(0, Math.min(minute, rec.out ?? minute) - rec.in), on: rec.out == null };
+      return { id: p.id, name: p.name, num: p.num, pos, rating, minutes: Math.max(0, Math.min(minute, rec.out ?? minute) - rec.in), on: rec.out == null, goals: rec.goals || 0, assists: rec.assists || 0 };
     }).filter(Boolean);
     const theirs = [...away.values()].map((rec) => ({
-      name: rec.p.name, num: rec.p.num, pos: rec.pos, p: rec.p, on: rec.out == null,
+      name: rec.p.name, num: rec.p.num, pos: rec.pos, p: rec.p, on: rec.out == null, goals: rec.goals || 0, assists: rec.assists || 0,
       minutes: Math.max(0, Math.min(minute, rec.out ?? minute) - rec.in),
       rating: noteOf({ ...rec, side: 'away', form: m.form[`o:${rec.p.name}`] }, ratingAt(rec.p, rec.pos) - m.myRating, gf),
     }));

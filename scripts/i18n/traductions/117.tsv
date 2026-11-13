@@ -1,0 +1,31 @@
+k:Pas encore de but ni de carton.	No goals or cards yet.	Todavía no hay goles ni tarjetas.	لا أهداف ولا بطاقات حتى الآن.
+k:un but	one goal	un gol	هدف واحد
+k:une passe décisive	one assist	una asistencia	تمريرة حاسمة واحدة
+k:{n} passes décisives	{n} assists	{n} asistencias	{"one": "تمريرة حاسمة واحدة", "two": "تمريرتان حاسمتان", "few": "{n} تمريرات حاسمة", "many": "{n} تمريرة حاسمة", "other": "{n} تمريرة حاسمة"}
+k:Homme du match, pour l’instant	Man of the match so far	Jugador del partido, por ahora	رجل المباراة حتى الآن
+k:Chiffres clés	Key stats	Datos clave	أبرز الأرقام
+k:Les deux équipes sur le terrain	Both teams on the pitch	Los dos equipos en el campo	الفريقان على أرض الملعب
+k:{v} : sa fiche et ses remplaçants	{v}: profile and substitutes	{v}: su ficha y sus sustitutos	{v}: بطاقته وبدلاؤه
+k:condition {fit} %	condition {fit}%	condición {fit} %	اللياقة {fit}%
+k:Note du match	Match rating	Nota del partido	تقييمه في المباراة
+k:Le remplacer par	Replace him with	Sustituirlo por	استبداله بـ
+k:Hors de son poste	Out of position	Fuera de su posición	خارج مركزه
+k:Le mieux placé pour ce poste	Best fit for this position	El más indicado para este puesto	الأنسب لهذا المركز
+k:Condition {fit} %	Condition {fit}%	Condición {fit} %	اللياقة {fit}%
+k:au poste	in this position	en este puesto	في هذا المركز
+k:Plus de changement possible.	No substitutions left.	No quedan cambios.	لم يعد التبديل ممكنًا.
+k:Tous les changements	All substitutions	Todos los cambios	كل التبديلات
+k:Faits	Facts	Resumen	الوقائع
+k:Compos	Line-ups	Alineaciones	التشكيلات
+k:Faits du match	Match facts	Resumen del partido	وقائع المباراة
+k:Événements	Key events	Incidencias	الأحداث
+k:touche un joueur	tap a player	toca a un jugador	المس لاعبًا
+k:Direct et fiches en 3D	Live match and player cards in 3D	Directo y fichas en 3D	المباراة المباشرة وبطاقات اللاعبين بتقنية ثلاثية الأبعاد
+k:Le direct se lit comme une appli de sport : le score et les écussons en tête, puis quatre onglets, Faits, Compos, Stats et Le fil.	The live match reads like a sports app: the score and crests at the top, then four tabs, Facts, Line-ups, Stats and Commentary.	El partido en directo se lee como una app deportiva: el marcador y los escudos arriba, y luego cuatro pestañas, Resumen, Alineaciones, Estadísticas y Directo.	تُقرأ المباراة المباشرة كتطبيق رياضي: النتيجة والشعارات في الأعلى، ثم أربعة تبويبات، الوقائع والتشكيلات والإحصائيات والمجريات.
+k:L’homme du match s’affiche en 3D, dans la tenue du match, sur une carte noir et or ; à chaque but, une carte montre le buteur en pleine célébration.	The man of the match appears in 3D, in his match kit, on a black and gold card; after every goal, a card shows the scorer in full celebration.	El jugador del partido aparece en 3D, con la equipación del partido, en una tarjeta negra y dorada; con cada gol, una tarjeta muestra al goleador en plena celebración.	يظهر رجل المباراة بتقنية ثلاثية الأبعاد بزيّ المباراة على بطاقة سوداء وذهبية؛ ومع كل هدف تُظهر بطاقة صاحبَ الهدف وهو يحتفل.
+k:Onglet Compos : les deux équipes sur le terrain avec leurs notes ; touche un des tiens pour ouvrir sa fiche et les trois remplaçants les mieux placés pour son poste.	Line-ups tab: both teams on the pitch with their ratings; tap one of your players to open his profile and the three substitutes best suited to his position.	Pestaña Alineaciones: los dos equipos en el campo con sus notas; toca a uno de los tuyos para abrir su ficha y los tres suplentes más indicados para su puesto.	تبويب التشكيلات: الفريقان على أرض الملعب مع تقييماتهما؛ المس أحد لاعبيك لفتح بطاقته وأنسب ثلاثة بدلاء لمركزه.
+k:La fiche du joueur le montre en 3D, en pied dans la tenue de son club, avec sa note, son poste, son numéro et l’écusson du club.	The player card shows him in 3D, full length in his club kit, with his rating, position, number and the club crest.	La ficha del jugador lo muestra en 3D, de cuerpo entero con la equipación de su club, con su nota, su posición, su dorsal y el escudo del club.	تُظهر بطاقة اللاعب صورته ثلاثية الأبعاد كاملةً بزيّ ناديه، مع تقييمه ومركزه ورقمه وشعار النادي.
+k:Pendant les temps forts, la 3D passe en plein écran, avec le score façon télé.	During highlights, the 3D goes full screen, with a TV-style score.	Durante las jugadas destacadas, el 3D pasa a pantalla completa, con el marcador al estilo televisión.	أثناء اللقطات البارزة، يملأ العرض ثلاثي الأبعاد الشاشة، مع النتيجة على طريقة التلفزيون.
+k:Faute sans gravité au milieu, coup franc pour {home}.	A minor foul in midfield, free kick to {home}.	Falta leve en el centro del campo, tiro libre para {home}.	خطأ بسيط في الوسط، ركلة حرة لصالح {home}.
+k:Les joueurs 3D sont plus humains : des yeux vivants et colorés qui accrochent la lumière, une carrure d’athlète, des cheveux courts peints là où les coupes faisaient un casque, un éclairage de portrait.	The 3D players look far more human: lively, coloured eyes that catch the light, an athlete’s build, short painted hair where the haircuts looked like a helmet, portrait lighting.	Los jugadores 3D son mucho más humanos: ojos vivos y de color que captan la luz, complexión de atleta, pelo corto pintado donde los cortes parecían un casco, iluminación de retrato.	أصبح اللاعبون ثلاثيو الأبعاد أكثر إنسانية: عيون حية ملونة تلتقط الضوء، وبنية رياضي، وشعر قصير مرسوم بدل القصات التي كانت تبدو كالخوذة، وإضاءة بورتريه.
+k:En photo, chaque joueur pose debout, les mains jointes dans le dos ; le gardien aussi, avec ses gants.	In photos, every player stands with his hands clasped behind his back; the goalkeeper too, with his gloves.	En las fotos, cada jugador posa de pie con las manos juntas a la espalda; el portero también, con sus guantes.	في الصور، يقف كل لاعب ويداه متشابكتان خلف ظهره، وكذلك الحارس بقفازيه.

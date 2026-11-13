@@ -5,6 +5,18 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.37', date: '2026-11-13', title: t('Direct et fiches en 3D'),
+    items: [
+      t('Le direct se lit comme une appli de sport : le score et les écussons en tête, puis quatre onglets, Faits, Compos, Stats et Le fil.'),
+      t('L’homme du match s’affiche en 3D, dans la tenue du match, sur une carte noir et or ; à chaque but, une carte montre le buteur en pleine célébration.'),
+      t('Onglet Compos : les deux équipes sur le terrain avec leurs notes ; touche un des tiens pour ouvrir sa fiche et les trois remplaçants les mieux placés pour son poste.'),
+      t('La fiche du joueur le montre en 3D, en pied dans la tenue de son club, avec sa note, son poste, son numéro et l’écusson du club.'),
+      t('Pendant les temps forts, la 3D passe en plein écran, avec le score façon télé.'),
+      t('Les joueurs 3D sont plus humains : des yeux vivants et colorés qui accrochent la lumière, une carrure d’athlète, des cheveux courts peints là où les coupes faisaient un casque, un éclairage de portrait.'),
+      t('En photo, chaque joueur pose debout, les mains jointes dans le dos ; le gardien aussi, avec ses gants.'),
+    ],
+  },
+  {
     version: '1.0.36', date: '2026-11-13', title: t('Installer l’app'),
     items: [
       t('Le message d’installation recommande fortement l’app : il revient à chaque visite au téléphone tant que le jeu n’est pas installé, avec les trois avantages de l’app, plein écran, ouvert d’un geste et notifications des championnats.'),

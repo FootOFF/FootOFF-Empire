@@ -19,6 +19,10 @@ import { Presence, useKeydown } from './presence';
 import { PHONE, useSwipe } from './gestures';
 import { FollowButton, LeagueOffer, ListingSheet, Mercato, Negotiation, SaleNegotiation, SaleToggle, heat } from './mercato';
 import { Portrait } from './portrait';
+import { ClubCrest, Crest } from './crest';
+import { clubStars } from '../game/crest';
+import { HeroShot } from './heroshot';
+import { ourKit, teamKitOf } from '../game/kits';
 import { uiSound } from './uisound';
 import { divRef, tierOf } from './kit';
 import { colon, comma, plural, t, tn, tr } from '../i18n/index';
@@ -599,6 +603,7 @@ function ContractBlock({ state, p, onRenew }) {
 }
 
 // --- Fiche joueur (magazine FootOFF Media) ---------------------------------------------------------------
+const FREE_KIT = { shirt: 0x2b2d31, trim: 0x17181b, keeper: 0x2f343c }; // joueur libre : tenue d'entraînement neutre
 
 // Aide repliée (1.0.14, demande du PDG) : un petit « ? » discret à côté d'un titre ; l'explication ne s'ouvre que si on
 // la demande
@@ -657,7 +662,7 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
 
   return (
     <div className="sq-overlay" onClick={onClose}>
-      <article ref={ref} className="sq-sheet glass" onClick={(e) => e.stopPropagation()} aria-label={t('Fiche {deName}', { deName: deName(p.name) })}>
+      <article ref={ref} className="sq-sheet glass sh2" onClick={(e) => e.stopPropagation()} aria-label={t('Fiche {deName}', { deName: deName(p.name) })}>
         <span className="grip" aria-hidden="true" />
         <header className="sh-bar">
           <div className="sh-pager">
@@ -668,28 +673,36 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
           <button className="hud-icon" onClick={onClose} aria-label={t('Fermer la fiche')}><IconClose /></button>
         </header>
 
-        <section className={`sh-hero ${tierOf(r, refLvl)}`}>
-          {p.num != null && <span className="sh-bignum" aria-hidden="true">{p.num}</span>}
-          <div className="sh-id">
-            <div className="sh-rate">
+        {/* 1.0.37 (PDG : « du moderne, faut choquer mes amis ») : la carte du joueur, son joueur 3D en pied, dans la tenue de
+            son club, sous un éclairage noir et or ; il dépasse du haut de la carte */}
+        <section className={`sh-hero2 ${tierOf(r, refLvl)}`}>
+          <i className="sh2-glow" aria-hidden="true" />
+          <HeroShot p={p} kit={market ? (p.club ? teamKitOf(p.club) : FREE_KIT) : ourKit()} className="sh2-shot"
+            fallback={<Portrait p={p} size={190} club={market ? p.club || null : null} free={market && !p.club} className="sh2-wait" />} />
+          <i className="sh2-floor" aria-hidden="true" />
+          <div className="sh2-top">
+            {/* la colonne de gauche (note, poste, numéro) laisse le joueur 3D dégagé ; à droite, l'écusson de son club */}
+            <div className="sh2-rate">
               <b>{fmtRating(r)}</b>
-              {!market && p.lastDelta ? <em className={p.lastDelta > 0 ? 'up' : 'down'} title={t('Progression du dernier été')}>{p.lastDelta > 0 ? '+' : ''}{fmtRating(p.lastDelta)}</em> : null}
+              <span className="sh2-lvl">{t('Niveau')}{!market && p.lastDelta ? <em className={p.lastDelta > 0 ? 'up' : 'down'} title={t('Progression du dernier été')}> {p.lastDelta > 0 ? '+' : ''}{fmtRating(p.lastDelta)}</em> : null}</span>
+              <span className="sh2-pos"><span className={`pos-pill ${p.pos}`}>{p.pos}</span>{p.num ? <em>{t('n°')}{p.num}</em> : null}</span>
+              <small className="sh2-post">{POS_LABELS[p.pos]}</small>
             </div>
-            <div className="sh-meta">
-              <span className={`pos-pill ${p.pos}`}>{p.pos}</span>
-              <span>{POS_LABELS[p.pos]}{p.num ? ` · ${t('n°')}${p.num}` : ''}</span>
-            </div>
-            <h3 className="sh-name">{nameRest.length > 0 && <small>{nameFirst}</small>}<b>{nameRest.length ? nameRest.join(' ') : nameFirst}</b></h3>
+            {(!market || p.club) && (
+              <span className="sh2-crest">{market ? <Crest name={p.club} /> : <ClubCrest crest={state.crest} name={state.clubName} stars={clubStars(state)} />}</span>
+            )}
           </div>
-          <Portrait p={p} size={136} club={market ? p.club || null : null} free={market && !p.club} className="sh-face" />
-          <div className="sh-tags">
-            <span className={`sh-tag ${role === t('Titulaire') ? 'on' : ''}`}>{role}</span>
-            <span className="sh-tag">{footLabel(p.foot, true)}</span>
-            {!market && <AbsentTag p={p} long />}
-            {!market && p.academy && <span className="sh-tag on">{t('Formé au club')}</span>}
-            {listed && <span className="sh-tag sale">{t('En vente')}</span>}
-            {market && p.interest > 0 && <span className="sh-tag warn">{tr('Courtisé<0/>', [tn(p.interest, '', ' par {interest} clubs', { interest: p.interest }, p.interest > 1)])}</span>}
-            {p.alt && <span className="sh-tag">{tr('Dépanne : <0/> <1/>', [POS_LABELS[p.alt].toLowerCase(), fmtRating(ratingAt(p, p.alt))])}</span>}
+          <div className="sh2-bottom">
+            <h3 className="sh2-name">{nameRest.length > 0 && <small>{nameFirst}</small>}<b>{nameRest.length ? nameRest.join(' ') : nameFirst}</b></h3>
+            <div className="sh-tags">
+              <span className={`sh-tag ${role === t('Titulaire') ? 'on' : ''}`}>{role}</span>
+              <span className="sh-tag">{footLabel(p.foot, true)}</span>
+              {!market && <AbsentTag p={p} long />}
+              {!market && p.academy && <span className="sh-tag on">{t('Formé au club')}</span>}
+              {listed && <span className="sh-tag sale">{t('En vente')}</span>}
+              {market && p.interest > 0 && <span className="sh-tag warn">{tr('Courtisé<0/>', [tn(p.interest, '', ' par {interest} clubs', { interest: p.interest }, p.interest > 1)])}</span>}
+              {p.alt && <span className="sh-tag">{tr('Dépanne : <0/> <1/>', [POS_LABELS[p.alt].toLowerCase(), fmtRating(ratingAt(p, p.alt))])}</span>}
+            </div>
           </div>
         </section>
 
