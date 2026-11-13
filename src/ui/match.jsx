@@ -671,7 +671,8 @@ function TopPlayer({ notesNow, state, m, kits, crestOf, ours = 'home' }) {
   return (
     <section className={`lv2-motm2 ${best.side === ours ? 'ours' : 'theirs'}`}>
       {p && <HeroShot p={p} kit={kits[best.side]} className="lv2-motm-shot"
-        fallback={<Portrait p={p} club={best.side === 'home' ? null : m.away} size={92} className="lv2-motm-wait" />} />}
+        fallback={<i className="lv2-motm-ring" aria-hidden="true" />}
+        unavailable={<Portrait p={p} club={best.side === 'home' ? null : m.away} size={92} className="lv2-motm-wait" />} />}
       <i className="lv2-motm-floor" aria-hidden="true" />
       <div className="lv2-motm-rate"><span className="lv2-motm-eyebrow">{t('Homme du match, pour l’instant')}</span><b>{fmtRating(best.rating)}</b></div>
       <div className="lv2-motm-info">
@@ -780,7 +781,8 @@ function PlayerSheet({ p, kit, slot, rating, fit, cands, canSub, onSwap, onOpen,
     <div className="scrim lv2-scrim" onClick={onClose}>
       <div ref={cardRef} className="lv2-sheet" role="dialog" aria-modal="true" aria-label={p.name} onClick={(e) => e.stopPropagation()}>
         {/* 1.0.37 : le joueur 3D, dans la tenue du match, dépasse du haut de la feuille (hors de la zone qui défile) */}
-        <HeroShot p={p} kit={kit} className="lv2-sheet-shot" fallback={<i className="lv2-sheet-wait" aria-hidden="true" />} />
+        <HeroShot p={p} kit={kit} className="lv2-sheet-shot" fallback={<i className="lv2-sheet-wait" aria-hidden="true" />}
+          unavailable={<Portrait p={p} size={64} className="lv2-sheet-face" />} />
         <div className="lv2-sheet-in">
         <span className="grip" aria-hidden="true" />
         <div className="lv2-sheet-head">

@@ -12,17 +12,19 @@ export function prefetchHero(p, opts = {}) {
   if (!p) return;
   studio().then((m) => m.heroOf(p, opts)).catch(() => {});
 }
-export function HeroShot({ p, kit, pose = 'stand', className = '', fallback = null }) {
+// fallback : pendant l'attente ; unavailable : si la 3D ne vient pas (réseau coupé, contexte perdu), à la place d'une
+// attente sans fin (relecture de la 1.0.42)
+export function HeroShot({ p, kit, pose = 'stand', className = '', fallback = null, unavailable = null }) {
   const key = `${p?.id ?? p?.name}|${p?.age}|${p?.pos}|${kit?.shirt}|${kit?.trim}|${kit?.keeper}|${pose}`;
   const ready = mod && p ? mod.heroReady(p, { kit, pose }) : null;
   const [got, setGot] = useState(null); // { key, shot } : la photo arrivée pour ce joueur (url, position de la tête)
   useEffect(() => {
     let alive = true;
     if (!p || ready) return undefined;
-    studio().then((m) => m.heroOf(p, { kit, pose })).then((s) => { if (alive) setGot({ key, shot: s }); }, () => {});
+    studio().then((m) => m.heroOf(p, { kit, pose })).then((s) => { if (alive) setGot({ key, shot: s }); }, () => { if (alive) setGot({ key, shot: null }); });
     return () => { alive = false; };
   }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
   const shot = ready || (got?.key === key ? got.shot : null);
-  if (!shot) return fallback;
+  if (!shot) return got?.key === key ? (unavailable ?? fallback) : fallback;
   return <img className={`hero-shot ${className}`} src={shot.url} style={{ '--hx': shot.hx }} alt="" draggable="false" />;
 }

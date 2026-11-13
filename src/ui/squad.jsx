@@ -696,7 +696,8 @@ function PlayerSheet({ p, state, run, refLvl, market, place, onClose, onPrev, on
         <section className={`sh-hero2 ${tierOf(r, refLvl)}`}>
           <i className="sh2-glow" aria-hidden="true" />
           <HeroShot p={p} kit={market ? (p.club ? teamKitOf(p.club) : FREE_KIT) : ourKit()} className="sh2-shot"
-            fallback={<i className="sh2-wait" aria-hidden="true" />} />
+            fallback={<i className="sh2-wait" aria-hidden="true" />}
+            unavailable={<Portrait p={p} size={190} club={market ? p.club || null : null} free={market && !p.club} className="sh2-face" />} />
           <i className="sh2-floor" aria-hidden="true" />
           <div className="sh2-top">
             {/* la colonne de gauche (note, poste, numéro) laisse le joueur 3D dégagé ; à droite, l'écusson de son club */}

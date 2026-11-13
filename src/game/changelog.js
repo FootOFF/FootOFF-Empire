@@ -7,9 +7,9 @@ export const CHANGELOG = [
   {
     version: '1.0.42', date: '2026-11-13', title: t('Fiches et visages'),
     items: [
-      t('La fiche d’un joueur s’ouvre directement sur son joueur 3D, sans afficher d’abord son portrait ; la photo se prépare dès que tu touches le joueur.'),
-      t('Le joueur 3D ressemble davantage à son portrait : la couleur de ses yeux, et des cheveux pleins de leur vraie couleur ; les cheveux châtains, roux et blonds retrouvent leur coupe.'),
-      t('Sur sa fiche, le joueur 3D se tient droit : buste droit, dos sans creux, épaules à leur place, pieds parallèles.'),
+      t('La fiche s’ouvre directement sur le joueur en 3D, sans afficher d’abord son portrait ; la photo se prépare dès que tu touches le joueur.'),
+      t('Le joueur 3D ressemble davantage à son portrait : il en reprend la couleur des yeux, ses cheveux bruns ou noirs sont pleins et foncés, et les cheveux châtains, roux et blonds retrouvent leur coupe.'),
+      t('En photo, le joueur 3D se tient bien droit : le buste d’aplomb, le dos sans creux, les épaules à leur place, les pieds parallèles.'),
     ],
   },
   {

@@ -1028,7 +1028,7 @@ export function createPlayers3D(parent, max = 22) {
     });
     athletic(root);
     root.traverse((b) => { if (b.isBone && /^(index|middle|ring|pinky|thumb)_/.test(b.name)) b.userData.rest = b.quaternion.clone(); });
-    // pose de construction du tronc, des épaules et des jambes, gardée pour les photos (1.0.43, PDG : « le buste est encore
+    // pose de construction du tronc, des épaules et des jambes, gardée pour les photos (1.0.42, PDG : « le buste est encore
     // beaucoup trop avancé, un creux dans le dos, les épaules trop en arrière ») : l'animation d'attente est une garde de
     // footballeur (un pied devant, cou et tête projetés de 14 à 18°) qui, en photo, bombait la poitrine et creusait le dos
     root.traverse((b) => { if (b.isBone && STANCE.has(b.name)) { b.userData.bind = b.quaternion.clone(); if (b.name === 'pelvis') b.userData.bindPos = b.position.clone(); } });
@@ -1132,7 +1132,8 @@ export function createPlayers3D(parent, max = 22) {
     p.u.scalp.value.copy(sc.lerp(new THREE.Color().setScalar(lum(sc)), 0.45)); // ras : moins saturé (jamais une calotte rousse)
     // sous une coupe en cartes, la lisière peinte prend la teinte des cartes (1.0.42 : une bande brune tachetée
     // apparaissait entre les cheveux roux ou châtains et le front)
-    if (mesh) p.u.scalp.value.set(id.hair).multiplyScalar(1.15);
+    // (jamais plus clair que le front : même plafond que les poils peints)
+    if (mesh) { const c = new THREE.Color(id.hair).multiplyScalar(1.15); const cap = 0.42 * skinL; if (lum(c) > cap) c.multiplyScalar(cap / lum(c)); p.u.scalp.value.copy(c); }
     // cheveux peints (1.0.42, PDG : cohérence avec le portrait) : une vraie chevelure du portrait (tout sauf ras, rasé,
     // très court ou dégarni) reste pleine en 3D, et foncée si elle est brune ou noire ; le crâne transparaissait, tous
     // paraissaient châtain clair, mèches et afros compris. Cheveux noirs ou bruns coupés court : jamais une brosse rousse.
@@ -1654,7 +1655,7 @@ export function createPlayers3D(parent, max = 22) {
       const p = slots[i];
       if (!p) return;
       const root = p.root;
-      // tenue droite (1.0.43) : tronc, épaules et jambes dans leur pose de construction, buste droit, dos sans creux, pieds
+      // tenue droite (1.0.42) : tronc, épaules et jambes dans leur pose de construction, buste droit, dos sans creux, pieds
       // parallèles ; les bras et le regard se posent ensuite
       root.traverse((b) => { if (b.isBone && b.userData.bind) { b.quaternion.copy(b.userData.bind); if (b.userData.bindPos) b.position.copy(b.userData.bindPos); } });
       root.updateMatrixWorld(true);
