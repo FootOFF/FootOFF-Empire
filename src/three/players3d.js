@@ -502,7 +502,10 @@ function moreFace(id, f, m, shaved) {
   m.brows_ridge = maybe(0.45, 0.3, 1);
   // bouche et lèvres (les traits du portrait d'abord : lèvres pleines ou bouche large gardent leur sens)
   axis('mouth_high', 'mouth_low', tri() * 0.8);
-  if (!m.mouth_wide) m.mouth_narrow = Math.max(0, tri()) * 0.9;
+  // largeur de la bouche et de la mâchoire : ce qui distingue deux visages même de loin (relecture du 14/11), dans les
+  // plafonds des traits d'origine (FACE_CAP)
+  if (!m.mouth_wide) { const w = wide() * 0.8; if (w > 0) m.mouth_wide = Math.min(FACE_CAP.mouth_wide, w * 0.5); else m.mouth_narrow = -w; }
+  m.jaw_wide = clamp((m.jaw_wide || 0) + wide() * 0.15, 0, FACE_CAP.jaw_wide);
   axis('mouth_up', 'mouth_down', tri() * 0.8 - clamp((id.age - 28) / 20, 0, 0.2));
   m.mouth_forward = maybe(0.3 + afr * 0.3, 0.2, 0.8);
   if (!m.lips_full) m.lips_thin = Math.max(0, tri()) * (1 - afr * 0.7);
@@ -529,6 +532,11 @@ function moreFace(id, f, m, shaved) {
   if (shape && (m.head_square || 0) + (m.head_oval || 0) < 0.3) m[shape] = (0.4 + r() * 0.6) * (shaved ? 0.5 : 1);
   axis('head_wide', 'head_narrow', wide() * 0.8);
   axis('face_fat', 'face_lean', wide() * 0.9 - 0.25); // (plus souvent fin que joufflu)
+  // visage plein ou rond, crâne large : de petits yeux rapprochés et des sourcils en V s'y ajouteraient en caricature
+  // (relecture du 14/11 : trois visages limites sur 72) ; ils restent à la moitié de leur amplitude
+  if ((m.face_fat || 0) > 0.5 || (m.head_wide || 0) > 0.5 || (m.head_round || 0) > 0.5 || (m.cheeks_full || 0) > 0.3) {
+    for (const k of ['eyes_small', 'eyes_close', 'brows_flat', 'brows_low']) if (m[k]) m[k] = Math.min(m[k], 0.5);
+  }
   // plafonds d'ensemble (les traits tirés avant ne sont jamais réduits : seuls les nouveaux le sont)
   const cap = (ks, max, keep = []) => {
     const fixed = keep.reduce((a, k) => a + (m[k] || 0), 0);

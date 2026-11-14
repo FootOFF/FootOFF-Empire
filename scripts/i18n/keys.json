@@ -3206,21 +3206,21 @@
    ]
   },
   {
-   "k": "Des visages tous différents",
+   "k": "Des visages bien plus variés",
    "kind": "t",
    "where": [
     "game/changelog.js:8"
    ]
   },
   {
-   "k": "Chaque joueur en 3D a enfin son propre visage : la taille, l’écart et la forme des yeux, les paupières, les sourcils, la bouche et les lèvres, la pointe du nez, le menton, les joues et la forme du crâne changent d’un joueur à l’autre.",
+   "k": "On distingue bien mieux les joueurs en 3D : la taille, l’écart et la forme des yeux, les paupières, les sourcils, la bouche et les lèvres, la pointe du nez, le menton, les joues et la forme du crâne changent d’un joueur à l’autre.",
    "kind": "t",
    "where": [
     "game/changelog.js:10"
    ]
   },
   {
-   "k": "Les visages restent naturels : chaque trait est dosé, deux traits contraires ne se cumulent jamais, et la taille comme la carrure de chaque joueur ne changent pas.",
+   "k": "Les visages restent naturels : chaque trait est dosé, et la taille comme la carrure de chaque joueur ne changent pas.",
    "kind": "t",
    "where": [
     "game/changelog.js:11"
