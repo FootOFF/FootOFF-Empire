@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { INSTR_KEYS, TACTICS, TACTIC_ORDER, formationOf, instructionsOf, tacticFrom } from '../game/tactics';
 import { uiSound } from './uisound';
 import { colon, t } from '../i18n/index';
@@ -151,6 +151,18 @@ export function BoardMarks({ formation, tactic, P, box }) {
   );
 }
 
+// Légende du tableau (1.0.55, « B · Tableau ») : le pressing (zone hachurée) et la ligne défensive (pointillés) nommés,
+// juste au-dessus du terrain (sur le terrain, les étiquettes couvraient les plaques des joueurs)
+export function BoardLegend({ tactic }) {
+  const st = presetOf(tactic);
+  return (
+    <div className="tb-legend">
+      <span className="zone"><i aria-hidden="true" />{LABELS.press} · {WORDS.press[st.press - 1]}</span>
+      <span className="line"><i aria-hidden="true" />{LABELS.line} · {WORDS.line[st.line - 1]}</span>
+    </div>
+  );
+}
+
 // Pictogramme d'un plan (relecture de la charte : lisible à 20 px) : le bloc en trois barres, haut et large pour
 // Offensive, au milieu pour Équilibrée, bas et serré pour Bloc bas, de part et d'autre de la ligne médiane
 const GLYPH = {
@@ -264,22 +276,39 @@ function Notches({ k, v, onPick, compact }) {
 }
 
 // tactic : le préréglage ou la tactique sur mesure ; onChange(id) reçoit la nouvelle tactique (préréglage si les crans en
-// sont un). compact : la mi-temps et les plans de mi-temps (lignes plus serrées).
-export function TacticSliders({ tactic, onChange, compact = false }) {
+// sont un). compact : la mi-temps et les plans de mi-temps (lignes plus serrées). carousel (1.0.55, « B · Tableau ») : au
+// téléphone, une carte par phase de jeu qui glisse de côté, juste sous le terrain, et trois points pour s'y retrouver ;
+// plus large, les trois cartes l'une sous l'autre.
+export function TacticSliders({ tactic, onChange, compact = false, carousel = false, className = '' }) {
   const I = instructionsOf(tactic);
+  const [page, setPage] = useState(0);
+  const strip = useRef(null);
   const pick = (k, n) => {
     if (n === I[k]) return;
     uiSound(n > I[k] ? 'shift-up' : 'shift-down');
     onChange(tacticFrom({ ...I, [k]: n }));
   };
+  const groups = GROUPS.map((g) => (
+    <section key={g.key} className="xi-group" aria-label={g.label}>
+      <h4 className="xi-gh">{g.label}</h4>
+      {g.keys.map((k) => <Notches key={k} k={k} v={I[k]} onPick={(n) => pick(k, n)} compact={compact} />)}
+    </section>
+  ));
+  if (!carousel) return <div className={`xi-sliders ${compact ? 'compact' : ''} ${className}`}>{groups}</div>;
+  const onScroll = () => {
+    const el = strip.current;
+    const card = el?.firstElementChild;
+    if (!card) return;
+    const k = Math.round(Math.abs(el.scrollLeft) / (card.offsetWidth + 10));
+    if (k !== page) setPage(Math.max(0, Math.min(GROUPS.length - 1, k)));
+  };
+  const go = (k) => strip.current?.children[k]?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
   return (
-    <div className={`xi-sliders ${compact ? 'compact' : ''}`}>
-      {GROUPS.map((g) => (
-        <section key={g.key} className="xi-group" aria-label={g.label}>
-          <h4 className="xi-gh">{g.label}</h4>
-          {g.keys.map((k) => <Notches key={k} k={k} v={I[k]} onPick={(n) => pick(k, n)} compact={compact} />)}
-        </section>
-      ))}
+    <div className={`xi-carousel ${className}`}>
+      <div ref={strip} className={`xi-sliders carousel ${compact ? 'compact' : ''}`} onScroll={onScroll} data-noswipe="">{groups}</div>
+      <div className="xi-dots" role="tablist" aria-label={t('Consignes')}>
+        {GROUPS.map((g, k) => <button key={g.key} type="button" role="tab" aria-selected={page === k} aria-label={g.label} className={page === k ? 'on' : ''} onClick={() => go(k)} />)}
+      </div>
     </div>
   );
 }

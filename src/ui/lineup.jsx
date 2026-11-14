@@ -12,7 +12,8 @@ import { Portrait } from './portrait';
 import { IconCheck } from './icons';
 import { comma, t, tn, tr } from '../i18n/index';
 import { useFitText } from './fittext';
-import { BoardMarks, boardPx, shapeOf, shapePoint, shapesOf } from './tacticboard';
+import { BoardLegend, BoardMarks, boardPx, shapeOf, shapePoint, shapesOf } from './tacticboard';
+import { RoleSheet, rolesAt } from './roles';
 
 // Composition interactive, la même partout (onglet Composition de l'Effectif, avant-match, mi-temps) : le terrain
 // avec le onze à ses postes (portrait, note au poste, nom, condition), le banc en cartes en dessous. Le terrain se
@@ -246,7 +247,7 @@ function BenchFit({ value }) {
 // tactic (avant-match, 1.0.34) : le terrain devient le tableau tactique noir et or (tacticboard.jsx) : l'équipe se place
 // selon le plan, avec sa zone de pressing, sa ligne défensive et ses courses, et glisse en place à chaque changement.
 // middle : ce qui se range entre le terrain et le banc (les réglages du plan, sous le tableau).
-export function LineupBoard({ players, lineup, formation, onChange, onShape = null, locked = null, booked = null, maxIn = Infinity, original = null, notes = null, hurt = null, unavailable = null, fitness = null, tactic = null, middle = null }) {
+export function LineupBoard({ players, lineup, formation, onChange, onShape = null, locked = null, booked = null, maxIn = Infinity, original = null, notes = null, hurt = null, unavailable = null, fitness = null, tactic = null, middle = null, roles = null, onRoles = null }) {
   const slots = slotsOf(formation);
   const posts = postsOf(formation);
   const cells = formationOf(formation).cells;
@@ -267,6 +268,12 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
   const [ghost, setGhost] = useState(null); // joueur suivi par le doigt
   const [over, setOver] = useState(null); // cible survolée pendant le glissé
   const [lift, setLift] = useState(null); // remplaçant saisi (maintien au doigt)
+  // mode Rôles (1.0.55, choix du PDG du 14/11 : « B · Tableau ») : sur le même terrain, un joueur touché ouvre la feuille
+  // de ses rôles (roles.jsx) ; rien ne se déplace dans ce mode, le banc s'efface
+  const [mode, setMode] = useState('xi');
+  const [roleFor, setRoleFor] = useState(null);
+  const rolesMode = !!onRoles && mode === 'roles';
+  const typeAt = (k) => (cells[k] === 'G' ? 'G' : typeOf(cells[k]));
   const drag = useRef(null);
   const bestRef = useRef(null);
   const root = useRef(null);
@@ -421,7 +428,17 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
     setSel(item);
     if (item.kind === 'bench') revealPitch();
   };
-  const handlers = (item) => ({
+  const openRole = (k) => {
+    const id = lineup[k];
+    if (id == null || !byId[id] || isLocked(id)) return;
+    uiSound('tap');
+    haptic('tap');
+    setRoleFor(k);
+  };
+  const handlers = (item) => (rolesMode ? {
+    onClick: () => { if (item.kind === 'slot') openRole(item.k); },
+    onContextMenu: (e) => e.preventDefault(),
+  } : {
     onPointerDown: (e) => down(e, item),
     onPointerMove: move,
     onPointerUp: up,
@@ -484,8 +501,18 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
   }, [firstId, target]);
 
   return (
-    <div className={`lu ${board ? 'tb' : ''} ${ghost ? 'dragging' : ''} ${showCells ? 'shaping' : ''}`} ref={root} data-noswipe="">
-      {outHint && <p className="lu-hint lu-hint-out" role="status">{outHint}</p>}
+    <div className={`lu ${board ? 'tb' : ''} ${ghost ? 'dragging' : ''} ${showCells ? 'shaping' : ''} ${rolesMode ? 'roles-mode' : ''}`} ref={root} data-noswipe="">
+      {onRoles && (
+        <div className="lu-modes" role="tablist" aria-label={t('Terrain')}>
+          {[['xi', t('Composition')], ['roles', t('Rôles')]].map(([k, label]) => (
+            <button key={k} type="button" role="tab" aria-selected={mode === k} className={mode === k ? 'on' : ''}
+              onClick={() => { if (k === mode) return; uiSound('shift'); reset(); setSel(null); setMode(k); }}>{label}</button>
+          ))}
+        </div>
+      )}
+      {rolesMode && <p className="lu-hint lu-hint-roles" role="status">{t('Touche un joueur pour choisir ses rôles.')}</p>}
+      {outHint && !rolesMode && <p className="lu-hint lu-hint-out" role="status">{outHint}</p>}
+      {board && <BoardLegend tactic={tactic} />}
       <div className="lu-pitch" ref={pitchEl}>
         {shapeMsg && (root.current?.clientWidth || 0) >= WIDE && <p className="lu-toast" role="status">{shapeMsg}</p>}
         <div className="p2-lines"><i className="half" /><i className="circle" /><i className="box top" /><i className="box bottom" /><i className="six top" /><i className="six bottom" /></div>
@@ -535,7 +562,9 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
                 {isHurt(id) && <i className="lu-hurt" aria-hidden="true" />}
               </span>
               <span className="lu-name">{names[id]}</span>
-              {!out && <FitBar value={fitValue(p)} />}
+              {rolesMode
+                ? (() => { const ra = rolesAt(typeAt(k), roles?.[id]); const r = ra && (ra.w !== ra.fam.with[0] || ra.d === ra.fam.without[0] ? ra.w : ra.d); return r ? <span className={`lu-role ${ra.custom ? 'custom' : ''}`}>{r.name}</span> : null; })()
+                : !out && <FitBar value={fitValue(p)} />}
             </button>
           );
         })}
@@ -592,6 +621,7 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
         </div>,
         document.body,
       )}
+      {roleFor !== null && byId[lineup[roleFor]] && <RoleSheet player={byId[lineup[roleFor]]} type={typeAt(roleFor)} roles={roles || {}} onChange={onRoles} onClose={() => setRoleFor(null)} />}
     </div>
   );
 }

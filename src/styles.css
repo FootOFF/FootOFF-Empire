@@ -6640,24 +6640,73 @@ button.lv2-pl { cursor: pointer; }
 /* banc classé pour un poste (1.0.51) : la bande cesse d'accrocher ses cartes, pour que le meilleur, premier, reste en vue */
 .matchscreen.live.lv2-on .halftime .lu-bench-grid.ranked, .lu.tb .lu-bench-grid.ranked { scroll-snap-type: none; }
 
-/* ===== rôles des joueurs (1.0.54, ui/roles.jsx) : un joueur touché déplie ses rôles avec et sans ballon ===== */
-.roles { display: flex; flex-direction: column; gap: 8px; }
-.roles-help { margin: 0; font-size: var(--t-sm); line-height: 1.45; color: var(--muted); }
-.roles-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.roles-row { background: var(--plate-2); clip-path: var(--cut-shape-sm); transition: box-shadow var(--dur-fast); }
-.roles-row.open { box-shadow: inset 3px 0 0 var(--gold-light); }
-.roles-head { display: grid; grid-template-columns: 46px minmax(0, 1fr) minmax(0, auto); align-items: center; column-gap: 10px; width: 100%; min-height: 46px; padding: 6px 12px; border: 0; background: transparent; color: var(--text); text-align: start; cursor: pointer; }
-.roles-post { font-family: var(--font-disp); font-weight: 700; font-size: 13px; letter-spacing: .06em; color: var(--gold); }
-.roles-name { font-family: var(--font-disp); font-weight: 700; font-size: 16px; line-height: 1.1; letter-spacing: .03em; text-transform: uppercase; overflow-wrap: break-word; }
-.roles-sum { max-width: 46vw; font-size: 12px; line-height: 1.25; color: var(--muted); text-align: end; }
-.roles-row.custom .roles-sum { grid-column: 2 / -1; grid-row: 2; max-width: none; margin-top: 3px; text-align: start; color: var(--gold-light); }
-.roles-sum > span { white-space: nowrap; }
-@media (hover: hover) { .roles-head:hover { background: rgba(222, 193, 127, .05); } }
-.roles-pick { display: flex; flex-direction: column; gap: 12px; padding: 2px 12px 14px; animation: fo-up .2s var(--ease); }
-.roles-label { font-family: var(--font-disp); font-weight: 700; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
-.roles-chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
-.roles-chip { min-height: 42px; padding: 6px; border: 1px solid rgba(199, 161, 90, .22); background: #0e0f11; color: var(--text-2); font-size: 12.5px; line-height: 1.2; -webkit-hyphens: auto; hyphens: auto; overflow-wrap: break-word; clip-path: var(--cut-shape-sm); cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
-.roles-chip.on { border-color: transparent; background: var(--gold-grad); color: var(--gold-ink); font-weight: 700; }
-@media (hover: hover) { .roles-chip:not(.on):hover { background: rgba(222, 193, 127, .1); color: var(--text); } }
-.roles-desc { margin: 6px 0 0; font-size: 13px; line-height: 1.4; color: var(--text-2); }
-@media (prefers-reduced-motion: reduce) { .roles-pick { animation: none; } }
+/* ===== tactique sur le terrain (1.0.55, choix du PDG du 14/11 : « B · Tableau ») ===== */
+/* le terrain : Composition ou Rôles (lineup.jsx) */
+.lu-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; margin-bottom: 8px; background: rgba(6, 7, 8, .9); clip-path: var(--cut-shape-sm); }
+.lu-modes button { height: 38px; border: 0; background: transparent; color: var(--text-2); font-family: var(--font-disp); font-weight: 700; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; clip-path: var(--cut-shape-sm); cursor: pointer; transition: background .2s, color .2s; }
+.lu-modes button.on { background: var(--gold-grad); color: var(--gold-ink); }
+@media (hover: hover) { .lu-modes button:not(.on):hover { color: var(--text); } }
+.lu-hint-roles { color: var(--gold-light); }
+.lu.roles-mode .lu-bench { display: none; }
+.lu.roles-mode .lu-chip { cursor: pointer; }
+.lu-role { display: block; max-width: 96px; margin-top: 2px; padding: 1px 5px; font-size: 10px; font-weight: 600; line-height: 1.15; text-align: center; color: var(--text-2); background: rgba(8, 9, 10, .85); overflow-wrap: break-word; }
+.lu-role.custom { color: var(--gold-ink); background: var(--gold-grad); font-weight: 700; }
+/* légende du tableau : le pressing et la ligne défensive nommés au-dessus du terrain (tacticboard.jsx, BoardLegend) */
+.tb-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 8px; font-family: var(--font-disp); font-weight: 700; font-size: 11px; line-height: 1.3; letter-spacing: .06em; text-transform: uppercase; color: var(--gold-light); }
+.tb-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.tb-legend .zone i { width: 16px; height: 11px; background: repeating-linear-gradient(135deg, rgba(222, 193, 127, .55) 0 2px, transparent 2px 5px); box-shadow: inset 0 0 0 1px rgba(222, 193, 127, .45); }
+.tb-legend .line i { width: 18px; height: 0; border-top: 2px dashed var(--gold-light); }
+/* la feuille des rôles d'un joueur (roles.jsx) : du bas de l'écran au téléphone, au centre sur un grand écran */
+.rs-wrap { position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; justify-content: flex-end; }
+.rs-dim { position: absolute; inset: 0; border: 0; padding: 0; background: rgba(0, 0, 0, .62); cursor: pointer; animation: rs-fade .2s ease; }
+.rs { position: relative; max-height: 92vh; overflow: auto; padding: 10px 16px calc(18px + env(safe-area-inset-bottom, 0px)); background: #141416; border-top: 1px solid rgba(199, 161, 90, .28); border-radius: 22px 22px 0 0; box-shadow: 0 -18px 40px rgba(0, 0, 0, .65); animation: rs-up .28s cubic-bezier(.2, .8, .2, 1); }
+@media (min-width: 761px) and (min-height: 501px) {
+  .rs-wrap { justify-content: center; align-items: center; }
+  .rs { width: min(520px, 92vw); border: 1px solid rgba(199, 161, 90, .28); border-radius: 18px; }
+  .rs-grip { display: none; }
+}
+@keyframes rs-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes rs-fade { from { opacity: 0; } to { opacity: 1; } }
+.rs-grip { display: block; width: 44px; height: 4px; margin: 0 auto 12px; border-radius: 2px; background: rgba(255, 255, 255, .2); }
+.rs-head { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; column-gap: 12px; }
+.rs-who b { display: block; font-family: var(--font-disp); font-weight: 700; font-size: 21px; line-height: 1.15; letter-spacing: .03em; text-transform: uppercase; overflow-wrap: break-word; }
+.rs-who em { display: block; font-style: normal; font-size: 13px; line-height: 1.35; color: var(--muted); }
+.rs-who em span { white-space: nowrap; }
+.rs-ok { height: 36px; padding: 0 20px; border: 0; background: var(--gold-grad); color: var(--gold-ink); font-family: var(--font-disp); font-weight: 700; letter-spacing: .06em; clip-path: var(--cut-shape-sm); cursor: pointer; }
+.rs-group { margin-top: 14px; }
+.rs-label { font-family: var(--font-disp); font-weight: 700; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.rs-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+.rs-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px 9px; border: 1px solid rgba(199, 161, 90, .22); background: #0e0f11; color: var(--text-2); font-size: 12.5px; line-height: 1.2; -webkit-hyphens: auto; hyphens: auto; overflow-wrap: break-word; text-align: center; clip-path: var(--cut-shape-sm); cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
+.rs-card.on { border-color: transparent; background: var(--gold-grad); color: var(--gold-ink); font-weight: 700; }
+.rs-card:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+@media (hover: hover) { .rs-card:not(.on):hover { background: rgba(222, 193, 127, .1); color: var(--text); } }
+.rs-desc { margin: 6px 0 0; font-size: 13px; line-height: 1.4; color: var(--text-2); }
+.rp { display: block; width: 50px; height: 65px; flex: none; }
+.rp-turf { fill: #0b0c0d; stroke: rgba(199, 161, 90, .35); stroke-width: .8; }
+.rp-mark { fill: none; stroke: rgba(199, 161, 90, .2); stroke-width: .7; }
+.rp-zone { fill: rgba(222, 193, 127, .12); stroke: rgba(222, 193, 127, .35); stroke-width: .7; stroke-dasharray: 1.5 1.5; }
+.rs-card.on .rp-turf { fill: rgba(0, 0, 0, .12); stroke: rgba(23, 17, 6, .5); }
+.rs-card.on .rp-mark { stroke: rgba(23, 17, 6, .3); }
+@media (prefers-reduced-motion: reduce) { .rs, .rs-dim { animation: none; } }
+/* les consignes en cartes qui glissent (tacticboard.jsx, TacticSliders carousel) */
+.xi-carousel { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.xi-sliders.carousel { display: grid; grid-auto-flow: column; grid-auto-columns: 88%; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.xi-sliders.carousel::-webkit-scrollbar { display: none; }
+.xi-sliders.carousel .xi-group { scroll-snap-align: start; }
+.xi-dots { display: flex; justify-content: center; }
+.xi-dots button { width: 26px; height: 18px; padding: 0; border: 0; background: none; cursor: pointer; }
+.xi-dots button::after { content: ''; display: block; width: 7px; height: 7px; margin: auto; border-radius: 4px; background: rgba(199, 161, 90, .35); transition: width .25s, background-color .25s; }
+.xi-dots button.on::after { width: 20px; background: var(--gold); }
+@media (prefers-reduced-motion: reduce) { .xi-dots button::after { transition: none; } }
+/* avant-match : au téléphone, les consignes sous le terrain (le panneau Tactique garde le nom et le dispositif) ;
+   plus large, elles restent dans le panneau Tactique */
+.pm-consignes { display: none; }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
+  .pm-consignes { display: flex; margin-top: 10px; }
+  .pm-plan .pm-sliders { display: none; }
+}
+/* (1.0.55) sur un grand écran, les cartes de consignes s'empilent : il y a la place, rien ne glisse */
+@media (min-width: 761px) and (min-height: 501px) {
+  .xi-sliders.carousel { grid-auto-flow: row; grid-auto-columns: auto; overflow: visible; }
+  .xi-carousel .xi-dots { display: none; }
+}

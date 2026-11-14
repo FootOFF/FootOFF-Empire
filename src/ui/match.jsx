@@ -3,7 +3,6 @@ import { HOME_KIT, kitHex, matchKits } from '../game/kits';
 import { flushSync } from 'react-dom';
 import { TACTICS, autoLineup, fitWeight, formationOf, isTactic, lineupRating, ratingAtSlot, reshapeLineup, slotsOf, tacticBlurb, tacticName } from '../game/tactics';
 import { fmtMoney, fmtNum, fmtRating } from './format';
-import { RolesPanel } from './roles';
 import { LIVE_VERSION, SUBS_MAX, awayPlayerOf, awayShownOf, createLiveMatch, highlightOf, liveKeyOf, pairSubs, statsOf, subMinute } from '../game/live';
 import { saveLive } from '../game/save';
 import { available, fitAt, ratingAt } from '../game/players';
@@ -36,12 +35,12 @@ import { colon, comma, ordinal as ordinalText, t, tn, tr } from '../i18n/index';
 
 // Tactique de la mi-temps et des plans de mi-temps (1.0.50) : les trois préréglages, puis les 7 consignes du mode expert
 // (tacticboard.jsx) ; un cran réglé fait une tactique sur mesure.
-function TacticPicker({ value, onChange, compact, formation = null }) {
+function TacticPicker({ value, onChange, compact, formation = null, carousel = false }) {
   return (
     <div className={`tactic-set ${compact ? 'compact' : ''}`}>
       {formation && <MiniBoard formation={formation} tactic={value} />}
       <PresetPicker value={value} onChange={onChange} />
-      <TacticSliders tactic={value} onChange={onChange} compact={compact} />
+      <TacticSliders tactic={value} onChange={onChange} compact={compact} carousel={carousel} />
     </div>
   );
 }
@@ -297,23 +296,23 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           </div>
           <LineupBoard
             players={state.players} lineup={lineup} formation={formation} tactic={tactic} onChange={(l) => commit({ lineup: l })} onShape={(f, l) => commit({ formation: f, lineup: l })} fitness={(p) => fitAt(p, 0)}
-            middle={(
+            roles={roles} onRoles={(r) => commit({ roles: r })}
+            middle={(<>
               <div className="pm-quick">
                 <PresetPicker value={tactic} onChange={pickTactic} />
                 <FormationPicker value={formation} onChange={reshape} />
               </div>
-            )}
+              {/* (1.0.55, « B · Tableau ») au téléphone, les consignes en cartes juste sous le terrain qu'elles font bouger */}
+              <TacticSliders tactic={tactic} onChange={tuneTactic} carousel className="pm-consignes" />
+            </>)}
           />
         </section>
         <section className="pm-plan glass" aria-label={t('Dispositif et tactique')}>
           <h3 className="pm-sh mark-head">{tr('Tactique · <0/>', [<span className="pm-plan-name">{tacticName(tactic)}</span>])}</h3>
           <p className="pm-blurb">{tacticBlurb(tactic)}</p>
-          <MiniBoard formation={formation} tactic={tactic} />
-          <TacticSliders tactic={tactic} onChange={tuneTactic} />
+          <TacticSliders tactic={tactic} onChange={tuneTactic} className="pm-sliders" />
           <h3 className="pm-sh mark-head">{tr('Dispositif · <0/>', [<span className="pm-plan-name">{form.name}</span>])}</h3>
           <p className="pm-blurb">{form.blurb}</p>
-          <h3 className="pm-sh mark-head">{t('Rôles')}</h3>
-          <RolesPanel players={state.players} lineup={lineup} formation={formation} roles={roles} onChange={(r) => commit({ roles: r })} />
           {friends && <>
             <h3 className="pm-sh mark-head">{t('Plans de mi-temps')}</h3>
             <PlansSummary players={state.players} lineup={lineup} formation={formation} tactic={tactic} plans={plans} onOpen={setPlansOpen} />
@@ -1271,6 +1270,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
       booked={m.booked.home}
       notes={notes}
       fitness={(p) => fitAt(p, oddsMinute, since(p.id))}
+      roles={replay ? null : roles2}
+      onRoles={replay ? null : setRoles2}
     />
   );
 
@@ -1486,11 +1487,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
             </div>}
             {!replay && <div className="ht-block ht-b-tactic">
               <span className="ht-label">{phase === 'halftime' ? t('Tactique de la seconde période') : t('Tactique', undefined, 'onglet')}</span>
-              <TacticPicker value={tactic2} onChange={setTactic2} compact formation={form2} />
-            </div>}
-            {!replay && <div className="ht-block ht-b-roles">
-              <span className="ht-label">{t('Rôles')}</span>
-              <RolesPanel players={state.players} lineup={planned} formation={form2} roles={roles2} onChange={setRoles2} compact />
+              <TacticPicker value={tactic2} onChange={setTactic2} compact formation={form2} carousel />
             </div>}
             {sub?.err && <p className="ht-note warn">{sub.err}</p>}
           </div>
