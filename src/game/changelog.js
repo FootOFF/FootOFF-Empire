@@ -5,6 +5,15 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.51', date: '2026-11-14', title: t('Mi-temps, onze et remplaçants plus clairs'),
+    items: [
+      t('Au téléphone, la mi-temps et chaque changement s’ouvrent en trois onglets : ton équipe sur le terrain, ta tactique, et les chiffres du match.'),
+      t('Touche un joueur du terrain : les remplaçants se classent selon leur note à son poste, et le meilleur est marqué « Le meilleur ici ».'),
+      t('Un titulaire épuisé se signale d’un anneau ambré autour de son portrait.'),
+      t('Au téléphone, un petit tableau reste en vue au-dessus des curseurs de la tactique : le bloc, la zone de pressing et la ligne défensive bougent avec chaque cran.'),
+    ],
+  },
+  {
     version: '1.0.50', date: '2026-11-14', title: t('Le mode expert de la tactique'),
     items: [
       t('Sous les trois plans, sept curseurs dorés règlent ta tactique cran par cran : pressing, ligne défensive, largeur, tempo, jeu direct, et ce que fait ton équipe quand elle récupère ou perd le ballon.'),

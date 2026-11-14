@@ -11,7 +11,7 @@ import { HeroShot, prefetchHero } from './heroshot';
 import { teamCodes } from './teamcode';
 import { FormationPicker, LineupActions, LineupBoard, displayNames } from './lineup';
 import { IconCheck, IconChevron, IconClose, IconFast, IconMute, IconPlay, IconSound, IconUndo, IconUsers } from './icons';
-import { PresetPicker, TacticSliders, shapeOf } from './tacticboard';
+import { MiniBoard, PresetPicker, TacticSliders, shapeOf } from './tacticboard';
 import { uiSound } from './uisound';
 import { IconAssist, IconBall, IconMedic, IconSwap, IconWhistle, LaneSplit, RatingBadge, VersusBar } from './kit';
 import { useKeydown } from './presence';
@@ -35,9 +35,10 @@ import { colon, comma, ordinal as ordinalText, t, tn, tr } from '../i18n/index';
 
 // Tactique de la mi-temps et des plans de mi-temps (1.0.50) : les trois préréglages, puis les 7 consignes du mode expert
 // (tacticboard.jsx) ; un cran réglé fait une tactique sur mesure.
-function TacticPicker({ value, onChange, compact }) {
+function TacticPicker({ value, onChange, compact, formation = null }) {
   return (
     <div className={`tactic-set ${compact ? 'compact' : ''}`}>
+      {formation && <MiniBoard formation={formation} tactic={value} />}
       <PresetPicker value={value} onChange={onChange} />
       <TacticSliders tactic={value} onChange={onChange} compact={compact} />
     </div>
@@ -303,6 +304,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
         <section className="pm-plan glass" aria-label={t('Dispositif et tactique')}>
           <h3 className="pm-sh mark-head">{tr('Tactique · <0/>', [<span className="pm-plan-name">{tacticName(tactic)}</span>])}</h3>
           <p className="pm-blurb">{tacticBlurb(tactic)}</p>
+          <MiniBoard formation={formation} tactic={tactic} />
           <TacticSliders tactic={tactic} onChange={tuneTactic} />
           <h3 className="pm-sh mark-head">{tr('Dispositif · <0/>', [<span className="pm-plan-name">{form.name}</span>])}</h3>
           <p className="pm-blurb">{form.blurb}</p>
@@ -863,6 +865,9 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const [tactic2, setTactic2] = useState(live.state.tactic);
   const [form2, setForm2] = useState(live.state.formation); // dispositif envisagé (mi-temps, changement en jeu)
   const [board, setBoard] = useState(false); // composition repliée : on la déploie pour faire ses changements
+  // mi-temps et changement en onglets au téléphone (1.0.51, PDG 14/11 : « améliore l'interface de mi-temps… intuitif ») :
+  // l'équipe (changements sur le terrain), la tactique (dispositif, plans, consignes), le match (ses chiffres)
+  const [htTab, setHtTab] = useState('team');
   const [sub, setSub] = useState(null); // changement en cours de jeu : { at: minute d'effet, note, err }
   const [lineupKey, setLineupKey] = useState(0); // le onze a changé : la scène 3D relit les noms
   // ce que montre le centre du match : stats, notes (téléphone : les PC les voient en colonnes) ou le fil
@@ -1191,7 +1196,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const htMoves = useMemo(() => (htReplay
     ? live.eventsOf(2).filter((e) => e.at <= 45.01 && (e.type === 'sub' || e.type === 'info')) : []), [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   // et les faits de la première période (buts, cartons, blessés), dans l'ordre du match
-  const htFacts = useMemo(() => (htReplay ? [...shown].reverse().filter((e) => ['goal', 'yellow', 'red', 'injury'].includes(e.type)) : []), [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  const htFacts = useMemo(() => (htReplay || phase === 'halftime' || phase === 'subs' ? [...shown].reverse().filter((e) => ['goal', 'yellow', 'red', 'injury'].includes(e.type)) : []), [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   const base = half === 1 ? 45 : 90;
   const minute = Math.max(half === 1 ? 0 : 45, Math.ceil(clock));
   const minuteLabel = minute > base ? `${base}+${minute - base}` : `${minute}`;
@@ -1398,7 +1403,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
       ))}
 
       {boardOpen && (
-        <div className={`halftime glass ${phase === 'subs' ? 'subs' : ''} ${htReplay ? 'replay' : board ? 'board-open' : 'board-closed'}`}>
+        <div className={`halftime glass ${phase === 'subs' ? 'subs' : ''} ${htReplay ? 'replay' : board ? 'board-open' : 'board-closed'} ${replay ? '' : `tab-${htTab}`}`}>
           <div className="ht-col">
             <h3 className="pm-sh mark-head">{phase === 'halftime' ? (replay ? t('Mi-temps') : t('Mi-temps · tes consignes')) : t('{minuteLabel}′ · changement', { minuteLabel })}</h3>
             {phase === 'subs' && (
@@ -1410,6 +1415,36 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
               <div><b>{st.shots[0]} - {st.shots[1]}</b><span>{t('Tirs')}</span></div>
               <div><b>{st.on[0]} - {st.on[1]}</b><span>{t('Cadrés')}</span></div>
             </div>
+            {!replay && (
+              <div className="ht-tabs" role="tablist" aria-label={t('Que régler ?')}>
+                {[['team', t('Équipe')], ['tactic', t('Tactique')], ['match', t('Le match')]].map(([k, label]) => (
+                  <button key={k} type="button" role="tab" aria-selected={htTab === k} className={htTab === k ? 'active' : ''}
+                    onClick={(e) => {
+                      if (k !== htTab) uiSound('shift');
+                      // l'onglet s'ouvre par son début : si la mi-temps a défilé sous les onglets collés en haut, elle
+                      // remonte juste au-dessus d'eux (sinon le haut du nouvel onglet reste caché derrière)
+                      const tabs = e.currentTarget.parentElement;
+                      const sc = tabs.closest('.halftime');
+                      const prev = tabs.previousElementSibling;
+                      if (sc && prev) {
+                        const top = prev.getBoundingClientRect().bottom - sc.getBoundingClientRect().top + sc.scrollTop;
+                        if (sc.scrollTop > top) sc.scrollTop = top;
+                      }
+                      setHtTab(k);
+                      if (k === 'team') setBoard(true);
+                    }}>{label}</button>
+                ))}
+              </div>
+            )}
+            {!replay && (
+              <div className="ht-block ht-b-match">
+                <KeyStats st={st} poss={poss} flip={flip} us={us} zst={zst} codes={codes} />
+                <span className="ht-label">{phase === 'halftime' ? t('Première période') : t('Jusqu’ici')}</span>
+                {htFacts.length
+                  ? <ol className="feed-list ht-moves">{htFacts.map((e) => <EventRow key={keyOf(e)} e={e} />)}</ol>
+                  : <p className="ht-note">{t('Ni but, ni carton, ni blessé pour l’instant.')}</p>}
+              </div>
+            )}
             {htReplay ? ( /* match revu (ligue) : rien à décider à la pause, le résumé de la première période */
               <>
                 <div className="ht-block ht-b-half">
@@ -1439,7 +1474,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
             </div>}
             {!replay && <div className="ht-block ht-b-tactic">
               <span className="ht-label">{phase === 'halftime' ? t('Tactique de la seconde période') : t('Tactique')}</span>
-              <TacticPicker value={tactic2} onChange={setTactic2} compact />
+              <TacticPicker value={tactic2} onChange={setTactic2} compact formation={form2} />
             </div>}
             {sub?.err && <p className="ht-note warn">{sub.err}</p>}
           </div>

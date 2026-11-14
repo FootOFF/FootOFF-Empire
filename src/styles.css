@@ -6595,3 +6595,44 @@ button.lv2-pl { cursor: pointer; }
 .tactic-set.compact .presets button { flex-direction: column; gap: 4px; height: 60px; padding: 0 4px; }
 .tactic-set.compact .presets strong { font-size: 15px; text-align: center; white-space: nowrap; }
 .tactic-set.compact .tb-glyph { width: 22px; height: 22px; }
+
+/* ===== banc classé pour le poste et titulaires fatigués (1.0.51, lineup.jsx) ===== */
+.lu-chip.tired .lu-face::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(232, 158, 70, .9); animation: lu-tired 1.8s ease-in-out infinite; pointer-events: none; }
+@keyframes lu-tired { 0%, 100% { opacity: .45; transform: scale(.97); } 50% { opacity: 1; transform: scale(1.03); } }
+@media (prefers-reduced-motion: reduce) { .lu-chip.tired .lu-face::after { animation: none; opacity: .85; } }
+.lu-bchip { position: relative; }
+.lu-bchip.aimed .lu-brate { color: var(--gold-light); }
+.lu-bchip.best { background: linear-gradient(90deg, rgba(222, 193, 127, .16), rgba(222, 193, 127, .04)); box-shadow: inset 3px 0 0 var(--gold-light), 0 0 0 1px rgba(222, 193, 127, .35); }
+.lu-bchip.best { height: 69px; padding-top: 17px; } /* plus haute que les autres : un bandeau or en tête, comme une carte recommandée */
+.lu-btag { position: absolute; top: 0; inset-inline: 0; height: 15px; display: flex; align-items: center; justify-content: center; font-style: normal; font-family: var(--font-disp); font-weight: 700; font-size: 10px; line-height: 1; letter-spacing: .1em; text-transform: uppercase; color: var(--gold-ink); background: var(--gold-grad); pointer-events: none; }
+
+/* ===== mi-temps et changement en onglets au téléphone (1.0.51, match.jsx) ===== */
+.ht-tabs { display: none; }
+.ht-b-match { display: none; }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
+  .ht-tabs { position: sticky; top: 0; z-index: 3; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; margin: 0 -2px; background: rgba(12, 13, 15, .92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); clip-path: var(--cut-shape-sm); }
+  .ht-tabs button { height: 40px; border: 0; background: transparent; color: var(--text-2); font-family: var(--font-disp); font-weight: 700; font-size: 16px; letter-spacing: .05em; text-transform: uppercase; clip-path: var(--cut-shape-sm); transition: background .2s, color .2s; }
+  .ht-tabs button.active { background: var(--gold-grad); color: var(--gold-ink); }
+  .halftime.tab-match .ht-b-match { display: flex; flex-direction: column; gap: 12px; }
+  .halftime.tab-team .ht-b-formation, .halftime.tab-team .ht-b-tactic { display: none; }
+  .halftime.tab-tactic .compo-card, .halftime.tab-tactic .ht-b-changes, .halftime.tab-tactic .ht-board { display: none; }
+  .halftime.tab-match .compo-card, .halftime.tab-match .ht-b-changes, .halftime.tab-match .ht-board,
+  .halftime.tab-match .ht-b-formation, .halftime.tab-match .ht-b-tactic { display: none; }
+}
+
+/* ===== mini-tableau au-dessus des curseurs, au téléphone (1.0.51, tacticboard.jsx MiniBoard) ===== */
+.mini-board { display: none; }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 501px) {
+  .mini-board { position: sticky; top: 46px; z-index: 2; display: block; width: 100%; height: auto; aspect-ratio: 2.2; filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .55)); }
+  .pm-plan .mini-board { top: 6px; }
+  .mb-pitch { fill: #0d0e0f; stroke: rgba(199, 161, 90, .3); stroke-width: 1; }
+  .mb-mark { fill: none; stroke: rgba(199, 161, 90, .22); stroke-width: 1; }
+  .mb-zone { fill: rgba(199, 161, 90, .16); stroke: rgba(222, 193, 127, .45); stroke-width: .8; stroke-dasharray: 3 2; transition: x .45s cubic-bezier(.2, .8, .2, 1), width .45s cubic-bezier(.2, .8, .2, 1); }
+  .mb-line { stroke: var(--gold-light); stroke-width: 1.4; stroke-dasharray: 4 3; transition: x1 .45s, x2 .45s; }
+  .mb-p { fill: var(--gold); stroke: #0d0e0f; stroke-width: 1.2; transition: cx .45s cubic-bezier(.2, .8, .2, 1), cy .45s cubic-bezier(.2, .8, .2, 1); }
+  .mb-gk { fill: #e7cc8c; stroke: #0d0e0f; stroke-width: 1.2; transition: cx .45s, cy .45s; }
+}
+/* (1.0.51) le banc collé en bas de la mi-temps passe devant le joueur choisi du terrain (qui monte au premier plan) */
+.matchscreen.live.lv2-on .halftime .lu-bench { z-index: 5; }
+/* banc classé pour un poste (1.0.51) : la bande cesse d'accrocher ses cartes, pour que le meilleur, premier, reste en vue */
+.matchscreen.live.lv2-on .halftime .lu-bench-grid.ranked, .lu.tb .lu-bench-grid.ranked { scroll-snap-type: none; }

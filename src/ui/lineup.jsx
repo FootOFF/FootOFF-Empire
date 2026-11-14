@@ -268,6 +268,7 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
   const [over, setOver] = useState(null); // cible survolée pendant le glissé
   const [lift, setLift] = useState(null); // remplaçant saisi (maintien au doigt)
   const drag = useRef(null);
+  const bestRef = useRef(null);
   const root = useRef(null);
   const pitchEl = useRef(null);
   useChipScale(pitchEl, root, sets, lineup.join(','), board ? onBox : null);
@@ -454,6 +455,27 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
   const moving = sel?.kind === 'slot' ? sel.k : ghost?.from?.startsWith('slot:') ? Number(ghost.from.slice(5)) : null;
   const showCells = !!onShape && !!cells && moving !== null && slots[moving] !== 'G' && !isOutAt(moving);
   const movingP = moving !== null ? byId[lineup[moving]] : null;
+  // Banc classé pour le poste (1.0.51, PDG 14/11 : « les remplaçants, améliore l'interface… intuitif ») : un joueur du terrain
+  // choisi ou glissé, chaque remplaçant montre sa note à ce poste, les meilleurs d'abord, le premier marqué « Le meilleur
+  // ici » ; un poste laissé vide par un blessé se remplace de la même façon.
+  const target = sel?.kind === 'slot' ? sel.k : moving;
+  const atTarget = (p) => (target === null || target === undefined ? null : ratingAtSlot(p, formation, target));
+  const benchShown = target === null || target === undefined ? bench : [...bench].sort((a, b) => canEnter(b) - canEnter(a) || atTarget(b) - atTarget(a));
+  const bestId = target === null || target === undefined || isLocked(lineup[target]) ? null : benchShown.find((p) => canEnter(p))?.id ?? null;
+  // un titulaire sous 60 % de condition se signale (anneau ambré qui respire) : c'est lui qu'on remplace
+  const TIRED = 60;
+  // le meilleur remplaçant vient en vue dans le banc qui défile (au téléphone, une bande horizontale). Pendant le
+  // classement, la bande n'accroche plus ses cartes (.ranked) : sinon le navigateur la ramène sur la carte accrochée
+  // avant le nouveau classement, et le meilleur, désormais premier, sort de l'écran. Seule la bande défile, jamais la page.
+  useLayoutEffect(() => {
+    const el = bestRef.current;
+    const g = el?.parentElement;
+    if (bestId === null || !g || g.scrollWidth <= g.clientWidth + 1) return;
+    const r = el.getBoundingClientRect();
+    const gr = g.getBoundingClientRect();
+    const dx = r.left < gr.left ? r.left - gr.left - 8 : r.right > gr.right ? r.right - gr.right + 8 : 0;
+    if (dx) g.scrollBy({ left: dx, behavior: 'smooth' });
+  }, [bestId, target]);
 
   return (
     <div className={`lu ${board ? 'tb' : ''} ${ghost ? 'dragging' : ''} ${showCells ? 'shaping' : ''}`} ref={root} data-noswipe="">
@@ -484,7 +506,7 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
           const cur = ratingAtSlot(p, formation, k);
           const out = isLocked(id) || isHurt(id);
           const preview = freed ? (out || pos === 'G' ? null : ratingAtPost(p, freed)) : chosen && chosen.id !== id ? ratingAtSlot(chosen, formation, k) : null;
-          const cls = ['lu-chip', !natural && !out && 'off', keyOf(sel) === key && 'sel', over === key && 'over', ghost?.from === key && 'src', isLocked(id) && 'locked', isHurt(id) && 'hurt'];
+          const cls = ['lu-chip', !natural && !out && 'off', keyOf(sel) === key && 'sel', over === key && 'over', ghost?.from === key && 'src', isLocked(id) && 'locked', isHurt(id) && 'hurt', !out && fitness && fitValue(p) < TIRED && 'tired'];
           return (
             <button
               key={k}
@@ -518,22 +540,24 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
           <span className="lu-bench-title mark-head">{t('Remplaçants')}{board && bench.length > 0 && <em className="lu-count">{bench.length}</em>}</span>
           {left !== null && <span className={`lu-left ${left === 0 ? 'none' : ''}`}>{left === 0 ? t('Plus de changement') : tn(left, '{left} changement possible', '{left} changements possibles', { left }, left > 1)}</span>}
         </div>
-        <div className="lu-bench-grid">
+        <div className={`lu-bench-grid ${bestId !== null ? 'ranked' : ''}`}>
           {bench.length === 0 && <span className="muted small">{t('Aucun remplaçant : recrute au mercato.')}</span>}
-          {bench.map((p) => {
+          {benchShown.map((p) => {
             const key = `bench:${p.id}`;
             const ok = canEnter(p);
             const why = ok ? null : absenceOf(p)?.short || (hurt?.has(p.id) ? t('Blessé') : t('Déjà sorti'));
-            const cls = ['lu-bchip', keyOf(sel) === key && 'sel', over === key && 'over', (ghost?.from === key || lift === key) && 'src', lift === key && 'lift', !ok && 'na'];
+            const here = ok ? atTarget(p) : null;
+            const cls = ['lu-bchip', keyOf(sel) === key && 'sel', over === key && 'over', (ghost?.from === key || lift === key) && 'src', lift === key && 'lift', !ok && 'na', p.id === bestId && 'best', here !== null && 'aimed'];
             return (
-              <button key={p.id} type="button" data-drop={key} className={cls.filter(Boolean).join(' ')} title={why || undefined} aria-disabled={!ok || undefined}
+              <button key={p.id} ref={p.id === bestId ? bestRef : undefined} type="button" data-drop={key} className={cls.filter(Boolean).join(' ')} title={why || undefined} aria-disabled={!ok || undefined}
                 aria-label={t('{name}, {toLowerCase}, niveau {fmtRating}{v}', { name: p.name, toLowerCase: POS_LABELS[p.pos].toLowerCase(), fmtRating: fmtRating(playerRating(p)), v: why ? `${comma()}${why.toLowerCase()}` : '' })} {...handlers({ kind: 'bench', id: p.id })}>
                 <Portrait p={p} size={36} />
                 <span className="lu-bmain">
                   <BenchName name={names[p.id]} />
                   <span className="lu-bmeta"><span className={`pos-pill ${p.pos}`}>{p.pos}</span>{why ? <em className="lu-why">{why}</em> : <BenchFit value={fitValue(p)} />}</span>
                 </span>
-                <b className="lu-brate">{fmtRating(playerRating(p))}</b>
+                <b className="lu-brate" title={here !== null ? t('Sa note à ce poste') : undefined}>{fmtRating(here !== null ? here : playerRating(p))}</b>
+                {p.id === bestId && <em className="lu-btag">{t('Le meilleur ici')}</em>}
               </button>
             );
           })}

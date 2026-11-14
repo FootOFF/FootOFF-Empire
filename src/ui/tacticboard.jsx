@@ -181,6 +181,30 @@ export function PresetPicker({ value, onChange }) {
   );
 }
 
+// Mini-tableau (1.0.51) : au téléphone, le grand tableau est loin des curseurs ; ce petit terrain couché (notre but à
+// gauche, l'attaque vers la droite) reste en vue au-dessus d'eux et montre, à chaque cran, le bloc, la zone de pressing
+// et la ligne défensive, aux mêmes places que le grand tableau.
+export function MiniBoard({ formation, tactic }) {
+  const P = shapeOf(formation, tactic);
+  const st = presetOf(tactic);
+  const [z0, z1] = ZONE[st.press - 1];
+  const [d] = formationOf(formation).lines;
+  const X = (y) => (5 + (100 - y) * 0.9) * 2.2; // y du schéma (0 : but adverse) → abscisse du terrain couché
+  const Y = (x) => 5 + x * 0.9;
+  const deepest = Math.max(...P.slice(1, 1 + d).map((p) => p[1]));
+  const lineX = X(deepest) - 7;
+  return (
+    <svg className="mini-board" viewBox="0 0 220 100" role="img" aria-label={t('Ton bloc selon tes consignes')}>
+      <rect x="1" y="1" width="218" height="98" rx="2" className="mb-pitch" />
+      <path d="M110 1V99M1 32H24V68H1M219 32H196V68H219" className="mb-mark" />
+      <circle cx="110" cy="50" r="12" className="mb-mark" />
+      <rect x={X(z1)} y="3" width={Math.max(4, X(z0) - X(z1))} height="94" className="mb-zone" />
+      <line x1={lineX} y1="4" x2={lineX} y2="96" className="mb-line" />
+      {P.map(([x, y], i) => <circle key={i} cx={X(y)} cy={Y(x)} r={i === 0 ? 3.6 : 4.4} className={i === 0 ? 'mb-gk' : 'mb-p'} />)}
+    </svg>
+  );
+}
+
 // Le mode expert (1.0.50, choix du PDG du 14/11 : les 7 consignes du moteur ; du 12/11 : un curseur doré à 5 crans,
 // le mot du cran, jamais de chiffre, le tableau qui bouge en même temps). Les consignes vont par phase de jeu : sans
 // ballon (pressing, ligne), avec ballon (largeur, tempo, jeu direct), aux transitions (à la récupération : contrer ou
