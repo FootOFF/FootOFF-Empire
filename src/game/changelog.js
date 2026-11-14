@@ -7,8 +7,8 @@ export const CHANGELOG = [
   {
     version: '1.0.55', date: '2026-11-14', title: t('La tactique sur le terrain'),
     items: [
-      t('Au téléphone, l’avant-match se fait autour du terrain : le pressing et la ligne défensive sont nommés juste au-dessus, et les consignes se règlent en cartes qui glissent sous le terrain, une par phase de jeu.'),
-      t('Les rôles se choisissent sur le terrain : passe en mode Rôles et touche un joueur. Chaque rôle montre sur un petit terrain où il joue, avec et sans ballon.'),
+      t('Au téléphone, l’avant-match se fait autour du terrain : le pressing et la ligne défensive sont indiqués juste au-dessus, et les consignes se règlent sur des cartes qui glissent sous le terrain, une par phase de jeu.'),
+      t('Les rôles se choisissent sur le terrain : passe en mode Rôles et touche un joueur. Chaque rôle montre sur un petit terrain où va le joueur, avec ou sans ballon.'),
       t('À la mi-temps, même principe : les rôles dans l’onglet Équipe, les consignes en cartes dans l’onglet Tactique. Il y a beaucoup moins à faire défiler.'),
     ],
   },

@@ -872,6 +872,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const [tactic2, setTactic2] = useState(live.state.tactic);
   const [form2, setForm2] = useState(live.state.formation); // dispositif envisagé (mi-temps, changement en jeu)
   const [roles2, setRoles2] = useState(live.state.roles || {}); // rôles envisagés (1.0.54)
+  const [boardMode, setBoardMode] = useState('xi'); // mode du terrain de l'onglet Équipe (1.0.55) : sa légende le suit
   const [board, setBoard] = useState(false); // composition repliée : on la déploie pour faire ses changements
   // mi-temps et changement en onglets au téléphone (1.0.51, PDG 14/11 : « améliore l'interface de mi-temps… intuitif ») :
   // l'équipe (changements sur le terrain), la tactique (dispositif, plans, consignes), le match (ses chiffres)
@@ -1272,6 +1273,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
       fitness={(p) => fitAt(p, oddsMinute, since(p.id))}
       roles={replay ? null : roles2}
       onRoles={replay ? null : setRoles2}
+      onMode={setBoardMode}
     />
   );
 
@@ -1507,7 +1509,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
           )}
           {board && <div className="ht-col ht-board">
             <div className="ht-board-head">
-              <span className="ht-label">{t('Ton équipe · pastille : note du match · sous le nom : condition')}</span>
+              <span className="ht-label">{boardMode === 'roles' ? t('Ton équipe · pastille : note du match · sous le nom : rôle') : t('Ton équipe · pastille : note du match · sous le nom : condition')}</span>
               <button type="button" className="linkbtn ht-board-close" onClick={() => setBoard(false)}>{t('Replier')}</button>
             </div>
             {boardEl}

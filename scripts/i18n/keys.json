@@ -3213,14 +3213,14 @@
    ]
   },
   {
-   "k": "Au téléphone, l’avant-match se fait autour du terrain : le pressing et la ligne défensive sont nommés juste au-dessus, et les consignes se règlent en cartes qui glissent sous le terrain, une par phase de jeu.",
+   "k": "Au téléphone, l’avant-match se fait autour du terrain : le pressing et la ligne défensive sont indiqués juste au-dessus, et les consignes se règlent sur des cartes qui glissent sous le terrain, une par phase de jeu.",
    "kind": "t",
    "where": [
     "game/changelog.js:10"
    ]
   },
   {
-   "k": "Les rôles se choisissent sur le terrain : passe en mode Rôles et touche un joueur. Chaque rôle montre sur un petit terrain où il joue, avec et sans ballon.",
+   "k": "Les rôles se choisissent sur le terrain : passe en mode Rôles et touche un joueur. Chaque rôle montre sur un petit terrain où va le joueur, avec ou sans ballon.",
    "kind": "t",
    "where": [
     "game/changelog.js:11"
@@ -11454,7 +11454,7 @@
    "kind": "t",
    "where": [
     "game/mercato.js:41",
-    "ui/lineup.jsx:583"
+    "ui/lineup.jsx:587"
    ]
   },
   {
@@ -13941,8 +13941,8 @@
    "where": [
     "game/training.js:23",
     "ui/match.jsx:142",
-    "ui/match.jsx:1433",
-    "ui/match.jsx:1489"
+    "ui/match.jsx:1435",
+    "ui/match.jsx:1491"
    ]
   },
   {
@@ -16719,7 +16719,7 @@
    "where": [
     "ui/calendar.jsx:245",
     "ui/lineup.jsx:153",
-    "ui/lineup.jsx:651",
+    "ui/lineup.jsx:655",
     "ui/match.jsx:140"
    ]
   },
@@ -16845,7 +16845,7 @@
    "kind": "t",
    "where": [
     "ui/calendar.jsx:312",
-    "ui/match.jsx:1295",
+    "ui/match.jsx:1297",
     "ui/postmatch.jsx:121",
     "ui/stats.jsx:560"
    ]
@@ -17527,9 +17527,9 @@
    "kind": "t",
    "where": [
     "ui/confirm.jsx:13",
-    "ui/lineup.jsx:613",
+    "ui/lineup.jsx:617",
     "ui/match.jsx:610",
-    "ui/match.jsx:1519"
+    "ui/match.jsx:1521"
    ]
   },
   {
@@ -18676,7 +18676,7 @@
    "kind": "tr",
    "where": [
     "ui/drill.jsx:311",
-    "ui/match.jsx:1520"
+    "ui/match.jsx:1522"
    ]
   },
   {
@@ -19486,8 +19486,8 @@
    "kind": "t",
    "where": [
     "ui/hud.jsx:137",
-    "ui/match.jsx:1341",
-    "ui/match.jsx:1433",
+    "ui/match.jsx:1343",
+    "ui/match.jsx:1435",
     "ui/nav.jsx:13"
    ]
   },
@@ -21964,71 +21964,71 @@
    "k": "Il faut au moins un défenseur, un milieu et un attaquant.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:307"
+    "ui/lineup.jsx:311"
    ]
   },
   {
    "k": "{v} ne joue plus : choisis le poste à laisser vide (jamais celui du gardien)",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:463"
+    "ui/lineup.jsx:467"
    ]
   },
   {
    "k": "Expulsés : déplace-les sur les postes à laisser vides",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:464"
+    "ui/lineup.jsx:468"
    ]
   },
   {
    "k": "Expulsé : déplace-le sur le poste à laisser vide",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:464"
+    "ui/lineup.jsx:468"
    ]
   },
   {
    "k": "{v} : choisis un poste libre pour changer le dispositif, ou un coéquipier pour échanger",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:467"
+    "ui/lineup.jsx:471"
    ]
   },
   {
    "k": "{v} : choisis un poste ou un joueur pour l’y placer",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:468",
-    "ui/lineup.jsx:612"
+    "ui/lineup.jsx:472",
+    "ui/lineup.jsx:616"
    ]
   },
   {
    "k": "Glisse un joueur sur un poste libre pour créer ton dispositif, ou sur un coéquipier pour les échanger",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:469"
+    "ui/lineup.jsx:473"
    ]
   },
   {
    "k": "Glisse un joueur sur un poste, ou choisis-en deux pour les échanger",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:470"
+    "ui/lineup.jsx:474"
    ]
   },
   {
    "k": "Terrain",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:506"
+    "ui/lineup.jsx:510"
    ]
   },
   {
    "k": "Composition",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:507",
+    "ui/lineup.jsx:511",
     "ui/nav.jsx:16"
    ]
   },
@@ -22036,133 +22036,133 @@
    "k": "Rôles",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:507"
+    "ui/lineup.jsx:511"
    ]
   },
   {
    "k": "Touche un joueur pour choisir ses rôles.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:513"
+    "ui/lineup.jsx:517"
    ]
   },
   {
    "k": "{post} : y placer {name}",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:526"
+    "ui/lineup.jsx:530"
    ]
   },
   {
    "k": "Expulsé : il ne peut pas être remplacé ; déplace-le sur le poste à laisser vide",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:550"
+    "ui/lineup.jsx:554"
    ]
   },
   {
    "k": "Blessé : à remplacer par un joueur du banc, ou à déplacer sur le poste à laisser vide",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:550"
+    "ui/lineup.jsx:554"
    ]
   },
   {
    "k": "· hors de son poste ({toLowerCase})",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:550"
+    "ui/lineup.jsx:554"
    ]
   },
   {
    "k": ", niveau {fmtRating}",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:551"
+    "ui/lineup.jsx:555"
    ]
   },
   {
    "k": ", expulsé, poste laissé vide",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:551"
+    "ui/lineup.jsx:555"
    ]
   },
   {
    "k": ", blessé",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:551"
+    "ui/lineup.jsx:555"
    ]
   },
   {
    "k": "Remplaçants",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:575"
+    "ui/lineup.jsx:579"
    ]
   },
   {
    "k": "Plus de changement",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:576"
+    "ui/lineup.jsx:580"
    ]
   },
   {
    "k": "{left} changement possible",
    "kind": "one",
    "where": [
-    "ui/lineup.jsx:576"
+    "ui/lineup.jsx:580"
    ]
   },
   {
    "k": "{left} changements possibles",
    "kind": "other",
    "where": [
-    "ui/lineup.jsx:576"
+    "ui/lineup.jsx:580"
    ]
   },
   {
    "k": "Aucun remplaçant : recrute au mercato.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:579"
+    "ui/lineup.jsx:583"
    ]
   },
   {
    "k": "Déjà sorti",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:583"
+    "ui/lineup.jsx:587"
    ]
   },
   {
    "k": "{name}, {toLowerCase}, niveau {fmtRating}{v}",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:588"
+    "ui/lineup.jsx:592"
    ]
   },
   {
    "k": "Sa note à ce poste",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:594"
+    "ui/lineup.jsx:598"
    ]
   },
   {
    "k": "Le meilleur ici",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:595"
+    "ui/lineup.jsx:599"
    ]
   },
   {
    "k": "Onze de départ · <0/>",
    "kind": "tr",
    "where": [
-    "ui/lineup.jsx:643",
+    "ui/lineup.jsx:647",
     "ui/match.jsx:292"
    ]
   },
@@ -22170,7 +22170,7 @@
    "k": "Repères",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:656",
+    "ui/lineup.jsx:660",
     "ui/mercato.jsx:185"
    ]
   },
@@ -22178,42 +22178,42 @@
    "k": "Le chiffre à côté du portrait est le niveau du joueur <0>à ce poste</0>.",
    "kind": "tr",
    "where": [
-    "ui/lineup.jsx:657"
+    "ui/lineup.jsx:661"
    ]
   },
   {
    "k": "Contour en pointillés rouges : il joue hors de son poste<0/>.",
    "kind": "tr",
    "where": [
-    "ui/lineup.jsx:658"
+    "ui/lineup.jsx:662"
    ]
   },
   {
    "k": "({offPos} dans ton onze)",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:658"
+    "ui/lineup.jsx:662"
    ]
   },
   {
    "k": "Joueur choisi : chaque poste affiche le niveau qu’il y aurait, en vert s’il y ferait mieux, en rouge sinon.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:659"
+    "ui/lineup.jsx:663"
    ]
   },
   {
    "k": "Barre et pourcentage sous le nom : condition physique. Un joueur fatigué joue moins bien et se blesse plus souvent ; les absents (blessés, suspendus) restent sur le banc, grisés.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:660"
+    "ui/lineup.jsx:664"
    ]
   },
   {
    "k": "Ce onze est repris à l’avant-match, où tu peux encore le retoucher.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:661"
+    "ui/lineup.jsx:665"
    ]
   },
   {
@@ -22721,7 +22721,7 @@
    "where": [
     "ui/match.jsx:489",
     "ui/match.jsx:713",
-    "ui/match.jsx:1427",
+    "ui/match.jsx:1429",
     "ui/postmatch.jsx:191"
    ]
   },
@@ -22731,7 +22731,7 @@
    "where": [
     "ui/match.jsx:491",
     "ui/match.jsx:706",
-    "ui/match.jsx:1428",
+    "ui/match.jsx:1430",
     "ui/postmatch.jsx:192"
    ]
   },
@@ -23097,96 +23097,96 @@
    "k": "{player} est blessé et ne peut pas continuer : fais entrer un remplaçant, ou continue à dix.",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1140"
+    "ui/match.jsx:1141"
    ]
   },
   {
    "k": "<0/> · Journée",
    "kind": "tr",
    "where": [
-    "ui/match.jsx:1233"
+    "ui/match.jsx:1234"
    ]
   },
   {
    "k": "Mi-temps",
    "kind": "one",
    "where": [
-    "ui/match.jsx:1234",
     "ui/match.jsx:1235",
-    "ui/match.jsx:1409",
-    "ui/match.jsx:1421"
+    "ui/match.jsx:1236",
+    "ui/match.jsx:1411",
+    "ui/match.jsx:1423"
    ]
   },
   {
    "k": "Fin du match{v}",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1234"
+    "ui/match.jsx:1235"
    ]
   },
   {
    "k": "· t.a.b. {a}-{b}",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1234",
-    "ui/match.jsx:1235"
+    "ui/match.jsx:1235",
+    "ui/match.jsx:1236"
    ]
   },
   {
    "k": "1re période",
    "kind": "one",
    "where": [
-    "ui/match.jsx:1234"
+    "ui/match.jsx:1235"
    ]
   },
   {
    "k": "2e période",
    "kind": "other",
    "where": [
-    "ui/match.jsx:1234"
+    "ui/match.jsx:1235"
    ]
   },
   {
    "k": "Terminé{v}",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1235"
+    "ui/match.jsx:1236"
    ]
   },
   {
    "k": "Rejeu",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1236"
+    "ui/match.jsx:1237"
    ]
   },
   {
    "k": "Centre du match",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1314"
+    "ui/match.jsx:1316"
    ]
   },
   {
    "k": "Faits",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1315"
+    "ui/match.jsx:1317"
    ]
   },
   {
    "k": "Compos",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1315",
-    "ui/match.jsx:1332"
+    "ui/match.jsx:1317",
+    "ui/match.jsx:1334"
    ]
   },
   {
    "k": "Stats",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1315",
+    "ui/match.jsx:1317",
     "ui/stats.jsx:574"
    ]
   },
@@ -23194,37 +23194,37 @@
    "k": "Le fil",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1315",
-    "ui/match.jsx:1356",
-    "ui/match.jsx:1358"
+    "ui/match.jsx:1317",
+    "ui/match.jsx:1358",
+    "ui/match.jsx:1360"
    ]
   },
   {
    "k": "Faits du match",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1321"
+    "ui/match.jsx:1323"
    ]
   },
   {
    "k": "Événements",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1324"
+    "ui/match.jsx:1326"
    ]
   },
   {
    "k": "touche un joueur",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1336"
+    "ui/match.jsx:1338"
    ]
   },
   {
    "k": "Notes du match",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1340",
+    "ui/match.jsx:1342",
     "ui/postmatch.jsx:151"
    ]
   },
@@ -23232,8 +23232,8 @@
    "k": "Statistiques",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1350",
     "ui/match.jsx:1352",
+    "ui/match.jsx:1354",
     "ui/nav.jsx:38",
     "ui/stats.jsx:701"
    ]
@@ -23242,186 +23242,186 @@
    "k": "Ralenti",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1381"
+    "ui/match.jsx:1383"
    ]
   },
   {
    "k": "Passer le temps fort",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1390"
+    "ui/match.jsx:1392"
    ]
   },
   {
    "k": "Remettre le son",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1391",
-    "ui/match.jsx:1411"
+    "ui/match.jsx:1393",
+    "ui/match.jsx:1413"
    ]
   },
   {
    "k": "Couper le son",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1391",
-    "ui/match.jsx:1411"
+    "ui/match.jsx:1393",
+    "ui/match.jsx:1413"
    ]
   },
   {
    "k": "Son coupé",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1391",
-    "ui/match.jsx:1411"
+    "ui/match.jsx:1393",
+    "ui/match.jsx:1413"
    ]
   },
   {
    "k": "Son",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1391",
-    "ui/match.jsx:1411"
+    "ui/match.jsx:1393",
+    "ui/match.jsx:1413"
    ]
   },
   {
    "k": "Vitesse normale : accélérer ×4",
    "kind": "one",
    "where": [
-    "ui/match.jsx:1400"
+    "ui/match.jsx:1402"
    ]
   },
   {
    "k": "Match accéléré ×4 : revenir à la vitesse normale",
    "kind": "other",
    "where": [
-    "ui/match.jsx:1400"
+    "ui/match.jsx:1402"
    ]
   },
   {
    "k": "Vitesse normale : toucher pour accélérer ×4 entre les temps forts",
    "kind": "one",
    "where": [
-    "ui/match.jsx:1401"
+    "ui/match.jsx:1403"
    ]
   },
   {
    "k": "Accéléré ×4 entre les temps forts : toucher pour revenir à ×1",
    "kind": "other",
    "where": [
-    "ui/match.jsx:1401"
+    "ui/match.jsx:1403"
    ]
   },
   {
    "k": "Attends la mi-temps",
    "kind": "one",
    "where": [
-    "ui/match.jsx:1404"
+    "ui/match.jsx:1406"
    ]
   },
   {
    "k": "Trop tard : le match touche à sa fin",
    "kind": "other",
    "where": [
-    "ui/match.jsx:1404"
+    "ui/match.jsx:1406"
    ]
   },
   {
    "k": "Faire un changement, changer de dispositif ou de tactique",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1404"
+    "ui/match.jsx:1406"
    ]
   },
   {
    "k": "Plus de changement possible : dispositif, tactique et postes seulement",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1404"
+    "ui/match.jsx:1406"
    ]
   },
   {
    "k": "Changement",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1405"
+    "ui/match.jsx:1407"
    ]
   },
   {
    "k": "Changer",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1405"
+    "ui/match.jsx:1407"
    ]
   },
   {
    "k": "Aller à la mi-temps",
    "kind": "one",
    "where": [
-    "ui/match.jsx:1408"
+    "ui/match.jsx:1410"
    ]
   },
   {
    "k": "Aller au coup de sifflet",
    "kind": "other",
    "where": [
-    "ui/match.jsx:1408"
+    "ui/match.jsx:1410"
    ]
   },
   {
    "k": "Fin du match",
    "kind": "other",
    "where": [
-    "ui/match.jsx:1409"
+    "ui/match.jsx:1411"
    ]
   },
   {
    "k": "Mi-temps · tes consignes",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1421"
+    "ui/match.jsx:1423"
    ]
   },
   {
    "k": "{minuteLabel}′ · changement",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1421"
+    "ui/match.jsx:1423"
    ]
   },
   {
    "k": "Le match est arrêté. Ce que tu décides prend effet à la {v}e minute, au prochain arrêt de jeu.",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1423"
+    "ui/match.jsx:1425"
    ]
   },
   {
    "k": "Score",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1426"
+    "ui/match.jsx:1428"
    ]
   },
   {
    "k": "Cadrés",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1429"
+    "ui/match.jsx:1431"
    ]
   },
   {
    "k": "Que régler ?",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1432"
+    "ui/match.jsx:1434"
    ]
   },
   {
    "k": "Le match",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1433",
+    "ui/match.jsx:1435",
     "ui/rules.jsx:21"
    ]
   },
@@ -23429,127 +23429,134 @@
    "k": "Première période",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1455",
-    "ui/match.jsx:1464"
+    "ui/match.jsx:1457",
+    "ui/match.jsx:1466"
    ]
   },
   {
    "k": "Jusqu’ici",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1455"
+    "ui/match.jsx:1457"
    ]
   },
   {
    "k": "Ni but, ni carton, ni blessé pour l’instant.",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1458"
+    "ui/match.jsx:1460"
    ]
   },
   {
    "k": "Ni but, ni carton, ni blessé en première période.",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1467"
+    "ui/match.jsx:1469"
    ]
   },
   {
    "k": "Composition et changements",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1473"
+    "ui/match.jsx:1475"
    ]
   },
   {
    "k": "{v}{name} · {v2}{n} possible sur {SUBS_MAX}",
    "kind": "one",
    "where": [
-    "ui/match.jsx:1474"
+    "ui/match.jsx:1476"
    ]
   },
   {
    "k": "{v}{name} · {v2}{n} possibles sur {SUBS_MAX}",
    "kind": "other",
    "where": [
-    "ui/match.jsx:1474"
+    "ui/match.jsx:1476"
    ]
   },
   {
    "k": "{plannedSubs} changement prévu ·",
    "kind": "one",
    "where": [
-    "ui/match.jsx:1474"
+    "ui/match.jsx:1476"
    ]
   },
   {
    "k": "{plannedSubs} changements prévus ·",
    "kind": "other",
    "where": [
-    "ui/match.jsx:1474"
+    "ui/match.jsx:1476"
    ]
   },
   {
    "k": "Changements",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1480"
+    "ui/match.jsx:1482"
    ]
   },
   {
    "k": "Dispositif de la seconde période",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1485"
+    "ui/match.jsx:1487"
    ]
   },
   {
    "k": "Tactique de la seconde période",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1489"
+    "ui/match.jsx:1491"
    ]
   },
   {
    "k": "Changements de la mi-temps",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1500"
+    "ui/match.jsx:1502"
    ]
   },
   {
    "k": "Prévus dans les plans de mi-temps validés avant le match.",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1501"
+    "ui/match.jsx:1503"
    ]
   },
   {
    "k": "Aucun changement à la pause : les mêmes onze et les mêmes consignes en seconde période.",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1504"
+    "ui/match.jsx:1506"
+   ]
+  },
+  {
+   "k": "Ton équipe · pastille : note du match · sous le nom : rôle",
+   "kind": "t",
+   "where": [
+    "ui/match.jsx:1512"
    ]
   },
   {
    "k": "Ton équipe · pastille : note du match · sous le nom : condition",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1510"
+    "ui/match.jsx:1512"
    ]
   },
   {
    "k": "Replier",
    "kind": "t",
    "where": [
-    "ui/match.jsx:1511"
+    "ui/match.jsx:1513"
    ]
   },
   {
    "k": "<0/> Reprendre la seconde période",
    "kind": "tr",
    "where": [
-    "ui/match.jsx:1517"
+    "ui/match.jsx:1519"
    ]
   },
   {
@@ -28663,21 +28670,21 @@
    "k": "Rôles de {name}",
    "kind": "t",
    "where": [
-    "ui/roles.jsx:108"
+    "ui/roles.jsx:122"
    ]
   },
   {
    "k": "OK",
    "kind": "t",
    "where": [
-    "ui/roles.jsx:116"
+    "ui/roles.jsx:130"
    ]
   },
   {
    "k": "Avec ballon",
    "kind": "t",
    "where": [
-    "ui/roles.jsx:118",
+    "ui/roles.jsx:132",
     "ui/tacticboard.jsx:227"
    ]
   },
@@ -28685,7 +28692,7 @@
    "k": "Sans ballon",
    "kind": "t",
    "where": [
-    "ui/roles.jsx:118",
+    "ui/roles.jsx:132",
     "ui/tacticboard.jsx:226"
    ]
   },

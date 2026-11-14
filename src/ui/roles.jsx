@@ -6,6 +6,7 @@ import { Portrait } from './portrait';
 import { haptic } from './haptics';
 import { uiSound } from './uisound';
 import { t } from '../i18n/index';
+import { PHONE, useSwipe } from './gestures';
 
 // Rôles des joueurs (1.0.54 ; écran refait en 1.0.55, choix du PDG du 14/11 : « B · Tableau ») : ils se choisissent sur le
 // terrain (mode Rôles du terrain de composition, lineup.jsx) ; un joueur touché ouvre cette feuille, où chacun de ses
@@ -26,6 +27,10 @@ export function rolesAt(type, r) {
 // déplacement d'après les effets du rôle dans le moteur (roles.js : at/al avec ballon, flèche pleine ; dt/dl sans ballon,
 // pointillés) ; sans déplacement, le geste qui compte (passe, pressing, couverture, jeu aérien, centre, frappe, dribble,
 // vitesse) ; le rôle du poste : sa place, sans flèche. (Le terrain ne se retourne pas en arabe.)
+// Relecture 1.0.55 : une flèche mesure au moins 16 (sur 40 × 52) et part du bord du point ; si elle sortirait du terrain,
+// le point recule d'autant (6 au plus) ; vers la ligne de touche, la course longe la ligne vers l'avant (le débordement) ;
+// un rôle de pressing porte en plus les chevrons du pressing au bout de sa flèche (sinon « Presse le latéral » et
+// « Reste haut » auraient le même dessin).
 const BASE = { G: [20, 45], DC: [20, 35], FB: [8, 35], MDC: [20, 31], MC: [20, 27], WM: [8, 26], MOC: [20, 20], W: [8, 17], BT: [20, 15] };
 const GLYPH = { build: 'pass', vision: 'pass', press: 'press', wall: 'cover', defPace: 'cover', defAir: 'air', air: 'air', cross: 'cross', shoot: 'shoot', drib: 'drib', pace: 'pace' };
 const head = (x0, y0, x1, y1) => {
@@ -42,10 +47,16 @@ export function RolePicto({ fam, part, role, on = false }) {
   let dy = 0;
   if (sh) dy = -(sh[1] - sh[0]) * (9 + sh[2] * 60);
   if (ln && x0 !== 20) dx = ln > 0 ? ln * 60 : ln * 40;
-  const len = Math.hypot(dx, dy);
-  if (len > 0 && len < 10) { dx *= 10 / len; dy *= 10 / len; }
-  const x1 = Math.max(4, Math.min(36, x0 + dx));
-  const y1 = Math.max(5, Math.min(47, y0 + dy));
+  let len = Math.hypot(dx, dy);
+  if (len > 0 && len < 16) { dx *= 16 / len; dy *= 16 / len; len = 16; }
+  if (len > 0 && x0 + dx < 3) { dx = 3 - x0; dy = -Math.sqrt(Math.max(0, len * len - dx * dx)); }
+  const lim = (v, a, b) => Math.max(a, Math.min(b, v));
+  const sx = x0 - lim(x0 + dx - lim(x0 + dx, 3, 37), -6, 6);
+  const sy = y0 - lim(y0 + dy - lim(y0 + dy, 3, 49), -6, 6);
+  const x1 = lim(sx + dx, 3, 37);
+  const y1 = lim(sy + dy, 3, 49);
+  const ux = len ? dx / len : 0;
+  const uy = len ? dy / len : 0;
   const q = Object.entries(fx.q || {}).filter(([, v]) => v > 1).sort((a, b) => b[1] - a[1])[0]?.[0];
   const gk = fx.gk ? Object.keys(fx.gk)[0] : null;
   const glyph = len ? null : fam === 'G'
@@ -59,8 +70,9 @@ export function RolePicto({ fam, part, role, on = false }) {
       <path d="M1 26H39M12 1V8H28V1M12 51V44H28V51" className="rp-mark" />
       {!len && !glyph && <circle cx={x0} cy={y0} r="7" className="rp-zone" />}
       {len > 0 && <>
-        <line x1={x0} y1={y0} x2={x1} y2={y1} stroke={c} strokeWidth="1.8" strokeDasharray={part === 'd' ? '2.6 2' : undefined} strokeLinecap="round" />
-        <path d={head(x0, y0, x1, y1)} fill={c} />
+        <line x1={sx + ux * 4.8} y1={sy + uy * 4.8} x2={x1 - ux * 2} y2={y1 - uy * 2} stroke={c} strokeWidth="1.8" strokeDasharray={part === 'd' ? '2.6 2' : undefined} strokeLinecap="round" />
+        <path d={head(sx, sy, x1, y1)} fill={c} />
+        {part === 'd' && GLYPH[q] === 'press' && <path d={`M${x1 + 5} ${y1 + 7}L${x1 + 9} ${y1 + 3}L${x1 + 13} ${y1 + 7}M${x1 + 5} ${y1 + 11}L${x1 + 9} ${y1 + 7}L${x1 + 13} ${y1 + 11}`} {...dot} strokeLinejoin="round" />}
       </>}
       {glyph === 'pass' && <path d={`M${x0 + 3} ${y0 - 3}L${x0 + 13} ${y0 - 13}`} {...dot} strokeDasharray="1.6 2.2" />}
       {glyph === 'short' && <path d={`M${x0 - 3} ${y0 - 2}L${x0 - 12} ${y0 - 7}`} {...dot} strokeDasharray="1.6 2.2" />}
@@ -73,7 +85,7 @@ export function RolePicto({ fam, part, role, on = false }) {
       {glyph === 'shoot' && <><line x1={x0} y1={y0 - 3} x2="20" y2="4" stroke={c} strokeWidth="1.6" /><path d={head(x0, y0, 20, 4)} fill={c} /></>}
       {glyph === 'drib' && <path d={`M${x0} ${y0 - 3}l3 -3l-4 -3l4 -3l-3 -3`} {...dot} strokeLinejoin="round" />}
       {glyph === 'pace' && <path d={`M${x0 - 7} ${y0 - 2}h-4M${x0 - 7} ${y0 + 1}h-6M${x0 - 7} ${y0 + 4}h-4`} {...dot} strokeWidth="1.3" />}
-      <circle cx={x0} cy={y0} r="3.4" fill={c} />
+      <circle cx={sx} cy={sy} r="3.4" fill={c} />
     </svg>
   );
 }
@@ -90,6 +102,8 @@ export function RoleSheet({ player, type, roles = {}, onChange, onClose }) {
     window.addEventListener('keydown', key);
     return () => { window.removeEventListener('keydown', key); prev?.focus?.({ preventScroll: true }); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // au téléphone, la feuille se ferme aussi en la glissant vers le bas (relecture 1.0.55)
+  useSwipe(sheet, { onDown: () => { uiSound('back'); onClose(); }, downMedia: PHONE });
   if (!cur) return null;
   const { fam, w, d } = cur;
   const famKey = ROLE_FAMILY[type];

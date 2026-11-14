@@ -50,7 +50,9 @@ function chipParts(chip) { // rectangles du joueur, sans l'échelle, centrés su
     add(face.offsetLeft, face.offsetTop, face.offsetWidth, face.offsetHeight);
     for (const b of face.querySelectorAll('.lu-rate, .lu-note, .lu-flag, .lu-hurt, .lu-alt')) add(face.offsetLeft + b.offsetLeft, face.offsetTop + b.offsetTop, b.offsetWidth, b.offsetHeight);
   }
-  for (const b of chip.querySelectorAll(':scope > .lu-name, :scope > .lu-fit')) add(b.offsetLeft, b.offsetTop, b.offsetWidth, b.offsetHeight);
+  // l'étiquette du mode Rôles compte aussi (relecture 1.0.55 : au PC, elle passait sous le portrait du voisin ; au
+  // téléphone, trois étiquettes d'une même ligne se touchaient)
+  for (const b of chip.querySelectorAll(':scope > .lu-name, :scope > .lu-fit, :scope > .lu-role')) add(b.offsetLeft, b.offsetTop, b.offsetWidth, b.offsetHeight);
   return rects;
 }
 function clashes(a, pa, b, pb, s) {
@@ -247,7 +249,7 @@ function BenchFit({ value }) {
 // tactic (avant-match, 1.0.34) : le terrain devient le tableau tactique noir et or (tacticboard.jsx) : l'équipe se place
 // selon le plan, avec sa zone de pressing, sa ligne défensive et ses courses, et glisse en place à chaque changement.
 // middle : ce qui se range entre le terrain et le banc (les réglages du plan, sous le tableau).
-export function LineupBoard({ players, lineup, formation, onChange, onShape = null, locked = null, booked = null, maxIn = Infinity, original = null, notes = null, hurt = null, unavailable = null, fitness = null, tactic = null, middle = null, roles = null, onRoles = null }) {
+export function LineupBoard({ players, lineup, formation, onChange, onShape = null, locked = null, booked = null, maxIn = Infinity, original = null, notes = null, hurt = null, unavailable = null, fitness = null, tactic = null, middle = null, roles = null, onRoles = null, onMode = null }) {
   const slots = slotsOf(formation);
   const posts = postsOf(formation);
   const cells = formationOf(formation).cells;
@@ -273,12 +275,15 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
   const [mode, setMode] = useState('xi');
   const [roleFor, setRoleFor] = useState(null);
   const rolesMode = !!onRoles && mode === 'roles';
+  // l'écran du match adapte sa légende au mode (« sous le nom : rôle ») ; à chaque ouverture du terrain, Composition
+  useEffect(() => { onMode?.(rolesMode ? 'roles' : 'xi'); }, [rolesMode]); // eslint-disable-line react-hooks/exhaustive-deps
   const typeAt = (k) => (cells[k] === 'G' ? 'G' : typeOf(cells[k]));
   const drag = useRef(null);
   const bestRef = useRef(null);
   const root = useRef(null);
   const pitchEl = useRef(null);
-  useChipScale(pitchEl, root, sets, lineup.join(','), board ? onBox : null);
+  // en mode Rôles, les étiquettes comptent dans la taille des joueurs (chipParts)
+  useChipScale(pitchEl, root, sets, lineup.join(',') + (rolesMode ? `:${JSON.stringify(roles || {})}` : ''), board ? onBox : null);
   const isLocked = (id) => !!locked?.has(id);
   const entering = (next) => (original ? next.filter((id) => id !== null && !original.includes(id)).length : 0);
   const keyOf = (item) => (item ? `${item.kind}:${item.kind === 'slot' ? item.k : item.kind === 'cell' ? item.key : item.id}` : null);
@@ -546,7 +551,7 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
               type="button"
               data-drop={key}
               className={cls.filter(Boolean).join(' ')}
-              style={{ '--x': `${+pitch[k][0].toFixed(2)}%`, '--y': `${+pitch[k][1].toFixed(2)}%` }}
+              style={{ '--x': `${+pitch[k][0].toFixed(2)}%`, '--y': `${+pitch[k][1].toFixed(2)}%`, ...(rolesMode ? { '--zn': 1 + Math.round((100 - pitch[k][1]) / 5), '--zw': 1 + Math.round((100 - pitch[k][0]) / 5) } : null) }}
               title={isLocked(id) ? t('Expulsé : il ne peut pas être remplacé ; déplace-le sur le poste à laisser vide') : isHurt(id) ? t('Blessé : à remplacer par un joueur du banc, ou à déplacer sur le poste à laisser vide') : `${POST_NAMES[posts[k]] || POS_LABELS[pos]}${natural ? '' : t(' · hors de son poste ({toLowerCase})', { toLowerCase: POS_LABELS[p.pos].toLowerCase() })}`}
               aria-label={`${p.name}, ${(POST_NAMES[posts[k]] || POS_LABELS[pos]).toLowerCase()}${out ? '' : t(', niveau {fmtRating}', { fmtRating: fmtRating(cur) })}${isLocked(id) ? t(', expulsé, poste laissé vide') : isHurt(id) ? t(', blessé') : ''}`}
               {...handlers({ kind: 'slot', k })}

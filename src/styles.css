@@ -6627,7 +6627,9 @@ button.lv2-pl { cursor: pointer; }
   .mini-board { position: sticky; top: 30px; z-index: 2; display: block; width: 100%; height: auto; aspect-ratio: 2.2; filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .55)); }
   /* collé, il garde un fond plein autour de lui : rien de ce qui défile ne se voit au-dessus ni sur les côtés (1.0.54) */
   .pm-plan .mini-board { top: 0; background: rgb(12, 13, 15); box-shadow: 0 0 0 20px rgb(12, 13, 15); }
-  .halftime .mini-board { background: #141416; box-shadow: 0 0 0 16px #141416; }
+  /* mi-temps (1.0.55) : avec les consignes en cartes, tout tient sous le tableau ; il ne colle plus en haut, et plus aucun
+     cadre ne couvre le titre ni les boutons des plans (relecture 1.0.55) */
+  .halftime .mini-board { position: relative; top: auto; margin: 4px 0 14px; }
   .mb-pitch { fill: #0d0e0f; stroke: rgba(199, 161, 90, .3); stroke-width: 1; }
   .mb-mark { fill: none; stroke: rgba(199, 161, 90, .22); stroke-width: 1; }
   .mb-zone { fill: rgba(199, 161, 90, .16); stroke: rgba(222, 193, 127, .45); stroke-width: .8; stroke-dasharray: 3 2; transition: x .45s cubic-bezier(.2, .8, .2, 1), width .45s cubic-bezier(.2, .8, .2, 1); }
@@ -6642,13 +6644,29 @@ button.lv2-pl { cursor: pointer; }
 
 /* ===== tactique sur le terrain (1.0.55, choix du PDG du 14/11 : « B · Tableau ») ===== */
 /* le terrain : Composition ou Rôles (lineup.jsx) */
-.lu-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; margin-bottom: 8px; background: rgba(6, 7, 8, .9); clip-path: var(--cut-shape-sm); }
-.lu-modes button { height: 38px; border: 0; background: transparent; color: var(--text-2); font-family: var(--font-disp); font-weight: 700; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; clip-path: var(--cut-shape-sm); cursor: pointer; transition: background .2s, color .2s; }
-.lu-modes button.on { background: var(--gold-grad); color: var(--gold-ink); }
+/* style secondaire (relecture 1.0.55) : texte et soulignement or, pour ne pas empiler deux barres d'onglets dorées à la mi-temps */
+.lu-modes { display: flex; gap: 26px; margin-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.lu-modes button { position: relative; height: 40px; padding: 0 2px; border: 0; background: none; color: var(--text-2); font-family: var(--font-disp); font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: color .2s; }
+.lu-modes button::after { content: ''; position: absolute; inset-inline: 0; bottom: -1px; height: 2px; background: var(--gold); transform: scaleX(0); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+.lu-modes button.on { color: var(--gold-light); }
+.lu-modes button.on::after { transform: none; }
 @media (hover: hover) { .lu-modes button:not(.on):hover { color: var(--text); } }
+@media (prefers-reduced-motion: reduce) { .lu-modes button::after { transition: none; } }
 .lu-hint-roles { color: var(--gold-light); }
 .lu.roles-mode .lu-bench { display: none; }
-.lu.roles-mode .lu-chip { cursor: pointer; }
+.lu.roles-mode .lu-chip { cursor: pointer; z-index: var(--zn, 1); }
+/* l'étiquette d'un joueur passe devant le joueur du dessous (ordre selon la hauteur à l'écran, lineup.jsx --zn / --zw),
+   dans le seul terrain */
+.lu.roles-mode .lu-pitch { isolation: isolate; }
+@container lu (min-width: 480px) {
+  .lu.roles-mode .lu-chip { z-index: var(--zw, 1); }
+  .lu.roles-mode .lu-role { max-width: none; white-space: nowrap; }
+}
+/* terrain debout (téléphone) : l'étiquette ne dépasse pas la largeur d'un joueur, trois milieux côte à côte ne se touchent pas */
+@container lu (max-width: 479px) {
+  /* jamais un mot coupé au milieu (« Mediocentr-o ») : la césure de la langue, sinon le mot entier */
+  .lu.roles-mode .lu-role { max-width: 66px; min-width: min-content; overflow-wrap: normal; -webkit-hyphens: auto; hyphens: auto; }
+}
 .lu-role { display: block; max-width: 96px; margin-top: 2px; padding: 1px 5px; font-size: 10px; font-weight: 600; line-height: 1.15; text-align: center; color: var(--text-2); background: rgba(8, 9, 10, .85); overflow-wrap: break-word; }
 .lu-role.custom { color: var(--gold-ink); background: var(--gold-grad); font-weight: 700; }
 /* légende du tableau : le pressing et la ligne défensive nommés au-dessus du terrain (tacticboard.jsx, BoardLegend) */
@@ -6690,11 +6708,11 @@ button.lv2-pl { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .rs, .rs-dim { animation: none; } }
 /* les consignes en cartes qui glissent (tacticboard.jsx, TacticSliders carousel) */
 .xi-carousel { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.xi-sliders.carousel { display: grid; grid-auto-flow: column; grid-auto-columns: 88%; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.xi-sliders.carousel { display: grid; grid-auto-flow: column; grid-auto-columns: 88%; align-items: start; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
 .xi-sliders.carousel::-webkit-scrollbar { display: none; }
 .xi-sliders.carousel .xi-group { scroll-snap-align: start; }
 .xi-dots { display: flex; justify-content: center; }
-.xi-dots button { width: 26px; height: 18px; padding: 0; border: 0; background: none; cursor: pointer; }
+.xi-dots button { width: 32px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer; }
 .xi-dots button::after { content: ''; display: block; width: 7px; height: 7px; margin: auto; border-radius: 4px; background: rgba(199, 161, 90, .35); transition: width .25s, background-color .25s; }
 .xi-dots button.on::after { width: 20px; background: var(--gold); }
 @media (prefers-reduced-motion: reduce) { .xi-dots button::after { transition: none; } }
