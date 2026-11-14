@@ -8,7 +8,7 @@ import { accrueDues, awayGate, expectedGate, matchGate, prizeFor, sponsorIncome,
 import { clamp, ordinal, pick, rnd } from './utils';
 import { clubAfter, leagueClubNames, randomClubName } from './names';
 import { drawInjury, fitOf, freshSeason, matchCost, playerRating, progressPlayer, recoveryOf, saleValue, wageOf, wantsRetirement } from './players';
-import { quickMatch } from './live';
+import { intensityOf, quickMatch } from './live';
 import { ensureLineup } from './tactics';
 import { reputationStatusEvent, resetSeasonStats } from './goals';
 import { closeSeasonObjectives, drawObjectives } from './objectives';
@@ -369,8 +369,10 @@ export function applyMatchResult(s, live) {
     // suspensions : un rouge direct vaut deux matchs, un second jaune un ; trois jaunes dans la saison, un match
     if (st.red) { p.ban = (p.ban || 0) + (st.yellow ? 1 : 2); absences.push({ id: p.id, name: p.name, kind: 'ban', matches: p.ban, why: st.yellow ? t('second carton jaune') : t('carton rouge') }); }
     else if (st.yellow && p.season.yellow % 3 === 0) { p.ban = (p.ban || 0) + 1; absences.push({ id: p.id, name: p.name, kind: 'ban', matches: p.ban, why: t('trois cartons jaunes') }); }
-    // condition physique : le match coûte selon le temps de jeu et l'endurance
-    p.fit = Math.max(0, Math.round((fitOf(p) - (matchCost(p) * (st.minutes ?? 90)) / 90) * 10) / 10);
+    // condition physique : le match coûte selon le temps de jeu, l'endurance et le rythme de la tactique (1.0.53, PDG 14/11 :
+    // la fatigue d'un pressing haut se reporte un peu sur les matchs suivants ; c'est la condition que le direct montrait
+    // au coup de sifflet, intensityOf : de 0,88 en bloc bas à 1,24 au rythme le plus fou)
+    p.fit = Math.max(0, Math.round((fitOf(p) - (matchCost(p) * (st.minutes ?? 90) * (live.tactic ? intensityOf(live.tactic) : 1)) / 90) * 10) / 10);
     fitness[p.id] = [p.fit]; // condition au coup de sifflet final (après-match)
   }
   // blessures du match : durée tirée maintenant, en dates du calendrier

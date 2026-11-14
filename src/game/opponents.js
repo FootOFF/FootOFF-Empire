@@ -39,3 +39,27 @@ export function opponentEleven(s, opp) {
     return { formation, players };
   });
 }
+
+// Banc de l'ordinateur (1.0.53, PDG 14/11 : « l'ordinateur coache comme un vrai coach ») : six remplaçants tirés comme son
+// onze, de la même graine de saison mais d'un tirage à part (le onze ne change pas), un peu en dessous de ses titulaires
+// (0,3 de note en moyenne, sinon un remplaçant ne vaudrait jamais un titulaire fatigué) :
+// un gardien, deux défenseurs, deux milieux, un attaquant. Il fait entrer ses joueurs de champ pendant le match (live.js).
+const BENCH = ['G', 'D', 'D', 'M', 'M', 'A'];
+export function opponentBench(s, opp, eleven = []) {
+  const taken = new Set([...(s.players || []).map((p) => p.name), ...eleven.map((p) => p.name)]);
+  const lasts = new Set(eleven.map((p) => p.name.slice(p.name.indexOf(' ') + 1)));
+  return seeded(hash(`${opp.name}|${s.seasonNumber || 1}|banc`), () => {
+    const level = ((opp.strength || 8) - 5.3) / 2 - 0.15;
+    const squad = [...eleven];
+    const bench = [];
+    for (const pos of BENCH) {
+      const p = makePlayer({ level: level + (Math.random() - 0.5) * 0.7, pos, name: squadName(taken, lasts) });
+      taken.add(p.name);
+      assignNumber(squad, p);
+      distinctFace(squad, p);
+      squad.push(p);
+      bench.push(p);
+    }
+    return bench;
+  });
+}

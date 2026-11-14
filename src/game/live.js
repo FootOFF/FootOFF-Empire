@@ -5,8 +5,8 @@ import { expectedGoals, formationOf, FORMATIONS, isFormation, isTactic, lineupRa
 import { ratingAtPost } from './posts';
 import { available, fitAt, fitFactor, ratingAt } from './players';
 import { injuryCut } from './medical';
-import { opponentEleven } from './opponents';
-import { aiHalftimePlan, aiPlanOf } from './coherence';
+import { opponentBench, opponentEleven } from './opponents';
+import { aiHalftimePlan, aiLatePlan, aiPlanOf } from './coherence';
 import { QMIX, Z as ZONES, buildTables, chainSummary, elevenOf, instructionsOf, kindWeights, neutralStatic, qualityMean, sideOfState, stateOf, teamAt, teamStatic } from './zones';
 import { detailsOf } from './attributes';
 import { t, tn } from '../i18n/index';
@@ -167,6 +167,11 @@ const T = {
     offensive: [t('Pressing très haut de {home} dès l’entame, la ligne défensive au milieu du terrain.')],
     balanced: [t('Bloc médian pour {home}, sans se livrer.')],
     low: [t('Repli en bloc bas pour {home}, à l’affût du contre.')],
+  },
+  shiftLate: { // (1.0.53) en cours de match, vers la 60e et la 75e
+    offensive: [t('Changement de plan pour {away} : tout le monde monte, le pressing est haut.')],
+    balanced: [t('{away} passe{n} en bloc médian.')],
+    low: [t('{away} recule{n} en bloc bas pour préserver l’avantage.')],
   },
   shift: {
     offensive: [t('Changement de plan pour {away} à la reprise : tout le monde monte, le pressing est haut.')],
@@ -379,6 +384,10 @@ function staticOf(cache, key, make) {
 // Joueurs en moins (expulsés, blessés non remplacés) : ils manquent dans les zones (zones.js) ; en plus, l'équipe à dix
 // se crée moins d'occasions et en laisse davantage (holes : son poste vide compte déjà dans son niveau, solo).
 export const Z_SHORT = { lose: 0.88, gain: 1.12, loseHoles: 0.95, gainHoles: 1.05 };
+// condition moyenne d'un onze de l'ordinateur sur un match, fatigue et changements compris (1.0.53 : 0,98 au calcul), réglée
+// au banc (tools/sim/coach, 2 500 matchs par réglage : 0,98 rendait le jeu plus facile de 0,06 point par match, 0,96 plus
+// difficile de 0,12) pour que la difficulté d'un joueur qui ne change rien reste celle d'avant : 0,973
+const AI_FIT_MEAN = 0.973;
 // z (1.0.49) : { cache, awayRoster (onze adverse dans l'ordre de ses postes), awayOff (noms des expulsés adverses),
 // awayFormation } ; sans onze adverse connu, un onze ordinaire de son dispositif.
 function minuteGoalChances(s, lineup, tactic, oppStrength, short = { home: 0, away: 0 }, offIds = new Set(), formation = s.formation, factorOf = null, atHome = true, oppPlan = null, holes = false, minute = 0, away = null, z = {}) {
@@ -410,7 +419,17 @@ function minuteGoalChances(s, lineup, tactic, oppStrength, short = { home: 0, aw
     return teamStatic(eleven, gk, oppTactic);
   });
   const H = teamAt(stH, rating, factorOf);
-  const A = teamAt(stA, oppStrength, null);
+  // l'ordinateur se fatigue aussi (1.0.53) : chacun de ses joueurs selon ses minutes et le plan de son équipe ; son niveau
+  // suit la moyenne de leurs facteurs, ses entrants arrivent frais (z.awayFactor : null sans lui). Son niveau affiché est
+  // celui de sa condition moyenne sur un match (AI_FIT_MEAN) : plus frais au coup d'envoi, plus entamé à la fin, la même
+  // force qu'avant sur l'ensemble du match (sans fatigue, il gardait toute la rencontre son niveau du coup d'envoi)
+  const fA = z.awayFactor || null;
+  let levelA = oppStrength;
+  if (fA && roster) {
+    const onA = roster.filter((p) => p && !(off && off.has(p.name)));
+    if (onA.length) levelA = (oppStrength * (onA.reduce((a, p) => a + fA(p), 0) / onA.length)) / AI_FIT_MEAN;
+  }
+  const A = teamAt(stA, levelA, fA);
   const lose = holes ? Z_SHORT.loseHoles : Z_SHORT.lose;
   const gain = holes ? Z_SHORT.gainHoles : Z_SHORT.gain;
   const multH = edgeH.chances * edgeA.against * TRAIT_NORM * lose ** short.home * gain ** short.away;
@@ -543,10 +562,10 @@ const memoChances = (fn) => { const cache = new Map(); return (minute) => { if (
 // mi-temps à part : la seconde commence à la 46e minute de jeu, quel que soit le temps additionnel), le onze de
 // départ jusqu'au bout, sa condition qui baisse au fil du match ; home : false pour un match à l'extérieur (Élite)
 // away : le onze adverse, dont les signes comptent (awayElevenOf) ; inconnu (null) : un onze ordinaire
-export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true, oppPlan = null, away = null, awayFormation = null }) {
+export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true, oppPlan = null, away = null, awayFormation = null, awayFactor = null }) {
   const z = { cache: new Map(), awayRoster: away, awayFormation: oppPlan?.formation || awayFormation };
   const intensity = intensityOf(tactic);
-  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0, intensity), home, oppPlan, false, minute, away, z));
+  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0, intensity), home, oppPlan, false, minute, away, awayFactor ? { ...z, awayFactor: awayFactor(minute) } : z));
   const parts = HALF1.map((h1) => outcomeOdds(chancesAt, 0, HALF2.map((h2) => h1 + h2), (k) => (k <= h1 ? k : 45 + k - h1)));
   const mean = (key) => parts.reduce((a, o) => a + o[key], 0) / parts.length;
   return { win: mean('win'), draw: mean('draw'), loss: mean('loss') };
@@ -557,10 +576,10 @@ export function prematchOdds(s, { lineup = s.lineup, tactic = s.tactic, formatio
 // contredisent ses pourcentages.
 const MEAN_H1 = Math.round(HALF1.reduce((a, b) => a + b, 0) / HALF1.length);
 const MEAN_H2 = Math.round(HALF2.reduce((a, b) => a + b, 0) / HALF2.length);
-export function prematchXg(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true, oppPlan = null, away = null, awayFormation = null }) {
+export function prematchXg(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, oppStrength, home = true, oppPlan = null, away = null, awayFormation = null, awayFactor = null }) {
   const z = { cache: new Map(), awayRoster: away, awayFormation: oppPlan?.formation || awayFormation };
   const intensity = intensityOf(tactic);
-  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0, intensity), home, oppPlan, false, minute, away, z));
+  const chancesAt = memoChances((minute) => minuteGoalChances(s, lineup, tactic, oppStrength, undefined, undefined, formation, factorAt(minute, () => 0, intensity), home, oppPlan, false, minute, away, awayFactor ? { ...z, awayFactor: awayFactor(minute) } : z));
   // répartition des expulsions (a chez nous, b chez eux), qui ne dépendent pas des buts : minute après minute
   let pr = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   let xf = 0, xa = 0;
@@ -588,6 +607,25 @@ export function prematchXg(s, { lineup = s.lineup, tactic = s.tactic, formation 
   for (let k = 1; k <= MEAN_H1; k++) step(k);
   for (let k = 1; k <= MEAN_H2; k++) step(45 + k);
   return { for: xf, against: xa };
+}
+
+// Onze de l'ordinateur tel que le direct l'a montré (1.0.53) : le moteur a quelques minutes d'avance sur l'horloge, ses
+// changements ne se voient (terrain, 3D) qu'une fois annoncés dans le fil. m : l'état du direct ; shown : les événements
+// montrés. Sans ordinateur-coach (ligue entre amis), son onze tel quel.
+export function awayShownOf(m, shown) {
+  if (!m.ai || !m.awayStart) return m.awayRoster || [];
+  const cur = [...m.awayStart];
+  for (const e of shown || []) {
+    if (e.type !== 'sub' || e.side !== 'away' || !e.inName) continue;
+    const k = cur.findIndex((p) => p?.name === e.outName);
+    const inn = awayPlayerOf(m, e.inName);
+    if (k >= 0 && inn) cur[k] = inn;
+  }
+  return cur;
+}
+// Un joueur de l'adversaire par son nom : sur le terrain, sorti, ou entré du banc de l'ordinateur (1.0.53)
+export function awayPlayerOf(m, name) {
+  return (m.awayRoster || []).find((p) => p?.name === name) || (m.awayStart || []).find((p) => p?.name === name) || (m.ai?.bench || []).find((p) => p.name === name) || null;
 }
 
 // Changements entre deux onzes : chaque entrant face au sortant qu'il remplace (celui de son poste s'il sort,
@@ -659,6 +697,32 @@ const zoneStat = () => ({ entries: [0, 0, 0], rec: [0, 0, 0], ctr: 0, off: 0, co
 // à gauche, dans l'axe, à droite, récupérations hautes, contres, hors-jeu, corners
 const ZROW = 14;
 const copyZones = (z) => z.map((x) => ({ ...x, entries: [...x.entries], rec: [...x.rec] }));
+
+// L'ordinateur-coach (1.0.53) : ses changements à chaque fenêtre (vers la 60e, la 75e), cinq au plus.
+const AI_SUBS = [2, 2];
+const AI_MAX_SUBS = 5;
+// Sa condition au fil des minutes pour un pronostic : à chaque fenêtre encore à venir, les plus fatigués de ses joueurs de
+// champ repartent frais (un entrant à leur poste). ai : son état (m.ai) ; roster : son onze ; from : la minute d'où l'on prévoit.
+function aiFatigueAhead(ai, roster, plan, from, sentAway = null) {
+  const int = intensityOf(plan?.tactic);
+  const since = ai.since || {};
+  const fitIn = (p, min, s0) => fitAt(p, s0 + Math.max(0, min - s0) * int, s0);
+  const fresh = {};
+  let subs = ai.subs || 0;
+  for (let k = ai.done || 0; k < ai.at.length; k++) {
+    const at = Math.max(ai.at[k], from);
+    const n = Math.max(0, Math.min(AI_SUBS[k] ?? 0, AI_MAX_SUBS - subs));
+    const cand = roster.filter((p) => p && p.pos !== 'G' && !(sentAway && sentAway.has(p.name)) && since[p.name] == null && fresh[p.name] == null);
+    cand.sort((a, b) => fitIn(a, at, 0) - fitIn(b, at, 0));
+    for (const p of cand.slice(0, n)) fresh[p.name] = at;
+    subs += n;
+  }
+  return (min) => (p) => {
+    const r = fresh[p.name];
+    const s0 = r != null && min >= r ? r : (since[p.name] ?? 0);
+    return fitFactor(fitIn(p, min, s0));
+  };
+}
 
 // saved : un direct sauvegardé (save(), plus bas) à reprendre tel quel.
 // ctx.awayEleven : le vrai onze de l'adversaire ({ formation, players }, championnat entre amis), sinon tiré de son nom ;
@@ -732,6 +796,11 @@ export function createLiveMatch(s, ctx, saved = null) {
     m.oppPlan = { tactic: aiPlanOf(ctx.opp.name, (ctx.opp.strength || 0) - m.myRating, m.awayRoster, m.awayFormation, ours), formation: m.awayFormation }; // (1.0.39 : le plan qui colle à ses joueurs ; 1.0.49 : mesuré par le moteur à zones, contre nos joueurs)
     m.aiPlan = true;
   }
+  // l'ordinateur coache en match (1.0.53, PDG 14/11 : « comme un vrai coach ») : un banc de six (opponents.js), deux
+  // fenêtres de changements, vers la 60e puis la 75e, où il ajuste son plan au score et fait entrer des joueurs frais à la
+  // place des plus fatigués ; ses joueurs se fatiguent comme les nôtres. at : minutes des fenêtres ; done : fenêtres passées ;
+  // since : minute d'entrée de ses entrants ; used : ses remplaçants entrés (le banc ne change pas).
+  if (m.aiPlan && !m.ai) m.ai = { at: [ri(57, 65), ri(71, 79)], done: 0, subs: 0, since: {}, used: [], bench: opponentBench(s, ctx.opp, m.awayRoster) };
   m.told ||= []; // ce que le commentaire a déjà dit du duel tactique (une fois chaque chose)
   // direct d'une version d'avant le moteur à zones (repris après une fermeture de l'app) : ballon au rond central
   m.stats.zones ||= [zoneStat(), zoneStat()];
@@ -739,7 +808,7 @@ export function createLiveMatch(s, ctx, saved = null) {
   m.pz ||= [[], []];
   m.zm ||= [[], []];
   if (!m.preOdds) {
-    const o = prematchOdds(s, { oppStrength: ctx.opp.strength, home: ctx.home !== false, oppPlan: m.oppPlan, away: m.awayRoster, awayFormation: m.awayFormation });
+    const o = prematchOdds(s, { oppStrength: ctx.opp.strength, home: ctx.home !== false, oppPlan: m.oppPlan, away: m.awayRoster, awayFormation: m.awayFormation, awayFactor: m.ai ? aiFatigueAhead(m.ai, m.awayRoster, m.oppPlan, 0) : null });
     const r4 = (v) => Math.round(v * 1e4) / 1e4;
     m.preOdds = { w: r4(o.win), d: r4(o.draw), l: r4(o.loss) };
     if (ctx.knockout) { // qualification : victoire, ou nul puis séance de tirs au but gagnée
@@ -792,8 +861,14 @@ export function createLiveMatch(s, ctx, saved = null) {
   const make = (at, type, side, text, extra = {}) => ({ at, minute: label(at, extra.half ?? m.half), type, side, text, half: m.half, ...extra });
   const push = (at, type, side, text, extra = {}) => { const e = make(at, type, side, text, extra); events().push(e); return e; };
   const zcache = new Map(); // modèles de zones des deux onze (zones.js), gardés tant qu'ils ne changent pas
-  const zOf = () => ({ cache: zcache, awayRoster, awayOff: m.sent.away, awayFormation: m.awayFormation });
-  const chancesNow = (minute, lineup = m.lineup, tactic = m.tactic) => minuteGoalChances(s, lineup, tactic, m.oppStrength, shortOf(lineup), offIds(), m.formation, factorAt(minute, since, intensityOf(tactic)), m.atHome !== false, m.oppPlan, m.holes, minute, awayOn(), zOf());
+  // condition de chaque joueur de l'ordinateur à une minute (1.0.53) : ses minutes jouées depuis son entrée, au rythme de son plan
+  const awayFactorNow = (minute) => {
+    if (!m.ai) return null;
+    const int = intensityOf(m.oppPlan?.tactic);
+    return (p) => { const s0 = m.ai.since[p.name] ?? 0; return fitFactor(fitAt(p, s0 + Math.max(0, minute - s0) * int, s0)); };
+  };
+  const zOf = (minute = null, ahead = null) => ({ cache: zcache, awayRoster, awayOff: m.sent.away, awayFormation: m.awayFormation, awayFactor: ahead ? ahead(minute) : minute == null ? null : awayFactorNow(minute) });
+  const chancesNow = (minute, lineup = m.lineup, tactic = m.tactic) => minuteGoalChances(s, lineup, tactic, m.oppStrength, shortOf(lineup), offIds(), m.formation, factorAt(minute, since, intensityOf(tactic)), m.atHome !== false, m.oppPlan, m.holes, minute, awayOn(), zOf(minute));
 
   // tireur : la finition compte (beaucoup pour un attaquant, un peu pour un milieu, peu pour un défenseur), chez nous
   // comme chez eux ; même pondération que le pronostic
@@ -843,6 +918,9 @@ export function createLiveMatch(s, ctx, saved = null) {
       out: new Set(m.out), gone: new Set(m.gone), injuries: [...m.injuries], played: new Set(m.played),
       perf: JSON.parse(JSON.stringify(m.perf)), lineup: [...m.lineup], tactic: m.tactic, formation: m.formation, subsUsed: m.subsUsed, subsList: [...m.subsList],
       lastAmbience: m.lastAmbience, usedAmbience: new Set(m.usedAmbience), simTo: m.simTo, told: [...m.told],
+      // l'ordinateur-coach (1.0.53) : son onze, son plan, ses changements (un retour en arrière les reprend)
+      awayRoster: [...awayRoster], oppPlan: m.oppPlan ? { ...m.oppPlan } : m.oppPlan, awayStart: m.awayStart ? [...m.awayStart] : null,
+      ai: m.ai ? { done: m.ai.done, subs: m.ai.subs, since: { ...m.ai.since }, used: [...m.ai.used] } : null,
     };
   }
   function restore(x) {
@@ -855,6 +933,8 @@ export function createLiveMatch(s, ctx, saved = null) {
     });
     m.sent = { home: new Set(x.sentH), away: new Set(x.sentA) };
     m.booked = { home: new Set(x.bookedH), away: new Set(x.bookedA) };
+    if (x.awayRoster) { awayRoster.splice(0, awayRoster.length, ...x.awayRoster); m.oppPlan = x.oppPlan; m.awayStart = x.awayStart || undefined; }
+    if (x.ai && m.ai) Object.assign(m.ai, { done: x.ai.done, subs: x.ai.subs, since: { ...x.ai.since }, used: [...x.ai.used] });
     events().length = x.len; // les événements des minutes reprises disparaissent, le tableau reste le même objet
     for (const k of [...m.snaps.keys()]) if (k > x.simTo + 1) m.snaps.delete(k);
     m.rewound += 1;
@@ -995,6 +1075,9 @@ export function createLiveMatch(s, ctx, saved = null) {
     const baseEnd = m.half === 1 ? 45 : 90;
     const extra = halfEnd() - baseEnd;
     if (minute === baseEnd + 1 && extra > 0) events().push(make(minute - 0.95, 'info', null, tn(extra, '{extra} minute de temps additionnel.', '{extra} minutes de temps additionnel.', { extra }, extra > 1)));
+    // l'ordinateur coache (1.0.53) : à chaque fenêtre, au premier arrêt de jeu, son plan suit le score et ses joueurs les plus
+    // fatigués sortent (avant les occasions de la minute : elles se jouent déjà avec ses entrants)
+    if (m.ai && m.half === 2 && m.ai.done < m.ai.at.length && minute >= m.ai.at[m.ai.done]) aiCoach(minute, add);
     const c = chancesNow(minute);
     // le plan de l'adversaire se découvre dans le commentaire, jamais avant le match (1.0.35, choix du PDG) : à la 3e
     // minute ; en ligue entre amis, celui du club qui reçoit aussi (son adversaire revoit le match) ; puis, quand un plan
@@ -1310,6 +1393,48 @@ export function createLiveMatch(s, ctx, saved = null) {
     return null;
   }
 
+  // L'ordinateur coache (1.0.53, PDG 14/11 : « comme un vrai coach ») : à sa fenêtre k, son plan suit le score (à la
+  // première comme à la pause, à la seconde la fin de match : aiLatePlan), puis ses joueurs de champ les plus fatigués
+  // sortent pour des remplaçants frais à leur poste (sinon d'une ligne voisine) : deux à chaque fenêtre, trois à la
+  // seconde s'il est mené, cinq au plus. Son gardien reste.
+  function aiCoach(minute, add) {
+    const k = m.ai.done;
+    m.ai.done += 1;
+    const lead = m.score.away - m.score.home;
+    const gap = (m.oppStrength || 0) - m.myRating;
+    const plan = m.oppPlan?.tactic || 'balanced';
+    const next = k === 0 ? aiHalftimePlan(plan, lead, gap) : aiLatePlan(plan, lead, gap);
+    if (next !== plan && TACTICS[next]) {
+      m.oppPlan = { ...m.oppPlan, tactic: next };
+      add(minute - 0.92, 'info', 'away', fill(pick(T.shiftLate[next]), vars()));
+    }
+    const int = intensityOf(m.oppPlan?.tactic);
+    const fitNow = (p) => { const s0 = m.ai.since[p.name] ?? 0; return fitAt(p, s0 + Math.max(0, minute - s0) * int, s0); };
+    let n = Math.min((AI_SUBS[k] ?? 0) + (k === 1 && lead < 0 ? 1 : 0), AI_MAX_SUBS - m.ai.subs);
+    const free = () => m.ai.bench.filter((b) => b.pos !== 'G' && !m.ai.used.includes(b.name));
+    const pool = awayRoster.filter((p) => p.pos !== 'G' && !m.sent.away.has(p.name) && m.ai.since[p.name] == null).sort((a, b) => fitNow(a) - fitNow(b));
+    const NEAR = { D: ['D', 'M'], M: ['M', 'A', 'D'], A: ['A', 'M'] };
+    // un vrai coach : le remplaçant qui vaut le plus à ce poste, et seulement s'il vaut mieux, frais, que le titulaire
+    // fatigué (à 0,15 près : des jambes neuves en fin de match) ; sinon le titulaire reste
+    const posts = postsOf(m.oppPlan?.formation || m.awayFormation);
+    let j = 0;
+    for (const out of pool) {
+      if (n <= 0 || fitNow(out) > 88) break; // personne de vraiment fatigué : il garde son onze
+      const post = posts[awayRoster.indexOf(out)];
+      const inn = free().filter((b) => (NEAR[out.pos] || ['M']).includes(b.pos)).reduce((a, b) => (!a || ratingAtPost(b, post) > ratingAtPost(a, post) ? b : a), null);
+      if (!inn || ratingAtPost(inn, post) < ratingAtPost(out, post) * fitFactor(fitNow(out)) - 0.15) continue;
+      m.awayStart ||= [...awayRoster];
+      m.awayStartFormation ||= m.oppPlan?.formation || m.awayFormation;
+      awayRoster[awayRoster.indexOf(out)] = inn;
+      m.ai.used.push(inn.name);
+      m.ai.since[inn.name] = minute;
+      m.ai.subs += 1;
+      m.form[`o:${inn.name}`] ??= Math.round((Math.random() - 0.5) * 120) / 100;
+      add(minute - 0.9 + 0.01 * j++, 'sub', 'away', t('Changement pour {away} : {name} remplace {name2}.', { away: m.away, name: inn.name, name2: out.name }), { inName: inn.name, outName: out.name });
+      n -= 1;
+    }
+  }
+
   // Plan de mi-temps du visiteur (championnats entre amis, league.js), à la pause : ses changements ([sortant, entrant],
   // des joueurs), le onze qui en sort dans l'ordre des postes, son dispositif, sa tactique et le niveau de ce onze. Les
   // notes du match suivent ses entrants par leur nom ; awayStart garde son onze de départ.
@@ -1369,7 +1494,8 @@ export function createLiveMatch(s, ctx, saved = null) {
       const end = halfEnd();
       const sinceOf = (id) => m.perf[id]?.in ?? (m.lineup.includes(id) ? 0 : minute);
       const short = shortOf(lineup);
-      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, offIds(), formation, factorAt(min, sinceOf, intensityOf(tactic)), m.atHome !== false, m.oppPlan, m.holes, min, awayOn(), zOf()));
+      const ahead = m.ai ? aiFatigueAhead(m.ai, awayRoster, m.oppPlan, minute, m.sent.away) : null;
+      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, offIds(), formation, factorAt(min, sinceOf, intensityOf(tactic)), m.atHome !== false, m.oppPlan, m.holes, min, awayOn(), zOf(min, ahead)));
       const rest = Math.max(0, end - minute); // la durée des mi-temps est tirée au coup d'envoi : le pronostic en tient compte
       const durations = [rest + (m.half === 1 ? m.halfLength[1] : 0)];
       return outcomeOdds(chancesAt, m.score.home - m.score.away, durations, (k) => (k <= rest ? minute + k : 45 + k - rest), short);
@@ -1392,7 +1518,8 @@ export function createLiveMatch(s, ctx, saved = null) {
       const short = { home: sentH.size + [...out].filter((id) => lineup.includes(id)).length, away: sentA };
       const off = new Set([...sentH, ...out]);
       const sinceOf = (id) => m.perf[id]?.in ?? (m.lineup.includes(id) ? 0 : minute);
-      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, off, formation, factorAt(min, sinceOf, intensityOf(tactic)), m.atHome !== false, m.oppPlan, m.holes, min, awayOn(), zOf()));
+      const ahead = m.ai ? aiFatigueAhead(m.ai, awayRoster, m.oppPlan, minute, m.sent.away) : null;
+      const chancesAt = memoChances((min) => minuteGoalChances(s, lineup, tactic, m.oppStrength, short, off, formation, factorAt(min, sinceOf, intensityOf(tactic)), m.atHome !== false, m.oppPlan, m.holes, min, awayOn(), zOf(min, ahead)));
       const rest = Math.max(0, halfEnd() - minute);
       const durations = [rest + (m.half === 1 ? m.halfLength[1] : 0)];
       return outcomeOdds(chancesAt, lead, durations, (k) => (k <= rest ? minute + k : 45 + k - rest), short);

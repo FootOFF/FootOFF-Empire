@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.53', date: '2026-11-14', title: t('Les clubs de l’ordinateur coachent le match'),
+    items: [
+      t('En solo, les clubs de l’ordinateur coachent comme de vrais entraîneurs : vers la 60e puis la 75e minute, ils ajustent leur plan au score (menés, ils attaquent ; devant, ils protègent leur avance) et font entrer des joueurs frais à la place des plus fatigués.'),
+      t('Leurs joueurs se fatiguent comme les tiens, selon leur plan de jeu, et leurs remplaçants entrent frais ; le pronostic en tient compte. Leurs changements s’affichent dans le fil du direct, sur le terrain et en 3D au moment où ils sont annoncés.'),
+      t('La fatigue d’un pressing haut ou d’un rythme rapide se reporte un peu sur les matchs suivants : la condition d’après-match est celle que le direct montrait au coup de sifflet final.'),
+    ],
+  },
+  {
     version: '1.0.52', date: '2026-11-14', title: t('Des visages bien plus variés'),
     items: [
       t('On distingue bien mieux les joueurs en 3D : la taille, l’écart et la forme des yeux, les paupières, les sourcils, la bouche et les lèvres, la pointe du nez, le menton, les joues et la forme du crâne changent d’un joueur à l’autre.'),

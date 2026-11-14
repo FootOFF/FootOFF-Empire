@@ -128,3 +128,12 @@ export function aiHalftimePlan(plan, lead, gap) {
   if (lead >= 1 && gap < 0) return DOWN[plan];
   return plan;
 }
+// En fin de match (1.0.53, PDG 14/11 : « l'ordinateur coache comme un vrai coach »), vers la 75e : mené, il attaque ; devant
+// d'un but sans être nettement plus fort, il protège son avance en bloc bas ; devant de deux, il recule d'un cran ; à
+// égalité et nettement plus fort, il pousse pour gagner.
+export function aiLatePlan(plan, lead, gap) {
+  if (lead < 0) return 'offensive';
+  if (lead === 1) return gap < 0.5 ? 'low' : DOWN[plan];
+  if (lead >= 2) return DOWN[plan];
+  return gap >= 1 ? UP[plan] : plan;
+}

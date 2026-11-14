@@ -3,7 +3,7 @@ import { HOME_KIT, kitHex, matchKits } from '../game/kits';
 import { flushSync } from 'react-dom';
 import { TACTICS, autoLineup, fitWeight, formationOf, isTactic, lineupRating, ratingAtSlot, reshapeLineup, slotsOf, tacticBlurb, tacticName } from '../game/tactics';
 import { fmtMoney, fmtNum, fmtRating } from './format';
-import { LIVE_VERSION, SUBS_MAX, createLiveMatch, highlightOf, liveKeyOf, pairSubs, statsOf, subMinute } from '../game/live';
+import { LIVE_VERSION, SUBS_MAX, awayPlayerOf, awayShownOf, createLiveMatch, highlightOf, liveKeyOf, pairSubs, statsOf, subMinute } from '../game/live';
 import { saveLive } from '../game/save';
 import { available, fitAt, ratingAt } from '../game/players';
 import { Portrait } from './portrait';
@@ -426,7 +426,7 @@ function Momentum({ shown, upTo, possHalf, names, codes, flip = false }) {
 function GoalBanner({ banner, state, m, shown, codes, kits, crestOf, flip = false, replay = false }) {
   const ours = banner.ours;
   const home = banner.side === 'home';
-  const p = home ? state.players.find((q) => q.id === banner.playerId) : (m.awayRoster || []).find((q) => q.name === banner.player);
+  const p = home ? state.players.find((q) => q.id === banner.playerId) : awayPlayerOf(m, banner.player);
   const nth = home && !replay && p ? (p.season?.goals || 0) + shown.filter((e) => e.type === 'goal' && e.playerId === banner.playerId
     && (e.half < banner.half || (e.half === banner.half && e.at <= banner.at))).length : 0;
   // passeur : « passe d’Eliott », « passe de Marc » (élision, 0.8.24)
@@ -671,7 +671,7 @@ function TopPlayer({ notesNow, state, m, kits, crestOf, ours = 'home' }) {
   const all = [...notesNow.home.map((r) => ({ ...r, side: 'home' })), ...notesNow.away.map((r) => ({ ...r, side: 'away' }))].filter((r) => r.rating != null && r.minutes > 0);
   if (!all.length) return null;
   const best = all.reduce((a, b) => (b.rating > a.rating ? b : a));
-  const p = best.side === 'home' ? state.players.find((q) => q.id === best.id) : (m.awayRoster || []).find((q) => q.name === best.name);
+  const p = best.side === 'home' ? state.players.find((q) => q.id === best.id) : awayPlayerOf(m, best.name);
   const facts = [
     best.goals ? tn(best.goals, 'un but', '{n} buts', {}, best.goals > 1) : null,
     best.assists ? tn(best.assists, 'une passe décisive', '{n} passes décisives', {}, best.assists > 1) : null,
@@ -759,7 +759,7 @@ function LivePitch({ m, state, notesNow, shown, names, us = 'home', onPick = nul
     );
   };
   const home = m.lineup.map((id, k) => ({ id, k, p: state.players.find((q) => q.id === id) })).filter((x) => x.p);
-  const away = (m.awayRoster || []).map((p, k) => ({ k, p }));
+  const away = awayShownOf(m, shown).map((p, k) => ({ k, p })); // (1.0.53) les changements de l'ordinateur une fois annoncés
   return (
     <div className="lv2-pitch" role="group" aria-label={t('Les deux équipes sur le terrain')}>
       <div className="lv2-lines" aria-hidden="true"><i className="half" /><i className="circle" /><i className="box top" /><i className="box bottom" /></div>
@@ -848,6 +848,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     return live.eventsOf(1);
   });
   const [shown, setShown] = useState(() => resumedFeed(live, restore));
+  const shownRef = useRef(shown); // (1.0.53) le fil montré, lu par la scène 3D entre deux rendus
+  shownRef.current = shown;
   const [banner, setBanner] = useState(null);
   const [muted, setMuted] = useState(sound.muted);
   const pause = useRef(restore ? 1.2 : 0); // reprise : un court temps pour se replonger dans le match
@@ -911,11 +913,13 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   // déjà joué en entier : en première période, les onze et les dispositifs du coup d'envoi (avant les plans de mi-temps)
   const kickoffView = () => !!replay && half === 1;
   const homeNames = () => (kickoffView() ? live.state.startLineup : live.state.lineup).map((id) => state.players.find((p) => p.id === id)?.name || '');
-  const awayNames = () => ((kickoffView() && live.state.awayStart) || live.state.awayRoster).map((p) => p.name);
+  // (1.0.53) l'ordinateur change ses joueurs pendant le match : la 3D montre ceux que le fil a déjà annoncés
+  const awayNow = () => (kickoffView() && live.state.awayStart) || awayShownOf(live.state, shownRef.current);
+  const awayNames = () => awayNow().map((p) => p.name);
   // les mêmes onze pour les joueurs 3D : portrait, âge, poste (teint, cheveux, barbe et taille suivent le portrait)
   const lookOf = (p) => (p ? { id: p.id, name: p.name, age: p.age, pos: p.pos, face: p.face } : null);
   const homeLooks = () => (kickoffView() ? live.state.startLineup : live.state.lineup).map((id) => lookOf(state.players.find((p) => p.id === id)));
-  const awayLooks = () => ((kickoffView() && live.state.awayStart) || live.state.awayRoster).map(lookOf);
+  const awayLooks = () => awayNow().map(lookOf);
   const formationNow = () => (kickoffView() ? live.state.startFormation || live.state.formation : live.state.formation);
   const awayFormationNow = () => (kickoffView() ? live.state.awayStartFormation || live.state.awayFormation : live.state.awayFormation);
   // la coupe vers le ralenti (scène 3D) : l'étiquette « Ralenti » tout de suite, sans attendre le prochain tour d'horloge
@@ -935,7 +939,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   useEffect(() => {
     Object.assign(matchFeed, { phase: phase === 'subs' ? 'playing' : phase, half, speed, homeNames: homeNames(), awayNames: awayNames(), homeLooks: homeLooks(), awayLooks: awayLooks(), formation: formationNow(), awayFormation: awayFormationNow() });
     if (phase === 'fulltime') matchFeed.ended = true;
-  }, [phase, half, events, speed, lineupKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [phase, half, events, speed, lineupKey, shown.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // aperçu (galerie) : direct déjà entamé, mi-temps, changement en cours de jeu, ou temps fort (sans la 3D)
   useEffect(() => {
