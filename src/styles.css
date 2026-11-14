@@ -3296,6 +3296,7 @@ html, body, #root, .game, .game * { -webkit-user-select: none; user-select: none
   .ht-b-changes { order: 2; }
   .ht-b-formation { order: 3; }
   .ht-b-tactic { order: 4; }
+  .ht-b-roles { order: 4; } /* (1.0.54) les rôles sous la tactique */
   .halftime .ht-go { order: 5; }
   /* en colonne, contenu en haut et « Reprendre » en bas : sur iPhone la carte prend tout l'écran (fit-content n'y
      limite pas la hauteur) et la grille étirait ses rangées, laissant de grands vides entre les blocs */
@@ -6614,7 +6615,7 @@ button.lv2-pl { cursor: pointer; }
   .ht-tabs button { height: 40px; border: 0; background: transparent; color: var(--text-2); font-family: var(--font-disp); font-weight: 700; font-size: 16px; letter-spacing: .05em; text-transform: uppercase; clip-path: var(--cut-shape-sm); transition: background .2s, color .2s; }
   .ht-tabs button.active { background: var(--gold-grad); color: var(--gold-ink); }
   .halftime.tab-match .ht-b-match { display: flex; flex-direction: column; gap: 12px; }
-  .halftime.tab-team .ht-b-formation, .halftime.tab-team .ht-b-tactic { display: none; }
+  .halftime.tab-team .ht-b-formation, .halftime.tab-team .ht-b-tactic, .halftime.tab-team .ht-b-roles, .halftime.tab-match .ht-b-roles { display: none; }
   .halftime.tab-tactic .compo-card, .halftime.tab-tactic .ht-b-changes, .halftime.tab-tactic .ht-board { display: none; }
   .halftime.tab-match .compo-card, .halftime.tab-match .ht-b-changes, .halftime.tab-match .ht-board,
   .halftime.tab-match .ht-b-formation, .halftime.tab-match .ht-b-tactic { display: none; }
@@ -6636,3 +6637,24 @@ button.lv2-pl { cursor: pointer; }
 .matchscreen.live.lv2-on .halftime .lu-bench { z-index: 5; }
 /* banc classé pour un poste (1.0.51) : la bande cesse d'accrocher ses cartes, pour que le meilleur, premier, reste en vue */
 .matchscreen.live.lv2-on .halftime .lu-bench-grid.ranked, .lu.tb .lu-bench-grid.ranked { scroll-snap-type: none; }
+
+/* ===== rôles des joueurs (1.0.54, ui/roles.jsx) : un joueur touché déplie ses rôles avec et sans ballon ===== */
+.roles { display: flex; flex-direction: column; gap: 8px; }
+.roles-help { margin: 0; font-size: var(--t-sm); line-height: 1.45; color: var(--muted); }
+.roles-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.roles-row { background: var(--plate-2); clip-path: var(--cut-shape-sm); transition: box-shadow var(--dur-fast); }
+.roles-row.open { box-shadow: inset 3px 0 0 var(--gold-light); }
+.roles-head { display: grid; grid-template-columns: 46px minmax(0, 1fr) minmax(0, auto); align-items: center; column-gap: 10px; width: 100%; min-height: 46px; padding: 6px 12px; border: 0; background: transparent; color: var(--text); text-align: start; cursor: pointer; }
+.roles-post { font-family: var(--font-disp); font-weight: 700; font-size: 13px; letter-spacing: .06em; color: var(--gold); }
+.roles-name { font-family: var(--font-disp); font-weight: 700; font-size: 16px; line-height: 1.1; letter-spacing: .03em; text-transform: uppercase; overflow-wrap: anywhere; }
+.roles-sum { max-width: 46vw; font-size: 12px; line-height: 1.25; color: var(--muted); text-align: end; }
+.roles-row.custom .roles-sum { color: var(--gold-light); }
+@media (hover: hover) { .roles-head:hover { background: rgba(222, 193, 127, .05); } }
+.roles-pick { display: flex; flex-direction: column; gap: 12px; padding: 2px 12px 14px; animation: fo-up .2s var(--ease); }
+.roles-label { font-family: var(--font-disp); font-weight: 700; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.roles-chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+.roles-chip { min-height: 42px; padding: 6px 8px; border: 1px solid rgba(199, 161, 90, .22); background: #0e0f11; color: var(--text-2); font-size: 13px; line-height: 1.2; clip-path: var(--cut-shape-sm); cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
+.roles-chip.on { border-color: transparent; background: var(--gold-grad); color: var(--gold-ink); font-weight: 700; }
+@media (hover: hover) { .roles-chip:not(.on):hover { background: rgba(222, 193, 127, .1); color: var(--text); } }
+.roles-desc { margin: 6px 0 0; font-size: 13px; line-height: 1.4; color: var(--text-2); }
+@media (prefers-reduced-motion: reduce) { .roles-pick { animation: none; } }

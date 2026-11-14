@@ -2,6 +2,7 @@ import { clamp } from './utils';
 import { detailsOf } from './attributes';
 import { INSTR_KEYS, formationOf, instructionsOf } from './tactics';
 import { typeOf } from './posts';
+import { ROLES, ROLE_FAMILY } from './roles';
 
 // Moteur de match à zones (1.0.49, moteur des ligues 7). Demande du PDG (13/11) : « que mon jeu soit une référence
 // comme Football Manager 27 tactiquement » ; ses choix : le moteur d'abord, des rôles façon FM26/27 ensuite, toute la
@@ -109,6 +110,31 @@ function lanesOf(c, w, attack, front = false) {
   return out;
 }
 
+// --- Rôles (1.0.54) ---------------------------------------------------------------------------------------------------
+// Effets réunis du rôle avec ballon et du rôle sans ballon d'un joueur à son poste (roles.js) ; r : { w, d } (identifiants
+// des deux rôles), absent ou rôles du poste : aucun effet (le moteur d'avant, au bit près).
+const NO_FX = Object.freeze({});
+export function roleFx(type, r) {
+  const fam = ROLES[ROLE_FAMILY[type] || ''];
+  if (!fam || !r) return NO_FX;
+  const w = fam.with.find((x) => x.id === r.w) || fam.with[0];
+  const d = fam.without.find((x) => x.id === r.d) || fam.without[0];
+  if (w === fam.with[0] && d === fam.without[0]) return NO_FX;
+  const q = {};
+  for (const src of [w.fx.q, d.fx.q]) for (const [k, x] of Object.entries(src || {})) q[k] = (q[k] ?? 1) * x;
+  return { at: w.fx.at, al: w.fx.al, dt: d.fx.dt, dl: d.fx.dl, q, gk: { ...(w.fx.gk || {}), ...(d.fx.gk || {}) } };
+}
+// une part de la présence d'un couloir passe vers l'axe (x > 0) ou de l'axe vers son couloir (x < 0) ; un poste de l'axe y reste
+function laneMove(l, x) {
+  if (!x) return l;
+  const side = l[0] > 0 ? 0 : l[2] > 0 ? 2 : -1;
+  if (side < 0) return l;
+  const out = [...l];
+  if (x > 0) { const m = out[side] * Math.min(1, x); out[side] -= m; out[1] += m; } else { const m = out[1] * Math.min(1, -x); out[1] -= m; out[side] += m; }
+  return out;
+}
+const thirdsMove = (a, s) => { if (!s) return a; const out = [...a]; shift(out, s[0], s[1], s[2]); return out; };
+
 // --- Profil des joueurs -------------------------------------------------------------------------------------------------
 // attributs détaillés (sur 20) d'un joueur, gardés tant qu'il ne change pas
 const detMemo = new Map();
@@ -156,15 +182,22 @@ export const Q_KEYS = Object.keys(BASE);
 // eleven : [{ p, type, c }] des joueurs de champ sur le terrain (type de poste, colonne de la grille) ; keeper : le gardien
 // (ou null) ; plan : tactique ou consignes. Le modèle fixe (couloirs, tiers, profil) ne dépend que du onze et des
 // consignes ; la fatigue s'applique minute par minute (teamAt).
-export function teamStatic(eleven, keeper, plan) {
+// roleOf (1.0.54) : les rôles de chaque joueur ({ w, d }, roles.js), absent : ceux du poste. Un rôle le déplace dans les
+// tiers et les couloirs, et change le poids de ses qualités dans le profil de l'équipe (qw) : bien choisi pour lui, il
+// rend son équipe meilleure là où il agit ; à contre-emploi, ses manques pèsent davantage.
+export function teamStatic(eleven, keeper, plan, roleOf = null) {
   const I = instructionsOf(plan);
-  const rows = eleven.map(({ p, type, c }) => ({
-    p, type,
-    at: attThirds(type, I), dt: defThirds(type, I),
-    al: lanesOf(c, I.width, true, FRONT.has(type)), dl: lanesOf(c, I.width, false),
-    sk: p ? skillsOf(p) : null, core: p ? coreOf(p) : null,
-    front: FRONT.has(type), back: BACK.has(type),
-  }));
+  const rows = eleven.map(({ p, type, c }) => {
+    const fx = roleOf && p ? roleFx(type, roleOf(p)) : NO_FX;
+    return {
+      p, type,
+      at: thirdsMove(attThirds(type, I), fx.at), dt: thirdsMove(defThirds(type, I), fx.dt),
+      al: laneMove(lanesOf(c, I.width, true, FRONT.has(type)), fx.al), dl: laneMove(lanesOf(c, I.width, false), fx.dl),
+      qw: fx.q || null,
+      sk: p ? skillsOf(p) : null, core: p ? coreOf(p) : null,
+      front: FRONT.has(type), back: BACK.has(type),
+    };
+  });
   const withP = rows.filter((r) => r.sk);
   for (const r of withP) {
     const pb = POSBASE[r.p.pos] || POSBASE.D;
@@ -173,26 +206,36 @@ export function teamStatic(eleven, keeper, plan) {
   }
   const teamCore = withP.length ? withP.reduce((s, r) => s + r.core, 0) / withP.length : 10;
   const Q = {};
-  const mean = (key, w) => {
+  const mean = (key, w, qk = key) => {
     let sw = 0, sv = 0;
-    for (const r of withP) { const x = w(r); if (x > 0) { sw += x; sv += x * r.rel[key]; } }
+    for (const r of withP) { const x = w(r) * (r.qw?.[qk] ?? 1); if (x > 0) { sw += x; sv += x * r.rel[key]; } }
     return sw ? sv / sw : 0;
   };
-  let gkRel = null;
+  let gkRel = null, gk = null, gkCore = 10;
   if (keeper?.g) {
-    const gk = det(keeper);
+    gk = det(keeper);
     const gv = Object.values(keeper.g).filter(Number.isFinite);
-    gkRel = 0.6 * v(gk, 'jeuPied') + 0.4 * v(gk, 'degagement') - gv.reduce((a, b) => a + b, 0) / (gv.length || 1) - GK_BASE;
+    gkCore = gv.reduce((a, b) => a + b, 0) / (gv.length || 1);
+    gkRel = 0.6 * v(gk, 'jeuPied') + 0.4 * v(gk, 'degagement') - gkCore - GK_BASE;
   }
+  // le gardien (1.0.54) : sa relance pèse plus (relance courte) ou moins (relance longue) dans la construction
+  const gfx = roleOf && keeper ? roleFx('G', roleOf(keeper)) : NO_FX;
+  const gw = gfx.q?.build ?? 1;
   const buildBase = mean('build', (r) => r.at[0]);
-  Q.build = gkRel === null ? buildBase : (buildBase * 3 + gkRel) / 4;
+  Q.build = gkRel === null ? buildBase : (buildBase * 3 + gkRel * gw) / (3 + gw);
   Q.press = mean('press', (r) => r.dt[2]);
   Q.pace = mean('pace', (r) => r.at[2]);
-  Q.defPace = mean('pace', (r) => (r.back ? r.dt[0] : 0));
+  Q.defPace = mean('pace', (r) => (r.back ? r.dt[0] : 0), 'defPace');
   Q.air = mean('air', (r) => r.at[2] * r.al[1]);
-  Q.defAir = mean('air', (r) => r.dt[0] * r.dl[1]);
+  Q.defAir = mean('air', (r) => r.dt[0] * r.dl[1], 'defAir');
   Q.crossL = mean('cross', (r) => (r.at[1] + r.at[2]) * r.al[0]);
   Q.crossR = mean('cross', (r) => (r.at[1] + r.at[2]) * r.al[2]);
+  // le gardien sans ballon (1.0.54) : libéro, il couvre la profondeur avec ses sorties et sa vitesse ; sur les centres, il
+  // les prend avec son jeu aérien (comparés à ses qualités de gardien : un gardien lent fait un mauvais libéro)
+  // (comparés à un gardien ordinaire : -1,24 et -0,05, tools/sim/gk, 3 000 gardiens tirés comme ceux du jeu ; le libéro
+  // recalé sur la valeur moyenne d'un rôle, tools/sim/roles)
+  if (gk && gfx.gk?.defPace) Q.defPace = (Q.defPace * 5 + (0.5 * v(gk, 'sorties') + 0.5 * v(gk, 'vitesse') - gkCore + 1.0)) / 6;
+  if (gk && gfx.gk?.defAir) Q.defAir = (Q.defAir * 4 + (0.6 * v(gk, 'gAerien') + 0.4 * v(gk, 'sorties') - gkCore + 0.05)) / 5;
   Q.drib = mean('drib', (r) => r.at[2]);
   Q.vision = mean('vision', (r) => r.at[1]);
   Q.wall = mean('wall', (r) => r.dt[0] + 0.5 * r.dt[1]);
@@ -512,9 +555,9 @@ export function qualityMean(summary, side, X, Y) {
 // son plan) ou, sans lui, contre un adversaire ordinaire (4-3-3, Équilibrée). L'ordinateur s'en sert pour jouer le plan qui
 // colle à ses joueurs et à ceux d'en face (coherence.js, aiPlanOf). players : le onze dans l'ordre des postes.
 let neutralOpp = null;
-export function planValue(players, formation, plan, vs = null) {
+export function planValue(players, formation, plan, vs = null, roleOf = null) {
   const { eleven, keeper } = elevenOf(players, formation);
-  const H = teamAt(teamStatic(eleven, keeper, plan), 10, null, { expect: true });
+  const H = teamAt(teamStatic(eleven, keeper, plan, roleOf), 10, null, { expect: true });
   let A;
   if (vs?.players?.length) {
     const o = elevenOf(vs.players, vs.formation);

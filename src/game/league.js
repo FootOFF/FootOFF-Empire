@@ -10,6 +10,7 @@ import {
 import { assignNumber, available, makePlayer } from './players';
 import { autoLineup, FORMATIONS, isFormation, isTactic, lineupRating, repairLineup, TACTICS } from './tactics';
 import { clone } from './utils';
+import { cleanRoles } from './roles';
 import { LANGS, numLocale, t } from '../i18n/index';
 
 // Championnats entre amis (Siège de la Ligue). Le serveur des ligues (site footoff.media, /api/ligue ; leagueNet.js)
@@ -29,7 +30,9 @@ import { LANGS, numLocale, t } from '../i18n/index';
 // joueurs dans chaque zone, plan de l'ordinateur mesuré par ce moteur.
 // 8 (1.0.50) : mode expert : tactiques sur mesure (« x:… », les 7 consignes), cohérence des consignes, tactique qui pèse
 // davantage, préréglages Offensive et Bloc bas retouchés.
-export const LEAGUE_ENGINE = 8;
+// 9 (1.0.54) : rôles des joueurs (roles.js : un rôle avec ballon, un sans, par joueur), envoyés avec l'équipe ; un club sans
+// rôle choisi joue comme en version 8.
+export const LEAGUE_ENGINE = 9;
 export const LEAGUE_CLUBS = 8; // amis complétés par l'ordinateur
 export const LEAGUE_MIN_HUMANS = 2;
 export const MAX_MY_LEAGUES = 3; // championnats à la fois sur un appareil
@@ -185,7 +188,9 @@ export function cleanSheet(sheet, players) {
     && new Set(named).size === named.length && named.every((id) => ids.has(id));
   if (!ok) return autoSheet(players);
   const ht = cleanPlans(sheet.ht, ids);
-  return { formation: sheet.formation, tactic: sheet.tactic, lineup: [...lineup], auto: !!sheet.auto, ...(ht ? { ht } : {}) };
+  // rôles (1.0.54) : seulement ceux de joueurs de l'effectif
+  const roles = Object.fromEntries(Object.entries(cleanRoles(sheet.roles)).filter(([id]) => ids.has(Number(id)) || ids.has(id)));
+  return { formation: sheet.formation, tactic: sheet.tactic, lineup: [...lineup], auto: !!sheet.auto, ...(ht ? { ht } : {}), ...(Object.keys(roles).length ? { roles } : {}) };
 }
 
 // Les joueurs sur le terrain après les changements, placés pour la seconde période : la composition voulue du plan (l)
@@ -260,13 +265,13 @@ function halftimePlans(live, home, away) {
 // niveau, son dispositif et sa tactique. home, away : { slot, name, crest, players, sheet }.
 export function leagueMatch(league, season, round, home, away) {
   return seeded(hash(`${league.code}|${league.seed}|${season}|${round}|${home.slot}-${away.slot}|match`), () => {
-    const s = { clubName: home.name, crest: home.crest, players: home.players, lineup: [...home.sheet.lineup], formation: home.sheet.formation, tactic: home.sheet.tactic, buildings: { medical: home.medical || 0 } };
+    const s = { clubName: home.name, crest: home.crest, players: home.players, lineup: [...home.sheet.lineup], formation: home.sheet.formation, tactic: home.sheet.tactic, roles: home.sheet.roles || {}, buildings: { medical: home.medical || 0 } };
     const ctx = {
       comp: 'friends',
       home: true,
       holes: false, // pénalité d'infériorité numérique comme en version 1 : personne ne déplace d'expulsé dans un match joué sans lui
       opp: { name: away.name, crest: away.crest, strength: lineupRating(away.players, away.sheet.lineup, away.sheet.formation) },
-      awayEleven: { formation: away.sheet.formation, players: away.sheet.lineup.map((id) => away.players.find((p) => p.id === id)).filter(Boolean) }, // poste vide : rien
+      awayEleven: { formation: away.sheet.formation, players: away.sheet.lineup.map((id) => away.players.find((p) => p.id === id)).filter(Boolean), roles: away.sheet.roles || {} }, // poste vide : rien ; rôles (1.0.54)
       oppPlan: { tactic: away.sheet.tactic, formation: away.sheet.formation },
     };
     const live = createLiveMatch(s, ctx);
@@ -315,8 +320,8 @@ function sideOf(clubs, teams, squads, world, slot, sold = null) {
   const b = buildingsOf(world.clubs[slot]);
   return { slot, name: c.name, crest: c.crest, players: squads[slot], sheet: autoSheet(squads[slot]), medical: b[2], stadium: b[0], money: world.clubs[slot]?.money ?? START_BUDGET, sent: null };
 }
-const packSheet = (sh) => ({ f: sh.formation, t: sh.tactic, l: sh.lineup, ...(sh.auto ? { a: 1 } : {}), ...(sh.ht ? { ht: sh.ht } : {}) });
-export const unpackSheet = (x) => ({ formation: x.f, tactic: x.t, lineup: x.l, auto: !!x.a, ...(x.ht ? { ht: x.ht } : {}) });
+const packSheet = (sh) => ({ f: sh.formation, t: sh.tactic, l: sh.lineup, ...(sh.auto ? { a: 1 } : {}), ...(sh.ht ? { ht: sh.ht } : {}), ...(sh.roles ? { r: sh.roles } : {}) });
+export const unpackSheet = (x) => ({ formation: x.f, tactic: x.t, lineup: x.l, auto: !!x.a, ...(x.ht ? { ht: x.ht } : {}), ...(x.r ? { roles: x.r } : {}) });
 // joueurs du visiteur gardés avec le résultat : son onze, et les entrants de ses plans de mi-temps (rejeu)
 const elevenOf = (side) => {
   const ids = [...side.sheet.lineup.filter((id) => id !== null)];

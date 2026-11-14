@@ -3,6 +3,7 @@ import { HOME_KIT, kitHex, matchKits } from '../game/kits';
 import { flushSync } from 'react-dom';
 import { TACTICS, autoLineup, fitWeight, formationOf, isTactic, lineupRating, ratingAtSlot, reshapeLineup, slotsOf, tacticBlurb, tacticName } from '../game/tactics';
 import { fmtMoney, fmtNum, fmtRating } from './format';
+import { RolesPanel } from './roles';
 import { LIVE_VERSION, SUBS_MAX, awayPlayerOf, awayShownOf, createLiveMatch, highlightOf, liveKeyOf, pairSubs, statsOf, subMinute } from '../game/live';
 import { saveLive } from '../game/save';
 import { available, fitAt, ratingAt } from '../game/players';
@@ -186,6 +187,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const [lineup, setLineup] = useState(() => [...state.lineup]);
   const [tactic, setTactic] = useState(isTactic(state.tactic) ? state.tactic : 'balanced');
   const [formation, setFormation] = useState(formationOf(state.formation).id);
+  const [roles, setRoles] = useState(() => state.roles || {}); // rôles des joueurs (1.0.54)
   const [hist, setHist] = useState([]); // états précédents, pour annuler (les 30 derniers)
   const friends = !!state.league; // partie de championnat entre amis : son match se joue sans elle (plans de mi-temps)
   const [plans, setPlans] = useState(() => ({ ...(state.league?.plans || {}) })); // plans de mi-temps (ligue)
@@ -198,10 +200,11 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const home = ctx.home !== false; // à l'extérieur (Élite) : l'avantage du terrain est à l'adversaire
   // chaque changement garde l'état d'avant (annuler) ; sound : le son de l'équipe qui se replace
   const commit = (next, sound) => {
-    setHist((h) => [...h.slice(-29), { lineup, tactic, formation }]);
+    setHist((h) => [...h.slice(-29), { lineup, tactic, formation, roles }]);
     if (next.lineup) setLineup(next.lineup);
     if (next.tactic) setTactic(next.tactic);
     if (next.formation) setFormation(next.formation);
+    if (next.roles) setRoles(next.roles);
     if (sound) uiSound(sound);
   };
   const undo = () => {
@@ -211,6 +214,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
     setLineup(prev.lineup);
     setTactic(prev.tactic);
     setFormation(prev.formation);
+    setRoles(prev.roles || {});
     uiSound('back');
   };
   const reshape = (f) => { if (f !== formation) commit({ formation: f, lineup: reshapeLineup(state.players, lineup, f) }, 'shift'); };
@@ -308,6 +312,8 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           <TacticSliders tactic={tactic} onChange={tuneTactic} />
           <h3 className="pm-sh mark-head">{tr('Dispositif · <0/>', [<span className="pm-plan-name">{form.name}</span>])}</h3>
           <p className="pm-blurb">{form.blurb}</p>
+          <h3 className="pm-sh mark-head">{t('Rôles')}</h3>
+          <RolesPanel players={state.players} lineup={lineup} formation={formation} roles={roles} onChange={(r) => commit({ roles: r })} />
           {friends && <>
             <h3 className="pm-sh mark-head">{t('Plans de mi-temps')}</h3>
             <PlansSummary players={state.players} lineup={lineup} formation={formation} tactic={tactic} plans={plans} onOpen={setPlansOpen} />
@@ -316,7 +322,7 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
         <div className="pm-go">
           <section className="pm-odds pm-kick glass" aria-label={t('Coup d’envoi')}>
             {ctx.knockout && <p className="pm-xg pm-ko">{t('Élimination directe : tirs au but en cas d’égalité.')}</p>}
-            <button className="btn btn-xl" onClick={() => onKickoff(lineup, tactic, formation, friends ? plans : undefined)}>{ctx.goLabel ? <><IconCheck /> {ctx.goLabel}</> : <><IconPlay className="fill" />{t(' Coup d’envoi')}</>}</button>
+            <button className="btn btn-xl" onClick={() => onKickoff(lineup, tactic, formation, friends ? plans : undefined, roles)}>{ctx.goLabel ? <><IconCheck /> {ctx.goLabel}</> : <><IconPlay className="fill" />{t(' Coup d’envoi')}</>}</button>
           </section>
         </div>
       </div>
@@ -866,6 +872,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   const [plan, setPlan] = useState(null); // onze composé sur le terrain (mi-temps, changement en cours de jeu)
   const [tactic2, setTactic2] = useState(live.state.tactic);
   const [form2, setForm2] = useState(live.state.formation); // dispositif envisagé (mi-temps, changement en jeu)
+  const [roles2, setRoles2] = useState(live.state.roles || {}); // rôles envisagés (1.0.54)
   const [board, setBoard] = useState(false); // composition repliée : on la déploie pour faire ses changements
   // mi-temps et changement en onglets au téléphone (1.0.51, PDG 14/11 : « améliore l'interface de mi-temps… intuitif ») :
   // l'équipe (changements sur le terrain), la tactique (dispositif, plans, consignes), le match (ses chiffres)
@@ -1098,13 +1105,14 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     setPlan([...m.lineup]);
     setTactic2(m.tactic);
     setForm2(m.formation);
+    setRoles2(m.roles || {});
     setBoard(true); // 1.0.37 (choix du PDG) : la composition et le banc toujours ouverts pour changer
     setSub({ at, note, err: null });
     setPhase('subs');
   }
   function closeSubs(apply) {
     if (apply && sub) {
-      const err = live.change(sub.at, { lineup: plan, tactic: tactic2, formation: form2 });
+      const err = live.change(sub.at, { lineup: plan, tactic: tactic2, formation: form2, roles: roles2 });
       if (err) { setSub((x) => ({ ...x, err })); return; }
       live.advanceTo(Math.ceil(clockRef.current) + LOOKAHEAD);
       setLineupKey((k) => k + 1);
@@ -1155,7 +1163,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
 
   const resume = () => { // reprise de la seconde période, avec les changements et la tactique de la pause
     if (replay) live.state.half = 2; // match revu : la seconde période est déjà jouée, on la montre
-    else live.change(45, { lineup: plan || m.lineup, tactic: tactic2, formation: form2, halftime: true });
+    else live.change(45, { lineup: plan || m.lineup, tactic: tactic2, formation: form2, roles: roles2, halftime: true });
     live.beginHalf(2);
     live.advanceTo(45 + LOOKAHEAD);
     const h2 = live.eventsOf(2);
@@ -1169,7 +1177,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
     sound.whistle(1);
   };
 
-  useEffect(() => { if (phase === 'halftime') { setPlan([...m.lineup]); setTactic2(m.tactic); setForm2(m.formation); setBoard(!replay || !!preview?.board); } }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (phase === 'halftime') { setPlan([...m.lineup]); setTactic2(m.tactic); setForm2(m.formation); setRoles2(m.roles || {}); setBoard(!replay || !!preview?.board); } }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   // nouveau dispositif : les joueurs encore en jeu replacés au mieux ; un expulsé ou un blessé non remplacé prend le poste
   // qui pèse le moins (on peut l'y déplacer ensuite, le poste où on le pose est celui laissé vide)
   const reshapePlan = (f) => {
@@ -1479,6 +1487,10 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
             {!replay && <div className="ht-block ht-b-tactic">
               <span className="ht-label">{phase === 'halftime' ? t('Tactique de la seconde période') : t('Tactique', undefined, 'onglet')}</span>
               <TacticPicker value={tactic2} onChange={setTactic2} compact formation={form2} />
+            </div>}
+            {!replay && <div className="ht-block ht-b-roles">
+              <span className="ht-label">{t('Rôles')}</span>
+              <RolesPanel players={state.players} lineup={planned} formation={form2} roles={roles2} onChange={setRoles2} compact />
             </div>}
             {sub?.err && <p className="ht-note warn">{sub.err}</p>}
           </div>

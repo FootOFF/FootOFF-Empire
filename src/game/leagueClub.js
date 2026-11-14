@@ -10,6 +10,7 @@ import { book, markTreasury } from './ledger';
 import { pushJournal } from './journal';
 import { HT_CASES, leagueClubs, leagueSquads, replayOf, squadsOf, startWorld } from './league';
 import { SUBS_MAX } from './live';
+import { cleanRoles } from './roles';
 import { expandPlayer, marketPlayers, priceOf, snapPlayer, unsnapPlayer } from './leagueWorld';
 import { officialTable, perspectiveResult, refreshRivals } from './leagueSeason';
 import { clone } from './utils';
@@ -137,11 +138,12 @@ export function ensureLids(s) {
 
 // L'équipe et l'effectif envoyés pour la journée (POST sheet) : dispositif, onze, tactique, plans de mi-temps, tout
 // l'effectif tel qu'il est (qualités, condition, indisponibles), le centre médical et le budget.
-export function teamSheet(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, plans = s.league.plans } = {}) {
+export function teamSheet(s, { lineup = s.lineup, tactic = s.tactic, formation = s.formation, plans = s.league.plans, roles = s.roles } = {}) {
   ensureLids(s);
   const ht = packPlans(s.players, lineup, formation, tactic, plans);
+  const r = cleanRoles(roles); // rôles des joueurs (1.0.54)
   return {
-    formation, lineup: [...lineup], tactic, ...(ht ? { ht } : {}), squad: s.players.map(snapPlayer), med: s.buildings.medical || 0, money: Math.round(s.money),
+    formation, lineup: [...lineup], tactic, ...(ht ? { ht } : {}), ...(Object.keys(r).length ? { roles: r } : {}), squad: s.players.map(snapPlayer), med: s.buildings.medical || 0, money: Math.round(s.money),
   };
 }
 

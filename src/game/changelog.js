@@ -5,6 +5,15 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.54', date: '2026-11-14', title: t('Les rôles des joueurs'),
+    items: [
+      t('Chaque joueur a désormais un rôle avec ballon et un rôle sans ballon, trois au choix pour chaque poste, dans le vocabulaire du football : relanceur, latéral offensif, meneur reculé, box-to-box, ailier intérieur, pivot, renard des surfaces, gardien libéro…'),
+      t('Un rôle change la place du joueur sur le terrain et ce qui compte de lui : un rôle qui lui va rend ton équipe meilleure, un rôle à contre-emploi la pénalise. Aucune note ne le dit : à toi de connaître tes joueurs.'),
+      t('Les rôles se choisissent dans l’avant-match et à la mi-temps, sous la tactique, et comptent aussi dans les championnats entre amis.'),
+      t('Championnats entre amis : nouvelle version du moteur des ligues, mets le jeu à jour avant de jouer.'),
+    ],
+  },
+  {
     version: '1.0.53', date: '2026-11-14', title: t('Les clubs de l’ordinateur coachent en match'),
     items: [
       t('En solo, les clubs de l’ordinateur coachent comme de vrais entraîneurs : vers la 60e puis la 75e minute, ils ajustent leur plan au score (menés, ils attaquent ; devant, ils protègent leur avance) et font entrer des joueurs frais à la place des plus fatigués.'),

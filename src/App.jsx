@@ -495,11 +495,11 @@ export default function App({ preview = null }) {
     setMatchPhase('prematch');
   };
   const cancelMatch = () => { setMatchPhase(null); setMatchDay(false); };
-  const kickoff = (lineup, tactic, formation, plans) => {
-    if (state.league) { sendLeagueTeam(lineup, tactic, formation, plans); return; }
+  const kickoff = (lineup, tactic, formation, plans, roles = state.roles) => {
+    if (state.league) { sendLeagueTeam(lineup, tactic, formation, plans, roles); return; }
     setResumeLive(null);
     clearLive();
-    if (run((s) => { staffSession(s); s.lineup = lineup; s.tactic = tactic; s.formation = formation; return s; })) setMatchPhase('live');
+    if (run((s) => { staffSession(s); s.lineup = lineup; s.tactic = tactic; s.formation = formation; s.roles = roles || {}; return s; })) setMatchPhase('live');
   };
   const finishMatch = (result) => {
     setResumeLive(null);
@@ -977,14 +977,14 @@ export default function App({ preview = null }) {
     return list.find((r) => r.round === state.round) || null;
   })();
   // « Valider mon équipe » : l'équipe et l'effectif partent au serveur (teamSheet), pour la journée ouverte.
-  const sendLeagueTeam = async (lineup, tactic, formation, plans = state.league.plans) => {
+  const sendLeagueTeam = async (lineup, tactic, formation, plans = state.league.plans, roles = state.roles) => {
     const { d, m } = leagueLive;
     const key = `${d.league.season}:${d.league.round}`;
     if (leagueLocked()) { lockedNote(); cancelMatch(); return; } // le dernier ami a validé pendant que l'avant-match était ouvert
     try {
       if (d.league.season !== state.league.season || d.league.round !== state.round) throw new Error(t('La journée a changé : regarde d’abord le match de la journée précédente.'));
-      await sendSheet(m, d.league.season, d.league.round, teamSheet(clone(state), { lineup, tactic, formation, plans }));
-      run((s) => { s.lineup = lineup; s.tactic = tactic; s.formation = formation; s.league.plans = plans || {}; s.league.sent = key; return s; });
+      await sendSheet(m, d.league.season, d.league.round, teamSheet(clone(state), { lineup, tactic, formation, plans, roles }));
+      run((s) => { s.lineup = lineup; s.tactic = tactic; s.formation = formation; s.roles = roles || {}; s.league.plans = plans || {}; s.league.sent = key; return s; });
       notify({ kind: 'success', eyebrow: state.league.name, title: t('Équipe validée'), text: t('Journée {v} : coup d’envoi dix minutes après la validation de la dernière équipe, au plus tard {deadlineText}.', { v: d.league.round + 1, deadlineText: deadlineText(d.league.deadline) }), key: 'league-sent' });
     } catch (x) {
       notify({ kind: 'warn', eyebrow: state.league.name, title: t('Équipe non envoyée'), text: x.message });
