@@ -568,7 +568,7 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
               </span>
               <span className="lu-name">{names[id]}</span>
               {rolesMode
-                ? (() => { const ra = rolesAt(typeAt(k), roles?.[id]); const r = ra && (ra.w !== ra.fam.with[0] || ra.d === ra.fam.without[0] ? ra.w : ra.d); return r ? <span className={`lu-role ${ra.custom ? 'custom' : ''}`}>{r.name}</span> : null; })()
+                ? isLocked(id) ? null /* expulsé : plus de rôle à choisir (relecture 1.0.55) */ : (() => { const ra = rolesAt(typeAt(k), roles?.[id]); const r = ra && (ra.w !== ra.fam.with[0] || ra.d === ra.fam.without[0] ? ra.w : ra.d); return r ? <span className={`lu-role ${ra.custom ? 'custom' : ''}`}>{r.name}</span> : null; })()
                 : !out && <FitBar value={fitValue(p)} />}
             </button>
           );
