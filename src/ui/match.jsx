@@ -1417,7 +1417,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
             </div>
             {!replay && (
               <div className="ht-tabs" role="tablist" aria-label={t('Que régler ?')}>
-                {[['team', t('Équipe')], ['tactic', t('Tactique')], ['match', t('Le match')]].map(([k, label]) => (
+                {[['team', t('Équipe')], ['tactic', t('Tactique', undefined, 'onglet')], ['match', t('Le match', undefined, 'onglet')]].map(([k, label]) => (
                   <button key={k} type="button" role="tab" aria-selected={htTab === k} className={htTab === k ? 'active' : ''}
                     onClick={(e) => {
                       if (k !== htTab) uiSound('shift');
@@ -1473,7 +1473,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
               <FormationPicker value={form2} onChange={reshapePlan} />
             </div>}
             {!replay && <div className="ht-block ht-b-tactic">
-              <span className="ht-label">{phase === 'halftime' ? t('Tactique de la seconde période') : t('Tactique')}</span>
+              <span className="ht-label">{phase === 'halftime' ? t('Tactique de la seconde période') : t('Tactique', undefined, 'onglet')}</span>
               <TacticPicker value={tactic2} onChange={setTactic2} compact formation={form2} />
             </div>}
             {sub?.err && <p className="ht-note warn">{sub.err}</p>}

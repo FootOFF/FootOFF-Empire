@@ -7,9 +7,9 @@ export const CHANGELOG = [
   {
     version: '1.0.51', date: '2026-11-14', title: t('Mi-temps, onze et remplaçants plus clairs'),
     items: [
-      t('Au téléphone, la mi-temps et chaque changement s’ouvrent en trois onglets : ton équipe sur le terrain, ta tactique, et les chiffres du match.'),
-      t('Touche un joueur du terrain : les remplaçants se classent selon leur note à son poste, et le meilleur est marqué « Le meilleur ici ».'),
-      t('Un titulaire épuisé se signale d’un anneau ambré autour de son portrait.'),
+      t('Au téléphone, la mi-temps et chaque changement s’ouvrent en trois onglets : ton équipe sur le terrain, ta tactique et les chiffres du match.'),
+      t('Touche un joueur du terrain : les remplaçants se classent selon leur note à son poste, et le premier, s’il est un vrai recours, porte le bandeau « Le meilleur ici ».'),
+      t('Un titulaire épuisé se signale par un anneau ambré autour de son portrait.'),
       t('Au téléphone, un petit tableau reste en vue au-dessus des curseurs de la tactique : le bloc, la zone de pressing et la ligne défensive bougent avec chaque cran.'),
     ],
   },

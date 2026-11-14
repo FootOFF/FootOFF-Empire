@@ -461,21 +461,27 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
   const target = sel?.kind === 'slot' ? sel.k : moving;
   const atTarget = (p) => (target === null || target === undefined ? null : ratingAtSlot(p, formation, target));
   const benchShown = target === null || target === undefined ? bench : [...bench].sort((a, b) => canEnter(b) - canEnter(a) || atTarget(b) - atTarget(a));
-  const bestId = target === null || target === undefined || isLocked(lineup[target]) ? null : benchShown.find((p) => canEnter(p))?.id ?? null;
-  // un titulaire sous 60 % de condition se signale (anneau ambré qui respire) : c'est lui qu'on remplace
-  const TIRED = 60;
+  const firstId = target === null || target === undefined || isLocked(lineup[target]) ? null : benchShown.find((p) => canEnter(p))?.id ?? null;
+  // le bandeau seulement pour un vrai recours : au moins 70 % de la note du titulaire à ce poste (et 3 sur 10) ; sinon la
+  // bande reste classée sans conseil (un poste sans remplaçant naturel ne pousse pas à un mauvais changement)
+  const starter = firstId !== null && !isOutAt(target) ? byId[lineup[target]] : null;
+  const floor = Math.max(3, starter ? 0.7 * ratingAtSlot(starter, formation, target) : 0);
+  const bestId = firstId !== null && atTarget(byId[firstId]) >= floor ? firstId : null;
+  // un titulaire épuisé, sous 50 % de condition (le rouge de sa barre), se signale (anneau ambré qui respire) : c'est lui
+  // qu'on remplace (à 60 %, presque tout un onze parti fatigué s'allumait à la pause, relecture du 14/11)
+  const TIRED = 50;
   // le meilleur remplaçant vient en vue dans le banc qui défile (au téléphone, une bande horizontale). Pendant le
   // classement, la bande n'accroche plus ses cartes (.ranked) : sinon le navigateur la ramène sur la carte accrochée
   // avant le nouveau classement, et le meilleur, désormais premier, sort de l'écran. Seule la bande défile, jamais la page.
   useLayoutEffect(() => {
     const el = bestRef.current;
     const g = el?.parentElement;
-    if (bestId === null || !g || g.scrollWidth <= g.clientWidth + 1) return;
+    if (firstId === null || !g || g.scrollWidth <= g.clientWidth + 1) return;
     const r = el.getBoundingClientRect();
     const gr = g.getBoundingClientRect();
     const dx = r.left < gr.left ? r.left - gr.left - 8 : r.right > gr.right ? r.right - gr.right + 8 : 0;
     if (dx) g.scrollBy({ left: dx, behavior: 'smooth' });
-  }, [bestId, target]);
+  }, [firstId, target]);
 
   return (
     <div className={`lu ${board ? 'tb' : ''} ${ghost ? 'dragging' : ''} ${showCells ? 'shaping' : ''}`} ref={root} data-noswipe="">
@@ -540,7 +546,7 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
           <span className="lu-bench-title mark-head">{t('Remplaçants')}{board && bench.length > 0 && <em className="lu-count">{bench.length}</em>}</span>
           {left !== null && <span className={`lu-left ${left === 0 ? 'none' : ''}`}>{left === 0 ? t('Plus de changement') : tn(left, '{left} changement possible', '{left} changements possibles', { left }, left > 1)}</span>}
         </div>
-        <div className={`lu-bench-grid ${bestId !== null ? 'ranked' : ''}`}>
+        <div className={`lu-bench-grid ${firstId !== null ? 'ranked' : ''}`}>
           {bench.length === 0 && <span className="muted small">{t('Aucun remplaçant : recrute au mercato.')}</span>}
           {benchShown.map((p) => {
             const key = `bench:${p.id}`;
@@ -549,7 +555,7 @@ export function LineupBoard({ players, lineup, formation, onChange, onShape = nu
             const here = ok ? atTarget(p) : null;
             const cls = ['lu-bchip', keyOf(sel) === key && 'sel', over === key && 'over', (ghost?.from === key || lift === key) && 'src', lift === key && 'lift', !ok && 'na', p.id === bestId && 'best', here !== null && 'aimed'];
             return (
-              <button key={p.id} ref={p.id === bestId ? bestRef : undefined} type="button" data-drop={key} className={cls.filter(Boolean).join(' ')} title={why || undefined} aria-disabled={!ok || undefined}
+              <button key={p.id} ref={p.id === firstId ? bestRef : undefined} type="button" data-drop={key} className={cls.filter(Boolean).join(' ')} title={why || undefined} aria-disabled={!ok || undefined}
                 aria-label={t('{name}, {toLowerCase}, niveau {fmtRating}{v}', { name: p.name, toLowerCase: POS_LABELS[p.pos].toLowerCase(), fmtRating: fmtRating(playerRating(p)), v: why ? `${comma()}${why.toLowerCase()}` : '' })} {...handlers({ kind: 'bench', id: p.id })}>
                 <Portrait p={p} size={36} />
                 <span className="lu-bmain">

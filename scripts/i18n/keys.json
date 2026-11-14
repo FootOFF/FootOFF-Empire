@@ -3213,21 +3213,21 @@
    ]
   },
   {
-   "k": "Au téléphone, la mi-temps et chaque changement s’ouvrent en trois onglets : ton équipe sur le terrain, ta tactique, et les chiffres du match.",
+   "k": "Au téléphone, la mi-temps et chaque changement s’ouvrent en trois onglets : ton équipe sur le terrain, ta tactique et les chiffres du match.",
    "kind": "t",
    "where": [
     "game/changelog.js:10"
    ]
   },
   {
-   "k": "Touche un joueur du terrain : les remplaçants se classent selon leur note à son poste, et le meilleur est marqué « Le meilleur ici ».",
+   "k": "Touche un joueur du terrain : les remplaçants se classent selon leur note à son poste, et le premier, s’il est un vrai recours, porte le bandeau « Le meilleur ici ».",
    "kind": "t",
    "where": [
     "game/changelog.js:11"
    ]
   },
   {
-   "k": "Un titulaire épuisé se signale d’un anneau ambré autour de son portrait.",
+   "k": "Un titulaire épuisé se signale par un anneau ambré autour de son portrait.",
    "kind": "t",
    "where": [
     "game/changelog.js:12"
@@ -11326,7 +11326,7 @@
    "kind": "t",
    "where": [
     "game/mercato.js:41",
-    "ui/lineup.jsx:548"
+    "ui/lineup.jsx:554"
    ]
   },
   {
@@ -15901,7 +15901,7 @@
    "where": [
     "ui/calendar.jsx:245",
     "ui/lineup.jsx:152",
-    "ui/lineup.jsx:615",
+    "ui/lineup.jsx:621",
     "ui/match.jsx:140"
    ]
   },
@@ -16709,7 +16709,7 @@
    "kind": "t",
    "where": [
     "ui/confirm.jsx:13",
-    "ui/lineup.jsx:578",
+    "ui/lineup.jsx:584",
     "ui/match.jsx:605",
     "ui/match.jsx:1506"
    ]
@@ -21182,7 +21182,7 @@
    "kind": "t",
    "where": [
     "ui/lineup.jsx:451",
-    "ui/lineup.jsx:577"
+    "ui/lineup.jsx:583"
    ]
   },
   {
@@ -21203,119 +21203,119 @@
    "k": "{post} : y placer {name}",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:493"
+    "ui/lineup.jsx:499"
    ]
   },
   {
    "k": "Expulsé : il ne peut pas être remplacé ; déplace-le sur le poste à laisser vide",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:517"
+    "ui/lineup.jsx:523"
    ]
   },
   {
    "k": "Blessé : à remplacer par un joueur du banc, ou à déplacer sur le poste à laisser vide",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:517"
+    "ui/lineup.jsx:523"
    ]
   },
   {
    "k": "· hors de son poste ({toLowerCase})",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:517"
+    "ui/lineup.jsx:523"
    ]
   },
   {
    "k": ", niveau {fmtRating}",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:518"
+    "ui/lineup.jsx:524"
    ]
   },
   {
    "k": ", expulsé, poste laissé vide",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:518"
+    "ui/lineup.jsx:524"
    ]
   },
   {
    "k": ", blessé",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:518"
+    "ui/lineup.jsx:524"
    ]
   },
   {
    "k": "Remplaçants",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:540"
+    "ui/lineup.jsx:546"
    ]
   },
   {
    "k": "Plus de changement",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:541"
+    "ui/lineup.jsx:547"
    ]
   },
   {
    "k": "{left} changement possible",
    "kind": "one",
    "where": [
-    "ui/lineup.jsx:541"
+    "ui/lineup.jsx:547"
    ]
   },
   {
    "k": "{left} changements possibles",
    "kind": "other",
    "where": [
-    "ui/lineup.jsx:541"
+    "ui/lineup.jsx:547"
    ]
   },
   {
    "k": "Aucun remplaçant : recrute au mercato.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:544"
+    "ui/lineup.jsx:550"
    ]
   },
   {
    "k": "Déjà sorti",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:548"
+    "ui/lineup.jsx:554"
    ]
   },
   {
    "k": "{name}, {toLowerCase}, niveau {fmtRating}{v}",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:553"
+    "ui/lineup.jsx:559"
    ]
   },
   {
    "k": "Sa note à ce poste",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:559"
+    "ui/lineup.jsx:565"
    ]
   },
   {
    "k": "Le meilleur ici",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:560"
+    "ui/lineup.jsx:566"
    ]
   },
   {
    "k": "Onze de départ · <0/>",
    "kind": "tr",
    "where": [
-    "ui/lineup.jsx:607",
+    "ui/lineup.jsx:613",
     "ui/match.jsx:289"
    ]
   },
@@ -21323,7 +21323,7 @@
    "k": "Repères",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:620",
+    "ui/lineup.jsx:626",
     "ui/mercato.jsx:185"
    ]
   },
@@ -21331,42 +21331,42 @@
    "k": "Le chiffre à côté du portrait est le niveau du joueur <0>à ce poste</0>.",
    "kind": "tr",
    "where": [
-    "ui/lineup.jsx:621"
+    "ui/lineup.jsx:627"
    ]
   },
   {
    "k": "Contour en pointillés rouges : il joue hors de son poste<0/>.",
    "kind": "tr",
    "where": [
-    "ui/lineup.jsx:622"
+    "ui/lineup.jsx:628"
    ]
   },
   {
    "k": "({offPos} dans ton onze)",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:622"
+    "ui/lineup.jsx:628"
    ]
   },
   {
    "k": "Joueur choisi : chaque poste affiche le niveau qu’il y aurait, en vert s’il y ferait mieux, en rouge sinon.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:623"
+    "ui/lineup.jsx:629"
    ]
   },
   {
    "k": "Barre et pourcentage sous le nom : condition physique. Un joueur fatigué joue moins bien et se blesse plus souvent ; les absents (blessés, suspendus) restent sur le banc, grisés.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:624"
+    "ui/lineup.jsx:630"
    ]
   },
   {
    "k": "Ce onze est repris à l’avant-match, où tu peux encore le retoucher.",
    "kind": "t",
    "where": [
-    "ui/lineup.jsx:625"
+    "ui/lineup.jsx:631"
    ]
   },
   {
