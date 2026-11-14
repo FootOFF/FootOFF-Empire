@@ -3206,7 +3206,7 @@
    ]
   },
   {
-   "k": "Les clubs de l’ordinateur coachent le match",
+   "k": "Les clubs de l’ordinateur coachent en match",
    "kind": "t",
    "where": [
     "game/changelog.js:8"
