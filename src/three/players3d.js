@@ -473,6 +473,76 @@ function tameFace(m) {
   if ((m.chin_narrow || 0) > 0.15) m.forehead_tall = Math.min(m.forehead_tall || 0, 0.1); // (menton fin sous un front haut : visage en amande)
 }
 const EXTRA = ['nose_wide', 'nose_narrow', 'nose_long', 'nose_hump', 'nose_flare', 'lips_full', 'mouth_wide', 'chin_strong', 'chin_narrow', 'cheekbones', 'cheeks_full', 'ears_big', 'head_square'];
+// Visages tous différents (1.0.52, PDG 14/11 : « on retrouve les mêmes visages en boucle ») : les yeux (taille, écart,
+// hauteur, inclinaison, paupière, ouverture, profondeur, cernes avec l'âge), les sourcils (hauteur, arc, arcade), la bouche
+// (hauteur, largeur, coins, lèvres), la pointe du nez, le menton, les joues et la forme du crâne. Chaque axe se tire de part
+// et d'autre de la moyenne (jamais deux contraires à la fois), d'une graine à part : la taille, la carrure et les traits
+// déjà tirés de chaque joueur ne bougent pas. Les clés du modèle sont réglées à l'amplitude la plus forte qui reste un
+// visage ordinaire (build_mh_v2.py) ; des plafonds par groupe évitent qu'un visage cumule tous les écarts.
+function moreFace(id, f, m, shaved) {
+  const r = rand(id.seed ^ 0x2545f491);
+  const tri = () => r() + r() - 1; // -1..1, le plus souvent près de 0
+  const wide = () => r() * 2 - 1; // -1..1, uniforme : les axes qui font l'identité d'un visage s'écartent franchement
+  const axis = (pos, neg, v) => { if (v > 0) m[pos] = Math.max(m[pos] || 0, v); else if (v < 0 && neg) m[neg] = Math.max(m[neg] || 0, -v); };
+  const maybe = (p, lo, hi) => (r() < p ? lo + r() * (hi - lo) : 0);
+  const afr = m.face_african || 0; const asi = m.face_asian || 0;
+  // yeux
+  axis('eyes_big', 'eyes_small', wide() * 0.9);
+  axis('eyes_apart', 'eyes_close', wide() * 0.9);
+  axis('eyes_high', 'eyes_low', tri() * 0.8);
+  axis('eyes_tilt_up', 'eyes_tilt_down', wide() * 0.9 + asi * 0.5);
+  m.eyes_inner_up = maybe(0.3, 0.2, 0.8);
+  axis('eyes_hooded', 'eyes_fold_up', tri() * 0.9 + clamp((id.age - 27) / 12, 0, 0.3));
+  axis('eyes_open', 'eyes_narrow', wide() * 0.9);
+  m.eyes_deep = maybe(0.45, 0.2, 0.8);
+  m.eyes_bags = clamp((id.age - 25) / 10, 0, 1) * (0.3 + r() * 0.7);
+  // sourcils
+  axis('brows_high', 'brows_low', wide());
+  axis('brows_arch', 'brows_flat', wide());
+  m.brows_ridge = maybe(0.45, 0.3, 1);
+  // bouche et lèvres (les traits du portrait d'abord : lèvres pleines ou bouche large gardent leur sens)
+  axis('mouth_high', 'mouth_low', tri() * 0.8);
+  if (!m.mouth_wide) m.mouth_narrow = Math.max(0, tri()) * 0.9;
+  axis('mouth_up', 'mouth_down', tri() * 0.8 - clamp((id.age - 28) / 20, 0, 0.2));
+  m.mouth_forward = maybe(0.3 + afr * 0.3, 0.2, 0.8);
+  if (!m.lips_full) m.lips_thin = Math.max(0, tri()) * (1 - afr * 0.7);
+  m.lips_lower = maybe(0.4, 0.3, 0.9);
+  m.lips_bow = maybe(0.4, 0.3, 1);
+  // nez : la pointe, la longueur, le profil
+  axis('nose_up', 'nose_down', wide());
+  if ((m.nose_long || 0) < 0.2) m.nose_short = maybe(0.35, 0.2, 0.8);
+  m.nose_flat = maybe(0.25 + afr * 0.35, 0.2, 0.8);
+  m.nose_tip = maybe(0.4, 0.2, 0.8);
+  if (!m.nose_hump) { const p = r(); if (p < 0.25) m.nose_greek = 0.3 + r() * 0.7; else if (p < 0.4) m.nose_concave = 0.3 + r() * 0.6; }
+  m.nose_bridge = maybe(0.35, 0.2, 0.8);
+  // menton et mâchoire
+  axis('chin_long', 'chin_short', wide() * 0.9);
+  m.chin_cleft = maybe(0.2, 0.5, 1);
+  m.chin_jut = maybe(0.2, 0.2, 0.7);
+  if ((m.jaw_wide || 0) < 0.35 && (f.jw || 1) < 1) m.jaw_narrow = r() * 0.6;
+  // joues : des visages d'athlètes, souvent secs
+  if ((m.cheeks_full || 0) < 0.2) m.cheeks_hollow = maybe(0.5, 0.3, 1);
+  m.cheeks_high = maybe(0.4, 0.2, 1);
+  m.cheeks_inner = maybe(0.3, 0.2, 0.8);
+  // crâne : une forme parmi six (ou celle du portrait), la largeur, la finesse du visage
+  const shape = ['head_round', 'head_diamond', 'head_rect', 'head_tri', 'head_invtri', null][Math.floor(r() * 6)];
+  if (shape && (m.head_square || 0) + (m.head_oval || 0) < 0.3) m[shape] = (0.4 + r() * 0.6) * (shaved ? 0.5 : 1);
+  axis('head_wide', 'head_narrow', wide() * 0.8);
+  axis('face_fat', 'face_lean', wide() * 0.9 - 0.25); // (plus souvent fin que joufflu)
+  // plafonds d'ensemble (les traits tirés avant ne sont jamais réduits : seuls les nouveaux le sont)
+  const cap = (ks, max, keep = []) => {
+    const fixed = keep.reduce((a, k) => a + (m[k] || 0), 0);
+    const sum = ks.reduce((a, k) => a + (m[k] || 0), 0);
+    if (fixed + sum > max && sum > 0) { const s = Math.max(0, max - fixed) / sum; for (const k of ks) if (m[k]) m[k] *= s; }
+  };
+  cap(['eyes_big', 'eyes_small', 'eyes_apart', 'eyes_close', 'eyes_high', 'eyes_low', 'eyes_tilt_up', 'eyes_tilt_down', 'eyes_inner_up', 'eyes_hooded', 'eyes_fold_up', 'eyes_open', 'eyes_narrow', 'eyes_deep'], 2.2);
+  cap(['brows_high', 'brows_low', 'brows_arch', 'brows_flat', 'brows_ridge'], 1.4, ['brow_heavy']);
+  cap(['mouth_high', 'mouth_low', 'mouth_narrow', 'mouth_up', 'mouth_down', 'mouth_forward', 'lips_thin', 'lips_lower', 'lips_bow'], 1.8, ['lips_full', 'mouth_wide']);
+  cap(['nose_up', 'nose_down', 'nose_short', 'nose_flat', 'nose_tip', 'nose_greek', 'nose_concave', 'nose_bridge'], 1.5, ['nose_wide', 'nose_narrow', 'nose_long', 'nose_hump', 'nose_flare']);
+  cap(['chin_long', 'chin_short', 'chin_cleft', 'chin_jut', 'jaw_narrow'], 1.3, ['chin_strong', 'chin_narrow']);
+  cap(['cheeks_hollow', 'cheeks_high', 'cheeks_inner'], 1.4, ['cheeks_full', 'cheekbones']);
+  cap(['head_round', 'head_diamond', 'head_rect', 'head_tri', 'head_invtri', 'head_wide', 'head_narrow'], 1.2, ['head_square', 'head_oval']);
+}
 export function recipe(id) {
   const f = id.face || {}; const r = rand(id.seed ^ 0x5bd1e995);
   const m = {};
@@ -504,6 +574,7 @@ export function recipe(id) {
     m.jaw_wide = Math.max(m.jaw_wide, 0.45); m.chin_strong = Math.max(m.chin_strong, 0.4); m.chin_narrow = Math.min(m.chin_narrow || 0, 0.2);
   }
   tameFace(m);
+  moreFace(id, f, m, shaved);
   // front (1.0.48, PDG : « quelques joueurs en C et d'autres en B ») : un joueur sur deux a le front plus petit (moins haut, tempes
   // plus étroites, moins bombé), les autres le front de la base ; tous ont la lisière plus basse. (Lu dans la graine, sans
   // tirage de plus : les autres traits des joueurs ne changent pas.)

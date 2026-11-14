@@ -5,6 +5,14 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.52', date: '2026-11-14', title: t('Des visages tous différents'),
+    items: [
+      t('Chaque joueur en 3D a enfin son propre visage : la taille, l’écart et la forme des yeux, les paupières, les sourcils, la bouche et les lèvres, la pointe du nez, le menton, les joues et la forme du crâne changent d’un joueur à l’autre.'),
+      t('Les visages restent naturels : chaque trait est dosé, deux traits contraires ne se cumulent jamais, et la taille comme la carrure de chaque joueur ne changent pas.'),
+      t('Avec l’âge, le regard se marque un peu : paupières plus lourdes, légers cernes.'),
+    ],
+  },
+  {
     version: '1.0.51', date: '2026-11-14', title: t('Mi-temps, onze et remplaçants plus clairs'),
     items: [
       t('Au téléphone, la mi-temps et chaque changement s’ouvrent en trois onglets : ton équipe sur le terrain, ta tactique et les chiffres du match.'),
