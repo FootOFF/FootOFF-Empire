@@ -46,7 +46,8 @@ export function RolesPanel({ players, lineup, formation, roles = {}, onChange, c
               <button type="button" className="roles-head" aria-expanded={isOpen} onClick={() => { uiSound(isOpen ? 'back' : 'tap'); setOpen(isOpen ? null : p.id); }}>
                 <span className="roles-post">{POST_SHORT[type] || type}</span>
                 <span className="roles-name">{lastName(p.name)}</span>
-                <span className="roles-sum">{custom ? `${w.name} · ${d.name}` : t('Rôles du poste')}</span>
+                {/* rôles choisis : sur leur propre ligne, sous le nom (un nom long ne se coupe jamais), chacun d'un seul tenant */}
+                <span className="roles-sum">{custom ? <><span>{w.name}</span>{' · '}<span>{d.name}</span></> : t('Rôles du poste')}</span>
               </button>
               {isOpen && (
                 <div className="roles-pick">

@@ -3213,21 +3213,21 @@
    ]
   },
   {
-   "k": "Chaque joueur a désormais un rôle avec ballon et un rôle sans ballon, trois au choix pour chaque poste, dans le vocabulaire du football : relanceur, latéral offensif, meneur reculé, box-to-box, ailier intérieur, pivot, renard des surfaces, gardien libéro…",
+   "k": "Chaque joueur a désormais un rôle avec ballon et un rôle sans ballon, trois au choix pour chaque poste, dans le vocabulaire du football : relanceur, latéral offensif, meneur reculé, box-to-box, ailier inversé, pivot, renard des surfaces, gardien libéro…",
    "kind": "t",
    "where": [
     "game/changelog.js:10"
    ]
   },
   {
-   "k": "Un rôle change la place du joueur sur le terrain et ce qui compte de lui : un rôle qui lui va rend ton équipe meilleure, un rôle à contre-emploi la pénalise. Aucune note ne le dit : à toi de connaître tes joueurs.",
+   "k": "Un rôle change la place du joueur sur le terrain et les qualités qui comptent chez lui : un rôle qui lui va rend ton équipe meilleure, un rôle à contre-emploi la pénalise. Aucune note ne le dit : à toi de connaître tes joueurs.",
    "kind": "t",
    "where": [
     "game/changelog.js:11"
    ]
   },
   {
-   "k": "Les rôles se choisissent dans l’avant-match et à la mi-temps, sous la tactique, et comptent aussi dans les championnats entre amis.",
+   "k": "Les rôles se choisissent avant le match, à la mi-temps et lors des changements, sous la tactique, et comptent aussi dans les championnats entre amis.",
    "kind": "t",
    "where": [
     "game/changelog.js:12"
@@ -12849,7 +12849,7 @@
    ]
   },
   {
-   "k": "Latéral intérieur",
+   "k": "Latéral inversé",
    "kind": "t",
    "where": [
     "game/roles.js:46"
@@ -12877,7 +12877,7 @@
    ]
   },
   {
-   "k": "Presse son ailier",
+   "k": "Presse l’ailier",
    "kind": "t",
    "where": [
     "game/roles.js:50"
@@ -12912,7 +12912,7 @@
    ]
   },
   {
-   "k": "Reste devant la défense et remet le ballon en jeu.",
+   "k": "Reste devant la défense et fait circuler le ballon.",
    "kind": "t",
    "where": [
     "game/roles.js:56"
@@ -12926,21 +12926,21 @@
    ]
   },
   {
-   "k": "Oriente le jeu depuis devant la défense.",
+   "k": "Oriente le jeu juste devant sa défense.",
    "kind": "t",
    "where": [
     "game/roles.js:57"
    ]
   },
   {
-   "k": "Relayeur",
+   "k": "Milieu porteur",
    "kind": "t",
    "where": [
     "game/roles.js:58"
    ]
   },
   {
-   "k": "Remonte le ballon balle au pied.",
+   "k": "Remonte le terrain balle au pied.",
    "kind": "t",
    "where": [
     "game/roles.js:58"
@@ -12961,7 +12961,7 @@
    ]
   },
   {
-   "k": "Récupérateur",
+   "k": "Récupé­rateur",
    "kind": "t",
    "where": [
     "game/roles.js:62"
@@ -13103,7 +13103,7 @@
    ]
   },
   {
-   "k": "Ailier intérieur",
+   "k": "Ailier inversé",
    "kind": "t",
    "where": [
     "game/roles.js:82",
@@ -13231,14 +13231,16 @@
    "k": "Revient au milieu",
    "kind": "t",
    "where": [
-    "game/roles.js:99"
+    "game/roles.js:99",
+    "game/roles.js:123"
    ]
   },
   {
    "k": "Recule pour aider le milieu.",
    "kind": "t",
    "where": [
-    "game/roles.js:99"
+    "game/roles.js:99",
+    "game/roles.js:123"
    ]
   },
   {
@@ -13273,8 +13275,7 @@
    "k": "Revient défendre",
    "kind": "t",
    "where": [
-    "game/roles.js:109",
-    "game/roles.js:123"
+    "game/roles.js:109"
    ]
   },
   {
@@ -13345,13 +13346,6 @@
    "kind": "t",
    "where": [
     "game/roles.js:122"
-   ]
-  },
-  {
-   "k": "Recule pour aider son milieu.",
-   "kind": "t",
-   "where": [
-    "game/roles.js:123"
    ]
   },
   {
@@ -28634,14 +28628,14 @@
    "k": "Rôles du poste",
    "kind": "t",
    "where": [
-    "ui/roles.jsx:49"
+    "ui/roles.jsx:50"
    ]
   },
   {
    "k": "Avec ballon",
    "kind": "t",
    "where": [
-    "ui/roles.jsx:53",
+    "ui/roles.jsx:54",
     "ui/tacticboard.jsx:215"
    ]
   },
@@ -28649,7 +28643,7 @@
    "k": "Sans ballon",
    "kind": "t",
    "where": [
-    "ui/roles.jsx:53",
+    "ui/roles.jsx:54",
     "ui/tacticboard.jsx:214"
    ]
   },

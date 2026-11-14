@@ -43,23 +43,23 @@ export const ROLES = {
     with: [
       { id: 'lateral', name: t('Latéral'), desc: t('Soutient l’attaque sans se livrer.'), fx: {} },
       { id: 'offensif', name: t('Latéral offensif'), desc: t('Déborde et centre depuis la ligne de fond.'), fx: { at: [1, 2, 0.09], al: -0.1, q: { cross: 1.4, pace: 1.2 } } },
-      { id: 'interieur', name: t('Latéral intérieur'), desc: t('Rentre dans l’axe pour aider à construire.'), fx: { al: 0.35, q: { build: 1.3, vision: 1.3, cross: 0.6 } } },
+      { id: 'interieur', name: t('Latéral inversé'), desc: t('Rentre dans l’axe pour aider à construire.'), fx: { al: 0.35, q: { build: 1.3, vision: 1.3, cross: 0.6 } } },
     ],
     without: [
       { id: 'ligne', name: t('Reste dans la ligne'), desc: t('Reste aligné avec ses centraux.'), fx: {} },
-      { id: 'presse', name: t('Presse son ailier'), desc: t('Monte presser l’ailier adverse.'), fx: { dt: [0, 1, 0.06], q: { press: 1.4 } } },
+      { id: 'presse', name: t('Presse l’ailier'), desc: t('Monte presser l’ailier adverse.'), fx: { dt: [0, 1, 0.06], q: { press: 1.4 } } },
       { id: 'resserre', name: t('Se resserre'), desc: t('Se rapproche de l’axe pour fermer la surface.'), fx: { dl: 0.2, q: { wall: 1.2, defAir: 1.2 } } },
     ],
   },
   MDC: {
     with: [
-      { id: 'sentinelle', name: t('Sentinelle'), desc: t('Reste devant la défense et remet le ballon en jeu.'), fx: {} },
-      { id: 'meneur', name: t('Meneur reculé'), desc: t('Oriente le jeu depuis devant la défense.'), fx: { at: [1, 0, 0.06], q: { build: 1.5, vision: 1.4 } } },
-      { id: 'relayeur', name: t('Relayeur'), desc: t('Remonte le ballon balle au pied.'), fx: { at: [0, 1, 0.12], q: { press: 1.2, drib: 1.2 } } },
+      { id: 'sentinelle', name: t('Sentinelle'), desc: t('Reste devant la défense et fait circuler le ballon.'), fx: {} },
+      { id: 'meneur', name: t('Meneur reculé'), desc: t('Oriente le jeu juste devant sa défense.'), fx: { at: [1, 0, 0.06], q: { build: 1.5, vision: 1.4 } } },
+      { id: 'relayeur', name: t('Milieu porteur'), desc: t('Remonte le terrain balle au pied.'), fx: { at: [0, 1, 0.12], q: { press: 1.2, drib: 1.2 } } },
     ],
     without: [
       { id: 'protege', name: t('Protège la défense'), desc: t('Couvre l’espace devant ses défenseurs.'), fx: {} },
-      { id: 'recuperateur', name: t('Récupérateur'), desc: t('Harcèle le porteur pour gagner le ballon.'), fx: { dt: [0, 1, 0.1], q: { press: 1.4, wall: 1.15 } } },
+      { id: 'recuperateur', name: t('Récupé\u00adrateur'), desc: t('Harcèle le porteur pour gagner le ballon.'), fx: { dt: [0, 1, 0.1], q: { press: 1.4, wall: 1.15 } } },
       { id: 'decroche', name: t('Décroche entre les centraux'), desc: t('Recule entre ses centraux à la perte du ballon.'), fx: { dt: [1, 0, 0.05], q: { defAir: 1.15, wall: 1.1 } } },
     ],
   },
@@ -79,7 +79,7 @@ export const ROLES = {
     with: [
       { id: 'milieu', name: t('Milieu de couloir'), desc: t('Tient son couloir en attaque comme en défense.'), fx: {} },
       { id: 'deborde', name: t('Ailier débordant'), desc: t('Fait la différence sur le côté et centre.'), fx: { at: [1, 2, 0.02], al: -0.1, q: { cross: 1.3, pace: 1.2 } } },
-      { id: 'interieur', name: t('Ailier intérieur'), desc: t('Repique dans l’axe pour frapper.'), fx: { at: [1, 2, 0.03], al: 0.16, q: { drib: 1.2, shoot: 1.2, cross: 0.6 } } },
+      { id: 'interieur', name: t('Ailier inversé'), desc: t('Repique dans l’axe pour frapper.'), fx: { at: [1, 2, 0.03], al: 0.16, q: { drib: 1.2, shoot: 1.2, cross: 0.6 } } },
     ],
     without: [
       { id: 'replie', name: t('Se replie'), desc: t('Revient aider son latéral.'), fx: {} },
@@ -103,7 +103,7 @@ export const ROLES = {
     with: [
       { id: 'ailier', name: t('Ailier'), desc: t('Joue son côté et combine.'), fx: {} },
       { id: 'deborde', name: t('Ailier débordant'), desc: t('Prend l’espace sur l’aile et centre.'), fx: { al: -0.15, q: { cross: 1.5, pace: 1.3 } } },
-      { id: 'interieur', name: t('Ailier intérieur'), desc: t('Repique sur son bon pied pour frapper.'), fx: { al: 0.1, q: { drib: 1.2, shoot: 1.2, cross: 0.6 } } },
+      { id: 'interieur', name: t('Ailier inversé'), desc: t('Repique sur son bon pied pour frapper.'), fx: { al: 0.1, q: { drib: 1.2, shoot: 1.2, cross: 0.6 } } },
     ],
     without: [
       { id: 'replie', name: t('Revient défendre'), desc: t('Revient défendre sur son côté.'), fx: {} },
@@ -120,7 +120,7 @@ export const ROLES = {
     without: [
       { id: 'reste', name: t('Reste devant'), desc: t('Reste devant, prêt pour le contre.'), fx: {} },
       { id: 'presse', name: t('Presse la relance'), desc: t('Presse le gardien et les défenseurs centraux.'), fx: { dt: [1, 2, 0.1], q: { press: 1.5 } } },
-      { id: 'revient', name: t('Revient défendre'), desc: t('Recule pour aider son milieu.'), fx: { dt: [2, 1, 0.12], q: { wall: 1.2 } } },
+      { id: 'revient', name: t('Revient au milieu'), desc: t('Recule pour aider le milieu.'), fx: { dt: [2, 1, 0.12], q: { wall: 1.2 } } },
     ],
   },
 };
