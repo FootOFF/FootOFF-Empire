@@ -103,6 +103,7 @@ export function perspectiveResult(live, side, players) {
     shots: flip2(st.shots), onTarget: flip2(st.onTarget), yellow: flip2(st.yellow), red: flip2(st.red), xg: flip2(st.xg),
     saves: flip2(st.saves), post: flip2(st.post), wide: flip2(st.wide), big: flip2(st.big), pens: flip2(st.pens),
     possHalf: st.possHalf ? st.possHalf.map((v) => (v == null ? v : 100 - v)) : st.possHalf,
+    zones: st.zones ? [st.zones[1], st.zones[0]] : st.zones, // (1.0.49) chaque camp vu de lui-même : on échange les camps
   };
   return {
     ...res,

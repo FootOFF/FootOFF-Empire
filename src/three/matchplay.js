@@ -429,7 +429,9 @@ export function createMatchScene(parent) {
     card.visible = false;
     baseShape();
     const { A, D } = H;
-    const s = r() < 0.5 ? 1 : -1; // côté de l'action
+    // côté de l'action : le couloir de l'occasion dans le moteur à zones (1.0.49 : gauche < 0, droite > 0, vus de l'équipe
+    // qui attaque), sinon au hasard (axe, carton rouge, temps fort d'une version d'avant)
+    const s = e.lane === 'l' ? -1 : e.lane === 'r' ? 1 : r() < 0.5 ? 1 : -1;
     const rr = H.rr;
     const text = `${e.lead || ''} ${e.text || ''}`;
     const header = /tête|s’élève|monte plus haut|premier poteau/.test(text);

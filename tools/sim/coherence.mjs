@@ -1,3 +1,5 @@
+// (1.0.49 : ce banc mesure l'ancienne cohérence de la 1.0.39 ; le moteur à zones se mesure avec tools/sim/zones.mjs et
+// tools/sim/plans-zones.mjs.)
 // Cohérence tactique (1.0.39) : des milliers de matchs joués par le vrai moteur du direct (live.js). Mesure ce que vaut
 // le plan qui colle aux joueurs (choix du PDG : « elle colle à mes joueurs », le cœur ; l'adversaire, léger) :
 //   1. profils : la forme des onze tirés au hasard et l'écart, en niveaux, entre le plan qui leur va le mieux et le pire ;

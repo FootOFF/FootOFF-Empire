@@ -1,6 +1,7 @@
 import { clamp } from './utils';
 import { hash } from './faces';
 import { TACTICS, formationOf } from './tactics';
+import { planValue } from './zones';
 
 // Cohérence tactique (1.0.39). Vision du PDG (12/11 au soir) : « Football Manager, c'est surtout un plan cohérent, une
 // tactique cohérente », pas « répondre au plan de l'adversaire tout le temps ». Ses choix :
@@ -108,11 +109,15 @@ export function identityOf(name) {
 // regroupe. gap : son niveau moins celui d'en face ; players : son onze (sans lui, son identité et le rapport de force).
 const UP = { low: 'balanced', balanced: 'offensive', offensive: 'offensive' };
 const DOWN = { offensive: 'balanced', balanced: 'low', low: 'low' };
-export function aiPlanOf(name, gap, players = null) {
+// vs (1.0.49) : le onze d'en face et son dispositif ({ players, formation }), quand on les connaît (en solo : il a observé
+// ton effectif, pas ton plan)
+export function aiPlanOf(name, gap, players = null, formation = null, vs = null) {
   const id = identityOf(name);
   if (!players?.length) return gap <= -1.2 ? DOWN[id] : gap >= 1.2 ? UP[id] : id;
-  const P = profileOf(players);
-  const score = (plan) => fitOf(plan, P) + (plan === id ? 0.12 : 0) + (plan === 'offensive' ? 0.1 * gap : plan === 'low' ? -0.12 * gap : 0);
+  // 1.0.49 : ce que chaque plan rapporte à ses joueurs, mesuré par le moteur à zones (occasions nettes par match), avec un
+  // penchant pour son identité ; plus fort, il attaque plus volontiers ; nettement plus faible, il se regroupe
+  const f = formation || '433';
+  const score = (plan) => planValue(players, f, plan, vs) + (plan === id ? 0.5 : 0) + (plan === 'offensive' ? 0.15 * gap : plan === 'low' ? -0.25 * gap : 0);
   return ['balanced', 'offensive', 'low'].reduce((best, x) => (score(x) > score(best) + 1e-9 ? x : best), 'balanced');
 }
 // À la pause, il réagit au score (lead : son avance) : mené de deux buts, il attaque ; mené d'un, il monte d'un cran ;

@@ -186,7 +186,7 @@ export function appliedSheet(players, oppStrength = null, name = null) {
   }
   const gap = oppStrength == null ? 0 : best.r - oppStrength;
   const onze = best.lineup.map((id) => players.find((p) => p.id === id)).filter(Boolean);
-  const tactic = name ? aiPlanOf(name, gap, onze) : gap > AI_GAP ? 'offensive' : gap < -AI_LOW ? 'low' : 'balanced';
+  const tactic = name ? aiPlanOf(name, gap, onze, best.f) : gap > AI_GAP ? 'offensive' : gap < -AI_LOW ? 'low' : 'balanced';
   const fresh = (n) => freshLegs(players, best.lineup, best.f, n);
   const ht = {
     lead: { t: tactic === 'offensive' ? 'balanced' : 'low', ...(fresh(1).length ? { s: fresh(1) } : {}) },

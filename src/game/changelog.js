@@ -5,6 +5,18 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.49', date: '2026-11-14', title: t('Un nouveau moteur de match'),
+    items: [
+      t('Chaque match se joue désormais action par action sur tout le terrain : construction depuis l’arrière, jeu au milieu, dernier geste devant le but, avec les récupérations et les contres entre ces phases.'),
+      t('La possession affichée est désormais réelle : le temps que chaque équipe passe avec le ballon.'),
+      t('Chaque occasion naît d’un côté du terrain ou dans l’axe, là où l’action s’est construite : le commentaire et le temps fort en 3D le montrent.'),
+      t('Ta tactique pèse davantage : le pressing, la hauteur de la ligne défensive et la largeur changent vraiment le match, et chaque plan convient mieux à certains joueurs qu’à d’autres.'),
+      t('Presser haut fatigue davantage tes joueurs ; le Bloc bas, moins.'),
+      t('En solo, les clubs de l’ordinateur choisissent le plan qui convient le mieux à leurs joueurs face à ton onze.'),
+      t('Championnats entre amis : nouvelle version du moteur des ligues, mets le jeu à jour avant de jouer.'),
+    ],
+  },
+  {
     version: '1.0.48', date: '2026-11-13', title: t('Des fronts moins hauts'),
     items: [
       t('La lisière des cheveux des joueurs 3D descend sur le front et aux tempes : le front paraît moins grand.'),

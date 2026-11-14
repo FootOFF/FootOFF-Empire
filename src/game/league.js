@@ -25,7 +25,9 @@ import { LANGS, numLocale, t } from '../i18n/index';
 // aux joueurs, un peu à l'adversaire), identité de jeu des clubs de l'ordinateur, commentaire des plans. (Le duel de la
 // 1.0.35, qui avait déjà fait passer le site à 5, n'a jamais été publié.)
 // 6 (1.0.41) : postes façon Football Manager (posts.js) : chaque poste a sa note, dispositifs libres de la grille.
-export const LEAGUE_ENGINE = 6;
+// 7 (1.0.49) : moteur à zones (zones.js) : chaque minute jouée phase par phase sur 9 zones, consignes et profils des
+// joueurs dans chaque zone, plan de l'ordinateur mesuré par ce moteur.
+export const LEAGUE_ENGINE = 7;
 export const LEAGUE_CLUBS = 8; // amis complétés par l'ordinateur
 export const LEAGUE_MIN_HUMANS = 2;
 export const MAX_MY_LEAGUES = 3; // championnats à la fois sur un appareil
