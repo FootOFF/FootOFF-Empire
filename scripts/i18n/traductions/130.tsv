@@ -1,0 +1,46 @@
+k:Sans ballon	Out of possession	Sin balón	دون الكرة
+k:Avec ballon	In possession	Con balón	مع الكرة
+k:Transitions	Transitions	Transiciones	التحولات
+k:Tempo	Tempo	Ritmo	الإيقاع
+k:Jeu direct	Direct play	Juego directo	اللعب المباشر
+k:À la récupération	On winning the ball	Al recuperar el balón	عند استخلاص الكرة
+k:À la perte	On losing the ball	Al perder el balón	عند فقدان الكرة
+k:Très lent	Very slow	Muy lento	بطيء جدًا
+k:Lent	Slow	Lento	بطيء
+k:tempo|Normal	Normal	Normal	عادي
+k:Rapide	Fast	Rápido	سريع
+k:Très rapide	Very fast	Muy rápido	سريع جدًا
+k:Très court	Very short	Muy corto	قصير جدًا
+k:Court	Short	Corto	قصير
+k:Mixte	Mixed	Mixto	متنوع
+k:jeu|Direct	Direct	Directo	مباشر
+k:Très direct	Very direct	Muy directo	مباشر جدًا
+k:Garder le ballon	Keep the ball	Conservar el balón	الاحتفاظ بالكرة
+k:Plutôt garder	Mostly keep it	Más bien conservar	الاحتفاظ غالبًا
+k:Selon l’occasion	When it’s on	Según la ocasión	حسب الفرصة
+k:Contrer souvent	Counter often	Contraatacar a menudo	المرتدة كثيرًا
+k:Contrer toujours	Always counter	Contraatacar siempre	المرتدة دائمًا
+k:Se replier	Drop back	Replegarse	التراجع
+k:Plutôt se replier	Mostly drop back	Más bien replegarse	التراجع غالبًا
+k:perte|Selon l’occasion	When it’s on	Según la ocasión	حسب الفرصة
+k:Contre-presser	Counter-press	Presionar tras pérdida	الضغط العكسي
+k:Contre-presser fort	Counter-press hard	Presionar fuerte tras pérdida	ضغط عكسي قوي
+k:Sur mesure	Custom	A medida	مخصص
+k:Tes propres consignes, cran par cran.	Your own instructions, notch by notch.	Tus propias consignas, nivel a nivel.	تعليماتك الخاصة، درجةً بدرجة.
+k:Changement tactique : {home} ajuste ses consignes.	Tactical change: {home} adjust their instructions.	Cambio táctico: {home} ajusta sus consignas.	تغيير تكتيكي: {home} يعدّل تعليماته.
+k:Changement tactique : {away} ajuste ses consignes.	Tactical change: {away} adjust their instructions.	Cambio táctico: {away} ajusta sus consignas.	تغيير تكتيكي: {away} يعدّل تعليماته.
+k:Côtés d’attaque	Attacking sides	Bandas de ataque	جهات الهجوم
+k:Gauche	Left	Izquierda	اليسار
+k:Axe	Centre	Centro	العمق
+k:Droite	Right	Derecha	اليمين
+k:Récupérations hautes	High recoveries	Recuperaciones altas	استخلاصات عالية
+k:Contre-attaques	Counter-attacks	Contraataques	هجمات مرتدة
+k:Corners	Corners	Córneres	ركلات ركنية
+k:Hors-jeu	Offsides	Fueras de juego	حالات تسلل
+k:Le mode expert de la tactique	Expert tactics mode	El modo experto de la táctica	الوضع المتقدم للتكتيك
+k:Sous les trois plans, sept curseurs dorés règlent ta tactique cran par cran : pressing, ligne défensive, largeur, tempo, jeu direct, et ce que fait ton équipe quand elle récupère ou perd le ballon.	Below the three plans, seven gold sliders set your tactics notch by notch: pressing, defensive line, width, tempo, direct play, and what your team does when it wins or loses the ball.	Bajo los tres planes, siete cursores dorados ajustan tu táctica nivel a nivel: presión, línea defensiva, amplitud, ritmo, juego directo y lo que hace tu equipo al recuperar o perder el balón.	تحت التكتيكات الثلاثة، سبعة مؤشرات ذهبية تضبط تكتيكك درجةً بدرجة: الضغط، وخط الدفاع، والعرض، والإيقاع، واللعب المباشر، وما يفعله فريقك عند استخلاص الكرة أو فقدانها.
+k:Le tableau bouge avec chaque cran. Les trois plans restent des préréglages, et ta tactique sur mesure te suit à la mi-temps comme dans les championnats entre amis.	The board moves with every notch. The three plans remain presets, and your custom tactics follow you at half-time and in leagues with friends.	La pizarra se mueve con cada nivel. Los tres planes siguen siendo preajustes, y tu táctica a medida te acompaña en el descanso y en las ligas entre amigos.	تتحرك اللوحة مع كل درجة. تبقى التكتيكات الثلاثة إعدادات جاهزة، ويرافقك تكتيكك المخصص بين الشوطين وفي دوريات الأصدقاء.
+k:Des réglages qui se contredisent se paient : un pressing haut sans ligne qui suit ouvre l’espace entre tes lignes, et contrer en jouant lentement ne mène à rien.	Settings that contradict each other come at a price: a high press without the line following opens space between your lines, and countering at a slow tempo goes nowhere.	Los ajustes que se contradicen se pagan: una presión alta sin que la línea acompañe abre espacio entre tus líneas, y contraatacar con un ritmo lento no lleva a nada.	للإعدادات المتناقضة ثمن: الضغط العالي دون أن يتقدم خط الدفاع يفتح المساحات بين خطوطك، والهجمات المرتدة بإيقاع بطيء لا تؤدي إلى شيء.
+k:La tactique pèse davantage : bien réglée pour tes joueurs, elle peut faire la différence face à une équipe plus forte.	Tactics carry more weight: set well for your players, they can make the difference against a stronger side.	La táctica pesa más: bien ajustada a tus jugadores, puede marcar la diferencia ante un equipo más fuerte.	صار للتكتيك وزن أكبر: إذا ضُبط جيدًا بما يناسب لاعبيك، فقد يصنع الفارق أمام فريق أقوى.
+k:Nouvelles statistiques dans le direct et après le match : côtés d’attaque, récupérations hautes, contre-attaques, corners et hors-jeu.	New stats during and after the match: attacking sides, high recoveries, counter-attacks, corners and offsides.	Nuevas estadísticas durante y después del partido: bandas de ataque, recuperaciones altas, contraataques, córneres y fueras de juego.	إحصاءات جديدة أثناء المباراة وبعدها: جهات الهجوم، والاستخلاصات العالية، والهجمات المرتدة، والركلات الركنية، وحالات التسلل.
+k:L’Offensive joue désormais à un tempo normal, et le Bloc bas contre souvent plutôt que toujours.	Attacking now plays at a normal tempo, and Low block counters often rather than always.	La Ofensiva juega ahora con un ritmo normal, y el Bloque bajo contraataca a menudo en lugar de siempre.	أصبح «هجومي» يلعب بإيقاع عادي، و«تكتل دفاعي» يعتمد المرتدات كثيرًا بدل أن يعتمدها دائمًا.

@@ -3,7 +3,7 @@ import { DIVISIONS } from '../game/constants';
 import { outcomeOf, seasonFixtures } from '../game/fixtures';
 import { STAGES, STAGES_SHORT, cupPrize, leagueLength } from '../game/cups';
 import { TICKET_POLICIES, awayGate, expectedGate, ticketPrice } from '../game/economy';
-import { TACTICS, formationOf, lineupRating } from '../game/tactics';
+import { formationOf, lineupRating, tacticName } from '../game/tactics';
 import { standingsOf } from '../game/season';
 import { teamKitOf } from '../game/kits';
 import { ordinal } from '../game/utils';
@@ -242,7 +242,7 @@ function Poster({ f, state, dir, onStep, onPlay, onOpenMatch }) {
           ? <Fact label={t('Lieu')} sub={t('droits TV seulement')}>{t('À l’extérieur')}</Fact>
           : <Fact label={t('Affluence')} sub={full ? t('stade plein') : m.capacity ? t('sur {capacity} places', { capacity: fmtNum(m.capacity) }) : null}>{fmtNum(m.attendance || 0)}</Fact>}
         <Fact label={t('Recette')}>{fmtMoney(m.revenue || 0)}</Fact>
-        <Fact label={t('Dispositif')} sub={TACTICS[m.tactic]?.name}>{formationOf(m.formation).name}</Fact>
+        <Fact label={t('Dispositif')} sub={(m.tactic ? tacticName(m.tactic) : null)}>{formationOf(m.formation).name}</Fact>
         {played && !f.away && <Fact label={t('Billets')} sub={t('formule {name}', { name: played.name })}>{m.ticketPrice ? fmtPrice(m.ticketPrice) : played.name}</Fact>}
       </div>
     );

@@ -5,6 +5,18 @@ import { t } from '../i18n/index';
 
 export const CHANGELOG = [
   {
+    version: '1.0.50', date: '2026-11-14', title: t('Le mode expert de la tactique'),
+    items: [
+      t('Sous les trois plans, sept curseurs dorés règlent ta tactique cran par cran : pressing, ligne défensive, largeur, tempo, jeu direct, et ce que fait ton équipe quand elle récupère ou perd le ballon.'),
+      t('Le tableau bouge avec chaque cran. Les trois plans restent des préréglages, et ta tactique sur mesure te suit à la mi-temps comme dans les championnats entre amis.'),
+      t('Des réglages qui se contredisent se paient : un pressing haut sans ligne qui suit ouvre l’espace entre tes lignes, et contrer en jouant lentement ne mène à rien.'),
+      t('La tactique pèse davantage : bien réglée pour tes joueurs, elle peut faire la différence face à une équipe plus forte.'),
+      t('Nouvelles statistiques dans le direct et après le match : côtés d’attaque, récupérations hautes, contre-attaques, corners et hors-jeu.'),
+      t('L’Offensive joue désormais à un tempo normal, et le Bloc bas contre souvent plutôt que toujours.'),
+      t('Championnats entre amis : nouvelle version du moteur des ligues, mets le jeu à jour avant de jouer.'),
+    ],
+  },
+  {
     version: '1.0.49', date: '2026-11-14', title: t('Un nouveau moteur de match'),
     items: [
       t('Chaque match se joue désormais action par action sur tout le terrain : construction depuis l’arrière, jeu au milieu, dernier geste devant le but, avec les récupérations et les contres entre ces phases.'),

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Agent, createBallMesh, placeBall } from './motion';
 import { createPlayers } from './players';
 import { createPlayersAuto, identityOf } from './players3d';
-import { formationOf, slotsOf } from '../game/tactics';
+import { formationOf, instructionsOf, isCustomTactic, slotsOf } from '../game/tactics';
 import { matchFeed } from '../game/matchFeed';
 import { hash, rng } from '../game/faces';
 import { hitFrame, simulate, solveBySpeed, solveLaunch, stepFree, stepNet } from './ballphysics';
@@ -76,7 +76,23 @@ const TAC3D = Object.assign(Object.create(null), {
   balanced: { up: 0, wingUp: 0, wide: 1, block: 0, comp: 1, press: 1 },
   low: { up: -0.3, wingUp: 0, wide: 0.95, block: 0.45, comp: 0.86, press: 0.8 },
 });
-const tac3dOf = (id) => TAC3D[id] || TAC3D.balanced;
+// tactique sur mesure (1.0.50, mode expert) : le bloc suit ses consignes, cran par cran ; aux crans des préréglages, les
+// mêmes valeurs que ceux-ci (ligne 4 = Offensive, ligne 2 = Bloc bas…)
+const T3_UP = [-0.45, -0.3, 0, 0.35, 0.6]; // ligne défensive
+const T3_WING = [0, 0, 0, 0.35, 0.55]; // largeur : latéraux projetés
+const T3_WIDE = [0.92, 0.95, 1, 1.08, 1.13];
+const T3_BLOCK = [0.6, 0.45, 0, -0.45, -0.65]; // pressing : le bloc sort ou recule
+const T3_COMP = [0.84, 0.88, 1, 0.92, 0.88];
+const T3_PRESS = [0.75, 0.8, 1, 1.2, 1.3];
+function tac3dOf(id) {
+  if (TAC3D[id]) return TAC3D[id];
+  if (!isCustomTactic(id)) return TAC3D.balanced;
+  const I = instructionsOf(id);
+  return {
+    up: T3_UP[I.line - 1], wingUp: T3_WING[I.width - 1], wide: T3_WIDE[I.width - 1], block: T3_BLOCK[I.press - 1],
+    comp: T3_COMP[I.line - 1] * (I.width <= 2 ? 0.98 : 1), press: T3_PRESS[I.press - 1],
+  };
+}
 
 // durée estimée d'une suite de gestes (s) (1.0.19 ; 1.0.24 : un centre, un dégagement, une passe lobée volent plus
 // longtemps qu'une passe au sol)

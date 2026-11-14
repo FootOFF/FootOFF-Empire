@@ -5,7 +5,8 @@ import { ordinal } from '../game/utils';
 import { StandingsTable, ZoneLegend } from './panels';
 import { fmtMoney, fmtNum, fmtRating, homeFirst } from './format';
 import { AnimatedMoney } from './moneyfx';
-import { Card, Eyebrow, IconAssist, IconBall, IconStar, RatingBadge, SectionHead, VersusBar } from './kit';
+import { Card, Eyebrow, IconAssist, IconBall, IconStar, LaneSplit, RatingBadge, SectionHead, VersusBar } from './kit';
+import { teamCodes } from './teamcode';
 import { useKeydown } from './presence';
 import { Trophy } from './trophy';
 import { ClubCrest, Crest } from './crest';
@@ -191,6 +192,13 @@ export default function PostMatch({ state, onClose, onStats, initialStep = 'resu
                 <VersusBar label={t('Tirs')} home={st.shots[0]} away={st.shots[1]} flip={!!lm.away} />
                 <VersusBar label={t('Tirs cadrés')} home={st.onTarget[0]} away={st.onTarget[1]} flip={!!lm.away} />
                 <VersusBar label={t('Cartons')} home={st.yellow[0] + st.red[0]} away={st.yellow[1] + st.red[1]} flip={!!lm.away} />
+                {st.zones && <>
+                  {/* moteur à zones (1.0.50) : d'où sont venues les attaques, et ce que la tactique a produit */}
+                  <LaneSplit lanes={[st.zones[0].entries, st.zones[1].entries]} labels={teamCodes(state.clubName, lm.oppName)} us={0} flip={!!lm.away} />
+                  <VersusBar label={t('Récupérations hautes')} home={st.zones[0].rec[2]} away={st.zones[1].rec[2]} flip={!!lm.away} />
+                  <VersusBar label={t('Contre-attaques')} home={st.zones[0].ctr} away={st.zones[1].ctr} flip={!!lm.away} />
+                  <VersusBar label={t('Corners')} home={st.zones[0].corners} away={st.zones[1].corners} flip={!!lm.away} />
+                </>}
               </div>
             )}
 

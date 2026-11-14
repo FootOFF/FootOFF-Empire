@@ -1,6 +1,6 @@
 import { clamp } from './utils';
 import { detailsOf } from './attributes';
-import { formationOf } from './tactics';
+import { INSTR_KEYS, formationOf, instructionsOf } from './tactics';
 import { typeOf } from './posts';
 
 // Moteur de match à zones (1.0.49, moteur des ligues 7). Demande du PDG (13/11) : « que mon jeu soit une référence
@@ -22,30 +22,14 @@ import { typeOf } from './posts';
 // Math.random (rendu déterministe par la graine d'un match de ligue).
 
 // --- Consignes -------------------------------------------------------------------------------------------------------
-// Chaque consigne a 5 crans (1 très bas … 5 très haut, 3 = neutre), comme le tableau tactique (tacticboard.jsx).
-// Les trois tactiques sont des préréglages : le mode expert réglera chaque cran (étape suivante).
-export const INSTR_KEYS = Object.freeze(['press', 'line', 'width', 'tempo', 'direct', 'counter', 'cpress']);
-export const PLAN_PRESETS = Object.freeze(Object.assign(Object.create(null), {
-  // pressing haut, ligne haute, latéraux projetés, on joue vite et on reprend le ballon tout de suite
-  offensive: Object.freeze({ press: 4, line: 4, width: 4, tempo: 4, direct: 3, counter: 3, cpress: 4 }),
-  // bloc médian, transitions maîtrisées : tout au cran du milieu
-  balanced: Object.freeze({ press: 3, line: 3, width: 3, tempo: 3, direct: 3, counter: 3, cpress: 3 }),
-  // bloc bas resserré, on se replie à la perte et on contre vite, en direct
-  low: Object.freeze({ press: 2, line: 2, width: 2, tempo: 3, direct: 4, counter: 5, cpress: 1 }),
-}));
-export function instructionsOf(plan) {
-  if (plan && typeof plan === 'object') {
-    const o = {};
-    for (const k of INSTR_KEYS) o[k] = clamp(Math.round(Number(plan[k]) || 3), 1, 5);
-    return o;
-  }
-  return PLAN_PRESETS[plan] || PLAN_PRESETS.balanced;
-}
+// Les 7 consignes à 5 crans et les trois préréglages vivent dans tactics.js (1.0.50 : une tactique « sur mesure »
+// s'écrit « x:… ») ; ce module les reprend.
+export { INSTR_KEYS, PLAN_PRESETS, instructionsOf } from './tactics';
 
 // --- Paramètres du moteur (calés sur tools/sim/zones.mjs) --------------------------------------------------------------
 export const Z = {
   K: 5, // phases par minute de jeu
-  prof: 3.5, // poids du profil des joueurs (ce qui les distingue d'un joueur ordinaire de leur ligne)
+  prof: 4, // poids du profil des joueurs (ce qui les distingue d'un joueur ordinaire de leur ligne)
   lvl: 0.135, // poids de l'écart de niveau (par point de note) dans les duels de la construction et de la progression
   lvlF: 0.12, // … et dans la finition
   weak: 0.09, // nettement plus faible : occasions encore raréfiées (par point d'écart, au carré)
@@ -68,6 +52,12 @@ export const Z = {
   back2: 0.1,
   // contre-attaque lancée
   cch: -2.6, cchLine: 0.3,
+  // cohérence des consignes (mode expert)
+  gapLoss: 0.35, gapFwd: 0.07, gapThr: 0.35, slowCtr: 0.35,
+  // prix des réglages extrêmes : pressing contourné, passes précipitées, contre-pressing qui expose, centres sans
+  // personne dans la surface, usure d'un plan intense
+  bypass: 0.12, tempoLoss: 0.15, cpressExp: 0.5, box: 0.25, wearPress: 0.6, wearLevel: 0.5,
+  stretch: 0.1, narrowCross: 0.18, shortRisk: 0.15,
 };
 
 // --- Postes dans les zones ----------------------------------------------------------------------------------------------
@@ -232,7 +222,10 @@ export function neutralStatic(formation, plan) {
 }
 // Modèle d'une minute : présence dans les zones (fatigue comprise : un joueur épuisé couvre moins de terrain), pressing
 // qui s'use, niveau du onze. fit(p) : facteur de condition du joueur (0,85 à 1), absent : 1.
-export function teamAt(st, level, fit = null) {
+// expect (1.0.50) : sans condition physique réelle (valeur d'un plan avant le match), l'usure moyenne d'un match selon
+// l'intensité de la tactique (presser, jouer vite, contre-presser fatigue ; le bloc bas, moins)
+export const intensityOfI = (I) => 1 + 0.06 * (I.press - 3) + 0.03 * (I.tempo - 3) + 0.03 * (I.cpress - 3);
+export function teamAt(st, level, fit = null, { expect = false } = {}) {
   const ATT = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
   const DEF = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
   let frontFit = 0, frontW = 0;
@@ -245,9 +238,19 @@ export function teamAt(st, level, fit = null) {
   }
   const I = st.I;
   const tired = frontW ? 1 - frontFit / frontW : 0; // 0 frais … 0,6 épuisé
-  const pressFit = clamp((1 + 0.12 * st.Q.press) * (1 - 0.55 * tired), 0.4, 1.5);
+  const wear = expect ? Math.max(0, intensityOfI(I) - 1) : 0;
+  const pressFit = clamp((1 + 0.12 * st.Q.press) * (1 - 0.55 * tired) * (1 - Z.wearPress * wear), 0.4, 1.5);
+  if (wear) level -= Z.wearLevel * wear;
   const commit = ATT[2][0] + ATT[2][1] + ATT[2][2];
-  return { st, I, Q: st.Q, ATT, DEF, level, pressFit, commit };
+  // Cohérence des consignes (1.0.50, mode expert ; choix du PDG du 12/11 : « des réglages cohérents entre eux ») : les
+  // trois préréglages le sont par construction. Un pressing haut sans ligne qui suit, ou une ligne haute sans pression sur
+  // le porteur, ouvre l'espace entre les lignes (gap) ; un contre-pressing loin d'un bloc bas ne reprend presque rien
+  // (cpressOk) ; contrer vite en jouant lentement se contredit (slowCounter).
+  const gap = Math.max(0, I.press - I.line - 1) + Math.max(0, I.line - I.press - 1);
+  const highNoPress = Math.max(0, I.line - I.press - 1);
+  const cpressOk = I.line >= 3 ? 1 : I.line === 2 ? 0.75 : 0.55;
+  const slowCounter = Math.max(0, I.counter - I.tempo - 1);
+  return { st, I, Q: st.Q, ATT, DEF, level, pressFit, commit, gap, highNoPress, cpressOk, slowCounter };
 }
 
 // --- Tables de transition -----------------------------------------------------------------------------------------------
@@ -259,6 +262,8 @@ export const counterState = (side, l) => side * 12 + 9 + l;
 export const sideOfState = (st) => (st >= 12 ? 1 : 0);
 export const zoneOfState = (st) => { const z = st % 12; return z >= 9 ? { t: 1, l: z - 9, counter: true } : { t: Math.floor(z / 3), l: z % 3, counter: false }; };
 const sig = (x) => 1 / (1 + Math.exp(-x));
+// tempo : précipitation (crans 4 et 5, le 5 surtout) ou patience (crans 1 et 2, un peu moins de ballons perdus)
+const rushOf = (tempo) => (tempo > 3 ? 0.7 * (tempo - 3) + Math.max(0, tempo - 4) : 0.5 * (tempo - 3));
 const PRESS_E = [0.12, 0.3, 0.5, 0.66, 0.82]; // pressing : part des relances adverses attaquées, selon le cran
 const WIDTH_W = [[0.2, 0.6, 0.2], [0.25, 0.5, 0.25], [0.3, 0.4, 0.3], [0.35, 0.3, 0.35], [0.4, 0.2, 0.4]];
 // joueurs autour du ballon dans un couloir : le couloir, à 35 % les couloirs voisins, à 10 % l'autre côté
@@ -283,19 +288,20 @@ function laneDist(X, Y, t, from) {
 // l'ouverture (face à une ligne haute), le dribble, le cafouillage.
 export function kindWeights(X, Y, l) {
   const q = X.Q, d = Y.Q;
+  const rush = Math.exp(0.18 * (X.I.tempo - 3)), calm = 1 / rush;
   if (l !== 1) {
     const cr = l === 0 ? q.crossL : q.crossR;
     return [
       ['cross', 3.1 * Math.exp(0.15 * cr + 0.12 * (q.air - d.defAir))],
-      ['cutback', 1.35 * Math.exp(0.12 * q.drib)],
+      ['cutback', 1.35 * calm * Math.exp(0.12 * q.drib)],
       ['solo', 1.1 * Math.exp(0.2 * q.drib)],
       ['combo', 0.7 * Math.exp(0.1 * q.vision)],
-      ['long', 0.65 * Math.exp(0.2 * q.shoot)],
+      ['long', 0.65 * rush * Math.exp(0.2 * q.shoot)],
     ];
   }
   return [
-    ['combo', 2.5 * Math.exp(0.12 * q.vision)],
-    ['long', 2.6 * Math.exp(0.2 * q.shoot + 0.2 * (3 - Y.I.line))],
+    ['combo', 2.5 * calm * Math.exp(0.12 * q.vision)],
+    ['long', 2.6 * rush * Math.exp(0.2 * q.shoot + 0.2 * (3 - Y.I.line))],
     ['solo', 1.0 * Math.exp(0.2 * q.drib)],
     ['through', 0.6 * Math.exp(0.3 * (Y.I.line - 3) + 0.2 * (q.pace - d.defPace))],
     ['cutback', 0.3],
@@ -331,21 +337,21 @@ export function buildTables(H, A, { homeAdv = 1, mult = [1, 1] } = {}) {
     const qx = X.Q, qy = Y.Q;
     const afterChance = stateOf(other, 0, 1); // après l'occasion : le gardien ou une sortie de but, au camp d'en face
     const E = PRESS_E[Y.I.press - 1] * Y.pressFit;
-    const regainX = clamp(Z.regain * (1 + 0.5 * (X.I.cpress - 3)) * X.pressFit, 0.01, 0.3);
+    const regainX = clamp(Z.regain * (1 + 0.5 * (X.I.cpress - 3) * (X.I.cpress > 3 ? X.cpressOk : 1)) * X.pressFit, 0.01, 0.3);
     // départ d'un contre : la consigne de celui qui récupère (plus encore avec des attaquants rapides), la vitesse de ses
     // attaquants contre celle de nos défenseurs, ce que nous avons laissé derrière (joueurs montés, ligne haute : moins grave
     // avec des défenseurs rapides), notre contre-pressing
-    const ctrBase = (base) => sig(base + (Y.I.counter - 3) * (Z.ctrInstr + 0.06 * qy.pace) + 0.28 * qy.pace - 0.25 * qx.defPace + Z.ctrCommit * (X.commit - 3.3) + (X.I.line - 3) * (Z.ctrLine - 0.12 * qx.defPace) - 0.1 * (X.I.cpress - 3) + L * -0.5);
+    const ctrBase = (base) => sig(base + (Y.I.counter - 3) * (Z.ctrInstr + 0.06 * qy.pace) + 0.28 * qy.pace - 0.25 * qx.defPace + Z.ctrCommit * (X.commit - 3.3) + (X.I.line - 3) * (Z.ctrLine - 0.12 * qx.defPace) - 0.1 * Math.max(0, 3 - X.I.cpress) + 0.1 * Math.max(0, X.I.cpress - 3) + Z.cpressExp * Math.max(0, X.I.cpress - 4) + L * -0.5);
     for (let l = 0; l < 3; l++) {
       const m = 2 - l; // le même couloir vu de l'adversaire
       // --- construction ---
       {
         const out = [];
         const nA = near(X.ATT, 0, l), nD = near(Y.DEF, 2, m);
-        const loss = E * sig(Z.b0 - L - Z.bN * sup(nA, nD) - Z.bBuild * qx.build + Z.bPress * qy.press);
+        const loss = E * sig(Z.b0 - L - Z.bN * sup(nA, nD) - Z.bBuild * qx.build + Z.bPress * qy.press) * (1 + Z.tempoLoss * rushOf(X.I.tempo) * (1 - 0.2 * qx.build)) * (1 + Z.shortRisk * Math.max(0, 2 - X.I.direct) * (1 - 0.1 * qx.build));
         const long = clamp(Z.long0 * (1 + Z.longDirect * (X.I.direct - 3) / 2) + Z.longPressed * loss, 0.01, 0.3);
         const rest = Math.max(0, 1 - loss - long);
-        const fwd = rest * clamp(Z.fwd0 + 0.06 * (X.I.tempo - 3) + 0.12 * sup(near(X.ATT, 1, l), near(Y.DEF, 1, m)), 0.2, 0.85);
+        const fwd = rest * clamp(Z.fwd0 + 0.06 * (X.I.tempo - 3) + 0.12 * sup(near(X.ATT, 1, l), near(Y.DEF, 1, m)) + Z.bypass * Math.max(0, E - 0.5), 0.2, 0.9);
         const stay = rest - fwd;
         // récupération haute de l'adversaire : une occasion tout de suite, sinon il s'installe dans notre tiers
         const ps = clamp(Z.pressShot * Math.exp(0.15 * qy.pace + 0.1 * qy.drib + Z.lvlF * -delta), 0.01, 0.6) * mult[other];
@@ -369,11 +375,11 @@ export function buildTables(H, A, { homeAdv = 1, mult = [1, 1] } = {}) {
       {
         const out = [];
         const nA = near(X.ATT, 1, l), nD = near(Y.DEF, 1, m);
-        const loss = sig(Z.l1 - L - Z.l1N * sup(nA, nD) - Z.l1Vision * qx.vision + Z.l1Wall * qy.wall) * (1 + 0.08 * (X.I.tempo - 3) * (1 - 0.12 * qx.vision));
-        const thr = Z.thr * Math.exp((Y.I.line - 3) * (Z.thrLine - 0.15 * qy.defPace) + Z.thrPace * (qx.pace - qy.defPace) + 0.12 * qx.vision + 0.06 * (X.I.direct - 3));
+        const loss = sig(Z.l1 - L - Z.l1N * sup(nA, nD) - Z.l1Vision * qx.vision + Z.l1Wall * qy.wall - Z.gapLoss * Y.gap) * (1 + Z.tempoLoss * rushOf(X.I.tempo) * (1 - 0.2 * qx.vision));
+        const thr = Z.thr * Math.exp((Y.I.line - 3) * (Z.thrLine - 0.15 * qy.defPace) + Z.thrPace * (qx.pace - qy.defPace) + 0.12 * qx.vision + 0.06 * (X.I.direct - 3) + Z.gapThr * Y.highNoPress);
         const thrOk = sig(Z.thrOk + 0.3 * (qx.pace - qy.defPace) + L);
         const rest = Math.max(0, 1 - loss - thr);
-        const fwd = rest * clamp(Z.fwd1 + 0.06 * (X.I.tempo - 3) + 0.12 * sup(near(X.ATT, 2, l), near(Y.DEF, 0, m)), 0.15, 0.8);
+        const fwd = rest * clamp(Z.fwd1 + 0.06 * (X.I.tempo - 3) + 0.12 * sup(near(X.ATT, 2, l), near(Y.DEF, 0, m)) + Z.gapFwd * Y.gap + Z.stretch * Math.max(0, Y.I.width - 4), 0.15, 0.85);
         const back = rest * clamp(0.1 - 0.03 * (X.I.tempo - 3), 0.02, 0.2);
         const stay = rest - fwd - back;
         // ouverture : seul face au gardien, ou hors-jeu (coup franc pour l'adversaire)
@@ -400,11 +406,11 @@ export function buildTables(H, A, { homeAdv = 1, mult = [1, 1] } = {}) {
         const wide = l !== 1;
         // un bloc bas resserré tient l'axe ; il s'y appuie sur ses défenseurs
         const deep = 1 + 0.5 * Math.max(0, 3 - Y.I.line);
-        const prof = wide ? 0.15 * ((l === 0 ? qx.crossL : qx.crossR) + 0.5 * (qx.air - qy.defAir)) - 0.05 * qy.wall : 0.15 * (qx.vision + 0.5 * qx.drib) - 0.1 * qy.wall * deep;
+        const prof = wide ? 0.15 * ((l === 0 ? qx.crossL : qx.crossR) + 0.5 * (qx.air - qy.defAir)) - 0.05 * qy.wall + Z.box * (X.ATT[2][1] - 1.8) + Z.narrowCross * Math.max(0, 2 - Y.I.width) : 0.15 * (qx.vision + 0.5 * qx.drib) - 0.1 * qy.wall * deep;
         const ch = clamp(Z.ch * Math.exp(Z.chN * sup(nA, nD) + Lf + weak + prof), 0.003, 0.25) * mu;
         const sp = wide ? Z.spWide : Z.spAxis;
         const spShot = (wide ? Z.spShotWide : Z.spShotAxis) * mu;
-        const loss = sig(Z.l2 - L - Z.l2N * sup(nA, nD) + Z.l2Wall * qy.wall * (1 + 0.4 * Math.max(0, 3 - Y.I.line)));
+        const loss = sig(Z.l2 - L - Z.l2N * sup(nA, nD) + Z.l2Wall * qy.wall * (1 + 0.4 * Math.max(0, 3 - Y.I.line))) * (1 + 0.6 * Z.tempoLoss * rushOf(X.I.tempo));
         const back = Z.back2;
         const stay = Math.max(0, 1 - ch - sp - loss - back);
         out.push({ p: ch, to: afterChance, ev: { ch: 'final', lane: l, side } });
@@ -421,8 +427,8 @@ export function buildTables(H, A, { homeAdv = 1, mult = [1, 1] } = {}) {
       // --- contre lancé ---
       {
         const out = [];
-        const cch = sig(Z.cch + 0.35 * qx.pace - 0.28 * qy.defPace + (Y.I.line - 3) * (Z.cchLine - 0.12 * qy.defPace) + 0.5 * L) * mu;
-        const foul = 0.15, stop = 0.2;
+        const cch = sig(Z.cch + 0.35 * qx.pace - 0.28 * qy.defPace + (Y.I.line - 3) * (Z.cchLine - 0.12 * qy.defPace) + 0.5 * L - Z.slowCtr * X.slowCounter - 0.35 * Math.max(0, X.I.counter - 4)) * mu;
+        const foul = 0.15, stop = 0.2 + 0.07 * Math.max(0, X.I.counter - 3); // contrer souvent, c'est aussi contrer sans soutien
         const on = Math.max(0, 1 - cch - foul - stop);
         out.push({ p: cch, to: afterChance, ev: { ch: 'counter', lane: l, side } });
         out.push({ p: foul, to: stateOf(side, 1, l), ev: { foul: other } });
@@ -508,7 +514,7 @@ export function qualityMean(summary, side, X, Y) {
 let neutralOpp = null;
 export function planValue(players, formation, plan, vs = null) {
   const { eleven, keeper } = elevenOf(players, formation);
-  const H = teamAt(teamStatic(eleven, keeper, plan), 10);
+  const H = teamAt(teamStatic(eleven, keeper, plan), 10, null, { expect: true });
   let A;
   if (vs?.players?.length) {
     const o = elevenOf(vs.players, vs.formation);

@@ -1,5 +1,6 @@
-import React from 'react';
-import { TACTICS, TACTIC_ORDER, formationOf } from '../game/tactics';
+import React, { useRef } from 'react';
+import { INSTR_KEYS, TACTICS, TACTIC_ORDER, formationOf, instructionsOf, tacticFrom } from '../game/tactics';
+import { uiSound } from './uisound';
 import { colon, t } from '../i18n/index';
 
 // Tableau tactique de l'avant-match (1.0.34, demande du PDG du 12/11 : direction A, « tableau animé noir et or »).
@@ -9,21 +10,10 @@ import { colon, t } from '../i18n/index';
 // match ne lit que l'identifiant de la tactique, inchangé (les ligues entre amis rejouent les mêmes journées).
 // Jamais de chiffres pour ces réglages (PDG, 12/11) : des crans dorés et le mot du cran.
 
-// crans de 1 (très bas) à 5 (très haut) ; le mode expert (après le championnat) réglera chacun
-export const PRESETS = Object.assign(Object.create(null), {
-  offensive: { press: 4, line: 4, width: 4 },
-  balanced: { press: 3, line: 3, width: 3 },
-  low: { press: 2, line: 2, width: 2 },
-});
-export const presetOf = (id) => PRESETS[id] || PRESETS.balanced;
+// crans de 1 (très bas) à 5 (très haut) : ceux du préréglage, ou ceux d'une tactique sur mesure (1.0.50, mode expert,
+// tactics.js instructionsOf : les 7 consignes ; le tableau dessine le pressing, la ligne, la largeur, et les courses)
+export const presetOf = (id) => instructionsOf(id);
 
-const LEVEL_KEYS = ['press', 'line', 'width'];
-const levelLabel = (key) => (key === 'press' ? t('Pressing') : key === 'line' ? t('Ligne défensive') : t('Largeur'));
-// mots des crans, accordés au réglage (le pressing, la ligne, la largeur)
-const levelWords = (key) => (key === 'press' ? [t('Très bas'), t('Bas'), t('Moyen'), t('Haut'), t('Très haut')]
-  : key === 'line' ? [t('Très basse'), t('Basse'), t('Médiane'), t('Haute'), t('Très haute')]
-    : [t('Très étroite'), t('Étroite'), t('Normale'), t('Large'), t('Très large')]);
-const levelWord = (key, v) => levelWords(key)[v - 1];
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -60,9 +50,12 @@ export const boardPx = ([x, y], W, H, wide) => (wide ? [W * (0.05 + (100 - y) * 
 // zone où l'équipe déclenche son pressing (en %, du but adverse vers le nôtre), selon le cran
 const ZONE = [[50, 68], [36, 56], [22, 44], [8, 32], [3, 22]];
 
-// Courses dessinées sur le tableau : les joueurs de couloir montent (Offensive : latéraux projetés), l'axe relaie
-// (Équilibrée : transitions maîtrisées), les attaquants jaillissent en profondeur (Bloc bas : les contres).
+// Courses dessinées sur le tableau, d'après les consignes (1.0.50) : les joueurs de couloir montent quand l'équipe joue
+// large (Offensive : latéraux projetés), les attaquants jaillissent en profondeur quand elle contre (Bloc bas), un long
+// ballon part de la défense quand elle joue direct, l'axe relaie quand elle construit (Équilibrée : transitions
+// maîtrisées). Trois flèches au plus.
 function runsOf(formation, tactic, P) {
+  const I = instructionsOf(tactic);
   const f = formationOf(formation);
   const [d, m] = f.lines;
   const idx = (from, n) => Array.from({ length: n }, (_, k) => from + k);
@@ -79,30 +72,22 @@ function runsOf(formation, tactic, P) {
   const at = (i, dx, dy) => [clamp(P[i][0] + dx, 4, 96), clamp(P[i][1] + dy, 3, 95)];
   const L = side(-1);
   const R = side(1);
-  // a : le joueur qui court ; to : le point visé, ou le joueur visé (nombre)
-  if (tactic === 'offensive') {
-    return [
-      { a: L, to: at(L, 3, -26) },
-      { a: R, to: at(R, -3, -26) },
-      { a: central(M), to: central(A), dash: true },
-    ];
-  }
-  if (tactic === 'low') {
+  const runs = [];
+  if (I.width >= 4) runs.push({ a: L, to: at(L, 3, -26) }, { a: R, to: at(R, -3, -26) });
+  if (I.counter >= 4 && runs.length < 3) {
     // les deux joueurs offensifs les plus excentrés jaillissent vers l'axe ; seul en pointe (4-2-3-1), ce sont les
     // meneurs des côtés
     const front = A.length > 1 ? A : [...M.filter((i) => P[i][1] < 40), ...A];
     const lo = front.reduce((a, i) => (P[i][0] < P[a][0] ? i : a));
     const hi = front.reduce((a, i) => (P[i][0] > P[a][0] ? i : a));
-    return [
-      { a: lo, to: at(lo, 9, -20) },
-      { a: hi, to: at(hi, -9, -20) },
-    ];
+    runs.push({ a: lo, to: at(lo, 9, -20) });
+    if (runs.length < 3) runs.push({ a: hi, to: at(hi, -9, -20) });
   }
-  return [
-    { a: central(M), to: central(A) },
-    { a: L, to: at(L, 0, -18), dash: true },
-    { a: R, to: at(R, 0, -18), dash: true },
-  ];
+  if (I.direct >= 4 && runs.length < 3) runs.push({ a: central(D), to: central(A), dash: true });
+  if (runs.length < 3) runs.push({ a: central(M), to: central(A), dash: I.width >= 4 });
+  if (runs.length < 3 && I.width <= 3) runs.push({ a: L, to: at(L, 0, -18), dash: true });
+  if (runs.length < 3 && I.width <= 3) runs.push({ a: R, to: at(R, 0, -18), dash: true });
+  return runs.slice(0, 3);
 }
 
 // Ce que le tableau dessine sous les joueurs : la zone de pressing (hachures dorées), la ligne défensive (pointillés),
@@ -196,19 +181,98 @@ export function PresetPicker({ value, onChange }) {
   );
 }
 
-// Ce que règle le plan choisi : un cran doré par niveau et le mot du cran ; le pictogramme de chaque ligne est celui du
-// tableau (hachures du pressing, pointillés de la ligne, écart de la largeur)
+// Le mode expert (1.0.50, choix du PDG du 14/11 : les 7 consignes du moteur ; du 12/11 : un curseur doré à 5 crans,
+// le mot du cran, jamais de chiffre, le tableau qui bouge en même temps). Les consignes vont par phase de jeu : sans
+// ballon (pressing, ligne), avec ballon (largeur, tempo, jeu direct), aux transitions (à la récupération : contrer ou
+// garder ; à la perte : contre-presser ou se replier). Un cran se touche, ou le curseur se fait glisser ; au clavier et
+// à la manette, les flèches. Les trois plans sont des préréglages : régler un cran fait une tactique sur mesure.
+const GROUPS = [
+  { key: 'out', label: t('Sans ballon'), keys: ['press', 'line'] },
+  { key: 'in', label: t('Avec ballon'), keys: ['width', 'tempo', 'direct'] },
+  { key: 'tr', label: t('Transitions'), keys: ['counter', 'cpress'] },
+];
+const LABELS = {
+  press: t('Pressing'), line: t('Ligne défensive'), width: t('Largeur'), tempo: t('Tempo'), direct: t('Jeu direct'),
+  counter: t('À la récupération'), cpress: t('À la perte'),
+};
+const WORDS = {
+  press: [t('Très bas'), t('Bas'), t('Moyen'), t('Haut'), t('Très haut')],
+  line: [t('Très basse'), t('Basse'), t('Médiane'), t('Haute'), t('Très haute')],
+  width: [t('Très étroite'), t('Étroite'), t('Normale'), t('Large'), t('Très large')],
+  tempo: [t('Très lent'), t('Lent'), t('Normal', undefined, 'tempo'), t('Rapide'), t('Très rapide')],
+  direct: [t('Très court'), t('Court'), t('Mixte'), t('Direct', undefined, 'jeu'), t('Très direct')],
+  counter: [t('Garder le ballon'), t('Plutôt garder'), t('Selon l’occasion'), t('Contrer souvent'), t('Contrer toujours')],
+  cpress: [t('Se replier'), t('Plutôt se replier'), t('Selon l’occasion', undefined, 'perte'), t('Contre-presser'), t('Contre-presser fort')],
+};
+export const instructionWord = (key, v) => WORDS[key][v - 1];
+export const instructionLabel = (key) => LABELS[key];
+
+// un curseur : le libellé et le mot du cran sur une ligne, les cinq crans dessous (toute la largeur, faciles à toucher)
+function Notches({ k, v, onPick, compact }) {
+  const ref = useRef(null);
+  const drag = useRef(false);
+  const rtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
+  const at = (x) => {
+    const r = ref.current.getBoundingClientRect();
+    let f = (x - r.left) / r.width;
+    if (rtl) f = 1 - f;
+    return Math.max(1, Math.min(5, Math.floor(f * 5) + 1));
+  };
+  const down = (e) => { drag.current = true; ref.current.setPointerCapture?.(e.pointerId); onPick(at(e.clientX)); };
+  const move = (e) => { if (drag.current) onPick(at(e.clientX)); };
+  const up = () => { drag.current = false; };
+  const key = (e) => {
+    const inc = rtl ? 'ArrowLeft' : 'ArrowRight';
+    const dec = rtl ? 'ArrowRight' : 'ArrowLeft';
+    if (e.key === inc || e.key === 'ArrowUp') { e.preventDefault(); onPick(Math.min(5, v + 1)); } else if (e.key === dec || e.key === 'ArrowDown') { e.preventDefault(); onPick(Math.max(1, v - 1)); }
+  };
+  return (
+    <div className={`xi-row ${compact ? 'compact' : ''}`}>
+      <div className="xi-head"><span className={`xi-k ${k}`}>{LABELS[k]}</span><b>{WORDS[k][v - 1]}</b></div>
+      <div
+        ref={ref} className="xi-track" role="slider" tabIndex={0} aria-label={LABELS[k]} aria-valuemin={1} aria-valuemax={5} aria-valuenow={v} aria-valuetext={WORDS[k][v - 1]}
+        onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onKeyDown={key} data-noswipe=""
+      >
+        {[1, 2, 3, 4, 5].map((n) => <i key={n} className={`${n <= v ? 'on' : ''} ${n === v ? 'at' : ''}`} />)}
+      </div>
+    </div>
+  );
+}
+
+// tactic : le préréglage ou la tactique sur mesure ; onChange(id) reçoit la nouvelle tactique (préréglage si les crans en
+// sont un). compact : la mi-temps et les plans de mi-temps (lignes plus serrées).
+export function TacticSliders({ tactic, onChange, compact = false }) {
+  const I = instructionsOf(tactic);
+  const pick = (k, n) => {
+    if (n === I[k]) return;
+    uiSound(n > I[k] ? 'shift-up' : 'shift-down');
+    onChange(tacticFrom({ ...I, [k]: n }));
+  };
+  return (
+    <div className={`xi-sliders ${compact ? 'compact' : ''}`}>
+      {GROUPS.map((g) => (
+        <section key={g.key} className="xi-group" aria-label={g.label}>
+          <h4 className="xi-gh">{g.label}</h4>
+          {g.keys.map((k) => <Notches key={k} k={k} v={I[k]} onPick={(n) => pick(k, n)} compact={compact} />)}
+        </section>
+      ))}
+    </div>
+  );
+}
+
+// Ce que règle le plan choisi, en lecture seule (écrans qui ne règlent rien) : un cran doré par niveau et le mot du cran
 export function PresetGauges({ tactic }) {
   const st = presetOf(tactic);
   return (
     <div className="tb-gauges">
-      {LEVEL_KEYS.map((key) => (
-        <div key={key} className="tb-gauge" role="img" aria-label={`${levelLabel(key)}${colon()}${levelWord(key, st[key])}`}>
-          <span className={`tb-gauge-k ${key}`}>{levelLabel(key)}</span>
+      {['press', 'line', 'width'].map((key) => (
+        <div key={key} className="tb-gauge" role="img" aria-label={`${LABELS[key]}${colon()}${WORDS[key][st[key] - 1]}`}>
+          <span className={`tb-gauge-k ${key}`}>{LABELS[key]}</span>
           <span className="tb-steps" aria-hidden="true">{[1, 2, 3, 4, 5].map((n) => <i key={n} className={n <= st[key] ? 'on' : ''} />)}</span>
-          <b>{levelWord(key, st[key])}</b>
+          <b>{WORDS[key][st[key] - 1]}</b>
         </div>
       ))}
     </div>
   );
 }
+export { INSTR_KEYS };

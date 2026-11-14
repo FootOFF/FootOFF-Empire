@@ -83,6 +83,56 @@ export const TACTICS = Object.assign(Object.create(null), {
 });
 export const TACTIC_ORDER = ['offensive', 'balanced', 'low'];
 
+// Consignes d'équipe (1.0.49, moteur à zones ; 1.0.50, mode expert, choix du PDG du 14/11 : les 7 consignes du moteur) :
+// chacune a 5 crans (1 très bas … 5 très haut, 3 neutre). Les trois tactiques en sont des préréglages ; une tactique
+// « sur mesure » s'écrit « x: » suivi des 7 crans dans l'ordre de INSTR_KEYS (comme un dispositif libre « g: »), et
+// circule partout comme un préréglage (partie, match en direct, équipes validées des ligues entre amis).
+export const INSTR_KEYS = Object.freeze(['press', 'line', 'width', 'tempo', 'direct', 'counter', 'cpress']);
+export const PLAN_PRESETS = Object.freeze(Object.assign(Object.create(null), {
+  // pressing haut, ligne haute, latéraux projetés, on joue vite et on reprend le ballon tout de suite
+  offensive: Object.freeze({ press: 4, line: 4, width: 4, tempo: 3, direct: 3, counter: 3, cpress: 4 }),
+  // bloc médian, transitions maîtrisées : tout au cran du milieu
+  balanced: Object.freeze({ press: 3, line: 3, width: 3, tempo: 3, direct: 3, counter: 3, cpress: 3 }),
+  // bloc bas resserré, on se replie à la perte et on contre vite, en direct
+  low: Object.freeze({ press: 2, line: 2, width: 2, tempo: 3, direct: 4, counter: 4, cpress: 1 }),
+}));
+const CUSTOM_RE = /^x:[1-5]{7}$/;
+export const isCustomTactic = (id) => typeof id === 'string' && CUSTOM_RE.test(id);
+export const isTactic = (id) => !!TACTICS[id] || isCustomTactic(id);
+// les 7 crans d'une tactique (préréglage, « x:… » ou objet de consignes) ; inconnue : l'Équilibrée
+export function instructionsOf(plan) {
+  if (isCustomTactic(plan)) {
+    const o = {};
+    INSTR_KEYS.forEach((k, i) => { o[k] = Number(plan[2 + i]); });
+    return o;
+  }
+  if (plan && typeof plan === 'object') {
+    const o = {};
+    for (const k of INSTR_KEYS) o[k] = clamp(Math.round(Number(plan[k]) || 3), 1, 5);
+    return o;
+  }
+  return PLAN_PRESETS[plan] || PLAN_PRESETS.balanced;
+}
+// la tactique de ces crans : le préréglage s'ils en sont un, sinon « x:… »
+export function tacticFrom(instr) {
+  const I = instructionsOf(instr);
+  const id = TACTIC_ORDER.find((p) => INSTR_KEYS.every((k) => PLAN_PRESETS[p][k] === I[k]));
+  return id || `x:${INSTR_KEYS.map((k) => I[k]).join('')}`;
+}
+// le préréglage le plus proche (commentaire du direct, 3D d'une version d'avant, signes distinctifs)
+export function nearestPreset(id) {
+  if (TACTICS[id]) return id;
+  const I = instructionsOf(id);
+  let best = 'balanced', bd = Infinity;
+  for (const p of TACTIC_ORDER) {
+    const d = INSTR_KEYS.reduce((s, k) => s + (PLAN_PRESETS[p][k] - I[k]) ** 2, 0);
+    if (d < bd - 1e-9) { bd = d; best = p; }
+  }
+  return best;
+}
+export const tacticName = (id) => (TACTICS[id] ? TACTICS[id].name : t('Sur mesure'));
+export const tacticBlurb = (id) => (TACTICS[id] ? TACTICS[id].blurb : t('Tes propres consignes, cran par cran.'));
+
 const HOME_BONUS = 1.06;
 
 // Affectation optimale (méthode hongroise) : n lignes (postes) × m colonnes (joueurs), n ≤ m, coût minimal.
@@ -224,7 +274,7 @@ export function repairLineup(players, lineup, formation = '433') {
 export function ensureLineup(s) {
   if (!isFormation(s.formation)) s.formation = '433';
   s.lineup = repairLineup(s.players, s.lineup || autoLineup(s.players, s.formation), s.formation);
-  if (!TACTICS[s.tactic]) s.tactic = 'balanced';
+  if (!isTactic(s.tactic)) s.tactic = 'balanced';
   return s;
 }
 

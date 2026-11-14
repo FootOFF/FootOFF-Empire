@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { deName } from '../game/names';
 import { DIVISIONS, divisionOf } from '../game/constants';
-import { TACTICS, formationOf } from '../game/tactics';
+import { formationOf, tacticName } from '../game/tactics';
 import { TICKET_POLICIES } from '../game/economy';
 import { ordinal } from '../game/utils';
 import { fmtMoney, fmtNum, fmtPrice, fmtRating, homeFirst, scoreText } from './format';
@@ -369,7 +369,7 @@ function MatchStats({ m }) {
         <span className="sh-cap">{t('Le contexte')}</span>
         <ul className="sp-facts">
           <li><span>{t('Niveau du onze')}</span><b>{tr('<0/> contre <1/>', [fmtRating(m.myRating || 0), fmtRating(m.oppStrength || 0)])}</b></li>
-          <li><span>{t('Tactique')}</span><b>{TACTICS[m.tactic]?.name || '—'}</b></li>
+          <li><span>{t('Tactique')}</span><b>{(m.tactic ? tacticName(m.tactic) : null) || '—'}</b></li>
           {st.longShots > 0 && <li><span>{t('Frappes de loin')}</span><b>{st.longShots}</b></li>}
           <li><span>{t('Affluence')}</span><b>{fmtNum(m.attendance || 0)}{m.capacity ? ` · ${pct(m.attendance, m.capacity)} %` : ''}</b></li>
           <li><span>{t('Recette du jour')}</span><b>{fmtMoney(m.revenue || 0)}</b></li>
@@ -661,7 +661,7 @@ function StatsPass({ state, m, matches, onClose, onPrev, onNext, onCareer }) {
           <span className="sh-cap">{t('Les chiffres')}</span>
           <ul className="sp-facts">
             <li><span>{t('Formation')}</span><b>{formationOf(m.formation).name}</b></li>
-            <li><span>{t('Tactique')}</span><b>{TACTICS[m.tactic]?.name || '—'}</b></li>
+            <li><span>{t('Tactique')}</span><b>{(m.tactic ? tacticName(m.tactic) : null) || '—'}</b></li>
             {st && <li><span>{t('Efficacité')}</span><b>{tr('<0/> % des tirs transformés', [pct(m.gf, st.shots[0])])}</b></li>}
             {st && <li><span>{t('Précision')}</span><b>{tr('<0/> % de tirs cadrés', [pct(st.onTarget[0], st.shots[0])])}</b></li>}
             <li><span>{t('Joueurs utilisés')}</span><b>{players.length}</b></li>

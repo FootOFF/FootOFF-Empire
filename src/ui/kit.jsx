@@ -55,6 +55,35 @@ export function VersusBar({ label, home, away, suffix = '', format = (v) => v, f
   );
 }
 
+// Côtés d'attaque (1.0.50, moteur à zones) : pour chaque équipe, la part de ses attaques (ses entrées dans le dernier
+// tiers) à gauche, dans l'axe et à droite, vues de l'équipe qui attaque. lanes : [[g, a, d] du club qui reçoit, du
+// visiteur] ; labels : leurs noms courts ; us : l'équipe du joueur (en or) ; flip : le visiteur en premier.
+export function LaneSplit({ lanes, labels, us = 0, flip = false }) {
+  const order = flip ? [1, 0] : [0, 1];
+  return (
+    <div className="lane-split" role="group" aria-label={t('Côtés d’attaque')}>
+      <div className="ls-head"><span>{t('Côtés d’attaque')}</span><em>{t('Gauche')}</em><em>{t('Axe')}</em><em>{t('Droite')}</em></div>
+      {order.map((k) => {
+        const v = lanes?.[k] || [0, 0, 0];
+        const tot = v[0] + v[1] + v[2];
+        const pc = v.map((x) => (tot ? Math.round((100 * x) / tot) : 0));
+        const top = Math.max(...pc);
+        return (
+          <div key={k} className={`ls-row ${k === us ? 'us' : 'them'}`}>
+            <span className="ls-name">{labels?.[k]}</span>
+            {pc.map((p, i) => (
+              <span key={i} className={`ls-cell ${tot && p === top ? 'top' : ''}`}>
+                <i style={{ height: `${tot ? 18 + p * 0.82 : 18}%` }} />
+                <b>{tot ? `${p} %` : '—'}</b>
+              </span>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // Note de match sur 10 (couleur selon la performance).
 export function RatingBadge({ value, size = 'md' }) {
   const tone = value >= 7.5 ? 'good' : value < 5.5 ? 'low' : ''; // mêmes seuils que la forme de la fiche joueur

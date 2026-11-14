@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { HOME_KIT, kitHex, matchKits } from '../game/kits';
 import { flushSync } from 'react-dom';
-import { TACTICS, TACTIC_ORDER, autoLineup, fitWeight, formationOf, lineupRating, ratingAtSlot, reshapeLineup, slotsOf } from '../game/tactics';
+import { TACTICS, autoLineup, fitWeight, formationOf, isTactic, lineupRating, ratingAtSlot, reshapeLineup, slotsOf, tacticBlurb, tacticName } from '../game/tactics';
 import { fmtMoney, fmtNum, fmtRating } from './format';
 import { LIVE_VERSION, SUBS_MAX, createLiveMatch, highlightOf, liveKeyOf, pairSubs, statsOf, subMinute } from '../game/live';
 import { saveLive } from '../game/save';
@@ -11,9 +11,9 @@ import { HeroShot, prefetchHero } from './heroshot';
 import { teamCodes } from './teamcode';
 import { FormationPicker, LineupActions, LineupBoard, displayNames } from './lineup';
 import { IconCheck, IconChevron, IconClose, IconFast, IconMute, IconPlay, IconSound, IconUndo, IconUsers } from './icons';
-import { PresetGauges, PresetPicker, shapeOf } from './tacticboard';
+import { PresetPicker, TacticSliders, shapeOf } from './tacticboard';
 import { uiSound } from './uisound';
-import { IconAssist, IconBall, IconMedic, IconSwap, IconWhistle, RatingBadge, VersusBar } from './kit';
+import { IconAssist, IconBall, IconMedic, IconSwap, IconWhistle, LaneSplit, RatingBadge, VersusBar } from './kit';
 import { useKeydown } from './presence';
 import { deName } from '../game/names';
 import { LANDSCAPE, PHONE, useSwipe } from './gestures';
@@ -33,15 +33,13 @@ import { colon, comma, ordinal as ordinalText, t, tn, tr } from '../i18n/index';
 // victoire, de nul ou de défaite, ni buts attendus avant le match, ni effet des plans en pourcentages, ni chance de
 // qualification. Chacun juge son match seul ; le calcul ne change pas.
 
+// Tactique de la mi-temps et des plans de mi-temps (1.0.50) : les trois préréglages, puis les 7 consignes du mode expert
+// (tacticboard.jsx) ; un cran réglé fait une tactique sur mesure.
 function TacticPicker({ value, onChange, compact }) {
   return (
-    <div className={`tactics ${compact ? 'compact' : ''}`} role="radiogroup" aria-label={t('Plan de jeu')}>
-      {TACTIC_ORDER.map((id) => (
-        <button key={id} role="radio" aria-checked={value === id} className={value === id ? 'active' : ''} onClick={() => onChange(id)}>
-          <span className="tac-top"><strong>{TACTICS[id].name}</strong></span>
-          {!compact && <span className="tac-blurb">{TACTICS[id].blurb}</span>}
-        </button>
-      ))}
+    <div className={`tactic-set ${compact ? 'compact' : ''}`}>
+      <PresetPicker value={value} onChange={onChange} />
+      <TacticSliders tactic={value} onChange={onChange} compact={compact} />
     </div>
   );
 }
@@ -76,7 +74,7 @@ const movedOnly = (v, formation, lineup) => {
 const planText = (v, formation, tactic, lineup) => {
   const bits = [];
   if (v.f !== formation) bits.push(formationOf(v.f).name);
-  if (v.t !== tactic) bits.push(TACTICS[v.t].name);
+  if (v.t !== tactic) bits.push(tacticName(v.t));
   if (v.s.length) bits.push(tn(v.s.length, '{n} changement', '{n} changements', { n: v.s.length }, v.s.length > 1));
   if (movedOnly(v, formation, lineup)) bits.push(t('postes modifiés'));
   return bits.length ? bits.map((b) => b.replace(/ /g, '\u00a0')).join(' · ').replace(/^p/, 'P') : t('Rien ne change');
@@ -185,7 +183,7 @@ function HalftimePlans({ players, lineup, formation, tactic, plans, onChange, st
 // calcul du match ne change pas.
 export function PreMatch({ state, ctx, onCancel, onKickoff }) {
   const [lineup, setLineup] = useState(() => [...state.lineup]);
-  const [tactic, setTactic] = useState(TACTICS[state.tactic] ? state.tactic : 'balanced');
+  const [tactic, setTactic] = useState(isTactic(state.tactic) ? state.tactic : 'balanced');
   const [formation, setFormation] = useState(formationOf(state.formation).id);
   const [hist, setHist] = useState([]); // états précédents, pour annuler (les 30 derniers)
   const friends = !!state.league; // partie de championnat entre amis : son match se joue sans elle (plans de mi-temps)
@@ -215,8 +213,10 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
     uiSound('back');
   };
   const reshape = (f) => { if (f !== formation) commit({ formation: f, lineup: reshapeLineup(state.players, lineup, f) }, 'shift'); };
-  // le bloc monte (plan plus offensif) ou recule : le son monte ou descend avec lui
-  const pickTactic = (id) => { if (id !== tactic) commit({ tactic: id }, TACTIC_ORDER.indexOf(id) < TACTIC_ORDER.indexOf(tactic) ? 'shift-up' : 'shift-down'); };
+  // le bloc monte (plan plus offensif) ou recule : le son monte ou descend avec lui (ligne et pressing réunis)
+  const height = (id) => (TACTICS[id] ? ['low', 'balanced', 'offensive'].indexOf(id) : 1);
+  const pickTactic = (id) => { if (id !== tactic) commit({ tactic: id }, height(id) > height(tactic) ? 'shift-up' : 'shift-down'); };
+  const tuneTactic = (id) => { if (id !== tactic) commit({ tactic: id }); }; // (le curseur joue son propre son)
   const form = formationOf(formation);
   // classement des deux clubs (championnat), dès la première journée jouée
   const table = ctx.comp === 'friends' ? [] : standingsOf(state);
@@ -301,9 +301,9 @@ export function PreMatch({ state, ctx, onCancel, onKickoff }) {
           />
         </section>
         <section className="pm-plan glass" aria-label={t('Dispositif et tactique')}>
-          <h3 className="pm-sh mark-head">{tr('Tactique · <0/>', [<span className="pm-plan-name">{TACTICS[tactic].name}</span>])}</h3>
-          <p className="pm-blurb">{TACTICS[tactic].blurb}</p>
-          <PresetGauges tactic={tactic} />
+          <h3 className="pm-sh mark-head">{tr('Tactique · <0/>', [<span className="pm-plan-name">{tacticName(tactic)}</span>])}</h3>
+          <p className="pm-blurb">{tacticBlurb(tactic)}</p>
+          <TacticSliders tactic={tactic} onChange={tuneTactic} />
           <h3 className="pm-sh mark-head">{tr('Dispositif · <0/>', [<span className="pm-plan-name">{form.name}</span>])}</h3>
           <p className="pm-blurb">{form.blurb}</p>
           {friends && <>
@@ -475,17 +475,24 @@ function ScoreFacts({ shown, side, pos = side }) {
 
 // Statistiques en direct : seulement ce que le direct a déjà montré (statsOf, live.js) ; la possession ondule minute
 // après minute autour de la tendance de la mi-temps.
-function LiveStats({ st, poss, flip = false }) {
+function LiveStats({ st, poss, flip = false, zst = null, codes = null, us = 0 }) {
   const n = (v) => fmtNum(v);
   return (
     <div className="lv-srows">
       <VersusBar label={t('Possession')} home={poss} away={100 - poss} suffix=" %" flip={flip} />
+      {zst && <LaneSplit lanes={[zst[0].lanes, zst[1].lanes]} labels={codes} us={us} flip={flip} />}
       <VersusBar label={t('Tirs')} home={st.shots[0]} away={st.shots[1]} format={n} flip={flip} />
       <VersusBar label={t('Tirs cadrés')} home={st.on[0]} away={st.on[1]} format={n} flip={flip} />
       <VersusBar label={t('Grosses occasions')} home={st.big[0]} away={st.big[1]} format={n} flip={flip} />
       <VersusBar label={t('Buts attendus')} home={st.xg[0]} away={st.xg[1]} format={(v) => fmtRating(v)} flip={flip} />
       <VersusBar label={t('Arrêts')} home={st.saves[0]} away={st.saves[1]} format={n} flip={flip} />
       <VersusBar label={t('Poteaux')} home={st.post[0]} away={st.post[1]} format={n} flip={flip} />
+      {zst && <>
+        <VersusBar label={t('Récupérations hautes')} home={zst[0].high} away={zst[1].high} format={n} flip={flip} />
+        <VersusBar label={t('Contre-attaques')} home={zst[0].ctr} away={zst[1].ctr} format={n} flip={flip} />
+        <VersusBar label={t('Corners')} home={zst[0].corners} away={zst[1].corners} format={n} flip={flip} />
+        <VersusBar label={t('Hors-jeu')} home={zst[0].off} away={zst[1].off} format={n} flip={flip} />
+      </>}
       <VersusBar label={t('Cartons jaunes')} home={st.yellow[0]} away={st.yellow[1]} format={n} flip={flip} />
       <VersusBar label={t('Cartons rouges')} home={st.red[0]} away={st.red[1]} format={n} flip={flip} />
       {st.pens[0] + st.pens[1] > 0 && <VersusBar label={t('Penalties')} home={st.pens[0]} away={st.pens[1]} format={n} flip={flip} />}
@@ -685,11 +692,13 @@ function TopPlayer({ notesNow, state, m, kits, crestOf, ours = 'home' }) {
 }
 
 // Chiffres clés, la valeur en tête dans une pastille (or : nous ; gris : eux)
-function KeyStats({ st, poss, flip = false, us = 0 }) {
+function KeyStats({ st, poss, flip = false, us = 0, zst = null, codes = null }) {
   const [a, b] = flip ? [1, 0] : [0, 1];
   const pv = [poss, 100 - poss];
   const pill = (v, w, k) => (v > w ? `lead ${k === us ? 'us' : 'them'}` : '');
-  const rows = [[t('Tirs'), st.shots], [t('Tirs cadrés'), st.on], [t('Grosses occasions'), st.big], [t('Arrêts'), st.saves], [t('Poteaux'), st.post]];
+  const rows = [[t('Tirs'), st.shots], [t('Tirs cadrés'), st.on], [t('Grosses occasions'), st.big],
+    ...(zst ? [[t('Récupérations hautes'), [zst[0].high, zst[1].high]], [t('Contre-attaques'), [zst[0].ctr, zst[1].ctr]], [t('Corners'), [zst[0].corners, zst[1].corners]]] : []),
+    [t('Arrêts'), st.saves], [t('Poteaux'), st.post]];
   return (
     <section className="lv2-card">
       <h3 className="lv2-title">{t('Chiffres clés')}</h3>
@@ -697,6 +706,7 @@ function KeyStats({ st, poss, flip = false, us = 0 }) {
         <div className="lv2-poss-nums"><b className={a === us ? 'us' : ''}>{pv[a]} %</b><span>{t('Possession')}</span><b className={b === us ? 'us' : ''}>{pv[b]} %</b></div>
         <div className="lv2-poss-bar"><i className={a === us ? 'us' : 'them'} style={{ flex: pv[a] }} /><i className={b === us ? 'us' : 'them'} style={{ flex: pv[b] }} /></div>
       </div>
+      {zst && <LaneSplit lanes={[zst[0].lanes, zst[1].lanes]} labels={codes} us={us} flip={flip} />}
       {rows.map(([label, v]) => (
         <div key={label} className="lv2-srow">
           <span><b className={pill(v[a], v[b], a)}>{fmtNum(v[a])}</b></span>
@@ -1197,6 +1207,8 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
   // minute d'effet d'un changement (plus de pronostic du direct, 1.0.34 : décision du PDG, aucun chiffre de prévision)
   const oddsMinute = phase === 'halftime' ? live.halfEnd : sub?.at ?? minute;
   const st = useMemo(() => statsOf(shown), [shown]);
+  // statistiques du moteur à zones (1.0.50) : seulement ce que le direct a déjà montré
+  const zst = phase === 'halftime' ? live.zonesAt(1, live.halfEnd) : phase === 'fulltime' ? live.zonesAt(2, 999) : live.zonesAt(half, minute);
   // match revu : le moteur a déjà joué les deux périodes, la possession de la pause est celle de la première
   const poss = phase === 'halftime' && replay ? live.possessionAt(1, live.halfEnd)
     : phase === 'halftime' || phase === 'fulltime' ? m.stats.possession : live.possessionAt(half, minute);
@@ -1297,7 +1309,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
             <div className="lv2-card lv2-dom">
               <Momentum shown={shown} upTo={slotOf(clockRef.current, half)} possHalf={m.stats.possHalf} names={[m.home, m.away]} codes={codes} flip={flip} />
             </div>
-            <KeyStats st={st} poss={poss} flip={flip} us={us} />
+            <KeyStats st={st} poss={poss} flip={flip} us={us} zst={zst} codes={codes} />
           </section>
           <section className="lv2-sec compos" aria-label={t('Compos')}>
             <div className="lv2-card lv2-pitch-card">
@@ -1320,7 +1332,7 @@ export function LiveMatch({ state, ctx, sound, onFx, onFinish, preview = null, r
           <section className="lv2-sec stats" aria-label={t('Statistiques')}>
             <div className="lv2-card">
               <h3 className="lv2-title">{t('Statistiques')}</h3>
-              <LiveStats st={st} poss={poss} flip={flip} />
+              <LiveStats st={st} poss={poss} flip={flip} zst={zst} codes={codes} us={us} />
             </div>
           </section>
           <section className="lv2-sec feed" aria-label={t('Le fil')}>

@@ -8,7 +8,7 @@ import {
   toSnap, trainClub, unsnapPlayer, worldSquads,
 } from './leagueWorld';
 import { assignNumber, available, makePlayer } from './players';
-import { autoLineup, FORMATIONS, isFormation, lineupRating, repairLineup, TACTICS } from './tactics';
+import { autoLineup, FORMATIONS, isFormation, isTactic, lineupRating, repairLineup, TACTICS } from './tactics';
 import { clone } from './utils';
 import { LANGS, numLocale, t } from '../i18n/index';
 
@@ -27,7 +27,9 @@ import { LANGS, numLocale, t } from '../i18n/index';
 // 6 (1.0.41) : postes façon Football Manager (posts.js) : chaque poste a sa note, dispositifs libres de la grille.
 // 7 (1.0.49) : moteur à zones (zones.js) : chaque minute jouée phase par phase sur 9 zones, consignes et profils des
 // joueurs dans chaque zone, plan de l'ordinateur mesuré par ce moteur.
-export const LEAGUE_ENGINE = 7;
+// 8 (1.0.50) : mode expert : tactiques sur mesure (« x:… », les 7 consignes), cohérence des consignes, tactique qui pèse
+// davantage, préréglages Offensive et Bloc bas retouchés.
+export const LEAGUE_ENGINE = 8;
 export const LEAGUE_CLUBS = 8; // amis complétés par l'ordinateur
 export const LEAGUE_MIN_HUMANS = 2;
 export const MAX_MY_LEAGUES = 3; // championnats à la fois sur un appareil
@@ -161,7 +163,7 @@ export function cleanPlans(ht, ids) {
     if (!x || typeof x !== 'object') continue;
     const plan = {};
     if (isFormation(x.f)) plan.f = x.f;
-    if (TACTICS[x.t]) plan.t = x.t;
+    if (isTactic(x.t)) plan.t = x.t;
     const seen = new Set();
     const subs = (Array.isArray(x.s) ? x.s : []).filter((pair) => Array.isArray(pair) && pair.length === 2 && pair.every((id) => ids.has(id))
       && pair[0] !== pair[1] && !seen.has(pair[0]) && !seen.has(pair[1]) && seen.add(pair[0]) && seen.add(pair[1])).slice(0, SUBS_MAX);
@@ -179,7 +181,7 @@ export function cleanSheet(sheet, players) {
   const ids = new Set(players.map((p) => p.id));
   const lineup = Array.isArray(sheet?.lineup) ? sheet.lineup : [];
   const named = lineup.filter((id) => id !== null);
-  const ok = sheet && isFormation(sheet.formation) && TACTICS[sheet.tactic] && lineup.length === 11
+  const ok = sheet && isFormation(sheet.formation) && isTactic(sheet.tactic) && lineup.length === 11
     && new Set(named).size === named.length && named.every((id) => ids.has(id));
   if (!ok) return autoSheet(players);
   const ht = cleanPlans(sheet.ht, ids);

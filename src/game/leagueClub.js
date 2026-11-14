@@ -3,7 +3,7 @@ import { applyMatchResult, archivePlayer, startSeason } from './season';
 import { logMove, poolOf } from './mercato';
 import { SQUAD_MIN } from './constants';
 import { repairSave, validSave } from './save';
-import { autoLineup, ensureLineup, FORMATIONS, isFormation, TACTICS } from './tactics';
+import { autoLineup, ensureLineup, FORMATIONS, isFormation, isTactic, TACTICS } from './tactics';
 import { assignNumber, available, freshSeason, playerRating, refWage } from './players';
 import { distinctFace } from './faces';
 import { book, markTreasury } from './ledger';
@@ -158,7 +158,7 @@ export function arrangeFor(players, lineup, formation) {
 }
 export function planView(players, lineup, formation, tactic, plan = null) {
   const f = isFormation(plan?.f) ? plan.f : formation;
-  const t = TACTICS[plan?.t] ? plan.t : tactic;
+  const t = isTactic(plan?.t) ? plan.t : tactic;
   const next = [...lineup];
   const s = [];
   for (const [o, i] of Array.isArray(plan?.s) ? plan.s : []) {
